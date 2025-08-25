@@ -110,7 +110,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
       )}
 
       {/* Input area */}
-      <div className="flex flex-col rounded border border-co-background-300 bg-co-background-100 dark:border-co-background-200 dark:bg-co-background-200">
+      <div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
         <Primitive.MultimodalInput
           className={cn(
             "flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",

@@ -43,7 +43,7 @@ export const ConversationPage = ({
 }: ConversationPageProps) => {
   const { website, availableAIAgents, availableHumanAgents, client, visitor } =
     useSupport();
-  const { navigate } = useSupportNavigation();
+  const { navigate, goBack, canGoBack } = useSupportNavigation();
 
   // Determine if we have a real conversation or pending one
   const hasRealConversation = conversationId !== PENDING_CONVERSATION_ID;
@@ -52,14 +52,6 @@ export const ConversationPage = ({
     conversationId,
   });
 
-  // Fetch conversation data only if we have a real conversation
-  // const {
-  //   conversation,
-  //   // isLoading: conversationLoading,
-  //   error: conversationError,
-  // } = useConversation(client, realConversationId);
-
-  // Fetch messages - for pending conversations, we use defaultMessages
   const {
     data: fetchedMessages,
     // isLoading: messagesLoading,
@@ -118,15 +110,19 @@ export const ConversationPage = ({
   const actualIsSubmitting = isSubmitting || sendMessage.isPending;
   const actualError = error || messagesError;
 
-  const goHome = () => {
-    navigate({
-      page: "HOME",
-    });
+  const handleGoBack = () => {
+    if (canGoBack) {
+      goBack();
+    } else {
+      navigate({
+        page: "HOME",
+      });
+    }
   };
 
   return (
     <div className="flex h-full flex-col gap-0 overflow-hidden">
-      <Header onGoBack={goHome}>
+      <Header onGoBack={handleGoBack}>
         <div className="flex w-full items-center justify-between gap-2 py-3">
           <div className="flex flex-col">
             <p className="font-medium text-sm">{website?.name}</p>

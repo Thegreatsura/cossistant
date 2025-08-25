@@ -1,4 +1,5 @@
 import type React from "react";
+import { useMemo } from "react";
 import { useSupport } from "../..";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { AvatarStack } from "../components/avatar-stack";
@@ -37,12 +38,30 @@ export const HomePage = () => {
       },
     });
 
+  const handleOpenConversationHistory = () =>
+    navigate({
+      page: "CONVERSATION_HISTORY",
+    });
+
   // const defaultMessages = useDefaultMessages({ conversationId: "default" });
+  const { lastOpenConversation, availableConversationsAmount } = useMemo(() => {
+    const _lastOpenConversation = conversations?.find(
+      (conversation) => conversation.status === "open"
+    );
+
+    return {
+      lastOpenConversation: _lastOpenConversation,
+      availableConversationsAmount: Math.max(
+        (conversations?.length || 0) - 1,
+        0
+      ),
+    };
+  }, [conversations]);
 
   return (
     <div className="relative flex h-full flex-col gap-10 overflow-y-auto">
       <Header>{/* <NavigationTab /> */}</Header>
-      <div className="flex flex-1 items-center justify-center">
+      <div className="sticky top-4 flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <AvatarStack
             aiAgents={website?.availableAIAgents || []}
@@ -80,32 +99,43 @@ export const HomePage = () => {
         </div>
       </div>
       <div className="flex flex-shrink-0 flex-col items-center justify-center gap-2 px-6 pb-4">
-        {(conversations?.length || 0) > 0 && (
+        {availableConversationsAmount > 0 && (
+          <Button
+            className="relative w-full text-co-primary/40 text-xs hover:text-co-primary"
+            onClick={handleOpenConversationHistory}
+            variant="ghost"
+          >
+            + {availableConversationsAmount} more conversations
+          </Button>
+        )}
+
+        {lastOpenConversation && (
           <div className="flex w-full flex-col rounded border border-co-border/50">
-            {conversations?.map((conversation) => (
-              <ConversationButtonLink
-                conversation={conversation}
-                key={conversation.id}
-                onClick={handleOpenConversation(conversation.id)}
-              />
-            ))}
+            <ConversationButtonLink
+              conversation={lastOpenConversation}
+              key={lastOpenConversation.id}
+              onClick={handleOpenConversation(lastOpenConversation.id)}
+            />
           </div>
         )}
 
-        <Button
-          className="relative w-full justify-between"
-          onClick={handleStartConversation()}
-          size="large"
-          variant="secondary"
-        >
-          <Icon
-            className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
-            name="arrow-right"
-            variant="default"
-          />
-          Ask us a question
-        </Button>
-        <Watermark className="mt-4 mb-2" />
+        <div className="sticky bottom-4 z-10 flex w-full flex-col items-center gap-2">
+          <Button
+            className="relative w-full justify-between"
+            onClick={handleStartConversation()}
+            size="large"
+            variant="secondary"
+          >
+            <Icon
+              className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
+              name="arrow-right"
+              variant="default"
+            />
+            Ask us a question
+          </Button>
+          <Watermark className="mt-4 mb-2" />
+        </div>
+        <div />
       </div>
     </div>
   );

@@ -11,9 +11,9 @@ const buttonVariants = cva(
         default:
           "bg-co-primary text-co-primary-foreground hover:bg-co-primary/90",
         secondary:
-          "border-co-border/50 bg-co-background-200 hover:bg-co-background-300 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
+          "border-co-border/50 bg-co-background-100 hover:bg-co-background-200 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
         ghost:
-          "hover:bg-co-background-200 hover:text-co-foreground dark:hover:bg-co-background-300",
+          "border-transparent hover:bg-co-background-200 hover:text-co-foreground dark:hover:bg-co-background-300",
         outline:
           "border border-co-border bg-co-background hover:bg-co-background-100 dark:bg-co-background-200 dark:hover:bg-co-background-300",
         tab: "opacity-40 hover:bg-co-background-100 hover:text-co-foreground hover:opacity-90 dark:hover:bg-co-background-200",
