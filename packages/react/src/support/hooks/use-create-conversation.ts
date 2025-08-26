@@ -60,11 +60,11 @@ export function useCreateConversation(
 				optimisticConversation
 			);
 
-			// Also update the conversations list if it exists
-			queryClient.setQueryData<Conversation[]>(["conversations"], (old) => [
-				...(old || []),
-				optimisticConversation,
-			]);
+			// Invalidate conversations queries to force refetch
+			queryClient.invalidateQueries({ 
+				queryKey: ["conversations"],
+				refetchType: "none" // Don't refetch yet, wait for onSuccess
+			});
 
 			return { conversationId };
 		},
@@ -75,20 +75,11 @@ export function useCreateConversation(
 				data.conversation
 			);
 
-			// Update conversations list
-			queryClient.setQueryData<Conversation[]>(["conversations"], (old) => {
-				if (!old) {
-					return [data.conversation];
-				}
-
-				// Replace optimistic conversation with real one
-				const index = old.findIndex((c) => c.id === data.conversation.id);
-				if (index >= 0) {
-					const updated = [...old];
-					updated[index] = data.conversation;
-					return updated;
-				}
-				return [...old, data.conversation];
+			// Invalidate and refetch conversations list to ensure it's up to date
+			// This will trigger useConversations to refetch with the correct query key
+			queryClient.invalidateQueries({ 
+				queryKey: ["conversations"],
+				refetchType: "active" // Refetch active queries
 			});
 
 			// Set initial messages if any
@@ -109,11 +100,10 @@ export function useCreateConversation(
 					queryKey: ["conversation", context.conversationId],
 				});
 
-				// Remove from list
-				queryClient.setQueryData<Conversation[]>(
-					["conversations"],
-					(old) => old?.filter((c) => c.id !== context.conversationId) || []
-				);
+				// Invalidate conversations to refetch the list
+				queryClient.invalidateQueries({ 
+					queryKey: ["conversations"] 
+				});
 			}
 
 			// Call user's onError callback

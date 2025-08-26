@@ -18,7 +18,6 @@ export function useConversations(
 	const { data, isLoading, error } = useQuery({
 		queryKey: [
 			"conversations",
-			client?.getConfiguration().publicKey,
 			params.limit || 3,
 		],
 		queryFn: async () => {
