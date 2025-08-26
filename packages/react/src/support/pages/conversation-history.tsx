@@ -91,7 +91,7 @@ export const ConversationHistoryPage: React.FC = () => {
                 name="arrow-right"
                 variant="default"
               />
-              Ask us a question
+              Ask us a question with us
             </Button>
             <Watermark className="mt-4 mb-2" />
           </div>

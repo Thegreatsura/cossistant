@@ -8,15 +8,42 @@ import { cn } from "../utils";
 export interface WindowProps {
   className?: string;
   children: React.ReactNode;
+  mode?: "floating" | "responsive";
+  position?: "top" | "bottom";
+  align?: "right" | "left";
 }
 
-export const Window: React.FC<WindowProps> = ({ className, children }) => {
+export const Window: React.FC<WindowProps> = ({
+  className,
+  children,
+  mode = "floating",
+  position = "bottom",
+  align = "right",
+}) => {
   return (
     <Primitive.Window asChild>
       <motion.div
         animate="visible"
         className={cn(
-          "flex h-[calc(100vh-6rem)] w-[calc(100vw-2rem)] flex-col overflow-clip rounded-lg border border-co-border/50 bg-co-background shadow-xl md:aspect-[9/16] md:h-auto md:w-[400px] dark:shadow-co-background-600",
+          // Common base styles
+          "flex flex-col overflow-clip bg-co-background",
+
+          // Mobile styles - always full screen
+          "max-md:fixed max-md:inset-0",
+
+          // Desktop floating mode
+          mode === "floating" && [
+            "z-[9999] md:absolute md:z-[9900] md:aspect-[9/16] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-lg md:border md:border-co-border/50 md:shadow-xl md:dark:shadow-co-background-600",
+            position === "bottom" && "md:bottom-16",
+            position === "top" && "md:top-16",
+            align === "right" && "md:right-0",
+            align === "left" && "md:left-0",
+          ],
+
+          // Desktop responsive mode
+          mode === "responsive" &&
+            "md:relative md:h-full md:w-full md:rounded-none md:border-0 md:shadow-none",
+
           className
         )}
         exit="exit"

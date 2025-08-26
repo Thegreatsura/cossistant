@@ -51,18 +51,6 @@ export const SupportContent: React.FC<SupportContentProps> = ({
     className
   );
 
-  const windowClasses = cn({
-    // Floating mode window positioning
-    "absolute z-[9900]": mode === "floating",
-    "bottom-16": mode === "floating" && position === "bottom",
-    "top-16": mode === "floating" && position === "top",
-    "right-0": mode === "floating" && align === "right",
-    "left-0": mode === "floating" && align === "left",
-    // Responsive mode window
-    "relative h-full w-full rounded-none border-0 shadow-none":
-      mode === "responsive",
-  });
-
   return (
     <motion.div
       animate={{ opacity: 1 }}
@@ -74,8 +62,8 @@ export const SupportContent: React.FC<SupportContentProps> = ({
         layout: { duration: 0.3 },
       }}
     >
-      {mode === "floating" && <Bubble className="z-[9999]" />}
-      <Window className={windowClasses}>
+      {mode === "floating" && <Bubble className="z-[1000] md:z-[9999]" />}
+      <Window align={align} mode={mode} position={position}>
         <SupportRouter
           addFiles={addFiles}
           error={error}

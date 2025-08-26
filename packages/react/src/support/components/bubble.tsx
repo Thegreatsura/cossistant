@@ -14,11 +14,11 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => {
   return (
     <Primitive.Bubble
       className={cn(
-        "relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
+        "relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
         className
       )}
     >
-      {({ isOpen, unreadCount, toggle }) => (
+      {({ isOpen, unreadCount }) => (
         <>
           <AnimatePresence mode="wait">
             {isOpen ? (
