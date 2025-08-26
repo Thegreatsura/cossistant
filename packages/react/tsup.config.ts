@@ -11,33 +11,45 @@ export default defineConfig({
 	clean: true,
 	outDir: "dist",
 	target: "es2020",
-	// Use neutral so the lib works in both browser + SSR bundles
-	platform: "neutral",
+	// Use browser platform since this is a React component library
+	platform: "browser",
 	splitting: false,
 	sourcemap: true,
-	minify: true,
+	minify: false, // Don't minify to allow better debugging for consumers
+	treeshake: true,
+	outExtension({ format }) {
+		return {
+			js: format === "esm" ? ".mjs" : ".cjs",
+		};
+	},
 	external: [
-		// React ecosystem
+		// React ecosystem (peer dependencies)
 		"react",
 		"react-dom",
 		"react/jsx-runtime",
 
-		// TanStack Query (peer)
+		// Peer dependencies
 		"@tanstack/react-query",
-
-		// Motion (root and subpath)
 		"motion",
 		"motion/*",
+		"tailwindcss",
 
-		// workspace packages (so we don’t inline them)
-		"@cossistant/*",
+		// Internal workspace packages that should be bundled
+		// Remove "@cossistant/*" to bundle core and types
+		"@cossistant/core",
+		"@cossistant/types",
 
+		// Regular dependencies that should stay external
 		"react-use-websocket",
-		"clsx",
-		"zod",
 		"react-markdown",
 		"zustand",
 		"zustand/middleware",
 		"nanoid",
+		"ulid",
+		"tailwind-merge",
 	],
+	esbuildOptions(options) {
+		// Ensure proper JSX handling
+		options.jsx = "automatic";
+	},
 });

@@ -20,9 +20,9 @@ export function useWebsiteData(
 			return client.getWebsite();
 		},
 		enabled: !!client,
-		staleTime: Number.POSITIVE_INFINITY, // Data doesn't go stale
-		gcTime: Number.POSITIVE_INFINITY, // Keep in cache forever (previously cacheTime)
-		retry: false, // Don't retry on error to match previous behavior
+		staleTime: Number.POSITIVE_INFINITY,
+		gcTime: Number.POSITIVE_INFINITY,
+		retry: false,
 	});
 
 	return {
