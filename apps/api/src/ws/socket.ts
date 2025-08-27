@@ -185,6 +185,7 @@ function extractAuthCredentials(c: Context): {
   let visitorId = c.req.header("X-Visitor-Id");
 
   // Fallback to URL parameters (for browser WebSocket clients)
+  // This is necessary because browsers can't set custom headers on WebSocket connections
   if (!privateKey) {
     privateKey = c.req.query("token");
   }
@@ -195,9 +196,36 @@ function extractAuthCredentials(c: Context): {
     visitorId = c.req.query("visitorId");
   }
 
+  // Extract origin from WebSocket-specific headers
+  // Priority: Origin > Sec-WebSocket-Origin > Referer
   const origin = c.req.header("Origin");
   const secWebSocketOrigin = c.req.header("Sec-WebSocket-Origin");
-  const actualOrigin = origin || secWebSocketOrigin;
+  const referer = c.req.header("Referer");
+
+  let actualOrigin = origin || secWebSocketOrigin;
+
+  // If no origin headers, try to extract from referer
+  if (!actualOrigin && referer) {
+    try {
+      const refererUrl = new URL(referer);
+      actualOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
+    } catch {
+      // Invalid referer URL, ignore
+    }
+  }
+
+  if (AUTH_LOGS_ENABLED) {
+    console.log("[WebSocket Auth] Extracted credentials:", {
+      hasPrivateKey: !!privateKey,
+      hasPublicKey: !!publicKey,
+      publicKey: publicKey ? `${publicKey.substring(0, 10)}...` : null,
+      origin,
+      secWebSocketOrigin,
+      referer,
+      actualOrigin,
+      visitorId: visitorId ? `${visitorId.substring(0, 8)}...` : null,
+    });
+  }
 
   return { privateKey, publicKey, actualOrigin, visitorId };
 }
@@ -251,6 +279,31 @@ function extractFromRequest(c: Context): {
 }
 
 /**
+ * Extract protocol and hostname from WebSocket context
+ */
+function extractProtocolAndHostname(
+  c: Context,
+  actualOrigin: string | undefined
+): { protocol: string | undefined; hostname: string | undefined } {
+  if (actualOrigin) {
+    return parseOriginDetails(actualOrigin);
+  }
+
+  // Fallback to extracting from the WebSocket request URL
+  const requestDetails = extractFromRequest(c);
+
+  if (AUTH_LOGS_ENABLED && requestDetails.hostname) {
+    console.log("[WebSocket Auth] No origin header, using request details:", {
+      protocol: requestDetails.protocol,
+      hostname: requestDetails.hostname,
+      url: c.req.url,
+    });
+  }
+
+  return requestDetails;
+}
+
+/**
  * Log authentication attempt if logging is enabled
  */
 function logAuthAttempt(
@@ -272,15 +325,17 @@ function logAuthAttempt(
 /**
  * Log authentication success if logging is enabled
  */
-function logAuthSuccess(result: {
-  apiKey: ApiKeyWithWebsiteAndOrganization;
-  isTestKey: boolean;
-}): void {
+function logAuthSuccess(result: WebSocketAuthSuccess): void {
   if (AUTH_LOGS_ENABLED) {
     console.log("[WebSocket Auth] Authentication successful:", {
-      apiKeyId: result.apiKey.id,
-      organizationId: result.apiKey.organization.id,
-      websiteId: result.apiKey.website?.id,
+      hasApiKey: !!result.apiKey,
+      apiKeyId: result.apiKey?.id,
+      organizationId: result.organizationId,
+      websiteId: result.websiteId,
+      userId: result.userId,
+      visitorId: result.visitorId
+        ? `${result.visitorId.substring(0, 8)}...`
+        : null,
       isTestKey: result.isTestKey,
     });
   }
@@ -299,6 +354,31 @@ export type WebSocketAuthSuccess = {
 };
 
 /**
+ * Perform WebSocket authentication with API key
+ */
+async function performApiKeyAuthentication(
+  privateKey: string | undefined,
+  publicKey: string | undefined,
+  options: AuthValidationOptions
+): Promise<WebSocketAuthSuccess | null> {
+  try {
+    const result = await authenticateWithApiKey(privateKey, publicKey, options);
+    return result;
+  } catch (error) {
+    if (error instanceof AuthValidationError) {
+      if (AUTH_LOGS_ENABLED) {
+        console.log("[WebSocket Auth] API key authentication failed:", {
+          error: error.message,
+          statusCode: error.statusCode,
+        });
+      }
+      throw error;
+    }
+    throw error;
+  }
+}
+
+/**
  * Authenticate WebSocket connection
  * Accept either API keys (public/private) or a Better Auth session via cookies
  */
@@ -312,36 +392,37 @@ async function authenticateWebSocketConnection(
 
     logAuthAttempt(!!privateKey, !!publicKey, actualOrigin, c.req.url);
 
-    // Parse origin details
-    let { protocol, hostname } = parseOriginDetails(actualOrigin);
+    // Extract protocol and hostname
+    const { protocol, hostname } = extractProtocolAndHostname(c, actualOrigin);
 
-    // Fallback to request headers if no origin
-    if (!hostname) {
-      const requestDetails = extractFromRequest(c);
-      protocol = requestDetails.protocol;
-      hostname = requestDetails.hostname;
-    }
-
+    // Build validation options
     const options: AuthValidationOptions = {
       origin: actualOrigin,
       protocol,
       hostname,
     };
 
-    // Store the result with visitorId
+    // Authenticate with API key or session
     let result: WebSocketAuthSuccess | null = null;
 
-    // If an API key was provided, authenticate with key-based flow
     if (privateKey || publicKey) {
-      result = await authenticateWithApiKey(privateKey, publicKey, options);
+      result = await performApiKeyAuthentication(
+        privateKey,
+        publicKey,
+        options
+      );
     } else {
-      // Otherwise, attempt Better Auth session-based authentication via cookies
       result = await authenticateWithSession(c);
+
+      if (!result && AUTH_LOGS_ENABLED) {
+        console.log("[WebSocket Auth] No valid authentication method provided");
+      }
     }
 
     // Add visitorId to the result if authentication was successful
     if (result) {
       result.visitorId = visitorId;
+      logAuthSuccess(result);
     }
 
     return result;
@@ -351,11 +432,11 @@ async function authenticateWebSocketConnection(
     }
 
     if (error instanceof AuthValidationError) {
-      // Return null to handle the error in onOpen
-      return null;
+      throw error;
     }
 
-    throw error;
+    // For any other errors, wrap them
+    throw new AuthValidationError(500, "Internal authentication error");
   }
 }
 
@@ -370,13 +451,15 @@ async function authenticateWithApiKey(
     db,
     options
   );
-  logAuthSuccess(result);
-  return {
+
+  const authSuccess: WebSocketAuthSuccess = {
     apiKey: result.apiKey,
     isTestKey: result.isTestKey,
     organizationId: result.apiKey.organization.id,
     websiteId: result.apiKey.website?.id,
   };
+
+  return authSuccess;
 }
 
 async function authenticateWithSession(
@@ -417,12 +500,36 @@ async function authenticateWithSession(
 }
 
 export const upgradedWebsocket = upgradeWebSocket(async (c) => {
-  // Perform authentication during the upgrade phase
-  const authResult = await authenticateWebSocketConnection(c);
+  let authResult: WebSocketAuthSuccess | null = null;
+  let authError: AuthValidationError | null = null;
+
+  try {
+    // Perform authentication during the upgrade phase
+    authResult = await authenticateWebSocketConnection(c);
+  } catch (error) {
+    if (error instanceof AuthValidationError) {
+      authError = error;
+    } else {
+      // Log unexpected errors but don't expose them to the client
+      console.error("[WebSocket] Unexpected authentication error:", error);
+      authError = new AuthValidationError(500, "Authentication failed");
+    }
+  }
 
   return {
     async onOpen(evt, ws) {
       const connectionId = generateConnectionId();
+
+      // If we have an authentication error, send it and close the connection
+      if (authError) {
+        sendError(ws, {
+          error: "Authentication failed",
+          message: authError.message,
+          code: authError.statusCode,
+        });
+        ws.close(authError.statusCode === 403 ? 1008 : 1011, authError.message);
+        return;
+      }
 
       // Check if authentication was successful
       if (!authResult) {

@@ -22,6 +22,7 @@ type WSContext = {
 interface ConnectionError {
   error: string;
   message: string;
+  code?: number;
 }
 
 export async function handleAuthenticationFailure(
@@ -98,6 +99,9 @@ export function createConnectionEvent(
   const isUserConnection = !!authResult.userId;
 
   if (isUserConnection) {
+    if (!authResult.userId) {
+      throw new Error("No userId available for user connection");
+    }
     return {
       type: "USER_CONNECTED",
       data: {

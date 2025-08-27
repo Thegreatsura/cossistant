@@ -101,15 +101,36 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const [connectionError, setConnectionError] = useState<Error | null>(null);
 
   const { sendMessage, lastMessage, readyState } = useWebSocketLib(socketUrl, {
-    shouldReconnect: () => true,
+    shouldReconnect: (closeEvent) => {
+      // Don't reconnect if authentication failed (1008) or server error (1011)
+      if (closeEvent.code === 1008 || closeEvent.code === 1011) {
+        const err = new Error(
+          closeEvent.reason ||
+            "Authentication failed. Please check your API key configuration."
+        );
+        setConnectionError(err);
+        onError?.(err);
+        return false;
+      }
+      return true;
+    },
     reconnectAttempts: 10,
     reconnectInterval: 3000,
     onOpen: () => {
       setConnectionError(null);
       onConnect?.();
     },
-    onClose: () => {
+    onClose: (event) => {
       onDisconnect?.();
+
+      // Handle authentication failures
+      if (event.code === 1008 || event.code === 1011) {
+        const err = new Error(
+          event.reason || "Connection closed due to authentication failure"
+        );
+        setConnectionError(err);
+        onError?.(err);
+      }
     },
     onError: (event) => {
       const err = new Error(`WebSocket error: ${event.type}`);
@@ -122,7 +143,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   useEffect(() => {
     if (lastMessage !== null) {
       try {
-        const event = JSON.parse(lastMessage.data) as RealtimeEvent;
+        const data = JSON.parse(lastMessage.data);
+
+        // Check if this is an error message from the server
+        if (data.error && data.message) {
+          const err = new Error(data.message);
+          setConnectionError(err);
+          onError?.(err);
+          return;
+        }
+
+        // Otherwise, treat it as a normal event
+        const event = data as RealtimeEvent;
         lastMessageRef.current = event;
 
         // Notify all subscribed handlers
@@ -133,7 +165,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         // Intentionally swallow to avoid console noise in production builds
       }
     }
-  }, [lastMessage]);
+  }, [lastMessage, onError]);
 
   const send = useCallback(
     (event: RealtimeEvent) => {
