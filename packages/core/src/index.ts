@@ -18,8 +18,4 @@ export {
 	getVisitorId,
 	setVisitorId,
 } from "./visitor-tracker";
-export {
-	CossistantWebSocketClient,
-	type CossistantWebSocketConfig,
-	type WebSocketEventHandlers,
-} from "./websocket-client";
+// WebSocket client removed - use React WebSocket context instead

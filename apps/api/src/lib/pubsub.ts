@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/nursery/noAwaitInLoop: ok */
 import { env } from "@api/env";
 import type {
 	RealtimeEvent,
@@ -5,53 +6,15 @@ import type {
 	RealtimeEventType,
 } from "@cossistant/types/realtime-events";
 import { Redis } from "@upstash/redis";
-
-// Production-ready constants and interfaces
-const MAX_RECONNECTION_ATTEMPTS = 5;
-const RECONNECTION_DELAY_MS = 1000;
-const HEARTBEAT_INTERVAL_MS = 30_000;
-const TRAILING_SLASH_REGEX = /\/$/;
+import { ulid } from "ulid";
 
 /**
- * Subscription state tracking
+ * Server instance ID for identifying which server owns which connections
  */
-interface SubscriptionState {
-	id: string;
-	channels: string[];
-	eventHandler: (
-		event: RealtimeEvent<RealtimeEventType>,
-		channel: string
-	) => Promise<void> | void;
-	abortController: AbortController;
-	reconnectAttempts: number;
-	lastHeartbeat: number;
-	isActive: boolean;
-}
+const SERVER_ID = ulid();
 
 /**
- * Connection pool entry
- */
-interface ConnectionEntry {
-	id: string;
-	subscription?: SubscriptionState;
-	lastUsed: number;
-	isActive: boolean;
-}
-
-/**
- * Metrics tracking
- */
-interface PubSubMetrics {
-	publishCount: number;
-	subscribeCount: number;
-	errorCount: number;
-	reconnectCount: number;
-	activeConnections: number;
-	lastActivity: number;
-}
-
-/**
- * Redis client for pub/sub operations
+ * Redis client for general operations and publishing
  */
 const redis = new Redis({
 	url: env.UPSTASH_REDIS_REST_URL,
@@ -64,25 +27,22 @@ const redis = new Redis({
 const CHANNEL_PREFIX = "cossistant:events";
 
 /**
- * Generate channel name for visitor-specific events (conversation-based)
- * Visitors subscribe to events about their specific conversations
+ * Connection registry TTL (30 seconds)
+ * Connections must heartbeat more frequently than this
+ */
+const CONNECTION_TTL_SECONDS = 30;
+
+/**
+ * Generate channel names
  */
 function getVisitorChannelName(conversationId: string): string {
 	return `${CHANNEL_PREFIX}:visitor:conversation:${conversationId}`;
 }
 
-/**
- * Generate channel name for dashboard/agent events (website-based)
- * Agents subscribe to all events happening on their website
- */
 function getDashboardChannelName(websiteId: string): string {
 	return `${CHANNEL_PREFIX}:dashboard:website:${websiteId}`;
 }
 
-/**
- * Generate channel name for connection-specific events
- * For direct messaging to specific WebSocket connections
- */
 function getConnectionChannelName(connectionId: string): string {
 	return `${CHANNEL_PREFIX}:connection:${connectionId}`;
 }
@@ -91,73 +51,58 @@ function getConnectionChannelName(connectionId: string): string {
  * Publish target options
  */
 export interface PublishTarget {
-	/** Target visitors of a specific conversation */
 	conversationId?: string;
-	/** Target dashboard/agents of a specific website */
 	websiteId?: string;
-	/** Target specific WebSocket connection directly */
 	connectionId?: string;
 }
 
 /**
- * Subscribe options for different audience types
+ * Connection info stored in Redis
  */
-export interface SubscribeOptions {
-	/** Subscribe to visitor events for a specific conversation */
-	conversationId?: string;
-	/** Subscribe to dashboard events for a specific website */
+export interface ConnectionInfo {
+	connectionId: string;
+	serverId: string;
+	userId?: string;
+	visitorId?: string;
 	websiteId?: string;
-	/** Subscribe to events for a specific connection */
-	connectionId?: string;
+	organizationId?: string;
+	connectedAt: number;
+	lastHeartbeat: number;
 }
 
 /**
- * Event handler type for subscriptions
+ * Message handler type
  */
-export type EventHandler<T extends RealtimeEventType = RealtimeEventType> = (
-	event: RealtimeEvent<T>,
+export type MessageHandler = (
+	event: RealtimeEvent,
 	channel: string
-) => Promise<void> | void;
+) => void | Promise<void>;
 
 /**
- * Subscription interface for managing active subscriptions
+ * Simple subscription handle
  */
 export interface Subscription {
 	unsubscribe: () => Promise<void>;
 }
 
 /**
- * Production-ready typed pub/sub system for realtime events
- * Uses Upstash Redis REST API with Server-Sent Events (SSE) for subscriptions
+ * Production-ready pub/sub service using Upstash Redis
+ * Each API server instance subscribes to relevant channels and
+ * broadcasts to its local WebSocket connections
  */
 export class PubSubService {
-	private redis: Redis;
-	private subscriptions = new Map<string, SubscriptionState>();
-	private connectionPool = new Map<string, ConnectionEntry>();
-	private metrics: PubSubMetrics;
+	private activeSubscriptions = new Map<string, AbortController>();
+	private messageHandlers = new Map<string, Set<MessageHandler>>();
 	private isShuttingDown = false;
 	private cleanupInterval?: NodeJS.Timeout;
 
 	constructor() {
-		this.redis = redis;
-		this.metrics = {
-			publishCount: 0,
-			subscribeCount: 0,
-			errorCount: 0,
-			reconnectCount: 0,
-			activeConnections: 0,
-			lastActivity: Date.now(),
-		};
-
-		// Start cleanup interval
-		this.cleanupInterval = setInterval(() => {
-			this.cleanupInactiveConnections();
-		}, 60_000); // Clean up every minute
+		// Start connection cleanup interval
+		this.startConnectionCleanup();
 	}
 
 	/**
-	 * Publish an event to the appropriate channels based on target
-	 * Includes retry logic and error handling
+	 * Publish an event to the appropriate channels
 	 */
 	async publish<T extends RealtimeEventType>(
 		eventType: T,
@@ -174,610 +119,438 @@ export class PubSubService {
 			timestamp: Date.now(),
 		};
 
-		const eventPayload = JSON.stringify(event);
-		const publishPromises: Array<{
-			promise: Promise<number>;
-			channel: string;
-		}> = [];
+		const message = JSON.stringify(event);
+		const publishPromises: Promise<number>[] = [];
 		const channels: string[] = [];
 
-		try {
-			// Publish to visitor channel (conversation-specific)
-			if (target.conversationId) {
-				const visitorChannel = getVisitorChannelName(target.conversationId);
-				channels.push(visitorChannel);
-				publishPromises.push({
-					promise: this.publishWithRetry(visitorChannel, eventPayload),
-					channel: visitorChannel,
-				});
-			}
-
-			// Publish to dashboard channel (website-specific)
-			if (target.websiteId) {
-				const dashboardChannel = getDashboardChannelName(target.websiteId);
-				channels.push(dashboardChannel);
-				publishPromises.push({
-					promise: this.publishWithRetry(dashboardChannel, eventPayload),
-					channel: dashboardChannel,
-				});
-			}
-
-			// Publish to connection-specific channel (direct messaging)
-			if (target.connectionId) {
-				const connChannel = getConnectionChannelName(target.connectionId);
-				channels.push(connChannel);
-				publishPromises.push({
-					promise: this.publishWithRetry(connChannel, eventPayload),
-					channel: connChannel,
-				});
-			}
-
-			if (publishPromises.length === 0) {
-				throw new Error(
-					"At least one target must be specified (conversationId, websiteId, or connectionId)"
-				);
-			}
-
-			// Wait for all publications to complete
-			const results = await Promise.allSettled(
-				publishPromises.map((p) => p.promise)
-			);
-
-			let totalSubscribers = 0;
-			let errorCount = 0;
-
-			results.forEach((result, index) => {
-				if (result.status === "fulfilled") {
-					totalSubscribers += result.value;
-				} else {
-					errorCount++;
-					const channel = publishPromises[index].channel;
-					this.logError(
-						`Failed to publish to channel ${channel}`,
-						result.reason
-					);
-				}
-			});
-
-			// Update metrics
-			this.metrics.publishCount++;
-			this.metrics.errorCount += errorCount;
-			this.metrics.lastActivity = Date.now();
-
-			this.logInfo(
-				`Published ${eventType} to ${channels.length} channels (${totalSubscribers} subscribers, ${errorCount} errors)`,
-				{
-					eventType,
-					channels,
-					target,
-					timestamp: event.timestamp,
-					totalSubscribers,
-					errorCount,
-				}
-			);
-		} catch (error) {
-			this.metrics.errorCount++;
-			this.logError("Failed to publish event", error as Error, {
-				eventType,
-				target,
-			});
-			throw error;
+		// Publish to appropriate channels based on target
+		if (target.conversationId) {
+			const channel = getVisitorChannelName(target.conversationId);
+			channels.push(channel);
+			publishPromises.push(redis.publish(channel, message));
 		}
+
+		if (target.websiteId) {
+			const channel = getDashboardChannelName(target.websiteId);
+			channels.push(channel);
+			publishPromises.push(redis.publish(channel, message));
+		}
+
+		if (target.connectionId) {
+			const channel = getConnectionChannelName(target.connectionId);
+			channels.push(channel);
+			publishPromises.push(redis.publish(channel, message));
+		}
+
+		if (publishPromises.length === 0) {
+			throw new Error("At least one target must be specified");
+		}
+
+		// Wait for all publish operations to complete
+		const results = await Promise.all(publishPromises);
+		const totalReceivers = results.reduce((sum, count) => sum + count, 0);
+
+		console.log(
+			`[PubSub] Published ${eventType} to ${channels.length} channels (${totalReceivers} receivers)`
+		);
 	}
 
 	/**
-	 * Publish with retry logic
+	 * Subscribe to a channel using Upstash Redis SSE
 	 */
-	private async publishWithRetry(
+	async subscribe(
 		channel: string,
-		message: string,
-		attempt = 1
-	): Promise<number> {
-		try {
-			return await this.redis.publish(channel, message);
-		} catch (error) {
-			if (attempt < 3) {
-				const delay = Math.min(1000 * 2 ** (attempt - 1), 5000);
-				await new Promise((resolve) => setTimeout(resolve, delay));
-				return this.publishWithRetry(channel, message, attempt + 1);
-			}
-			throw error;
-		}
-	}
-
-	/**
-	 * Subscribe to events using Server-Sent Events (SSE)
-	 * Production-ready implementation with reconnection and error handling
-	 */
-	async subscribe<T extends RealtimeEventType>(
-		handler: EventHandler<T>,
-		options: SubscribeOptions,
-		eventType?: T
+		handler: MessageHandler
 	): Promise<Subscription> {
 		if (this.isShuttingDown) {
 			throw new Error("PubSub service is shutting down");
 		}
 
-		const channels: string[] = [];
-		const abortController = new AbortController();
-		const subscriptionId = `${eventType ?? "ALL"}-${Date.now()}-${Math.random()}`;
+		// Add handler to the set for this channel
+		let handlers = this.messageHandlers.get(channel);
 
-		// Determine channels to subscribe to
-		if (options.conversationId) {
-			channels.push(getVisitorChannelName(options.conversationId));
-		}
-		if (options.websiteId) {
-			channels.push(getDashboardChannelName(options.websiteId));
-		}
-		if (options.connectionId) {
-			channels.push(getConnectionChannelName(options.connectionId));
+		if (!handlers) {
+			handlers = new Set();
+			this.messageHandlers.set(channel, handlers);
 		}
 
-		if (channels.length === 0) {
-			throw new Error(
-				"At least one subscription option must be provided (conversationId, websiteId, or connectionId)"
-			);
+		handlers.add(handler);
+
+		// If not already subscribed to this channel, start subscription
+		if (!this.activeSubscriptions.has(channel)) {
+			const abortController = new AbortController();
+			this.activeSubscriptions.set(channel, abortController);
+
+			// Start the subscription in background
+			this.startSubscription(channel, abortController);
+			console.log(`[PubSub] Subscribed to channel: ${channel}`);
 		}
 
-		// Create subscription state
-		const subscription: SubscriptionState = {
-			id: subscriptionId,
-			channels,
-			eventHandler: handler as (
-				event: RealtimeEvent<RealtimeEventType>,
-				channel: string
-			) => Promise<void> | void,
-			abortController,
-			reconnectAttempts: 0,
-			lastHeartbeat: Date.now(),
-			isActive: true,
-		};
-
-		this.subscriptions.set(subscriptionId, subscription);
-		this.metrics.subscribeCount++;
-		this.metrics.activeConnections++;
-
-		// Start subscription for each channel
-		for (const channel of channels) {
-			this.startChannelSubscription(subscription, channel);
-		}
-
-		this.logInfo(
-			`Subscribed to ${eventType ?? "ALL"} on channels: ${channels.join(", ")}`,
-			{
-				subscriptionId,
-				eventType: eventType ?? "ALL",
-				channels,
-				options,
-			}
-		);
-
+		// Return unsubscribe function
 		return {
 			unsubscribe: async () => {
-				await this.unsubscribe(subscriptionId);
+				const channelHandlers = this.messageHandlers.get(channel);
+				if (channelHandlers) {
+					channelHandlers.delete(handler);
+
+					// If no more handlers for this channel, stop subscription
+					if (channelHandlers.size === 0) {
+						this.messageHandlers.delete(channel);
+						const controller = this.activeSubscriptions.get(channel);
+						if (controller) {
+							controller.abort();
+							this.activeSubscriptions.delete(channel);
+							console.log(`[PubSub] Unsubscribed from channel: ${channel}`);
+						}
+					}
+				}
 			},
 		};
 	}
 
 	/**
-	 * Start SSE subscription for a single channel
+	 * Regex for removing trailing slashes (defined at top level for performance)
 	 */
-	private async startChannelSubscription(
-		subscription: SubscriptionState,
-		channel: string
-	): Promise<void> {
-		this.connectToChannel(subscription, channel);
-	}
+	private static readonly TRAILING_SLASH_REGEX = /\/$/;
 
 	/**
-	 * Connect to a channel with SSE
+	 * Start SSE subscription for a channel
 	 */
-	private async connectToChannel(
-		subscription: SubscriptionState,
-		channel: string
-	): Promise<void> {
-		if (!this.shouldConnect(subscription)) {
-			return;
-		}
-
-		try {
-			const response = await this.createSSEConnection(channel, subscription);
-			await this.handleSSEStream(response, subscription, channel);
-		} catch (error) {
-			await this.handleConnectionError(error, subscription, channel);
-		}
-	}
-
-	/**
-	 * Check if connection should be established
-	 */
-	private shouldConnect(subscription: SubscriptionState): boolean {
-		return (
-			subscription.isActive && !subscription.abortController.signal.aborted
-		);
-	}
-
-	/**
-	 * Create SSE connection to channel
-	 */
-	private async createSSEConnection(
+	private async startSubscription(
 		channel: string,
-		subscription: SubscriptionState
-	): Promise<Response> {
+		abortController: AbortController
+	) {
 		const baseUrl = env.UPSTASH_REDIS_REST_URL.replace(
-			TRAILING_SLASH_REGEX,
+			PubSubService.TRAILING_SLASH_REGEX,
 			""
 		);
 		const endpoint = `${baseUrl}/subscribe/${encodeURIComponent(channel)}`;
 
-		const init: RequestInit = {
-			headers: {
-				Authorization: `Bearer ${env.UPSTASH_REDIS_REST_TOKEN}`,
-				Accept: "text/event-stream",
-				"Cache-Control": "no-cache",
-			},
-			signal: subscription.abortController.signal,
-			method: "POST",
+		const handleStreamResponse = async (response: Response) => {
+			if (!response.body) {
+				throw new Error("Response body is null");
+			}
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+
+			while (!abortController.signal.aborted) {
+				const { done, value } = await reader.read();
+				if (done) {
+					break;
+				}
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || "";
+
+				for (const line of lines) {
+					if (line.startsWith("data: ")) {
+						const data = line.slice(6);
+						await this.processMessage(channel, data);
+					}
+				}
+			}
 		};
 
-		let response = await fetch(endpoint, init);
-
-		// Some SRH/Upstash-compatible gateways may expect GET for SSE subscribe.
-		if (!response.ok && (response.status === 400 || response.status === 405)) {
-			response = await fetch(endpoint, { ...init, method: "GET" });
-		}
-
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-		}
-
-		if (!response.body) {
-			throw new Error("No response body received");
-		}
-
-		return response;
-	}
-
-	/**
-	 * Handle SSE stream processing
-	 */
-	private async handleSSEStream(
-		response: Response,
-		subscription: SubscriptionState,
-		channel: string
-	): Promise<void> {
-		if (!response.body) {
-			throw new Error("Response body is null");
-		}
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder();
-
-		subscription.reconnectAttempts = 0;
-		subscription.lastHeartbeat = Date.now();
-
-		try {
-			await this.processStreamChunks(reader, decoder, subscription, channel);
-		} finally {
-			reader.releaseLock();
-		}
-	}
-
-	/**
-	 * Process stream chunks without await in loop
-	 */
-	private async processStreamChunks(
-		reader: ReadableStreamDefaultReader<Uint8Array>,
-		decoder: TextDecoder,
-		subscription: SubscriptionState,
-		channel: string
-	): Promise<void> {
-		let buffer = "";
-
-		while (this.shouldConnect(subscription)) {
-			// biome-ignore lint: Stream processing requires sequential reads
-			const { done, value } = await reader.read();
-
-			if (done) {
-				break;
+		const reconnect = async () => {
+			if (abortController.signal.aborted || this.isShuttingDown) {
+				return;
 			}
 
-			buffer += decoder.decode(value, { stream: true });
-			const lines = buffer.split("\n");
-
-			// Keep the last incomplete line in buffer
-			buffer = lines.pop() || "";
-
-			// Process complete lines in parallel
-			const messagePromises = lines
-				.filter((line) => line.startsWith("data: "))
-				.map((line) => {
-					const data = line.slice(6);
-					return this.processSSEMessage(subscription, channel, data);
+			try {
+				const response = await fetch(endpoint, {
+					method: "GET",
+					headers: {
+						Authorization: `Bearer ${env.UPSTASH_REDIS_REST_TOKEN}`,
+						Accept: "text/event-stream",
+					},
+					signal: abortController.signal,
 				});
 
-			// Wait for all messages to be processed
-			await Promise.all(messagePromises);
-		}
+				if (!(response.ok && response.body)) {
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+				}
+
+				await handleStreamResponse(response);
+			} catch (error) {
+				if (abortController.signal.aborted) {
+					return;
+				}
+
+				console.error(`[PubSub] Subscription error for ${channel}:`, error);
+				// Retry after 5 seconds
+				setTimeout(() => reconnect(), 5000);
+			}
+		};
+
+		// Start the subscription
+		reconnect();
 	}
 
 	/**
-	 * Handle connection errors and reconnection
+	 * Process incoming message from SSE
 	 */
-	private async handleConnectionError(
-		error: unknown,
-		subscription: SubscriptionState,
-		channel: string
-	): Promise<void> {
-		if (subscription.abortController.signal.aborted) {
-			return; // Expected when unsubscribing
-		}
-
-		this.metrics.errorCount++;
-		this.logError(
-			`SSE connection failed for channel ${channel}`,
-			error as Error
-		);
-
-		if (subscription.reconnectAttempts >= MAX_RECONNECTION_ATTEMPTS) {
-			this.logError(`Max reconnection attempts reached for channel ${channel}`);
-			subscription.isActive = false;
-			return;
-		}
-
-		await this.scheduleReconnection(subscription, channel);
-	}
-
-	/**
-	 * Schedule reconnection with exponential backoff
-	 */
-	private async scheduleReconnection(
-		subscription: SubscriptionState,
-		channel: string
-	): Promise<void> {
-		subscription.reconnectAttempts++;
-		this.metrics.reconnectCount++;
-
-		const delay = Math.min(
-			RECONNECTION_DELAY_MS * 2 ** (subscription.reconnectAttempts - 1),
-			30_000
-		);
-
-		this.logInfo(
-			`Reconnecting to ${channel} in ${delay}ms (attempt ${subscription.reconnectAttempts})`
-		);
-
-		setTimeout(() => {
-			this.connectToChannel(subscription, channel);
-		}, delay);
-	}
-
-	/**
-	 * Process incoming SSE message
-	 */
-	private async processSSEMessage(
-		subscription: SubscriptionState,
-		channel: string,
-		data: string
-	): Promise<void> {
+	private async processMessage(channel: string, data: string) {
 		try {
-			// Parse SSE message format: "type,channel,message"
+			// Parse SSE message format
 			const parts = data.split(",", 3);
+
 			if (parts.length < 2) {
-				return; // Invalid message format
+				return;
 			}
 
 			const [messageType, messageChannel] = parts;
 			const message = parts.length > 2 ? parts.slice(2).join(",") : "";
 
-			subscription.lastHeartbeat = Date.now();
-
-			if (messageType === "subscribe") {
-				// Subscription confirmation
-				this.logInfo(`Subscription confirmed for channel ${channel}`);
-				return;
-			}
-
 			if (messageType === "message" && messageChannel === channel && message) {
-				try {
-					// Parse the event message
-					const event = JSON.parse(message) as RealtimeEvent<RealtimeEventType>;
+				const event = JSON.parse(message) as RealtimeEvent;
+				const handlers = this.messageHandlers.get(channel);
 
-					// Call the handler
-					await subscription.eventHandler(event, channel);
-
-					this.metrics.lastActivity = Date.now();
-				} catch (parseError) {
-					this.logError(
-						`Failed to parse message from channel ${channel}`,
-						parseError as Error,
-						{ message }
+				if (handlers) {
+					// Execute all handlers for this channel
+					const promises = Array.from(handlers).map((handler) =>
+						Promise.resolve(handler(event, channel)).catch((error) => {
+							console.error("[PubSub] Handler error:", error);
+						})
 					);
+					await Promise.all(promises);
 				}
 			}
 		} catch (error) {
-			this.logError(
-				`Failed to process SSE message from channel ${channel}`,
-				error as Error,
-				{ data }
+			console.error("[PubSub] Failed to process message:", error);
+		}
+	}
+
+	/**
+	 * Subscribe to channels based on options
+	 */
+	async subscribeToChannels(
+		options: {
+			conversationId?: string;
+			websiteId?: string;
+			connectionId?: string;
+		},
+		handler: MessageHandler
+	): Promise<Subscription> {
+		const unsubscribeFunctions: Array<() => Promise<void>> = [];
+
+		if (options.conversationId) {
+			const sub = await this.subscribe(
+				getVisitorChannelName(options.conversationId),
+				handler
 			);
-		}
-	}
-
-	/**
-	 * Unsubscribe from a subscription
-	 */
-	private async unsubscribe(subscriptionId: string): Promise<void> {
-		const subscription = this.subscriptions.get(subscriptionId);
-		if (!subscription) {
-			return;
+			unsubscribeFunctions.push(sub.unsubscribe);
 		}
 
-		subscription.isActive = false;
-		subscription.abortController.abort();
-		this.subscriptions.delete(subscriptionId);
-		this.metrics.activeConnections--;
+		if (options.websiteId) {
+			const sub = await this.subscribe(
+				getDashboardChannelName(options.websiteId),
+				handler
+			);
+			unsubscribeFunctions.push(sub.unsubscribe);
+		}
 
-		this.logInfo(`Unsubscribed from subscription ${subscriptionId}`);
-	}
+		if (options.connectionId) {
+			const sub = await this.subscribe(
+				getConnectionChannelName(options.connectionId),
+				handler
+			);
+			unsubscribeFunctions.push(sub.unsubscribe);
+		}
 
-	/**
-	 * Get metrics for monitoring
-	 */
-	getMetrics(): Readonly<PubSubMetrics> {
-		return { ...this.metrics };
-	}
-
-	/**
-	 * Get active subscription count
-	 */
-	getActiveSubscriptionCount(): number {
-		return Array.from(this.subscriptions.values()).filter((s) => s.isActive)
-			.length;
-	}
-
-	/**
-	 * Health check for the pub/sub service
-	 */
-	async healthCheck(): Promise<{
-		healthy: boolean;
-		details: Record<string, unknown>;
-	}> {
-		const now = Date.now();
-		const activeSubscriptions = this.getActiveSubscriptionCount();
-		const stalledConnections = Array.from(this.subscriptions.values()).filter(
-			(s) => s.isActive && now - s.lastHeartbeat > HEARTBEAT_INTERVAL_MS * 2
-		).length;
-
-		const healthy =
-			!this.isShuttingDown && stalledConnections < activeSubscriptions * 0.5;
-
+		// Return combined unsubscribe function
 		return {
-			healthy,
-			details: {
-				isShuttingDown: this.isShuttingDown,
-				activeSubscriptions,
-				stalledConnections,
-				metrics: this.metrics,
-				uptime: now - this.metrics.lastActivity,
+			unsubscribe: async () => {
+				await Promise.all(unsubscribeFunctions.map((fn) => fn()));
 			},
 		};
 	}
 
 	/**
-	 * Clean up inactive connections
+	 * Register a connection in Redis
 	 */
-	private cleanupInactiveConnections(): void {
-		const now = Date.now();
-		const toRemove: string[] = [];
+	async registerConnection(info: ConnectionInfo): Promise<void> {
+		const key = `connection:${info.connectionId}`;
+		await redis.setex(key, CONNECTION_TTL_SECONDS, JSON.stringify(info));
 
-		for (const [id, subscription] of this.subscriptions.entries()) {
-			// Remove subscriptions that have been inactive for too long
-			if (
-				!subscription.isActive ||
-				now - subscription.lastHeartbeat > HEARTBEAT_INTERVAL_MS * 3
-			) {
-				subscription.isActive = false;
-				subscription.abortController.abort();
-				toRemove.push(id);
+		// Add to website's connection set if websiteId is present
+		if (info.websiteId) {
+			await redis.sadd(
+				`website:${info.websiteId}:connections`,
+				info.connectionId
+			);
+			// Set expiry on the set (will be refreshed on each new connection)
+			await redis.expire(`website:${info.websiteId}:connections`, 3600); // 1 hour
+		}
+
+		console.log(
+			`[PubSub] Registered connection: ${info.connectionId} on server: ${SERVER_ID}`
+		);
+	}
+
+	/**
+	 * Update connection heartbeat
+	 */
+	async heartbeatConnection(connectionId: string): Promise<void> {
+		const key = `connection:${connectionId}`;
+		const data = await redis.get<string>(key);
+
+		if (data) {
+			const info = JSON.parse(data) as ConnectionInfo;
+			info.lastHeartbeat = Date.now();
+			await redis.setex(key, CONNECTION_TTL_SECONDS, JSON.stringify(info));
+		}
+	}
+
+	async unregisterConnection(connectionId: string): Promise<void> {
+		const key = `connection:${connectionId}`;
+		const data = await redis.get<string>(key);
+
+		if (data) {
+			const info = JSON.parse(data) as ConnectionInfo;
+
+			// Remove from website's connection set
+			if (info.websiteId) {
+				await redis.srem(`website:${info.websiteId}:connections`, connectionId);
 			}
-		}
 
-		for (const id of toRemove) {
-			this.subscriptions.delete(id);
-			this.metrics.activeConnections--;
-		}
+			// Delete the connection data
+			await redis.del(key);
 
-		if (toRemove.length > 0) {
-			this.logInfo(`Cleaned up ${toRemove.length} inactive connections`);
+			console.log(`[PubSub] Unregistered connection: ${connectionId}`);
 		}
 	}
 
 	/**
-	 * Graceful shutdown with proper cleanup
+	 * Get all connections for a website
+	 */
+	async getWebsiteConnections(websiteId: string): Promise<ConnectionInfo[]> {
+		const connectionIds = await redis.smembers<string[]>(
+			`website:${websiteId}:connections`
+		);
+		if (!connectionIds || connectionIds.length === 0) {
+			return [];
+		}
+
+		const connections: ConnectionInfo[] = [];
+		for (const connId of connectionIds) {
+			const data = await redis.get<string>(`connection:${connId}`);
+			if (data) {
+				connections.push(JSON.parse(data));
+			}
+		}
+
+		return connections;
+	}
+
+	/**
+	 * Update user presence
+	 */
+	async updatePresence(
+		userId: string,
+		status: "online" | "away" | "offline",
+		websiteId?: string
+	): Promise<void> {
+		const key = `presence:${userId}`;
+		const presence = {
+			status,
+			lastSeen: Date.now(),
+			websiteId,
+		};
+
+		if (status === "offline") {
+			await redis.del(key);
+		} else {
+			// Presence expires after 5 minutes of no updates
+			await redis.setex(key, 300, JSON.stringify(presence));
+		}
+
+		// Publish presence update event if we have context
+		if (websiteId) {
+			await this.publish(
+				"USER_PRESENCE_UPDATE",
+				{
+					userId,
+					status,
+					lastSeen: presence.lastSeen,
+				},
+				{ websiteId }
+			);
+		}
+	}
+
+	/**
+	 * Get user presence
+	 */
+	async getPresence(
+		userId: string
+	): Promise<{ status: string; lastSeen: number } | null> {
+		const data = await redis.get<string>(`presence:${userId}`);
+		return data ? JSON.parse(data) : null;
+	}
+
+	/**
+	 * Clean up expired connections periodically
+	 */
+	private startConnectionCleanup() {
+		this.cleanupInterval = setInterval(async () => {
+			if (this.isShuttingDown) {
+				return;
+			}
+
+			try {
+				// Note: Upstash Redis automatically handles key expiration
+				// This is just for logging and additional cleanup if needed
+				console.log("[PubSub] Running connection cleanup check");
+			} catch (error) {
+				console.error("[PubSub] Connection cleanup error:", error);
+			}
+		}, 60_000); // Run every minute
+	}
+
+	/**
+	 * Get server ID
+	 */
+	getServerId(): string {
+		return SERVER_ID;
+	}
+
+	/**
+	 * Check if a connection belongs to this server
+	 */
+	async isLocalConnection(connectionId: string): Promise<boolean> {
+		const data = await redis.get<string>(`connection:${connectionId}`);
+		if (!data) {
+			return false;
+		}
+
+		const info = JSON.parse(data) as ConnectionInfo;
+		return info.serverId === SERVER_ID;
+	}
+
+	/**
+	 * Graceful shutdown
 	 */
 	async shutdown(): Promise<void> {
-		this.logInfo("Initiating graceful shutdown...");
+		console.log("[PubSub] Shutting down...");
 		this.isShuttingDown = true;
 
 		// Clear cleanup interval
 		if (this.cleanupInterval) {
 			clearInterval(this.cleanupInterval);
-			this.cleanupInterval = undefined;
 		}
 
-		// Close all active subscriptions
-		const shutdownPromises: Promise<void>[] = [];
-
-		for (const subscription of this.subscriptions.values()) {
-			subscription.isActive = false;
-			subscription.abortController.abort();
+		// Abort all active subscriptions
+		for (const [channel, controller] of this.activeSubscriptions) {
+			controller.abort();
+			console.log(`[PubSub] Aborted subscription to ${channel}`);
 		}
 
-		// Wait for all subscriptions to close (with timeout)
-		try {
-			await Promise.race([
-				Promise.all(shutdownPromises),
-				new Promise((_, reject) =>
-					setTimeout(() => reject(new Error("Shutdown timeout")), 10_000)
-				),
-			]);
-		} catch (error) {
-			this.logError("Error during shutdown", error as Error);
-		}
+		this.activeSubscriptions.clear();
+		this.messageHandlers.clear();
 
-		this.subscriptions.clear();
-		this.connectionPool.clear();
-		this.metrics.activeConnections = 0;
-
-		this.logInfo("PubSub service shutdown complete", {
-			finalMetrics: this.metrics,
-		});
-	}
-
-	/**
-	 * Structured logging methods
-	 */
-	private logInfo(message: string, data?: Record<string, unknown>): void {
-		const logEntry = {
-			level: "info",
-			service: "pubsub",
-			message,
-			timestamp: new Date().toISOString(),
-			...data,
-		};
-
-		if (process.env.NODE_ENV === "development") {
-			console.log(`[PubSub] ${message}`, data || "");
-		} else {
-			console.log(JSON.stringify(logEntry));
-		}
-	}
-
-	private logError(
-		message: string,
-		error?: Error,
-		data?: Record<string, unknown>
-	): void {
-		const logEntry = {
-			level: "error",
-			service: "pubsub",
-			message,
-			error: error
-				? {
-						name: error.name,
-						message: error.message,
-						stack: error.stack,
-					}
-				: undefined,
-			timestamp: new Date().toISOString(),
-			...data,
-		};
-
-		if (process.env.NODE_ENV === "development") {
-			console.error(`[PubSub] ${message}`, error || "", data || "");
-		} else {
-			console.error(JSON.stringify(logEntry));
-		}
+		console.log("[PubSub] Shutdown complete");
 	}
 }
 
@@ -787,11 +560,7 @@ export class PubSubService {
 export const pubsub = new PubSubService();
 
 /**
- * Convenience functions for common pub/sub operations
- */
-
-/**
- * Emit an event to visitors of a specific conversation
+ * Convenience functions
  */
 export async function emitToVisitors<T extends RealtimeEventType>(
 	conversationId: string,
@@ -801,9 +570,6 @@ export async function emitToVisitors<T extends RealtimeEventType>(
 	return pubsub.publish(eventType, data, { conversationId });
 }
 
-/**
- * Emit an event to dashboard/agents of a specific website
- */
 export async function emitToDashboard<T extends RealtimeEventType>(
 	websiteId: string,
 	eventType: T,
@@ -812,10 +578,6 @@ export async function emitToDashboard<T extends RealtimeEventType>(
 	return pubsub.publish(eventType, data, { websiteId });
 }
 
-/**
- * Emit an event to both visitors and dashboard
- * This is useful for events that should be seen by both audiences
- */
 export async function emitToAll<T extends RealtimeEventType>(
 	conversationId: string,
 	websiteId: string,
@@ -825,9 +587,6 @@ export async function emitToAll<T extends RealtimeEventType>(
 	return pubsub.publish(eventType, data, { conversationId, websiteId });
 }
 
-/**
- * Emit an event to a specific WebSocket connection
- */
 export async function emitToConnection<T extends RealtimeEventType>(
 	connectionId: string,
 	eventType: T,
@@ -838,7 +597,6 @@ export async function emitToConnection<T extends RealtimeEventType>(
 
 /**
  * Helper function to trigger events from anywhere in the API
- * This is the main function that should be used throughout the codebase
  */
 export async function triggerEvent<T extends RealtimeEventType>(
 	eventType: T,

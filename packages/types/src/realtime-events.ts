@@ -15,6 +15,16 @@ export const RealtimeEvents = {
 		connectionId: z.string(),
 		timestamp: z.number(),
 	}),
+	VISITOR_CONNECTED: z.object({
+		visitorId: z.string(),
+		connectionId: z.string(),
+		timestamp: z.number(),
+	}),
+	VISITOR_DISCONNECTED: z.object({
+		visitorId: z.string(),
+		connectionId: z.string(),
+		timestamp: z.number(),
+	}),
 	USER_PRESENCE_UPDATE: z.object({
 		userId: z.string(),
 		status: z.enum(["online", "away", "offline"]),

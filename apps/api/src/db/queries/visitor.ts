@@ -19,12 +19,12 @@ export async function upsertVisitor(
 			id: visitorId,
 			websiteId: params.websiteId,
 			organizationId: params.organizationId,
-			lastConnectedAt: new Date(),
+			lastSeenAt: new Date(),
 		})
 		.onConflictDoUpdate({
 			target: visitor.id,
 			set: {
-				lastConnectedAt: new Date(),
+				lastSeenAt: new Date(),
 			},
 		})
 		.returning();

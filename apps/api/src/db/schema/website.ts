@@ -102,7 +102,7 @@ export const visitor = pgTable(
 		userId: ulidNullableReference("user_id").references(() => user.id, {
 			onDelete: "set null",
 		}),
-		lastConnectedAt: timestamp("last_connected_at"),
+		lastSeenAt: timestamp("last_seen_at"),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date())
 			.notNull(),
@@ -121,9 +121,9 @@ export const visitor = pgTable(
 		// Index for looking up visitors by user
 		index("visitor_user_idx").on(table.userId),
 		// Index for active visitors query within organization
-		index("visitor_org_connected_idx").on(
+		index("visitor_org_last_seen_idx").on(
 			table.organizationId,
-			table.lastConnectedAt
+			table.lastSeenAt
 		),
 		// Index for soft delete queries
 		index("visitor_deleted_at_idx").on(table.deletedAt),

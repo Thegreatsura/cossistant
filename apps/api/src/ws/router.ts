@@ -8,6 +8,7 @@ import type {
 type EventContext = {
 	connectionId: string;
 	userId?: string;
+	visitorId?: string;
 	websiteId?: string;
 	organizationId?: string;
 	ws?: WebSocket;
@@ -53,6 +54,34 @@ const eventHandlers: EventHandlers = {
 		// Emit to dashboard so agents can see user disconnections
 		if (ctx.websiteId) {
 			await emitToDashboard(ctx.websiteId, "USER_DISCONNECTED", data);
+		}
+	},
+
+	VISITOR_CONNECTED: async (ctx, data) => {
+		console.log(`[VISITOR_CONNECTED] Visitor ${data.visitorId} connected`, {
+			connectionId: data.connectionId,
+			timestamp: new Date(data.timestamp).toISOString(),
+			contextConnectionId: ctx.connectionId,
+			websiteId: ctx.websiteId,
+		});
+
+		// Emit to dashboard so agents can see visitor connections
+		if (ctx.websiteId) {
+			await emitToDashboard(ctx.websiteId, "VISITOR_CONNECTED", data);
+		}
+	},
+
+	VISITOR_DISCONNECTED: async (ctx, data) => {
+		console.log(`[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`, {
+			connectionId: data.connectionId,
+			timestamp: new Date(data.timestamp).toISOString(),
+			contextConnectionId: ctx.connectionId,
+			websiteId: ctx.websiteId,
+		});
+
+		// Emit to dashboard so agents can see visitor disconnections
+		if (ctx.websiteId) {
+			await emitToDashboard(ctx.websiteId, "VISITOR_DISCONNECTED", data);
 		}
 	},
 

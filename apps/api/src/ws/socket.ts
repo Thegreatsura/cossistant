@@ -1,5 +1,7 @@
 import { db } from "@api/db";
 import type { ApiKeyWithWebsiteAndOrganization } from "@api/db/queries/api-keys";
+import { updateUserLastSeen } from "@api/db/queries/user";
+import { upsertVisitor } from "@api/db/queries/visitor";
 import { website as websiteTable } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
 import {
@@ -7,7 +9,11 @@ import {
 	type AuthValidationOptions,
 	performAuthentication,
 } from "@api/lib/auth-validation";
-import { pubsub, type Subscription } from "@api/lib/pubsub";
+import {
+	type ConnectionInfo,
+	pubsub,
+	type Subscription,
+} from "@api/lib/pubsub";
 import {
 	isValidEventType,
 	type RealtimeEvent,
@@ -28,19 +34,11 @@ export type ConnectionData = {
 	websiteId?: string;
 };
 
-const connections = new Map<string, ConnectionData>();
-// Map connectionId -> active WebSocket instance
+// Local WebSocket connection tracking (only for this server instance)
 type RawSocket = ServerWebSocket & { connectionId?: string };
-const wsByConnectionId = new Map<string, RawSocket>();
-// Track which connections belong to a website
-const websiteToConnections = new Map<string, Set<string>>();
-// One SSE subscription per website on this instance (+ refcount)
-const websiteSubscriptions = new Map<
-	string,
-	{ sub: Subscription; count: number }
->();
-// One SSE subscription per connection on this instance
-const connectionSubscriptions = new Map<string, Subscription>();
+const localConnections = new Map<string, RawSocket>();
+// Active subscriptions for this server instance
+const activeSubscriptions = new Map<string, Subscription>();
 
 // Enable auth logging by setting ENABLE_AUTH_LOGS=true
 const AUTH_LOGS_ENABLED = process.env.ENABLE_AUTH_LOGS === "true";
@@ -59,112 +57,105 @@ export const { websocket, upgradeWebSocket } =
 	createBunWebSocket<ServerWebSocket>();
 
 /**
- * Get all active connections
+ * Get all active connections for a website (from Redis)
  */
-export function getActiveConnections(): ConnectionData[] {
-	return Array.from(connections.values());
+export async function getWebsiteConnections(
+	websiteId: string
+): Promise<ConnectionInfo[]> {
+	return await pubsub.getWebsiteConnections(websiteId);
 }
 
 /**
- * Get a specific connection by ID
+ * Check if a connection is local to this server
  */
-export function getConnection(
+export async function isLocalConnection(
 	connectionId: string
-): ConnectionData | undefined {
-	return connections.get(connectionId);
+): Promise<boolean> {
+	return await pubsub.isLocalConnection(connectionId);
 }
 
-async function ensureConnectionSubscription(
-	connectionId: string
+/**
+ * Broadcast event to all local connections for a website
+ */
+function broadcastToWebsite(event: unknown): void {
+	for (const [, socket] of localConnections) {
+		// Check if this connection belongs to the website (would need to store this info)
+		// For now, broadcast to all local connections
+		try {
+			socket.send(JSON.stringify(event));
+		} catch {
+			// Ignore send errors
+		}
+	}
+}
+
+/**
+ * Send event to a specific connection
+ */
+function sendToConnection(connectionId: string, event: unknown): void {
+	const socket = localConnections.get(connectionId);
+	if (socket) {
+		try {
+			socket.send(JSON.stringify(event));
+		} catch {
+			// Ignore send errors
+		}
+	}
+}
+
+/**
+ * Ensure we have subscriptions for the given connection context
+ */
+async function ensureSubscriptions(
+	connectionId: string,
+	websiteId?: string
 ): Promise<void> {
-	if (connectionSubscriptions.has(connectionId)) {
-		return;
-	}
-	const sub = await pubsub.subscribe(
-		async (incomingEvent) => {
-			const client = wsByConnectionId.get(connectionId);
-			if (!client) {
-				return;
-			}
-			try {
-				client.send(JSON.stringify(incomingEvent));
-			} catch {
-				// ignore send errors
-			}
-		},
-		{ connectionId }
-	);
-	connectionSubscriptions.set(connectionId, sub);
-}
+	// Create subscription key based on context
+	const subscriptionKey = websiteId
+		? `website:${websiteId}`
+		: `connection:${connectionId}`;
 
-async function ensureWebsiteSubscription(websiteId: string): Promise<void> {
-	const existing = websiteSubscriptions.get(websiteId);
-	if (existing) {
-		existing.count += 1;
-		websiteSubscriptions.set(websiteId, existing);
+	// Don't create duplicate subscriptions
+	if (activeSubscriptions.has(subscriptionKey)) {
 		return;
 	}
 
-	const sub = await pubsub.subscribe(
-		async (incomingEvent) => {
-			const members = websiteToConnections.get(websiteId);
-			if (!members) {
-				return;
-			}
-			const payload = JSON.stringify(incomingEvent);
-			for (const memberConnId of members) {
-				const client = wsByConnectionId.get(memberConnId);
-				if (!client) {
-					continue;
-				}
-				try {
-					client.send(payload);
-				} catch {
-					// ignore send errors
-				}
-			}
+	// Subscribe to events and broadcast to local WebSocket connections
+	const subscription = await pubsub.subscribeToChannels(
+		{
+			websiteId,
+			connectionId: websiteId ? undefined : connectionId,
 		},
-		{ websiteId }
+		async (event) => {
+			if (websiteId) {
+				broadcastToWebsite(event);
+			} else {
+				sendToConnection(connectionId, event);
+			}
+		}
 	);
-	websiteSubscriptions.set(websiteId, { sub, count: 1 });
+
+	activeSubscriptions.set(subscriptionKey, subscription);
+	console.log(`[WebSocket] Created subscription: ${subscriptionKey}`);
 }
 
-function cleanupConnection(connectionData: ConnectionData): void {
-	// Remove from maps
-	connections.delete(connectionData.connectionId);
-	wsByConnectionId.delete(connectionData.connectionId);
+async function cleanupConnection(connectionId: string): Promise<void> {
+	// Remove from local connections
+	localConnections.delete(connectionId);
 
-	// Unsubscribe connection-specific subscription
-	const connSub = connectionSubscriptions.get(connectionData.connectionId);
-	if (connSub) {
-		connSub.unsubscribe().catch(() => {});
-		connectionSubscriptions.delete(connectionData.connectionId);
+	// Unregister from Redis
+	await pubsub.unregisterConnection(connectionId);
+
+	// Clean up any connection-specific subscriptions
+	const connSubscription = activeSubscriptions.get(
+		`connection:${connectionId}`
+	);
+	if (connSubscription) {
+		await connSubscription.unsubscribe();
+		activeSubscriptions.delete(`connection:${connectionId}`);
 	}
 
-	// Decrement website refcount and possibly unsubscribe
-	const websiteId = connectionData.websiteId;
-	if (websiteId) {
-		const members = websiteToConnections.get(websiteId);
-		if (members) {
-			members.delete(connectionData.connectionId);
-			if (members.size === 0) {
-				websiteToConnections.delete(websiteId);
-			} else {
-				websiteToConnections.set(websiteId, members);
-			}
-		}
-
-		const entry = websiteSubscriptions.get(websiteId);
-		if (entry) {
-			entry.count -= 1;
-			if (entry.count <= 0) {
-				entry.sub.unsubscribe().catch(() => {});
-				websiteSubscriptions.delete(websiteId);
-			} else {
-				websiteSubscriptions.set(websiteId, entry);
-			}
-		}
-	}
+	console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
 }
 
 /**
@@ -174,11 +165,13 @@ function extractAuthCredentials(c: Context): {
 	privateKey: string | undefined;
 	publicKey: string | undefined;
 	actualOrigin: string | undefined;
+	visitorId: string | undefined;
 } {
 	// Try headers first (for non-browser clients)
 	const authHeader = c.req.header("Authorization");
 	let privateKey = authHeader?.split(" ")[1];
 	let publicKey = c.req.header("X-Public-Key");
+	let visitorId = c.req.header("X-Visitor-Id");
 
 	// Fallback to URL parameters (for browser WebSocket clients)
 	if (!privateKey) {
@@ -187,12 +180,15 @@ function extractAuthCredentials(c: Context): {
 	if (!publicKey) {
 		publicKey = c.req.query("publicKey");
 	}
+	if (!visitorId) {
+		visitorId = c.req.query("visitorId");
+	}
 
 	const origin = c.req.header("Origin");
 	const secWebSocketOrigin = c.req.header("Sec-WebSocket-Origin");
 	const actualOrigin = origin || secWebSocketOrigin;
 
-	return { privateKey, publicKey, actualOrigin };
+	return { privateKey, publicKey, actualOrigin, visitorId };
 }
 
 /**
@@ -286,6 +282,7 @@ type WebSocketAuthSuccess = {
 	organizationId?: string;
 	websiteId?: string;
 	userId?: string;
+	visitorId?: string;
 	apiKey?: ApiKeyWithWebsiteAndOrganization;
 	isTestKey?: boolean;
 };
@@ -299,7 +296,8 @@ async function authenticateWebSocketConnection(
 ): Promise<WebSocketAuthSuccess | null> {
 	try {
 		// Extract credentials
-		const { privateKey, publicKey, actualOrigin } = extractAuthCredentials(c);
+		const { privateKey, publicKey, actualOrigin, visitorId } =
+			extractAuthCredentials(c);
 
 		logAuthAttempt(!!privateKey, !!publicKey, actualOrigin, c.req.url);
 
@@ -319,13 +317,23 @@ async function authenticateWebSocketConnection(
 			hostname,
 		};
 
+		// Store the result with visitorId
+		let result: WebSocketAuthSuccess | null = null;
+
 		// If an API key was provided, authenticate with key-based flow
 		if (privateKey || publicKey) {
-			return await authenticateWithApiKey(privateKey, publicKey, options);
+			result = await authenticateWithApiKey(privateKey, publicKey, options);
+		} else {
+			// Otherwise, attempt Better Auth session-based authentication via cookies
+			result = await authenticateWithSession(c);
 		}
 
-		// Otherwise, attempt Better Auth session-based authentication via cookies
-		return await authenticateWithSession(c);
+		// Add visitorId to the result if authentication was successful
+		if (result) {
+			result.visitorId = visitorId;
+		}
+
+		return result;
 	} catch (error) {
 		if (AUTH_LOGS_ENABLED) {
 			console.error("[WebSocket Auth] Authentication failed:", error);
@@ -402,7 +410,7 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 	const authResult = await authenticateWebSocketConnection(c);
 
 	return {
-		onOpen(evt, ws) {
+		async onOpen(evt, ws) {
 			const connectionId = generateConnectionId();
 
 			// Check if authentication was successful
@@ -421,17 +429,40 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 				return;
 			}
 
-			const connectionData: ConnectionData = {
+			// Check if we have either a user ID or visitor ID
+			if (!(authResult.userId || authResult.visitorId)) {
+				console.error(
+					`[WebSocket] No user ID or visitor ID provided for connection: ${connectionId}`
+				);
+				ws.send(
+					JSON.stringify({
+						error: "Identification required",
+						message:
+							"Either authenticate with credentials or provide a visitor ID via X-Visitor-Id header or query parameter.",
+					})
+				);
+				ws.close(1008, "Identification required");
+				return;
+			}
+
+			// Use authenticated user id if available; otherwise use visitor id for connection tracking
+		const userId = authResult.userId ?? authResult.visitorId;
+
+			// Register connection in Redis for horizontal scaling
+			const connectionInfo: ConnectionInfo = {
 				connectionId,
-				connectedAt: Date.now(),
-				apiKey: authResult.apiKey,
-				organizationId: authResult.organizationId,
+				serverId: pubsub.getServerId(),
+				userId: authResult.userId,
+				visitorId: authResult.visitorId,
 				websiteId: authResult.websiteId,
+				organizationId: authResult.organizationId,
+				connectedAt: Date.now(),
+				lastHeartbeat: Date.now(),
 			};
 
-			connections.set(connectionId, connectionData);
-			// Track socket for this connection
-			wsByConnectionId.set(connectionId, ws.raw as RawSocket);
+			await pubsub.registerConnection(connectionInfo);
+			// Track socket locally for this server instance
+			localConnections.set(connectionId, ws.raw as RawSocket);
 
 			// Store just the connectionId as a custom property
 			if (ws.raw) {
@@ -440,14 +471,8 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			}
 
 			console.log(
-				`[WebSocket] Connection opened: ${connectionId} for organization: ${connectionData.organizationId}`
+				`[WebSocket] Connection opened: ${connectionId} for organization: ${authResult.organizationId}`
 			);
-
-			// Prefer authenticated user id if available; otherwise generate ephemeral id
-			const userId =
-				authResult.userId ??
-				`user_${Math.random().toString(36).substring(2, 9)}`;
-			connectionData.userId = userId;
 
 			// Send successful connection message
 			ws.send(
@@ -455,59 +480,90 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 					type: "CONNECTION_ESTABLISHED",
 					data: {
 						connectionId,
-						userId,
-						organizationId: connectionData.organizationId,
-						websiteId: connectionData.websiteId,
+						userId: authResult.userId,
+						visitorId: authResult.visitorId,
+						organizationId: authResult.organizationId,
+						websiteId: authResult.websiteId,
 						timestamp: Date.now(),
 					},
 				})
 			);
 
-			// Emit USER_CONNECTED event
+			// Emit USER_CONNECTED or VISITOR_CONNECTED event based on authentication type
 			const event: RealtimeEvent = {
-				type: "USER_CONNECTED",
-				data: {
-					userId,
-					connectionId,
-					timestamp: Date.now(),
-				},
+				type: authResult.userId ? "USER_CONNECTED" : "VISITOR_CONNECTED",
+				data: authResult.userId
+					? {
+							userId: authResult.userId,
+							connectionId,
+							timestamp: Date.now(),
+						}
+					: {
+							visitorId: authResult.visitorId,
+							connectionId,
+							timestamp: Date.now(),
+						},
 				timestamp: Date.now(),
 			};
 
 			const context: EventContext = {
 				connectionId,
-				userId,
-				websiteId: connectionData.websiteId,
-				organizationId: connectionData.organizationId,
+				userId: authResult.userId,
+				visitorId: authResult.visitorId,
+				websiteId: authResult.websiteId,
+				organizationId: authResult.organizationId,
 				ws: undefined,
 			};
 
 			routeEvent(event, context);
 
-			// Subscribe to connection-specific channel to receive targeted events
-			ensureConnectionSubscription(connectionId).catch(() => {});
+			// Set up subscriptions for this connection
+			await ensureSubscriptions(connectionId, authResult.websiteId);
 
-			// Subscribe (once per website on this instance) and track membership
-			if (connectionData.websiteId) {
-				const websiteId = connectionData.websiteId;
-				const set = websiteToConnections.get(websiteId) ?? new Set<string>();
-				set.add(connectionId);
-				websiteToConnections.set(websiteId, set);
-				ensureWebsiteSubscription(websiteId).catch(() => {});
+			// Update presence to online for authenticated users or visitors
+			if (authResult.websiteId) {
+				const presenceId = authResult.userId || authResult.visitorId;
+				if (presenceId) {
+					await pubsub.updatePresence(presenceId, "online", authResult.websiteId);
+				}
+			}
+
+			// Update last seen timestamps
+			try {
+				// If it's an authenticated user, update their lastSeenAt
+				if (authResult.userId) {
+					await updateUserLastSeen(db, authResult.userId);
+				}
+
+				// If we have a visitor ID and website context, update visitor's lastSeenAt
+				if (
+					authResult.visitorId &&
+					authResult.websiteId &&
+					authResult.organizationId
+				) {
+					await upsertVisitor(db, {
+						websiteId: authResult.websiteId,
+						organizationId: authResult.organizationId,
+						visitorId: authResult.visitorId,
+					});
+				}
+			} catch (error) {
+				console.error(
+					"[WebSocket] Error updating last seen timestamps:",
+					error
+				);
+				// Don't fail the connection if last seen update fails
 			}
 		},
 
 		onMessage(evt, ws) {
-			// Get connectionId from the WebSocket and look up data from our Map
+			// Get connectionId from the WebSocket
 			const connectionId = ws.raw
 				? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
 				: undefined;
-			const connectionData = connectionId
-				? connections.get(connectionId)
-				: undefined;
 
-			if (!connectionData) {
-				console.error("[WebSocket] No connection data found");
+			if (!(connectionId && localConnections.has(connectionId))) {
+				console.error("[WebSocket] No connection found");
 				ws.send(
 					JSON.stringify({
 						error: "Connection not authenticated",
@@ -540,11 +596,13 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 					timestamp: Date.now(),
 				};
 
+				// We'll need to get connection info from Redis for context
+				// For now, create minimal context with connectionId
 				const context: EventContext = {
-					connectionId: connectionData.connectionId,
-					userId: connectionData.userId,
-					websiteId: connectionData.websiteId,
-					organizationId: connectionData.organizationId,
+					connectionId,
+					userId: undefined, // Would need to fetch from Redis
+					websiteId: undefined, // Would need to fetch from Redis
+					organizationId: undefined, // Would need to fetch from Redis
 					ws: undefined,
 				};
 
@@ -560,63 +618,33 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			}
 		},
 
-		onClose(evt, ws) {
-			// Get connectionId from the WebSocket and look up data from our Map
+		async onClose(evt, ws) {
+			// Get connectionId from the WebSocket
 			const connectionId = ws.raw
 				? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
 				: undefined;
-			const connectionData = connectionId
-				? connections.get(connectionId)
-				: undefined;
 
-			if (!connectionData) {
-				console.error("[WebSocket] No connection data found on close");
+			if (!connectionId) {
+				console.error("[WebSocket] No connection ID found on close");
 				return;
 			}
 
-			console.log(
-				`[WebSocket] Connection closed: ${connectionData.connectionId}`
-			);
+			console.log(`[WebSocket] Connection closed: ${connectionId}`);
 
-			// Emit USER_DISCONNECTED event
-			if (connectionData.userId) {
-				const event: RealtimeEvent = {
-					type: "USER_DISCONNECTED",
-					data: {
-						userId: connectionData.userId,
-						connectionId: connectionData.connectionId,
-						timestamp: Date.now(),
-					},
-					timestamp: Date.now(),
-				};
+			// TODO: Emit USER_DISCONNECTED event
+			// We'd need to fetch user info from Redis first
 
-				const context: EventContext = {
-					connectionId: connectionData.connectionId,
-					userId: connectionData.userId,
-					websiteId: connectionData.websiteId,
-					organizationId: connectionData.organizationId,
-					ws: undefined,
-				};
-
-				routeEvent(event, context);
-			}
-
-			cleanupConnection(connectionData);
+			// Clean up connection
+			await cleanupConnection(connectionId);
 		},
 
 		onError(evt, ws) {
-			// Get connectionId from the WebSocket and look up data from our Map
+			// Get connectionId from the WebSocket
 			const connectionId = ws.raw
 				? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
 				: undefined;
-			const connectionData = connectionId
-				? connections.get(connectionId)
-				: undefined;
 
-			console.error(
-				`[WebSocket] Error on connection ${connectionData?.connectionId}:`,
-				evt
-			);
+			console.error(`[WebSocket] Error on connection ${connectionId}:`, evt);
 		},
 	};
 });

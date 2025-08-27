@@ -210,6 +210,10 @@ export const publicWebsiteResponseSchema = z.object({
 				description: "When the visitor was first seen.",
 				example: "2021-01-01T00:00:00.000Z",
 			}),
+			lastSeenAt: z.string().datetime().openapi({
+				description: "When the visitor was last connected or active.",
+				example: "2021-01-01T00:00:00.000Z",
+			}),
 		})
 		.openapi({
 			description:

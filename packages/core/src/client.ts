@@ -1,145 +1,81 @@
 import type {
-	CreateConversationRequestBody,
-	CreateConversationResponseBody,
-	GetConversationRequest,
-	GetConversationResponse,
-	ListConversationsRequest,
-	ListConversationsResponse,
+  CreateConversationRequestBody,
+  CreateConversationResponseBody,
+  GetConversationRequest,
+  GetConversationResponse,
+  ListConversationsRequest,
+  ListConversationsResponse,
 } from "@cossistant/types/api/conversation";
 import type {
-	GetMessagesRequest,
-	GetMessagesResponse,
-	SendMessageRequest,
-	SendMessageResponse,
+  GetMessagesRequest,
+  GetMessagesResponse,
+  SendMessageRequest,
+  SendMessageResponse,
 } from "@cossistant/types/api/message";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import { CossistantRestClient } from "./rest-client";
 import type { CossistantConfig, PublicWebsiteResponse } from "./types";
-import {
-	CossistantWebSocketClient,
-	type CossistantWebSocketConfig,
-	type WebSocketEventHandlers,
-} from "./websocket-client";
 
 export class CossistantClient {
-	private restClient: CossistantRestClient;
-	private wsClient: CossistantWebSocketClient;
-	private config: CossistantConfig;
+  private restClient: CossistantRestClient;
+  private config: CossistantConfig;
 
-	constructor(config: CossistantConfig) {
-		this.config = config;
-		this.restClient = new CossistantRestClient(config);
-		const wsConfig: CossistantWebSocketConfig = {
-			wsUrl: config.wsUrl,
-			publicKey: config.publicKey,
-			apiKey: config.apiKey,
-			userId: config.userId,
-			organizationId: config.organizationId,
-		};
-		this.wsClient = new CossistantWebSocketClient(wsConfig);
-	}
+  constructor(config: CossistantConfig) {
+    this.config = config;
+    this.restClient = new CossistantRestClient(config);
+  }
 
-	// WebSocket methods
-	async connectWebSocket(): Promise<void> {
-		return this.wsClient.connect();
-	}
+  // Configuration updates
+  updateConfiguration(config: Partial<CossistantConfig>): void {
+    this.config = { ...this.config, ...config };
+    this.restClient.updateConfiguration(config);
+  }
 
-	disconnectWebSocket(): void {
-		this.wsClient.disconnect();
-	}
+  // Utility methods
+  getConfiguration(): CossistantConfig {
+    return { ...this.config };
+  }
 
-	isWebSocketConnected(): boolean {
-		return this.wsClient.isConnected();
-	}
+  // Website information
+  async getWebsite(): Promise<PublicWebsiteResponse> {
+    return this.restClient.getWebsite();
+  }
 
-	sendWebSocketMessage(event: RealtimeEvent): void {
-		this.wsClient.send(event);
-	}
+  setWebsiteContext(websiteId: string, visitorId?: string): void {
+    this.restClient.setWebsiteContext(websiteId, visitorId);
+  }
 
-	// Event handling
-	on<T extends keyof WebSocketEventHandlers>(
-		event: T,
-		handler: WebSocketEventHandlers[T]
-	): void {
-		this.wsClient.on(event, handler);
-	}
+  // Conversation management
+  async createConversation(
+    params?: Partial<CreateConversationRequestBody>
+  ): Promise<CreateConversationResponseBody> {
+    return this.restClient.createConversation(params);
+  }
 
-	off<T extends keyof WebSocketEventHandlers>(event: T): void {
-		this.wsClient.off(event);
-	}
+  async listConversations(
+    params?: Partial<ListConversationsRequest>
+  ): Promise<ListConversationsResponse> {
+    return this.restClient.listConversations(params);
+  }
 
-	// Configuration updates
-	updateConfiguration(config: Partial<CossistantConfig>): void {
-		this.config = { ...this.config, ...config };
-		this.restClient.updateConfiguration(config);
+  async getConversation(
+    params: GetConversationRequest
+  ): Promise<GetConversationResponse> {
+    return this.restClient.getConversation(params);
+  }
 
-		const wsConfig: Partial<CossistantWebSocketConfig> = {};
+  // Message management
+  async getConversationMessages(
+    params: GetMessagesRequest
+  ): Promise<GetMessagesResponse> {
+    return this.restClient.getConversationMessages(params);
+  }
 
-		if (config.wsUrl !== undefined) {
-			wsConfig.wsUrl = config.wsUrl;
-		}
-		if (config.publicKey !== undefined) {
-			wsConfig.publicKey = config.publicKey;
-		}
-		if (config.apiKey !== undefined) {
-			wsConfig.apiKey = config.apiKey;
-		}
-		if (config.userId !== undefined) {
-			wsConfig.userId = config.userId;
-		}
-		if (config.organizationId !== undefined) {
-			wsConfig.organizationId = config.organizationId;
-		}
+  async sendMessage(params: SendMessageRequest): Promise<SendMessageResponse> {
+    return this.restClient.sendMessage(params);
+  }
 
-		this.wsClient.updateConfiguration(wsConfig);
-	}
-
-	// Utility methods
-	getConfiguration(): CossistantConfig {
-		return { ...this.config };
-	}
-
-	// Website information
-	async getWebsite(): Promise<PublicWebsiteResponse> {
-		return this.restClient.getWebsite();
-	}
-
-	setWebsiteContext(websiteId: string, visitorId?: string): void {
-		this.restClient.setWebsiteContext(websiteId, visitorId);
-	}
-
-	// Conversation management
-	async createConversation(
-		params?: Partial<CreateConversationRequestBody>
-	): Promise<CreateConversationResponseBody> {
-		return this.restClient.createConversation(params);
-	}
-
-	async listConversations(
-		params?: Partial<ListConversationsRequest>
-	): Promise<ListConversationsResponse> {
-		return this.restClient.listConversations(params);
-	}
-
-	async getConversation(
-		params: GetConversationRequest
-	): Promise<GetConversationResponse> {
-		return this.restClient.getConversation(params);
-	}
-
-	// Message management
-	async getConversationMessages(
-		params: GetMessagesRequest
-	): Promise<GetMessagesResponse> {
-		return this.restClient.getConversationMessages(params);
-	}
-
-	async sendMessage(params: SendMessageRequest): Promise<SendMessageResponse> {
-		return this.restClient.sendMessage(params);
-	}
-
-	// Cleanup method
-	destroy(): void {
-		this.disconnectWebSocket();
-	}
+  // Cleanup method
+  destroy(): void {
+    // No cleanup needed for REST client
+  }
 }

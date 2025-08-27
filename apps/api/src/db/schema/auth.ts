@@ -31,6 +31,7 @@ export const user = pgTable(
 		updatedAt: timestamp("updated_at")
 			.$defaultFn(() => /* @__PURE__ */ new Date())
 			.notNull(),
+		lastSeenAt: timestamp("last_seen_at"),
 		role: text("role"),
 		banned: boolean("banned"),
 		banReason: text("ban_reason"),
@@ -43,6 +44,8 @@ export const user = pgTable(
 		index("user_role_idx").on(table.role),
 		// Index for banned users
 		index("user_banned_idx").on(table.banned),
+		// Index for presence queries (last_seen_at)
+		index("user_last_seen_at_idx").on(table.lastSeenAt),
 	]
 );
 

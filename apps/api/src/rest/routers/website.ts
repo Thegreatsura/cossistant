@@ -1,5 +1,6 @@
 import { upsertVisitor } from "@api/db/queries";
 import { member } from "@api/db/schema/auth";
+import { pubsub } from "@api/lib/pubsub";
 import {
 	safelyExtractRequestData,
 	validateResponse,
@@ -152,7 +153,8 @@ websiteRouter.openapi(
 			name: humanAgent.user.name,
 			email: humanAgent.user.email,
 			image: humanAgent.user.image,
-			lastOnlineAt: new Date().toISOString(),
+			lastOnlineAt:
+				humanAgent.user.lastSeenAt?.toISOString() ?? new Date().toISOString(),
 		}));
 
 		// iso string indicating support activity
@@ -174,6 +176,9 @@ websiteRouter.openapi(
 					visitor: {
 						id: visitorData.id,
 						createdAt: visitorData.createdAt.toISOString(),
+						lastSeenAt:
+							visitorData.lastSeenAt?.toISOString() ??
+							visitorData.createdAt.toISOString(),
 						name: visitorData.name,
 						email: visitorData.email,
 					},

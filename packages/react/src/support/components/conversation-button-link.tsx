@@ -91,7 +91,8 @@ export function ConversationButtonLink({
     ]);
     const allMessages = getAllMessagesFromCache(cachedMessages);
     const cachedLastMessage =
-      allMessages.length > 0 ? allMessages.at(-1) : null;
+      // biome-ignore lint/style/useAtIndex: ok here
+      allMessages.length > 0 ? allMessages[allMessages.length - 1] : null;
 
     // Use cached message if available, otherwise use conversation's lastMessage
     const messageToDisplay = cachedLastMessage || conversation.lastMessage;
