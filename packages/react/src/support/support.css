@@ -10,6 +10,7 @@
 
 	/* Colors - direct values, customizable via CSS variables */
 	--co-background: oklch(99% 0 0);
+	--co-background-50: oklch(98.5% 0 0);
 	--co-background-100: oklch(98% 0 0);
 	--co-background-200: oklch(97% 0 0);
 	--co-background-300: oklch(96% 0 0);
@@ -50,6 +51,7 @@
 .dark {
 	/* Colors - direct values for dark mode */
 	--co-background: oklch(15.5% 0 0);
+	--co-background-50: oklch(16% 0 0);
 	--co-background-100: oklch(16.5% 0 0);
 	--co-background-200: oklch(17.5% 0 0);
 	--co-background-300: oklch(18.5% 0 0);
@@ -95,6 +97,7 @@
 	--font-co-sans: var(--co-font-sans);
 	--font-co-mono: var(--co-font-mono);
 	--color-co-background: var(--co-background);
+	--color-co-background-50: var(--co-background-50);
 	--color-co-background-100: var(--co-background-100);
 	--color-co-background-200: var(--co-background-200);
 	--color-co-background-300: var(--co-background-300);

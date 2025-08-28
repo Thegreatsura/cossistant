@@ -351,7 +351,7 @@
 		padding-right: calc(var(--spacing) * 6);
 		text-align: right;
 		color: var(--color-code-number);
-		background-color: var(--color-code);
+		background-color: var(--background-100);
 		position: sticky;
 		left: 0;
 	}
