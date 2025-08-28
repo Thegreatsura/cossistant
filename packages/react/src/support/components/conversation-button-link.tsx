@@ -1,4 +1,4 @@
-import type { Conversation } from "@cossistant/types";
+import { type Conversation, ConversationStatus } from "@cossistant/types";
 import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useMemo } from "react";
@@ -9,6 +9,7 @@ import {
   getAllMessagesFromCache,
   type PaginatedMessagesCache,
 } from "../utils/message-cache";
+import { QUERY_KEYS } from "../utils/query-keys";
 import { formatTimeAgo } from "../utils/time";
 import { Avatar } from "./avatar";
 import Icon from "./icons";
@@ -85,10 +86,9 @@ export function ConversationButtonLink({
   // Process the last message (memoized to avoid expensive recomputation)
   const lastMessage = useMemo(() => {
     // Check for cached messages for this conversation
-    const cachedMessages = queryClient.getQueryData<PaginatedMessagesCache>([
-      "messages",
-      conversation.id,
-    ]);
+    const cachedMessages = queryClient.getQueryData<PaginatedMessagesCache>(
+      QUERY_KEYS.messages(conversation.id)
+    );
     const allMessages = getAllMessagesFromCache(cachedMessages);
     const cachedLastMessage =
       // biome-ignore lint/style/useAtIndex: ok here
@@ -119,7 +119,7 @@ export function ConversationButtonLink({
       onClick,
       type: "button",
       className: cn(
-        "group/btn relative flex w-full items-start gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-100/50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
+        "group/btn relative flex w-full items-center gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-100/50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
         typeof props.className === "function"
           ? props.className(state)
           : props.className
@@ -135,7 +135,7 @@ export function ConversationButtonLink({
           )}
 
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div className="flex max-w-[90%] items-baseline justify-between gap-2">
+            <div className="flex max-w-[90%] items-center justify-between gap-2">
               <h3 className="truncate font-medium text-co-primary text-sm">
                 {conversation.title ||
                   lastMessage?.content ||
@@ -155,7 +155,18 @@ export function ConversationButtonLink({
               </p>
             )}
           </div>
-
+          <div
+            className={cn(
+              "mr-6 inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs",
+              conversation.status === ConversationStatus.OPEN
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                : conversation.status === ConversationStatus.RESOLVED
+                  ? "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-400"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+            )}
+          >
+            {conversation.status}
+          </div>
           <Icon
             className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
             name="arrow-right"

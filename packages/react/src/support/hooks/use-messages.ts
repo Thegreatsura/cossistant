@@ -139,7 +139,7 @@ export function useSendMessage(
 		onSettled: () => {
 			// Always refetch after error or success
 			queryClient.invalidateQueries({
-				queryKey: ["messages", conversationId],
+				queryKey: QUERY_KEYS.messages(conversationId),
 			});
 		},
 	});

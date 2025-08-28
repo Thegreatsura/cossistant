@@ -11,6 +11,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
+import { QUERY_KEYS } from "../utils/query-keys";
 
 export interface SendMessageOptions {
 	conversationId?: string | null;
@@ -65,7 +66,7 @@ function addOptimisticMessage(
 	message: Message
 ): void {
 	queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-		["messages", conversationId],
+		QUERY_KEYS.messages(conversationId),
 		(old) => {
 			if (!old) {
 				return {
@@ -109,7 +110,7 @@ function rollbackOptimisticUpdates(
 	if (context.wasNewConversation) {
 		// Reset pending conversation messages to default
 		queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-			["messages", PENDING_CONVERSATION_ID],
+			QUERY_KEYS.messages(PENDING_CONVERSATION_ID),
 			{
 				pages: [
 					{
@@ -124,7 +125,7 @@ function rollbackOptimisticUpdates(
 	} else {
 		// Remove just the optimistic message
 		queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-			["messages", context.optimisticConversationId],
+			QUERY_KEYS.messages(context.optimisticConversationId),
 			(old) => {
 				if (!old) {
 					return old;
@@ -155,7 +156,7 @@ function updateWithServerData(
 	if (context.wasNewConversation && data.conversation) {
 		// Update conversation with server data
 		queryClient.setQueryData<Conversation>(
-			["conversation", data.conversationId],
+			QUERY_KEYS.conversation(data.conversationId),
 			data.conversation
 		);
 
@@ -165,7 +166,7 @@ function updateWithServerData(
 		// Update messages with the actual messages from the server
 		if (data.initialMessages) {
 			queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-				["messages", data.conversationId],
+				QUERY_KEYS.messages(data.conversationId),
 				{
 					pages: [
 						{
@@ -182,7 +183,7 @@ function updateWithServerData(
 		// For existing conversations, we need to replace the optimistic message with the server response
 		// The server response might have different IDs or timestamps
 		queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-			["messages", data.conversationId],
+			QUERY_KEYS.messages(data.conversationId),
 			(old) => {
 				if (!old) {
 					return old;
@@ -207,7 +208,7 @@ function updateWithServerData(
 
 		// Then invalidate to ensure we have the latest data
 		queryClient.invalidateQueries({
-			queryKey: ["messages", data.conversationId],
+			queryKey: QUERY_KEYS.messages(data.conversationId),
 		});
 	}
 }
@@ -322,7 +323,7 @@ export function useSendMessage(
 				// Update the pending conversation messages
 				const allMessages: Message[] = [...defaultMessages, userMessage];
 				queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
-					["messages", PENDING_CONVERSATION_ID],
+					QUERY_KEYS.messages(PENDING_CONVERSATION_ID),
 					{
 						pages: [
 							{
@@ -361,7 +362,7 @@ export function useSendMessage(
 				
 				// Directly update the conversations list cache
 				queryClient.setQueryData<ListConversationsResponse>(
-					["conversations"],
+					QUERY_KEYS.conversations(),
 					(oldData) => {
 						console.log("[useSendMessage] Updating cache, old data:", oldData?.conversations?.map(c => ({ 
 							id: c.id, 

@@ -57,13 +57,13 @@ export function useCreateConversation(
 
 			// Set optimistic data in query cache
 			queryClient.setQueryData<Conversation>(
-				["conversation", conversationId],
+				QUERY_KEYS.conversation(conversationId),
 				optimisticConversation
 			);
 
 			// Invalidate conversations queries to force refetch
 			queryClient.invalidateQueries({ 
-				queryKey: ["conversations"],
+				queryKey: QUERY_KEYS.conversations(),
 				refetchType: "none" // Don't refetch yet, wait for onSuccess
 			});
 
@@ -72,13 +72,13 @@ export function useCreateConversation(
 		onSuccess: (data, variables, context) => {
 			// Update the conversation with server data
 			queryClient.setQueryData<Conversation>(
-				["conversation", data.conversation.id],
+				QUERY_KEYS.conversation(data.conversation.id),
 				data.conversation
 			);
 
 			// Directly update the conversations list cache
 			queryClient.setQueryData<ListConversationsResponse>(
-				["conversations"],
+				QUERY_KEYS.conversations(),
 				(oldData) => {
 					console.log("[useCreateConversation] Updating cache:", {
 						newConversation: data.conversation,
@@ -124,7 +124,7 @@ export function useCreateConversation(
 			// Set initial messages if any
 			if (data.initialMessages.length > 0) {
 				queryClient.setQueryData<PaginatedMessagesCache>(
-					["messages", data.conversation.id],
+					QUERY_KEYS.messages(data.conversation.id),
 					setInitialMessagesInCache(data.initialMessages)
 				);
 			}
@@ -136,12 +136,12 @@ export function useCreateConversation(
 			// Remove optimistic conversation on error
 			if (context?.conversationId) {
 				queryClient.removeQueries({
-					queryKey: ["conversation", context.conversationId],
+					queryKey: QUERY_KEYS.conversation(context.conversationId),
 				});
 
 				// Invalidate conversations to refetch the list
 				queryClient.invalidateQueries({ 
-					queryKey: ["conversations"]
+					queryKey: QUERY_KEYS.conversations()
 				});
 			}
 

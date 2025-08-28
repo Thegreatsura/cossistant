@@ -1,6 +1,7 @@
 import type { CossistantClient } from "@cossistant/core";
 import type { ListConversationsResponse } from "@cossistant/types/api/conversation";
 import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "../utils/query-keys";
 
 export interface UseConversationsResult {
 	conversations: ListConversationsResponse["conversations"] | null;
@@ -16,7 +17,7 @@ export function useConversations(
 	const isEnabled = !!client && params.enabled !== false;
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["conversations"],
+		queryKey: QUERY_KEYS.conversations(),
 		queryFn: async () => {
 			if (!client) {
 				throw new Error("No client available");
