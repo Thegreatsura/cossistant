@@ -27,8 +27,6 @@
 	--co-secondary-foreground: oklch(20.5% 0 0);
 	--co-muted: oklch(97% 0 0);
 	--co-muted-foreground: oklch(55.6% 0 0);
-	--co-accent: oklch(97% 0 0);
-	--co-accent-foreground: oklch(20.5% 0 0);
 	--co-destructive: oklch(57.7% 0.245 27.325);
 	--co-destructive-foreground: oklch(57.7% 0.245 27.325);
 	--co-border: oklch(92.2% 0 0);
@@ -39,17 +37,25 @@
 	--co-yellow: hsla(58, 92%, 70%, 1);
 	--co-blue: hsla(218, 91%, 68%, 1);
 	--co-orange: hsla(19, 99%, 65%, 1);
+
+	/* Status colors */
+	--co-success: oklch(71.7% 0.18 142);
+	--co-success-foreground: oklch(26.5% 0.052 142.7);
+	--co-neutral: oklch(60.8% 0 0);
+	--co-neutral-foreground: oklch(25.6% 0 0);
+	--co-warning: var(--co-yellow);
+	--co-warning-foreground: oklch(41.4% 0.071 58);
 }
 
 .dark {
 	/* Colors - direct values for dark mode */
-	--co-background: oklch(14.5% 0 0);
-	--co-background-100: oklch(15.5% 0 0);
-	--co-background-200: oklch(16.5% 0 0);
-	--co-background-300: oklch(17.5% 0 0);
-	--co-background-400: oklch(18.5% 0 0);
-	--co-background-500: oklch(19.5% 0 0);
-	--co-background-600: oklch(20.5% 0 0);
+	--co-background: oklch(15.5% 0 0);
+	--co-background-100: oklch(16.5% 0 0);
+	--co-background-200: oklch(17.5% 0 0);
+	--co-background-300: oklch(18.5% 0 0);
+	--co-background-400: oklch(19.5% 0 0);
+	--co-background-500: oklch(20.5% 0 0);
+	--co-background-600: oklch(21.5% 0 0);
 
 	--co-foreground: oklch(98.5% 0 0);
 
@@ -65,9 +71,6 @@
 	--co-muted: oklch(26.9% 0 0);
 	--co-muted-foreground: oklch(70.8% 0 0);
 
-	--co-accent: oklch(26.9% 0 0);
-	--co-accent-foreground: oklch(98.5% 0 0);
-
 	--co-destructive: oklch(39.6% 0.141 25.723);
 	--co-destructive-foreground: oklch(63.7% 0.237 25.331);
 
@@ -78,6 +81,14 @@
 	--co-yellow: hsla(58, 92%, 79%, 1);
 	--co-blue: hsla(218, 91%, 78%, 1);
 	--co-orange: hsla(19, 99%, 50%, 1);
+
+	/* Status colors - dark mode */
+	--co-success: oklch(60% 0.15 142);
+	--co-success-foreground: oklch(85% 0.12 142);
+	--co-neutral: oklch(50% 0 0);
+	--co-neutral-foreground: oklch(85% 0 0);
+	--co-warning: var(--co-yellow);
+	--co-warning-foreground: oklch(85% 0.1 58);
 }
 
 @theme inline {
@@ -99,10 +110,6 @@
 	--color-co-secondary-foreground: var(--co-secondary-foreground);
 	--color-co-muted: var(--co-muted);
 	--color-co-muted-foreground: var(--co-muted-foreground);
-	--color-co-accent: var(--co-accent);
-	--color-co-accent-foreground: var(--co-accent-foreground);
-	--color-co-destructive: var(--co-destructive);
-	--color-co-destructive-foreground: var(--co-destructive-foreground);
 	--color-co-border: var(--co-border);
 	--color-co-input: var(--co-input);
 	--color-co-ring: var(--co-ring);
@@ -113,6 +120,16 @@
 	--color-co-yellow: var(--co-yellow);
 	--color-co-blue: var(--co-blue);
 	--color-co-orange: var(--co-orange);
+
+	/* status colors */
+	--color-co-destructive: var(--co-destructive);
+	--color-co-destructive-foreground: var(--co-destructive-foreground);
+	--color-co-success: var(--co-success);
+	--color-co-success-foreground: var(--co-success-foreground);
+	--color-co-neutral: var(--co-neutral);
+	--color-co-neutral-foreground: var(--co-neutral-foreground);
+	--color-co-warning: var(--co-warning);
+	--color-co-warning-foreground: var(--co-warning-foreground);
 }
 
 @layer base {

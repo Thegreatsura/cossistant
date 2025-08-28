@@ -119,7 +119,7 @@ export function ConversationButtonLink({
       onClick,
       type: "button",
       className: cn(
-        "group/btn relative flex w-full items-center gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-100/50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
+        "group/btn relative flex w-full items-center gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-100/50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:cursor-pointer hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
         typeof props.className === "function"
           ? props.className(state)
           : props.className
@@ -157,12 +157,12 @@ export function ConversationButtonLink({
           </div>
           <div
             className={cn(
-              "mr-6 inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs",
+              "mr-6 inline-flex items-center rounded-full px-2 py-0.5 font-medium text-[9px] uppercase",
               conversation.status === ConversationStatus.OPEN
-                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                ? "bg-co-success/20 text-co-success-foreground"
                 : conversation.status === ConversationStatus.RESOLVED
-                  ? "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-400"
-                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  ? "bg-co-neutral/20 text-co-neutral-foreground"
+                  : "bg-co-warning/20 text-co-warning-foreground"
             )}
           >
             {conversation.status}
