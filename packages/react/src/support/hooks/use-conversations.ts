@@ -35,7 +35,6 @@ export function useConversations(
 		retry: false, // Don't retry on error to match previous behavior
 	});
 
-
 	return {
 		conversations: data?.conversations ?? null,
 		pagination: data?.pagination ?? null,

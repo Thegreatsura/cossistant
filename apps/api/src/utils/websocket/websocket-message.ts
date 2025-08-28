@@ -2,9 +2,12 @@
  * WebSocket message handling utilities
  */
 
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
-import { isValidEventType, validateRealtimeEvent } from "@cossistant/types/realtime-events";
 import type { EventContext } from "@api/ws/router";
+import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import {
+	isValidEventType,
+	validateRealtimeEvent,
+} from "@cossistant/types/realtime-events";
 import { WEBSOCKET_ERRORS } from "./websocket-errors";
 
 export interface ParsedMessage {
@@ -23,15 +26,15 @@ export interface ValidatedMessage {
 export function parseMessage(data: string | Buffer): ParsedMessage {
 	try {
 		const message = JSON.parse(data.toString());
-		
+
 		if (typeof message !== "object" || message === null) {
 			throw new Error("Message must be an object");
 		}
-		
+
 		if (!message.type) {
 			throw new Error("Message must have a type property");
 		}
-		
+
 		return message as ParsedMessage;
 	} catch (error) {
 		throw WEBSOCKET_ERRORS.invalidMessageFormat(error);
@@ -55,17 +58,17 @@ export function validateMessage(
 	if (!isValidEventType(message.type)) {
 		throw WEBSOCKET_ERRORS.invalidEventType(message.type);
 	}
-	
+
 	// Validate event data
 	const validatedData = validateRealtimeEvent(message.type, message.data);
-	
+
 	// Create event
 	const event: RealtimeEvent = {
 		type: message.type,
 		data: validatedData,
 		timestamp: Date.now(),
 	};
-	
+
 	// Create context
 	const context: EventContext = {
 		connectionId,
@@ -75,18 +78,26 @@ export function validateMessage(
 		organizationId: authContext?.organizationId,
 		ws: undefined,
 	};
-	
+
 	return { event, context };
 }
 
 /**
  * Handle message processing errors
  */
-export function handleMessageError(error: unknown): { error: string; message: string } {
-	if (error && typeof error === "object" && "error" in error && "message" in error) {
+export function handleMessageError(error: unknown): {
+	error: string;
+	message: string;
+} {
+	if (
+		error &&
+		typeof error === "object" &&
+		"error" in error &&
+		"message" in error
+	) {
 		return error as { error: string; message: string };
 	}
-	
+
 	console.error("[WebSocket] Error processing message:", error);
 	return WEBSOCKET_ERRORS.serverError(error);
 }

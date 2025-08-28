@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Icon from "@/components/ui/icons";
 import { TextEffect } from "@/components/ui/text-effect";
 
 export default function GlobalError({

@@ -9,7 +9,8 @@ export const WebSocketErrorCode = {
 	SERVER_ERROR: 1011,
 } as const;
 
-export type WebSocketErrorCode = typeof WebSocketErrorCode[keyof typeof WebSocketErrorCode];
+export type WebSocketErrorCode =
+	(typeof WebSocketErrorCode)[keyof typeof WebSocketErrorCode];
 
 export interface WebSocketError {
 	code: WebSocketErrorCode;
@@ -39,28 +40,28 @@ export const WEBSOCKET_ERRORS = {
 			"Authentication failed",
 			"Authentication failed: Provide a valid API key or be signed in."
 		),
-	
+
 	identificationRequired: () =>
 		createWebSocketError(
 			WebSocketErrorCode.IDENTIFICATION_REQUIRED,
 			"Identification required",
 			"Either authenticate with credentials or provide a visitor ID via X-Visitor-Id header or query parameter."
 		),
-	
+
 	connectionNotAuthenticated: () =>
 		createWebSocketError(
 			WebSocketErrorCode.AUTHENTICATION_FAILED,
 			"Connection not authenticated",
 			"Please reconnect with valid authentication."
 		),
-	
+
 	invalidEventType: (type?: string) =>
 		createWebSocketError(
 			WebSocketErrorCode.INVALID_MESSAGE_FORMAT,
 			"Invalid event type",
 			`Invalid event type: ${type || "unknown"}`
 		),
-	
+
 	invalidMessageFormat: (error?: unknown) =>
 		createWebSocketError(
 			WebSocketErrorCode.INVALID_MESSAGE_FORMAT,
@@ -68,7 +69,7 @@ export const WEBSOCKET_ERRORS = {
 			"The message format is invalid. Please check your message structure.",
 			error
 		),
-	
+
 	serverError: (error?: unknown) =>
 		createWebSocketError(
 			WebSocketErrorCode.SERVER_ERROR,

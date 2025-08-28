@@ -72,12 +72,15 @@ const eventHandlers: EventHandlers = {
 	},
 
 	VISITOR_DISCONNECTED: async (ctx, data) => {
-		console.log(`[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: ctx.websiteId,
-		});
+		console.log(
+			`[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`,
+			{
+				connectionId: data.connectionId,
+				timestamp: new Date(data.timestamp).toISOString(),
+				contextConnectionId: ctx.connectionId,
+				websiteId: ctx.websiteId,
+			}
+		);
 
 		// Emit to dashboard so agents can see visitor disconnections
 		if (ctx.websiteId) {
