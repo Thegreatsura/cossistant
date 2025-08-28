@@ -45,9 +45,17 @@ export const HomePage = () => {
 
 	// const defaultMessages = useDefaultMessages({ conversationId: "default" });
 	const { lastOpenConversation, availableConversationsAmount } = useMemo(() => {
+		console.log("[HomePage] Conversations:", conversations?.map(c => ({ 
+			id: c.id, 
+			status: c.status,
+			updatedAt: c.updatedAt
+		})));
+		
 		const _lastOpenConversation = conversations?.find(
 			(conversation) => conversation.status === "open"
 		);
+		
+		console.log("[HomePage] Last open conversation:", _lastOpenConversation?.id);
 
 		return {
 			lastOpenConversation: _lastOpenConversation,

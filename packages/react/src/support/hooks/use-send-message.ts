@@ -1,7 +1,7 @@
 import type { CossistantClient, CossistantRestClient } from "@cossistant/core";
 import { generateConversationId, generateMessageId } from "@cossistant/core";
 import { MessageType, MessageVisibility } from "@cossistant/types";
-import type { CreateConversationResponseBody } from "@cossistant/types/api/conversation";
+import type { CreateConversationResponseBody, ListConversationsResponse } from "@cossistant/types/api/conversation";
 import type { GetMessagesResponse } from "@cossistant/types/api/message";
 import type { Conversation, Message } from "@cossistant/types/schemas";
 import {
@@ -159,26 +159,8 @@ function updateWithServerData(
 			data.conversation
 		);
 
-		// Update conversations list
-		queryClient.setQueryData<Conversation[]>(["conversations"], (old) => {
-			if (!data.conversation) {
-				return old || [];
-			}
-			if (!old) {
-				return [data.conversation];
-			}
-
-			// Replace optimistic conversation with real one
-			const index = old.findIndex(
-				(c) => c.id === context.optimisticConversationId
-			);
-			if (index >= 0) {
-				const updated = [...old];
-				updated[index] = data.conversation;
-				return updated;
-			}
-			return [...old, data.conversation];
-		});
+		// Don't manually update conversations list - let invalidation handle it
+		// This ensures the list stays in sync with the server
 
 		// Update messages with the actual messages from the server
 		if (data.initialMessages) {
@@ -369,6 +351,57 @@ export function useSendMessage(
 
 			// Update with server data
 			updateWithServerData(queryClient, data, context);
+			
+			// If we created a new conversation, update the conversations list
+			if (context.wasNewConversation && data.conversation) {
+				console.log("[useSendMessage] New conversation created:", {
+					id: data.conversation.id,
+					status: data.conversation.status
+				});
+				
+				// Directly update the conversations list cache
+				queryClient.setQueryData<ListConversationsResponse>(
+					["conversations"],
+					(oldData) => {
+						console.log("[useSendMessage] Updating cache, old data:", oldData?.conversations?.map(c => ({ 
+							id: c.id, 
+							status: c.status 
+						})));
+						
+						if (!oldData) {
+							return {
+								conversations: [data.conversation],
+								pagination: { hasNextPage: false, nextCursor: null }
+							};
+						}
+						
+						// Check if conversation already exists (in case of race conditions)
+						const existingIndex = oldData.conversations.findIndex(
+							c => c.id === data.conversation.id
+						);
+						
+						let updatedConversations;
+						if (existingIndex >= 0) {
+							// Update existing conversation
+							updatedConversations = [...oldData.conversations];
+							updatedConversations[existingIndex] = data.conversation;
+						} else {
+							// Add new conversation at the beginning (most recent)
+							// and limit to 10 conversations to match the API limit
+							updatedConversations = [data.conversation, ...oldData.conversations].slice(0, 10);
+						}
+						
+						console.log("[useSendMessage] Updated conversations:", 
+							updatedConversations.map(c => ({ id: c.id, status: c.status }))
+						);
+						
+						return {
+							...oldData,
+							conversations: updatedConversations
+						};
+					}
+				);
+			}
 
 			// Call user's success callback
 			variables.onSuccess?.(data.conversationId, data.messageId);

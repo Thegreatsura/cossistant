@@ -16,10 +16,7 @@ export function useConversations(
 	const isEnabled = !!client && params.enabled !== false;
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: [
-			"conversations",
-			params.limit || 3,
-		],
+		queryKey: ["conversations"],
 		queryFn: async () => {
 			if (!client) {
 				throw new Error("No client available");
@@ -37,14 +34,6 @@ export function useConversations(
 		retry: false, // Don't retry on error to match previous behavior
 	});
 
-	console.log("useConversations state:", {
-		isEnabled,
-		isLoading,
-		hasData: !!data,
-		error: error?.message,
-		client: !!client,
-		enabled: params.enabled,
-	});
 
 	return {
 		conversations: data?.conversations ?? null,

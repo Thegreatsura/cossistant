@@ -43,7 +43,7 @@ export const ConversationPage = ({
 }: ConversationPageProps) => {
 	const { website, availableAIAgents, availableHumanAgents, client, visitor } =
 		useSupport();
-	const { navigate, goBack, canGoBack } = useSupportNavigation();
+	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
 
 	// Determine if we have a real conversation or pending one
 	const hasRealConversation = conversationId !== PENDING_CONVERSATION_ID;
@@ -76,12 +76,13 @@ export const ConversationPage = ({
 			defaultMessages,
 			visitorId: visitor?.id,
 			onSuccess: (newConversationId, messageId) => {
-				// If we created a new conversation, navigate to it
+				// If we created a new conversation, replace the current navigation state
+				// to avoid having to click back twice
 				if (
 					!hasRealConversation &&
 					newConversationId !== PENDING_CONVERSATION_ID
 				) {
-					navigate({
+					replace({
 						page: "CONVERSATION",
 						params: { conversationId: newConversationId },
 					});
@@ -101,7 +102,7 @@ export const ConversationPage = ({
 		defaultMessages,
 		visitor?.id,
 		sendMessage,
-		navigate,
+		replace,
 		setMessage,
 	]);
 

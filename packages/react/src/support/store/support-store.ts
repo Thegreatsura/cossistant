@@ -47,6 +47,7 @@ type SupportStoreState = {
 type SupportStoreActions = {
 	// Navigation actions
 	navigate: (state: NavigationState) => void;
+	replace: (state: NavigationState) => void;
 	goBack: () => void;
 
 	// Config actions
@@ -91,6 +92,14 @@ export const useSupportStore = create<SupportStore>()(
 							...state.navigation.previousPages,
 							state.navigation.current,
 						],
+						current: newState,
+					},
+				})),
+
+			replace: (newState) =>
+				set((state) => ({
+					navigation: {
+						...state.navigation,
 						current: newState,
 					},
 				})),
@@ -173,7 +182,7 @@ export const useSupportConfig = () => {
 };
 
 export const useSupportNavigation = () => {
-	const { navigation, navigate, goBack } = useSupportStore();
+	const { navigation, navigate, replace, goBack } = useSupportStore();
 	const { current, previousPages } = navigation;
 
 	return {
@@ -182,6 +191,7 @@ export const useSupportNavigation = () => {
 		params: current.params,
 		previousPages,
 		navigate,
+		replace,
 		goBack,
 		canGoBack: previousPages.length > 0,
 	};

@@ -3,6 +3,7 @@ import { generateConversationId } from "@cossistant/core";
 import type {
 	CreateConversationRequestBody,
 	CreateConversationResponseBody,
+	ListConversationsResponse,
 } from "@cossistant/types/api/conversation";
 import type { Conversation } from "@cossistant/types/schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -75,12 +76,50 @@ export function useCreateConversation(
 				data.conversation
 			);
 
-			// Invalidate and refetch conversations list to ensure it's up to date
-			// This will trigger useConversations to refetch with the correct query key
-			queryClient.invalidateQueries({ 
-				queryKey: ["conversations"],
-				refetchType: "active" // Refetch active queries
-			});
+			// Directly update the conversations list cache
+			queryClient.setQueryData<ListConversationsResponse>(
+				["conversations"],
+				(oldData) => {
+					console.log("[useCreateConversation] Updating cache:", {
+						newConversation: data.conversation,
+						newConversationStatus: data.conversation.status,
+						oldDataExists: !!oldData,
+						oldConversations: oldData?.conversations?.map(c => ({ id: c.id, status: c.status }))
+					});
+					
+					if (!oldData) {
+						return {
+							conversations: [data.conversation],
+							pagination: { hasNextPage: false, nextCursor: null }
+						};
+					}
+					
+					// Check if conversation already exists (in case of race conditions)
+					const existingIndex = oldData.conversations.findIndex(
+						c => c.id === data.conversation.id
+					);
+					
+					let updatedConversations;
+					if (existingIndex >= 0) {
+						// Update existing conversation
+						updatedConversations = [...oldData.conversations];
+						updatedConversations[existingIndex] = data.conversation;
+					} else {
+						// Add new conversation at the beginning (most recent)
+						// and limit to 10 conversations to match the API limit
+						updatedConversations = [data.conversation, ...oldData.conversations].slice(0, 10);
+					}
+					
+					console.log("[useCreateConversation] Updated conversations:", 
+						updatedConversations.map(c => ({ id: c.id, status: c.status }))
+					);
+					
+					return {
+						...oldData,
+						conversations: updatedConversations
+					};
+				}
+			);
 
 			// Set initial messages if any
 			if (data.initialMessages.length > 0) {
@@ -102,7 +141,7 @@ export function useCreateConversation(
 
 				// Invalidate conversations to refetch the list
 				queryClient.invalidateQueries({ 
-					queryKey: ["conversations"] 
+					queryKey: ["conversations"]
 				});
 			}
 
