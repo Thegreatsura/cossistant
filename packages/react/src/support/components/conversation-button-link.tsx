@@ -119,7 +119,7 @@ export function ConversationButtonLink({
       onClick,
       type: "button",
       className: cn(
-        "group/btn relative flex w-full items-center gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:cursor-pointer hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-300 dark:hover:bg-co-background-400",
+        "group/btn relative flex w-full items-center gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:cursor-pointer hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-100 dark:hover:bg-co-background-200",
         typeof props.className === "function"
           ? props.className(state)
           : props.className

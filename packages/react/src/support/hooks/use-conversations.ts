@@ -24,9 +24,9 @@ export function useConversations(
       }
 
       return client.listConversations({
-        limit: params.limit || 3,
-        orderBy: "updatedAt",
-        order: "desc",
+        limit: params.limit || 10,
+        orderBy: "createdAt",
+        order: "asc",
       });
     },
     enabled: isEnabled,

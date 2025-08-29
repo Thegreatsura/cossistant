@@ -70,12 +70,13 @@ export const HomePage = () => {
   }, [conversations]);
 
   return (
-    <div className="relative flex h-full flex-col gap-10 overflow-y-auto">
+    <>
       <Header>{/* <NavigationTab /> */}</Header>
       <div className="sticky top-4 flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <motion.div
             animate="visible"
+            className="flex flex-col items-center justify-center gap-2"
             exit="exit"
             initial="hidden"
             transition={{
@@ -175,6 +176,6 @@ export const HomePage = () => {
         </div>
         <div />
       </div>
-    </div>
+    </>
   );
 };

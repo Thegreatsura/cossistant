@@ -1,4 +1,5 @@
 export { Bubble } from "./bubble";
+export { Container } from "./container";
 export type { ConversationEventProps } from "./conversation-event";
 export { ConversationEvent } from "./conversation-event";
 export type { IconName, IconProps, IconVariant } from "./icons";
@@ -13,4 +14,3 @@ export { SendButton } from "./multimodal-input";
 export { SupportContent } from "./support-content";
 export type { TypingIndicatorProps } from "./typing-indicator";
 export { TypingIndicator } from "./typing-indicator";
-export { Window } from "./window";
