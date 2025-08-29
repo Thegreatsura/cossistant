@@ -90,8 +90,9 @@ export const HomePage = () => {
           >
             <AvatarStack
               aiAgents={website?.availableAIAgents || []}
-              className="size-14"
               humanAgents={availableHumanAgents}
+              size={44}
+              spacing={32}
             />
             <p className="mb-4 text-co-primary/80 text-sm">
               {website?.name} support

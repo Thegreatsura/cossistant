@@ -51,7 +51,10 @@ export const ConversationHistoryPage: React.FC = () => {
           <div className="flex flex-col" />
           <AvatarStack
             aiAgents={availableAIAgents}
+            gapWidth={2}
             humanAgents={availableHumanAgents}
+            size={28}
+            spacing={20}
           />
         </div>
       </Header>

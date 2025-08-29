@@ -55,7 +55,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       id="message-list"
       messages={messages}
     >
-      <MessageListContainer className="flex min-h-full w-full flex-col gap-3 pt-18">
+      <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
         {groupedMessages.map((item, index) => {
           if (item.type === "event") {
             return (

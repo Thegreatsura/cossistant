@@ -131,7 +131,10 @@ export const ConversationPage = ({
           </div>
           <AvatarStack
             aiAgents={availableAIAgents}
+            gapWidth={2}
             humanAgents={availableHumanAgents}
+            size={28}
+            spacing={24}
           />
         </div>
       </Header>

@@ -37,13 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
           {children}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
-        <Button
-          className="!block md:!hidden"
-          onClick={close}
-          size="icon"
-          type="button"
-          variant="ghost"
-        >
+        <Button onClick={close} size="icon" type="button" variant="ghost">
           <Icon name="close" />
         </Button>
       </div>
