@@ -74,7 +74,9 @@ async function authenticateRequest(c: Context<RestContext>, db: Database) {
 		return result.apiKey;
 	} catch (error) {
 		if (error instanceof AuthValidationError) {
-			throw new HTTPException(error.statusCode, { message: error.message });
+			throw new HTTPException(error.statusCode as 401 | 403, {
+				message: error.message,
+			});
 		}
 		throw error;
 	}
@@ -114,7 +116,9 @@ export const withPrivateApiKeyAuth: MiddlewareHandler = async (c, next) => {
 		await next();
 	} catch (error) {
 		if (error instanceof AuthValidationError) {
-			throw new HTTPException(error.statusCode, { message: error.message });
+			throw new HTTPException(error.statusCode as 401 | 403, {
+				message: error.message,
+			});
 		}
 		throw error;
 	}
