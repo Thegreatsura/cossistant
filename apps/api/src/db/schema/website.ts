@@ -119,6 +119,8 @@ export const visitor = pgTable(
     index("visitor_org_idx").on(table.organizationId),
     // Composite index for organization + website queries
     index("visitor_org_website_idx").on(table.organizationId, table.websiteId),
+    // Composite index for visitor ID with organization (performance optimization)
+    index("visitor_id_org_idx").on(table.id, table.organizationId),
     // Index for looking up visitors by website
     index("visitor_website_idx").on(table.websiteId),
     // Index for looking up visitors by user
