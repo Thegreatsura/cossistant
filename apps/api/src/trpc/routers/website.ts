@@ -1,5 +1,5 @@
 import { createDefaultWebsiteKeys } from "@api/db/queries/api-keys";
-import { createWebsite } from "@api/db/queries/website";
+import { createWebsite, getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { website } from "@api/db/schema";
 import { domainToSlug } from "@api/utils/domain-slug";
 import {
@@ -13,6 +13,23 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
 export const websiteRouter = createTRPCRouter({
+	getBySlug: protectedProcedure
+		.input(z.object({ slug: z.string() }))
+		.query(async ({ ctx: { db, user }, input }) => {
+			const website = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.slug,
+			});
+
+			if (!website) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			return website;
+		}),
 	create: protectedProcedure
 		.input(createWebsiteRequestSchema)
 		.output(createWebsiteResponseSchema)
