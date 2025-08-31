@@ -25,10 +25,12 @@ export function TopbarItem({
   active = false,
 }: SidebarItemProps) {
   const baseClasses = cn(
-    "group/btn relative flex items-center gap-3 rounded px-1 py-1 text-primary/80 text-sm transition-colors",
+    "group/btn relative flex items-center gap-3 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors",
     "hover:bg-background-100 hover:text-primary",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-    active && "bg-background-100 text-primary",
+    {
+      "bg-background-200 text-primary dark:bg-background-300": active,
+    },
     className
   );
 

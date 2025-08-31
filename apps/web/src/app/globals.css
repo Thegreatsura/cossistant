@@ -77,12 +77,12 @@
 
 .dark {
 	--background: oklch(14.5% 0 0);
-	--background-100: oklch(15.5% 0 0);
-	--background-200: oklch(16.5% 0 0);
-	--background-300: oklch(17.5% 0 0);
-	--background-400: oklch(18.5% 0 0);
-	--background-500: oklch(19.5% 0 0);
-	--background-600: oklch(20.5% 0 0);
+	--background-100: oklch(18.5% 0 0);
+	--background-200: oklch(20.5% 0 0);
+	--background-300: oklch(22.5% 0 0);
+	--background-400: oklch(24.5% 0 0);
+	--background-500: oklch(28.5% 0 0);
+	--background-600: oklch(30.5% 0 0);
 
 	--foreground: oklch(98.5% 0 0);
 
