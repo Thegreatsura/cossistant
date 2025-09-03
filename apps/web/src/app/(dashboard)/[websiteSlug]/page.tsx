@@ -1,4 +1,5 @@
 import { Page } from "@/components/ui/layout";
+import { NavigationSidebar } from "@/components/ui/layout/sidebars/navigation/navigation-sidebar";
 import { TextEffect } from "@/components/ui/text-effect";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 
@@ -14,6 +15,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   return (
     <>
+      <NavigationSidebar />
       <Page>
         <div className="flex flex-col gap-2 font-medium">
           <TextEffect className="font-normal text-3xl">

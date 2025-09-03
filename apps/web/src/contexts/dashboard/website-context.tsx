@@ -2,13 +2,15 @@
 
 import type { RouterOutputs } from "@cossistant/api/types";
 import { useQuery } from "@tanstack/react-query";
+import type { TRPCClientErrorBase } from "@trpc/client";
+import type { DefaultErrorShape } from "@trpc/server/unstable-core-do-not-import";
 import { createContext, useContext } from "react";
 import { useTRPC } from "@/lib/trpc/client";
 
 interface WebsiteContextValue {
   website: RouterOutputs["website"]["getBySlug"];
   isLoading: boolean;
-  error: Error | null;
+  error: TRPCClientErrorBase<DefaultErrorShape> | null;
 }
 
 const WebsiteContext = createContext<WebsiteContextValue | null>(null);
@@ -24,7 +26,11 @@ export function WebsiteProvider({
 }: WebsiteProviderProps) {
   const trpc = useTRPC();
 
-  const { data: website, isFetching: isLoading } = useQuery({
+  const {
+    data: website,
+    isFetching: isLoading,
+    error,
+  } = useQuery({
     ...trpc.website.getBySlug.queryOptions({
       slug: websiteSlug,
     }),
@@ -36,7 +42,7 @@ export function WebsiteProvider({
         // biome-ignore lint/style/noNonNullAssertion: should never be null
         website: website!,
         isLoading,
-        error: null,
+        error,
       }}
     >
       {children}

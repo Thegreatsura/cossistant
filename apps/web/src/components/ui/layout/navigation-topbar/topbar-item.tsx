@@ -26,10 +26,10 @@ export function TopbarItem({
 }: SidebarItemProps) {
   const baseClasses = cn(
     "group/btn relative flex items-center gap-3 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors",
-    "hover:bg-background-100 hover:text-primary",
+    "hover:bg-background-100 hover:bg-background-300 hover:text-primary",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     {
-      "bg-background-200 text-primary dark:bg-background-300": active,
+      "bg-background-200 text-primary dark:bg-background-400": active,
     },
     className
   );

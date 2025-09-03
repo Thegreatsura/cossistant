@@ -11,7 +11,7 @@ export function NavigationTopbar() {
   const website = useWebsite();
 
   return (
-    <header className="flex h-14 w-full items-center justify-between gap-6 pr-3 pl-4">
+    <header className="flex h-18 w-full items-center justify-between gap-4 pr-3 pl-8">
       <Logo className="text-primary" />
       <div className="flex flex-1 items-center gap-4">
         <TopbarItem

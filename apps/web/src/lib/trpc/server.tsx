@@ -6,8 +6,13 @@ import { auth } from "@api/lib/auth";
 import type { OrigamiTRPCRouter } from "@cossistant/api/types";
 import { getCountryCode, getLocale, getTimezone } from "@cossistant/location";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { createTRPCClient, loggerLink } from "@trpc/client";
+import {
+  createTRPCClient,
+  loggerLink,
+  type TRPCClientErrorBase,
+} from "@trpc/client";
 import { httpBatchLink } from "@trpc/client/links/httpBatchLink";
+import type { DefaultErrorShape } from "@trpc/server/unstable-core-do-not-import";
 import {
   createTRPCOptionsProxy,
   type TRPCQueryOptions,
@@ -69,14 +74,19 @@ export function HydrateClient(props: { children: React.ReactNode }) {
 }
 
 export function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
-  queryOptions: T
+  queryOptions: T,
+  onError?: (error: TRPCClientErrorBase<DefaultErrorShape>) => void
 ) {
-  const queryClient = getQueryClient();
+  try {
+    const queryClient = getQueryClient();
 
-  if (queryOptions.queryKey[1]?.type === "infinite") {
-    void queryClient.prefetchInfiniteQuery(queryOptions as any);
-  } else {
-    void queryClient.prefetchQuery(queryOptions);
+    if (queryOptions.queryKey[1]?.type === "infinite") {
+      void queryClient.prefetchInfiniteQuery(queryOptions as any);
+    } else {
+      void queryClient.prefetchQuery(queryOptions);
+    }
+  } catch (error) {
+    onError?.(error as TRPCClientErrorBase<DefaultErrorShape>);
   }
 }
 
