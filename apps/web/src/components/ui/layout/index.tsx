@@ -1,5 +1,24 @@
 import { cn } from "@/lib/utils";
 
+export const PageHeaderContainer = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  return (
+    <div
+      className={cn(
+        "flex h-16 w-full items-center justify-between gap-4 border-b px-2",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
 export const Page = ({
   children,
   className,
