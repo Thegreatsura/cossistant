@@ -12,24 +12,36 @@ export function NavigationTopbar() {
 
   return (
     <header className="flex h-18 w-full items-center justify-between gap-4 pr-3 pl-8">
-      <Logo className="text-primary" />
-      <div className="flex flex-1 items-center gap-4">
+      <div className="flex flex-1 items-center gap-3">
+        <Logo className="text-primary" />
+        <span className="select-none text-primary/20">/</span>
         <TopbarItem
           active={pathname === `/${website.slug}`}
           href={`/${website.slug}`}
           iconName="dashboard"
         >
-          Dashboard
+          {website.name}
         </TopbarItem>
+      </div>
+      <div className="flex items-center gap-3">
         <TopbarItem
           active={pathname === `/${website.slug}/agents`}
+          hideLabelOnMobile
           href={`/${website.slug}/agents`}
           iconName="agent"
         >
           Agents
         </TopbarItem>
+        <TopbarItem
+          active={pathname === `/${website.slug}/settings`}
+          hideLabelOnMobile
+          href={`/${website.slug}/settings`}
+          iconName="settings"
+        >
+          Settings
+        </TopbarItem>
+        <UserDropdown />
       </div>
-      <UserDropdown />
     </header>
   );
 }

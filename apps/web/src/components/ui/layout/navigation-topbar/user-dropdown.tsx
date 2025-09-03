@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronsUpDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,7 +36,7 @@ export function UserDropdown() {
               <AvatarImage alt={userDisplayName} src={userAvatarUrl} />
             )}
             <AvatarFallback className="rounded">
-              {userDisplayName}
+              {userDisplayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </button>
@@ -54,7 +53,7 @@ export function UserDropdown() {
               <AvatarImage alt={userDisplayName} src={userAvatarUrl} />
             )}
             <AvatarFallback className="rounded">
-              {userDisplayName}
+              {userDisplayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="grid flex-1 text-left text-sm leading-tight">

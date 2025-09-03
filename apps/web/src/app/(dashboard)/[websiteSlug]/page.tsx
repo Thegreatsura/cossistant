@@ -16,7 +16,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   return (
     <>
       <NavigationSidebar />
-      <Page>
+      <Page className="flex items-center justify-center">
         <div className="flex flex-col gap-2 font-medium">
           <TextEffect className="font-normal text-3xl">
             Welcome {user.name?.split(" ")[0] || "there"},

@@ -13,6 +13,7 @@ interface SidebarItemProps {
   onClick?: () => void;
   className?: string;
   active?: boolean;
+  hideLabelOnMobile?: boolean;
 }
 
 export function TopbarItem({
@@ -23,13 +24,15 @@ export function TopbarItem({
   onClick,
   className,
   active = false,
+  hideLabelOnMobile = false,
 }: SidebarItemProps) {
   const baseClasses = cn(
-    "group/btn relative flex items-center gap-3 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors",
+    "group/btn relative flex items-center gap-2 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors",
     "hover:bg-background-100 hover:bg-background-300 hover:text-primary",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     {
       "bg-background-200 text-primary dark:bg-background-400": active,
+      "px-1 md:px-2": hideLabelOnMobile,
     },
     className
   );
@@ -53,7 +56,13 @@ export function TopbarItem({
           />
         </span>
       )}
-      <span className="flex-1 truncate">{children}</span>
+      <span
+        className={cn("flex-1 truncate", {
+          "hidden md:block": hideLabelOnMobile,
+        })}
+      >
+        {children}
+      </span>
       {actions && (
         <span className="opacity-0 transition-opacity group-hover/btn:opacity-100">
           {actions}
