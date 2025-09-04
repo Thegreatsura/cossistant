@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export const PageHeaderContainer = ({
+export const PageHeader = ({
   children,
   className,
 }: {
@@ -10,7 +10,7 @@ export const PageHeaderContainer = ({
   return (
     <div
       className={cn(
-        "flex h-16 w-full items-center justify-between gap-4 border-b px-2",
+        "absolute inset-x-0 top-0 flex h-16 w-full items-center justify-between gap-4 border-b px-2",
         className
       )}
     >
@@ -29,7 +29,7 @@ export const Page = ({
   return (
     <div
       className={cn(
-        "scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-500 flex flex-1 flex-col overflow-y-auto p-6",
+        "scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-500 relative flex h-full flex-1 flex-col overflow-y-auto p-6 pt-16",
         className
       )}
     >

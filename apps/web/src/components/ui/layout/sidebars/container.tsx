@@ -3,5 +3,5 @@ type Props = {
 };
 
 export function SidebarContainer({ children }: Props) {
-  return <div className="flex w-full flex-col">{children}</div>;
+  return <div className="relative flex w-full flex-col pt-16">{children}</div>;
 }

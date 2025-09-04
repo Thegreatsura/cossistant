@@ -30,7 +30,7 @@ export const ResizableSidebar = ({
           "relative flex p-0 transition-all duration-200 ease-in-out",
           className,
           {
-            "ml-[3px] p-0": !open,
+            "ml-[0px] p-0": !open,
             "border-r": position === "left",
             "border-l": position === "right",
             "border-transparent": !open,
@@ -51,15 +51,15 @@ export const ResizableSidebar = ({
             />
           </>
         )}
+        {!open && (
+          <SidebarHandle
+            hotkeys={["shift", position === "right" ? "right" : "left"]}
+            isCollapsed={!open}
+            onToggle={toggle}
+            position={position === "right" ? "left" : "right"}
+          />
+        )}
       </aside>
-      {!open && (
-        <SidebarHandle
-          hotkeys={["shift", position === "right" ? "right" : "left"]}
-          isCollapsed={!open}
-          onToggle={toggle}
-          position={position === "right" ? "left" : "right"}
-        />
-      )}
     </>
   );
 };
@@ -106,16 +106,14 @@ const SidebarHandle = ({
   return (
     <button
       className={cn(
-        "relative z-10 hidden max-h-screen w-auto items-center justify-center bg-transparent md:flex",
-        position === "right" ? "-right-[5px]" : "left-[6px]",
+        "absolute top-0.5 bottom-0.5 z-10 hidden max-h-screen w-[2px] items-center justify-center rounded-full hover:cursor-pointer hover:bg-border md:flex",
         {
-          "-right-[26px] absolute top-0 bottom-0":
-            !isCollapsed && position === "right",
-          "-left-[14px] absolute top-0 bottom-0":
-            !isCollapsed && position === "left",
+          "-right-[1px]": !isCollapsed && position === "right",
+          "-left-[1px]": !isCollapsed && position === "left",
         }
       )}
       onClick={handleClick}
+      tabIndex={0}
       type="button"
     >
       <TooltipOnHover
@@ -130,12 +128,12 @@ const SidebarHandle = ({
             position === "left" ? "border-r-4" : "border-l-4"
           )}
         >
-          <div className="h-fit w-4 flex-col items-center justify-center bg-transparent hover:cursor-pointer">
+          <div className="h-fit w-4 flex-col items-center justify-center bg-transparent pl-3 hover:cursor-pointer">
             {position === "right" ? (
               <>
                 <div
                   className={cn(
-                    "-mb-[3px] h-4 w-[3px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:rotate-6 group-hover:bg-border",
+                    "-mb-[3px] h-4 w-[2px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:rotate-6 group-hover:bg-border",
                     {
                       "group-hover:-rotate-6": isCollapsed,
                     }
@@ -143,7 +141,7 @@ const SidebarHandle = ({
                 />
                 <div
                   className={cn(
-                    "-mt-[3px] group-hover:-rotate-6 h-4 w-[3px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:bg-border",
+                    "-mt-[3px] group-hover:-rotate-6 h-4 w-[2px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:bg-border",
                     {
                       "group-hover:rotate-6": isCollapsed,
                     }
@@ -154,7 +152,7 @@ const SidebarHandle = ({
               <>
                 <div
                   className={cn(
-                    "-mb-[3px] group-hover:-rotate-6 h-4 w-[3px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:bg-border",
+                    "-mb-[3px] group-hover:-rotate-6 h-4 w-[2px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:bg-border",
                     {
                       "group-hover:-rotate-6": isCollapsed,
                     }
@@ -162,7 +160,7 @@ const SidebarHandle = ({
                 />
                 <div
                   className={cn(
-                    "-mt-[3px] h-4 w-[3px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:rotate-6 group-hover:bg-border",
+                    "-mt-[3px] h-4 w-[2px] rounded bg-border/80 transition-all group-hover:h-6 group-hover:rotate-6 group-hover:bg-border",
                     {
                       "group-hover:rotate-6": isCollapsed,
                     }

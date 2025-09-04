@@ -49,7 +49,7 @@ export function ConversationItem({
         "group/conversation-item relative flex items-center gap-3 rounded-[2px] px-2 py-2 transition-colors",
         "hover:bg-os-background-400 hover:text-primary",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        active && "bg-background-400 text-accent-foreground",
+        active && "bg-background-200 text-accent-foreground",
         className
       )}
       href={href}
