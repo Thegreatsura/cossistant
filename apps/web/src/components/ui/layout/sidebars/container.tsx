@@ -1,7 +1,11 @@
 type Props = {
-	children: React.ReactNode;
+  children: React.ReactNode;
 };
 
 export function SidebarContainer({ children }: Props) {
-	return <div className="relative flex w-full flex-col pt-16">{children}</div>;
+  return (
+    <div className="relative flex w-full flex-col gap-2 px-2 py-2">
+      {children}
+    </div>
+  );
 }
