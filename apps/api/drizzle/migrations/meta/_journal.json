@@ -71,6 +71,13 @@
       "when": 1756572713488,
       "tag": "0009_sweet_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1757081394809,
+      "tag": "0010_violet_skullbuster",
+      "breakpoints": true
     }
   ]
 }

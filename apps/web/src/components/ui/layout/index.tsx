@@ -1,60 +1,87 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Button } from "../button";
+import Icon from "../icons";
+
+export const PageHeaderTitle = ({
+	children,
+	className,
+}: {
+	children: React.ReactNode;
+	className?: string;
+}) => {
+	return (
+		<h3 className={cn("font-medium text-base text-primary", className)}>
+			{children}
+		</h3>
+	);
+};
 
 export const PageHeader = ({
-  children,
-  className,
+	children,
+	className,
+	defaultBackPath,
 }: {
-  children: React.ReactNode;
-  className?: string;
+	children: React.ReactNode;
+	className?: string;
+	defaultBackPath?: string;
 }) => {
-  return (
-    <div
-      className={cn(
-        "absolute inset-x-0 top-0 flex h-16 w-full items-center justify-between gap-4 border-b px-2",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+	return (
+		<div
+			className={cn(
+				"absolute inset-x-0 top-0 flex h-16 w-full items-center justify-between gap-4 px-5",
+				className
+			)}
+		>
+			{defaultBackPath && (
+				<Link className="-ml-1.5" href={defaultBackPath}>
+					<Button className="px-1" size="sm" variant="ghost">
+						<Icon name="arrow-left" />
+						Back
+					</Button>
+				</Link>
+			)}
+			{children}
+		</div>
+	);
 };
 
 export const Page = ({
-  children,
-  className,
+	children,
+	className,
 }: {
-  children: React.ReactNode;
-  className?: string;
+	children: React.ReactNode;
+	className?: string;
 }) => {
-  return (
-    <div
-      className={cn(
-        "scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-500 relative flex h-full flex-1 flex-col overflow-y-auto p-6 pt-16",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+	return (
+		<div
+			className={cn(
+				"scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-500 relative flex h-full flex-1 flex-col overflow-y-auto p-4 pt-16",
+				className
+			)}
+		>
+			{children}
+		</div>
+	);
 };
 
 export const CentralContainer = ({
-  children,
-  className,
+	children,
+	className,
 }: {
-  children: React.ReactNode;
-  className?: string;
+	children: React.ReactNode;
+	className?: string;
 }) => {
-  return (
-    <div className="h-full w-full px-3 pb-3">
-      <section
-        className={cn(
-          "flex h-full max-h-full rounded-md border border-primary/10 bg-background",
-          className
-        )}
-      >
-        {children}
-      </section>
-    </div>
-  );
+	return (
+		<div className="h-[calc(100vh-4rem)] w-full px-2 pb-2">
+			<section
+				className={cn(
+					"flex h-full max-h-full rounded border border-primary/8",
+					className
+				)}
+			>
+				{children}
+			</section>
+		</div>
+	);
 };

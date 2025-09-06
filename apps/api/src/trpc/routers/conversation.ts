@@ -100,7 +100,6 @@ export const conversationRouter = createTRPCRouter({
         limit: input.limit,
         cursor: input.cursor,
         status: input.status,
-        orderBy: "createdAt", // Order by first opened as requested
       });
 
       return {

@@ -10,6 +10,7 @@ import {
 	jsonb,
 	pgEnum,
 	pgTable,
+	real,
 	text,
 	timestamp,
 	uniqueIndex,
@@ -92,6 +93,28 @@ export const visitor = pgTable(
 		name: text("name"),
 		email: text("email"),
 		metadata: jsonb("metadata"),
+		// Browser and Device Information
+		browser: varchar("browser", { length: 100 }),
+		browserVersion: varchar("browser_version", { length: 50 }),
+		os: varchar("os", { length: 100 }),
+		osVersion: varchar("os_version", { length: 50 }),
+		device: varchar("device", { length: 100 }),
+		deviceType: varchar("device_type", { length: 50 }), // desktop, mobile, tablet
+		// Location Information
+		ip: varchar("ip", { length: 45 }), // Support both IPv4 and IPv6
+		city: varchar("city", { length: 100 }),
+		region: varchar("region", { length: 100 }),
+		country: varchar("country", { length: 100 }),
+		countryCode: varchar("country_code", { length: 2 }),
+		latitude: real("latitude"),
+		longitude: real("longitude"),
+		// User Preferences
+		language: varchar("language", { length: 10 }),
+		timezone: varchar("timezone", { length: 100 }),
+		// Screen Information
+		screenResolution: varchar("screen_resolution", { length: 20 }),
+		viewport: varchar("viewport", { length: 20 }),
+		// Reference Fields
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }

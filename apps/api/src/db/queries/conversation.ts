@@ -1,11 +1,14 @@
 import type { Database } from "@api/db";
+
 import { conversation, type MessageSelect, message } from "@api/db/schema";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
+
 import {
   ConversationStatus,
   MessageType,
   MessageVisibility,
 } from "@cossistant/types";
+
 import { and, asc, count, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 
 export async function upsertConversation(
@@ -192,6 +195,41 @@ export async function getConversationById(
   };
 }
 
+async function fetchLastMessagesForConversations(
+  db: Database,
+  organizationId: string,
+  conversationIds: string[]
+): Promise<Record<string, MessageSelect>> {
+  const lastMessagesMap: Record<string, MessageSelect> = {};
+
+  if (conversationIds.length === 0) {
+    return lastMessagesMap;
+  }
+
+  const messages = await db
+    .select()
+    .from(message)
+    .where(
+      and(
+        eq(message.organizationId, organizationId),
+        inArray(message.conversationId, conversationIds),
+        eq(message.visibility, MessageVisibility.PUBLIC),
+        eq(message.type, MessageType.TEXT),
+        isNull(message.deletedAt)
+      )
+    )
+    .orderBy(desc(message.createdAt));
+
+  // Group messages by conversation and take the first (latest) one for each
+  for (const msg of messages) {
+    if (!lastMessagesMap[msg.conversationId]) {
+      lastMessagesMap[msg.conversationId] = msg;
+    }
+  }
+
+  return lastMessagesMap;
+}
+
 export async function listConversationsByWebsite(
   db: Database,
   params: {
@@ -226,15 +264,15 @@ export async function listConversationsByWebsite(
       .limit(1);
 
     if (cursorConversation) {
-      whereConditions.push(
+      const orderColumn =
         orderBy === "createdAt"
-          ? gt(conversation.createdAt, cursorConversation.createdAt)
-          : gt(conversation.updatedAt, cursorConversation.updatedAt)
-      );
+          ? conversation.createdAt
+          : conversation.updatedAt;
+      whereConditions.push(gt(orderColumn, cursorConversation[orderBy]));
     }
   }
 
-  // Get paginated conversations ordered by createdAt (first opened)
+  // Get paginated conversations
   const conversations = await db
     .select()
     .from(conversation)
@@ -249,37 +287,15 @@ export async function listConversationsByWebsite(
     nextCursor = nextItem?.id ?? null;
   }
 
-  // Get conversation IDs for fetching last messages
+  // Fetch last messages
   const conversationIds = conversations.map((c) => c.id);
+  const lastMessagesMap = await fetchLastMessagesForConversations(
+    db,
+    params.organizationId,
+    conversationIds
+  );
 
-  // Fetch last messages for each conversation if there are any conversations
-  const lastMessagesMap: Record<string, MessageSelect> = {};
-
-  if (conversationIds.length > 0) {
-    // Get all messages for the conversations and group by conversation ID
-    const messages = await db
-      .select()
-      .from(message)
-      .where(
-        and(
-          eq(message.organizationId, params.organizationId),
-          inArray(message.conversationId, conversationIds),
-          eq(message.visibility, MessageVisibility.PUBLIC),
-          eq(message.type, MessageType.TEXT),
-          isNull(message.deletedAt)
-        )
-      )
-      .orderBy(desc(message.createdAt));
-
-    // Group messages by conversation and take the first (latest) one for each
-    for (const msg of messages) {
-      if (!lastMessagesMap[msg.conversationId]) {
-        lastMessagesMap[msg.conversationId] = msg;
-      }
-    }
-  }
-
-  // Add lastMessage to each conversation and create lastMessagePreview
+  // Add lastMessage details to each conversation
   const conversationsWithDetails = conversations.map((conv) => {
     const lastMsg = lastMessagesMap[conv.id];
     return {

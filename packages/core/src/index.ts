@@ -12,6 +12,7 @@ export { CossistantRestClient } from "./rest-client";
 export { CossistantAPIError } from "./types";
 // Utility exports
 export { generateConversationId, generateMessageId } from "./utils";
+export { collectVisitorData, type VisitorData } from "./visitor-data";
 export {
 	clearAllVisitorIds,
 	clearVisitorId,

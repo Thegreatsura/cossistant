@@ -1,5 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { APIKeyType, WebsiteInstallationTarget } from "../enums";
+import { publicVisitorResponseSchema, visitorResponseSchema } from "./visitor";
 
 /**
  * Website creation request schema
@@ -192,33 +193,10 @@ export const publicWebsiteResponseSchema = z.object({
 	}),
 	availableHumanAgents: z.array(availableHumanAgentSchema),
 	availableAIAgents: z.array(AvailableAIAgentSchema),
-	visitor: z
-		.object({
-			id: z.string().ulid().openapi({
-				description: "The visitor's unique identifier (ULID).",
-				example: "01JG000000000000000000000",
-			}),
-			name: z.string().nullable().openapi({
-				description: "The visitor's name, if provided or identified.",
-				example: "John Doe",
-			}),
-			email: z.string().email().nullable().openapi({
-				description: "The visitor's email address, if provided or identified.",
-				example: "john.doe@example.com",
-			}),
-			createdAt: z.string().datetime().openapi({
-				description: "When the visitor was first seen.",
-				example: "2021-01-01T00:00:00.000Z",
-			}),
-			lastSeenAt: z.string().datetime().openapi({
-				description: "When the visitor was last connected or active.",
-				example: "2021-01-01T00:00:00.000Z",
-			}),
-		})
-		.openapi({
-			description:
-				"The visitor information. Either existing visitor data or newly created visitor.",
-		}),
+	visitor: publicVisitorResponseSchema.openapi({
+		description:
+			"The visitor information. Either existing visitor data or newly created visitor.",
+	}),
 });
 
 export type PublicWebsiteResponse = z.infer<typeof publicWebsiteResponseSchema>;

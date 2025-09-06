@@ -1,6 +1,6 @@
 import { upsertVisitor } from "@api/db/queries";
 import { member } from "@api/db/schema/auth";
-import { pubsub } from "@api/lib/pubsub";
+
 import {
 	safelyExtractRequestData,
 	validateResponse,
@@ -177,10 +177,7 @@ websiteRouter.openapi(
 					availableAIAgents: [],
 					visitor: {
 						id: visitor.id,
-						createdAt: visitor.createdAt.toISOString(),
-						lastSeenAt:
-							visitor.lastSeenAt?.toISOString() ??
-							visitor.createdAt.toISOString(),
+						externalId: visitor.externalId,
 						name: visitor.name,
 						email: visitor.email,
 					},

@@ -58,6 +58,7 @@ export default Support;
 export { useSupportConfig } from "./context/config";
 export type { WebSocketContextValue } from "./context/websocket";
 export { useWebSocket, WebSocketProvider } from "./context/websocket";
+export { useVisitor } from "./hooks/use-visitor";
 
 // Export the store for direct access if needed
 export { useSupportStore } from "./store";

@@ -1,32 +1,26 @@
-import { Page } from "@/components/ui/layout";
-import { NavigationSidebar } from "@/components/ui/layout/sidebars/navigation/navigation-sidebar";
-import { TextEffect } from "@/components/ui/text-effect";
+import { ConversationsList } from "@/components/conversations-list";
+import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 
 interface DashboardPageProps {
-  params: Promise<{
-    websiteSlug: string;
-  }>;
+	params: Promise<{
+		websiteSlug: string;
+	}>;
 }
 
 export default async function DashboardPage({ params }: DashboardPageProps) {
-  const { websiteSlug } = await params;
-  const { user, website } = await ensureWebsiteAccess(websiteSlug);
+	const { websiteSlug } = await params;
 
-  return (
-    <>
-      <NavigationSidebar />
-      <Page className="flex items-center justify-center">
-        <div className="flex flex-col gap-2 font-medium">
-          <TextEffect className="font-normal text-3xl">
-            Welcome {user.name?.split(" ")[0] || "there"},
-          </TextEffect>
-          <p className="text-base text-primary/70">
-            Here&apos;s what&apos;s happening with{" "}
-            {website?.name || "your website"}.
-          </p>
-        </div>
-      </Page>
-    </>
-  );
+	await ensureWebsiteAccess(websiteSlug);
+
+	return (
+		<>
+			<Page className="flex items-center justify-center px-2">
+				<PageHeader>
+					<PageHeaderTitle>Inbox</PageHeaderTitle>
+				</PageHeader>
+				<ConversationsList />
+			</Page>
+		</>
+	);
 }

@@ -4,3 +4,4 @@ export {
 	type UseGroupedMessagesProps,
 	useGroupedMessages,
 } from "./use-grouped-messages";
+export { useVisitor } from "./use-visitor";
