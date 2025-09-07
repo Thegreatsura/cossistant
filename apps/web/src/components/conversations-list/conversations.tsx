@@ -1,11 +1,8 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
-import { useTRPC } from "@/lib/trpc/client";
-import { useLocalConversations } from "@/sync/hooks/useLocalConversations";
+import { useLocalConversations } from "@/sync/hooks/useLocalData";
 
 type ConversationsListProps = {
   websiteId: string;
@@ -16,7 +13,7 @@ type ConversationsListProps = {
 export function Conversations({ websiteSlug }: ConversationsListProps) {
   const pathname = usePathname();
 
-  const { conversations } = useLocalConversations({
+  const { data: conversations } = useLocalConversations({
     websiteSlug,
   });
 

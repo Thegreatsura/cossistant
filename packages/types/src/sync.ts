@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { ConversationPriority, ConversationStatus } from "./enums";
+import {
+	ConversationPriority,
+	ConversationStatus,
+	MessageType,
+	MessageVisibility,
+} from "./enums";
 
 export const syncConversationSchema = z.object({
 	id: z.string(),
@@ -22,8 +27,31 @@ export const syncConversationSchema = z.object({
 	lastMessageAt: z.date().nullable(),
 });
 
-export const syncResponseSchema = z.object({
+export const syncMessageSchema = z.object({
+	id: z.string(),
+	bodyMd: z.string(),
+	type: z.nativeEnum(MessageType),
+	userId: z.string().nullable(),
+	visitorId: z.string().nullable(),
+	organizationId: z.string(),
+	conversationId: z.string(),
+	parentMessageId: z.string().nullable(),
+	aiAgentId: z.string().nullable(),
+	modelUsed: z.string().nullable(),
+	visibility: z.nativeEnum(MessageVisibility),
+	createdAt: z.date(),
+	updatedAt: z.date(),
+	deletedAt: z.date().nullable(),
+});
+
+export const syncConversationsResponseSchema = z.object({
 	conversations: z.array(syncConversationSchema),
+	cursor: z.string().datetime().nullable(),
+	hasMore: z.boolean(),
+});
+
+export const syncMessagesResponseSchema = z.object({
+	messages: z.array(syncMessageSchema),
 	cursor: z.string().datetime().nullable(),
 	hasMore: z.boolean(),
 });
@@ -35,5 +63,9 @@ export const syncRequestSchema = z.object({
 });
 
 export type SyncConversation = z.infer<typeof syncConversationSchema>;
-export type SyncResponse = z.infer<typeof syncResponseSchema>;
+export type SyncMessage = z.infer<typeof syncMessageSchema>;
+export type SyncConversationsResponse = z.infer<
+	typeof syncConversationsResponseSchema
+>;
+export type SyncMessagesResponse = z.infer<typeof syncMessagesResponseSchema>;
 export type SyncRequest = z.infer<typeof syncRequestSchema>;

@@ -1,13 +1,17 @@
 export type {
   SyncConversation,
+  SyncConversationsResponse,
+  SyncMessage,
+  SyncMessagesResponse,
   SyncRequest,
-  SyncResponse,
 } from "@cossistant/types";
+
 export {
   clearDatabase,
-  getCursorFromDatabase,
+  getCursor,
   getDatabase,
   saveConversations,
+  saveMessages,
 } from "./db";
-export { useLocalConversations } from "./hooks/useLocalConversations";
-export { useSyncData } from "./hooks/useSyncData";
+export { useLocalConversations, useLocalMessages } from "./hooks/useLocalData";
+export { useSync } from "./hooks/useSync";

@@ -1,6 +1,10 @@
 import { getWebsiteByIdWithAccess } from "@api/db/queries/website";
 import { conversation, message } from "@api/db/schema";
-import { syncRequestSchema, syncResponseSchema } from "@cossistant/types";
+import {
+	syncRequestSchema,
+	syncConversationsResponseSchema,
+	syncMessagesResponseSchema,
+} from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../init";
@@ -8,7 +12,7 @@ import { createTRPCRouter, protectedProcedure } from "../init";
 export const syncRouter = createTRPCRouter({
   conversations: protectedProcedure
     .input(syncRequestSchema)
-    .output(syncResponseSchema)
+    .output(syncConversationsResponseSchema)
     .query(async ({ ctx: { db, user }, input }) => {
       const websiteData = await getWebsiteByIdWithAccess(db, {
         userId: user.id,
@@ -93,6 +97,87 @@ export const syncRouter = createTRPCRouter({
 
       return {
         conversations: syncConversations,
+        cursor: nextCursor,
+        hasMore,
+      };
+    }),
+
+  messages: protectedProcedure
+    .input(syncRequestSchema)
+    .output(syncMessagesResponseSchema)
+    .query(async ({ ctx: { db, user }, input }) => {
+      const websiteData = await getWebsiteByIdWithAccess(db, {
+        userId: user.id,
+        websiteId: input.websiteId,
+      });
+
+      if (!websiteData) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Website not found or access denied",
+        });
+      }
+
+      // First, get all conversation IDs for this website
+      const websiteConversations = await db
+        .select({ id: conversation.id })
+        .from(conversation)
+        .where(
+          and(
+            eq(conversation.organizationId, websiteData.organizationId),
+            eq(conversation.websiteId, input.websiteId),
+            isNull(conversation.deletedAt)
+          )
+        );
+
+      const conversationIds = websiteConversations.map((c) => c.id);
+
+      // If no conversations, return empty
+      if (conversationIds.length === 0) {
+        return {
+          messages: [],
+          cursor: null,
+          hasMore: false,
+        };
+      }
+
+      // Build where conditions for fetching messages
+      const whereConditions = [
+        eq(message.organizationId, websiteData.organizationId),
+        inArray(message.conversationId, conversationIds),
+        isNull(message.deletedAt),
+      ];
+
+      // If cursor is provided, fetch only messages updated after that timestamp
+      if (input.cursor) {
+        const cursorDate = new Date(input.cursor);
+        whereConditions.push(gt(message.updatedAt, cursorDate));
+      }
+
+      // Fetch messages with pagination
+      const limit = input.limit ?? 50;
+      const messages = await db
+        .select()
+        .from(message)
+        .where(and(...whereConditions))
+        .orderBy(message.updatedAt)
+        .limit(limit + 1);
+
+      // Check if there's more data
+      let hasMore = false;
+      let nextCursor: string | null = null;
+
+      if (messages.length > limit) {
+        hasMore = true;
+        messages.pop(); // Remove the extra item
+        const lastMessage = messages.at(-1);
+        if (lastMessage) {
+          nextCursor = lastMessage.updatedAt.toISOString();
+        }
+      }
+
+      return {
+        messages,
         cursor: nextCursor,
         hasMore,
       };

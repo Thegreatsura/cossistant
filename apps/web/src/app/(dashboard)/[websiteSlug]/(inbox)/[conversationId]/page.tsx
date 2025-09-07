@@ -1,5 +1,4 @@
 import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
-import { NavigationSidebar } from "@/components/ui/layout/sidebars/navigation/inbox-navigation-sidebar";
 import { TextEffect } from "@/components/ui/text-effect";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 

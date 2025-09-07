@@ -37,14 +37,14 @@ export function SidebarItem({
       {iconName && (
         <span
           className={cn(
-            "flex size-6 shrink-0 items-center justify-center opacity-60 group-hover/btn:opacity-80",
+            "flex size-6 shrink-0 items-center justify-center opacity-40 group-hover/btn:opacity-80",
             {
-              "opacity-100 group-hover/btn:opacity-100": active,
+              "opacity-90 group-hover/btn:opacity-80": active,
             }
           )}
         >
           <Icon
-            className="size-5"
+            className="size-4"
             filledOnHover={!active}
             name={iconName}
             variant={active ? "filled" : "default"}

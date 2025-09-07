@@ -18,13 +18,28 @@ export function InboxNavigationSidebar() {
             pathname.includes(`/${website.slug}`) && !pathname.endsWith("/")
           }
           href={`/${website.slug}`}
-          iconName="inbox-zero"
+          iconName="conversation"
         >
           Inbox
         </SidebarItem>
-        <SidebarItem href={`/${website.slug}/resolved`}>Resolved</SidebarItem>
-        <SidebarItem href={`/${website.slug}/spam`}>Spam</SidebarItem>
-        <SidebarItem href={`/${website.slug}/trash`}>Trash</SidebarItem>
+        <SidebarItem
+          href={`/${website.slug}/resolved`}
+          iconName="conversation-resolved"
+        >
+          Resolved
+        </SidebarItem>
+        <SidebarItem
+          href={`/${website.slug}/spam`}
+          iconName="conversation-spam"
+        >
+          Spam
+        </SidebarItem>
+        <SidebarItem
+          href={`/${website.slug}/trash`}
+          iconName="conversation-trash"
+        >
+          Trash
+        </SidebarItem>
       </SidebarContainer>
     </ResizableSidebar>
   );

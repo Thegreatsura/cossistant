@@ -3,7 +3,7 @@ import type { SyncConversation } from "@cossistant/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc/client";
-import { getCursorFromDatabase, saveConversations } from "../db";
+import { getCursor, saveConversations } from "../db";
 
 interface UseSyncDataOptions {
   websiteId: string;
@@ -133,7 +133,7 @@ export function useSyncData({
 
     try {
       // Get the latest cursor from the local database
-      const cursor = await getCursorFromDatabase(websiteSlug);
+      const cursor = await getCursor(websiteSlug, "conversations");
 
       // Execute the sync loop
       const allConversations = await executeSyncLoop(cursor);
