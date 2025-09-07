@@ -1,4 +1,5 @@
 import { listConversationsByWebsite } from "@api/db/queries/conversation";
+import { getWebsiteByIdWithAccess } from "@api/db/queries/website";
 import { ConversationStatus } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -43,53 +44,15 @@ export const conversationRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx: { db, user }, input }) => {
-      // First get the website to verify it exists and get its organizationId
-      const [websiteData] = await db.query.website.findMany({
-        where: (website, { eq, and, isNull }) =>
-          and(eq(website.id, input.websiteId), isNull(website.deletedAt)),
-        limit: 1,
+      const websiteData = await getWebsiteByIdWithAccess(db, {
+        userId: user.id,
+        websiteId: input.websiteId,
       });
 
       if (!websiteData) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Website not found",
-        });
-      }
-
-      // Check if user has access to this website (either org admin/owner or team member)
-      const hasOrgAccess = await db.query.member.findFirst({
-        where: (member, { eq, and, inArray }) =>
-          and(
-            eq(member.userId, user.id),
-            eq(member.organizationId, websiteData.organizationId),
-            inArray(member.role, ["owner", "admin"])
-          ),
-      });
-
-      if (hasOrgAccess) {
-        // User has org-level access, proceed
-      } else if (websiteData.teamId) {
-        // Check team-level access
-        const teamAccess = await db.query.teamMember.findFirst({
-          where: (teamMember, { eq, and }) =>
-            and(
-              eq(teamMember.userId, user.id),
-              eq(teamMember.teamId, websiteData.teamId)
-            ),
-        });
-
-        if (!teamAccess) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Access denied to this website",
-          });
-        }
-      } else {
-        // No org access and no team to check
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Access denied to this website",
+          message: "Website not found or access denied",
         });
       }
 

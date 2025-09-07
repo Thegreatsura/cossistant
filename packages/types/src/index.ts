@@ -1,6 +1,7 @@
 export * from "./api";
 export * from "./enums";
 export * from "./realtime-events";
+export * from "./sync";
 export type { Conversation, ConversationEvent, Message } from "./schemas";
 
 export {

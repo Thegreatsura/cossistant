@@ -24,7 +24,6 @@ interface ConversationItemProps {
   href: string;
   avatar?: string;
   name: string;
-  lastMessage: string;
   time?: Date;
   unread?: boolean;
   active?: boolean;
@@ -36,7 +35,6 @@ export function ConversationItem({
   href,
   avatar,
   name,
-  lastMessage,
   time,
   unread = false,
   active = false,
@@ -82,7 +80,7 @@ export function ConversationItem({
             unread && "font-medium text-foreground"
           )}
         >
-          {lastMessage}
+          [TODO]: add last message from local database
         </p>
       </div>
       {time && (
