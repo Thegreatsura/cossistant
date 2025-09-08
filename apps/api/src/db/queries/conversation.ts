@@ -1,6 +1,11 @@
 import type { Database } from "@api/db";
 
-import { conversation, type MessageSelect, message } from "@api/db/schema";
+import {
+  conversation,
+  type MessageSelect,
+  message,
+  visitor,
+} from "@api/db/schema";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 
 import {
@@ -9,7 +14,17 @@ import {
   MessageVisibility,
 } from "@cossistant/types";
 
-import { and, asc, count, desc, eq, gt, inArray, isNull } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  lt,
+} from "drizzle-orm";
 
 export async function upsertConversation(
   db: Database,
@@ -230,32 +245,26 @@ async function fetchLastMessagesForConversations(
   return lastMessagesMap;
 }
 
-export async function listConversationsByWebsite(
+export async function listConversationsHeaders(
   db: Database,
   params: {
     organizationId: string;
     websiteId: string;
     limit?: number;
+    // cursor is the updatedAt reference
     cursor?: string | null;
-    status?: ConversationStatus;
     orderBy?: "createdAt" | "updatedAt";
   }
 ) {
   const limit = params.limit ?? 50;
-  const orderBy = params.orderBy ?? "createdAt";
+  const orderBy = params.orderBy ?? "updatedAt";
 
-  // Build where conditions
   const whereConditions = [
     eq(conversation.organizationId, params.organizationId),
     eq(conversation.websiteId, params.websiteId),
-    isNull(conversation.deletedAt),
   ];
 
-  if (params.status) {
-    whereConditions.push(eq(conversation.status, params.status));
-  }
-
-  // Handle cursor pagination
+  // Handle cursor pagination - using ID-based cursor with timestamp ordering
   if (params.cursor) {
     const [cursorConversation] = await db
       .select()
@@ -264,31 +273,36 @@ export async function listConversationsByWebsite(
       .limit(1);
 
     if (cursorConversation) {
+      // For cursor-based pagination with timestamp ordering, we need to ensure we get items
+      // that come after the cursor item based on the orderBy field
       const orderColumn =
         orderBy === "createdAt"
           ? conversation.createdAt
           : conversation.updatedAt;
-      whereConditions.push(gt(orderColumn, cursorConversation[orderBy]));
+      whereConditions.push(lt(orderColumn, cursorConversation[orderBy]));
     }
   }
 
   // Get paginated conversations
-  const conversations = await db
+  const res = await db
     .select()
     .from(conversation)
     .where(and(...whereConditions))
-    .orderBy(asc(conversation[orderBy]))
+    .orderBy(desc(conversation[orderBy]))
+    .innerJoin(visitor, eq(conversation.visitorId, visitor.id))
     .limit(limit + 1);
 
   // Check if there's a next page
   let nextCursor: string | null = null;
-  if (conversations.length > limit) {
-    const nextItem = conversations.pop();
-    nextCursor = nextItem?.id ?? null;
+
+  if (res.length > limit) {
+    const nextItem = res.pop();
+    nextCursor = nextItem?.conversation.id ?? null;
   }
 
   // Fetch last messages
-  const conversationIds = conversations.map((c) => c.id);
+  const conversationIds = res.map((r) => r.conversation.id);
+
   const lastMessagesMap = await fetchLastMessagesForConversations(
     db,
     params.organizationId,
@@ -296,12 +310,20 @@ export async function listConversationsByWebsite(
   );
 
   // Add lastMessage details to each conversation
-  const conversationsWithDetails = conversations.map((conv) => {
-    const lastMsg = lastMessagesMap[conv.id];
+  const conversationsWithDetails = res.map((r) => {
+    const lastMsg = lastMessagesMap[r.conversation.id];
+
     return {
-      ...conv,
+      ...r.conversation,
+      visitor: {
+        id: r.visitor.id,
+        externalId: r.visitor.externalId,
+        name: r.visitor.name,
+        email: r.visitor.email,
+        avatar: r.visitor.image,
+      },
       lastMessageAt: lastMsg?.createdAt ?? null,
-      lastMessagePreview: lastMsg ? lastMsg.bodyMd.slice(0, 100) : null,
+      lastMessagePreview: lastMsg ? lastMsg : null,
     };
   });
 

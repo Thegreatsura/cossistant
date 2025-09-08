@@ -9,7 +9,6 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/docs/*": ["./src/app/(docs)/*"],
-      "@/sync/*": ["./src/sync/*"],
       "@/docs-source/*": ["./.source/*"],
       "@api/*": ["../api/src/*"],
       "@cossistant/react/*": ["../../packages/react/src/*"],

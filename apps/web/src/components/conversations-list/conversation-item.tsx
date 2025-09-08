@@ -1,5 +1,6 @@
 "use client";
 
+import type { Message } from "@cossistant/types";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ interface ConversationItemProps {
   active?: boolean;
   online?: boolean;
   className?: string;
+  lastMessage: Message | null;
 }
 
 export function ConversationItem({
@@ -40,6 +42,7 @@ export function ConversationItem({
   active = false,
   online = false,
   className,
+  lastMessage,
 }: ConversationItemProps) {
   return (
     <Link
@@ -80,7 +83,7 @@ export function ConversationItem({
             unread && "font-medium text-foreground"
           )}
         >
-          [TODO]: add last message from local database
+          {lastMessage?.bodyMd}
         </p>
       </div>
       {time && (

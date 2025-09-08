@@ -1,8 +1,9 @@
 "use client";
 
+import type { Conversation } from "@cossistant/types";
 import { usePathname } from "next/navigation";
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
-import { useLocalConversations } from "@/sync/hooks/useLocalData";
+import { useConversationHeaders } from "@/data/use-conversation-headers";
 
 type ConversationsListProps = {
   websiteId: string;
@@ -10,12 +11,13 @@ type ConversationsListProps = {
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 };
 
-export function Conversations({ websiteSlug }: ConversationsListProps) {
+export function Conversations({
+  websiteSlug,
+  websiteId,
+}: ConversationsListProps) {
   const pathname = usePathname();
 
-  const { data: conversations } = useLocalConversations({
-    websiteSlug,
-  });
+  const { conversations } = useConversationHeaders(websiteId);
 
   return (
     <div className="flex flex-col gap-1">
@@ -27,6 +29,7 @@ export function Conversations({ websiteSlug }: ConversationsListProps) {
             active={active}
             href={href}
             key={c.id}
+            lastMessage={c.lastMessagePreview}
             name={c.title ?? `Conversation ${c.id}`}
             online={false}
             time={c.updatedAt}

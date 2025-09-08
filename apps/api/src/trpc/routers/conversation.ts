@@ -1,18 +1,17 @@
-import { listConversationsByWebsite } from "@api/db/queries/conversation";
-import { getWebsiteByIdWithAccess } from "@api/db/queries/website";
-import { ConversationStatus } from "@cossistant/types";
+import { listConversationsHeaders } from "@api/db/queries/conversation";
+import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { messageSchema, visitorProfileSchema } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
 export const conversationRouter = createTRPCRouter({
-  listByWebsite: protectedProcedure
+  listConversationsHeaders: protectedProcedure
     .input(
       z.object({
-        websiteId: z.string().ulid(),
-        limit: z.number().int().min(1).max(100).optional(),
+        websiteSlug: z.string(),
+        limit: z.number().int().min(1).max(500).optional(),
         cursor: z.string().nullable().optional(),
-        status: z.nativeEnum(ConversationStatus).optional(),
       })
     )
     .output(
@@ -24,6 +23,7 @@ export const conversationRouter = createTRPCRouter({
             priority: z.string(),
             organizationId: z.string(),
             visitorId: z.string(),
+            visitor: visitorProfileSchema,
             websiteId: z.string(),
             channel: z.string(),
             title: z.string().nullable(),
@@ -37,16 +37,16 @@ export const conversationRouter = createTRPCRouter({
             updatedAt: z.date(),
             deletedAt: z.date().nullable(),
             lastMessageAt: z.date().nullable(),
-            lastMessagePreview: z.string().nullable(),
+            lastMessagePreview: messageSchema.nullable(),
           })
         ),
         nextCursor: z.string().nullable(),
       })
     )
     .query(async ({ ctx: { db, user }, input }) => {
-      const websiteData = await getWebsiteByIdWithAccess(db, {
+      const websiteData = await getWebsiteBySlugWithAccess(db, {
         userId: user.id,
-        websiteId: input.websiteId,
+        websiteSlug: input.websiteSlug,
       });
 
       if (!websiteData) {
@@ -57,12 +57,11 @@ export const conversationRouter = createTRPCRouter({
       }
 
       // Fetch conversations for the website
-      const result = await listConversationsByWebsite(db, {
+      const result = await listConversationsHeaders(db, {
         organizationId: websiteData.organizationId,
-        websiteId: input.websiteId,
+        websiteId: websiteData.id,
         limit: input.limit,
         cursor: input.cursor,
-        status: input.status,
       });
 
       return {
