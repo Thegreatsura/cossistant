@@ -16,9 +16,12 @@ export function useConversationHeaders(
   const queryClient = useQueryClient();
 
   const query = useInfiniteQuery({
-    queryKey: trpc.conversation.listConversationsHeaders.queryOptions({
-      websiteSlug,
-    }).queryKey,
+    queryKey: [
+      ...trpc.conversation.listConversationsHeaders.queryOptions({
+        websiteSlug,
+      }).queryKey,
+      { type: "infinite" },
+    ],
     queryFn: async ({ pageParam }) => {
       const response = await queryClient.fetchQuery(
         trpc.conversation.listConversationsHeaders.queryOptions({
@@ -33,6 +36,7 @@ export function useConversationHeaders(
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: null as string | null,
     enabled: options?.enabled ?? true,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
 
   const conversations = query.data?.pages.flatMap((page) => page.items) ?? [];

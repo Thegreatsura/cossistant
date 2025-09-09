@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { CentralContainer } from "@/components/ui/layout";
 import { NavigationTopbar } from "@/components/ui/layout/navigation-topbar";
 import { WebsiteProvider } from "@/contexts/dashboard/website-context";
-import { HydrateClient, prefetch, trpc } from "@/lib/trpc/server";
+import {
+  getQueryClient,
+  HydrateClient,
+  prefetch,
+  trpc,
+} from "@/lib/trpc/server";
 import { DashboardProviders } from "./providers";
 
 interface LayoutProps {
@@ -14,6 +19,7 @@ interface LayoutProps {
 
 export default async function Layout({ children, params }: LayoutProps) {
   const { websiteSlug } = await params;
+  const queryClient = getQueryClient();
 
   await Promise.all([
     prefetch(
@@ -32,9 +38,28 @@ export default async function Layout({ children, params }: LayoutProps) {
         redirect("/select");
       }
     ),
-    prefetch(
-      trpc.conversation.listConversationsHeaders.queryOptions({ websiteSlug })
-    ),
+    // Prefetch the conversation headers as an infinite query
+    queryClient.prefetchInfiniteQuery({
+      queryKey: [
+        ...trpc.conversation.listConversationsHeaders.queryOptions({
+          websiteSlug,
+        }).queryKey,
+        { type: "infinite" },
+      ],
+      queryFn: async ({ pageParam }) => {
+        const response = await queryClient.fetchQuery(
+          trpc.conversation.listConversationsHeaders.queryOptions({
+            websiteSlug,
+            limit: 500,
+            cursor: pageParam ?? null,
+          })
+        );
+        return response;
+      },
+      initialPageParam: null as string | null,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      pages: 1, // Prefetch the first page
+    }),
   ]);
 
   return (

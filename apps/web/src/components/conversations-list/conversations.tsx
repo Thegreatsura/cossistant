@@ -6,18 +6,14 @@ import { ConversationItem } from "@/components/conversations-list/conversation-i
 import { useConversationHeaders } from "@/data/use-conversation-headers";
 
 type ConversationsListProps = {
-  websiteId: string;
   websiteSlug: string;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 };
 
-export function Conversations({
-  websiteSlug,
-  websiteId,
-}: ConversationsListProps) {
+export function Conversations({ websiteSlug }: ConversationsListProps) {
   const pathname = usePathname();
 
-  const { conversations } = useConversationHeaders(websiteId);
+  const { conversations } = useConversationHeaders(websiteSlug);
 
   return (
     <div className="flex flex-col gap-1">
