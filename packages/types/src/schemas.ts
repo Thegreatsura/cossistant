@@ -22,6 +22,20 @@ export const messageSchema = z.object({
 
 export type Message = z.infer<typeof messageSchema>;
 
+export const viewSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	description: z.string().nullable(),
+	prompt: z.string().nullable(),
+	organizationId: z.string(),
+	websiteId: z.string(),
+	createdAt: z.date(),
+	updatedAt: z.date(),
+	deletedAt: z.date().nullable(),
+});
+
+export type InboxView = z.infer<typeof viewSchema>;
+
 export const conversationSchema = z.object({
 	id: z.string(),
 	title: z.string().optional(),
@@ -33,8 +47,7 @@ export const conversationSchema = z.object({
 		.enum([
 			ConversationStatus.OPEN,
 			ConversationStatus.RESOLVED,
-			ConversationStatus.BLOCKED,
-			ConversationStatus.PENDING,
+			ConversationStatus.SPAM,
 		])
 		.default(ConversationStatus.OPEN),
 	lastMessage: messageSchema.optional(),

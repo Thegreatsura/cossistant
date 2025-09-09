@@ -17,8 +17,7 @@ export type SenderType = (typeof SenderType)[keyof typeof SenderType];
 export const ConversationStatus = {
 	OPEN: "open",
 	RESOLVED: "resolved",
-	BLOCKED: "blocked",
-	PENDING: "pending",
+	SPAM: "spam",
 } as const;
 
 export type ConversationStatus =
@@ -56,6 +55,15 @@ export const ConversationParticipationStatus = {
 	LEFT: "left",
 	DECLINED: "declined",
 } as const;
+
+export const ConversationSentiment = {
+	POSITIVE: "positive",
+	NEGATIVE: "negative",
+	NEUTRAL: "neutral",
+} as const;
+
+export type ConversationSentiment =
+	(typeof ConversationSentiment)[keyof typeof ConversationSentiment];
 
 export type ConversationParticipationStatus =
 	(typeof ConversationParticipationStatus)[keyof typeof ConversationParticipationStatus];

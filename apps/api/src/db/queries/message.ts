@@ -13,10 +13,7 @@ export async function sendMessages(
 		messages: CreateMessageSchema[];
 	}
 ) {
-	// Make sure we have IDs for all messages
 	const data = params.messages.map((m) => {
-		// Validate that IDs are either null or valid ULIDs
-		// Don't allow placeholder IDs like "default-team-0"
 		const userId =
 			m.userId && !m.userId.startsWith("default-") ? m.userId : null;
 		const aiAgentId =
@@ -29,6 +26,7 @@ export async function sendMessages(
 			bodyMd: m.bodyMd || "",
 			type: m.type,
 			userId,
+			websiteId: params.websiteId,
 			visitorId,
 			organizationId: params.organizationId,
 			conversationId: params.conversationId,
@@ -40,7 +38,6 @@ export async function sendMessages(
 		return messageData;
 	});
 
-	// Insert messages
 	const insertedMessages = await db.insert(message).values(data).returning();
 
 	// TODO: Broadcast messages events to all connected clients
