@@ -1,19 +1,49 @@
 "use client";
 
-import { useRef } from "react";
+import type { ConversationStatus } from "@cossistant/types";
+import type { InboxView } from "@cossistant/types/schemas";
+import { useMemo } from "react";
 import { useWebsite } from "@/contexts/dashboard/website-context";
+import { useConversationHeaders } from "@/data/use-conversation-headers";
+import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
 import { Conversations } from "./conversations";
 
-export function ConversationsList() {
-	const scrollRef = useRef<HTMLDivElement | null>(null);
-	const website = useWebsite();
+type Props = {
+  basePath: string;
+  selectedConversationStatus: ConversationStatus | "archived" | null;
+  selectedView: InboxView | null;
+};
 
-	return (
-		<div className="h-full w-full py-2" ref={scrollRef}>
-			<Conversations
-				scrollContainerRef={scrollRef as React.RefObject<HTMLDivElement | null>}
-				websiteSlug={website.slug}
-			/>
-		</div>
-	);
+export function ConversationsList({
+  basePath,
+  selectedConversationStatus,
+  selectedView,
+}: Props) {
+  const website = useWebsite();
+  const { conversations } = useConversationHeaders(website.slug);
+
+  const filteredConversations = useMemo(() => {
+    return conversations.filter(
+      (conversation) => conversation.status === "open"
+    );
+  }, [conversations]);
+
+  return (
+    <Page className="px-3">
+      <PageHeader>
+        <PageHeaderTitle className="capitalize">
+          {selectedConversationStatus || "Inbox"}
+        </PageHeaderTitle>
+      </PageHeader>
+      <div className="h-full w-full py-2">
+        {conversations.length === 0 ? (
+          <div className="mx-1 mt-4 flex flex-col gap-1 rounded border border-primary/10 border-dashed p-2 text-center">
+            <p className="text-primary/40 text-xs">No conversations yet</p>
+          </div>
+        ) : (
+          <Conversations basePath={basePath} conversations={conversations} />
+        )}
+      </div>
+    </Page>
+  );
 }

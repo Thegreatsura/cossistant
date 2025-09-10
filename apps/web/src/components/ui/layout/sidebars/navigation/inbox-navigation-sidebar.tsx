@@ -7,40 +7,61 @@ import { ResizableSidebar } from "../resizable-sidebar";
 import { SidebarItem } from "../sidebar-item";
 
 export function InboxNavigationSidebar() {
-	const website = useWebsite();
-	const pathname = usePathname();
+  const website = useWebsite();
+  const pathname = usePathname();
 
-	return (
-		<ResizableSidebar position="left">
-			<SidebarContainer>
-				<SidebarItem
-					active={
-						pathname.includes(`/${website.slug}`) && !pathname.endsWith("/")
-					}
-					href={`/${website.slug}`}
-					iconName="conversation"
-				>
-					Inbox
-				</SidebarItem>
-				<SidebarItem
-					href={`/${website.slug}/resolved`}
-					iconName="conversation-resolved"
-				>
-					Resolved
-				</SidebarItem>
-				<SidebarItem
-					href={`/${website.slug}/spam`}
-					iconName="conversation-spam"
-				>
-					Spam
-				</SidebarItem>
-				<SidebarItem
-					href={`/${website.slug}/trash`}
-					iconName="conversation-trash"
-				>
-					Trash
-				</SidebarItem>
-			</SidebarContainer>
-		</ResizableSidebar>
-	);
+  const basePath = `/${website.slug}/inbox`;
+
+  // Helper to determine if a specific inbox section is active
+  const isInboxActive = (section?: "resolved" | "spam" | "archived") => {
+    const isInInboxPath = pathname.startsWith(basePath);
+
+    if (!isInInboxPath) {
+      return false;
+    }
+
+    if (section) {
+      return pathname.includes(`/${section}`);
+    }
+
+    // Main inbox is active when we're in the inbox path
+    // but NOT in resolved, spam, or archived sections
+    const excludedSections = ["/resolved", "/spam", "/archived"];
+    return !excludedSections.some((excluded) => pathname.includes(excluded));
+  };
+
+  return (
+    <ResizableSidebar position="left">
+      <SidebarContainer>
+        <SidebarItem
+          active={isInboxActive()}
+          href={`${basePath}`}
+          iconName="conversation"
+        >
+          Inbox
+        </SidebarItem>
+        <SidebarItem
+          active={isInboxActive("resolved")}
+          href={`${basePath}/resolved`}
+          iconName="conversation-resolved"
+        >
+          Resolved
+        </SidebarItem>
+        <SidebarItem
+          active={isInboxActive("spam")}
+          href={`${basePath}/spam`}
+          iconName="conversation-spam"
+        >
+          Spam
+        </SidebarItem>
+        <SidebarItem
+          active={isInboxActive("archived")}
+          href={`${basePath}/archived`}
+          iconName="archive"
+        >
+          Archived
+        </SidebarItem>
+      </SidebarContainer>
+    </ResizableSidebar>
+  );
 }

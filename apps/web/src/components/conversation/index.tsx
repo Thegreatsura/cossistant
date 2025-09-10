@@ -1,17 +1,17 @@
 "use client";
 
-import { useRef } from "react";
+import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
 
 type ConversationProps = {
-	conversationId: string;
+  conversationId: string;
 };
 
 export function Conversation({ conversationId }: ConversationProps) {
-	const scrollRef = useRef<HTMLDivElement | null>(null);
-
-	return (
-		<div className="h-full w-full py-2" ref={scrollRef}>
-			<p>Conversation {conversationId}</p>
-		</div>
-	);
+  return (
+    <Page className="py-2">
+      <PageHeader>
+        <PageHeaderTitle>Conversation {conversationId}</PageHeaderTitle>
+      </PageHeader>
+    </Page>
+  );
 }
