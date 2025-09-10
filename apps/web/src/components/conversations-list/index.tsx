@@ -3,7 +3,7 @@
 import type { ConversationStatus } from "@cossistant/types";
 import type { ConversationHeader } from "@/contexts/conversations";
 import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
-import { Conversations } from "./conversations";
+import { VirtualizedConversations } from "./virtualized-conversations";
 
 type Props = {
   basePath: string;
@@ -29,7 +29,10 @@ export function ConversationsList({
             <p className="text-primary/40 text-xs">No conversations yet</p>
           </div>
         ) : (
-          <Conversations basePath={basePath} conversations={conversations} />
+          <VirtualizedConversations
+            basePath={basePath}
+            conversations={conversations}
+          />
         )}
       </div>
     </Page>

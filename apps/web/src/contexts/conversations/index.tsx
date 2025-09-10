@@ -64,6 +64,7 @@ export function ConversationsProvider({
     selectedConversationStatus,
     selectedViewId,
     selectedConversationId,
+    basePath,
   });
 
   return (
