@@ -2,8 +2,10 @@ import type { Database } from "@api/db";
 
 import {
 	conversation,
+	conversationView,
 	type MessageSelect,
 	message,
+	view,
 	visitor,
 } from "@api/db/schema";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
@@ -273,45 +275,88 @@ export async function listConversationsHeaders(
 		}
 	}
 
-	// Get paginated conversations
+	// Single optimized query with all joins including views
 	const res = await db
-		.select()
+		.select({
+			conversation: conversation,
+			visitor: visitor,
+			viewId: conversationView.viewId,
+		})
 		.from(conversation)
 		.where(and(...whereConditions))
-		.orderBy(desc(conversation[orderBy]))
 		.innerJoin(visitor, eq(conversation.visitorId, visitor.id))
+		.leftJoin(
+			conversationView,
+			and(
+				eq(conversationView.conversationId, conversation.id),
+				eq(conversationView.organizationId, params.organizationId),
+				isNull(conversationView.deletedAt)
+			)
+		)
+		.orderBy(desc(conversation[orderBy]))
 		.limit(limit + 1);
 
 	// Check if there's a next page
 	let nextCursor: string | null = null;
+	let conversations = res;
 
 	if (res.length > limit) {
-		const nextItem = res.pop();
-		nextCursor = nextItem?.conversation.id ?? null;
+		conversations = res.slice(0, limit);
+		const lastItem = conversations[conversations.length - 1];
+		nextCursor = lastItem?.conversation.id ?? null;
 	}
 
-	// Fetch last messages
-	const conversationIds = res.map((r) => r.conversation.id);
+	// Group conversations and their view IDs
+	const conversationMap = new Map<string, {
+		conversation: typeof conversation.$inferSelect;
+		visitor: typeof visitor.$inferSelect;
+		viewIds: string[];
+	}>();
 
+	for (const row of conversations) {
+		const convId = row.conversation.id;
+		
+		if (!conversationMap.has(convId)) {
+			conversationMap.set(convId, {
+				conversation: row.conversation,
+				visitor: row.visitor,
+				viewIds: [],
+			});
+		}
+
+		if (row.viewId) {
+			const existing = conversationMap.get(convId)!;
+			// Add view ID if not already present
+			if (!existing.viewIds.includes(row.viewId)) {
+				existing.viewIds.push(row.viewId);
+			}
+		}
+	}
+
+	// Get unique conversation IDs for fetching last messages
+	const conversationIds = Array.from(conversationMap.keys());
+
+	// Fetch last messages (this still needs to be separate due to different filtering logic)
 	const lastMessagesMap = await fetchLastMessagesForConversations(
 		db,
 		params.organizationId,
 		conversationIds
 	);
 
-	// Add lastMessage details to each conversation
-	const conversationsWithDetails = res.map((r) => {
-		const lastMsg = lastMessagesMap[r.conversation.id];
+	// Build final result
+	const conversationsWithDetails = Array.from(conversationMap.values()).map((item) => {
+		const lastMsg = lastMessagesMap[item.conversation.id];
 
 		return {
-			...r.conversation,
+			...item.conversation,
 			visitor: {
-				id: r.visitor.id,
-				externalId: r.visitor.externalId,
-				name: r.visitor.name,
-				email: r.visitor.email,
-				avatar: r.visitor.image,
+				id: item.visitor.id,
+				externalId: item.visitor.externalId,
+				name: item.visitor.name,
+				email: item.visitor.email,
+				avatar: item.visitor.image,
 			},
+			viewIds: item.viewIds,
 			lastMessageAt: lastMsg?.createdAt ?? null,
 			lastMessagePreview: lastMsg ? lastMsg : null,
 		};

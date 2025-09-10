@@ -7,26 +7,26 @@ import { useWebsite } from "@/contexts/dashboard/website-context";
 import { useConversationHeaders } from "@/data/use-conversation-headers";
 import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
 import { Conversations } from "./conversations";
+import { useFilteredConversations } from "./use-filtered-conversations";
 
 type Props = {
   basePath: string;
   selectedConversationStatus: ConversationStatus | "archived" | null;
   selectedView: InboxView | null;
+  selectedConversationId: string | null;
 };
 
 export function ConversationsList({
   basePath,
   selectedConversationStatus,
   selectedView,
+  selectedConversationId,
 }: Props) {
-  const website = useWebsite();
-  const { conversations } = useConversationHeaders(website.slug);
-
-  const filteredConversations = useMemo(() => {
-    return conversations.filter(
-      (conversation) => conversation.status === "open"
-    );
-  }, [conversations]);
+  const { conversations } = useFilteredConversations({
+    selectedConversationStatus,
+    selectedView,
+    selectedConversationId,
+  });
 
   return (
     <Page className="px-3">

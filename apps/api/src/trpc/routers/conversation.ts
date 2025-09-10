@@ -38,6 +38,7 @@ export const conversationRouter = createTRPCRouter({
 						deletedAt: z.date().nullable(),
 						lastMessageAt: z.date().nullable(),
 						lastMessagePreview: messageSchema.nullable(),
+						viewIds: z.array(z.string()),
 					})
 				),
 				nextCursor: z.string().nullable(),
