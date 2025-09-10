@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { CentralContainer } from "@/components/ui/layout";
 import { NavigationTopbar } from "@/components/ui/layout/navigation-topbar";
+import { ConversationsProvider } from "@/contexts/dashboard/conversations-context";
 import { WebsiteProvider } from "@/contexts/dashboard/website-context";
 import {
   getQueryClient,
@@ -66,10 +67,12 @@ export default async function Layout({ children, params }: LayoutProps) {
   return (
     <HydrateClient>
       <WebsiteProvider websiteSlug={websiteSlug}>
-        <div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
-          <NavigationTopbar />
-          <CentralContainer>{children}</CentralContainer>
-        </div>
+        <ConversationsProvider websiteSlug={websiteSlug}>
+          <div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
+            <NavigationTopbar />
+            <CentralContainer>{children}</CentralContainer>
+          </div>
+        </ConversationsProvider>
       </WebsiteProvider>
     </HydrateClient>
   );

@@ -1,33 +1,21 @@
 "use client";
 
 import type { ConversationStatus } from "@cossistant/types";
-import type { InboxView } from "@cossistant/types/schemas";
-import { useMemo } from "react";
-import { useWebsite } from "@/contexts/dashboard/website-context";
-import { useConversationHeaders } from "@/data/use-conversation-headers";
+import type { ConversationHeader } from "@/contexts/dashboard/conversations-context";
 import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
 import { Conversations } from "./conversations";
-import { useFilteredConversations } from "./use-filtered-conversations";
 
 type Props = {
   basePath: string;
   selectedConversationStatus: ConversationStatus | "archived" | null;
-  selectedView: InboxView | null;
-  selectedConversationId: string | null;
+  conversations: ConversationHeader[];
 };
 
 export function ConversationsList({
   basePath,
   selectedConversationStatus,
-  selectedView,
-  selectedConversationId,
+  conversations,
 }: Props) {
-  const { conversations } = useFilteredConversations({
-    selectedConversationStatus,
-    selectedView,
-    selectedConversationId,
-  });
-
   return (
     <Page className="px-3">
       <PageHeader>

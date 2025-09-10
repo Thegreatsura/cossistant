@@ -40,12 +40,12 @@ export function extractInboxParamsFromSlug({
   availableViews: InboxView[];
   websiteSlug: string;
 }): {
-  selectedView: InboxView | null;
+  selectedViewId: string | null;
   selectedConversationStatus: ConversationStatus | "archived" | null;
   selectedConversationId: string | null;
   basePath: string;
 } {
-  const selectedView: InboxView | null = null;
+  const selectedViewId: string | null = null;
   const basePath = `/${websiteSlug}/inbox${slug?.length > 0 ? `/${slug.join("/")}` : ""}`;
 
   const selectedConversationStatus: ConversationStatus | "archived" | null =
@@ -63,7 +63,7 @@ export function extractInboxParamsFromSlug({
 
   if (!slug || slug.length === 0) {
     return {
-      selectedView: null,
+      selectedViewId: null,
       selectedConversationStatus,
       selectedConversationId: null,
       basePath,
@@ -72,7 +72,7 @@ export function extractInboxParamsFromSlug({
 
   if (slug.length === 1 && selectedConversationId) {
     return {
-      selectedView,
+      selectedViewId,
       selectedConversationStatus,
       selectedConversationId,
       basePath,
@@ -80,7 +80,7 @@ export function extractInboxParamsFromSlug({
   }
 
   return {
-    selectedView,
+    selectedViewId,
     selectedConversationStatus,
     selectedConversationId,
     basePath,
