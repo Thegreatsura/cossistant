@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { CentralContainer } from "@/components/ui/layout";
 import { NavigationTopbar } from "@/components/ui/layout/navigation-topbar";
-import { ConversationsProvider } from "@/contexts/dashboard/conversations-context";
-import { WebsiteProvider } from "@/contexts/dashboard/website-context";
+import { ConversationsProvider } from "@/contexts/conversations";
+import { WebsiteProvider } from "@/contexts/website";
 import {
   getQueryClient,
   HydrateClient,

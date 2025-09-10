@@ -1,7 +1,7 @@
 "use client";
 
 import type { ConversationStatus } from "@cossistant/types";
-import type { ConversationHeader } from "@/contexts/dashboard/conversations-context";
+import type { ConversationHeader } from "@/contexts/conversations";
 import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
 import { Conversations } from "./conversations";
 

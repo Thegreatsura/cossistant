@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useWebsite } from "@/contexts/dashboard/website-context";
+import { useWebsite } from "@/contexts/website";
 import { Logo } from "../../logo";
 import { TopbarItem } from "./topbar-item";
 import UserDropdown from "./user-dropdown";

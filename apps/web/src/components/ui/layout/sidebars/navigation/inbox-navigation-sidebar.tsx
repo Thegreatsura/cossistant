@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useWebsite } from "@/contexts/dashboard/website-context";
+import { useWebsite } from "@/contexts/website";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
 import { SidebarItem } from "../sidebar-item";

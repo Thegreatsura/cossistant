@@ -7,16 +7,19 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useMemo } from "react";
 import { useConversationHeaders } from "@/data/use-conversation-headers";
 import { extractInboxParamsFromSlug } from "@/lib/url";
-import { useWebsiteViews } from "./website-context";
+import { useWebsiteViews } from "../website";
+import { useFilteredConversations } from "./use-filtered-conversations";
 
 export type ConversationHeader =
   RouterOutputs["conversation"]["listConversationsHeaders"]["items"][number];
 
 interface ConversationsContextValue {
-  openConversationCount: number;
-  resolvedConversationCount: number;
-  spamConversationCount: number;
-  archivedConversationCount: number;
+  statusCounts: {
+    open: number;
+    resolved: number;
+    spam: number;
+    archived: number;
+  };
   conversations: ConversationHeader[];
   selectedConversationStatus: ConversationStatus | "archived" | null;
   selectedConversationId: string | null;
@@ -38,7 +41,6 @@ export function ConversationsProvider({
   children,
   websiteSlug,
 }: ConversationsProviderProps) {
-  const { conversations, isLoading } = useConversationHeaders(websiteSlug);
   const views = useWebsiteViews();
   const pathname = usePathname();
 
@@ -58,13 +60,16 @@ export function ConversationsProvider({
     });
   }, [pathname, views, websiteSlug]);
 
+  const { conversations, isLoading, statusCounts } = useFilteredConversations({
+    selectedConversationStatus,
+    selectedViewId,
+    selectedConversationId,
+  });
+
   return (
     <ConversationsContext.Provider
       value={{
-        openConversationCount: 40,
-        resolvedConversationCount: 0,
-        spamConversationCount: 0,
-        archivedConversationCount: 0,
+        statusCounts,
         conversations,
         selectedConversationStatus,
         selectedConversationId,

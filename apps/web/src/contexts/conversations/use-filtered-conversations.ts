@@ -1,9 +1,8 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import { ConversationStatus } from "@cossistant/types";
-import type { InboxView } from "@cossistant/types/schemas";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { useWebsite } from "@/contexts/dashboard/website-context";
+import { useWebsite } from "@/contexts/website";
 import { useConversationHeaders } from "@/data/use-conversation-headers";
 
 type ConversationStatusFilter = ConversationStatus | "archived" | null;
@@ -78,20 +77,19 @@ const sortByLastMessage = (conversations: ConversationHeader[]) => {
  * @returns The filtered conversations and utils to navigate between conversations.
  */
 export function useFilteredConversations({
-  selectedView,
+  selectedViewId,
   selectedConversationStatus,
   selectedConversationId,
 }: {
-  selectedView: InboxView | null;
+  selectedViewId: string | null;
   selectedConversationStatus: ConversationStatusFilter;
   selectedConversationId: string | null;
 }) {
   const website = useWebsite();
   const router = useRouter();
 
-  const { conversations: unfilteredConversations } = useConversationHeaders(
-    website.slug
-  );
+  const { conversations: unfilteredConversations, isLoading } =
+    useConversationHeaders(website.slug);
 
   // Apply filters and sorting
   const filteredConversations = useMemo(() => {
@@ -106,13 +104,13 @@ export function useFilteredConversations({
     }
 
     // Filter by view
-    result = filterByView(result, selectedView?.id ?? null);
+    result = filterByView(result, selectedViewId ?? null);
 
     // Sort by last message
     result = sortByLastMessage(result);
 
     return result;
-  }, [unfilteredConversations, selectedConversationStatus, selectedView]);
+  }, [unfilteredConversations, selectedConversationStatus, selectedViewId]);
 
   const currentIndex = useMemo(() => {
     if (!selectedConversationId) {
@@ -179,5 +177,6 @@ export function useFilteredConversations({
     statusCounts,
     currentIndex,
     totalCount: filteredConversations.length,
+    isLoading,
   };
 }

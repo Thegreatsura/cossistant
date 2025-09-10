@@ -2,7 +2,7 @@
 
 import { Conversation } from "@/components/conversation";
 import { ConversationsList } from "@/components/conversations-list";
-import { useConversations } from "@/contexts/dashboard/conversations-context";
+import { useConversations } from "@/contexts/conversations";
 
 interface DashboardPageProps {
   params: Promise<{
