@@ -51,7 +51,9 @@ export function ConversationsProvider({
     basePath,
     selectedViewId,
   } = useMemo(() => {
-    const slug = pathname.split("/");
+    const slug = pathname.split("/").slice(1);
+
+    console.log("slug", slug);
 
     return extractInboxParamsFromSlug({
       slug: slug || [],

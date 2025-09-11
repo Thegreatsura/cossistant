@@ -47,7 +47,7 @@ export function ConversationItem({
   return (
     <Link
       className={cn(
-        "group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors duration-100",
+        "group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors duration-0",
         "hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         active && "bg-background-200 text-accent-foreground",

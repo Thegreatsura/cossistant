@@ -1,7 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useConversations } from "@/contexts/conversations";
 import { useWebsite } from "@/contexts/website";
+import { UserDropdown } from "../../../../user-dropdown";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
 import { SidebarItem } from "../sidebar-item";
@@ -9,6 +11,7 @@ import { SidebarItem } from "../sidebar-item";
 export function InboxNavigationSidebar() {
   const website = useWebsite();
   const pathname = usePathname();
+  const { statusCounts } = useConversations();
 
   const basePath = `/${website.slug}/inbox`;
 
@@ -32,11 +35,16 @@ export function InboxNavigationSidebar() {
 
   return (
     <ResizableSidebar position="left">
-      <SidebarContainer>
+      <SidebarContainer footer={<UserDropdown />}>
         <SidebarItem
           active={isInboxActive()}
           href={`${basePath}`}
           iconName="conversation"
+          rightItem={
+            <span className="pr-1 text-primary/40 text-xs">
+              {statusCounts.open}
+            </span>
+          }
         >
           Inbox
         </SidebarItem>

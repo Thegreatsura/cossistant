@@ -31,7 +31,7 @@ export function TopbarItem({
     "hover:bg-background-100 hover:bg-background-300 hover:text-primary",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
     {
-      "bg-background-200 text-primary dark:bg-background-400": active,
+      "bg-background-200 text-primary dark:bg-background-300": active,
       "px-1 md:px-2": hideLabelOnMobile,
     },
     className
@@ -42,9 +42,9 @@ export function TopbarItem({
       {iconName && (
         <span
           className={cn(
-            "flex size-5 shrink-0 items-center justify-center opacity-60 group-hover/btn:opacity-80",
+            "flex size-5 shrink-0 items-center justify-center opacity-60 transition-all duration-100 group-hover/btn:rotate-[-4deg] group-hover/btn:opacity-80",
             {
-              "opacity-100 group-hover/btn:opacity-100": active,
+              "rotate-[-2deg] opacity-100 group-hover/btn:opacity-100": active,
             }
           )}
         >

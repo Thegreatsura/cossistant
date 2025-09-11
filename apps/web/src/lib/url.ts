@@ -46,7 +46,7 @@ export function extractInboxParamsFromSlug({
   basePath: string;
 } {
   const selectedViewId: string | null = null;
-  const basePath = `/${websiteSlug}/inbox${slug?.length > 0 ? `/${slug.join("/")}` : ""}`;
+  const basePath = `/${slug.join("/")}`;
 
   const selectedConversationStatus: ConversationStatus | "archived" | null =
     slug?.find(

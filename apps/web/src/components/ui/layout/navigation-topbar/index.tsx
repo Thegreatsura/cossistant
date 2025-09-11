@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWebsite } from "@/contexts/website";
+import UserDropdown from "../../../user-dropdown";
 import { Logo } from "../../logo";
 import { TopbarItem } from "./topbar-item";
-import UserDropdown from "./user-dropdown";
 
 export function NavigationTopbar() {
   const pathname = usePathname();
