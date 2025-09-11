@@ -73,7 +73,6 @@ export function VirtualizedConversations({
 
           return (
             <div
-              className="px-1"
               key={virtualItem.key}
               style={{
                 position: "absolute",
