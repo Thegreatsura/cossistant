@@ -22,6 +22,7 @@ interface ConversationsContextValue {
   };
   conversations: ConversationHeader[];
   selectedConversationStatus: ConversationStatus | "archived" | null;
+  selectedConversationIndex: number;
   selectedConversationId: string | null;
   basePath: string;
   selectedViewId: string | null;
@@ -62,12 +63,13 @@ export function ConversationsProvider({
     });
   }, [pathname, views, websiteSlug]);
 
-  const { conversations, isLoading, statusCounts } = useFilteredConversations({
-    selectedConversationStatus,
-    selectedViewId,
-    selectedConversationId,
-    basePath,
-  });
+  const { conversations, isLoading, statusCounts, selectedConversationIndex } =
+    useFilteredConversations({
+      selectedConversationStatus,
+      selectedViewId,
+      selectedConversationId,
+      basePath,
+    });
 
   return (
     <ConversationsContext.Provider
@@ -79,6 +81,7 @@ export function ConversationsProvider({
         basePath,
         selectedViewId,
         isLoading,
+        selectedConversationIndex,
       }}
     >
       {children}

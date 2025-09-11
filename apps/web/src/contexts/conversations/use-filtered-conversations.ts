@@ -150,6 +150,7 @@ function filterAndProcessConversations(
  * @param selectedViewId - The selected view ID
  * @param selectedConversationStatus - The selected conversation status filter
  * @param selectedConversationId - The currently selected conversation ID
+ * @param basePath - The base path for navigation
  * @returns Filtered conversations with navigation utilities and O(1) lookup capabilities
  */
 export function useFilteredConversations({
@@ -224,7 +225,7 @@ export function useFilteredConversations({
     conversationMap,
     indexMap,
     statusCounts,
-    currentIndex,
+    selectedConversationIndex: currentIndex,
     totalCount: conversations.length,
     isLoading,
     // Navigation
