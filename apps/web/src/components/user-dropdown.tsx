@@ -31,7 +31,7 @@ export function UserDropdown() {
           disabled={!user}
           type="button"
         >
-          <Avatar className="size-6">
+          <Avatar className="size-7">
             {userAvatarUrl && (
               <AvatarImage alt={userDisplayName} src={userAvatarUrl} />
             )}

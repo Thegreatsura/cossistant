@@ -170,7 +170,6 @@ export function useFilteredConversations({
   const { conversations: unfilteredConversations, isLoading } =
     useConversationHeaders(website.slug);
 
-  // Process conversations with single-pass algorithm
   const { conversations, conversationMap, indexMap, statusCounts } = useMemo(
     () =>
       filterAndProcessConversations(
@@ -181,40 +180,45 @@ export function useFilteredConversations({
     [unfilteredConversations, selectedConversationStatus, selectedViewId]
   );
 
-  // O(1) lookup for current index
   const currentIndex = selectedConversationId
     ? (indexMap.get(selectedConversationId) ?? -1)
     : -1;
 
-  // O(1) navigation helpers
   const nextConversation =
     currentIndex >= 0 && currentIndex < conversations.length - 1
-      ? conversations[currentIndex + 1]
+      ? conversations[currentIndex + 1] || null
       : null;
 
   const previousConversation =
-    currentIndex > 0 ? conversations[currentIndex - 1] : null;
+    currentIndex > 0 ? conversations[currentIndex - 1] || null : null;
 
-  // Navigation callbacks - only recreate when dependencies change
   const navigateToNextConversation = useCallback(() => {
     if (nextConversation) {
-      router.push(`${basePath}/${nextConversation.id}`);
+      const path = basePath.split("/").slice(0, -1).join("/");
+
+      router.push(`${path}/${nextConversation.id}`);
     }
   }, [nextConversation, router, basePath]);
 
   const navigateToPreviousConversation = useCallback(() => {
     if (previousConversation) {
-      router.push(`${basePath}/${previousConversation.id}`);
+      const path = basePath.split("/").slice(0, -1).join("/");
+
+      router.push(`${path}/${previousConversation.id}`);
     }
   }, [previousConversation, router, basePath]);
 
-  // O(1) lookup for checking if conversation is in current filter
+  const goBack = useCallback(() => {
+    const path = basePath.split("/").slice(0, -1).join("/");
+
+    router.push(`${path}`);
+  }, [router, basePath]);
+
   const isConversationInCurrentFilter = useCallback(
     (conversationId: string) => conversationMap.has(conversationId),
     [conversationMap]
   );
 
-  // Get conversation by ID with O(1) lookup
   const getConversationById = useCallback(
     (conversationId: string) => conversationMap.get(conversationId) || null,
     [conversationMap]
@@ -229,6 +233,7 @@ export function useFilteredConversations({
     totalCount: conversations.length,
     isLoading,
     // Navigation
+    goBack,
     nextConversation,
     previousConversation,
     navigateToNextConversation,

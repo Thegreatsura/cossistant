@@ -44,7 +44,6 @@ export function NavigationTopbar() {
         >
           Settings
         </TopbarItem>
-        <UserDropdown />
       </div>
     </header>
   );

@@ -16,7 +16,18 @@ import {
   MessageVisibility,
 } from "@cossistant/types";
 
-import { and, asc, count, desc, eq, inArray, isNull, lt } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 
 export async function upsertConversation(
   db: Database,
@@ -202,48 +213,12 @@ export async function getConversationById(
   };
 }
 
-async function fetchLastMessagesForConversations(
-  db: Database,
-  organizationId: string,
-  conversationIds: string[]
-): Promise<Record<string, MessageSelect>> {
-  const lastMessagesMap: Record<string, MessageSelect> = {};
-
-  if (conversationIds.length === 0) {
-    return lastMessagesMap;
-  }
-
-  const messages = await db
-    .select()
-    .from(message)
-    .where(
-      and(
-        eq(message.organizationId, organizationId),
-        inArray(message.conversationId, conversationIds),
-        eq(message.visibility, MessageVisibility.PUBLIC),
-        eq(message.type, MessageType.TEXT),
-        isNull(message.deletedAt)
-      )
-    )
-    .orderBy(desc(message.createdAt));
-
-  // Group messages by conversation and take the first (latest) one for each
-  for (const msg of messages) {
-    if (!lastMessagesMap[msg.conversationId]) {
-      lastMessagesMap[msg.conversationId] = msg;
-    }
-  }
-
-  return lastMessagesMap;
-}
-
 export async function listConversationsHeaders(
   db: Database,
   params: {
     organizationId: string;
     websiteId: string;
     limit?: number;
-    // cursor is the updatedAt reference
     cursor?: string | null;
     orderBy?: "createdAt" | "updatedAt";
   }
@@ -251,126 +226,205 @@ export async function listConversationsHeaders(
   const limit = params.limit ?? 50;
   const orderBy = params.orderBy ?? "updatedAt";
 
+  // Create a subquery for the last message per conversation using window function
+  const lastMessageSubquery = db
+    .select({
+      conversationId: message.conversationId,
+      id: message.id,
+      bodyMd: message.bodyMd,
+      type: message.type,
+      userId: message.userId,
+      visitorId: message.visitorId,
+      websiteId: message.websiteId,
+      organizationId: message.organizationId,
+      aiAgentId: message.aiAgentId,
+      modelUsed: message.modelUsed,
+      visibility: message.visibility,
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      deletedAt: message.deletedAt,
+      parentMessageId: message.parentMessageId,
+      // Use ROW_NUMBER() to get only the latest message per conversation
+      rn: sql<number>`ROW_NUMBER() OVER (
+				PARTITION BY ${message.conversationId}
+				ORDER BY ${message.createdAt} DESC
+			)`.as("rn"),
+    })
+    .from(message)
+    .where(
+      and(
+        eq(message.organizationId, params.organizationId),
+        eq(message.visibility, MessageVisibility.PUBLIC),
+        eq(message.type, MessageType.TEXT),
+        isNull(message.deletedAt)
+      )
+    )
+    .as("last_msg");
+
+  // Create a subquery for aggregated views per conversation
+  const viewsSubquery = db
+    .select({
+      conversationId: conversationView.conversationId,
+      viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
+        "view_ids"
+      ),
+    })
+    .from(conversationView)
+    .where(
+      and(
+        eq(conversationView.organizationId, params.organizationId),
+        isNull(conversationView.deletedAt)
+      )
+    )
+    .groupBy(conversationView.conversationId)
+    .as("conv_views");
+
+  // Build where conditions
   const whereConditions = [
     eq(conversation.organizationId, params.organizationId),
     eq(conversation.websiteId, params.websiteId),
   ];
 
-  // Handle cursor pagination - using ID-based cursor with timestamp ordering
+  // Handle cursor-based pagination more efficiently
   if (params.cursor) {
-    const [cursorConversation] = await db
-      .select()
-      .from(conversation)
-      .where(eq(conversation.id, params.cursor))
-      .limit(1);
+    // Decode cursor to get the timestamp and ID (format: timestamp_id)
+    const cursorParts = params.cursor.split("_");
+    if (cursorParts.length === 2) {
+      const [cursorTimestamp, cursorId] = cursorParts;
+      const cursorDate = new Date(cursorTimestamp);
 
-    if (cursorConversation) {
-      // For cursor-based pagination with timestamp ordering, we need to ensure we get items
-      // that come after the cursor item based on the orderBy field
-      const orderColumn =
-        orderBy === "createdAt"
-          ? conversation.createdAt
-          : conversation.updatedAt;
-      whereConditions.push(lt(orderColumn, cursorConversation[orderBy]));
+      // Use composite cursor for stable pagination
+      const cursorCondition = or(
+        lt(conversation[orderBy], cursorDate),
+        and(
+          eq(conversation[orderBy], cursorDate),
+          lt(conversation.id, cursorId)
+        )
+      );
+      if (cursorCondition) {
+        whereConditions.push(cursorCondition);
+      }
+    } else {
+      // Fallback to old cursor format (just ID)
+      const [cursorConversation] = await db
+        .select()
+        .from(conversation)
+        .where(eq(conversation.id, params.cursor))
+        .limit(1);
+
+      if (cursorConversation) {
+        whereConditions.push(
+          lt(conversation[orderBy], cursorConversation[orderBy])
+        );
+      }
     }
   }
 
-  // Single optimized query with all joins including views
-  const res = await db
+  // Main query - single execution with all data
+  const results = await db
     .select({
+      // All conversation fields
       conversation,
-      visitor,
-      viewId: conversationView.viewId,
+      // Visitor fields (only what we need for the header)
+      visitorId: visitor.id,
+      visitorExternalId: visitor.externalId,
+      visitorName: visitor.name,
+      visitorEmail: visitor.email,
+      visitorAvatar: visitor.image,
+      // Last message fields (filtered by ROW_NUMBER = 1)
+      lastMessageId: lastMessageSubquery.id,
+      lastMessageBodyMd: lastMessageSubquery.bodyMd,
+      lastMessageType: lastMessageSubquery.type,
+      lastMessageUserId: lastMessageSubquery.userId,
+      lastMessageVisitorId: lastMessageSubquery.visitorId,
+      lastMessageWebsiteId: lastMessageSubquery.websiteId,
+      lastMessageOrganizationId: lastMessageSubquery.organizationId,
+      lastMessageAiAgentId: lastMessageSubquery.aiAgentId,
+      lastMessageModelUsed: lastMessageSubquery.modelUsed,
+      lastMessageVisibility: lastMessageSubquery.visibility,
+      lastMessageCreatedAt: lastMessageSubquery.createdAt,
+      lastMessageUpdatedAt: lastMessageSubquery.updatedAt,
+      lastMessageDeletedAt: lastMessageSubquery.deletedAt,
+      lastMessageParentMessageId: lastMessageSubquery.parentMessageId,
+      // Aggregated view IDs
+      viewIds: viewsSubquery.viewIds,
     })
     .from(conversation)
-    .where(and(...whereConditions))
     .innerJoin(visitor, eq(conversation.visitorId, visitor.id))
     .leftJoin(
-      conversationView,
+      lastMessageSubquery,
       and(
-        eq(conversationView.conversationId, conversation.id),
-        eq(conversationView.organizationId, params.organizationId),
-        isNull(conversationView.deletedAt)
+        eq(lastMessageSubquery.conversationId, conversation.id),
+        eq(lastMessageSubquery.rn, 1) // Only get the first (latest) message
       )
     )
-    .orderBy(desc(conversation[orderBy]))
+    .leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
+    .where(and(...whereConditions))
+    .orderBy(
+      desc(conversation[orderBy]),
+      desc(conversation.id) // Secondary sort for stable pagination
+    )
     .limit(limit + 1);
 
-  // Check if there's a next page
+  // Process results for pagination
   let nextCursor: string | null = null;
-  let conversations = res;
+  let items = results;
 
-  if (res.length > limit) {
-    conversations = res.slice(0, limit);
-    const lastItem = conversations.at(-1);
-    nextCursor = lastItem?.conversation.id ?? null;
-  }
-
-  // Group conversations and their view IDs
-  const conversationMap = new Map<
-    string,
-    {
-      conversation: typeof conversation.$inferSelect;
-      visitor: typeof visitor.$inferSelect;
-      viewIds: string[];
-    }
-  >();
-
-  for (const row of conversations) {
-    const convId = row.conversation.id;
-
-    if (!conversationMap.has(convId)) {
-      conversationMap.set(convId, {
-        conversation: row.conversation,
-        visitor: row.visitor,
-        viewIds: [],
-      });
-    }
-
-    if (row.viewId) {
-      const existing = conversationMap.get(convId);
-
-      if (!existing) {
-        continue;
-      }
-
-      // Add view ID if not already present
-      if (!existing.viewIds.includes(row.viewId)) {
-        existing.viewIds.push(row.viewId);
-      }
+  if (results.length > limit) {
+    items = results.slice(0, limit);
+    const lastItem = items.at(-1);
+    if (lastItem) {
+      // Create composite cursor with timestamp and ID
+      const timestamp = lastItem.conversation[orderBy].toISOString();
+      nextCursor = `${timestamp}_${lastItem.conversation.id}`;
     }
   }
 
-  // Get unique conversation IDs for fetching last messages
-  const conversationIds = Array.from(conversationMap.keys());
+  // Transform results (much simpler now!)
+  const conversationsWithDetails = items.map((row) => {
+    // Build last message object if it exists
+    const lastMessage =
+      row.lastMessageId &&
+      row.lastMessageBodyMd !== null &&
+      row.lastMessageType &&
+      row.lastMessageWebsiteId &&
+      row.lastMessageOrganizationId &&
+      row.lastMessageVisibility &&
+      row.lastMessageCreatedAt &&
+      row.lastMessageUpdatedAt
+        ? {
+            id: row.lastMessageId,
+            bodyMd: row.lastMessageBodyMd,
+            type: row.lastMessageType,
+            userId: row.lastMessageUserId,
+            visitorId: row.lastMessageVisitorId,
+            websiteId: row.lastMessageWebsiteId,
+            organizationId: row.lastMessageOrganizationId,
+            aiAgentId: row.lastMessageAiAgentId,
+            modelUsed: row.lastMessageModelUsed,
+            visibility: row.lastMessageVisibility,
+            createdAt: row.lastMessageCreatedAt,
+            updatedAt: row.lastMessageUpdatedAt,
+            deletedAt: row.lastMessageDeletedAt,
+            parentMessageId: row.lastMessageParentMessageId,
+            conversationId: row.conversation.id,
+          }
+        : null;
 
-  // Fetch last messages (this still needs to be separate due to different filtering logic)
-  const lastMessagesMap = await fetchLastMessagesForConversations(
-    db,
-    params.organizationId,
-    conversationIds
-  );
-
-  // Build final result
-  const conversationsWithDetails = Array.from(conversationMap.values()).map(
-    (item) => {
-      const lastMsg = lastMessagesMap[item.conversation.id];
-
-      return {
-        ...item.conversation,
-        visitor: {
-          id: item.visitor.id,
-          externalId: item.visitor.externalId,
-          name: item.visitor.name,
-          email: item.visitor.email,
-          avatar: item.visitor.image,
-        },
-        viewIds: item.viewIds,
-        lastMessageAt: lastMsg?.createdAt ?? null,
-        lastMessagePreview: lastMsg ? lastMsg : null,
-      };
-    }
-  );
+    return {
+      ...row.conversation,
+      visitor: {
+        id: row.visitorId,
+        externalId: row.visitorExternalId,
+        name: row.visitorName,
+        email: row.visitorEmail,
+        avatar: row.visitorAvatar,
+      },
+      viewIds: row.viewIds || [],
+      lastMessageAt: row.lastMessageCreatedAt ?? null,
+      lastMessagePreview: lastMessage,
+    };
+  });
 
   return {
     items: conversationsWithDetails,

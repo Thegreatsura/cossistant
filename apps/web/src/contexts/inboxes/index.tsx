@@ -1,0 +1,121 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: ok here */
+"use client";
+
+import type { RouterOutputs } from "@cossistant/api/types";
+import type { ConversationStatus } from "@cossistant/types";
+import { usePathname } from "next/navigation";
+import { createContext, useContext, useMemo } from "react";
+import { extractInboxParamsFromSlug } from "@/lib/url";
+import { useWebsiteViews } from "../website";
+import { useFilteredConversations } from "./use-filtered-conversations";
+
+export type ConversationHeader =
+	RouterOutputs["conversation"]["listConversationsHeaders"]["items"][number];
+
+interface InboxesContextValue {
+	statusCounts: {
+		open: number;
+		resolved: number;
+		spam: number;
+		archived: number;
+	};
+	// Navigation
+	goBack: () => void;
+	nextConversation: ConversationHeader | null;
+	previousConversation: ConversationHeader | null;
+	navigateToNextConversation: () => void;
+	navigateToPreviousConversation: () => void;
+	conversations: ConversationHeader[];
+	selectedConversationStatus: ConversationStatus | "archived" | null;
+	selectedConversationIndex: number;
+	selectedConversationId: string | null;
+	basePath: string;
+	selectedViewId: string | null;
+	isLoading: boolean;
+}
+
+const InboxesContext = createContext<InboxesContextValue | null>(null);
+
+interface InboxesProviderProps {
+	children: React.ReactNode;
+	websiteSlug: string;
+}
+
+export function InboxesProvider({
+	children,
+	websiteSlug,
+}: InboxesProviderProps) {
+	const views = useWebsiteViews();
+	const pathname = usePathname();
+
+	// Extract the inbox params from the pathname
+	const {
+		selectedConversationStatus,
+		selectedConversationId,
+		basePath,
+		selectedViewId,
+	} = useMemo(() => {
+		const slug = pathname.split("/").slice(1);
+
+		console.log("slug", slug);
+
+		return extractInboxParamsFromSlug({
+			slug: slug || [],
+			availableViews: views,
+			websiteSlug,
+		});
+	}, [pathname, views, websiteSlug]);
+
+	const {
+		conversations,
+		isLoading,
+		statusCounts,
+		selectedConversationIndex,
+		goBack,
+		nextConversation,
+		previousConversation,
+		navigateToNextConversation,
+		navigateToPreviousConversation,
+	} = useFilteredConversations({
+		selectedConversationStatus,
+		selectedViewId,
+		selectedConversationId,
+		basePath,
+	});
+
+	return (
+		<InboxesContext.Provider
+			value={{
+				statusCounts,
+				conversations,
+				selectedConversationStatus,
+				selectedConversationId,
+				basePath,
+				selectedViewId,
+				isLoading,
+				selectedConversationIndex,
+				goBack,
+				nextConversation,
+				previousConversation,
+				navigateToNextConversation,
+				navigateToPreviousConversation,
+			}}
+		>
+			{children}
+		</InboxesContext.Provider>
+	);
+}
+
+export function useInboxes() {
+	const context = useContext(InboxesContext);
+
+	if (!context) {
+		throw new Error("useInboxes must be used within a InboxesProvider");
+	}
+
+	if (context.isLoading) {
+		throw new Error("Conversations not found");
+	}
+
+	return context;
+}

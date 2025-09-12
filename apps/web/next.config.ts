@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
 	typescript: {
 		ignoreBuildErrors: true,
 	},
+	devIndicators: false,
 };
 
 export default withMDX(nextConfig);
