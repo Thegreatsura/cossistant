@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar as AvatarPlaceholder } from "@cossistant/micro-react-avatars";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
@@ -37,6 +36,7 @@ function AvatarImage({
 interface AvatarFallbackProps
   extends React.ComponentProps<typeof AvatarPrimitive.Fallback> {
   value?: string;
+  children?: string;
 }
 
 function AvatarFallback({
@@ -45,6 +45,15 @@ function AvatarFallback({
   children,
   ...props
 }: AvatarFallbackProps) {
+  const getInitials = (str: string) => {
+    return str
+      .split(/\s+/)
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <AvatarPrimitive.Fallback
       className={cn(
@@ -56,15 +65,7 @@ function AvatarFallback({
       data-slot="avatar-fallback"
       {...props}
     >
-      {
-        <AvatarPlaceholder
-          radius="none"
-          size={32}
-          value={value ?? ""}
-          palette="tailwind"
-          backgroundColor="var(--background-200)"
-        />
-      }
+      {value ? getInitials(value) : getInitials(children ?? "")}
     </AvatarPrimitive.Fallback>
   );
 }
