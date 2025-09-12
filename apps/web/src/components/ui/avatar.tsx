@@ -1,9 +1,8 @@
 "use client";
 
+import { Avatar as AvatarPlaceholder } from "@cossistant/micro-react-avatars";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import Avvvatars from "avvvatars-react";
 import type * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 function Avatar({
@@ -57,7 +56,15 @@ function AvatarFallback({
       data-slot="avatar-fallback"
       {...props}
     >
-      {<Avvvatars size={32} style="shape" value={value ?? ""} />}
+      {
+        <AvatarPlaceholder
+          radius="none"
+          size={32}
+          value={value ?? ""}
+          palette="tailwind"
+          backgroundColor="var(--background-200)"
+        />
+      }
     </AvatarPrimitive.Fallback>
   );
 }

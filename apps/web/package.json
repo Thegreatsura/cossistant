@@ -19,6 +19,7 @@
     "@cossistant/location": "workspace:*",
     "@cossistant/react": "workspace:*",
     "@cossistant/transactional": "workspace:*",
+    "@cossistant/micro-react-avatars": "workspace:*",
     "@cossistant/types": "workspace:*",
     "@hookform/resolvers": "^5.1.1",
     "@normy/react-query": "^0.20.0",

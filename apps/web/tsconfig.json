@@ -12,7 +12,13 @@
       "@/docs-source/*": ["./.source/*"],
       "@api/*": ["../api/src/*"],
       "@cossistant/react/*": ["../../packages/react/src/*"],
-      "@cossistant/react": ["../../packages/react/src"]
+      "@cossistant/react": ["../../packages/react/src"],
+      "@cossistant/micro-react-avatars/*": [
+        "../../packages/micro-react-avatars/src/*"
+      ],
+      "@cossistant/micro-react-avatars": [
+        "../../packages/micro-react-avatars/src"
+      ]
     },
     "skipLibCheck": true
   },
