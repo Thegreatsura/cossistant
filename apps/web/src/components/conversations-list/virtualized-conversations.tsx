@@ -8,6 +8,7 @@ import type { ConversationHeader } from "@/contexts/inboxes";
 type ConversationsListProps = {
   basePath: string;
   conversations: ConversationHeader[];
+  websiteSlug: string;
 };
 
 const ITEM_HEIGHT = 44;
@@ -16,15 +17,18 @@ const VirtualConversationItem = memo(
   ({
     conversation,
     href,
+    websiteSlug,
   }: {
     conversation: ConversationHeader;
     href: string;
+    websiteSlug: string;
   }) => {
     return (
       <ConversationItem
         href={href}
         key={conversation.id}
         header={conversation}
+        websiteSlug={websiteSlug}
       />
     );
   }
@@ -35,6 +39,7 @@ VirtualConversationItem.displayName = "VirtualConversationItem";
 export function VirtualizedConversations({
   basePath,
   conversations,
+  websiteSlug,
 }: ConversationsListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +87,7 @@ export function VirtualizedConversations({
               <VirtualConversationItem
                 conversation={conversation}
                 href={href}
+                websiteSlug={websiteSlug}
               />
             </div>
           );

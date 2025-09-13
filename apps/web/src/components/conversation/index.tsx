@@ -25,7 +25,7 @@ export function Conversation({
 
   return (
     <>
-      <Page className="py-2 pt-14">
+      <Page className="py-0">
         <ConversationHeader />
         <MessagesList
           messages={messages}

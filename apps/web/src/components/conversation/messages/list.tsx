@@ -39,7 +39,7 @@ export function MessagesList({
     <PrimitiveMessageList
       autoScroll={true}
       className={cn(
-        "overflow-y-auto scroll-smooth py-6",
+        "overflow-y-auto scroll-smooth pt-60 pb-40",
         "scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-transparent",
         "h-full w-full",
         className
@@ -48,7 +48,7 @@ export function MessagesList({
       id="message-list"
       messages={messages}
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="2xl:max-w-3xl max-w-2xl mx-auto">
         <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
           {groupedMessages.map((item, index) => {
             if (item.type === "event") {

@@ -34,6 +34,7 @@ export default function ConversationRouterPage({ params }: DashboardPageProps) {
       basePath={basePath}
       conversations={conversations}
       selectedConversationStatus={selectedConversationStatus}
+      websiteSlug={websiteSlug}
     />
   );
 }

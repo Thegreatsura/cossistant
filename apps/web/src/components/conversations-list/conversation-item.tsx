@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { formatTimeAgo } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { generateVisitorName } from "@/lib/visitors";
@@ -10,10 +11,16 @@ import { generateVisitorName } from "@/lib/visitors";
 interface ConversationItemProps {
   href: string;
   header: ConversationHeader;
+  websiteSlug: string;
 }
 
-export function ConversationItem({ href, header }: ConversationItemProps) {
+export function ConversationItem({
+  href,
+  header,
+  websiteSlug,
+}: ConversationItemProps) {
   const { visitor, lastMessagePreview } = header;
+  const { prefetchConversation } = usePrefetchConversationData();
 
   const fullName =
     visitor.name || visitor.email || generateVisitorName(visitor.id);
@@ -27,6 +34,13 @@ export function ConversationItem({ href, header }: ConversationItemProps) {
       )}
       href={href}
       prefetch="auto"
+      onMouseEnter={() => {
+        prefetchConversation({
+          websiteSlug,
+          conversationId: header.id,
+          visitorId: header.visitorId,
+        });
+      }}
     >
       <Avatar
         url={visitor.avatar}
