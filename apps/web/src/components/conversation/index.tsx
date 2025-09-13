@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { Page } from "../ui/layout";
 import { VisitorSidebar } from "../ui/layout/sidebars/visitor/visitor-sidebar";
 import { ConversationHeader } from "./header";
