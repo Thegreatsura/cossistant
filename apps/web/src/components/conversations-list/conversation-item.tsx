@@ -28,17 +28,11 @@ export function ConversationItem({ href, header }: ConversationItemProps) {
       href={href}
       prefetch="auto"
     >
-      <div className="relative">
-        <Avatar className="size-8 shrink-0">
-          {visitor.avatar && (
-            <AvatarImage alt={fullName} src={visitor.avatar} />
-          )}
-          <AvatarFallback>{fullName}</AvatarFallback>
-        </Avatar>
-        {/* {online && (
-          <div className="absolute right-0 bottom-0 size-1 rounded-full bg-co-blue ring-2 ring-background group-hover/conversation-item:ring-background-400" />
-        )} */}
-      </div>
+      <Avatar
+        url={visitor.avatar}
+        fallbackName={fullName}
+        lastOnlineAt={visitor.lastSeenAt}
+      />
 
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <div className="mb-0.5 flex items-baseline justify-between gap-2">

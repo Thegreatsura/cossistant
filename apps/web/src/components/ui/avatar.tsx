@@ -4,7 +4,7 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-function Avatar({
+function AvatarContainer({
   className,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
@@ -70,4 +70,40 @@ function AvatarFallback({
   );
 }
 
-export { Avatar, AvatarImage, AvatarFallback };
+function Avatar({
+  className,
+  url,
+  fallbackName,
+  lastOnlineAt,
+}: {
+  className?: string;
+  url: string | null | undefined;
+  fallbackName: string;
+  lastOnlineAt?: Date | null;
+}) {
+  // If lastOnlineAt is within the last 5 minutes, the user is online
+  const isOnline =
+    lastOnlineAt &&
+    new Date(lastOnlineAt) > new Date(Date.now() - 1000 * 60 * 5);
+
+  const color = isOnline ? "bg-co-green" : "bg-co-orange";
+
+  return (
+    <div className="relative">
+      <AvatarContainer className={cn("size-8 shrink-0", className)}>
+        {url && <AvatarImage alt={fallbackName} src={url} />}
+        <AvatarFallback>{fallbackName}</AvatarFallback>
+      </AvatarContainer>
+      {isOnline && (
+        <div
+          className={cn(
+            "absolute right-0 bottom-0 size-1 rounded-full ring-2 ring-background group-hover/conversation-item:ring-background-400",
+            color
+          )}
+        />
+      )}
+    </div>
+  );
+}
+
+export { AvatarContainer, AvatarImage, AvatarFallback, Avatar };

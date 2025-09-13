@@ -331,6 +331,7 @@ export async function listConversationsHeaders(
       visitorName: visitor.name,
       visitorEmail: visitor.email,
       visitorAvatar: visitor.image,
+      visitorLastSeenAt: visitor.lastSeenAt,
       // Last message fields (filtered by ROW_NUMBER = 1)
       lastMessageId: lastMessageSubquery.id,
       lastMessageBodyMd: lastMessageSubquery.bodyMd,
@@ -419,6 +420,7 @@ export async function listConversationsHeaders(
         name: row.visitorName,
         email: row.visitorEmail,
         avatar: row.visitorAvatar,
+        lastSeenAt: row.visitorLastSeenAt,
       },
       viewIds: row.viewIds || [],
       lastMessageAt: row.lastMessageCreatedAt ?? null,

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,14 +31,11 @@ export function UserDropdown() {
           disabled={!user}
           type="button"
         >
-          <Avatar className="size-7">
-            {userAvatarUrl && (
-              <AvatarImage alt={userDisplayName} src={userAvatarUrl} />
-            )}
-            <AvatarFallback className="rounded">
-              {userDisplayName.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <Avatar
+            className="size-7"
+            url={userAvatarUrl}
+            fallbackName={userDisplayName}
+          />
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate text-primary/70">{userDisplayName}</span>
           </div>
