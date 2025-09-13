@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-
+import { useTheme } from "next-themes";
+import { useHotkeys } from "react-hotkeys-hook";
 import { Avatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -17,11 +18,28 @@ import { signOut, useSession } from "@/lib/auth/client";
 export function UserDropdown() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { setTheme, resolvedTheme } = useTheme();
 
   const user = session?.user ?? null;
   const userEmail = user?.email ?? "";
   const userDisplayName = user?.name ?? userEmail ?? "You";
   const userAvatarUrl = user?.image ?? null;
+
+  useHotkeys(
+    ["m"],
+    (_, handler) => {
+      switch (handler.keys?.join("")) {
+        case "m":
+          setTheme(resolvedTheme === "dark" ? "light" : "dark");
+          break;
+      }
+    },
+    {
+      preventDefault: true,
+      enableOnContentEditable: false,
+      enableOnFormTags: false,
+    }
+  );
 
   return (
     <DropdownMenu>
@@ -65,6 +83,22 @@ export function UserDropdown() {
             Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setTheme(resolvedTheme === "dark" ? "light" : "dark");
+          }}
+          shortcuts={["M"]}
+        >
+          <Icon
+            className="mx-1 size-4"
+            filledOnHover
+            name={resolvedTheme === "dark" ? "sun" : "moon"}
+          />
+          Toggle theme
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={async () => {
