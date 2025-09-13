@@ -184,6 +184,10 @@ export function useFilteredConversations({
     ? (indexMap.get(selectedConversationId) ?? -1)
     : -1;
 
+  const selectedConversation = selectedConversationId
+    ? conversationMap.get(selectedConversationId) || null
+    : null;
+
   const nextConversation =
     currentIndex >= 0 && currentIndex < conversations.length - 1
       ? conversations[currentIndex + 1] || null
@@ -230,6 +234,7 @@ export function useFilteredConversations({
     indexMap,
     statusCounts,
     selectedConversationIndex: currentIndex,
+    selectedVisitorId: selectedConversation?.visitorId || null,
     totalCount: conversations.length,
     isLoading,
     // Navigation

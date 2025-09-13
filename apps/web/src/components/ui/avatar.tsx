@@ -59,7 +59,7 @@ function AvatarFallback({
       className={cn(
         "flex size-full items-center justify-center rounded-sm",
         !value &&
-          "bg-background-300 text-[10px] text-primary dark:bg-background-400",
+          "bg-background-400 text-[10px] text-primary dark:bg-background-400",
         className
       )}
       data-slot="avatar-fallback"
@@ -86,7 +86,9 @@ function Avatar({
     lastOnlineAt &&
     new Date(lastOnlineAt) > new Date(Date.now() - 1000 * 60 * 5);
 
-  const color = isOnline ? "bg-co-green" : "bg-co-orange";
+  const color = isOnline ? "bg-cossistant-green" : "bg-cossistant-orange";
+
+  console.log(lastOnlineAt);
 
   return (
     <div className="relative">
@@ -97,7 +99,7 @@ function Avatar({
       {isOnline && (
         <div
           className={cn(
-            "absolute right-0 bottom-0 size-1 rounded-full ring-2 ring-background group-hover/conversation-item:ring-background-400",
+            "absolute -right-0.5 -bottom-0.5 size-2 rounded-full shadow",
             color
           )}
         />

@@ -1,6 +1,5 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useRef } from "react";
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
@@ -11,7 +10,7 @@ type ConversationsListProps = {
   conversations: ConversationHeader[];
 };
 
-const ITEM_HEIGHT = 48;
+const ITEM_HEIGHT = 44;
 
 const VirtualConversationItem = memo(
   ({

@@ -66,6 +66,7 @@
 	--cossistant-yellow: hsla(58, 92%, 70%, 1);
 	--cossistant-blue: hsla(218, 91%, 68%, 1);
 	--cossistant-orange: hsla(19, 99%, 65%, 1);
+	--cossistant-green: rgb(72, 208, 153);
 
 	--surface-foreground: var(--foreground);
 	--code: var(--surface);
@@ -121,6 +122,7 @@
 	--cossistant-yellow: hsla(58, 92%, 79%, 1);
 	--cossistant-blue: hsla(218, 91%, 78%, 1);
 	--cossistant-orange: hsla(19, 99%, 50%, 1);
+	--cossistant-green: hsla(156, 86%, 64%, 1);
 
 	--surface: oklch(0.2 0 0);
 	--surface-foreground: oklch(0.708 0 0);
@@ -177,6 +179,7 @@
 	--color-cossistant-yellow: var(--cossistant-yellow);
 	--color-cossistant-blue: var(--cossistant-blue);
 	--color-cossistant-orange: var(--cossistant-orange);
+	--color-cossistant-green: var(--cossistant-green);
 
 	/* custom code colors */
 	--color-code: var(--code);

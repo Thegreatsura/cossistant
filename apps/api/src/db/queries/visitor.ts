@@ -107,3 +107,16 @@ export async function getVisitor(
 
 	return _visitor;
 }
+
+export async function getVisitorComplete(
+	db: Database,
+	params: {
+		visitorId: string;
+	}
+) {
+	const _visitor = await db.query.visitor.findFirst({
+		where: eq(visitor.id, params.visitorId),
+	});
+
+	return _visitor;
+}

@@ -27,20 +27,14 @@ export function formatTimeAgo(date: Date): string {
     if (isToday(date)) {
       return format(date, timeFormat);
     }
-    if (isYesterday(date)) {
-      return `Yesterday ${format(date, timeFormat)}`;
-    }
-    // For times within 24 hours but not today/yesterday
+
     return format(date, timeFormat);
   }
 
-  // For times older than 24 hours, show days ago
-  if (diffDays === 1) {
-    return "Yesterday";
-  }
   if (diffDays < 7) {
     return `${diffDays}d`;
   }
+
   if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
     return weeks === 1 ? "1w" : `${weeks}w`;

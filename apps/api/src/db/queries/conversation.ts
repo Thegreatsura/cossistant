@@ -2,6 +2,7 @@ import type { Database } from "@api/db";
 
 import {
   conversation,
+  conversationEvent,
   conversationView,
   type MessageSelect,
   message,
@@ -22,6 +23,7 @@ import {
   count,
   desc,
   eq,
+  gt,
   inArray,
   isNull,
   lt,
@@ -431,5 +433,52 @@ export async function listConversationsHeaders(
   return {
     items: conversationsWithDetails,
     nextCursor,
+  };
+}
+
+export async function getConversationEvents(
+  db: Database,
+  params: {
+    conversationId: string;
+    websiteId: string;
+    limit?: number;
+    cursor?: Date | null;
+  }
+) {
+  const limit = params.limit ?? 50;
+
+  // Build where clause
+  const whereConditions = [
+    eq(conversationEvent.conversationId, params.conversationId),
+  ];
+
+  // Add cursor condition if provided (gt for ascending order)
+  if (params.cursor) {
+    whereConditions.push(
+      gt(conversationEvent.createdAt, new Date(params.cursor))
+    );
+  }
+
+  // Fetch events with pagination - ascending order (oldest first)
+  const events = await db
+    .select()
+    .from(conversationEvent)
+    .where(and(...whereConditions))
+    .orderBy(asc(conversationEvent.createdAt))
+    .limit(limit + 1); // Fetch one extra to determine if there's a next page
+
+  // Determine if there's a next page
+  const hasNextPage = events.length > limit;
+  const nextCursor = hasNextPage ? events[limit - 1].createdAt : null;
+
+  // Remove the extra item if present
+  if (hasNextPage) {
+    events.pop();
+  }
+
+  return {
+    events,
+    nextCursor,
+    hasNextPage,
   };
 }

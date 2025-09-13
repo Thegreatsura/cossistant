@@ -32,7 +32,7 @@ export function Message({ message, isLast = false }: MessageProps) {
             <MessageContent
               bodyMd={message.bodyMd}
               className={cn(
-                "block w-max max-w-[300px] rounded-lg px-3.5 py-2.5 text-sm",
+                "block md:w-max md:max-w-[420px] max-w-full rounded-lg px-3.5 py-2.5 text-md",
                 {
                   "bg-co-background-300 text-foreground dark:bg-co-background-600":
                     !isVisitor,

@@ -22,7 +22,7 @@ export function ConversationItem({ href, header }: ConversationItemProps) {
     <Link
       className={cn(
         "group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors duration-0",
-        "hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        "hover:bg-background-200 hover:text-primary dark:hover:bg-background-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       )}
       href={href}
@@ -32,13 +32,12 @@ export function ConversationItem({ href, header }: ConversationItemProps) {
         url={visitor.avatar}
         fallbackName={fullName}
         lastOnlineAt={visitor.lastSeenAt}
+        className="size-7"
       />
 
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <div className="mb-0.5 flex items-baseline justify-between gap-2">
-          <h4 className={cn("truncate font-medium md:w-[120px]")}>
-            {fullName}
-          </h4>
+          <h4 className={cn("truncate md:w-[120px]")}>{fullName}</h4>
         </div>
         <p className={cn("truncate pr-6 text-muted-foreground")}>
           {lastMessagePreview?.bodyMd}

@@ -39,7 +39,7 @@ export function MessagesList({
     <PrimitiveMessageList
       autoScroll={true}
       className={cn(
-        "overflow-y-auto scroll-smooth px-3 py-6",
+        "overflow-y-auto scroll-smooth py-6",
         "scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-transparent",
         "h-full w-full",
         className
@@ -48,35 +48,37 @@ export function MessagesList({
       id="message-list"
       messages={messages}
     >
-      <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
-        {groupedMessages.map((item, index) => {
-          if (item.type === "event") {
+      <div className="max-w-4xl mx-auto">
+        <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
+          {groupedMessages.map((item, index) => {
+            if (item.type === "event") {
+              return (
+                <ConversationEvent
+                  availableAIAgents={availableAIAgents}
+                  availableHumanAgents={availableHumanAgents}
+                  event={item.event}
+                  key={item.event.id}
+                />
+              );
+            }
             return (
-              <ConversationEvent
+              <MessageGroup
                 availableAIAgents={availableAIAgents}
                 availableHumanAgents={availableHumanAgents}
-                event={item.event}
-                key={item.event.id}
+                key={`group-${index}`}
+                messages={item.messages}
               />
             );
-          }
-          return (
-            <MessageGroup
-              availableAIAgents={availableAIAgents}
-              availableHumanAgents={availableHumanAgents}
-              key={`group-${index}`}
-              messages={item.messages}
-            />
-          );
-        })}
-        {/* {isTyping && (
+          })}
+          {/* {isTyping && (
           <TypingIndicator
             isAI={isTyping.type === SenderType.AI}
             senderImage={availableAgents[0]?.image || undefined}
             senderName={availableAgents[0]?.name || "Support"}
           />
-        )} */}
-      </MessageListContainer>
+          )} */}
+        </MessageListContainer>
+      </div>
     </PrimitiveMessageList>
   );
 }

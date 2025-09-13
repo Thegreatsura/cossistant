@@ -38,15 +38,12 @@ export function MessageGroup({
   return (
     <PrimitiveMessageGroup messages={messages}>
       {({ isVisitor, isAI }) => (
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className={cn(
             "flex w-full gap-2 px-2",
             isVisitor && "flex-row-reverse",
             !isVisitor && "flex-row"
           )}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
         >
           {!isVisitor && (
             <MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
@@ -82,7 +79,7 @@ export function MessageGroup({
               />
             ))}
           </MessageGroupContent>
-        </motion.div>
+        </div>
       )}
     </PrimitiveMessageGroup>
   );
