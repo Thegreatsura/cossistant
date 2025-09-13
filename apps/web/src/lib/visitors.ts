@@ -217,32 +217,6 @@ const nouns = [
   "builder",
   "architect",
   "engineer",
-
-  // Fun objects
-  "pixel",
-  "voxel",
-  "crystal",
-  "prism",
-  "kaleidoscope",
-  "compass",
-  "telescope",
-  "microscope",
-  "beacon",
-  "lighthouse",
-  "castle",
-  "fortress",
-  "citadel",
-  "tower",
-  "bridge",
-  "portal",
-  "gateway",
-  "nexus",
-  "vertex",
-  "matrix",
-  "cipher",
-  "enigma",
-  "puzzle",
-  "riddle",
 ];
 
 // Simple hash function to convert string to number

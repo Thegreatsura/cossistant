@@ -29,6 +29,7 @@
 	--background-400: oklch(94% 0 0);
 	--background-500: oklch(92% 0 0);
 	--background-600: oklch(91% 0 0);
+	--background-700: oklch(86% 0 0);
 
 	--foreground: oklch(14.5% 0 0);
 
@@ -83,6 +84,7 @@
 	--background-400: oklch(23.5% 0 0);
 	--background-500: oklch(27.5% 0 0);
 	--background-600: oklch(29.5% 0 0);
+	--background-700: oklch(34.5% 0 0);
 
 	--foreground: oklch(98.5% 0 0);
 
@@ -141,6 +143,7 @@
 	--color-background-400: var(--background-400);
 	--color-background-500: var(--background-500);
 	--color-background-600: var(--background-600);
+	--color-background-700: var(--background-700);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
 	--color-card-foreground: var(--card-foreground);
