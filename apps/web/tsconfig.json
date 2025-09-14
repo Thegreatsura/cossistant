@@ -1,38 +1,32 @@
 {
-  "extends": "@cossistant/typescript-config/nextjs.json",
-  "compilerOptions": {
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/docs/*": ["./src/app/(docs)/*"],
-      "@/docs-source/*": ["./.source/*"],
-      "@api/*": ["../api/src/*"],
-      "@cossistant/react/*": ["../../packages/react/src/*"],
-      "@cossistant/react": ["../../packages/react/src"],
-      "@cossistant/micro-react-avatars/*": [
-        "../../packages/micro-react-avatars/src/*"
-      ],
-      "@cossistant/micro-react-avatars": [
-        "../../packages/micro-react-avatars/src"
-      ]
-    },
-    "skipLibCheck": true
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "../api/src/lib/loops.ts"
-  ],
-  "exclude": ["node_modules"],
-  "references": [
-    {
-      "path": "../api"
-    }
-  ]
+	"extends": "@cossistant/typescript-config/nextjs.json",
+	"compilerOptions": {
+		"plugins": [
+			{
+				"name": "next"
+			}
+		],
+		"paths": {
+			"@/*": ["./src/*"],
+			"@/docs/*": ["./src/app/(docs)/*"],
+			"@/docs-source/*": ["./.source/*"],
+			"@api/*": ["../api/src/*"],
+			"@cossistant/react/*": ["../../packages/react/src/*"],
+			"@cossistant/react": ["../../packages/react/src"]
+		},
+		"skipLibCheck": true
+	},
+	"include": [
+		"next-env.d.ts",
+		"**/*.ts",
+		"**/*.tsx",
+		".next/types/**/*.ts",
+		"../api/src/lib/loops.ts"
+	],
+	"exclude": ["node_modules"],
+	"references": [
+		{
+			"path": "../api"
+		}
+	]
 }

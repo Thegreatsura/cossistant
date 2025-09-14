@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useConversationFocusStore } from "@/contexts/inboxes/conversation-focus-store";
 
 interface UseConversationKeyboardNavigationProps {
   conversations: Array<{ id: string }>;
@@ -20,8 +21,26 @@ export function useConversationKeyboardNavigation({
   enabled = true,
 }: UseConversationKeyboardNavigationProps) {
   const router = useRouter();
-  const [focusedIndex, setFocusedIndex] = useState(0);
   const lastInteractionRef = useRef<"keyboard" | "mouse">("keyboard");
+  const hasInitializedRef = useRef(false);
+
+  const {
+    focusedConversationId,
+    shouldRestoreFocus,
+    setFocusedConversationId,
+    markFocusRestored
+  } = useConversationFocusStore();
+
+  // Initialize focus index - restore from store if we should
+  const [focusedIndex, setFocusedIndex] = useState(() => {
+    if (shouldRestoreFocus && focusedConversationId && conversations.length > 0) {
+      const index = conversations.findIndex(c => c.id === focusedConversationId);
+      if (index !== -1) {
+        return index;
+      }
+    }
+    return 0;
+  });
 
   const scrollToItem = useCallback(
     (index: number) => {
@@ -68,10 +87,12 @@ export function useConversationKeyboardNavigation({
     if (focusedIndex >= 0 && focusedIndex < conversations.length) {
       const conversation = conversations[focusedIndex];
       if (conversation) {
+        // Store the focused conversation ID before navigating
+        setFocusedConversationId(conversation.id);
         router.push(`${basePath}/${conversation.id}`);
       }
     }
-  }, [focusedIndex, conversations, basePath, router]);
+  }, [focusedIndex, conversations, basePath, router, setFocusedConversationId]);
 
   const handleMouseEnter = useCallback((index: number) => {
     lastInteractionRef.current = "mouse";
@@ -108,12 +129,26 @@ export function useConversationKeyboardNavigation({
     [moveFocus, navigateToConversation, enabled]
   );
 
+  // Restore focus from store on mount if needed
   useEffect(() => {
-    if (enabled && conversations.length > 0 && focusedIndex === 0) {
-      lastInteractionRef.current = "keyboard";
-      scrollToItem(0);
+    if (!enabled || conversations.length === 0 || hasInitializedRef.current) return;
+
+    if (shouldRestoreFocus && focusedConversationId) {
+      const index = conversations.findIndex(c => c.id === focusedConversationId);
+      if (index !== -1) {
+        setFocusedIndex(index);
+        scrollToItem(index);
+        lastInteractionRef.current = "keyboard";
+        markFocusRestored();
+      } else {
+        scrollToItem(0);
+      }
+    } else {
+      scrollToItem(focusedIndex);
     }
-  }, [enabled, conversations.length, focusedIndex, scrollToItem]);
+
+    hasInitializedRef.current = true;
+  }, [enabled, conversations, focusedConversationId, shouldRestoreFocus, scrollToItem, markFocusRestored]);
 
   useEffect(() => {
     if (focusedIndex >= conversations.length && conversations.length > 0) {

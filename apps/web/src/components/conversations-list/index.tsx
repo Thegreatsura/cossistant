@@ -1,7 +1,9 @@
 "use client";
 
 import type { ConversationStatus } from "@cossistant/types";
+import { useEffect } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { useConversationFocusStore } from "@/contexts/inboxes/conversation-focus-store";
 import { Page, PageHeader, PageHeaderTitle } from "../ui/layout";
 import { VirtualizedConversations } from "./virtualized-conversations";
 
@@ -18,6 +20,13 @@ export function ConversationsList({
   conversations,
   websiteSlug,
 }: Props) {
+  const clearFocus = useConversationFocusStore(state => state.clearFocus);
+
+  // Clear focus when filters change
+  useEffect(() => {
+    clearFocus();
+  }, [selectedConversationStatus, clearFocus]);
+
   return (
     <Page className="px-3">
       <PageHeader>

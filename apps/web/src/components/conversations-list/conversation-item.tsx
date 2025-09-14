@@ -55,8 +55,8 @@ export function ConversationItem({
         className="size-9"
       />
 
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <p className="truncate md:min-w-[120px] md:max-w-[120px]">{fullName}</p>
+      <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
+        <p className="truncate min-w-[120px] max-w-[120px]">{fullName}</p>
 
         <p className={cn("truncate pr-6 text-muted-foreground")}>
           {lastMessagePreview?.bodyMd}
