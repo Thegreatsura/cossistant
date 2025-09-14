@@ -20,13 +20,13 @@ export function Message({ message, isLast = false }: MessageProps) {
 					className={cn(
 						"flex w-full gap-2",
 						isVisitor && "flex-row-reverse",
-						!isVisitor && "flex-row"
+						!isVisitor && "flex-row",
 					)}
 				>
 					<div
 						className={cn(
 							"flex w-full flex-1 flex-col gap-1",
-							isVisitor && "items-end"
+							isVisitor && "items-end",
 						)}
 					>
 						<MessageContent
@@ -39,7 +39,7 @@ export function Message({ message, isLast = false }: MessageProps) {
 									"bg-primary text-primary-foreground": isVisitor,
 									"rounded-br-sm": isLast && isVisitor,
 									"rounded-bl-sm": isLast && !isVisitor,
-								}
+								},
 							)}
 							renderMarkdown
 						/>

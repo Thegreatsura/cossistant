@@ -101,7 +101,7 @@ export const Container: React.FC<ContainerProps> = ({
 					mode === "responsive" &&
 						"md:relative md:h-full md:w-full md:rounded-none md:border-0 md:shadow-none",
 
-					className
+					className,
 				)}
 				exit="exit"
 				initial="hidden"

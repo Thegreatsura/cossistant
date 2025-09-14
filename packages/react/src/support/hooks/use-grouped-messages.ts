@@ -28,7 +28,7 @@ export interface UseGroupedMessagesProps {
 
 // Helper function to determine sender ID and type from a message
 const getSenderIdAndType = (
-	message: MessageType
+	message: MessageType,
 ): { senderId: string; senderType: SenderType } => {
 	if (message.visitorId) {
 		return { senderId: message.visitorId, senderType: SenderType.VISITOR };
@@ -80,7 +80,7 @@ const groupMessagesBySender = (messages: MessageType[]): GroupedMessage[] => {
 
 // Helper function to get timestamp for sorting
 const getItemTimestamp = (
-	item: GroupedMessage | ConversationEventItem
+	item: GroupedMessage | ConversationEventItem,
 ): number => {
 	if (item.type === "event") {
 		return item.event.createdAt?.getTime() || 0;

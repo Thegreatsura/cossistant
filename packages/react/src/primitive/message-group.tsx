@@ -65,9 +65,9 @@ export const MessageGroup = React.forwardRef<HTMLDivElement, MessageGroupProps>(
 					...props,
 					children: content,
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 MessageGroup.displayName = "MessageGroup";
@@ -95,7 +95,7 @@ export const MessageGroupAvatar = React.forwardRef<
 				...props,
 				children,
 			},
-		}
+		},
 	);
 });
 
@@ -127,7 +127,7 @@ export const MessageGroupHeader = React.forwardRef<
 				...props,
 				children: content,
 			},
-		}
+		},
 	);
 });
 
@@ -156,7 +156,7 @@ export const MessageGroupContent = React.forwardRef<
 				...props,
 				children,
 			},
-		}
+		},
 	);
 });
 

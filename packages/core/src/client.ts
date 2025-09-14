@@ -46,26 +46,26 @@ export class CossistantClient {
 
 	// Conversation management
 	async createConversation(
-		params?: Partial<CreateConversationRequestBody>
+		params?: Partial<CreateConversationRequestBody>,
 	): Promise<CreateConversationResponseBody> {
 		return this.restClient.createConversation(params);
 	}
 
 	async listConversations(
-		params?: Partial<ListConversationsRequest>
+		params?: Partial<ListConversationsRequest>,
 	): Promise<ListConversationsResponse> {
 		return this.restClient.listConversations(params);
 	}
 
 	async getConversation(
-		params: GetConversationRequest
+		params: GetConversationRequest,
 	): Promise<GetConversationResponse> {
 		return this.restClient.getConversation(params);
 	}
 
 	// Message management
 	async getConversationMessages(
-		params: GetMessagesRequest
+		params: GetMessagesRequest,
 	): Promise<GetMessagesResponse> {
 		return this.restClient.getConversationMessages(params);
 	}

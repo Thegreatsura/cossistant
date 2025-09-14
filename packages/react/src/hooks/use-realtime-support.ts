@@ -17,7 +17,7 @@ export interface UseRealtimeSupportResult {
 }
 
 export function useRealtimeSupport(
-	options: UseRealtimeSupportOptions = {}
+	options: UseRealtimeSupportOptions = {},
 ): UseRealtimeSupportResult {
 	const { onEvent } = options;
 	const { isConnected, isConnecting, error, send, subscribe, lastMessage } =

@@ -30,7 +30,7 @@ export const aiAgent = pgTable(
 		maxTokens: integer("max_tokens"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" }
+			{ onDelete: "cascade" },
 		),
 		websiteId: ulidReference("website_id").references(() => website.id, {
 			onDelete: "cascade",
@@ -54,7 +54,7 @@ export const aiAgent = pgTable(
 		index("ai_agent_active_idx").on(table.isActive),
 		// Index for soft delete queries
 		index("ai_agent_deleted_at_idx").on(table.deletedAt),
-	]
+	],
 );
 
 export const aiAgentRelations = relations(aiAgent, ({ one, many }) => ({

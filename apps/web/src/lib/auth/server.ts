@@ -26,7 +26,7 @@ type EnsurePageAuthProps = {
 };
 
 export const ensurePageAuth = async (
-	props: EnsurePageAuthProps = { redirectTo: "/" }
+	props: EnsurePageAuthProps = { redirectTo: "/" },
 ) => {
 	const { session, user } = await getAuth();
 

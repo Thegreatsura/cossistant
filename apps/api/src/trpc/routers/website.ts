@@ -42,7 +42,7 @@ export const websiteRouter = createTRPCRouter({
 			const existingDomainWebsite = await db.query.website.findFirst({
 				where: and(
 					eq(website.domain, input.domain),
-					eq(website.isDomainOwnershipVerified, true)
+					eq(website.isDomainOwnershipVerified, true),
 				),
 			});
 
@@ -111,7 +111,7 @@ export const websiteRouter = createTRPCRouter({
 			const existingWebsite = await db.query.website.findFirst({
 				where: and(
 					eq(website.domain, input.domain),
-					eq(website.isDomainOwnershipVerified, true)
+					eq(website.isDomainOwnershipVerified, true),
 				),
 			});
 

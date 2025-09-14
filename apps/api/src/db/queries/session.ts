@@ -18,7 +18,7 @@ export async function getTRPCSession(
 	db: Database,
 	params: {
 		headers: Headers;
-	}
+	},
 ) {
 	let userSession = await auth.api.getSession({ headers: params.headers });
 

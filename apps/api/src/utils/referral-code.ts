@@ -15,7 +15,7 @@ interface UserInfo {
  * to create a clean, readable code while ensuring uniqueness.
  */
 export async function generateUniqueReferralCode(
-	userInfo: UserInfo
+	userInfo: UserInfo,
 ): Promise<string> {
 	const baseCode = createBaseReferralCode(userInfo);
 

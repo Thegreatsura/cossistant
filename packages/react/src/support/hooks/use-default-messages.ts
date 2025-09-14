@@ -49,7 +49,7 @@ export function useDefaultMessages({
 			availableHumanAgents[0]?.id,
 			availableAIAgents[0]?.id,
 			conversationId,
-		]
+		],
 	);
 
 	return memoisedDefaultMessages;

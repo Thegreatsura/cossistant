@@ -42,8 +42,8 @@ export const useSidebarsState = create<SidebarsState>()(
 		{
 			name: "sidebars-state",
 			storage: createJSONStorage(() => localStorage),
-		}
-	)
+		},
+	),
 );
 
 export function useSidebar({ position }: { position: SidebarPosition }) {

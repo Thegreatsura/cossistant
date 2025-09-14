@@ -17,7 +17,7 @@ export async function WaitingListRank({ className }: { className?: string }) {
 	const queryClient = getQueryClient();
 
 	const { entry, rank, totalEntries } = await queryClient.fetchQuery(
-		trpc.waitlist.getWaitlistEntry.queryOptions({ userId: user?.id })
+		trpc.waitlist.getWaitlistEntry.queryOptions({ userId: user?.id }),
 	);
 
 	if (!entry) {
@@ -31,7 +31,7 @@ export async function WaitingListRank({ className }: { className?: string }) {
 			<div
 				className={cn(
 					"mx-auto flex w-full max-w-[592px] flex-col gap-4 rounded py-10 md:p-10",
-					className
+					className,
 				)}
 			>
 				<div className="flex items-center gap-10">

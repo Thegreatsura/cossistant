@@ -49,7 +49,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 				"overflow-y-auto scroll-smooth px-3 py-6",
 				"scrollbar-thin scrollbar-thumb-co-background-300 scrollbar-track-transparent",
 				"h-full w-full",
-				className
+				className,
 			)}
 			events={events}
 			id="message-list"

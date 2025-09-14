@@ -58,9 +58,9 @@ export const Message = React.forwardRef<HTMLDivElement, MessageProps>(
 					...props,
 					children: messageContent,
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 Message.displayName = "Message";
@@ -118,7 +118,7 @@ const MemoizedMarkdownBlock = React.memo(
 			return false;
 		}
 		return true;
-	}
+	},
 );
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
@@ -145,7 +145,7 @@ export const MessageContent = React.forwardRef<
 			renderMarkdown = true,
 			...props
 		},
-		ref
+		ref,
 	) => {
 		const messageContent = React.useMemo(() => {
 			if (typeof children === "function") {
@@ -175,9 +175,9 @@ export const MessageContent = React.forwardRef<
 						...props.style,
 					},
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 MessageContent.displayName = "MessageContent";
@@ -208,7 +208,7 @@ export const MessageTimestamp = React.forwardRef<
 				}),
 			...props
 		},
-		ref
+		ref,
 	) => {
 		const content =
 			typeof children === "function"
@@ -227,9 +227,9 @@ export const MessageTimestamp = React.forwardRef<
 					...props,
 					children: content,
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 MessageTimestamp.displayName = "MessageTimestamp";

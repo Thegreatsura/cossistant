@@ -1,122 +1,122 @@
 {
-  "name": "@cossistant/react",
-  "version": "0.0.0",
-  "private": false,
-  "author": "Cossistant team",
-  "description": "Headless React SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
-  "keywords": [
-    "react",
-    "react-hooks",
-    "react-components",
-    "headless",
-    "headless-ui",
-    "support",
-    "customer-support",
-    "helpdesk",
-    "support-widget",
-    "chat-widget",
-    "live-chat",
-    "ai",
-    "ai-support",
-    "ai-agent",
-    "support-agent",
-    "sdk",
-    "typescript",
-    "nextjs",
-    "websocket",
-    "tanstack-query",
-    "open-source",
-    "tailwind",
-    "shadcn",
-    "a11y",
-    "accessibility"
-  ],
-  "bugs": {
-    "url": "https://github.com/cossistantcom/cossistant/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/cossistantcom/cossistant.git",
-    "directory": "packages/react"
-  },
-  "license": "MIT",
-  "homepage": "https://cossistant.com",
-  "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "require": "./src/index.ts"
-    },
-    "./primitive": {
-      "types": "./src/primitive/index.ts",
-      "import": "./src/primitive/index.ts",
-      "require": "./src/primitive/index.ts"
-    },
-    "./support.css": "./src/support/support.css"
-  },
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
-  "sideEffects": [
-    "*.css"
-  ],
-  "scripts": {
-    "build": "tsup && bun run build:css",
-    "build:css": "bunx @tailwindcss/cli -i src/support/support.css -o dist/support.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify"
-  },
-  "files": [
-    "dist"
-  ],
-  "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      },
-      "./primitive": {
-        "types": "./dist/primitive/index.d.ts",
-        "import": "./dist/primitive/index.mjs",
-        "require": "./dist/primitive/index.cjs"
-      },
-      "./support.css": "./dist/support.css"
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts"
-  },
-  "dependencies": {
-    "@cossistant/core": "workspace:*",
-    "@cossistant/types": "workspace:*",
-    "nanoid": "^5.1.5",
-    "react-markdown": "^9.0.0",
-    "react-use-websocket": "^4.13.0",
-    "tailwind-merge": "^3.3.1",
-    "ulid": "^3.0.1",
-    "zustand": "^5.0.7"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.11",
-    "postcss": "^8.5.6",
-    "@cossistant/typescript-config": "workspace:*",
-    "autoprefixer": "^10.4.21",
-    "@tanstack/react-query": "^5.0.0"
-  },
-  "peerDependencies": {
-    "react": ">=18 <20",
-    "react-dom": ">=18 <20",
-    "@types/react": "^18 || ^19",
-    "@tanstack/react-query": "^5.0.0",
-    "motion": "^12.18.1",
-    "tailwindcss": "*"
-  },
-  "peerDependenciesMeta": {
-    "@types/react": {
-      "optional": true
-    },
-    "tailwindcss": {
-      "optional": true
-    }
-  }
+	"name": "@cossistant/react",
+	"version": "0.0.0",
+	"private": false,
+	"author": "Cossistant team",
+	"description": "Headless React SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
+	"keywords": [
+		"react",
+		"react-hooks",
+		"react-components",
+		"headless",
+		"headless-ui",
+		"support",
+		"customer-support",
+		"helpdesk",
+		"support-widget",
+		"chat-widget",
+		"live-chat",
+		"ai",
+		"ai-support",
+		"ai-agent",
+		"support-agent",
+		"sdk",
+		"typescript",
+		"nextjs",
+		"websocket",
+		"tanstack-query",
+		"open-source",
+		"tailwind",
+		"shadcn",
+		"a11y",
+		"accessibility"
+	],
+	"bugs": {
+		"url": "https://github.com/cossistantcom/cossistant/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cossistantcom/cossistant.git",
+		"directory": "packages/react"
+	},
+	"license": "MIT",
+	"homepage": "https://cossistant.com",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"import": "./src/index.ts",
+			"require": "./src/index.ts"
+		},
+		"./primitive": {
+			"types": "./src/primitive/index.ts",
+			"import": "./src/primitive/index.ts",
+			"require": "./src/primitive/index.ts"
+		},
+		"./support.css": "./src/support/support.css"
+	},
+	"main": "./src/index.ts",
+	"module": "./src/index.ts",
+	"types": "./src/index.ts",
+	"sideEffects": [
+		"*.css"
+	],
+	"scripts": {
+		"build": "tsup && bun run build:css",
+		"build:css": "bunx @tailwindcss/cli -i src/support/support.css -o dist/support.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify"
+	},
+	"files": [
+		"dist"
+	],
+	"publishConfig": {
+		"access": "public",
+		"exports": {
+			".": {
+				"types": "./dist/index.d.ts",
+				"import": "./dist/index.mjs",
+				"require": "./dist/index.cjs"
+			},
+			"./primitive": {
+				"types": "./dist/primitive/index.d.ts",
+				"import": "./dist/primitive/index.mjs",
+				"require": "./dist/primitive/index.cjs"
+			},
+			"./support.css": "./dist/support.css"
+		},
+		"main": "./dist/index.cjs",
+		"module": "./dist/index.mjs",
+		"types": "./dist/index.d.ts"
+	},
+	"dependencies": {
+		"@cossistant/core": "workspace:*",
+		"@cossistant/types": "workspace:*",
+		"nanoid": "^5.1.5",
+		"react-markdown": "^9.0.0",
+		"react-use-websocket": "^4.13.0",
+		"tailwind-merge": "^3.3.1",
+		"ulid": "^3.0.1",
+		"zustand": "^5.0.7"
+	},
+	"devDependencies": {
+		"@tailwindcss/postcss": "^4.1.11",
+		"postcss": "^8.5.6",
+		"@cossistant/typescript-config": "workspace:*",
+		"autoprefixer": "^10.4.21",
+		"@tanstack/react-query": "^5.0.0"
+	},
+	"peerDependencies": {
+		"react": ">=18 <20",
+		"react-dom": ">=18 <20",
+		"@types/react": "^18 || ^19",
+		"@tanstack/react-query": "^5.0.0",
+		"motion": "^12.18.1",
+		"tailwindcss": "*"
+	},
+	"peerDependenciesMeta": {
+		"@types/react": {
+			"optional": true
+		},
+		"tailwindcss": {
+			"optional": true
+		}
+	}
 }

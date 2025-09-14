@@ -46,7 +46,7 @@ export interface CossistantContextValue {
 }
 
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
-	undefined
+	undefined,
 );
 
 function SupportProviderInner({
@@ -67,7 +67,7 @@ function SupportProviderInner({
 		DefaultMessage[]
 	>(defaultMessages || []);
 	const [_quickOptions, _setQuickOptions] = React.useState<string[]>(
-		quickOptions || []
+		quickOptions || [],
 	);
 	const [isClientPrimed, setIsClientPrimed] = React.useState(false);
 
@@ -107,17 +107,17 @@ function SupportProviderInner({
 
 	const setDefaultMessages = React.useCallback(
 		(messages: DefaultMessage[]) => _setDefaultMessages(messages),
-		[]
+		[],
 	);
 
 	const setQuickOptions = React.useCallback(
 		(options: string[]) => _setQuickOptions(options),
-		[]
+		[],
 	);
 
 	const setUnreadCountStable = React.useCallback(
 		(count: number) => setUnreadCount(count),
-		[]
+		[],
 	);
 
 	const value = React.useMemo<CossistantContextValue>(
@@ -146,7 +146,7 @@ function SupportProviderInner({
 			setDefaultMessages,
 			setQuickOptions,
 			setUnreadCountStable,
-		]
+		],
 	);
 
 	return (
@@ -190,7 +190,7 @@ export function SupportProvider({
 						gcTime: 10 * 60 * 1000, // 10 minutes
 					},
 				},
-			})
+			}),
 	);
 
 	const activeQueryClient = queryClient || defaultQueryClient;
@@ -219,7 +219,7 @@ export function useSupport() {
 	const context = React.useContext(SupportContext);
 	if (!context) {
 		throw new Error(
-			"useSupport must be used within a cossistant SupportProvider"
+			"useSupport must be used within a cossistant SupportProvider",
 		);
 	}
 

@@ -45,7 +45,7 @@ export async function generateMetadata(props: {
 			images: [
 				{
 					url: `/og?title=${encodeURIComponent(
-						doc.title
+						doc.title,
 					)}&description=${encodeURIComponent(doc.description)}`,
 				},
 			],
@@ -57,7 +57,7 @@ export async function generateMetadata(props: {
 			images: [
 				{
 					url: `/og?title=${encodeURIComponent(
-						doc.title
+						doc.title,
 					)}&description=${encodeURIComponent(doc.description)}`,
 				},
 			],

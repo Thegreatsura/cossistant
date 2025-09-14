@@ -52,7 +52,7 @@ export function validateMessage(
 		visitorId?: string;
 		websiteId?: string;
 		organizationId?: string;
-	}
+	},
 ): ValidatedMessage {
 	// Validate event type
 	if (!isValidEventType(message.type)) {

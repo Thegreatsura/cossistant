@@ -66,7 +66,7 @@ export const useMultimodalInput = ({
 
 			return null;
 		},
-		[maxFileSize, allowedFileTypes]
+		[maxFileSize, allowedFileTypes],
 	);
 
 	// Actions
@@ -77,7 +77,7 @@ export const useMultimodalInput = ({
 			// Check max files limit
 			if (files.length + newFiles.length > maxFiles) {
 				const err = new Error(
-					`Cannot add files: maximum ${maxFiles} files allowed`
+					`Cannot add files: maximum ${maxFiles} files allowed`,
 				);
 				setError(err);
 				onError?.(err);
@@ -97,7 +97,7 @@ export const useMultimodalInput = ({
 
 			setFiles((prev) => [...prev, ...newFiles]);
 		},
-		[files.length, maxFiles, validateFile, onError]
+		[files.length, maxFiles, validateFile, onError],
 	);
 
 	const removeFile = useCallback((index: number) => {

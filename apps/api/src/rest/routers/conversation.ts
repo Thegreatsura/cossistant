@@ -127,7 +127,7 @@ conversationRouter.openapi(
 					error:
 						"Visitor not found, please pass a valid visitorId or externalVisitorId",
 				},
-				400
+				400,
 			);
 		}
 
@@ -171,10 +171,10 @@ conversationRouter.openapi(
 						lastMessage,
 					},
 				},
-				createConversationResponseSchema
-			)
+				createConversationResponseSchema,
+			),
 		);
-	}
+	},
 );
 
 conversationRouter.openapi(
@@ -269,7 +269,7 @@ conversationRouter.openapi(
 					error:
 						"Visitor not found, please pass a valid visitorId or externalVisitorId",
 				},
-				400
+				400,
 			);
 		}
 
@@ -300,9 +300,9 @@ conversationRouter.openapi(
 		};
 
 		return c.json(
-			validateResponse(apiResponse, listConversationsResponseSchema)
+			validateResponse(apiResponse, listConversationsResponseSchema),
 		);
-	}
+	},
 );
 
 conversationRouter.openapi(
@@ -422,7 +422,7 @@ conversationRouter.openapi(
 				{
 					error: "Conversation not found",
 				},
-				404
+				404,
 			);
 		}
 
@@ -441,5 +441,5 @@ conversationRouter.openapi(
 		};
 
 		return c.json(validateResponse(apiResponse, getConversationResponseSchema));
-	}
+	},
 );

@@ -21,7 +21,7 @@ export async function upsertVisitor(
 			screenResolution?: string;
 			viewport?: string;
 		};
-	}
+	},
 ) {
 	const visitorId = params.visitorId ?? generateULID();
 	const now = new Date();
@@ -82,7 +82,7 @@ export async function getVisitor(
 	params: {
 		visitorId?: string | null;
 		externalVisitorId?: string | null;
-	}
+	},
 ) {
 	if (!(params.visitorId || params.externalVisitorId)) {
 		return;
@@ -112,7 +112,7 @@ export async function getVisitorComplete(
 	db: Database,
 	params: {
 		visitorId: string;
-	}
+	},
 ) {
 	const _visitor = await db.query.visitor.findFirst({
 		where: eq(visitor.id, params.visitorId),

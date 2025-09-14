@@ -10,7 +10,7 @@ export const resendRouter = createTRPCRouter({
 		.input(
 			z.object({
 				email: emailSchema,
-			})
+			}),
 		)
 		.mutation(async ({ input }) => {
 			const { email } = input;
@@ -19,7 +19,7 @@ export const resendRouter = createTRPCRouter({
 				const success = await updateContactSubscriptionStatus(
 					env.RESEND_AUDIENCE_ID,
 					email,
-					true // Set unsubscribed to true
+					true, // Set unsubscribed to true
 				);
 
 				if (!success) {

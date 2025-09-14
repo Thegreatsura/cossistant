@@ -14,7 +14,7 @@ export function useVisitor(): UseVisitorReturn {
 		visitor,
 		setVisitorMetadata: () => {
 			console.warn(
-				"useVisitor setVisitor is not implemented - visitor is managed by website context"
+				"useVisitor setVisitor is not implemented - visitor is managed by website context",
 			);
 		},
 	};

@@ -10,7 +10,7 @@ interface UseConversationHeadersOptions {
 
 export function useConversationHeaders(
 	websiteSlug: string,
-	options?: UseConversationHeadersOptions
+	options?: UseConversationHeadersOptions,
 ) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
@@ -28,7 +28,7 @@ export function useConversationHeaders(
 					websiteSlug,
 					limit: options?.limit ?? 500,
 					cursor: pageParam ?? null,
-				})
+				}),
 			);
 
 			return response;

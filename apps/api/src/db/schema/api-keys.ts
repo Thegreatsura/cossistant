@@ -33,7 +33,7 @@ export const apiKey = pgTable(
 		name: text("name").notNull(),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" }
+			{ onDelete: "cascade" },
 		),
 		websiteId: ulidReference("website_id").references(() => website.id, {
 			onDelete: "cascade",
@@ -75,7 +75,7 @@ export const apiKey = pgTable(
 		index("api_key_expires_at_idx").on(table.expiresAt),
 		// Index for revoked keys
 		index("api_key_revoked_at_idx").on(table.revokedAt),
-	]
+	],
 );
 
 // Relations

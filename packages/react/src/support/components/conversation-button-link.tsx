@@ -20,7 +20,7 @@ export interface ConversationButtonLinkProps {
 	className?: string | ((state: ConversationButtonLinkState) => string);
 	render?: (
 		props: React.HTMLProps<HTMLButtonElement>,
-		state: ConversationButtonLinkState
+		state: ConversationButtonLinkState,
 	) => React.ReactElement;
 }
 
@@ -38,7 +38,7 @@ export interface ConversationButtonLinkState {
 function getLastMessageInfo(
 	message: NonNullable<Conversation["lastMessage"]>,
 	availableHumanAgents: ReturnType<typeof useSupport>["availableHumanAgents"],
-	website: ReturnType<typeof useSupport>["website"]
+	website: ReturnType<typeof useSupport>["website"],
 ) {
 	const isFromVisitor = message.visitorId !== null;
 
@@ -58,7 +58,7 @@ function getLastMessageInfo(
 	} else if (message.aiAgentId && website?.availableAIAgents) {
 		// Find the AI agent
 		const aiAgent = website.availableAIAgents.find(
-			(a) => a.id === message.aiAgentId
+			(a) => a.id === message.aiAgentId,
 		);
 		if (aiAgent) {
 			senderName = aiAgent.name;
@@ -87,7 +87,7 @@ export function ConversationButtonLink({
 	const lastMessage = useMemo(() => {
 		// Check for cached messages for this conversation
 		const cachedMessages = queryClient.getQueryData<PaginatedMessagesCache>(
-			QUERY_KEYS.messages(conversation.id)
+			QUERY_KEYS.messages(conversation.id),
 		);
 		const allMessages = getAllMessagesFromCache(cachedMessages);
 		const cachedLastMessage =
@@ -122,7 +122,7 @@ export function ConversationButtonLink({
 				"group/btn relative flex w-full items-center gap-2 rounded-none border-0 border-co-border/50 border-b bg-co-background-50 px-4 py-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0 hover:cursor-pointer hover:bg-co-background-100 hover:text-co-foreground dark:bg-co-background-100 dark:hover:bg-co-background-200",
 				typeof props.className === "function"
 					? props.className(state)
-					: props.className
+					: props.className,
 			),
 			children: (
 				<>
@@ -162,7 +162,7 @@ export function ConversationButtonLink({
 								? "bg-co-success/20 text-co-success-foreground"
 								: conversation.status === ConversationStatus.RESOLVED
 									? "bg-co-neutral/20 text-co-neutral-foreground"
-									: "bg-co-warning/20 text-co-warning-foreground"
+									: "bg-co-warning/20 text-co-warning-foreground",
 						)}
 					>
 						{conversation.status}

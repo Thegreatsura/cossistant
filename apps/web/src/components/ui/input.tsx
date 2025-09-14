@@ -33,7 +33,7 @@ function Input({
 					variant === "sm" && "h-8 text-sm",
 					variant === "md" && "h-9 text-md",
 					variant === "lg" && "h-10 text-lg",
-					className
+					className,
 				)}
 				data-slot="input"
 				type={type}

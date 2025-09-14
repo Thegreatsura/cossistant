@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 export async function updateUserLastSeen(
 	db: Database,
-	userId: string
+	userId: string,
 ): Promise<void> {
 	await db
 		.update(user)
@@ -17,7 +17,7 @@ export async function updateUserLastSeen(
 
 export async function getUserLastSeen(
 	db: Database,
-	userId: string
+	userId: string,
 ): Promise<Date | null> {
 	const result = await db
 		.select({ lastSeenAt: user.lastSeenAt })

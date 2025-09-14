@@ -134,7 +134,7 @@ const LINUX_PATTERN_DEVICE = /Linux/;
  * Detect device type from user agent
  */
 function detectDeviceType(
-	userAgent: string
+	userAgent: string,
 ): "desktop" | "mobile" | "tablet" | "unknown" {
 	const isMobile = MOBILE_PATTERN.test(userAgent);
 	const isTablet = TABLET_PATTERN.test(userAgent);

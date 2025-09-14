@@ -48,23 +48,23 @@ export const HomePage = () => {
 				id: c.id,
 				status: c.status,
 				updatedAt: c.updatedAt,
-			}))
+			})),
 		);
 
 		const _lastOpenConversation = conversations?.find(
-			(conversation) => conversation.status === "open"
+			(conversation) => conversation.status === "open",
 		);
 
 		console.log(
 			"[HomePage] Last open conversation:",
-			_lastOpenConversation?.id
+			_lastOpenConversation?.id,
 		);
 
 		return {
 			lastOpenConversation: _lastOpenConversation,
 			availableConversationsAmount: Math.max(
 				(conversations?.length || 0) - 1,
-				0
+				0,
 			),
 		};
 	}, [conversations]);

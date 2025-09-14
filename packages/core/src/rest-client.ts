@@ -48,7 +48,7 @@ export class CossistantRestClient {
 
 		if (!this.publicKey) {
 			throw new Error(
-				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISSTANT_KEY or COSSISSTANT_PUBLIC_KEY environment variable."
+				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISSTANT_KEY or COSSISSTANT_PUBLIC_KEY environment variable.",
 			);
 		}
 
@@ -68,7 +68,7 @@ export class CossistantRestClient {
 
 	private async request<T>(
 		path: string,
-		options: RequestInit = {}
+		options: RequestInit = {},
 	): Promise<T> {
 		const url = `${this.config.apiUrl}${path}`;
 
@@ -140,7 +140,7 @@ export class CossistantRestClient {
 	}
 
 	async createConversation(
-		params: Partial<CreateConversationRequestBody> = {}
+		params: Partial<CreateConversationRequestBody> = {},
 	): Promise<CreateConversationResponseBody> {
 		const conversationId = params.conversationId || generateConversationId();
 
@@ -236,7 +236,7 @@ export class CossistantRestClient {
 	}
 
 	async listConversations(
-		params: Partial<ListConversationsRequest> = {}
+		params: Partial<ListConversationsRequest> = {},
 	): Promise<ListConversationsResponse> {
 		// Get visitor ID from storage if we have the website ID
 		const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
@@ -316,7 +316,7 @@ export class CossistantRestClient {
 	}
 
 	async getConversation(
-		params: GetConversationRequest
+		params: GetConversationRequest,
 	): Promise<GetConversationResponse> {
 		// Get visitor ID from storage if we have the website ID
 		const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
@@ -352,7 +352,7 @@ export class CossistantRestClient {
 	}
 
 	async getConversationMessages(
-		params: GetMessagesRequest
+		params: GetMessagesRequest,
 	): Promise<GetMessagesResponse> {
 		// Get visitor ID from storage if we have the website ID
 		const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;

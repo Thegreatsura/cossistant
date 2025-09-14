@@ -11,7 +11,7 @@ export interface UseConversationResult {
 
 export function useConversation(
 	client: CossistantClient | null,
-	conversationId: string | null
+	conversationId: string | null,
 ): UseConversationResult {
 	const { data, isLoading, error } = useQuery({
 		queryKey: QUERY_KEYS.conversation(conversationId),

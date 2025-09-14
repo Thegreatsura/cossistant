@@ -48,7 +48,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 			// Responsive mode
 			"relative h-full w-full": mode === "responsive",
 		},
-		className
+		className,
 	);
 
 	return (

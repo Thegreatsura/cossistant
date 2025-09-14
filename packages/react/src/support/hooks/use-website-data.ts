@@ -9,7 +9,7 @@ export interface UseWebsiteDataResult {
 }
 
 export function useWebsiteData(
-	client: CossistantClient | null
+	client: CossistantClient | null,
 ): UseWebsiteDataResult {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["website", client?.getConfiguration().publicKey],

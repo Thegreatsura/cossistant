@@ -15,7 +15,7 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => {
 		<Primitive.Bubble
 			className={cn(
 				"relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
-				className
+				className,
 			)}
 		>
 			{({ isOpen, unreadCount }) => (

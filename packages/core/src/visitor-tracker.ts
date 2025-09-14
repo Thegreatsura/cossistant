@@ -98,7 +98,7 @@ export function clearAllVisitorIds(): void {
 
 	try {
 		const keys = Object.keys(localStorage).filter((key) =>
-			key.startsWith(STORAGE_KEY_PREFIX)
+			key.startsWith(STORAGE_KEY_PREFIX),
 		);
 		for (const key of keys) {
 			localStorage.removeItem(key);
@@ -113,7 +113,7 @@ export function clearAllVisitorIds(): void {
  * This is useful when we don't yet know the website ID but need to check for existing visitors
  */
 export function getExistingVisitorId(
-	publicKey: string
+	publicKey: string,
 ): { websiteId: string; visitorId: string } | null {
 	if (!isLocalStorageAvailable()) {
 		return null;
@@ -122,7 +122,7 @@ export function getExistingVisitorId(
 	try {
 		// Find all visitor keys in localStorage
 		const keys = Object.keys(localStorage).filter((key) =>
-			key.startsWith(STORAGE_KEY_PREFIX)
+			key.startsWith(STORAGE_KEY_PREFIX),
 		);
 
 		// Check each one to see if we have a valid visitor ID

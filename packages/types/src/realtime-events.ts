@@ -49,7 +49,7 @@ export type RealtimeEventData<T extends RealtimeEventType> = z.infer<
  */
 export function validateRealtimeEvent<T extends RealtimeEventType>(
 	type: T,
-	data: unknown
+	data: unknown,
 ): RealtimeEventData<T> {
 	const schema = RealtimeEvents[type];
 	return schema.parse(data);

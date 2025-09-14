@@ -48,7 +48,7 @@ app.get("/health", async (c) => {
 	} catch (_error) {
 		return c.json(
 			{ status: "unhealthy", error: "Database connection failed" },
-			503
+			503,
 		);
 	}
 });
@@ -60,7 +60,7 @@ app.use(
 		origin: acceptedOrigins,
 		maxAge: 86_400,
 		credentials: true,
-	})
+	}),
 );
 
 app.use(
@@ -69,7 +69,7 @@ app.use(
 		origin: acceptedOrigins,
 		maxAge: 86_400,
 		credentials: true,
-	})
+	}),
 );
 
 // CORS middleware for V1 API (public access)
@@ -79,7 +79,7 @@ app.use(
 		origin: "*",
 		maxAge: 86_400,
 		credentials: false,
-	})
+	}),
 );
 
 app.use("/trpc/*", async (c, next) => {
@@ -110,7 +110,7 @@ app.use(
 	trpcServer({
 		router: origamiTRPCRouter,
 		createContext: createTRPCContext,
-	})
+	}),
 );
 
 app.route("/v1", routers);
@@ -149,7 +149,7 @@ app.get(
 	"/docs",
 	swaggerUI({
 		url: "/openapi",
-	})
+	}),
 );
 
 export default {

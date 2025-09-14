@@ -71,7 +71,7 @@ export const { websocket, upgradeWebSocket } =
  * Get all active connections for a website (from Redis)
  */
 export async function getWebsiteConnections(
-	websiteId: string
+	websiteId: string,
 ): Promise<ConnectionInfo[]> {
 	return await pubsub.getWebsiteConnections(websiteId);
 }
@@ -80,7 +80,7 @@ export async function getWebsiteConnections(
  * Check if a connection is local to this server
  */
 export async function isLocalConnection(
-	connectionId: string
+	connectionId: string,
 ): Promise<boolean> {
 	return await pubsub.isLocalConnection(connectionId);
 }
@@ -119,7 +119,7 @@ function sendToConnection(connectionId: string, event: unknown): void {
  */
 async function ensureSubscriptions(
 	connectionId: string,
-	websiteId?: string
+	websiteId?: string,
 ): Promise<void> {
 	// Create subscription key based on context
 	const subscriptionKey = websiteId
@@ -143,7 +143,7 @@ async function ensureSubscriptions(
 			} else {
 				sendToConnection(connectionId, event);
 			}
-		}
+		},
 	);
 
 	activeSubscriptions.set(subscriptionKey, subscription);
@@ -159,7 +159,7 @@ async function cleanupConnection(connectionId: string): Promise<void> {
 
 	// Clean up any connection-specific subscriptions
 	const connSubscription = activeSubscriptions.get(
-		`connection:${connectionId}`
+		`connection:${connectionId}`,
 	);
 	if (connSubscription) {
 		await connSubscription.unsubscribe();
@@ -283,7 +283,7 @@ function extractFromRequest(c: Context): {
  */
 function extractProtocolAndHostname(
 	c: Context,
-	actualOrigin: string | undefined
+	actualOrigin: string | undefined,
 ): { protocol: string | undefined; hostname: string | undefined } {
 	if (actualOrigin) {
 		return parseOriginDetails(actualOrigin);
@@ -310,7 +310,7 @@ function logAuthAttempt(
 	hasPrivateKey: boolean,
 	hasPublicKey: boolean,
 	actualOrigin: string | undefined,
-	url: string
+	url: string,
 ): void {
 	if (AUTH_LOGS_ENABLED) {
 		console.log("[WebSocket Auth] Authentication attempt:", {
@@ -359,7 +359,7 @@ export type WebSocketAuthSuccess = {
 async function performApiKeyAuthentication(
 	privateKey: string | undefined,
 	publicKey: string | undefined,
-	options: AuthValidationOptions
+	options: AuthValidationOptions,
 ): Promise<WebSocketAuthSuccess | null> {
 	try {
 		const result = await authenticateWithApiKey(privateKey, publicKey, options);
@@ -383,7 +383,7 @@ async function performApiKeyAuthentication(
  * Accept either API keys (public/private) or a Better Auth session via cookies
  */
 async function authenticateWebSocketConnection(
-	c: Context
+	c: Context,
 ): Promise<WebSocketAuthSuccess | null> {
 	try {
 		// Extract credentials
@@ -409,7 +409,7 @@ async function authenticateWebSocketConnection(
 			result = await performApiKeyAuthentication(
 				privateKey,
 				publicKey,
-				options
+				options,
 			);
 		} else {
 			result = await authenticateWithSession(c);
@@ -443,13 +443,13 @@ async function authenticateWebSocketConnection(
 async function authenticateWithApiKey(
 	privateKey: string | undefined,
 	publicKey: string | undefined,
-	options: AuthValidationOptions
+	options: AuthValidationOptions,
 ): Promise<WebSocketAuthSuccess> {
 	const result = await performAuthentication(
 		privateKey,
 		publicKey,
 		db,
-		options
+		options,
 	);
 
 	const authSuccess: WebSocketAuthSuccess = {
@@ -463,7 +463,7 @@ async function authenticateWithApiKey(
 }
 
 async function authenticateWithSession(
-	c: Context
+	c: Context,
 ): Promise<WebSocketAuthSuccess | null> {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
 	if (!session) {
@@ -488,7 +488,7 @@ async function authenticateWithSession(
 
 	if (!organizationId && AUTH_LOGS_ENABLED) {
 		console.log(
-			"[WebSocket Auth] Session found but no active organization; proceeding without website context"
+			"[WebSocket Auth] Session found but no active organization; proceeding without website context",
 		);
 	}
 
@@ -546,7 +546,7 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			// Register connection in Redis for horizontal scaling
 			const connectionInfo = await createConnectionInfo(
 				connectionId,
-				authResult
+				authResult,
 			);
 			await pubsub.registerConnection(connectionInfo);
 
@@ -555,7 +555,7 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			storeConnectionId(ws, connectionId);
 
 			console.log(
-				`[WebSocket] Connection opened: ${connectionId} for organization: ${authResult.organizationId}`
+				`[WebSocket] Connection opened: ${connectionId} for organization: ${authResult.organizationId}`,
 			);
 
 			// Send successful connection message
@@ -639,7 +639,7 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 					JSON.stringify({
 						error: "Invalid message format",
 						details: error instanceof Error ? error.message : "Unknown error",
-					})
+					}),
 				);
 			}
 		},

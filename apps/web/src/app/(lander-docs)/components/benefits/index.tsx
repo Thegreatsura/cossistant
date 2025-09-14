@@ -68,7 +68,7 @@ export const Benefits = () => (
 						// Add border-right for first column items (index 0, 2, 4)
 						index % 2 === 0 && "border-r",
 						// Add border-bottom for all items except last row (index 0, 1, 2, 3)
-						index < 4 && "border-b"
+						index < 4 && "border-b",
 					)}
 					key={benefit.title}
 				>

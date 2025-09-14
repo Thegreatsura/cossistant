@@ -12,7 +12,7 @@ export async function createWebsite(
 	params: {
 		organizationId: string;
 		data: Omit<WebsiteInsert, "organizationId" | "teamId">;
-	}
+	},
 ) {
 	// Create a team for the website using better-auth API
 	const teamResponse = await auth.api.createTeam({
@@ -45,7 +45,7 @@ export async function getWebsiteById(
 	params: {
 		orgId: string;
 		websiteId: string;
-	}
+	},
 ) {
 	const [site] = await db
 		.select()
@@ -54,8 +54,8 @@ export async function getWebsiteById(
 			and(
 				eq(website.id, params.websiteId),
 				eq(website.organizationId, params.orgId),
-				isNull(website.deletedAt)
-			)
+				isNull(website.deletedAt),
+			),
 		)
 		.limit(1);
 
@@ -70,7 +70,7 @@ export async function getWebsitesByOrganization(
 		status?: WebsiteStatus;
 		limit?: number;
 		offset?: number;
-	}
+	},
 ) {
 	const websites = await db
 		.select()
@@ -79,8 +79,8 @@ export async function getWebsitesByOrganization(
 			and(
 				eq(website.organizationId, params.orgId),
 				params.status ? eq(website.status, params.status) : undefined,
-				isNull(website.deletedAt)
-			)
+				isNull(website.deletedAt),
+			),
 		)
 		.orderBy(desc(website.createdAt))
 		.limit(params.limit ?? 50)
@@ -96,7 +96,7 @@ export async function updateWebsite(
 		orgId: string;
 		websiteId: string;
 		data: Partial<Omit<WebsiteInsert, "organizationId">>;
-	}
+	},
 ) {
 	const [updatedWebsite] = await db
 		.update(website)
@@ -107,8 +107,8 @@ export async function updateWebsite(
 		.where(
 			and(
 				eq(website.id, params.websiteId),
-				eq(website.organizationId, params.orgId)
-			)
+				eq(website.organizationId, params.orgId),
+			),
 		)
 		.returning();
 
@@ -121,7 +121,7 @@ export async function deleteWebsite(
 	params: {
 		orgId: string;
 		websiteId: string;
-	}
+	},
 ) {
 	const [deletedWebsite] = await db
 		.update(website)
@@ -132,8 +132,8 @@ export async function deleteWebsite(
 		.where(
 			and(
 				eq(website.id, params.websiteId),
-				eq(website.organizationId, params.orgId)
-			)
+				eq(website.organizationId, params.orgId),
+			),
 		)
 		.returning();
 
@@ -146,7 +146,7 @@ export async function restoreWebsite(
 	params: {
 		orgId: string;
 		websiteId: string;
-	}
+	},
 ) {
 	const [restoredWebsite] = await db
 		.update(website)
@@ -157,8 +157,8 @@ export async function restoreWebsite(
 		.where(
 			and(
 				eq(website.id, params.websiteId),
-				eq(website.organizationId, params.orgId)
-			)
+				eq(website.organizationId, params.orgId),
+			),
 		)
 		.returning();
 
@@ -171,7 +171,7 @@ export async function checkUserWebsiteAccess(
 	params: {
 		userId: string;
 		websiteSlug: string;
-	}
+	},
 ) {
 	// First, get the website by slug
 	const [site] = await db
@@ -193,8 +193,8 @@ export async function checkUserWebsiteAccess(
 			and(
 				eq(member.userId, params.userId),
 				eq(member.organizationId, site.organizationId),
-				inArray(member.role, ["owner", "admin"])
-			)
+				inArray(member.role, ["owner", "admin"]),
+			),
 		)
 		.limit(1);
 
@@ -210,8 +210,8 @@ export async function checkUserWebsiteAccess(
 			.where(
 				and(
 					eq(teamMember.userId, params.userId),
-					eq(teamMember.teamId, site.teamId)
-				)
+					eq(teamMember.teamId, site.teamId),
+				),
 			)
 			.limit(1);
 
@@ -229,7 +229,7 @@ export async function getWebsiteBySlugWithAccess(
 	params: {
 		userId: string;
 		websiteSlug: string;
-	}
+	},
 ) {
 	const accessCheck = await checkUserWebsiteAccess(db, params);
 
@@ -246,7 +246,7 @@ export async function getWebsiteByIdWithAccess(
 	params: {
 		userId: string;
 		websiteId: string;
-	}
+	},
 ) {
 	// First, get the website by ID
 	const [site] = await db
@@ -267,8 +267,8 @@ export async function getWebsiteByIdWithAccess(
 			and(
 				eq(member.userId, params.userId),
 				eq(member.organizationId, site.organizationId),
-				inArray(member.role, ["owner", "admin"])
-			)
+				inArray(member.role, ["owner", "admin"]),
+			),
 		)
 		.limit(1);
 
@@ -284,8 +284,8 @@ export async function getWebsiteByIdWithAccess(
 			.where(
 				and(
 					eq(teamMember.userId, params.userId),
-					eq(teamMember.teamId, site.teamId)
-				)
+					eq(teamMember.teamId, site.teamId),
+				),
 			)
 			.limit(1);
 

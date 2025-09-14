@@ -22,7 +22,7 @@ export async function getApiKeyByKey(
 	db: Database,
 	params: {
 		key: string;
-	}
+	},
 ): Promise<ApiKeyWithWebsiteAndOrganization | null> {
 	const [res] = await db
 		.select()
@@ -50,7 +50,7 @@ export async function getApiKeyById(
 	params: {
 		orgId: string;
 		apiKeyId: string;
-	}
+	},
 ) {
 	const [key] = await db
 		.select()
@@ -58,8 +58,8 @@ export async function getApiKeyById(
 		.where(
 			and(
 				eq(apiKey.id, params.apiKeyId),
-				eq(apiKey.organizationId, params.orgId)
-			)
+				eq(apiKey.organizationId, params.orgId),
+			),
 		)
 		.limit(1);
 
@@ -76,7 +76,7 @@ export async function getApiKeysByOrganization(
 		isActive?: boolean;
 		limit?: number;
 		offset?: number;
-	}
+	},
 ) {
 	const keys = await db
 		.select()
@@ -88,8 +88,8 @@ export async function getApiKeysByOrganization(
 				params.keyType ? eq(apiKey.keyType, params.keyType) : undefined,
 				params.isActive !== undefined
 					? eq(apiKey.isActive, params.isActive)
-					: undefined
-			)
+					: undefined,
+			),
 		)
 		.orderBy(desc(apiKey.createdAt))
 		.limit(params.limit ?? 50)
@@ -109,7 +109,7 @@ export async function updateApiKey(
 			isActive: boolean;
 			expiresAt: Date | null;
 		}>;
-	}
+	},
 ) {
 	const [updatedKey] = await db
 		.update(apiKey)
@@ -120,8 +120,8 @@ export async function updateApiKey(
 		.where(
 			and(
 				eq(apiKey.id, params.apiKeyId),
-				eq(apiKey.organizationId, params.orgId)
-			)
+				eq(apiKey.organizationId, params.orgId),
+			),
 		)
 		.returning();
 
@@ -135,7 +135,7 @@ export async function revokeApiKey(
 		orgId: string;
 		apiKeyId: string;
 		revokedBy: string;
-	}
+	},
 ) {
 	const [revokedKey] = await db
 		.update(apiKey)
@@ -148,8 +148,8 @@ export async function revokeApiKey(
 		.where(
 			and(
 				eq(apiKey.id, params.apiKeyId),
-				eq(apiKey.organizationId, params.orgId)
-			)
+				eq(apiKey.organizationId, params.orgId),
+			),
 		)
 		.returning();
 
@@ -162,7 +162,7 @@ export async function updateApiKeyLastUsed(
 	params: {
 		orgId: string;
 		apiKeyId: string;
-	}
+	},
 ) {
 	const [updatedKey] = await db
 		.update(apiKey)
@@ -172,8 +172,8 @@ export async function updateApiKeyLastUsed(
 		.where(
 			and(
 				eq(apiKey.id, params.apiKeyId),
-				eq(apiKey.organizationId, params.orgId)
-			)
+				eq(apiKey.organizationId, params.orgId),
+			),
 		)
 		.returning();
 
@@ -190,7 +190,7 @@ export async function createApiKey(
 		keyType: APIKeyType;
 		createdBy: string;
 		isTest: boolean;
-	}
+	},
 ): Promise<CreateApiKeyResult> {
 	let storedKey = "";
 
@@ -234,7 +234,7 @@ export async function createDefaultWebsiteKeys(
 		websiteName: string;
 		organizationId: string;
 		createdBy: string;
-	}
+	},
 ) {
 	// Generate production / test private and public keys
 	const keys = [
@@ -259,8 +259,8 @@ export async function createDefaultWebsiteKeys(
 			createApiKey(db, {
 				...key,
 				...data,
-			})
-		)
+			}),
+		),
 	);
 
 	return result;

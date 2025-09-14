@@ -21,9 +21,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 					type: "button",
 					...props,
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 Button.displayName = "Button";

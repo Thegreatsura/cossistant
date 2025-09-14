@@ -25,7 +25,7 @@ export const waitlistRouter = createTRPCRouter({
 		.input(
 			z.object({
 				userId: optionalUserIdSchema,
-			})
+			}),
 		)
 		.query(async ({ input }) => {
 			return getWaitlistEntryByUserId(db, { userId: input.userId });
@@ -34,7 +34,7 @@ export const waitlistRouter = createTRPCRouter({
 		.input(
 			z.object({
 				referralCode: referralCodeSchema,
-			})
+			}),
 		)
 		.mutation(async ({ input, ctx }) => {
 			const { referralCode } = input;

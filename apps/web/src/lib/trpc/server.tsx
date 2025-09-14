@@ -75,7 +75,7 @@ export function HydrateClient(props: { children: React.ReactNode }) {
 
 export async function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
 	queryOptions: T,
-	onError?: (error: TRPCClientErrorBase<DefaultErrorShape>) => void
+	onError?: (error: TRPCClientErrorBase<DefaultErrorShape>) => void,
 ) {
 	try {
 		const queryClient = getQueryClient();
@@ -91,7 +91,7 @@ export async function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
 }
 
 export function batchPrefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
-	queryOptionsArray: T[]
+	queryOptionsArray: T[],
 ) {
 	const queryClient = getQueryClient();
 

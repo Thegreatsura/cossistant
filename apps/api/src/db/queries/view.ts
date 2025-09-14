@@ -7,7 +7,7 @@ export async function listActiveWebsiteViews(
 	db: Database,
 	params: {
 		websiteId: string;
-	}
+	},
 ) {
 	const views = await db
 		.select()
@@ -21,13 +21,13 @@ export async function listArchivedWebsiteViews(
 	db: Database,
 	params: {
 		websiteId: string;
-	}
+	},
 ) {
 	const views = await db
 		.select()
 		.from(view)
 		.where(
-			and(eq(view.websiteId, params.websiteId), isNotNull(view.deletedAt))
+			and(eq(view.websiteId, params.websiteId), isNotNull(view.deletedAt)),
 		);
 
 	return views;
@@ -40,7 +40,7 @@ export async function createDefaultWebsiteViews(
 		websiteName: string;
 		organizationId: string;
 		createdBy: string;
-	}
+	},
 ) {
 	// Generate production / test private and public keys
 	const views: ViewInsert[] = [

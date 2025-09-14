@@ -8,77 +8,77 @@ import { useConversationHeaders } from "@/data/use-conversation-headers";
 type ConversationStatusFilter = ConversationStatus | "archived" | null;
 
 type ConversationHeader =
-  RouterOutputs["conversation"]["listConversationsHeaders"]["items"][number];
+	RouterOutputs["conversation"]["listConversationsHeaders"]["items"][number];
 
 type FilterResult = {
-  conversations: ConversationHeader[];
-  conversationMap: Map<string, ConversationHeader>;
-  indexMap: Map<string, number>;
-  statusCounts: {
-    open: number;
-    resolved: number;
-    spam: number;
-    archived: number;
-  };
+	conversations: ConversationHeader[];
+	conversationMap: Map<string, ConversationHeader>;
+	indexMap: Map<string, number>;
+	statusCounts: {
+		open: number;
+		resolved: number;
+		spam: number;
+		archived: number;
+	};
 };
 
 /**
  * Count conversations by status
  */
 function countStatus(
-  conversation: ConversationHeader,
-  statusCounts: FilterResult["statusCounts"]
+	conversation: ConversationHeader,
+	statusCounts: FilterResult["statusCounts"],
 ) {
-  if (conversation.deletedAt !== null) {
-    statusCounts.archived++;
-  } else if (conversation.status === ConversationStatus.OPEN) {
-    statusCounts.open++;
-  } else if (
-    conversation.status === ConversationStatus.RESOLVED ||
-    conversation.resolvedAt !== null
-  ) {
-    statusCounts.resolved++;
-  } else if (conversation.status === ConversationStatus.SPAM) {
-    statusCounts.spam++;
-  }
+	if (conversation.deletedAt !== null) {
+		statusCounts.archived++;
+	} else if (conversation.status === ConversationStatus.OPEN) {
+		statusCounts.open++;
+	} else if (
+		conversation.status === ConversationStatus.RESOLVED ||
+		conversation.resolvedAt !== null
+	) {
+		statusCounts.resolved++;
+	} else if (conversation.status === ConversationStatus.SPAM) {
+		statusCounts.spam++;
+	}
 }
 
 /**
  * Check if conversation matches status filter
  */
 function matchesStatusFilter(
-  conversation: ConversationHeader,
-  selectedStatus: ConversationStatusFilter
+	conversation: ConversationHeader,
+	selectedStatus: ConversationStatusFilter,
 ): boolean {
-  if (!selectedStatus) {
-    return true;
-  }
+	if (!selectedStatus) {
+		return true;
+	}
 
-  switch (selectedStatus) {
-    case "open":
-      return (
-        conversation.status === ConversationStatus.OPEN &&
-        !conversation.deletedAt
-      );
-    case "resolved":
-      return (
-        (conversation.status === ConversationStatus.RESOLVED ||
-          conversation.resolvedAt !== null) &&
-        !conversation.deletedAt
-      );
-    case "spam":
-      return (
-        conversation.status === ConversationStatus.SPAM &&
-        !conversation.deletedAt
-      );
-    case "archived":
-      return conversation.deletedAt !== null;
-    default: {
-      // Handle enum exhaustiveness
-      const _exhaustive: never = selectedStatus;
-      return true;
-    }
-  }
+	switch (selectedStatus) {
+		case "open":
+			return (
+				conversation.status === ConversationStatus.OPEN &&
+				!conversation.deletedAt
+			);
+		case "resolved":
+			return (
+				(conversation.status === ConversationStatus.RESOLVED ||
+					conversation.resolvedAt !== null) &&
+				!conversation.deletedAt
+			);
+		case "spam":
+			return (
+				conversation.status === ConversationStatus.SPAM &&
+				!conversation.deletedAt
+			);
+		case "archived":
+			return conversation.deletedAt !== null;
+		default: {
+			// Handle enum exhaustiveness
+			const _exhaustive: never = selectedStatus;
+			return true;
+		}
+	}
 }
 
 /**
@@ -89,53 +89,53 @@ function matchesStatusFilter(
  * 3. Create lookup maps for O(1) access
  */
 function filterAndProcessConversations(
-  conversations: ConversationHeader[],
-  selectedStatus: ConversationStatusFilter,
-  selectedViewId: string | null
+	conversations: ConversationHeader[],
+	selectedStatus: ConversationStatusFilter,
+	selectedViewId: string | null,
 ): FilterResult {
-  const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
-  const filteredConversations: ConversationHeader[] = [];
-  const conversationMap = new Map<string, ConversationHeader>();
-  const indexMap = new Map<string, number>();
+	const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
+	const filteredConversations: ConversationHeader[] = [];
+	const conversationMap = new Map<string, ConversationHeader>();
+	const indexMap = new Map<string, number>();
 
-  // Single pass through conversations
-  for (const conversation of conversations) {
-    // Count by status (always count, regardless of filters)
-    countStatus(conversation, statusCounts);
+	// Single pass through conversations
+	for (const conversation of conversations) {
+		// Count by status (always count, regardless of filters)
+		countStatus(conversation, statusCounts);
 
-    // Check if conversation matches current filters
-    const matchesStatus = matchesStatusFilter(conversation, selectedStatus);
-    const matchesViewFilter =
-      !selectedViewId || conversation.viewIds.includes(selectedViewId);
+		// Check if conversation matches current filters
+		const matchesStatus = matchesStatusFilter(conversation, selectedStatus);
+		const matchesViewFilter =
+			!selectedViewId || conversation.viewIds.includes(selectedViewId);
 
-    // Add to filtered list if matches all filters
-    if (matchesStatus && matchesViewFilter) {
-      filteredConversations.push(conversation);
-    }
-  }
+		// Add to filtered list if matches all filters
+		if (matchesStatus && matchesViewFilter) {
+			filteredConversations.push(conversation);
+		}
+	}
 
-  // Sort by lastMessageAt (most recent first) - in-place for efficiency
-  filteredConversations.sort((a, b) => {
-    const aTime = a.lastMessageAt?.getTime() ?? 0;
-    const bTime = b.lastMessageAt?.getTime() ?? 0;
-    return bTime - aTime;
-  });
+	// Sort by lastMessageAt (most recent first) - in-place for efficiency
+	filteredConversations.sort((a, b) => {
+		const aTime = a.lastMessageAt?.getTime() ?? 0;
+		const bTime = b.lastMessageAt?.getTime() ?? 0;
+		return bTime - aTime;
+	});
 
-  // Build maps after sorting for correct indexes
-  for (let i = 0; i < filteredConversations.length; i++) {
-    const conversation = filteredConversations[i];
-    if (conversation) {
-      conversationMap.set(conversation.id, conversation);
-      indexMap.set(conversation.id, i);
-    }
-  }
+	// Build maps after sorting for correct indexes
+	for (let i = 0; i < filteredConversations.length; i++) {
+		const conversation = filteredConversations[i];
+		if (conversation) {
+			conversationMap.set(conversation.id, conversation);
+			indexMap.set(conversation.id, i);
+		}
+	}
 
-  return {
-    conversations: filteredConversations,
-    conversationMap,
-    indexMap,
-    statusCounts,
-  };
+	return {
+		conversations: filteredConversations,
+		conversationMap,
+		indexMap,
+		statusCounts,
+	};
 }
 
 /**
@@ -154,97 +154,97 @@ function filterAndProcessConversations(
  * @returns Filtered conversations with navigation utilities and O(1) lookup capabilities
  */
 export function useFilteredConversations({
-  selectedViewId,
-  selectedConversationStatus,
-  selectedConversationId,
-  basePath,
+	selectedViewId,
+	selectedConversationStatus,
+	selectedConversationId,
+	basePath,
 }: {
-  selectedViewId: string | null;
-  selectedConversationStatus: ConversationStatusFilter;
-  selectedConversationId: string | null;
-  basePath: string;
+	selectedViewId: string | null;
+	selectedConversationStatus: ConversationStatusFilter;
+	selectedConversationId: string | null;
+	basePath: string;
 }) {
-  const website = useWebsite();
-  const router = useRouter();
+	const website = useWebsite();
+	const router = useRouter();
 
-  const { conversations: unfilteredConversations, isLoading } =
-    useConversationHeaders(website.slug);
+	const { conversations: unfilteredConversations, isLoading } =
+		useConversationHeaders(website.slug);
 
-  const { conversations, conversationMap, indexMap, statusCounts } = useMemo(
-    () =>
-      filterAndProcessConversations(
-        unfilteredConversations,
-        selectedConversationStatus,
-        selectedViewId
-      ),
-    [unfilteredConversations, selectedConversationStatus, selectedViewId]
-  );
+	const { conversations, conversationMap, indexMap, statusCounts } = useMemo(
+		() =>
+			filterAndProcessConversations(
+				unfilteredConversations,
+				selectedConversationStatus,
+				selectedViewId,
+			),
+		[unfilteredConversations, selectedConversationStatus, selectedViewId],
+	);
 
-  const currentIndex = selectedConversationId
-    ? (indexMap.get(selectedConversationId) ?? -1)
-    : -1;
+	const currentIndex = selectedConversationId
+		? (indexMap.get(selectedConversationId) ?? -1)
+		: -1;
 
-  const selectedConversation = selectedConversationId
-    ? conversationMap.get(selectedConversationId) || null
-    : null;
+	const selectedConversation = selectedConversationId
+		? conversationMap.get(selectedConversationId) || null
+		: null;
 
-  const nextConversation =
-    currentIndex >= 0 && currentIndex < conversations.length - 1
-      ? conversations[currentIndex + 1] || null
-      : null;
+	const nextConversation =
+		currentIndex >= 0 && currentIndex < conversations.length - 1
+			? conversations[currentIndex + 1] || null
+			: null;
 
-  const previousConversation =
-    currentIndex > 0 ? conversations[currentIndex - 1] || null : null;
+	const previousConversation =
+		currentIndex > 0 ? conversations[currentIndex - 1] || null : null;
 
-  const navigateToNextConversation = useCallback(() => {
-    if (nextConversation) {
-      const path = basePath.split("/").slice(0, -1).join("/");
+	const navigateToNextConversation = useCallback(() => {
+		if (nextConversation) {
+			const path = basePath.split("/").slice(0, -1).join("/");
 
-      router.push(`${path}/${nextConversation.id}`);
-    }
-  }, [nextConversation, router, basePath]);
+			router.push(`${path}/${nextConversation.id}`);
+		}
+	}, [nextConversation, router, basePath]);
 
-  const navigateToPreviousConversation = useCallback(() => {
-    if (previousConversation) {
-      const path = basePath.split("/").slice(0, -1).join("/");
+	const navigateToPreviousConversation = useCallback(() => {
+		if (previousConversation) {
+			const path = basePath.split("/").slice(0, -1).join("/");
 
-      router.push(`${path}/${previousConversation.id}`);
-    }
-  }, [previousConversation, router, basePath]);
+			router.push(`${path}/${previousConversation.id}`);
+		}
+	}, [previousConversation, router, basePath]);
 
-  const goBack = useCallback(() => {
-    const path = basePath.split("/").slice(0, -1).join("/");
+	const goBack = useCallback(() => {
+		const path = basePath.split("/").slice(0, -1).join("/");
 
-    router.push(`${path}`);
-  }, [router, basePath]);
+		router.push(`${path}`);
+	}, [router, basePath]);
 
-  const isConversationInCurrentFilter = useCallback(
-    (conversationId: string) => conversationMap.has(conversationId),
-    [conversationMap]
-  );
+	const isConversationInCurrentFilter = useCallback(
+		(conversationId: string) => conversationMap.has(conversationId),
+		[conversationMap],
+	);
 
-  const getConversationById = useCallback(
-    (conversationId: string) => conversationMap.get(conversationId) || null,
-    [conversationMap]
-  );
+	const getConversationById = useCallback(
+		(conversationId: string) => conversationMap.get(conversationId) || null,
+		[conversationMap],
+	);
 
-  return {
-    conversations,
-    conversationMap,
-    indexMap,
-    statusCounts,
-    selectedConversationIndex: currentIndex,
-    selectedVisitorId: selectedConversation?.visitorId || null,
-    totalCount: conversations.length,
-    isLoading,
-    // Navigation
-    goBack,
-    nextConversation,
-    previousConversation,
-    navigateToNextConversation,
-    navigateToPreviousConversation,
-    // Utilities
-    isConversationInCurrentFilter,
-    getConversationById,
-  };
+	return {
+		conversations,
+		conversationMap,
+		indexMap,
+		statusCounts,
+		selectedConversationIndex: currentIndex,
+		selectedVisitorId: selectedConversation?.visitorId || null,
+		totalCount: conversations.length,
+		isLoading,
+		// Navigation
+		goBack,
+		nextConversation,
+		previousConversation,
+		navigateToNextConversation,
+		navigateToPreviousConversation,
+		// Utilities
+		isConversationInCurrentFilter,
+		getConversationById,
+	};
 }

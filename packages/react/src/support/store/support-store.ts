@@ -166,8 +166,8 @@ export const useSupportStore = create<SupportStore>()(
 					isOpen: state.config.isOpen,
 				},
 			}),
-		}
-	)
+		},
+	),
 );
 
 export const useSupportConfig = () => {

@@ -12,7 +12,7 @@ export interface UseConversationsResult {
 
 export function useConversations(
 	client: CossistantClient | null,
-	params: { limit?: number; enabled?: boolean } = {}
+	params: { limit?: number; enabled?: boolean } = {},
 ): UseConversationsResult {
 	const isEnabled = !!client && params.enabled !== false;
 

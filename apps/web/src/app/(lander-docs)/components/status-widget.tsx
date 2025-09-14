@@ -40,7 +40,7 @@ async function getStatus(slug: string): Promise<{ status: Status }> {
 			`https://api.openstatus.dev/public/status/${slug}`,
 			{
 				cache: "no-cache",
-			}
+			},
 		);
 
 		if (res.ok) {
@@ -77,7 +77,7 @@ export async function StatusWidget({ slug, href }: StatusWidgetProps) {
 					<span
 						className={cn(
 							"absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 duration-1000",
-							color
+							color,
 						)}
 					/>
 				) : null}

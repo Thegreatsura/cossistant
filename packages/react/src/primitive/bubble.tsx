@@ -45,7 +45,7 @@ export const SupportBubble = React.forwardRef<
 				...props,
 				children: content,
 			},
-		}
+		},
 	);
 });
 

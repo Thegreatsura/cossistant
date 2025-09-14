@@ -75,7 +75,7 @@ export interface ConnectionInfo {
  */
 export type MessageHandler = (
 	event: RealtimeEvent,
-	channel: string
+	channel: string,
 ) => void | Promise<void>;
 
 /**
@@ -107,7 +107,7 @@ export class PubSubService {
 	async publish<T extends RealtimeEventType>(
 		eventType: T,
 		data: RealtimeEventData<T>,
-		target: PublishTarget
+		target: PublishTarget,
 	): Promise<void> {
 		if (this.isShuttingDown) {
 			throw new Error("PubSub service is shutting down");
@@ -151,7 +151,7 @@ export class PubSubService {
 		const totalReceivers = results.reduce((sum, count) => sum + count, 0);
 
 		console.log(
-			`[PubSub] Published ${eventType} to ${channels.length} channels (${totalReceivers} receivers)`
+			`[PubSub] Published ${eventType} to ${channels.length} channels (${totalReceivers} receivers)`,
 		);
 	}
 
@@ -160,7 +160,7 @@ export class PubSubService {
 	 */
 	async subscribe(
 		channel: string,
-		handler: MessageHandler
+		handler: MessageHandler,
 	): Promise<Subscription> {
 		if (this.isShuttingDown) {
 			throw new Error("PubSub service is shutting down");
@@ -218,11 +218,11 @@ export class PubSubService {
 	 */
 	private async startSubscription(
 		channel: string,
-		abortController: AbortController
+		abortController: AbortController,
 	) {
 		const baseUrl = env.UPSTASH_REDIS_REST_URL.replace(
 			PubSubService.TRAILING_SLASH_REGEX,
-			""
+			"",
 		);
 		const endpoint = `${baseUrl}/subscribe/${encodeURIComponent(channel)}`;
 
@@ -312,7 +312,7 @@ export class PubSubService {
 					const promises = Array.from(handlers).map((handler) =>
 						Promise.resolve(handler(event, channel)).catch((error) => {
 							console.error("[PubSub] Handler error:", error);
-						})
+						}),
 					);
 					await Promise.all(promises);
 				}
@@ -331,14 +331,14 @@ export class PubSubService {
 			websiteId?: string;
 			connectionId?: string;
 		},
-		handler: MessageHandler
+		handler: MessageHandler,
 	): Promise<Subscription> {
 		const unsubscribeFunctions: Array<() => Promise<void>> = [];
 
 		if (options.conversationId) {
 			const sub = await this.subscribe(
 				getVisitorChannelName(options.conversationId),
-				handler
+				handler,
 			);
 			unsubscribeFunctions.push(sub.unsubscribe);
 		}
@@ -346,7 +346,7 @@ export class PubSubService {
 		if (options.websiteId) {
 			const sub = await this.subscribe(
 				getDashboardChannelName(options.websiteId),
-				handler
+				handler,
 			);
 			unsubscribeFunctions.push(sub.unsubscribe);
 		}
@@ -354,7 +354,7 @@ export class PubSubService {
 		if (options.connectionId) {
 			const sub = await this.subscribe(
 				getConnectionChannelName(options.connectionId),
-				handler
+				handler,
 			);
 			unsubscribeFunctions.push(sub.unsubscribe);
 		}
@@ -378,14 +378,14 @@ export class PubSubService {
 		if (info.websiteId) {
 			await redis.sadd(
 				`website:${info.websiteId}:connections`,
-				info.connectionId
+				info.connectionId,
 			);
 			// Set expiry on the set (will be refreshed on each new connection)
 			await redis.expire(`website:${info.websiteId}:connections`, 3600); // 1 hour
 		}
 
 		console.log(
-			`[PubSub] Registered connection: ${info.connectionId} on server: ${SERVER_ID}`
+			`[PubSub] Registered connection: ${info.connectionId} on server: ${SERVER_ID}`,
 		);
 	}
 
@@ -427,7 +427,7 @@ export class PubSubService {
 	 */
 	async getWebsiteConnections(websiteId: string): Promise<ConnectionInfo[]> {
 		const connectionIds = await redis.smembers<string[]>(
-			`website:${websiteId}:connections`
+			`website:${websiteId}:connections`,
 		);
 		if (!connectionIds || connectionIds.length === 0) {
 			return [];
@@ -450,7 +450,7 @@ export class PubSubService {
 	async updatePresence(
 		userId: string,
 		status: "online" | "away" | "offline",
-		websiteId?: string
+		websiteId?: string,
 	): Promise<void> {
 		const key = `presence:${userId}`;
 		const presence = {
@@ -475,7 +475,7 @@ export class PubSubService {
 					status,
 					lastSeen: presence.lastSeen,
 				},
-				{ websiteId }
+				{ websiteId },
 			);
 		}
 	}
@@ -484,7 +484,7 @@ export class PubSubService {
 	 * Get user presence
 	 */
 	async getPresence(
-		userId: string
+		userId: string,
 	): Promise<{ status: string; lastSeen: number } | null> {
 		const data = await redis.get<string>(`presence:${userId}`);
 		return data ? JSON.parse(data) : null;
@@ -565,7 +565,7 @@ export const pubsub = new PubSubService();
 export async function emitToVisitors<T extends RealtimeEventType>(
 	conversationId: string,
 	eventType: T,
-	data: RealtimeEventData<T>
+	data: RealtimeEventData<T>,
 ): Promise<void> {
 	return pubsub.publish(eventType, data, { conversationId });
 }
@@ -573,7 +573,7 @@ export async function emitToVisitors<T extends RealtimeEventType>(
 export async function emitToDashboard<T extends RealtimeEventType>(
 	websiteId: string,
 	eventType: T,
-	data: RealtimeEventData<T>
+	data: RealtimeEventData<T>,
 ): Promise<void> {
 	return pubsub.publish(eventType, data, { websiteId });
 }
@@ -582,7 +582,7 @@ export async function emitToAll<T extends RealtimeEventType>(
 	conversationId: string,
 	websiteId: string,
 	eventType: T,
-	data: RealtimeEventData<T>
+	data: RealtimeEventData<T>,
 ): Promise<void> {
 	return pubsub.publish(eventType, data, { conversationId, websiteId });
 }
@@ -590,7 +590,7 @@ export async function emitToAll<T extends RealtimeEventType>(
 export async function emitToConnection<T extends RealtimeEventType>(
 	connectionId: string,
 	eventType: T,
-	data: RealtimeEventData<T>
+	data: RealtimeEventData<T>,
 ): Promise<void> {
 	return pubsub.publish(eventType, data, { connectionId });
 }
@@ -601,7 +601,7 @@ export async function emitToConnection<T extends RealtimeEventType>(
 export async function triggerEvent<T extends RealtimeEventType>(
 	eventType: T,
 	data: RealtimeEventData<T>,
-	target: PublishTarget
+	target: PublishTarget,
 ): Promise<void> {
 	return pubsub.publish(eventType, data, target);
 }

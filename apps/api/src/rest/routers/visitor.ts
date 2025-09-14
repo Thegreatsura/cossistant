@@ -104,13 +104,13 @@ visitorRouter.openapi(
 			const visitorId = c.req.param("id");
 			const data = await safelyExtractRequestData(
 				c,
-				updateVisitorRequestSchema
+				updateVisitorRequestSchema,
 			);
 
 			if (!apiKey?.websiteId) {
 				return c.json(
 					{ error: "UNAUTHORIZED", message: "Invalid API key" },
-					401
+					401,
 				);
 			}
 
@@ -121,15 +121,15 @@ visitorRouter.openapi(
 				.where(
 					and(
 						eq(visitor.id, visitorId),
-						eq(visitor.websiteId, apiKey.websiteId)
-					)
+						eq(visitor.websiteId, apiKey.websiteId),
+					),
 				)
 				.limit(1);
 
 			if (!existingVisitor) {
 				return c.json(
 					{ error: "NOT_FOUND", message: "Visitor not found" },
-					404
+					404,
 				);
 			}
 
@@ -178,7 +178,7 @@ visitorRouter.openapi(
 
 			return c.json(
 				validateResponse(response, visitorResponseSchema, c.req.url),
-				200
+				200,
 			);
 		} catch (error) {
 			console.error("Error upserting visitor:", error);
@@ -187,10 +187,10 @@ visitorRouter.openapi(
 					error: "INTERNAL_SERVER_ERROR",
 					message: "Failed to upsert visitor information",
 				},
-				500
+				500,
 			);
 		}
-	}
+	},
 );
 
 // GET /visitors/:id - Get visitor information by ID
@@ -258,7 +258,7 @@ visitorRouter.openapi(
 			if (!apiKey?.websiteId) {
 				return c.json(
 					{ error: "UNAUTHORIZED", message: "Invalid API key" },
-					401
+					401,
 				);
 			}
 
@@ -268,15 +268,15 @@ visitorRouter.openapi(
 				.where(
 					and(
 						eq(visitor.id, visitorId),
-						eq(visitor.websiteId, apiKey.websiteId)
-					)
+						eq(visitor.websiteId, apiKey.websiteId),
+					),
 				)
 				.limit(1);
 
 			if (!visitorRecord) {
 				return c.json(
 					{ error: "NOT_FOUND", message: "Visitor not found" },
-					404
+					404,
 				);
 			}
 
@@ -310,7 +310,7 @@ visitorRouter.openapi(
 
 			return c.json(
 				validateResponse(response, visitorResponseSchema, c.req.url),
-				200
+				200,
 			);
 		} catch (error) {
 			console.error("Error fetching visitor:", error);
@@ -319,8 +319,8 @@ visitorRouter.openapi(
 					error: "INTERNAL_SERVER_ERROR",
 					message: "Failed to fetch visitor information",
 				},
-				500
+				500,
 			);
 		}
-	}
+	},
 );

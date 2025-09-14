@@ -32,13 +32,13 @@ export const MultimodalInput = React.forwardRef<
 			disabled,
 			...props
 		},
-		ref
+		ref,
 	) => {
 		const innerRef = React.useRef<HTMLTextAreaElement | null>(null);
 
 		React.useImperativeHandle(
 			ref,
-			() => innerRef.current as HTMLTextAreaElement
+			() => innerRef.current as HTMLTextAreaElement,
 		);
 
 		const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -117,9 +117,9 @@ export const MultimodalInput = React.forwardRef<
 						overflow: "hidden",
 					},
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 MultimodalInput.displayName = "MultimodalInput";
@@ -157,9 +157,9 @@ export const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
 					multiple: true,
 					onChange: handleChange,
 				},
-			}
+			},
 		);
-	}
+	},
 );
 
 FileInput.displayName = "FileInput";

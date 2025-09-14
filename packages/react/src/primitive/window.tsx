@@ -29,7 +29,7 @@ export const SupportWindow = React.forwardRef<HTMLDivElement, WindowProps>(
 			id = "cossistant-window",
 			...props
 		},
-		ref
+		ref,
 	) => {
 		const { isOpen, close, mode } = useSupportConfig();
 
@@ -81,9 +81,9 @@ export const SupportWindow = React.forwardRef<HTMLDivElement, WindowProps>(
 					children: content,
 				},
 				enabled: open,
-			}
+			},
 		);
-	}
+	},
 );
 
 SupportWindow.displayName = "SupportWindow";

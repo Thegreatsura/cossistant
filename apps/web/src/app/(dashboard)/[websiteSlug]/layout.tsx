@@ -35,7 +35,7 @@ export default async function Layout({ children, params }: LayoutProps) {
 				// For other errors, we still redirect to select
 				// This ensures the user doesn't see a broken page
 				redirect("/select");
-			}
+			},
 		),
 		// prefetch(trpc.view.list.queryOptions({ slug: websiteSlug }), (error) => {
 		//   console.error(error);
@@ -54,7 +54,7 @@ export default async function Layout({ children, params }: LayoutProps) {
 						websiteSlug,
 						limit: 500,
 						cursor: pageParam ?? null,
-					})
+					}),
 				);
 				return response;
 			},

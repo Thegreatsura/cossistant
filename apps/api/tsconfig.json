@@ -1,25 +1,25 @@
 {
-  "compilerOptions": {
-    "strict": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "react",
-    "moduleResolution": "bundler",
-    "module": "ESNext",
-    "target": "ESNext",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@api/*": ["src/*"],
-      "@cossistant/types/*": ["../../packages/types/src/*"]
-    },
-    "declaration": true,
-    "composite": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+	"compilerOptions": {
+		"strict": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "react",
+		"moduleResolution": "bundler",
+		"module": "ESNext",
+		"target": "ESNext",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"baseUrl": ".",
+		"paths": {
+			"@api/*": ["src/*"],
+			"@cossistant/types/*": ["../../packages/types/src/*"]
+		},
+		"declaration": true,
+		"composite": true,
+		"declarationMap": true,
+		"outDir": "./dist",
+		"rootDir": "./src"
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules"]
 }

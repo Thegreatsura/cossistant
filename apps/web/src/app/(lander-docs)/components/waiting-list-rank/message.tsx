@@ -8,7 +8,7 @@ export async function WaitingListMessage() {
 	const { entry, totalEntries } = await queryClient.fetchQuery(
 		trpc.waitlist.getWaitlistEntry.queryOptions({
 			userId: user?.id,
-		})
+		}),
 	);
 	return (
 		<p className="text-balance text-center font-mono text-foreground/60 text-xs md:text-left">

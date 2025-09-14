@@ -29,7 +29,7 @@ export default function UnsubscribePage() {
 			onError: (err) => {
 				setError(err.message || "Failed to unsubscribe");
 			},
-		})
+		}),
 	);
 
 	const handleSubmit = async (e: React.FormEvent) => {

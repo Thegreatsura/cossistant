@@ -13,7 +13,7 @@ export default async function Page() {
 	const { totalEntries } = await queryClient.fetchQuery(
 		trpc.waitlist.getWaitlistEntry.queryOptions({
 			userId: undefined,
-		})
+		}),
 	);
 
 	return (

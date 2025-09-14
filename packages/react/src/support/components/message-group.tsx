@@ -32,7 +32,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 	}
 
 	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === messages[0]?.userId
+		(agent) => agent.id === messages[0]?.userId,
 	);
 
 	return (
@@ -43,7 +43,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 					className={cn(
 						"flex w-full gap-2 px-2",
 						isVisitor && "flex-row-reverse",
-						!isVisitor && "flex-row"
+						!isVisitor && "flex-row",
 					)}
 					initial={{ opacity: 0, y: 20 }}
 					transition={{ duration: 0.3, ease: "easeOut" }}

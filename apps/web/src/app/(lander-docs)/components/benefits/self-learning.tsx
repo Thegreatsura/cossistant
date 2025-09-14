@@ -42,7 +42,7 @@ export const SelfLearningGraphic = () => (
 					"after:-right-1 after:absolute after:top-[-5%] after:h-[110%] after:w-[20rem] after:bg-gradient-to-l after:from-background after:to-transparent after:content-['']",
 					"hover:border-foreground/20 hover:bg-muted",
 					"[&>*]:flex [&>*]:items-center [&>*]:gap-2",
-					card.className
+					card.className,
 				)}
 				key={card.title}
 			>

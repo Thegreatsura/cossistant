@@ -19,8 +19,8 @@ export const useConfigState = create<ConfigState>()(
 		{
 			name: "config-state",
 			storage: createJSONStorage(() => localStorage),
-		}
-	)
+		},
+	),
 );
 
 export const useConfig = () => {
