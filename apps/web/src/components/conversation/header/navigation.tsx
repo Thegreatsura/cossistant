@@ -45,22 +45,16 @@ export function ConversationHeaderNavigation() {
   return (
     <div className="flex items-center gap-4">
       <TooltipOnHover content="Go back" shortcuts={["Esc"]}>
-        <Button
-          className="size-6 rounded-md"
-          onClick={goBack}
-          size="icon"
-          variant="ghost"
-        >
+        <Button onClick={goBack} size="icon-small" variant="ghost">
           <Icon name="arrow-left" />
         </Button>
       </TooltipOnHover>
       <div className="flex items-center gap-2">
         <TooltipOnHover content="Previous conversation" shortcuts={["j"]}>
           <Button
-            className="size-6 rounded-md"
             disabled={!previousConversation}
             onClick={navigateToPreviousConversation}
-            size="icon"
+            size="icon-small"
             variant="outline"
           >
             <Icon className="rotate-90" name="arrow-left" />
@@ -68,10 +62,9 @@ export function ConversationHeaderNavigation() {
         </TooltipOnHover>
         <TooltipOnHover content="Next conversation" shortcuts={["k"]}>
           <Button
-            className="size-6 rounded-md"
             disabled={!nextConversation}
             onClick={navigateToNextConversation}
-            size="icon"
+            size="icon-small"
             variant="outline"
           >
             <Icon className="rotate-90" name="arrow-right" />

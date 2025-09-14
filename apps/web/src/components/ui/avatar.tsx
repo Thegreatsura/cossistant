@@ -59,7 +59,7 @@ function AvatarFallback({
       className={cn(
         "flex size-full items-center justify-center rounded-sm",
         !value &&
-          "bg-background-400 text-[10px] text-primary dark:bg-background-400",
+          "bg-background-400 text-[10px] text-primary dark:bg-background-500",
         className
       )}
       data-slot="avatar-fallback"

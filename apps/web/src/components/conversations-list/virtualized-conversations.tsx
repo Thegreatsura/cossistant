@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useRef } from "react";
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { useConversationKeyboardNavigation } from "./use-conversation-keyboard-navigation";
 
 type ConversationsListProps = {
   basePath: string;
@@ -18,10 +19,14 @@ const VirtualConversationItem = memo(
     conversation,
     href,
     websiteSlug,
+    focused,
+    onMouseEnter,
   }: {
     conversation: ConversationHeader;
     href: string;
     websiteSlug: string;
+    focused: boolean;
+    onMouseEnter: () => void;
   }) => {
     return (
       <ConversationItem
@@ -29,6 +34,8 @@ const VirtualConversationItem = memo(
         key={conversation.id}
         header={conversation}
         websiteSlug={websiteSlug}
+        focused={focused}
+        setFocused={onMouseEnter}
       />
     );
   }
@@ -43,11 +50,20 @@ export function VirtualizedConversations({
 }: ConversationsListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  const { focusedIndex, handleMouseEnter } = useConversationKeyboardNavigation({
+    conversations,
+    basePath,
+    parentRef,
+    itemHeight: ITEM_HEIGHT,
+    enabled: true,
+  });
+
   const virtualizer = useVirtualizer({
     count: conversations.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => ITEM_HEIGHT,
-    overscan: 5, // Render 5 items outside of the visible area for smoother scrolling
+    gap: 4,
+    overscan: 4,
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -88,6 +104,8 @@ export function VirtualizedConversations({
                 conversation={conversation}
                 href={href}
                 websiteSlug={websiteSlug}
+                focused={focusedIndex === virtualItem.index}
+                onMouseEnter={() => handleMouseEnter(virtualItem.index)}
               />
             </div>
           );
