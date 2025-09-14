@@ -14,7 +14,7 @@ export function ConversationHeader() {
   }
 
   return (
-    <PageHeader className="pl-3.5">
+    <PageHeader className="pl-3.5 border-b border-primary/10 bg-background dark:bg-background-100 xl:border-transparent xl:bg-transparent xl:dark:bg-transparent">
       <ConversationHeaderNavigation />
       <div className="flex items-center gap-3">
         <ConversationBasicActions className="pr-0 gap-3" />

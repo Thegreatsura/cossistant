@@ -14,19 +14,23 @@ import { ConversationEvent } from "./event";
 import { MessageGroup } from "./group";
 
 type Props = {
+  ref?: React.RefObject<HTMLDivElement | null>;
   messages: MessageType[];
   events: ConversationEventType[];
   availableAIAgents: AvailableAIAgent[];
   availableHumanAgents: AvailableHumanAgent[];
   className?: string;
+  onFetchMoreIfNeeded?: () => void;
 };
 
 export function MessagesList({
+  ref,
   messages = [],
   events = [],
   availableAIAgents = [],
   availableHumanAgents = [],
   className,
+  onFetchMoreIfNeeded,
 }: Props) {
   const groupedMessages = useGroupedMessages({
     messages,
@@ -37,6 +41,8 @@ export function MessagesList({
 
   return (
     <PrimitiveMessageList
+      ref={ref}
+      onScrollStart={onFetchMoreIfNeeded}
       autoScroll={true}
       className={cn(
         "overflow-y-auto scroll-smooth pt-60 pb-40",
@@ -48,7 +54,7 @@ export function MessagesList({
       id="message-list"
       messages={messages}
     >
-      <div className="2xl:max-w-2xl max-w-xl mx-auto">
+      <div className="2xl:max-w-3xl xl:max-w-2xl max-w-xl mx-auto">
         <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
           {groupedMessages.map((item, index) => {
             if (item.type === "event") {
