@@ -137,59 +137,9 @@ const SidebarHandle = ({
         <div
           className={cn(
             "group flex h-full items-center justify-center border-transparent transition-all hover:cursor-pointe",
-            position === "left" ? "border-r-4" : "border-l-4"
+            position === "left" ? "border-r-2" : "border-l-2"
           )}
-        >
-          <div
-            className={cn(
-              "h-fit w-4 flex flex-col items-center justify-start hover:cursor-pointer",
-              {
-                "mr-3": position === "left",
-                "ml-3": position === "right",
-              }
-            )}
-          >
-            {position === "right" ? (
-              <>
-                <div
-                  className={cn(
-                    "-mb-[3px] h-4 w-[2px] rounded bg-border/90 transition-all group-hover:h-6 group-hover:rotate-6 group-hover:bg-background-600",
-                    {
-                      "group-hover:-rotate-6 bg-background-700": isCollapsed,
-                    }
-                  )}
-                />
-                <div
-                  className={cn(
-                    "-mt-[3px] group-hover:-rotate-6 h-4 w-[2px] rounded bg-border/90 transition-all group-hover:h-6 group-hover:bg-background-600",
-                    {
-                      "group-hover:rotate-6 bg-background-700": isCollapsed,
-                    }
-                  )}
-                />
-              </>
-            ) : (
-              <>
-                <div
-                  className={cn(
-                    "-mb-[3px] group-hover:-rotate-6 h-4 w-[2px] rounded bg-border/90 transition-all group-hover:h-6 group-hover:bg-background-600",
-                    {
-                      "group-hover:-rotate-6 bg-background-700": isCollapsed,
-                    }
-                  )}
-                />
-                <div
-                  className={cn(
-                    "-mt-[3px] h-4 w-[2px] rounded bg-border/90 transition-all group-hover:h-6 group-hover:rotate-6 group-hover:bg-background-600",
-                    {
-                      "group-hover:rotate-6 bg-background-700": isCollapsed,
-                    }
-                  )}
-                />
-              </>
-            )}
-          </div>
-        </div>
+        />
       </TooltipOnHover>
     </button>
   );

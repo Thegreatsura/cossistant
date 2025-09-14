@@ -21,11 +21,11 @@ export function Conversation({
 }: ConversationProps) {
   const { messages } = useConversationMessages({ conversationId, websiteSlug });
   const { events } = useConversationEvents({ conversationId, websiteSlug });
-  const { visitor } = useVisitor({ visitorId, websiteSlug });
+  const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
 
   return (
     <>
-      <Page className="py-0">
+      <Page className="py-0 px-[1px]">
         <ConversationHeader />
         <MessagesList
           messages={messages}
@@ -34,7 +34,7 @@ export function Conversation({
           availableHumanAgents={[]}
         />
       </Page>
-      <VisitorSidebar />
+      <VisitorSidebar visitor={visitor} isLoading={isLoading} />
     </>
   );
 }

@@ -48,7 +48,7 @@ export function MessagesList({
       id="message-list"
       messages={messages}
     >
-      <div className="2xl:max-w-3xl max-w-2xl mx-auto">
+      <div className="2xl:max-w-2xl max-w-xl mx-auto">
         <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
           {groupedMessages.map((item, index) => {
             if (item.type === "event") {

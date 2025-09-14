@@ -7,17 +7,22 @@ import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-da
 import { formatTimeAgo } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { generateVisitorName } from "@/lib/visitors";
+import { ConversationBasicActions } from "../conversation/actions/basic";
 
 interface ConversationItemProps {
   href: string;
   header: ConversationHeader;
   websiteSlug: string;
+  focused?: boolean;
+  setFocused?: () => void;
 }
 
 export function ConversationItem({
   href,
   header,
   websiteSlug,
+  focused = false,
+  setFocused,
 }: ConversationItemProps) {
   const { visitor, lastMessagePreview } = header;
   const { prefetchConversation } = usePrefetchConversationData();
@@ -29,12 +34,13 @@ export function ConversationItem({
     <Link
       className={cn(
         "group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors duration-0",
-        "hover:bg-background-200 hover:text-primary dark:hover:bg-background-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        "focus-visible:outline-none focus-visible:ring-0",
+        focused && "bg-background-200 dark:bg-background-300 text-primary"
       )}
       href={href}
       prefetch="auto"
       onMouseEnter={() => {
+        setFocused?.();
         prefetchConversation({
           websiteSlug,
           conversationId: header.id,
@@ -57,11 +63,19 @@ export function ConversationItem({
           {lastMessagePreview?.bodyMd}
         </p>
       </div>
-      {lastMessagePreview && (
-        <span className="shrink-0 pr-2 text-primary/40 text-xs">
-          {formatTimeAgo(lastMessagePreview.createdAt)}
-        </span>
-      )}
+      <div className="flex items-center gap-1">
+        {focused ? (
+          <ConversationBasicActions />
+        ) : (
+          <>
+            {lastMessagePreview && (
+              <span className="shrink-0 pr-2 text-primary/40 text-xs">
+                {formatTimeAgo(lastMessagePreview.createdAt)}
+              </span>
+            )}
+          </>
+        )}
+      </div>
     </Link>
   );
 }
