@@ -12,12 +12,12 @@ export function ConversationBasicActions({
     <div className={cn("flex items-center gap-2 pr-1", className)}>
       <TooltipOnHover content="Mark as resolved" shortcuts={["R"]}>
         <Button variant="ghost" size="icon-small">
-          <Icon name="check" />
+          <Icon name="check" filledOnHover />
         </Button>
       </TooltipOnHover>
       <TooltipOnHover content="Mark as archived" shortcuts={["Delete"]}>
         <Button variant="ghost" size="icon-small">
-          <Icon name="archive" />
+          <Icon name="archive" filledOnHover />
         </Button>
       </TooltipOnHover>
     </div>

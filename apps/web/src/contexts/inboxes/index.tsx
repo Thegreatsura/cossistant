@@ -58,8 +58,6 @@ export function InboxesProvider({
   } = useMemo(() => {
     const slug = pathname.split("/").slice(1);
 
-    console.log("slug", slug);
-
     return extractInboxParamsFromSlug({
       slug: slug || [],
       availableViews: views,

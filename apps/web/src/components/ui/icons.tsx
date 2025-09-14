@@ -33,6 +33,7 @@ export type IconName =
   | "conversation-cancel"
   | "sun"
   | "moon"
+  | "more"
   | "menu";
 
 export interface IconProps {
@@ -130,7 +131,15 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
         strokeWidth="1.5"
       />
     ),
-    filled: <path d="M4 13L9 18L20 6" fill="currentColor" />,
+    filled: (
+      <path
+        d="M4 13L9 18L20 6"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    ),
   },
   x: {
     default: (
@@ -571,6 +580,46 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
         d="M11.5425 2.45285C11.7267 2.20966 11.7452 1.87914 11.5894 1.61688C11.4335 1.35463 11.1344 1.2129 10.8327 1.25842C5.96272 1.99337 2.25 6.28809 2.25 11.4489C2.25 17.12 6.737 21.75 12.3118 21.75C16.6025 21.75 20.2516 19.0038 21.7018 15.1571C21.81 14.8702 21.7326 14.5463 21.5064 14.3393C21.2802 14.1323 20.9507 14.0838 20.6745 14.2169C19.7065 14.6832 18.6262 14.9439 17.485 14.9439C13.3457 14.9439 9.95787 11.4967 9.95787 7.20398C9.95787 5.41053 10.5502 3.76308 11.5425 2.45285Z"
         fill="currentColor"
       />
+    ),
+  },
+  more: {
+    default: (
+      <>
+        <path
+          d="M4.5 9.5C3.125 9.5 2 10.625 2 12C2 13.375 3.125 14.5 4.5 14.5C5.875 14.5 7 13.375 7 12C7 10.625 5.875 9.5 4.5 9.5Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M19.5 9.5C18.125 9.5 17 10.625 17 12C17 13.375 18.125 14.5 19.5 14.5C20.875 14.5 22 13.375 22 12C22 10.625 20.875 9.5 19.5 9.5Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M12 9.5C10.625 9.5 9.5 10.625 9.5 12C9.5 13.375 10.625 14.5 12 14.5C13.375 14.5 14.5 13.375 14.5 12C14.5 10.625 13.375 9.5 12 9.5Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </>
+    ),
+    filled: (
+      <>
+        <path
+          d="M4.5 9.5C3.125 9.5 2 10.625 2 12C2 13.375 3.125 14.5 4.5 14.5C5.875 14.5 7 13.375 7 12C7 10.625 5.875 9.5 4.5 9.5Z"
+          fill="currentColor"
+        />
+        <path
+          d="M19.5 9.5C18.125 9.5 17 10.625 17 12C17 13.375 18.125 14.5 19.5 14.5C20.875 14.5 22 13.375 22 12C22 10.625 20.875 9.5 19.5 9.5Z"
+          fill="currentColor"
+        />
+        <path
+          d="M9.5 12C9.5 10.625 10.625 9.5 12 9.5C13.375 9.5 14.5 10.625 14.5 12C14.5 13.375 13.375 14.5 12 14.5C10.625 14.5 9.5 13.375 9.5 12Z"
+          fill="currentColor"
+        />
+      </>
     ),
   },
 };
