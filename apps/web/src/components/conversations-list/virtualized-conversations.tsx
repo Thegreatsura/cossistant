@@ -12,7 +12,7 @@ type ConversationsListProps = {
   websiteSlug: string;
 };
 
-const ITEM_HEIGHT = 44;
+const ITEM_HEIGHT = 52;
 
 const VirtualConversationItem = memo(
   ({

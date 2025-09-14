@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { formatTimeAgo } from "@/lib/date";
@@ -52,13 +52,12 @@ export function ConversationItem({
         url={visitor.avatar}
         fallbackName={fullName}
         lastOnlineAt={visitor.lastSeenAt}
-        className="size-7"
+        className="size-9"
       />
 
       <div className="flex min-w-0 flex-1 items-center gap-4">
-        <div className="mb-0.5 flex items-baseline justify-between gap-2">
-          <h4 className={cn("truncate md:w-[120px]")}>{fullName}</h4>
-        </div>
+        <p className="truncate md:min-w-[120px] md:max-w-[120px]">{fullName}</p>
+
         <p className={cn("truncate pr-6 text-muted-foreground")}>
           {lastMessagePreview?.bodyMd}
         </p>
