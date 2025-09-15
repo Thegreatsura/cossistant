@@ -12,85 +12,88 @@ import { MessagesList } from "./messages/list";
 import { MultimodalInput } from "./multimodal-input";
 
 type ConversationProps = {
-	conversationId: string;
-	visitorId: string;
-	websiteSlug: string;
+  conversationId: string;
+  visitorId: string;
+  websiteSlug: string;
 };
 
 export function Conversation({
-	conversationId,
-	visitorId,
-	websiteSlug,
+  conversationId,
+  visitorId,
+  websiteSlug,
 }: ConversationProps) {
-	const {
-		message,
-		files,
-		isSubmitting,
-		error,
-		setMessage,
-		addFiles,
-		removeFile,
-		clearFiles,
-		submit,
-		reset,
-		isValid,
-		canSubmit,
-	} = useMultimodalInput();
+  const {
+    message,
+    files,
+    isSubmitting,
+    error,
+    setMessage,
+    addFiles,
+    removeFile,
+    clearFiles,
+    submit,
+    reset,
+    isValid,
+    canSubmit,
+  } = useMultimodalInput();
 
-	const {
-		messages,
-		fetchNextPage: fetchNextPageMessages,
-		hasNextPage: hasNextPageMessages,
-	} = useConversationMessages({ conversationId, websiteSlug });
-	const {
-		events,
-		fetchNextPage: fetchNextPageEvents,
-		hasNextPage: hasNextPageEvents,
-	} = useConversationEvents({ conversationId, websiteSlug });
+  const {
+    messages,
+    fetchNextPage: fetchNextPageMessages,
+    hasNextPage: hasNextPageMessages,
+  } = useConversationMessages({ conversationId, websiteSlug });
+  const {
+    events,
+    fetchNextPage: fetchNextPageEvents,
+    hasNextPage: hasNextPageEvents,
+  } = useConversationEvents({ conversationId, websiteSlug });
 
-	const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
+  const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
 
-	const onFetchMoreIfNeeded = async () => {
-		const promises = [];
+  const onFetchMoreIfNeeded = async () => {
+    const promises = [];
 
-		if (hasNextPageMessages) {
-			promises.push(fetchNextPageMessages());
-		}
+    if (hasNextPageMessages) {
+      promises.push(fetchNextPageMessages());
+    }
 
-		if (hasNextPageEvents) {
-			promises.push(fetchNextPageEvents());
-		}
+    if (hasNextPageEvents) {
+      promises.push(fetchNextPageEvents());
+    }
 
-		await Promise.all(promises);
-	};
+    await Promise.all(promises);
+  };
 
-	return (
-		<>
-			<Page className="py-0 px-[1px]">
-				<ConversationHeader />
-				<MessagesList
-					onFetchMoreIfNeeded={onFetchMoreIfNeeded}
-					messages={messages}
-					events={events}
-					availableAIAgents={[]}
-					availableHumanAgents={[]}
-				/>
-				<MultimodalInput
-					value={message}
-					onChange={setMessage}
-					onSubmit={submit}
-					files={files}
-					isSubmitting={isSubmitting}
-					error={error}
-					onFileSelect={addFiles}
-					onRemoveFile={removeFile}
-					placeholder="Type your message..."
-					allowedFileTypes={["image/*", "application/pdf", "text/*"]}
-					maxFiles={2}
-					maxFileSize={10 * 1024 * 1024}
-				/>
-			</Page>
-			<VisitorSidebar visitor={visitor} isLoading={isLoading} />
-		</>
-	);
+  return (
+    <>
+      <Page className="py-0 px-[1px] relative">
+        <div className="absolute inset-x-0 top-0 h-14 z-0 bg-gradient-to-b from-co-background/50 dark:from-co-background-100/80 to-transparent pointer-events-none" />
+        <ConversationHeader />
+        <MessagesList
+          onFetchMoreIfNeeded={onFetchMoreIfNeeded}
+          messages={messages}
+          events={events}
+          availableAIAgents={[]}
+          availableHumanAgents={[]}
+        />
+        <MultimodalInput
+          value={message}
+          onChange={setMessage}
+          onSubmit={submit}
+          files={files}
+          isSubmitting={isSubmitting}
+          error={error}
+          onFileSelect={addFiles}
+          onRemoveFile={removeFile}
+          placeholder="Type your message..."
+          allowedFileTypes={["image/*", "application/pdf", "text/*"]}
+          maxFiles={2}
+          maxFileSize={10 * 1024 * 1024}
+        />
+        <div className="absolute inset-x-0 bottom-0 h-30 z-0 bg-gradient-to-t from-co-background dark:from-co-background-100/90 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-co-background/50 dark:from-co-background-100/90 via-co-background dark:via-co-background-100 to-transparent pointer-events-none" />
+      </Page>
+      <VisitorSidebar visitor={visitor} isLoading={isLoading} />
+    </>
+  );
 }
