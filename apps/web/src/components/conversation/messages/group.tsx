@@ -9,7 +9,6 @@ import type {
   AvailableHumanAgent,
   Message as MessageType,
 } from "@cossistant/types";
-import { motion } from "motion/react";
 import type React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";

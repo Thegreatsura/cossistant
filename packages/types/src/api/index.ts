@@ -4,5 +4,6 @@ export * from "./conversation";
 export * from "./message";
 export * from "./messages";
 export * from "./organization";
+export * from "./user";
 export * from "./visitor";
 export * from "./website";

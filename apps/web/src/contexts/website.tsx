@@ -9,82 +9,103 @@ import { createContext, useContext } from "react";
 import { useTRPC } from "@/lib/trpc/client";
 
 interface WebsiteContextValue {
-	website: RouterOutputs["website"]["getBySlug"];
-	isLoading: boolean;
-	views: RouterOutputs["view"]["list"];
-	error: TRPCClientErrorBase<DefaultErrorShape> | null;
+  website: RouterOutputs["website"]["getBySlug"];
+  members: RouterOutputs["user"]["getWebsiteMembers"];
+  isLoading: boolean;
+  views: RouterOutputs["view"]["list"];
+  error: TRPCClientErrorBase<DefaultErrorShape> | null;
 }
 
 const WebsiteContext = createContext<WebsiteContextValue | null>(null);
 
 interface WebsiteProviderProps {
-	children: React.ReactNode;
-	websiteSlug: string;
+  children: React.ReactNode;
+  websiteSlug: string;
 }
 
 export function WebsiteProvider({
-	children,
-	websiteSlug,
+  children,
+  websiteSlug,
 }: WebsiteProviderProps) {
-	const trpc = useTRPC();
+  const trpc = useTRPC();
 
-	const {
-		data: website,
-		isFetching: isLoadingWebsite,
-		error: errorWebsite,
-	} = useQuery({
-		...trpc.website.getBySlug.queryOptions({
-			slug: websiteSlug,
-		}),
-	});
+  const {
+    data: website,
+    isFetching: isLoadingWebsite,
+    error: errorWebsite,
+  } = useQuery({
+    ...trpc.website.getBySlug.queryOptions({
+      slug: websiteSlug,
+    }),
+  });
 
-	const {
-		data: views,
-		isFetching: isLoadingViews,
-		error: errorViews,
-	} = useQuery({
-		...trpc.view.list.queryOptions({
-			slug: websiteSlug,
-		}),
-	});
+  const {
+    data: members,
+    isFetching: isLoadingMembers,
+    error: errorMembers,
+  } = useQuery({
+    ...trpc.user.getWebsiteMembers.queryOptions({
+      websiteSlug: websiteSlug,
+    }),
+  });
 
-	return (
-		<WebsiteContext.Provider
-			value={{
-				website: website!,
-				views: views!,
-				isLoading: isLoadingWebsite || isLoadingViews,
-				error: errorViews || errorWebsite,
-			}}
-		>
-			{children}
-		</WebsiteContext.Provider>
-	);
+  const {
+    data: views,
+    isFetching: isLoadingViews,
+    error: errorViews,
+  } = useQuery({
+    ...trpc.view.list.queryOptions({
+      slug: websiteSlug,
+    }),
+  });
+
+  return (
+    <WebsiteContext.Provider
+      value={{
+        website: website!,
+        members: members!,
+        views: views!,
+        isLoading: isLoadingWebsite || isLoadingViews || isLoadingMembers,
+        error: errorViews || errorWebsite || errorMembers,
+      }}
+    >
+      {children}
+    </WebsiteContext.Provider>
+  );
 }
 
 export function useWebsite() {
-	const context = useContext(WebsiteContext);
+  const context = useContext(WebsiteContext);
 
-	if (!context) {
-		throw new Error("useWebsite must be used within a WebsiteProvider");
-	}
+  if (!context) {
+    throw new Error("useWebsite must be used within a WebsiteProvider");
+  }
 
-	if (!(context.website || context.isLoading)) {
-		throw new Error("Website not found");
-	}
+  if (!(context.website || context.isLoading)) {
+    throw new Error("Website not found");
+  }
 
-	return context.website;
+  return context.website;
 }
 
 export function useWebsiteViews() {
-	const context = useContext(WebsiteContext);
-	if (!context) {
-		throw new Error("useWebsiteViews must be used within a WebsiteProvider");
-	}
+  const context = useContext(WebsiteContext);
+  if (!context) {
+    throw new Error("useWebsiteViews must be used within a WebsiteProvider");
+  }
 
-	if (!(context.views || context.isLoading)) {
-		throw new Error("Views not found");
-	}
+  if (!(context.views || context.isLoading)) {
+    throw new Error("Views not found");
+  }
 
-	return context.views;
+  return context.views;
+}
+
+export function useWebsiteMembers() {
+  const context = useContext(WebsiteContext);
+  if (!context) {
+    throw new Error("useWebsiteMembers must be used within a WebsiteProvider");
+  }
+
+  return context.members;
 }
