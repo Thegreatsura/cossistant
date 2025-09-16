@@ -26,7 +26,7 @@
 		"@cossistant/typescript-config": "workspace:*"
 	},
 	"dependencies": {
-		"zod": "^3.25.56",
-		"@hono/zod-openapi": "^0.18.4"
+		"zod": "^4.1.8",
+		"@hono/zod-openapi": "^1.1.0"
 	}
 }
