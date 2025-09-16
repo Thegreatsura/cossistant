@@ -148,7 +148,7 @@ export const updateVisitorRequestSchema = z.object({
     })
     .optional(),
   metadata: z
-    .record(z.any())
+    .record(z.string(), z.any())
     .openapi({
       description: "Additional custom metadata for the visitor.",
       example: { plan: "premium", role: "admin" },

@@ -77,7 +77,7 @@ export const conversationEventSchema = z.object({
   targetUserId: z.string().nullable(),
   targetAiAgentId: z.string().nullable(),
   message: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable(),
