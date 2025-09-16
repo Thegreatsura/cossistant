@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/nursery/useUniqueElementIds: we don't care here */
 
+import type { RouterOutputs } from "@api/trpc/types";
 import {
   MessageListContainer,
   MessageList as PrimitiveMessageList,
@@ -11,6 +12,10 @@ import type {
   ConversationEvent as ConversationEventType,
   Message as MessageType,
 } from "@cossistant/types";
+import { SenderType } from "@cossistant/types";
+import type { ConversationSeen } from "@cossistant/types/schemas";
+import { useMemo } from "react";
+import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
 import { MessageGroup } from "./group";
@@ -19,8 +24,11 @@ type Props = {
   ref?: React.RefObject<HTMLDivElement | null>;
   messages: MessageType[];
   events: ConversationEventType[];
+  teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
   availableAIAgents: AvailableAIAgent[];
-  availableHumanAgents: AvailableHumanAgent[];
+  seenData?: ConversationSeen[];
+  visitor: ConversationHeader["visitor"];
+  currentUserId: string;
   className?: string;
   onFetchMoreIfNeeded?: () => void;
 };
@@ -29,17 +37,37 @@ export function MessagesList({
   ref,
   messages = [],
   events = [],
+  teamMembers = [],
   availableAIAgents = [],
-  availableHumanAgents = [],
+  seenData = [],
+  currentUserId,
   className,
   onFetchMoreIfNeeded,
+  visitor,
 }: Props) {
-  const groupedMessages = useGroupedMessages({
+  const {
+    items,
+    lastReadMessageMap,
+    getLastReadMessageId,
+    isMessageSeenByViewer,
+  } = useGroupedMessages({
     messages,
     events,
-    availableAIAgents,
-    availableHumanAgents,
+    seenData,
+    currentViewerId: currentUserId,
+    viewerType: SenderType.TEAM_MEMBER,
   });
+
+  const availableHumanAgents = useMemo(
+    () =>
+      teamMembers.map((member) => ({
+        id: member.id,
+        name: member.name || member.email.split("@")[0] || "Unknown member",
+        image: member.image,
+        lastSeenAt: member.lastSeenAt,
+      })),
+    [teamMembers]
+  );
 
   return (
     <PrimitiveMessageList
@@ -58,7 +86,7 @@ export function MessagesList({
     >
       <div className="2xl:max-w-2xl xl:max-w-xl mx-auto">
         <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
-          {groupedMessages.map((item, index) => {
+          {items.map((item, index) => {
             if (item.type === "event") {
               return (
                 <ConversationEvent
@@ -75,6 +103,9 @@ export function MessagesList({
                 availableHumanAgents={availableHumanAgents}
                 key={`group-${index}`}
                 messages={item.messages}
+                lastReadMessageIds={lastReadMessageMap}
+                currentUserId={currentUserId}
+                visitor={visitor}
               />
             );
           })}

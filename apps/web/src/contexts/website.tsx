@@ -6,9 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 import type { TRPCClientErrorBase } from "@trpc/client";
 import type { DefaultErrorShape } from "@trpc/server/unstable-core-do-not-import";
 import { createContext, useContext } from "react";
+import { authClient, type Session } from "@/lib/auth/client";
 import { useTRPC } from "@/lib/trpc/client";
 
 interface WebsiteContextValue {
+  session: Session["session"];
+  user: Session["user"];
   website: RouterOutputs["website"]["getBySlug"];
   members: RouterOutputs["user"]["getWebsiteMembers"];
   isLoading: boolean;
@@ -28,6 +31,8 @@ export function WebsiteProvider({
   websiteSlug,
 }: WebsiteProviderProps) {
   const trpc = useTRPC();
+
+  const { data: sessionData } = authClient.useSession();
 
   const {
     data: website,
@@ -59,9 +64,16 @@ export function WebsiteProvider({
     }),
   });
 
+  // If no session data, we should redirect to the login page? Should be handle server side, so we should be ok here
+  if (!sessionData) {
+    return <></>;
+  }
+
   return (
     <WebsiteContext.Provider
       value={{
+        session: sessionData.session,
+        user: sessionData.user,
         website: website!,
         members: members!,
         views: views!,
@@ -86,6 +98,16 @@ export function useWebsite() {
   }
 
   return context.website;
+}
+
+export function useUserSession() {
+  const context = useContext(WebsiteContext);
+
+  if (!context) {
+    throw new Error("useUserSession must be used within a WebsiteProvider");
+  }
+
+  return { user: context.user, session: context.session };
 }
 
 export function useWebsiteViews() {

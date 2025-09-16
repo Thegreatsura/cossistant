@@ -1,7 +1,7 @@
 "use client";
 
 import { useMultimodalInput } from "@cossistant/react/hooks/use-multimodal-input";
-import { useRef } from "react";
+import { useWebsiteMembers } from "@/contexts/website";
 import { useConversationEvents } from "@/data/use-conversation-events";
 import { useConversationMessages } from "@/data/use-conversation-messages";
 import { useVisitor } from "@/data/use-visitor";
@@ -15,11 +15,13 @@ type ConversationProps = {
   conversationId: string;
   visitorId: string;
   websiteSlug: string;
+  currentUserId: string;
 };
 
 export function Conversation({
   conversationId,
   visitorId,
+  currentUserId,
   websiteSlug,
 }: ConversationProps) {
   const {
@@ -37,11 +39,14 @@ export function Conversation({
     canSubmit,
   } = useMultimodalInput();
 
+  const members = useWebsiteMembers();
+
   const {
     messages,
     fetchNextPage: fetchNextPageMessages,
     hasNextPage: hasNextPageMessages,
   } = useConversationMessages({ conversationId, websiteSlug });
+
   const {
     events,
     fetchNextPage: fetchNextPageEvents,
@@ -64,6 +69,10 @@ export function Conversation({
     await Promise.all(promises);
   };
 
+  if (!visitor) {
+    return <></>;
+  }
+
   return (
     <>
       <Page className="py-0 px-[1px] relative">
@@ -74,7 +83,9 @@ export function Conversation({
           messages={messages}
           events={events}
           availableAIAgents={[]}
-          availableHumanAgents={[]}
+          teamMembers={members}
+          visitor={visitor}
+          currentUserId={currentUserId}
         />
         <MultimodalInput
           value={message}
