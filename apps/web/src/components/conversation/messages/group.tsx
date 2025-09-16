@@ -133,6 +133,7 @@ export function MessageGroup({
                 <Message
                   isLast={index === messages.length - 1}
                   message={message}
+                  isSentByViewer={isSentByViewer}
                 />
 
                 {/* Show read indicator where users stopped reading */}
