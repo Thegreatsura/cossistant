@@ -13,7 +13,11 @@ export interface MessageProps {
   isSentByViewer?: boolean;
 }
 
-export function Message({ message, isLast = false, isSentByViewer = false }: MessageProps) {
+export function Message({
+  message,
+  isLast = false,
+  isSentByViewer = false,
+}: MessageProps) {
   return (
     <PrimitiveMessage message={message}>
       {({ isVisitor, isAI, timestamp }) => (
@@ -26,7 +30,7 @@ export function Message({ message, isLast = false, isSentByViewer = false }: Mes
         >
           <div
             className={cn(
-              "flex w-full flex-1 flex-col gap-1",
+              "flex w-full flex-1 flex-col gap-3",
               isSentByViewer && "items-end"
             )}
           >
@@ -46,7 +50,7 @@ export function Message({ message, isLast = false, isSentByViewer = false }: Mes
             />
             {isLast && (
               <MessageTimestamp
-                className="px-1 text-muted-foreground text-xs"
+                className="px-1 text-muted-foreground text-xs mb-0.5"
                 timestamp={timestamp}
               >
                 {() => (

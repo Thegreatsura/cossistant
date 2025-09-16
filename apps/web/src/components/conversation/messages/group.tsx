@@ -1,3 +1,4 @@
+import type { RouterOutputs } from "@api/trpc/types";
 import {
   MessageGroupAvatar,
   MessageGroupContent,
@@ -7,7 +8,6 @@ import {
 } from "@cossistant/react/primitive/message-group";
 import type {
   AvailableAIAgent,
-  AvailableHumanAgent,
   Message as MessageType,
 } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
@@ -22,7 +22,7 @@ import { Message } from "./message";
 type Props = {
   messages: MessageType[];
   availableAIAgents: AvailableAIAgent[];
-  availableHumanAgents: AvailableHumanAgent[];
+  teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
   lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
   currentUserId?: string;
   visitor: ConversationHeader["visitor"];
@@ -31,7 +31,7 @@ type Props = {
 export function MessageGroup({
   messages,
   availableAIAgents,
-  availableHumanAgents,
+  teamMembers,
   lastReadMessageIds,
   currentUserId,
   visitor,
@@ -42,7 +42,7 @@ export function MessageGroup({
 
   // Get agent info for the sender
   const firstMessage = messages[0];
-  const humanAgent = availableHumanAgents.find(
+  const humanAgent = teamMembers.find(
     (agent) => agent.id === firstMessage?.userId
   );
   const aiAgent = availableAIAgents.find(
@@ -123,7 +123,9 @@ export function MessageGroup({
                   ? getVisitorNameWithFallback(visitor)
                   : isAI
                     ? aiAgent?.name || "AI Assistant"
-                    : humanAgent?.name || "Team Member"}
+                    : humanAgent?.name ||
+                      humanAgent?.email?.split("@")[0] ||
+                      "Unknown member"}
               </MessageGroupHeader>
             )}
 
@@ -159,15 +161,14 @@ export function MessageGroup({
                     // Get names/avatars of people who stopped reading here
                     const readerInfo = otherReaders
                       .map((id) => {
-                        const human = availableHumanAgents.find(
-                          (a) => a.id === id
-                        );
+                        const human = teamMembers.find((a) => a.id === id);
                         const ai = availableAIAgents.find((a) => a.id === id);
                         if (human) {
                           return {
                             id,
                             name: human.name,
                             image: human.image,
+                            email: human.email,
                             type: "human",
                           };
                         }
@@ -201,9 +202,13 @@ export function MessageGroup({
                                   title={`${reader.name} read up to here`}
                                 >
                                   {reader.type === "human" && reader.image ? (
-                                    <img
-                                      src={reader.image}
-                                      alt={reader.name}
+                                    <Avatar
+                                      url={reader.image}
+                                      fallbackName={
+                                        reader.name ||
+                                        reader.email?.split("@")[0] ||
+                                        "Unknown member"
+                                      }
                                       className="size-4 rounded-full border border-background"
                                     />
                                   ) : reader.type === "ai" ? (

@@ -100,7 +100,7 @@ export function MessagesList({
             return (
               <MessageGroup
                 availableAIAgents={availableAIAgents}
-                availableHumanAgents={availableHumanAgents}
+                teamMembers={teamMembers}
                 key={`group-${index}`}
                 messages={item.messages}
                 lastReadMessageIds={lastReadMessageMap}
