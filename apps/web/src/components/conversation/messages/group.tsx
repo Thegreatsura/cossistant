@@ -93,18 +93,18 @@ export function MessageGroup({
             <MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
               {isVisitor ? (
                 <Avatar
-                  className="size-8"
+                  className="size-7"
                   url={visitor?.avatar}
                   fallbackName={getVisitorNameWithFallback(visitor)}
                   lastOnlineAt={visitor?.lastSeenAt}
                 />
               ) : isAI ? (
-                <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
+                <div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
                   <Logo className="h-5 w-5 text-primary" />
                 </div>
               ) : (
                 <Avatar
-                  className="size-8"
+                  className="size-7"
                   url={humanAgent?.image}
                   fallbackName={humanAgent?.name || "Team"}
                   lastOnlineAt={humanAgent?.lastSeenAt}

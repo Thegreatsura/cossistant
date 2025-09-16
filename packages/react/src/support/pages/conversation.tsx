@@ -143,6 +143,7 @@ export const ConversationPage = ({
 				availableAIAgents={availableAIAgents}
 				availableHumanAgents={availableHumanAgents}
 				className="min-h-0 flex-1"
+				currentVisitorId={visitor?.id}
 				events={events}
 				messages={actualMessages}
 			/>

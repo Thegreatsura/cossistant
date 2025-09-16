@@ -10,58 +10,64 @@ import { cn } from "../utils";
 export interface MessageProps {
 	message: MessageType;
 	isLast?: boolean;
+	isSentByViewer?: boolean;
 }
 
-export function Message({ message, isLast = false }: MessageProps) {
+export function Message({ message, isLast = false, isSentByViewer }: MessageProps) {
 	return (
 		<PrimitiveMessage message={message}>
-			{({ isVisitor, isAI, timestamp }) => (
-				<div
-					className={cn(
-						"flex w-full gap-2",
-						isVisitor && "flex-row-reverse",
-						!isVisitor && "flex-row",
-					)}
-				>
+			{({ isVisitor, isAI, timestamp }) => {
+				// Use passed isSentByViewer if provided, otherwise fall back to isVisitor
+				const isSentByViewerFinal = isSentByViewer ?? isVisitor;
+
+				return (
 					<div
 						className={cn(
-							"flex w-full flex-1 flex-col gap-1",
-							isVisitor && "items-end",
+							"flex w-full gap-2",
+							isSentByViewerFinal && "flex-row-reverse",
+							!isSentByViewerFinal && "flex-row",
 						)}
 					>
-						<MessageContent
-							bodyMd={message.bodyMd}
+						<div
 							className={cn(
-								"block w-max max-w-[300px] rounded-lg px-3.5 py-2.5 text-sm",
-								{
-									"bg-co-background-300 text-foreground dark:bg-co-background-600":
-										!isVisitor,
-									"bg-primary text-primary-foreground": isVisitor,
-									"rounded-br-sm": isLast && isVisitor,
-									"rounded-bl-sm": isLast && !isVisitor,
-								},
+								"flex w-full flex-1 flex-col gap-1",
+								isSentByViewerFinal && "items-end",
 							)}
-							renderMarkdown
-						/>
-						{isLast && (
-							<MessageTimestamp
-								className="px-1 text-muted-foreground text-xs"
-								timestamp={timestamp}
-							>
-								{() => (
-									<>
-										{timestamp.toLocaleTimeString([], {
-											hour: "2-digit",
-											minute: "2-digit",
-										})}
-										{isAI && " • AI agent"}
-									</>
+						>
+							<MessageContent
+								bodyMd={message.bodyMd}
+								className={cn(
+									"block w-max max-w-[300px] rounded-lg px-3.5 py-2.5 text-sm",
+									{
+										"bg-co-background-300 text-foreground dark:bg-co-background-600":
+											!isSentByViewerFinal,
+										"bg-primary text-primary-foreground": isSentByViewerFinal,
+										"rounded-br-sm": isLast && isSentByViewerFinal,
+										"rounded-bl-sm": isLast && !isSentByViewerFinal,
+									},
 								)}
-							</MessageTimestamp>
-						)}
+								renderMarkdown
+							/>
+							{isLast && (
+								<MessageTimestamp
+									className="px-1 text-muted-foreground text-xs"
+									timestamp={timestamp}
+								>
+									{() => (
+										<>
+											{timestamp.toLocaleTimeString([], {
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+											{isAI && " • AI agent"}
+										</>
+									)}
+								</MessageTimestamp>
+							)}
+						</div>
 					</div>
-				</div>
-			)}
+				);
+			}}
 		</PrimitiveMessage>
 	);
 }
