@@ -24,6 +24,8 @@ export function useConversationMessages({
         const baseQueryKey = trpc.conversation.getConversationMessages.queryOptions({
                 websiteSlug,
                 conversationId,
+                // ensure cache key differentiates by page size
+                limit: options?.limit ?? 50,
         }).queryKey;
 
         const query = useInfiniteQuery({
