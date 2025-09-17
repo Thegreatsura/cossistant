@@ -690,21 +690,21 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			sendConnectionEstablishedMessage(ws, connectionId, authResult);
 
 			// Emit USER_CONNECTED or VISITOR_CONNECTED event based on authentication type
-			try {
-				const event = createConnectionEvent(authResult, connectionId);
-				const context: EventContext = {
-					connectionId,
-					userId: authResult.userId,
-					visitorId: authResult.visitorId,
-					websiteId: authResult.websiteId,
-					organizationId: authResult.organizationId,
-					ws: undefined,
-				};
-				routeEvent(event, context);
-			} catch (error) {
-				console.error("[WebSocket] Error creating connection event:", error);
-				// Continue with connection setup even if event creation fails
-			}
+                        try {
+                                const event = createConnectionEvent(authResult, connectionId);
+                                const context: EventContext = {
+                                        connectionId,
+                                        userId: authResult.userId,
+                                        visitorId: authResult.visitorId,
+                                        websiteId: authResult.websiteId,
+                                        organizationId: authResult.organizationId,
+                                        ws: undefined,
+                                };
+                                await routeEvent(event, context);
+                        } catch (error) {
+                                console.error("[WebSocket] Error creating connection event:", error);
+                                // Continue with connection setup even if event creation fails
+                        }
 
 			// Set up subscriptions for this connection
 			await ensureSubscriptions(connectionId, authResult.websiteId);

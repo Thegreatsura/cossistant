@@ -1,6 +1,9 @@
 "use client";
 
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type {
+  RealtimeEvent,
+  RealtimeEventType,
+} from "@cossistant/types/realtime-events";
 import {
   createContext,
   type ReactNode,
@@ -138,6 +141,29 @@ export function DashboardWebSocketProvider({
     webSocketOptions,
   );
 
+  const handleIncomingEvent = useCallback(
+    <T extends RealtimeEventType>(event: RealtimeEvent<T>) => {
+      console.log("[Dashboard WS] Event received", {
+        type: event.type,
+        data: event.data,
+        timestamp: event.timestamp,
+      });
+
+      if (event.type === "VISITOR_CONNECTED") {
+        console.log("[Dashboard WS] Visitor connected", event.data);
+      }
+
+      if (event.type === "VISITOR_DISCONNECTED") {
+        console.log("[Dashboard WS] Visitor disconnected", event.data);
+      }
+
+      for (const handler of eventHandlersRef.current) {
+        handler(event);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!lastMessage) {
       return;
@@ -155,25 +181,23 @@ export function DashboardWebSocketProvider({
       const event = data as RealtimeEvent;
       lastMessageRef.current = event;
 
-      if (event.type === "VISITOR_CONNECTED") {
-        console.log("[Dashboard WS] Visitor connected", event.data);
-      } else if (event.type === "VISITOR_DISCONNECTED") {
-        console.log("[Dashboard WS] Visitor disconnected", event.data);
-      }
-
-      for (const handler of eventHandlersRef.current) {
-        handler(event);
-      }
+      handleIncomingEvent(event);
     } catch (error) {
       console.error("[Dashboard WS] Failed to parse message", error);
     }
-  }, [lastMessage]);
+  }, [handleIncomingEvent, lastMessage]);
 
   const send = useCallback(
     (event: RealtimeEvent) => {
       if (readyState !== ReadyState.OPEN) {
         throw new Error("WebSocket is not connected");
       }
+
+      console.log("[Dashboard WS] Sending event", {
+        type: event.type,
+        data: event.data,
+        timestamp: event.timestamp,
+      });
 
       sendMessage(JSON.stringify(event));
     },
