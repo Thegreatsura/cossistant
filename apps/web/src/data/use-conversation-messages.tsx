@@ -2,6 +2,7 @@
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc/client";
+import { createConversationMessagesInfiniteQueryKey } from "./conversation-message-cache";
 
 interface UseConversationHeadersOptions {
 	limit?: number;
@@ -20,17 +21,16 @@ export function useConversationMessages({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	const query = useInfiniteQuery({
-		queryKey: [
-			...trpc.conversation.getConversationMessages.queryOptions({
-				websiteSlug,
-				conversationId,
-			}).queryKey,
-			{ type: "infinite" },
-		],
-		queryFn: async ({ pageParam }) => {
-			const response = await queryClient.fetchQuery(
-				trpc.conversation.getConversationMessages.queryOptions({
+        const baseQueryKey = trpc.conversation.getConversationMessages.queryOptions({
+                websiteSlug,
+                conversationId,
+        }).queryKey;
+
+        const query = useInfiniteQuery({
+                queryKey: createConversationMessagesInfiniteQueryKey(baseQueryKey),
+                queryFn: async ({ pageParam }) => {
+                        const response = await queryClient.fetchQuery(
+                                trpc.conversation.getConversationMessages.queryOptions({
 					websiteSlug,
 					conversationId,
 					limit: options?.limit ?? 50,

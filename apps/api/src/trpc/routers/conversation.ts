@@ -6,6 +6,8 @@ import { getConversationMessages } from "@api/db/queries/message";
 import { getVisitorComplete } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import {
+  MessageType,
+  MessageVisibility,
   conversationEventSchema,
   messageSchema,
   visitorProfileSchema,
@@ -14,6 +16,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
+import { createMessage } from "@api/utils/message";
 
 export const conversationRouter = createTRPCRouter({
   listConversationsHeaders: protectedProcedure
@@ -203,6 +206,66 @@ export const conversationRouter = createTRPCRouter({
         nextCursor: result.nextCursor,
         hasNextPage: result.hasNextPage,
       };
+    }),
+
+  sendMessage: protectedProcedure
+    .input(
+      z.object({
+        conversationId: z.string(),
+        websiteSlug: z.string(),
+        bodyMd: z.string().min(1),
+        type: z
+          .enum([MessageType.TEXT, MessageType.IMAGE, MessageType.FILE])
+          .default(MessageType.TEXT),
+        visibility: z
+          .enum([MessageVisibility.PUBLIC, MessageVisibility.PRIVATE])
+          .default(MessageVisibility.PUBLIC),
+      })
+    )
+    .output(z.object({ message: messageSchema }))
+    .mutation(async ({ ctx: { db, user }, input }) => {
+      const [websiteData, conversation] = await Promise.all([
+        getWebsiteBySlugWithAccess(db, {
+          userId: user.id,
+          websiteSlug: input.websiteSlug,
+        }),
+        db.query.conversation.findFirst({
+          where: (conversation, { eq }) =>
+            eq(conversation.id, input.conversationId),
+          columns: { id: true, websiteId: true },
+        }),
+      ]);
+
+      if (!websiteData) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Website not found or access denied",
+        });
+      }
+
+      if (!conversation || conversation.websiteId !== websiteData.id) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Conversation not found",
+        });
+      }
+
+      const createdMessage = await createMessage({
+        db,
+        organizationId: websiteData.organizationId,
+        websiteId: websiteData.id,
+        conversationId: input.conversationId,
+        message: {
+          bodyMd: input.bodyMd,
+          type: input.type,
+          visibility: input.visibility,
+          userId: user.id,
+          visitorId: null,
+          aiAgentId: null,
+        },
+      });
+
+      return { message: createdMessage };
     }),
 
   getVisitorById: protectedProcedure

@@ -1,4 +1,4 @@
-import { emitToDashboard } from "@api/lib/pubsub";
+import { emitToAll, emitToDashboard } from "@api/lib/pubsub";
 import type {
 	RealtimeEvent,
 	RealtimeEventData,
@@ -88,21 +88,38 @@ const eventHandlers: EventHandlers = {
 		}
 	},
 
-	USER_PRESENCE_UPDATE: async (ctx, data) => {
-		console.log(
-			`[USER_PRESENCE_UPDATE] User ${data.userId} status: ${data.status}`,
-			{
-				lastSeen: new Date(data.lastSeen).toISOString(),
-				contextConnectionId: ctx.connectionId,
-				websiteId: ctx.websiteId,
-			},
-		);
+        USER_PRESENCE_UPDATE: async (ctx, data) => {
+                console.log(
+                        `[USER_PRESENCE_UPDATE] User ${data.userId} status: ${data.status}`,
+                        {
+                                lastSeen: new Date(data.lastSeen).toISOString(),
+                                contextConnectionId: ctx.connectionId,
+                                websiteId: ctx.websiteId,
+                        },
+                );
 
-		// Emit to dashboard so agents can see presence updates
-		if (ctx.websiteId) {
-			await emitToDashboard(ctx.websiteId, "USER_PRESENCE_UPDATE", data);
-		}
-	},
+                // Emit to dashboard so agents can see presence updates
+                if (ctx.websiteId) {
+                        await emitToDashboard(ctx.websiteId, "USER_PRESENCE_UPDATE", data);
+                }
+        },
+
+        MESSAGE_CREATED: async (_ctx, data) => {
+                console.log(
+                        `[MESSAGE_CREATED] Message ${data.message.id} created for conversation ${data.conversationId}`,
+                        {
+                                websiteId: data.websiteId,
+                                organizationId: data.organizationId,
+                        },
+                );
+
+                await emitToAll(
+                        data.conversationId,
+                        data.websiteId,
+                        "MESSAGE_CREATED",
+                        data,
+                );
+        },
 };
 
 /**

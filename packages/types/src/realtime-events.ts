@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MessageType, MessageVisibility } from "./enums";
 
 /**
  * Central event system for real-time communication
@@ -29,6 +30,31 @@ export const RealtimeEvents = {
     userId: z.string(),
     status: z.enum(["online", "away", "offline"]),
     lastSeen: z.number(),
+  }),
+  MESSAGE_CREATED: z.object({
+    message: z.object({
+      id: z.string(),
+      bodyMd: z.string(),
+      type: z.enum([
+        MessageType.TEXT,
+        MessageType.IMAGE,
+        MessageType.FILE,
+      ]),
+      userId: z.string().nullable(),
+      aiAgentId: z.string().nullable(),
+      visitorId: z.string().nullable(),
+      conversationId: z.string(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+      deletedAt: z.string().nullable(),
+      visibility: z.enum([
+        MessageVisibility.PUBLIC,
+        MessageVisibility.PRIVATE,
+      ]),
+    }),
+    conversationId: z.string(),
+    websiteId: z.string(),
+    organizationId: z.string(),
   }),
 } as const;
 
