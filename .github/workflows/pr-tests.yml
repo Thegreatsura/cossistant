@@ -1,0 +1,95 @@
+name: PR Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'bun.lockb'
+      - 'turbo.json'
+
+jobs:
+  test-api:
+    name: API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run type checking
+        run: bun check-types
+
+      - name: Run linting
+        run: bun lint
+
+      - name: Run API tests
+        run: cd apps/api && bun test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          BETTER_AUTH_SECRET: test-secret-key-for-ci
+          BETTER_AUTH_URL: http://localhost:3001
+
+      - name: Run API build
+        run: cd apps/api && bun build
+
+  # Optional: Add test summary comment
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-api]
+    if: always()
+
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## Test Results')
+            );
+
+            const testStatus = '${{ needs.test-api.result }}' === 'success' ? '✅' : '❌';
+            const body = `## Test Results
+
+            | Test Suite | Status |
+            |------------|--------|
+            | API Tests | ${testStatus} |
+
+            _Last updated: ${new Date().toISOString()}_`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
