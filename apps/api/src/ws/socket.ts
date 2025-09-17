@@ -165,8 +165,8 @@ async function cleanupConnection(connectionId: string): Promise<void> {
         // Remove from local connections
         localConnections.delete(connectionId);
 
-	// Unregister from Redis
-	await pubsub.unregisterConnection(connectionId);
+        // Unregister from Redis
+        await pubsub.unregisterConnection(connectionId);
 
 	// Clean up any connection-specific subscriptions
 	const connSubscription = activeSubscriptions.get(
@@ -177,7 +177,80 @@ async function cleanupConnection(connectionId: string): Promise<void> {
 		activeSubscriptions.delete(`connection:${connectionId}`);
 	}
 
-	console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
+        console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
+}
+
+export async function handleConnectionClose(connectionId: string): Promise<void> {
+        try {
+                const localConnection = localConnections.get(connectionId);
+                let userId = localConnection?.userId;
+                let visitorId = localConnection?.visitorId;
+                let websiteId = localConnection?.websiteId;
+                let organizationId = localConnection?.organizationId;
+
+                if (
+                        (!userId && !visitorId) ||
+                        !websiteId ||
+                        !organizationId
+                ) {
+                        const connectionInfo = await pubsub.getConnectionInfo(connectionId);
+
+                        if (connectionInfo) {
+                                userId ??= connectionInfo.userId;
+                                visitorId ??= connectionInfo.visitorId;
+                                websiteId ??= connectionInfo.websiteId;
+                                organizationId ??= connectionInfo.organizationId;
+                        }
+                }
+
+                const timestamp = Date.now();
+                const context: EventContext = {
+                        connectionId,
+                        userId,
+                        visitorId,
+                        websiteId,
+                        organizationId,
+                        ws: undefined,
+                };
+
+                if (userId) {
+                        const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
+                                type: "USER_DISCONNECTED",
+                                data: {
+                                        userId,
+                                        connectionId,
+                                        timestamp,
+                                },
+                                timestamp,
+                        };
+
+                        await routeEvent(disconnectEvent, context);
+                } else if (visitorId) {
+                        const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
+                                type: "VISITOR_DISCONNECTED",
+                                data: {
+                                        visitorId,
+                                        connectionId,
+                                        timestamp,
+                                },
+                                timestamp,
+                        };
+
+                        await routeEvent(disconnectEvent, context);
+                } else {
+                        // TODO: replace console.* with logger
+                        console.error(
+                                `[WebSocket] Missing connection metadata for ${connectionId} on close`,
+                        );
+                }
+
+                const presenceId = userId ?? visitorId;
+                if (presenceId) {
+                        await pubsub.updatePresence(presenceId, "offline", websiteId);
+                }
+        } finally {
+                await cleanupConnection(connectionId);
+        }
 }
 
 /**
@@ -707,25 +780,19 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			}
 		},
 
-		async onClose(evt, ws) {
-			// Get connectionId from the WebSocket
-			const connectionId = ws.raw
-				? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
-				: undefined;
+                async onClose(evt, ws) {
+                        // Get connectionId from the WebSocket
+                        const connectionId = ws.raw
+                                ? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
+                                : undefined;
 
 			if (!connectionId) {
 				console.error("[WebSocket] No connection ID found on close");
 				return;
 			}
 
-			console.log(`[WebSocket] Connection closed: ${connectionId}`);
-
-			// TODO: Emit USER_DISCONNECTED event
-			// We'd need to fetch user info from Redis first
-
-			// Clean up connection
-			await cleanupConnection(connectionId);
-		},
+                        await handleConnectionClose(connectionId);
+                },
 
 		onError(evt, ws) {
 			// Get connectionId from the WebSocket
