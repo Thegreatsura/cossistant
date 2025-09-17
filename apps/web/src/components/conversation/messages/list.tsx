@@ -75,7 +75,7 @@ export function MessagesList({
       onScrollStart={onFetchMoreIfNeeded}
       autoScroll={true}
       className={cn(
-        "overflow-y-auto scroll-smooth pt-20 pb-48",
+        "overflow-y-auto scroll-smooth pt-20 pb-48 px-4 xl:px-0",
         "scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-transparent",
         "h-full w-full",
         className
