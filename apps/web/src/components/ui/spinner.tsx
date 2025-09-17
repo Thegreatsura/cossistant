@@ -4,12 +4,12 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface SpinnerProps {
+type SpinnerProps = {
 	className?: string;
 	size?: number;
 	circleCount?: number;
 	circleDiameter?: number;
-}
+};
 
 export const Spinner = ({
 	className,

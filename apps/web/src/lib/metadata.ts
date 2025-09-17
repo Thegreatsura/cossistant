@@ -20,7 +20,7 @@ const defaultMetadata: Metadata = {
 	authors: [{ name: "Cossistant Team" }],
 	creator: "Cossistant",
 	metadataBase: new URL(
-		process.env.NEXT_PUBLIC_URL || "https://cossistant.com",
+		process.env.NEXT_PUBLIC_URL || "https://cossistant.com"
 	),
 	icons: {
 		icon: [

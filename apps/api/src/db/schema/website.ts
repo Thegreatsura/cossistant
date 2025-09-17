@@ -29,12 +29,12 @@ import { conversation } from "./conversation";
 
 export const websiteInstallationTargetEnum = pgEnum(
 	"website_installation_target",
-	enumToPgEnum(WebsiteInstallationTarget),
+	enumToPgEnum(WebsiteInstallationTarget)
 );
 
 export const websiteStatusEnum = pgEnum(
 	"website_status",
-	enumToPgEnum(WebsiteStatus),
+	enumToPgEnum(WebsiteStatus)
 );
 
 export const website = pgTable(
@@ -55,7 +55,7 @@ export const website = pgTable(
 			.notNull(),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		teamId: ulidReference("team_id").references(() => team.id, {
 			onDelete: "cascade",
@@ -80,9 +80,9 @@ export const website = pgTable(
 		index("website_domain_idx").on(table.domain),
 		index("website_org_domain_idx").on(
 			table.isDomainOwnershipVerified,
-			table.domain,
+			table.domain
 		),
-	],
+	]
 );
 
 export const visitor = pgTable(
@@ -118,7 +118,7 @@ export const visitor = pgTable(
 		// Reference Fields
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		websiteId: ulidReference("website_id")
 			.notNull()
@@ -149,16 +149,16 @@ export const visitor = pgTable(
 		// Index for active visitors query within organization
 		index("visitor_org_last_seen_idx").on(
 			table.organizationId,
-			table.lastSeenAt,
+			table.lastSeenAt
 		),
 		// Index for soft delete queries
 		index("visitor_deleted_at_idx").on(table.deletedAt),
 		// Unique index for identifier per website
 		uniqueIndex("visitor_external_id_website_idx").on(
 			table.externalId,
-			table.websiteId,
+			table.websiteId
 		),
-	],
+	]
 );
 
 export const view = pgTable(
@@ -170,7 +170,7 @@ export const view = pgTable(
 		prompt: text("prompt"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		websiteId: ulidReference("website_id").references(() => website.id, {
 			onDelete: "cascade",
@@ -188,7 +188,7 @@ export const view = pgTable(
 		index("view_website_idx").on(table.websiteId),
 		uniqueIndex("view_website_name_idx").on(table.websiteId, table.name),
 		index("view_deleted_at_idx").on(table.deletedAt),
-	],
+	]
 );
 
 // Relations

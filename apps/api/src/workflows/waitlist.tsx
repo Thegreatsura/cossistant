@@ -17,7 +17,7 @@ waitlistWorkflow.post(
 
 		await context.run("post-join-waitlist", async () => {
 			console.log(
-				`Processing waitlist join for user ${userId} with email ${email}`,
+				`Processing waitlist join for user ${userId} with email ${email}`
 			);
 
 			// Add user in resend audience
@@ -32,7 +32,7 @@ waitlistWorkflow.post(
 				addUserToDefaultAudience(email),
 			]);
 		});
-	}),
+	})
 );
 
 export default waitlistWorkflow;

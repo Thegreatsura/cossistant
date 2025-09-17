@@ -39,7 +39,7 @@ export function CopyButton({
 			<Button
 				className={cn(
 					"absolute top-3 right-1 z-10 size-7 hover:opacity-100 focus-visible:opacity-100",
-					className,
+					className
 				)}
 				data-slot="copy-button"
 				onClick={() => {

@@ -125,7 +125,7 @@ export async function generateSlugFromEmailDomain(
 	db: Database,
 	params: {
 		email: string;
-	},
+	}
 ): Promise<{ slug: string; organizationName: string }> {
 	const domain = params.email.split("@")[1]?.toLowerCase();
 

@@ -21,7 +21,7 @@ export function TopBar({
 		<div
 			className={cn(
 				"fixed top-0 right-0 left-0 z-50 border-grid-x border-b border-dashed bg-background/50 backdrop-blur-xl",
-				className,
+				className
 			)}
 		>
 			<div className="container-wrapper mx-auto">

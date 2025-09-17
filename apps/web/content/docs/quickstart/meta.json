@@ -1,4 +1,4 @@
 {
-	"pages": ["index", "next", "react"],
-	"title": "Quickstart"
+  "pages": ["index", "next", "react"],
+  "title": "Quickstart"
 }

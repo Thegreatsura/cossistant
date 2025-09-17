@@ -3,15 +3,16 @@ import { cn } from "@/lib/utils";
 const DeleteIcon = ({ className }: { className?: string }) => {
 	return (
 		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			viewBox="0 0 24 24"
+			className={className}
 			fill="none"
 			stroke="currentColor"
-			strokeWidth="1.5"
 			strokeLinecap="round"
-			className={className}
 			strokeLinejoin="round"
+			strokeWidth="1.5"
+			viewBox="0 0 24 24"
+			xmlns="http://www.w3.org/2000/svg"
 		>
+			<title>Delete</title>
 			<path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z" />
 			<path d="m12 9 6 6" />
 			<path d="m18 9-6 6" />
@@ -63,7 +64,7 @@ export const CommandShortcut = ({
 		<span
 			className={cn(
 				"ml-auto inline-flex h-[18px] min-w-[20px] items-center justify-center rounded-xs bg-primary-foreground/15 px-1 text-center font-medium font-mono text-[9px] text-primary-foreground uppercase",
-				className,
+				className
 			)}
 			{...props}
 		>

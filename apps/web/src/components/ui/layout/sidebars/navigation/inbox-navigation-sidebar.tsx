@@ -23,7 +23,7 @@ export function InboxNavigationSidebar() {
 			return false;
 		}
 
-		if (section) {
+		if (section !== undefined) {
 			return pathname.includes(`/${section}`);
 		}
 

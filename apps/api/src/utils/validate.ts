@@ -45,17 +45,17 @@ type ExtractedDataWithoutQuery = BaseExtractedData & {
 // Function overloads for proper typing
 export async function safelyExtractRequestData<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema: ZodSchema<T>,
+	schema: ZodSchema<T>
 ): Promise<ExtractedDataWithBody<T>>;
 
 export async function safelyExtractRequestData(
-	c: Context<RestContext, string, Record<string, unknown>>,
+	c: Context<RestContext, string, Record<string, unknown>>
 ): Promise<ExtractedDataWithoutBody>;
 
 // Implementation
 export async function safelyExtractRequestData<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema?: ZodSchema<T>,
+	schema?: ZodSchema<T>
 ): Promise<ExtractedDataWithBody<T> | ExtractedDataWithoutBody> {
 	const db = c.get("db");
 	const website = c.get("website");
@@ -109,17 +109,17 @@ export async function safelyExtractRequestData<T>(
 // Function overloads for query extraction
 export async function safelyExtractRequestQuery<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema: ZodSchema<T>,
+	schema: ZodSchema<T>
 ): Promise<ExtractedDataWithQuery<T>>;
 
 export async function safelyExtractRequestQuery(
-	c: Context<RestContext, string, Record<string, unknown>>,
+	c: Context<RestContext, string, Record<string, unknown>>
 ): Promise<ExtractedDataWithoutQuery>;
 
 // Implementation for query extraction
 export async function safelyExtractRequestQuery<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema?: ZodSchema<T>,
+	schema?: ZodSchema<T>
 ): Promise<ExtractedDataWithQuery<T> | ExtractedDataWithoutQuery> {
 	const db = c.get("db");
 	const website = c.get("website");

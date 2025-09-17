@@ -15,7 +15,7 @@ const Circle = forwardRef<
 		<div
 			className={cn(
 				"relative z-10 flex size-12 items-center justify-center rounded border border-primary/10 border-dashed bg-background-200 p-2 dark:bg-background-500",
-				className,
+				className
 			)}
 			ref={ref}
 		>
@@ -95,8 +95,8 @@ export function CustomToolsGraphic() {
 					</Circle>
 					<Circle className="mr-6 md:mr-16" ref={div6Ref}>
 						<Avatar
-							url="https://cdn.cossistant.com/yin-yang.png"
 							fallbackName="yin.yang"
+							url="https://cdn.cossistant.com/yin-yang.png"
 						/>
 						{showTyping && (
 							<div className="-bottom-1 fade-in slide-in-from-bottom-1 absolute flex w-[115px] animate-in gap-1 border border-primary/10 border-dashed bg-background-200 px-0.5 text-center text-xs duration-300 dark:bg-background-500">

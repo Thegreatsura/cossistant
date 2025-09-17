@@ -12,6 +12,4 @@ export default async function Page({ params }: { params: tParams }) {
 
 	// This page only redirect to the landing page
 	redirect(url.toString());
-
-	return <></>;
 }

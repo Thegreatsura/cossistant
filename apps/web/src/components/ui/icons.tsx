@@ -39,12 +39,12 @@ export type IconName =
 	| "send"
 	| "menu";
 
-export interface IconProps {
+export type IconProps = {
 	name: IconName;
 	variant?: IconVariant;
 	className?: string;
 	filledOnHover?: boolean;
-}
+};
 
 // Thanks to Anron Icons
 const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
@@ -554,17 +554,17 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 			<path
 				d="M12 20L12 22M12 2L12 4M20 12H22M2 12H4M18 17.9995L19.5 19.4995M4.5 4.49949L6.00002 5.99953M18 6L19.5 4.5M4.5 19.5L6 18M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z"
 				stroke="currentColor"
-				strokeWidth="1.5"
 				strokeLinecap="round"
 				strokeLinejoin="round"
+				strokeWidth="1.5"
 			/>
 		),
 		filled: (
 			<path
-				fillRule="evenodd"
 				clipRule="evenodd"
 				d="M12.75 2C12.75 1.58579 12.4142 1.25 12 1.25C11.5858 1.25 11.25 1.58579 11.25 2L11.25 4C11.25 4.41421 11.5858 4.75 12 4.75C12.4142 4.75 12.75 4.41421 12.75 4L12.75 2ZM5.03033 3.96916C4.73744 3.67627 4.26257 3.67626 3.96967 3.96915C3.67678 4.26205 3.67677 4.73692 3.96967 5.02981L5.46969 6.52986C5.76258 6.82276 6.23745 6.82276 6.53035 6.52987C6.82325 6.23698 6.82325 5.7621 6.53036 5.46921L5.03033 3.96916ZM20.0303 5.03033C20.3232 4.73744 20.3232 4.26256 20.0303 3.96967C19.7374 3.67678 19.2626 3.67678 18.9697 3.96967L17.4697 5.46967C17.1768 5.76256 17.1768 6.23744 17.4697 6.53033C17.7626 6.82322 18.2374 6.82322 18.5303 6.53033L20.0303 5.03033ZM2 11.25C1.58579 11.25 1.25 11.5858 1.25 12C1.25 12.4142 1.58579 12.75 2 12.75H4C4.41421 12.75 4.75 12.4142 4.75 12C4.75 11.5858 4.41421 11.25 4 11.25H2ZM20 11.25C19.5858 11.25 19.25 11.5858 19.25 12C19.25 12.4142 19.5858 12.75 20 12.75H22C22.4142 12.75 22.75 12.4142 22.75 12C22.75 11.5858 22.4142 11.25 22 11.25H20ZM18.5303 17.4692C18.2374 17.1763 17.7626 17.1763 17.4697 17.4692C17.1768 17.7621 17.1768 18.2369 17.4697 18.5298L18.9697 20.0298C19.2626 20.3227 19.7374 20.3227 20.0303 20.0298C20.3232 19.7369 20.3232 19.2621 20.0303 18.9692L18.5303 17.4692ZM6.53033 18.5303C6.82322 18.2374 6.82322 17.7626 6.53033 17.4697C6.23744 17.1768 5.76256 17.1768 5.46967 17.4697L3.96967 18.9697C3.67678 19.2626 3.67678 19.7374 3.96967 20.0303C4.26256 20.3232 4.73744 20.3232 5.03033 20.0303L6.53033 18.5303ZM12.75 20C12.75 19.5858 12.4142 19.25 12 19.25C11.5858 19.25 11.25 19.5858 11.25 20L11.25 22C11.25 22.4142 11.5858 22.75 12 22.75C12.4142 22.75 12.75 22.4142 12.75 22L12.75 20ZM6.25 12C6.25 8.82436 8.82436 6.25 12 6.25C15.1756 6.25 17.75 8.82436 17.75 12C17.75 15.1756 15.1756 17.75 12 17.75C8.82436 17.75 6.25 15.1756 6.25 12Z"
 				fill="currentColor"
+				fillRule="evenodd"
 			/>
 		),
 	},
@@ -573,9 +573,9 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 			<path
 				d="M3 11.4489C3 16.7238 7.16904 21 12.3118 21C16.2709 21 19.6529 18.4657 21 14.8925C19.9331 15.4065 18.7418 15.6938 17.485 15.6938C12.9137 15.6938 9.20787 11.8928 9.20787 7.20396C9.20787 5.24299 9.85605 3.4373 10.9446 2C6.45002 2.6783 3 6.65034 3 11.4489Z"
 				stroke="currentColor"
-				strokeWidth="1.5"
 				strokeLinecap="round"
 				strokeLinejoin="round"
+				strokeWidth="1.5"
 			/>
 		),
 		filled: (
@@ -591,20 +591,20 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 				<path
 					d="M4.5 9.5C3.125 9.5 2 10.625 2 12C2 13.375 3.125 14.5 4.5 14.5C5.875 14.5 7 13.375 7 12C7 10.625 5.875 9.5 4.5 9.5Z"
 					stroke="currentColor"
-					strokeWidth="1.5"
 					strokeLinecap="round"
+					strokeWidth="1.5"
 				/>
 				<path
 					d="M19.5 9.5C18.125 9.5 17 10.625 17 12C17 13.375 18.125 14.5 19.5 14.5C20.875 14.5 22 13.375 22 12C22 10.625 20.875 9.5 19.5 9.5Z"
 					stroke="currentColor"
-					strokeWidth="1.5"
 					strokeLinecap="round"
+					strokeWidth="1.5"
 				/>
 				<path
-					stroke="currentColor"
-					strokeWidth="1.5"
-					strokeLinecap="round"
 					d="M12 9.5C10.625 9.5 9.5 10.625 9.5 12C9.5 13.375 10.625 14.5 12 14.5C13.375 14.5 14.5 13.375 14.5 12C14.5 10.625 13.375 9.5 12 9.5Z"
+					stroke="currentColor"
+					strokeLinecap="round"
+					strokeWidth="1.5"
 				/>
 			</>
 		),
@@ -628,10 +628,10 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 	attachment: {
 		default: (
 			<path
-				stroke="currentColor"
-				strokeWidth="1.5"
-				strokeLinecap="round"
 				d="M22 12L15.25 18.75C12.3505 21.6495 7.64949 21.6495 4.75 18.75V18.75C1.85051 15.8505 1.8505 11.1495 4.75 8.25L9.5 3.5C11.433 1.56701 14.567 1.567 16.5 3.5V3.5C18.433 5.433 18.433 8.567 16.5 10.5L11.75 15.25C10.7835 16.2165 9.2165 16.2165 8.25 15.25V15.25C7.2835 14.2835 7.2835 12.7165 8.25 11.75L13 7"
+				stroke="currentColor"
+				strokeLinecap="round"
+				strokeWidth="1.5"
 			/>
 		),
 		filled: (
@@ -644,10 +644,10 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 	file: {
 		default: (
 			<path
-				stroke="currentColor"
-				strokeWidth="1.5"
-				strokeLinecap="round"
 				d="M14 2.5V4.80003C14 5.92013 14 6.48019 14.218 6.90801C14.4097 7.28433 14.7157 7.5903 15.092 7.78204C15.5198 8.00003 16.0799 8.00003 17.2 8.00003H19.5M20 10.3137V14C20 16.8003 20 18.2004 19.455 19.27C18.9757 20.2108 18.2108 20.9757 17.27 21.455C16.2004 22 14.8003 22 12 22V22C9.19974 22 7.79961 22 6.73005 21.455C5.78924 20.9757 5.02433 20.2108 4.54497 19.27C4 18.2004 4 16.8003 4 14V9.77817C4 7.18697 4 5.89136 4.46859 4.88663C4.96536 3.82147 5.82147 2.96536 6.88663 2.46859C7.89136 2 9.18697 2 11.7782 2V2C12.9105 2 13.4766 2 14.0113 2.11855C14.5806 2.24479 15.1235 2.46965 15.6153 2.78296C16.0772 3.07721 16.4775 3.47753 17.2782 4.27817L17.6569 4.65685C18.5216 5.52161 18.954 5.95399 19.2632 6.45858C19.5373 6.90594 19.7394 7.39366 19.8618 7.90384C20 8.47928 20 9.09076 20 10.3137Z"
+				stroke="currentColor"
+				strokeLinecap="round"
+				strokeWidth="1.5"
 			/>
 		),
 		filled: (
@@ -700,11 +700,11 @@ export const Icon: React.FC<IconProps> = ({
 				<title>{name}</title>
 				{renderWithClass(
 					defaultContent,
-					"transition-opacity duration-200 group-hover/btn:opacity-0",
+					"transition-opacity duration-200 group-hover/btn:opacity-0"
 				)}
 				{renderWithClass(
 					filledContent,
-					"opacity-0 transition-opacity duration-200 group-hover/btn:opacity-100",
+					"opacity-0 transition-opacity duration-200 group-hover/btn:opacity-100"
 				)}
 			</svg>
 		);

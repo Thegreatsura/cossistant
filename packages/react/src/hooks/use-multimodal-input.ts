@@ -1,14 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 
-export interface UseMultimodalInputOptions {
+export type UseMultimodalInputOptions = {
 	onSubmit?: (data: { message: string; files: File[] }) => void | Promise<void>;
 	onError?: (error: Error) => void;
 	maxFileSize?: number; // in bytes
 	maxFiles?: number;
 	allowedFileTypes?: string[]; // MIME types
-}
+};
 
-export interface UseMultimodalInputReturn {
+export type UseMultimodalInputReturn = {
 	// State
 	message: string;
 	files: File[];
@@ -26,7 +26,7 @@ export interface UseMultimodalInputReturn {
 	// Validation
 	isValid: boolean;
 	canSubmit: boolean;
-}
+};
 
 export const useMultimodalInput = ({
 	onSubmit,
@@ -66,7 +66,7 @@ export const useMultimodalInput = ({
 
 			return null;
 		},
-		[maxFileSize, allowedFileTypes],
+		[maxFileSize, allowedFileTypes]
 	);
 
 	// Actions
@@ -77,7 +77,7 @@ export const useMultimodalInput = ({
 			// Check max files limit
 			if (files.length + newFiles.length > maxFiles) {
 				const err = new Error(
-					`Cannot add files: maximum ${maxFiles} files allowed`,
+					`Cannot add files: maximum ${maxFiles} files allowed`
 				);
 				setError(err);
 				onError?.(err);
@@ -97,7 +97,7 @@ export const useMultimodalInput = ({
 
 			setFiles((prev) => [...prev, ...newFiles]);
 		},
-		[files.length, maxFiles, validateFile, onError],
+		[files.length, maxFiles, validateFile, onError]
 	);
 
 	const removeFile = useCallback((index: number) => {

@@ -45,7 +45,7 @@ export async function StarsCount() {
 		"https://api.github.com/repos/cossistantcom/cossistant",
 		{
 			next: { revalidate: 86_400 }, // Cache for 1 day (86400 seconds)
-		},
+		}
 	);
 	const json = await data.json();
 

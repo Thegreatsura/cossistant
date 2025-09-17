@@ -9,17 +9,17 @@ export {
 } from "./schemas";
 export * from "./sync";
 
-export interface CossistantConfig {
+export type CossistantConfig = {
 	apiUrl: string;
 	wsUrl: string;
 	apiKey?: string;
 	publicKey?: string;
 	userId?: string;
 	organizationId?: string;
-}
+};
 
-export interface CossistantError {
+export type CossistantError = {
 	code: string;
 	message: string;
 	details?: Record<string, unknown>;
-}
+};

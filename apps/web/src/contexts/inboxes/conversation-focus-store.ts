@@ -1,12 +1,12 @@
 import { create } from "zustand";
 
-interface ConversationFocusStore {
+type ConversationFocusStore = {
 	focusedConversationId: string | null;
 	shouldRestoreFocus: boolean;
 	setFocusedConversationId: (id: string | null) => void;
 	clearFocus: () => void;
 	markFocusRestored: () => void;
-}
+};
 
 export const useConversationFocusStore = create<ConversationFocusStore>(
 	(set) => ({
@@ -17,5 +17,5 @@ export const useConversationFocusStore = create<ConversationFocusStore>(
 		clearFocus: () =>
 			set({ focusedConversationId: null, shouldRestoreFocus: false }),
 		markFocusRestored: () => set({ shouldRestoreFocus: false }),
-	}),
+	})
 );

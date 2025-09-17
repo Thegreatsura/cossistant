@@ -16,11 +16,11 @@ import {
 } from "../utils/message-cache";
 import { QUERY_KEYS } from "../utils/query-keys";
 
-interface UseMessagesParams {
+type UseMessagesParams = {
 	client: CossistantClient | null;
 	conversationId: string | null;
 	defaultMessages?: Message[];
-}
+};
 
 export function useMessages({
 	client,
@@ -74,7 +74,7 @@ export function useMessages({
 // Hook to send a message
 export function useSendMessage(
 	client: CossistantClient | null,
-	conversationId: string | null,
+	conversationId: string | null
 ) {
 	const queryClient = useQueryClient();
 
@@ -102,7 +102,7 @@ export function useSendMessage(
 
 			// Snapshot previous value
 			const previousMessages = queryClient.getQueryData<PaginatedMessagesCache>(
-				QUERY_KEYS.messages(conversationId),
+				QUERY_KEYS.messages(conversationId)
 			);
 
 			// Optimistically update to the new value
@@ -123,7 +123,7 @@ export function useSendMessage(
 			// Add the optimistic message to the cache
 			queryClient.setQueryData<PaginatedMessagesCache>(
 				QUERY_KEYS.messages(conversationId),
-				(old) => addMessageToCache(old, optimisticMessage),
+				(old) => addMessageToCache(old, optimisticMessage)
 			);
 
 			return { previousMessages };
@@ -133,7 +133,7 @@ export function useSendMessage(
 			if (context?.previousMessages) {
 				queryClient.setQueryData(
 					QUERY_KEYS.messages(conversationId),
-					context.previousMessages,
+					context.previousMessages
 				);
 			}
 		},

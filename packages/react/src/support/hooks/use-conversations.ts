@@ -3,16 +3,16 @@ import type { ListConversationsResponse } from "@cossistant/types/api/conversati
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../utils/query-keys";
 
-export interface UseConversationsResult {
+export type UseConversationsResult = {
 	conversations: ListConversationsResponse["conversations"] | null;
 	pagination: ListConversationsResponse["pagination"] | null;
 	isLoading: boolean;
 	error: Error | null;
-}
+};
 
 export function useConversations(
 	client: CossistantClient | null,
-	params: { limit?: number; enabled?: boolean } = {},
+	params: { limit?: number; enabled?: boolean } = {}
 ): UseConversationsResult {
 	const isEnabled = !!client && params.enabled !== false;
 

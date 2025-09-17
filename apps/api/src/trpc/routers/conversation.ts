@@ -1,14 +1,16 @@
 import {
+  getConversationById,
   getConversationEvents,
   listConversationsHeaders,
 } from "@api/db/queries/conversation";
 import { getConversationMessages } from "@api/db/queries/message";
 import { getVisitorComplete } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { createMessage } from "@api/utils/message";
 import {
+  conversationEventSchema,
   MessageType,
   MessageVisibility,
-  conversationEventSchema,
   messageSchema,
   visitorProfileSchema,
   visitorResponseSchema,
@@ -16,7 +18,6 @@ import {
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
-import { createMessage } from "@api/utils/message";
 
 export const conversationRouter = createTRPCRouter({
   listConversationsHeaders: protectedProcedure
@@ -107,10 +108,8 @@ export const conversationRouter = createTRPCRouter({
           userId: user.id,
           websiteSlug: input.websiteSlug,
         }),
-        db.query.conversation.findFirst({
-          where: (conversation, { eq }) =>
-            eq(conversation.id, input.conversationId),
-          columns: { id: true, websiteId: true },
+        getConversationById(db, {
+          conversationId: input.conversationId,
         }),
       ]);
 
@@ -166,10 +165,8 @@ export const conversationRouter = createTRPCRouter({
           userId: user.id,
           websiteSlug: input.websiteSlug,
         }),
-        db.query.conversation.findFirst({
-          where: (conversation, { eq }) =>
-            eq(conversation.id, input.conversationId),
-          columns: { id: true, websiteId: true },
+        getConversationById(db, {
+          conversationId: input.conversationId,
         }),
       ]);
 
@@ -229,10 +226,8 @@ export const conversationRouter = createTRPCRouter({
           userId: user.id,
           websiteSlug: input.websiteSlug,
         }),
-        db.query.conversation.findFirst({
-          where: (conversation, { eq }) =>
-            eq(conversation.id, input.conversationId),
-          columns: { id: true, websiteId: true },
+        getConversationById(db, {
+          conversationId: input.conversationId,
         }),
       ]);
 

@@ -1,9 +1,9 @@
 import * as React from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 
-interface AvatarState {
+type AvatarState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
-}
+};
 
 export interface AvatarProps
 	extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {
@@ -14,7 +14,7 @@ export interface AvatarProps
 
 export interface AvatarContextValue extends AvatarState {
 	onImageLoadingStatusChange: (
-		status: AvatarState["imageLoadingStatus"],
+		status: AvatarState["imageLoadingStatus"]
 	) => void;
 }
 
@@ -24,7 +24,7 @@ export const useAvatarContext = () => {
 	const context = React.useContext(AvatarContext);
 	if (!context) {
 		throw new Error(
-			"Avatar compound components cannot be rendered outside the Avatar component",
+			"Avatar compound components cannot be rendered outside the Avatar component"
 		);
 	}
 	return context;
@@ -40,7 +40,7 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
 				imageLoadingStatus,
 				onImageLoadingStatusChange: setImageLoadingStatus,
 			}),
-			[imageLoadingStatus],
+			[imageLoadingStatus]
 		);
 
 		const state: AvatarState = {
@@ -62,11 +62,11 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
 							...props,
 							children,
 						},
-					},
+					}
 				)}
 			</AvatarContext.Provider>
 		);
-	},
+	}
 );
 
 Avatar.displayName = "Avatar";

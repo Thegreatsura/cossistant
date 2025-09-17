@@ -17,7 +17,7 @@ export default async function Landing() {
 		<>
 			<div className="flex min-h-screen flex-col gap-8 pt-32 md:flex-row md:items-center lg:pt-0">
 				<div className="mb-20 flex flex-col gap-20 lg:mb-0 lg:flex-row">
-					<div className="flex flex-1 flex-col items-start justify-between gap-6 pt-11 ">
+					<div className="flex flex-1 flex-col items-start justify-between gap-6 pt-11">
 						<EscapeIframeAnimation />
 						<div className="my-auto flex flex-col items-center gap-2 px-4 lg:items-start">
 							<h1 className="text-pretty text-center font-f37-stout text-[36px] leading-tight md:text-5xl lg:text-left xl:text-6xl">

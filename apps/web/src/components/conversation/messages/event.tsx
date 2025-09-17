@@ -8,11 +8,11 @@ import type React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 
-export interface ConversationEventProps {
+export type ConversationEventProps = {
 	event: ConversationEventType;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
-}
+};
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	event,
@@ -21,10 +21,10 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 }) => {
 	const isAI = event.actorAiAgentId !== null;
 	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === event.actorUserId,
+		(agent) => agent.id === event.actorUserId
 	);
 	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === event.actorAiAgentId,
+		(agent) => agent.id === event.actorAiAgentId
 	);
 
 	// Get the actor name
@@ -78,9 +78,9 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 					) : (
 						<Avatar
 							className="size-5 flex-shrink-0 overflow-clip rounded-full"
-							url={humanAgent?.image}
 							fallbackName={humanAgent?.name ?? "Someone"}
 							lastOnlineAt={humanAgent?.lastSeenAt}
+							url={humanAgent?.image}
 						/>
 					)}
 				</div>

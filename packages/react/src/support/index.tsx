@@ -8,7 +8,7 @@ import { type DefaultMessage, useSupport } from "../provider";
 import { SupportContent } from "./components/support-content";
 import { SupportConfigProvider } from "./context/config";
 
-export interface SupportProps {
+export type SupportProps = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
@@ -17,7 +17,7 @@ export interface SupportProps {
 	quickOptions?: string[];
 	defaultMessages?: DefaultMessage[];
 	defaultOpen?: boolean;
-}
+};
 
 // Internal component that needs the conversation context
 export function Support({
@@ -32,7 +32,7 @@ export function Support({
 	const { website } = useSupport();
 
 	if (!website) {
-		return <></>;
+		return null;
 	}
 
 	return (

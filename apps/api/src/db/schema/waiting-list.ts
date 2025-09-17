@@ -32,5 +32,5 @@ export const waitingListEntryRelations = relations(
 			fields: [waitingListEntry.userId],
 			references: [user.id],
 		}),
-	}),
+	})
 );

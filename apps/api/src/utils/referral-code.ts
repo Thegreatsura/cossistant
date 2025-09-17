@@ -4,18 +4,18 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { slugify } from "./db";
 
-interface UserInfo {
+type UserInfo = {
 	name: string;
 	email: string;
 	image?: string;
-}
+};
 
 /**
  * Generates a unique referral code for a user, trying multiple strategies
  * to create a clean, readable code while ensuring uniqueness.
  */
 export async function generateUniqueReferralCode(
-	userInfo: UserInfo,
+	userInfo: UserInfo
 ): Promise<string> {
 	const baseCode = createBaseReferralCode(userInfo);
 
@@ -28,7 +28,7 @@ export async function generateUniqueReferralCode(
 	const maxRetries = 5;
 	for (let i = 0; i < maxRetries; i++) {
 		const codeWithSuffix = `${baseCode}-${nanoid(3)}`;
-		// biome-ignore lint/nursery/noAwaitInLoop: No risk here
+
 		if (await isReferralCodeAvailable(codeWithSuffix)) {
 			return codeWithSuffix;
 		}

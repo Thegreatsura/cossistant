@@ -2,10 +2,10 @@ import * as React from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 import { useAvatarContext } from "./avatar";
 
-interface FallbackState {
+type FallbackState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
 	initials?: string;
-}
+};
 
 export interface AvatarFallbackProps
 	extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {
@@ -39,7 +39,7 @@ export const AvatarFallback = React.forwardRef<
 >(
 	(
 		{ children, name = "", delayMs = 0, className, asChild = false, ...props },
-		ref,
+		ref
 	) => {
 		const { imageLoadingStatus } = useAvatarContext();
 		const [canRender, setCanRender] = React.useState(delayMs === 0);
@@ -84,9 +84,9 @@ export const AvatarFallback = React.forwardRef<
 					...props,
 					children: content,
 				},
-			},
+			}
 		);
-	},
+	}
 );
 
 AvatarFallback.displayName = "AvatarFallback";

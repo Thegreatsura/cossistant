@@ -1,96 +1,96 @@
 import type { Database } from "@api/db";
 import type {
-  ApiKeySelect,
-  OrganizationSelect,
-  WebsiteSelect,
+	ApiKeySelect,
+	OrganizationSelect,
+	WebsiteSelect,
 } from "@api/db/schema";
 import { session, user } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
 
-import { eq, gt, and } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 
 export type ApiKeyWithWebsiteAndOrganization = ApiKeySelect & {
-  website: WebsiteSelect;
-  organization: OrganizationSelect;
+	website: WebsiteSelect;
+	organization: OrganizationSelect;
 };
 
 const MAX_SESSION_TOKEN_LENGTH = 512;
 
 export function normalizeSessionToken(
-  token: string | null | undefined
+	token: string | null | undefined
 ): string | undefined {
-  if (!token) {
-    return undefined;
-  }
+	if (!token) {
+		return;
+	}
 
-  const trimmed = token.trim();
-  if (!trimmed) {
-    return undefined;
-  }
+	const trimmed = token.trim();
+	if (!trimmed) {
+		return;
+	}
 
-  if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
-    return undefined;
-  }
+	if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
+		return;
+	}
 
-  return trimmed;
+	return trimmed;
 }
 
 export async function resolveSession(
-  db: Database,
-  params: {
-    headers: Headers;
-    sessionToken?: string | null;
-  }
+	db: Database,
+	params: {
+		headers: Headers;
+		sessionToken?: string | null;
+	}
 ) {
-  let userSession = await auth.api.getSession({ headers: params.headers });
+	let userSession = await auth.api.getSession({ headers: params.headers });
 
-  const tokensToCheck = new Set<string>();
+	const tokensToCheck = new Set<string>();
 
-  const normalizedOverride = normalizeSessionToken(params.sessionToken);
-  if (normalizedOverride) {
-    tokensToCheck.add(normalizedOverride);
-  }
+	const normalizedOverride = normalizeSessionToken(params.sessionToken);
+	if (normalizedOverride) {
+		tokensToCheck.add(normalizedOverride);
+	}
 
-  const headerToken = normalizeSessionToken(
-    params.headers.get("x-user-session-token")
-  );
-  if (headerToken) {
-    tokensToCheck.add(headerToken);
-  }
+	const headerToken = normalizeSessionToken(
+		params.headers.get("x-user-session-token")
+	);
+	if (headerToken) {
+		tokensToCheck.add(headerToken);
+	}
 
-  // Avoid querying again if the Better Auth session already resolves to the
-  // same token.
-  const currentToken = normalizeSessionToken(userSession?.session?.token);
-  if (currentToken) {
-    tokensToCheck.delete(currentToken);
-  }
+	// Avoid querying again if the Better Auth session already resolves to the
+	// same token.
+	const currentToken = normalizeSessionToken(userSession?.session?.token);
+	if (currentToken) {
+		tokensToCheck.delete(currentToken);
+	}
 
-  const now = new Date();
-  for (const token of tokensToCheck) {
-    const [res] = await db
-      .select()
-      .from(session)
-      .where(and(eq(session.token, token), gt(session.expiresAt, now)))
-      .innerJoin(user, eq(session.userId, user.id))
-      .limit(1)
-      .$withCache({ tag: `session:${token}` });
-    if (res) {
-      userSession = {
-        session: res.session,
-        user: res.user,
-      };
-      break;
-    }
-  }
+	const now = new Date();
+	for (const token of tokensToCheck) {
+		const [res] = await db
+			.select()
+			.from(session)
+			.where(and(eq(session.token, token), gt(session.expiresAt, now)))
+			.innerJoin(user, eq(session.userId, user.id))
+			.limit(1)
+			.$withCache({ tag: `session:${token}` });
+		if (res) {
+			userSession = {
+				session: res.session,
+				user: res.user,
+			};
+			break;
+		}
+	}
 
-  return userSession;
+	return userSession;
 }
 
 export async function getTRPCSession(
-  db: Database,
-  params: {
-    headers: Headers;
-  }
+	db: Database,
+	params: {
+		headers: Headers;
+	}
 ) {
-  return await resolveSession(db, { headers: params.headers });
+	return await resolveSession(db, { headers: params.headers });
 }

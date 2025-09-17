@@ -7,7 +7,7 @@ export function WaitingListSkeleton({ className }: { className?: string }) {
 		<div
 			className={cn(
 				"mx-auto flex w-full max-w-[592px] flex-col gap-4 rounded py-10 opacity-10 md:p-10",
-				className,
+				className
 			)}
 		>
 			<div className="mb-10 flex items-center gap-10">

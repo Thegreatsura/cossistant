@@ -6,7 +6,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { cn } from "@/lib/utils";
 import { TooltipOnHover } from "./tooltip";
 
-interface TopbarButtonProps {
+type TopbarButtonProps = {
 	href: string;
 	children: React.ReactNode;
 	className?: string;
@@ -14,7 +14,7 @@ interface TopbarButtonProps {
 	tooltip?: string;
 	shortcuts?: string[];
 	withBrackets?: boolean;
-}
+};
 
 export function TopbarButton({
 	href,
@@ -35,7 +35,7 @@ export function TopbarButton({
 		{
 			enabled: !!shortcuts,
 			preventDefault: true,
-		},
+		}
 	);
 
 	return (
@@ -43,7 +43,7 @@ export function TopbarButton({
 			<Link
 				className={cn(
 					"group flex items-center gap-1 font-mono text-foreground/70 text-sm transition-colors hover:text-foreground",
-					className,
+					className
 				)}
 				href={href}
 			>

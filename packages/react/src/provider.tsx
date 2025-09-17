@@ -10,7 +10,7 @@ import { WebSocketProvider } from "./support";
 import { useConversations } from "./support/hooks/use-conversations";
 import { useWebsiteData } from "./support/hooks/use-website-data";
 
-export interface CossistantProviderProps {
+export type CossistantProviderProps = {
 	children: React.ReactNode;
 	defaultOpen?: boolean;
 	apiUrl?: string;
@@ -23,15 +23,15 @@ export interface CossistantProviderProps {
 	onWsDisconnect?: () => void;
 	onWsError?: (error: Error) => void;
 	queryClient?: QueryClient;
-}
+};
 
-export interface DefaultMessage {
+export type DefaultMessage = {
 	content: string;
 	senderType: SenderType;
 	senderId?: string;
-}
+};
 
-export interface CossistantContextValue {
+export type CossistantContextValue = {
 	website: PublicWebsiteResponse | null;
 	defaultMessages: DefaultMessage[];
 	quickOptions: string[];
@@ -43,10 +43,10 @@ export interface CossistantContextValue {
 	error: Error | null;
 	client: CossistantClient | null;
 	queryClient: QueryClient;
-}
+};
 
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
-	undefined,
+	undefined
 );
 
 function SupportProviderInner({
@@ -67,7 +67,7 @@ function SupportProviderInner({
 		DefaultMessage[]
 	>(defaultMessages || []);
 	const [_quickOptions, _setQuickOptions] = React.useState<string[]>(
-		quickOptions || [],
+		quickOptions || []
 	);
 	const [isClientPrimed, setIsClientPrimed] = React.useState(false);
 
@@ -107,17 +107,17 @@ function SupportProviderInner({
 
 	const setDefaultMessages = React.useCallback(
 		(messages: DefaultMessage[]) => _setDefaultMessages(messages),
-		[],
+		[]
 	);
 
 	const setQuickOptions = React.useCallback(
 		(options: string[]) => _setQuickOptions(options),
-		[],
+		[]
 	);
 
 	const setUnreadCountStable = React.useCallback(
 		(count: number) => setUnreadCount(count),
-		[],
+		[]
 	);
 
 	const value = React.useMemo<CossistantContextValue>(
@@ -146,7 +146,7 @@ function SupportProviderInner({
 			setDefaultMessages,
 			setQuickOptions,
 			setUnreadCountStable,
-		],
+		]
 	);
 
 	return (
@@ -190,7 +190,7 @@ export function SupportProvider({
 						gcTime: 10 * 60 * 1000, // 10 minutes
 					},
 				},
-			}),
+			})
 	);
 
 	const activeQueryClient = queryClient || defaultQueryClient;
@@ -219,7 +219,7 @@ export function useSupport() {
 	const context = React.useContext(SupportContext);
 	if (!context) {
 		throw new Error(
-			"useSupport must be used within a cossistant SupportProvider",
+			"useSupport must be used within a cossistant SupportProvider"
 		);
 	}
 

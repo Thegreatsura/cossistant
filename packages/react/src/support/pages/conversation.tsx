@@ -14,7 +14,7 @@ import { useMessages } from "../hooks/use-messages";
 import { useSendMessage } from "../hooks/use-send-message";
 import { useSupportNavigation } from "../store";
 
-interface ConversationPageProps {
+type ConversationPageProps = {
 	conversationId: string;
 	message: string;
 	files: File[];
@@ -26,7 +26,7 @@ interface ConversationPageProps {
 	submit: () => void;
 	messages?: MessageType[];
 	events: ConversationEvent[];
-}
+};
 
 export const ConversationPage = ({
 	conversationId,

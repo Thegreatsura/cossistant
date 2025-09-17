@@ -54,7 +54,7 @@ export function extractInboxParamsFromSlug({
 				segment === "archived" ||
 				segment === ConversationStatus.OPEN ||
 				segment === ConversationStatus.RESOLVED ||
-				segment === ConversationStatus.SPAM,
+				segment === ConversationStatus.SPAM
 		) ?? null;
 
 	// If within the slug array a string starts with "CO", then it is a conversation id

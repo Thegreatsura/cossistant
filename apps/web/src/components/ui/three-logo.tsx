@@ -6,9 +6,9 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-interface ThreeLogoProps {
+type ThreeLogoProps = {
 	className?: string;
-}
+};
 
 function LogoPlane() {
 	const meshRef = useRef<THREE.Mesh>(null);

@@ -46,7 +46,7 @@ const AvatarStackItem = ({
 			props: {
 				className: cn(
 					"relative grid place-items-center",
-					!isFirst && "[mask-repeat:no-repeat] [mask-size:100%_100%]",
+					!isFirst && "[mask-repeat:no-repeat] [mask-size:100%_100%]"
 				),
 				style: {
 					width: `${size}px`,
@@ -61,7 +61,7 @@ const AvatarStackItem = ({
 				},
 				children,
 			},
-		},
+		}
 	);
 };
 
@@ -133,6 +133,6 @@ export function AvatarStack({
 					</AvatarStackItem>
 				)),
 			},
-		},
+		}
 	);
 }

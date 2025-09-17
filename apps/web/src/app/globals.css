@@ -321,7 +321,6 @@
 		@apply md:-mx-1;
 
 		&:has([data-rehype-pretty-code-title]) [data-slot="copy-button"] {
-			/* biome-ignore lint/nursery/noImportantStyles: ok */
 			top: calc(var(--spacing) * 1.5) !important;
 		}
 	}
@@ -379,7 +378,6 @@
 
 		@variant dark {
 			/* biome-ignore lint/suspicious/noDuplicateProperties: ok */
-			/* biome-ignore lint/nursery/noImportantStyles: ok */
 			color: var(--shiki-dark) !important;
 		}
 	}

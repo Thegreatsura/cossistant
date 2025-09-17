@@ -33,13 +33,15 @@ export function ConversationHeaderNavigation() {
 						navigateToNextConversation();
 					}
 					break;
+				default:
+					break;
 			}
 		},
 		{
 			preventDefault: true,
 			enableOnContentEditable: false,
 			enableOnFormTags: false,
-		},
+		}
 	);
 
 	return (

@@ -1,6 +1,6 @@
 import { getVisitor } from "@api/db/queries";
 import {
-	getConversationById,
+	getConversationByIdWithLastMessage,
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
@@ -127,7 +127,7 @@ conversationRouter.openapi(
 					error:
 						"Visitor not found, please pass a valid visitorId or externalVisitorId",
 				},
-				400,
+				400
 			);
 		}
 
@@ -181,10 +181,10 @@ conversationRouter.openapi(
 						lastMessage,
 					},
 				},
-				createConversationResponseSchema,
-			),
+				createConversationResponseSchema
+			)
 		);
-	},
+	}
 );
 
 conversationRouter.openapi(
@@ -279,7 +279,7 @@ conversationRouter.openapi(
 					error:
 						"Visitor not found, please pass a valid visitorId or externalVisitorId",
 				},
-				400,
+				400
 			);
 		}
 
@@ -310,9 +310,9 @@ conversationRouter.openapi(
 		};
 
 		return c.json(
-			validateResponse(apiResponse, listConversationsResponseSchema),
+			validateResponse(apiResponse, listConversationsResponseSchema)
 		);
-	},
+	}
 );
 
 conversationRouter.openapi(
@@ -421,7 +421,7 @@ conversationRouter.openapi(
 			conversationId: c.req.param("conversationId"),
 		});
 
-		const conversation = await getConversationById(db, {
+		const conversation = await getConversationByIdWithLastMessage(db, {
 			organizationId: organization.id,
 			websiteId: website.id,
 			conversationId: params.conversationId,
@@ -432,7 +432,7 @@ conversationRouter.openapi(
 				{
 					error: "Conversation not found",
 				},
-				404,
+				404
 			);
 		}
 
@@ -451,5 +451,5 @@ conversationRouter.openapi(
 		};
 
 		return c.json(validateResponse(apiResponse, getConversationResponseSchema));
-	},
+	}
 );

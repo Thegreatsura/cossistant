@@ -12,7 +12,7 @@ function RegisterReferral() {
 			onSuccess: (data) => {
 				console.log("Successfully redeemed referral code", data);
 			},
-		}),
+		})
 	);
 
 	useEffect(() => {
@@ -23,7 +23,7 @@ function RegisterReferral() {
 		}
 	}, [redeemReferralCode]);
 
-	return <></>;
+	return null;
 }
 
 export default RegisterReferral;

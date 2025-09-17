@@ -15,7 +15,7 @@ const AUTH_LOGS_ENABLED = process.env.ENABLE_AUTH_LOGS === "true";
 function logAuthenticationRequest(
 	c: Context<RestContext>,
 	privateKey: string | undefined,
-	publicKey: string | undefined,
+	publicKey: string | undefined
 ): void {
 	if (AUTH_LOGS_ENABLED) {
 		console.log("[AUTH] Processing request:", {
@@ -31,7 +31,7 @@ function logAuthenticationRequest(
 }
 
 function getAuthValidationOptions(
-	c: Context<RestContext>,
+	c: Context<RestContext>
 ): AuthValidationOptions {
 	const origin = c.req.header("Origin");
 	let protocol: string | undefined;
@@ -68,7 +68,7 @@ async function authenticateRequest(c: Context<RestContext>, db: Database) {
 			privateKey,
 			publicKey,
 			db,
-			options,
+			options
 		);
 
 		return result.apiKey;

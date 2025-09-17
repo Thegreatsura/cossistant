@@ -5,7 +5,7 @@ import { and, count, eq, gt, lt, or } from "drizzle-orm";
 
 export async function getWaitlistEntryByUserId(
 	db: Database,
-	params: { userId?: string },
+	params: { userId?: string }
 ) {
 	try {
 		const totalEntries = await db
@@ -37,9 +37,9 @@ export async function getWaitlistEntryByUserId(
 					gt(waitingListEntry.points, entry.points),
 					and(
 						eq(waitingListEntry.points, entry.points),
-						lt(waitingListEntry.createdAt, entry.createdAt),
-					),
-				),
+						lt(waitingListEntry.createdAt, entry.createdAt)
+					)
+				)
 			);
 
 		const rank = result[0].count + 1;
@@ -53,7 +53,7 @@ export async function getWaitlistEntryByUserId(
 		console.error("Error in getWaitlistEntryByUserId:", err);
 		console.error(
 			"Stack trace:",
-			err instanceof Error ? err.stack : "No stack trace",
+			err instanceof Error ? err.stack : "No stack trace"
 		);
 		// Return 0 instead of 666 to make it clear there's an error
 		return { entry: null, rank: null, totalEntries: 0 };

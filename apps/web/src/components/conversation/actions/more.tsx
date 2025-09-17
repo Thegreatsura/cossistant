@@ -23,8 +23,8 @@ export function MoreConversationActions({
 			<DropdownMenu>
 				<TooltipOnHover content="More options">
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" size="icon-small">
-							<Icon name="more" filledOnHover />
+						<Button size="icon-small" variant="ghost">
+							<Icon filledOnHover name="more" />
 						</Button>
 					</DropdownMenuTrigger>
 				</TooltipOnHover>

@@ -27,7 +27,7 @@ type FilterResult = {
  */
 function countStatus(
 	conversation: ConversationHeader,
-	statusCounts: FilterResult["statusCounts"],
+	statusCounts: FilterResult["statusCounts"]
 ) {
 	if (conversation.deletedAt !== null) {
 		statusCounts.archived++;
@@ -48,7 +48,7 @@ function countStatus(
  */
 function matchesStatusFilter(
 	conversation: ConversationHeader,
-	selectedStatus: ConversationStatusFilter,
+	selectedStatus: ConversationStatusFilter
 ): boolean {
 	if (!selectedStatus) {
 		return true;
@@ -91,7 +91,7 @@ function matchesStatusFilter(
 function filterAndProcessConversations(
 	conversations: ConversationHeader[],
 	selectedStatus: ConversationStatusFilter,
-	selectedViewId: string | null,
+	selectedViewId: string | null
 ): FilterResult {
 	const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
 	const filteredConversations: ConversationHeader[] = [];
@@ -175,9 +175,9 @@ export function useFilteredConversations({
 			filterAndProcessConversations(
 				unfilteredConversations,
 				selectedConversationStatus,
-				selectedViewId,
+				selectedViewId
 			),
-		[unfilteredConversations, selectedConversationStatus, selectedViewId],
+		[unfilteredConversations, selectedConversationStatus, selectedViewId]
 	);
 
 	const currentIndex = selectedConversationId
@@ -220,12 +220,12 @@ export function useFilteredConversations({
 
 	const isConversationInCurrentFilter = useCallback(
 		(conversationId: string) => conversationMap.has(conversationId),
-		[conversationMap],
+		[conversationMap]
 	);
 
 	const getConversationById = useCallback(
 		(conversationId: string) => conversationMap.get(conversationId) || null,
-		[conversationMap],
+		[conversationMap]
 	);
 
 	return {

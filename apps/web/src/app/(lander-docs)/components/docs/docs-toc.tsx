@@ -22,7 +22,7 @@ function useActiveItem(itemIds: string[]) {
 					}
 				}
 			},
-			{ rootMargin: "0% 0% -80% 0%" },
+			{ rootMargin: "0% 0% -80% 0%" }
 		);
 
 		for (const id of itemIds ?? []) {
@@ -61,7 +61,7 @@ export function DocsTableOfContents({
 	const [open, setOpen] = React.useState(false);
 	const itemIds = React.useMemo(
 		() => toc.map((item) => item.url.replace("#", "")),
-		[toc],
+		[toc]
 	);
 	const activeHeading = useActiveItem(itemIds);
 

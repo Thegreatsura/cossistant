@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/nursery/useImageSize:ok */
 "use client";
 
 import { ConversationEvent } from "@cossistant/react/support/components/conversation-event";
@@ -184,7 +185,7 @@ const availableHumanAgents: AvailableHumanAgent[] = [
 		id: "anthony",
 		name: "Anthony",
 		image: anthonyAvatar,
-		lastOnlineAt: new Date().toISOString(),
+		lastSeenAt: new Date(),
 	},
 ];
 
@@ -258,7 +259,7 @@ export const HumanAiGraphic = () => {
 
 	// Helper to find the last visible message before the given index
 	const findLastVisibleMessage = (
-		beforeIndex: number,
+		beforeIndex: number
 	): { index: number; senderId: string } | null => {
 		for (let i = beforeIndex - 1; i >= 0; i--) {
 			const item = chatSequence[i];
@@ -275,7 +276,7 @@ export const HumanAiGraphic = () => {
 	const countVisibleMessagesFromSender = (
 		startIndex: number,
 		endIndex: number,
-		senderId: string,
+		senderId: string
 	): number => {
 		let count = 0;
 		for (let i = startIndex; i < endIndex; i++) {
@@ -322,7 +323,7 @@ export const HumanAiGraphic = () => {
 		const messageCount = countVisibleMessagesFromSender(
 			lastMessage.index,
 			index,
-			currentSenderId,
+			currentSenderId
 		);
 
 		// If there's already 1 message from this sender, this would be the 2nd
@@ -332,7 +333,7 @@ export const HumanAiGraphic = () => {
 	// Helper to collect consecutive messages from the same sender
 	const collectGroupedMessages = (
 		startIndex: number,
-		senderId: string,
+		senderId: string
 	): Message[] => {
 		const messages: Message[] = [];
 		let currentIndex = startIndex;
@@ -390,7 +391,7 @@ export const HumanAiGraphic = () => {
 	// Helper to render typing indicator
 	const renderTypingIndicator = (
 		item: ChatSequenceItem & { type: "typing" },
-		index: number,
+		index: number
 	) => (
 		<motion.div
 			animate={{ opacity: 1, y: 0 }}

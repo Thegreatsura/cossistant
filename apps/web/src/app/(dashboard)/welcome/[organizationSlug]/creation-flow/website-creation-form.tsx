@@ -28,11 +28,11 @@ import { isValidDomain } from "@/lib/utils";
 
 const PROTOCOL_REGEX = /^https?:\/\//;
 
-interface WebsiteCreationFormProps {
+type WebsiteCreationFormProps = {
 	organizationId: string;
 	onSubmit?: (data: CreateWebsiteRequest) => void;
 	isSubmitting?: boolean;
-}
+};
 
 export default function WebsiteCreationForm({
 	organizationId,
@@ -134,7 +134,7 @@ export default function WebsiteCreationForm({
 												const value = e.target.value;
 												const domainWithoutProtocol = value.replace(
 													PROTOCOL_REGEX,
-													"",
+													""
 												);
 
 												field.onChange(domainWithoutProtocol);

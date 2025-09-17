@@ -12,7 +12,7 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 export async function getOrganizationById(
 	db: Database,
-	id: string,
+	id: string
 ): Promise<OrganizationSelect | undefined> {
 	const result = await db.query.organization.findFirst({
 		where: eq(organization.id, id),
@@ -23,7 +23,7 @@ export async function getOrganizationById(
 
 export async function getOrganizationBySlug(
 	db: Database,
-	slug: string,
+	slug: string
 ): Promise<OrganizationSelect | undefined> {
 	const result = await db.query.organization.findFirst({
 		where: eq(organization.slug, slug),
@@ -37,7 +37,7 @@ export async function getOrganizationsForUser(
 	db: Database,
 	params: {
 		userId: string;
-	},
+	}
 ) {
 	// First, get the organizations for the user
 	const organizations = await db
@@ -65,7 +65,7 @@ export async function getOrganizationsForUser(
 		.select()
 		.from(website)
 		.where(
-			and(inArray(website.organizationId, orgIds), isNull(website.deletedAt)),
+			and(inArray(website.organizationId, orgIds), isNull(website.deletedAt))
 		);
 
 	// Group websites by organization ID
@@ -78,7 +78,7 @@ export async function getOrganizationsForUser(
 			acc[orgId].push(site);
 			return acc;
 		},
-		{} as Record<string, WebsiteSelect[]>,
+		{} as Record<string, WebsiteSelect[]>
 	);
 
 	// Combine organizations with their websites
@@ -94,7 +94,7 @@ export async function getOrganizationsForUserOrCreateDefault(
 		userId: string;
 		userEmail: string;
 		userName: string;
-	},
+	}
 ): Promise<
 	{
 		organization: OrganizationSelect;

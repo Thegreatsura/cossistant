@@ -42,29 +42,27 @@ export default function Playground() {
 	const { mode, size, isOpen } = useSupportConfig();
 
 	return (
-		<>
-			<div className="flex min-h-screen bg-background p-20">
-				<div className="w-full border border-primary/10 border-dashed p-6 md:w-1/3">
-					<h1 className="flex items-center gap-2 font-f37-stout text-xl">
-						<Logo />
-						Dev playground
-					</h1>
-					<div className="mt-6 flex flex-col gap-2">
-						<PlaygroundPropDisplay
-							name="Websocket healthy"
-							value={isConnected.toString()}
-						/>
-						<PlaygroundPropDisplay name="Opened" value={isOpen.toString()} />
-						<PlaygroundPropDisplay name="Mode" value={mode} />
-						<PlaygroundPropDisplay name="Size" value={size} />
-					</div>
+		<div className="flex min-h-screen bg-background p-20">
+			<div className="w-full border border-primary/10 border-dashed p-6 md:w-1/3">
+				<h1 className="flex items-center gap-2 font-f37-stout text-xl">
+					<Logo />
+					Dev playground
+				</h1>
+				<div className="mt-6 flex flex-col gap-2">
+					<PlaygroundPropDisplay
+						name="Websocket healthy"
+						value={isConnected.toString()}
+					/>
+					<PlaygroundPropDisplay name="Opened" value={isOpen.toString()} />
+					<PlaygroundPropDisplay name="Mode" value={mode} />
+					<PlaygroundPropDisplay name="Size" value={size} />
 				</div>
-				<Support
-					defaultMessages={DEFAULT_MESSAGES}
-					defaultOpen
-					quickOptions={QUICK_OPTIONS}
-				/>
 			</div>
-		</>
+			<Support
+				defaultMessages={DEFAULT_MESSAGES}
+				defaultOpen
+				quickOptions={QUICK_OPTIONS}
+			/>
+		</div>
 	);
 }

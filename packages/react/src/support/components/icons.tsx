@@ -20,12 +20,12 @@ export type IconName =
 	| "articles"
 	| "chat";
 
-export interface IconProps {
+export type IconProps = {
 	name: IconName;
 	variant?: IconVariant;
 	className?: string;
 	filledOnHover?: boolean;
-}
+};
 
 // Thanks to Aaon for the icons
 const iconRegistry: Record<IconName, Record<IconVariant, string>> = {
@@ -144,7 +144,7 @@ export const Icon: React.FC<IconProps> = ({
 						{
 							"opacity-0": variant === "filled",
 						},
-						className,
+						className
 					)}
 					fill="none"
 					height="24"
@@ -167,7 +167,7 @@ export const Icon: React.FC<IconProps> = ({
 						{
 							"opacity-100": variant === "filled",
 						},
-						className,
+						className
 					)}
 					fill="none"
 					height="24"

@@ -1,249 +1,256 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ok */
 import type {
-  ConversationEvent,
-  Message as MessageType,
+	ConversationEvent,
+	Message as MessageType,
 } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { useMemo } from "react";
 
-export interface GroupedMessage {
-  type: "message_group";
-  senderId: string;
-  senderType: SenderType;
-  messages: MessageType[];
-  firstMessageId: string;
-  lastMessageId: string;
-  firstMessageTime: Date;
-  lastMessageTime: Date;
-}
+export type GroupedMessage = {
+	type: "message_group";
+	senderId: string;
+	senderType: SenderType;
+	messages: MessageType[];
+	firstMessageId: string;
+	lastMessageId: string;
+	firstMessageTime: Date;
+	lastMessageTime: Date;
+};
 
-export interface ConversationEventItem {
-  type: "event";
-  event: ConversationEvent;
-  timestamp: Date;
-}
+export type ConversationEventItem = {
+	type: "event";
+	event: ConversationEvent;
+	timestamp: Date;
+};
 
 export type ConversationItem = GroupedMessage | ConversationEventItem;
 
-export interface UseGroupedMessagesProps {
-  messages: MessageType[];
-  events?: ConversationEvent[];
-  seenData?: ConversationSeen[];
-  currentViewerId?: string; // The ID of the current viewer (visitor, user, or AI agent)
-  viewerType?: SenderType; // Type of the current viewer
-}
+export type UseGroupedMessagesProps = {
+	messages: MessageType[];
+	events?: ConversationEvent[];
+	seenData?: ConversationSeen[];
+	currentViewerId?: string; // The ID of the current viewer (visitor, user, or AI agent)
+	viewerType?: SenderType; // Type of the current viewer
+};
 
 // Helper function to determine sender ID and type from a message
 const getSenderIdAndType = (
-  message: MessageType
+	message: MessageType
 ): { senderId: string; senderType: SenderType } => {
-  if (message.visitorId) {
-    return { senderId: message.visitorId, senderType: SenderType.VISITOR };
-  }
-  if (message.aiAgentId) {
-    return { senderId: message.aiAgentId, senderType: SenderType.AI };
-  }
-  if (message.userId) {
-    return { senderId: message.userId, senderType: SenderType.TEAM_MEMBER };
-  }
+	if (message.visitorId) {
+		return { senderId: message.visitorId, senderType: SenderType.VISITOR };
+	}
+	if (message.aiAgentId) {
+		return { senderId: message.aiAgentId, senderType: SenderType.AI };
+	}
+	if (message.userId) {
+		return { senderId: message.userId, senderType: SenderType.TEAM_MEMBER };
+	}
 
-  // Fallback for default messages that might not have sender IDs yet
-  // Use the message ID as a temporary sender ID to prevent errors
-  return {
-    senderId: message.id || "default-sender",
-    senderType: SenderType.TEAM_MEMBER, // Default to team member for welcome messages
-  };
+	// Fallback for default messages that might not have sender IDs yet
+	// Use the message ID as a temporary sender ID to prevent errors
+	return {
+		senderId: message.id || "default-sender",
+		senderType: SenderType.TEAM_MEMBER, // Default to team member for welcome messages
+	};
 };
 
 // Helper function to build read receipt data
-interface ReadReceiptData {
-  seenByMap: Map<string, Set<string>>; // messageId -> Set of userIds who have seen it
-  lastReadMessageMap: Map<string, string>; // userId -> last messageId they read
-  unreadCountMap: Map<string, number>; // userId -> number of unread messages
-}
+type ReadReceiptData = {
+	seenByMap: Map<string, Set<string>>; // messageId -> Set of userIds who have seen it
+	lastReadMessageMap: Map<string, string>; // userId -> last messageId they read
+	unreadCountMap: Map<string, number>; // userId -> number of unread messages
+};
 
 const buildReadReceiptData = (
-  seenData: ConversationSeen[],
-  messages: MessageType[]
+	seenData: ConversationSeen[],
+	messages: MessageType[]
 ): ReadReceiptData => {
-  const seenByMap = new Map<string, Set<string>>();
-  const lastReadMessageMap = new Map<string, string>();
-  const unreadCountMap = new Map<string, number>();
+	const seenByMap = new Map<string, Set<string>>();
+	const lastReadMessageMap = new Map<string, string>();
+	const unreadCountMap = new Map<string, number>();
 
-  // Initialize map for all messages
-  for (const message of messages) {
-    seenByMap.set(message.id, new Set());
-  }
+	// Initialize map for all messages
+	for (const message of messages) {
+		seenByMap.set(message.id, new Set());
+	}
 
-  // Sort messages by time to process in order
-  const sortedMessages = [...messages].sort(
-    (a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0)
-  );
+	// Sort messages by time to process in order
+	const sortedMessages = [...messages].sort(
+		(a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0)
+	);
 
-  // Process seen data for each viewer
-  for (const seen of seenData) {
-    const seenTime = seen.updatedAt?.getTime() || 0;
-    const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
-    if (!viewerId) continue;
+	// Process seen data for each viewer
+	for (const seen of seenData) {
+		const seenTime = seen.updatedAt?.getTime() || 0;
+		const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
+		if (!viewerId) {
+			continue;
+		}
 
-    let lastReadMessage: MessageType | null = null;
-    let unreadCount = 0;
-    let hasPassedLastSeen = false;
+		let lastReadMessage: MessageType | null = null;
+		let unreadCount = 0;
+		let hasPassedLastSeen = false;
 
-    // Process messages in chronological order
-    for (const message of sortedMessages) {
-      const messageTime = message.createdAt?.getTime() || 0;
+		// Process messages in chronological order
+		for (const message of sortedMessages) {
+			const messageTime = message.createdAt?.getTime() || 0;
 
-      if (messageTime <= seenTime && !hasPassedLastSeen) {
-        // This message has been seen
-        const seenBy = seenByMap.get(message.id);
-        if (seenBy) {
-          seenBy.add(viewerId);
-        }
-        lastReadMessage = message;
-      } else {
-        // This message is unread
-        hasPassedLastSeen = true;
-        unreadCount++;
-      }
-    }
+			if (messageTime <= seenTime && !hasPassedLastSeen) {
+				// This message has been seen
+				const seenBy = seenByMap.get(message.id);
+				if (seenBy) {
+					seenBy.add(viewerId);
+				}
+				lastReadMessage = message;
+			} else {
+				// This message is unread
+				hasPassedLastSeen = true;
+				unreadCount++;
+			}
+		}
 
-    // Store the last read message for this viewer
-    if (lastReadMessage) {
-      lastReadMessageMap.set(viewerId, lastReadMessage.id);
-    }
+		// Store the last read message for this viewer
+		if (lastReadMessage) {
+			lastReadMessageMap.set(viewerId, lastReadMessage.id);
+		}
 
-    // Store unread count
-    unreadCountMap.set(viewerId, unreadCount);
-  }
+		// Store unread count
+		unreadCountMap.set(viewerId, unreadCount);
+	}
 
-  return { seenByMap, lastReadMessageMap, unreadCountMap };
+	return { seenByMap, lastReadMessageMap, unreadCountMap };
 };
 
 // Helper function to group messages by sender
 const groupMessagesBySender = (messages: MessageType[]): GroupedMessage[] => {
-  const groupedMessages: GroupedMessage[] = [];
-  let currentGroup: GroupedMessage | null = null;
+	const groupedMessages: GroupedMessage[] = [];
+	let currentGroup: GroupedMessage | null = null;
 
-  for (const message of messages) {
-    const { senderId, senderType } = getSenderIdAndType(message);
+	for (const message of messages) {
+		const { senderId, senderType } = getSenderIdAndType(message);
 
-    if (currentGroup && currentGroup.senderId === senderId) {
-      // Add to existing group
-      currentGroup.messages.push(message);
-      currentGroup.lastMessageId = message.id;
-      currentGroup.lastMessageTime = message.createdAt || new Date();
-    } else {
-      // Finalize previous group if exists
-      if (currentGroup) {
-        groupedMessages.push(currentGroup);
-      }
+		if (currentGroup && currentGroup.senderId === senderId) {
+			// Add to existing group
+			currentGroup.messages.push(message);
+			currentGroup.lastMessageId = message.id;
+			currentGroup.lastMessageTime = message.createdAt || new Date();
+		} else {
+			// Finalize previous group if exists
+			if (currentGroup) {
+				groupedMessages.push(currentGroup);
+			}
 
-      // Start new group
-      currentGroup = {
-        type: "message_group",
-        senderId,
-        senderType,
-        messages: [message],
-        firstMessageId: message.id,
-        lastMessageId: message.id,
-        firstMessageTime: message.createdAt || new Date(),
-        lastMessageTime: message.createdAt || new Date(),
-      };
-    }
-  }
+			// Start new group
+			currentGroup = {
+				type: "message_group",
+				senderId,
+				senderType,
+				messages: [message],
+				firstMessageId: message.id,
+				lastMessageId: message.id,
+				firstMessageTime: message.createdAt || new Date(),
+				lastMessageTime: message.createdAt || new Date(),
+			};
+		}
+	}
 
-  if (currentGroup) {
-    groupedMessages.push(currentGroup);
-  }
+	if (currentGroup) {
+		groupedMessages.push(currentGroup);
+	}
 
-  return groupedMessages;
+	return groupedMessages;
 };
 
 // Helper function to get timestamp for sorting
 const getItemTimestamp = (item: ConversationItem): number => {
-  if (item.type === "event") {
-    return item.timestamp.getTime();
-  }
-  return item.firstMessageTime.getTime();
+	if (item.type === "event") {
+		return item.timestamp.getTime();
+	}
+	return item.firstMessageTime.getTime();
 };
 
 export const useGroupedMessages = ({
-  messages,
-  events = [],
-  seenData = [],
-  currentViewerId,
-  viewerType,
+	messages,
+	events = [],
+	seenData = [],
+	currentViewerId,
+	viewerType,
 }: UseGroupedMessagesProps) => {
-  return useMemo(() => {
-    // Group messages by sender
-    const groupedMessages = groupMessagesBySender(messages);
+	return useMemo(() => {
+		// Group messages by sender
+		const groupedMessages = groupMessagesBySender(messages);
 
-    // Build comprehensive read receipt data
-    const { seenByMap, lastReadMessageMap, unreadCountMap } =
-      buildReadReceiptData(seenData, messages);
+		// Build comprehensive read receipt data
+		const { seenByMap, lastReadMessageMap, unreadCountMap } =
+			buildReadReceiptData(seenData, messages);
 
-    // Convert events to have the discriminant type
-    const eventsWithType: ConversationEventItem[] = events.map((event) => ({
-      type: "event" as const,
-      event,
-      timestamp: event.createdAt || new Date(),
-    }));
+		// Convert events to have the discriminant type
+		const eventsWithType: ConversationEventItem[] = events.map((event) => ({
+			type: "event" as const,
+			event,
+			timestamp: event.createdAt || new Date(),
+		}));
 
-    // Combine all items
-    const allItems: ConversationItem[] = [
-      ...groupedMessages,
-      ...eventsWithType,
-    ];
+		// Combine all items
+		const allItems: ConversationItem[] = [
+			...groupedMessages,
+			...eventsWithType,
+		];
 
-    // Sort by timestamp
-    allItems.sort((a, b) => getItemTimestamp(a) - getItemTimestamp(b));
+		// Sort by timestamp
+		allItems.sort((a, b) => getItemTimestamp(a) - getItemTimestamp(b));
 
-    return {
-      items: allItems,
-      seenByMap,
-      lastReadMessageMap,
-      unreadCountMap,
+		return {
+			items: allItems,
+			seenByMap,
+			lastReadMessageMap,
+			unreadCountMap,
 
-      // Helper to check if a message has been seen by current viewer
-      isMessageSeenByViewer: (messageId: string): boolean => {
-        if (!currentViewerId) return false;
-        const seenBy = seenByMap.get(messageId);
-        return seenBy ? seenBy.has(currentViewerId) : false;
-      },
+			// Helper to check if a message has been seen by current viewer
+			isMessageSeenByViewer: (messageId: string): boolean => {
+				if (!currentViewerId) {
+					return false;
+				}
+				const seenBy = seenByMap.get(messageId);
+				return seenBy ? seenBy.has(currentViewerId) : false;
+			},
 
-      // Helper to get all viewers who have seen a message
-      getMessageSeenBy: (messageId: string): string[] => {
-        const seenBy = seenByMap.get(messageId);
-        return seenBy ? Array.from(seenBy) : [];
-      },
+			// Helper to get all viewers who have seen a message
+			getMessageSeenBy: (messageId: string): string[] => {
+				const seenBy = seenByMap.get(messageId);
+				return seenBy ? Array.from(seenBy) : [];
+			},
 
-      // Get the last message ID that a user has read
-      getLastReadMessageId: (userId: string): string | undefined => {
-        return lastReadMessageMap.get(userId);
-      },
+			// Get the last message ID that a user has read
+			getLastReadMessageId: (userId: string): string | undefined => {
+				return lastReadMessageMap.get(userId);
+			},
 
-      // Check if this is the last read message for a user
-      isLastReadMessage: (messageId: string, userId: string): boolean => {
-        return lastReadMessageMap.get(userId) === messageId;
-      },
+			// Check if this is the last read message for a user
+			isLastReadMessage: (messageId: string, userId: string): boolean => {
+				return lastReadMessageMap.get(userId) === messageId;
+			},
 
-      // Get unread count for a user
-      getUnreadCount: (userId: string): number => {
-        return unreadCountMap.get(userId) || 0;
-      },
+			// Get unread count for a user
+			getUnreadCount: (userId: string): number => {
+				return unreadCountMap.get(userId) || 0;
+			},
 
-      // Check if there are unread messages after a specific message
-      hasUnreadAfter: (messageId: string, userId: string): boolean => {
-        const lastRead = lastReadMessageMap.get(userId);
-        if (!lastRead) return true; // All messages are unread
+			// Check if there are unread messages after a specific message
+			hasUnreadAfter: (messageId: string, userId: string): boolean => {
+				const lastRead = lastReadMessageMap.get(userId);
+				if (!lastRead) {
+					return true; // All messages are unread
+				}
 
-        // Find the indices
-        const messageIndex = messages.findIndex((m) => m.id === messageId);
-        const lastReadIndex = messages.findIndex((m) => m.id === lastRead);
+				// Find the indices
+				const messageIndex = messages.findIndex((m) => m.id === messageId);
+				const lastReadIndex = messages.findIndex((m) => m.id === lastRead);
 
-        return messageIndex < lastReadIndex;
-      },
-    };
-  }, [messages, events, seenData, currentViewerId, viewerType]);
+				return messageIndex < lastReadIndex;
+			},
+		};
+	}, [messages, events, seenData, currentViewerId]);
 };

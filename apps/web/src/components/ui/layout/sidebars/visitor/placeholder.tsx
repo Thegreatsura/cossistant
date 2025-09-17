@@ -3,7 +3,7 @@ import { ResizableSidebar } from "../resizable-sidebar";
 
 export function VisitorSidebarPlaceholder() {
 	return (
-		<ResizableSidebar position="right" className="hidden lg:flex">
+		<ResizableSidebar className="hidden lg:flex" position="right">
 			<SidebarContainer>
 				<div>VisitorSidebarPlaceholder</div>
 			</SidebarContainer>

@@ -3,12 +3,12 @@ import { cn } from "../utils";
 import { Button } from "./button";
 import Icon from "./icons";
 
-export interface HeaderProps {
+export type HeaderProps = {
 	className?: string;
 	children?: React.ReactNode;
 	actions?: React.ReactNode;
 	onGoBack?: () => void;
-}
+};
 
 export const Header: React.FC<HeaderProps> = ({
 	className,

@@ -30,15 +30,15 @@ const VirtualConversationItem = memo(
 	}) => {
 		return (
 			<ConversationItem
+				focused={focused}
+				header={conversation}
 				href={href}
 				key={conversation.id}
-				header={conversation}
-				websiteSlug={websiteSlug}
-				focused={focused}
 				setFocused={onMouseEnter}
+				websiteSlug={websiteSlug}
 			/>
 		);
-	},
+	}
 );
 
 VirtualConversationItem.displayName = "VirtualConversationItem";
@@ -102,10 +102,10 @@ export function VirtualizedConversations({
 						>
 							<VirtualConversationItem
 								conversation={conversation}
-								href={href}
-								websiteSlug={websiteSlug}
 								focused={focusedIndex === virtualItem.index}
+								href={href}
 								onMouseEnter={() => handleMouseEnter(virtualItem.index)}
+								websiteSlug={websiteSlug}
 							/>
 						</div>
 					);

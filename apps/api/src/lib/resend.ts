@@ -4,16 +4,16 @@ import { generateShortPrimaryId } from "@api/utils/db/ids";
 import type { ReactNode } from "react";
 import { Resend } from "resend";
 
-export interface ContactData {
+export type ContactData = {
 	email: string;
 	firstName?: string;
 	lastName?: string;
 	unsubscribed?: boolean;
-}
+};
 
 export const addContactToAudience = async (
 	audienceId: string,
-	contactData: ContactData,
+	contactData: ContactData
 ): Promise<boolean> => {
 	try {
 		await resend.contacts.create({
@@ -25,7 +25,7 @@ export const addContactToAudience = async (
 		});
 
 		console.log(
-			`Successfully added contact ${contactData.email} to Resend audience ${audienceId}`,
+			`Successfully added contact ${contactData.email} to Resend audience ${audienceId}`
 		);
 		return true;
 	} catch (error) {
@@ -37,7 +37,7 @@ export const addContactToAudience = async (
 
 export const removeContactFromAudience = async (
 	audienceId: string,
-	email: string,
+	email: string
 ): Promise<boolean> => {
 	try {
 		await resend.contacts.remove({
@@ -46,7 +46,7 @@ export const removeContactFromAudience = async (
 		});
 
 		console.log(
-			`Successfully removed contact ${email} from Resend audience ${audienceId}`,
+			`Successfully removed contact ${email} from Resend audience ${audienceId}`
 		);
 		return true;
 	} catch (error) {
@@ -58,7 +58,7 @@ export const removeContactFromAudience = async (
 
 export const removeContactFromAudienceById = async (
 	audienceId: string,
-	contactId: string,
+	contactId: string
 ): Promise<boolean> => {
 	try {
 		await resend.contacts.remove({
@@ -67,7 +67,7 @@ export const removeContactFromAudienceById = async (
 		});
 
 		console.log(
-			`Successfully removed contact ${contactId} from Resend audience ${audienceId}`,
+			`Successfully removed contact ${contactId} from Resend audience ${audienceId}`
 		);
 		return true;
 	} catch (error) {
@@ -80,7 +80,7 @@ export const removeContactFromAudienceById = async (
 export const updateContactSubscriptionStatus = async (
 	audienceId: string,
 	email: string,
-	unsubscribed: boolean,
+	unsubscribed: boolean
 ): Promise<boolean> => {
 	try {
 		await resend.contacts.update({
@@ -90,7 +90,7 @@ export const updateContactSubscriptionStatus = async (
 		});
 
 		console.log(
-			`Successfully updated contact ${email} subscription status to ${unsubscribed ? "unsubscribed" : "subscribed"}`,
+			`Successfully updated contact ${email} subscription status to ${unsubscribed ? "unsubscribed" : "subscribed"}`
 		);
 		return true;
 	} catch (error) {
@@ -102,7 +102,7 @@ export const updateContactSubscriptionStatus = async (
 
 export const addUserToDefaultAudience = async (
 	email: string,
-	name?: string,
+	name?: string
 ): Promise<boolean> => {
 	const firstName = name?.split(" ")[0] || "";
 	const lastName = name?.split(" ").slice(1).join(" ") || "";
@@ -116,7 +116,7 @@ export const addUserToDefaultAudience = async (
 };
 
 export const removeUserFromDefaultAudience = async (
-	email: string,
+	email: string
 ): Promise<boolean> => {
 	return removeContactFromAudience(env.RESEND_AUDIENCE_ID, email);
 };

@@ -164,7 +164,7 @@ export function ComponentPreviewTabs({
 							sizeClasses,
 							align === "start" && "items-start",
 							align === "center" && "items-center",
-							align === "end" && "items-end",
+							align === "end" && "items-end"
 						)}
 					>
 						{component}
@@ -174,7 +174,7 @@ export function ComponentPreviewTabs({
 					<div
 						className={cn(
 							"scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-background-100 overflow-auto bg-background-100 px-5 py-4",
-							sizeClasses,
+							sizeClasses
 						)}
 					>
 						{source}

@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT } from "@api/constants";
 import type { Database } from "@api/db";
 import { message } from "@api/db/schema";
 import { generateULID } from "@api/utils/db/ids";
@@ -11,7 +12,7 @@ export async function sendMessages(
 		websiteId: string;
 		conversationId: string;
 		messages: CreateMessageSchema[];
-	},
+	}
 ) {
 	const data = params.messages.map((m) => {
 		const userId =
@@ -52,9 +53,9 @@ export async function getMessages(
 		conversationId: string;
 		limit?: number;
 		cursor?: string;
-	},
+	}
 ) {
-	const limit = params.limit ?? 50;
+	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
 	// Build where clause
 	const whereConditions = [
@@ -101,9 +102,9 @@ export async function getConversationMessages(
 		websiteId: string;
 		limit?: number;
 		cursor?: Date | null;
-	},
+	}
 ) {
-	const limit = params.limit ?? 50;
+	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
 	// Build where clause
 	const whereConditions = [eq(message.conversationId, params.conversationId)];

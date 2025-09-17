@@ -7,7 +7,7 @@ import { cn } from "../utils";
 import Icon from "./icons";
 import { Watermark } from "./watermark";
 
-export interface MultimodalInputProps {
+export type MultimodalInputProps = {
 	className?: string;
 	value: string;
 	onChange: (value: string) => void;
@@ -22,7 +22,7 @@ export interface MultimodalInputProps {
 	maxFiles?: number;
 	maxFileSize?: number;
 	allowedFileTypes?: string[];
-}
+};
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	className,
@@ -114,7 +114,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 				<Primitive.MultimodalInput
 					className={cn(
 						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
-						className,
+						className
 					)}
 					disabled={disabled || isSubmitting}
 					error={error}
@@ -136,7 +136,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 									aria-label="Attach files"
 									className={cn(
 										"group flex h-8 w-8 items-center justify-center rounded-md text-co-muted-foreground hover:bg-co-muted hover:text-co-foreground disabled:cursor-not-allowed disabled:opacity-50",
-										files.length >= maxFiles && "opacity-50",
+										files.length >= maxFiles && "opacity-50"
 									)}
 									disabled={
 										disabled || isSubmitting || files.length >= maxFiles
@@ -168,10 +168,10 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	);
 };
 
-export interface SendButtonProps {
+export type SendButtonProps = {
 	className?: string;
 	disabled?: boolean;
-}
+};
 
 export const SendButton: React.FC<SendButtonProps> = ({
 	className,
@@ -181,7 +181,7 @@ export const SendButton: React.FC<SendButtonProps> = ({
 		<Primitive.Button
 			className={cn(
 				"group flex h-8 w-8 items-center justify-center rounded-md text-co-primary hover:bg-co-muted disabled:cursor-not-allowed disabled:opacity-50",
-				className,
+				className
 			)}
 			disabled={disabled}
 			type="submit"
