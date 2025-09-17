@@ -12,6 +12,8 @@ export const messageSchema = z.object({
 	type: z.enum([MessageType.TEXT, MessageType.IMAGE, MessageType.FILE]),
 	userId: z.string().nullable(),
 	aiAgentId: z.string().nullable(),
+	parentMessageId: z.string().nullable(),
+	modelUsed: z.string().nullable(),
 	visitorId: z.string().nullable(),
 	conversationId: z.string(),
 	createdAt: z.date(),

@@ -31,6 +31,28 @@ export const RealtimeEvents = {
     status: z.enum(["online", "away", "offline"]),
     lastSeen: z.number(),
   }),
+  MESSAGE_CREATED: z.object({
+    message: z.object({
+      id: z.string(),
+      bodyMd: z.string(),
+      type: z.string(),
+      userId: z.string().nullable(),
+      visitorId: z.string().nullable(),
+      organizationId: z.string(),
+      websiteId: z.string(),
+      conversationId: z.string(),
+      parentMessageId: z.string().nullable(),
+      aiAgentId: z.string().nullable(),
+      modelUsed: z.string().nullable(),
+      visibility: z.string(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+      deletedAt: z.string().nullable(),
+    }),
+    conversationId: z.string(),
+    websiteId: z.string(),
+    organizationId: z.string(),
+  }),
 } as const;
 
 export type RealtimeEventType = keyof typeof RealtimeEvents;

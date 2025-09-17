@@ -26,18 +26,18 @@ export function useConversationMessages({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-        const baseQueryKey = trpc.conversation.getConversationMessages.queryOptions({
-                websiteSlug,
-                conversationId,
-                // ensure cache key differentiates by page size
-                limit: options?.limit ?? 50,
-        }).queryKey;
+	const baseQueryKey = trpc.conversation.getConversationMessages.queryOptions({
+		websiteSlug,
+		conversationId,
+		// ensure cache key differentiates by page size
+		limit: options?.limit ?? 50,
+	}).queryKey;
 
-        const query = useInfiniteQuery({
-                queryKey: createConversationMessagesInfiniteQueryKey(baseQueryKey),
-                queryFn: async ({ pageParam }) => {
-                        const response = await queryClient.fetchQuery(
-                                trpc.conversation.getConversationMessages.queryOptions({
+	const query = useInfiniteQuery({
+		queryKey: createConversationMessagesInfiniteQueryKey(baseQueryKey),
+		queryFn: async ({ pageParam }) => {
+			const response = await queryClient.fetchQuery(
+				trpc.conversation.getConversationMessages.queryOptions({
 					websiteSlug,
 					conversationId,
 					limit: options?.limit ?? DEFAULT_PAGE_LIMIT,

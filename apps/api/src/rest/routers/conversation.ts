@@ -140,28 +140,28 @@ conversationRouter.openapi(
 
 		let initialMessages: Message[] = [];
 
-                const defaults = body.defaultMessages ?? [];
-                if (defaults.length > 0) {
-                        initialMessages = await Promise.all(
-                                defaults.map((msg) =>
-                                        createMessage({
-                                                db,
-                                                organizationId: organization.id,
-                                                websiteId: website.id,
-                                                conversationId: conversation.id,
-                                                message: {
-                                                        bodyMd: msg.bodyMd,
-                                                        type: msg.type ?? undefined,
-                                                        userId: msg.userId ?? null,
-                                                        aiAgentId: msg.aiAgentId ?? null,
-                                                        visitorId: msg.visitorId ?? null,
-                                                        visibility: msg.visibility ?? undefined,
-                                                        createdAt: msg.createdAt,
-                                                },
-                                        }),
-                                ),
-                        );
-                }
+		const defaults = body.defaultMessages ?? [];
+		if (defaults.length > 0) {
+			initialMessages = await Promise.all(
+				defaults.map((msg) =>
+					createMessage({
+						db,
+						organizationId: organization.id,
+						websiteId: website.id,
+						conversationId: conversation.id,
+						message: {
+							bodyMd: msg.bodyMd,
+							type: msg.type ?? undefined,
+							userId: msg.userId ?? null,
+							aiAgentId: msg.aiAgentId ?? null,
+							visitorId: msg.visitorId ?? null,
+							visibility: msg.visibility ?? undefined,
+							createdAt: msg.createdAt,
+						},
+					})
+				)
+			);
+		}
 
 		// Get the last message if any were sent
 		const lastMessage =
