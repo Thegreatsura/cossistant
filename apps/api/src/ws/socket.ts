@@ -47,7 +47,16 @@ export type ConnectionData = {
 
 // Local WebSocket connection tracking (only for this server instance)
 export type RawSocket = ServerWebSocket & { connectionId?: string };
-export const localConnections = new Map<string, RawSocket>();
+
+export type LocalConnectionRecord = {
+        socket: RawSocket;
+        websiteId?: string;
+        organizationId?: string;
+        userId?: string;
+        visitorId?: string;
+};
+
+export const localConnections = new Map<string, LocalConnectionRecord>();
 // Active subscriptions for this server instance
 const activeSubscriptions = new Map<string, Subscription>();
 
@@ -88,30 +97,32 @@ export async function isLocalConnection(
 /**
  * Broadcast event to all local connections for a website
  */
-function broadcastToWebsite(event: unknown): void {
-	for (const [, socket] of localConnections) {
-		// Check if this connection belongs to the website (would need to store this info)
-		// For now, broadcast to all local connections
-		try {
-			socket.send(JSON.stringify(event));
-		} catch {
-			// Ignore send errors
-		}
-	}
+export function broadcastToWebsite(websiteId: string, event: unknown): void {
+        for (const [, connection] of localConnections) {
+                if (connection.websiteId !== websiteId) {
+                        continue;
+                }
+
+                try {
+                        connection.socket.send(JSON.stringify(event));
+                } catch {
+                        // Ignore send errors
+                }
+        }
 }
 
 /**
  * Send event to a specific connection
  */
 function sendToConnection(connectionId: string, event: unknown): void {
-	const socket = localConnections.get(connectionId);
-	if (socket) {
-		try {
-			socket.send(JSON.stringify(event));
-		} catch {
-			// Ignore send errors
-		}
-	}
+        const connection = localConnections.get(connectionId);
+        if (connection) {
+                try {
+                        connection.socket.send(JSON.stringify(event));
+                } catch {
+                        // Ignore send errors
+                }
+        }
 }
 
 /**
@@ -132,27 +143,27 @@ async function ensureSubscriptions(
 	}
 
 	// Subscribe to events and broadcast to local WebSocket connections
-	const subscription = await pubsub.subscribeToChannels(
-		{
-			websiteId,
-			connectionId: websiteId ? undefined : connectionId,
-		},
-		async (event) => {
-			if (websiteId) {
-				broadcastToWebsite(event);
-			} else {
-				sendToConnection(connectionId, event);
-			}
-		},
-	);
+        const subscription = await pubsub.subscribeToChannels(
+                {
+                        websiteId,
+                        connectionId: websiteId ? undefined : connectionId,
+                },
+                async (event) => {
+                        if (websiteId) {
+                                broadcastToWebsite(websiteId, event);
+                        } else {
+                                sendToConnection(connectionId, event);
+                        }
+                },
+        );
 
 	activeSubscriptions.set(subscriptionKey, subscription);
 	console.log(`[WebSocket] Created subscription: ${subscriptionKey}`);
 }
 
 async function cleanupConnection(connectionId: string): Promise<void> {
-	// Remove from local connections
-	localConnections.delete(connectionId);
+        // Remove from local connections
+        localConnections.delete(connectionId);
 
 	// Unregister from Redis
 	await pubsub.unregisterConnection(connectionId);
@@ -551,7 +562,13 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			await pubsub.registerConnection(connectionInfo);
 
 			// Track socket locally for this server instance
-			localConnections.set(connectionId, ws.raw as RawSocket);
+                        localConnections.set(connectionId, {
+                                socket: ws.raw as RawSocket,
+                                websiteId: authResult.websiteId,
+                                organizationId: authResult.organizationId,
+                                userId: authResult.userId,
+                                visitorId: authResult.visitorId,
+                        });
 			storeConnectionId(ws, connectionId);
 
 			console.log(
@@ -590,14 +607,17 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 
 		onMessage(evt, ws) {
 			// Get connectionId from the WebSocket
-			const connectionId = getConnectionIdFromSocket(ws);
+                        const connectionId = getConnectionIdFromSocket(ws);
+                        const connection = connectionId
+                                ? localConnections.get(connectionId)
+                                : undefined;
 
-			if (!(connectionId && localConnections.has(connectionId))) {
-				console.error("[WebSocket] No connection found");
-				sendError(ws, {
-					error: "Connection not authenticated",
-					message: "Please reconnect with valid authentication.",
-				});
+                        if (!(connectionId && connection)) {
+                                console.error("[WebSocket] No connection found");
+                                sendError(ws, {
+                                        error: "Connection not authenticated",
+                                        message: "Please reconnect with valid authentication.",
+                                });
 				return;
 			}
 
