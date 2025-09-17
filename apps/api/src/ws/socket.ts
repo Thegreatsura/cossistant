@@ -180,79 +180,77 @@ async function cleanupConnection(connectionId: string): Promise<void> {
         console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
 }
 
-export async function handleConnectionClose(
-        connectionId: string,
-): Promise<void> {
-        console.log(`[WebSocket] Connection closed: ${connectionId}`);
+export async function handleConnectionClose(connectionId: string): Promise<void> {
+        try {
+                const localConnection = localConnections.get(connectionId);
+                let userId = localConnection?.userId;
+                let visitorId = localConnection?.visitorId;
+                let websiteId = localConnection?.websiteId;
+                let organizationId = localConnection?.organizationId;
 
-        const localConnection = localConnections.get(connectionId);
+                if (
+                        (!userId && !visitorId) ||
+                        !websiteId ||
+                        !organizationId
+                ) {
+                        const connectionInfo = await pubsub.getConnectionInfo(connectionId);
 
-        let userId = localConnection?.userId;
-        let visitorId = localConnection?.visitorId;
-        let websiteId = localConnection?.websiteId;
-        let organizationId = localConnection?.organizationId;
-
-        if (
-                (!userId && !visitorId) ||
-                !websiteId ||
-                !organizationId
-        ) {
-                const connectionInfo = await pubsub.getConnectionInfo(connectionId);
-
-                if (connectionInfo) {
-                        userId ??= connectionInfo.userId;
-                        visitorId ??= connectionInfo.visitorId;
-                        websiteId ??= connectionInfo.websiteId;
-                        organizationId ??= connectionInfo.organizationId;
+                        if (connectionInfo) {
+                                userId ??= connectionInfo.userId;
+                                visitorId ??= connectionInfo.visitorId;
+                                websiteId ??= connectionInfo.websiteId;
+                                organizationId ??= connectionInfo.organizationId;
+                        }
                 }
-        }
 
-        const timestamp = Date.now();
-        const context: EventContext = {
-                connectionId,
-                userId,
-                visitorId,
-                websiteId,
-                organizationId,
-                ws: undefined,
-        };
-
-        if (userId) {
-                const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
-                        type: "USER_DISCONNECTED",
-                        data: {
-                                userId,
-                                connectionId,
-                                timestamp,
-                        },
-                        timestamp,
+                const timestamp = Date.now();
+                const context: EventContext = {
+                        connectionId,
+                        userId,
+                        visitorId,
+                        websiteId,
+                        organizationId,
+                        ws: undefined,
                 };
 
-                await routeEvent(disconnectEvent, context);
-        } else if (visitorId) {
-                const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
-                        type: "VISITOR_DISCONNECTED",
-                        data: {
-                                visitorId,
-                                connectionId,
+                if (userId) {
+                        const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
+                                type: "USER_DISCONNECTED",
+                                data: {
+                                        userId,
+                                        connectionId,
+                                        timestamp,
+                                },
                                 timestamp,
-                        },
-                        timestamp,
-                };
+                        };
 
-                await routeEvent(disconnectEvent, context);
-        } else {
-                console.error(
-                        `[WebSocket] Missing connection metadata for ${connectionId} on close`,
-                );
+                        await routeEvent(disconnectEvent, context);
+                } else if (visitorId) {
+                        const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
+                                type: "VISITOR_DISCONNECTED",
+                                data: {
+                                        visitorId,
+                                        connectionId,
+                                        timestamp,
+                                },
+                                timestamp,
+                        };
+
+                        await routeEvent(disconnectEvent, context);
+                } else {
+                        // TODO: replace console.* with logger
+                        console.error(
+                                `[WebSocket] Missing connection metadata for ${connectionId} on close`,
+                        );
+                }
+
+                const presenceId = userId ?? visitorId;
+                if (presenceId) {
+                        await pubsub.updatePresence(presenceId, "offline", websiteId);
+                }
+        } finally {
+                await cleanupConnection(connectionId);
         }
-
-        const presenceId = userId ?? visitorId;
-        if (presenceId) {
-                await pubsub.updatePresence(presenceId, "offline", websiteId);
-        }
-
-        await cleanupConnection(connectionId);
 }
 
 /**
