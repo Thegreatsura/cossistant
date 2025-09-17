@@ -1,8 +1,8 @@
 import { db } from "@api/db";
 import type { ApiKeyWithWebsiteAndOrganization } from "@api/db/queries/api-keys";
+import { normalizeSessionToken, resolveSession } from "@api/db/queries/session";
 
 import { website as websiteTable } from "@api/db/schema";
-import { auth } from "@api/lib/auth";
 import {
 	AuthValidationError,
 	type AuthValidationOptions,
@@ -184,10 +184,10 @@ async function cleanupConnection(connectionId: string): Promise<void> {
  * Extract authentication credentials from WebSocket context
  */
 function extractAuthCredentials(c: Context): {
-	privateKey: string | undefined;
-	publicKey: string | undefined;
-	actualOrigin: string | undefined;
-	visitorId: string | undefined;
+        privateKey: string | undefined;
+        publicKey: string | undefined;
+        actualOrigin: string | undefined;
+        visitorId: string | undefined;
 } {
 	// Try headers first (for non-browser clients)
 	const authHeader = c.req.header("Authorization");
@@ -238,7 +238,28 @@ function extractAuthCredentials(c: Context): {
 		});
 	}
 
-	return { privateKey, publicKey, actualOrigin, visitorId };
+        return { privateKey, publicKey, actualOrigin, visitorId };
+}
+
+function extractSessionToken(c: Context): string | undefined {
+        const queryCandidates = [
+                c.req.query("sessionToken"),
+                c.req.query("sessionId"),
+                c.req.query("session"),
+        ];
+
+        for (const candidate of queryCandidates) {
+                const normalized = normalizeSessionToken(candidate);
+                if (normalized) {
+                        return normalized;
+                }
+        }
+
+        const headerToken = normalizeSessionToken(
+                c.req.header("x-user-session-token"),
+        );
+
+        return headerToken;
 }
 
 /**
@@ -318,19 +339,21 @@ function extractProtocolAndHostname(
  * Log authentication attempt if logging is enabled
  */
 function logAuthAttempt(
-	hasPrivateKey: boolean,
-	hasPublicKey: boolean,
-	actualOrigin: string | undefined,
-	url: string,
+        hasPrivateKey: boolean,
+        hasPublicKey: boolean,
+        hasSessionToken: boolean,
+        actualOrigin: string | undefined,
+        url: string,
 ): void {
-	if (AUTH_LOGS_ENABLED) {
-		console.log("[WebSocket Auth] Authentication attempt:", {
-			hasPrivateKey,
-			hasPublicKey,
-			origin: actualOrigin,
-			url,
-		});
-	}
+        if (AUTH_LOGS_ENABLED) {
+                console.log("[WebSocket Auth] Authentication attempt:", {
+                        hasPrivateKey,
+                        hasPublicKey,
+                        hasSessionToken,
+                        origin: actualOrigin,
+                        url,
+                });
+        }
 }
 
 /**
@@ -398,10 +421,17 @@ async function authenticateWebSocketConnection(
 ): Promise<WebSocketAuthSuccess | null> {
 	try {
 		// Extract credentials
-		const { privateKey, publicKey, actualOrigin, visitorId } =
-			extractAuthCredentials(c);
+                const { privateKey, publicKey, actualOrigin, visitorId } =
+                        extractAuthCredentials(c);
+                const sessionToken = extractSessionToken(c);
 
-		logAuthAttempt(!!privateKey, !!publicKey, actualOrigin, c.req.url);
+                logAuthAttempt(
+                        !!privateKey,
+                        !!publicKey,
+                        !!sessionToken,
+                        actualOrigin,
+                        c.req.url,
+                );
 
 		// Extract protocol and hostname
 		const { protocol, hostname } = extractProtocolAndHostname(c, actualOrigin);
@@ -422,13 +452,13 @@ async function authenticateWebSocketConnection(
 				publicKey,
 				options,
 			);
-		} else {
-			result = await authenticateWithSession(c);
+                } else {
+                        result = await authenticateWithSession(c, sessionToken);
 
-			if (!result && AUTH_LOGS_ENABLED) {
-				console.log("[WebSocket Auth] No valid authentication method provided");
-			}
-		}
+                        if (!result && AUTH_LOGS_ENABLED) {
+                                console.log("[WebSocket Auth] No valid authentication method provided");
+                        }
+                }
 
 		// Add visitorId to the result if authentication was successful
 		if (result) {
@@ -474,15 +504,23 @@ async function authenticateWithApiKey(
 }
 
 async function authenticateWithSession(
-	c: Context,
+        c: Context,
+        sessionToken: string | undefined,
 ): Promise<WebSocketAuthSuccess | null> {
-	const session = await auth.api.getSession({ headers: c.req.raw.headers });
-	if (!session) {
-		if (AUTH_LOGS_ENABLED) {
-			console.log("[WebSocket Auth] No API key or session provided");
-		}
-		return null;
-	}
+        const session = await resolveSession(db, {
+                headers: c.req.raw.headers,
+                sessionToken,
+        });
+        if (!session) {
+                if (AUTH_LOGS_ENABLED) {
+                        console.log(
+                                sessionToken
+                                        ? "[WebSocket Auth] Session token invalid or expired"
+                                        : "[WebSocket Auth] No API key or session provided",
+                        );
+                }
+                return null;
+        }
 
 	const organizationId = session.session.activeOrganizationId ?? null;
 	const activeTeamId = session.session.activeTeamId ?? null;

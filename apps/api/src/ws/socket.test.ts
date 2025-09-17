@@ -2,8 +2,19 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 mock.module("@api/db", () => ({ db: {} }));
 mock.module("@api/db/queries/api-keys", () => ({}));
+mock.module("@api/db/queries/session", () => ({
+        normalizeSessionToken: (token: string | null | undefined) =>
+                token?.trim() || undefined,
+        resolveSession: async () => null,
+}));
 mock.module("@api/db/schema", () => ({ website: {} }));
-mock.module("@api/lib/auth", () => ({ auth: {} }));
+mock.module("@api/lib/auth", () => ({
+        auth: {
+                api: {
+                        getSession: async () => null,
+                },
+        },
+}));
 mock.module("drizzle-orm", () => ({
         eq: () => ({}),
 }));
