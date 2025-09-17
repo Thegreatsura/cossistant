@@ -1,10 +1,10 @@
 import type { PublicVisitor, VisitorMetadata } from "@cossistant/types";
 import { useSupport } from "../..";
 
-export interface UseVisitorReturn {
+export type UseVisitorReturn = {
 	visitor: PublicVisitor | null;
 	setVisitorMetadata: (metadata: VisitorMetadata) => void;
-}
+};
 
 export function useVisitor(): UseVisitorReturn {
 	const { website } = useSupport();
@@ -14,7 +14,7 @@ export function useVisitor(): UseVisitorReturn {
 		visitor,
 		setVisitorMetadata: () => {
 			console.warn(
-				"useVisitor setVisitor is not implemented - visitor is managed by website context",
+				"useVisitor setVisitor is not implemented - visitor is managed by website context"
 			);
 		},
 	};

@@ -31,7 +31,7 @@ export function SidebarItem({
 		"hover:bg-background-100 hover:text-primary",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 		active && "bg-background-100 text-primary dark:bg-background-200",
-		className,
+		className
 	);
 
 	const content = (
@@ -42,7 +42,7 @@ export function SidebarItem({
 						"flex size-6 shrink-0 items-center justify-center opacity-40 transition-all duration-100 group-hover/btn:rotate-[-4deg] group-hover/btn:opacity-80",
 						{
 							"rotate-[-2deg] opacity-90 group-hover/btn:opacity-80": active,
-						},
+						}
 					)}
 				>
 					<Icon

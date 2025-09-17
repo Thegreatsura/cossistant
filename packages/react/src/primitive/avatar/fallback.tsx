@@ -39,7 +39,7 @@ export const AvatarFallback = React.forwardRef<
 >(
 	(
 		{ children, name = "", delayMs = 0, className, asChild = false, ...props },
-		ref,
+		ref
 	) => {
 		const { imageLoadingStatus } = useAvatarContext();
 		const [canRender, setCanRender] = React.useState(delayMs === 0);
@@ -84,9 +84,9 @@ export const AvatarFallback = React.forwardRef<
 					...props,
 					children: content,
 				},
-			},
+			}
 		);
-	},
+	}
 );
 
 AvatarFallback.displayName = "AvatarFallback";

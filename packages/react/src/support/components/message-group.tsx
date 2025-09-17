@@ -17,12 +17,12 @@ import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
 import { Message } from "./message";
 
-export interface MessageGroupProps {
+export type MessageGroupProps = {
 	messages: MessageType[];
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	currentVisitorId?: string;
-}
+};
 
 export const MessageGroup: React.FC<MessageGroupProps> = ({
 	messages,
@@ -37,10 +37,10 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 	// Get agent info for the sender
 	const firstMessage = messages[0];
 	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === firstMessage?.userId,
+		(agent) => agent.id === firstMessage?.userId
 	);
 	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === firstMessage?.aiAgentId,
+		(agent) => agent.id === firstMessage?.aiAgentId
 	);
 
 	return (
@@ -49,7 +49,13 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 			viewerId={currentVisitorId}
 			viewerType={SenderType.VISITOR}
 		>
-			{({ isSentByViewer, isReceivedByViewer, isVisitor, isAI, isTeamMember }) => (
+			{({
+				isSentByViewer,
+				isReceivedByViewer,
+				isVisitor,
+				isAI,
+				isTeamMember,
+			}) => (
 				<motion.div
 					animate={{ opacity: 1, y: 0 }}
 					className={cn(
@@ -57,7 +63,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 						// Support widget POV: visitor messages are sent (right side)
 						// Agent messages are received (left side)
 						isSentByViewer && "flex-row-reverse",
-						isReceivedByViewer && "flex-row",
+						isReceivedByViewer && "flex-row"
 					)}
 					initial={{ opacity: 0, y: 20 }}
 					transition={{ duration: 0.3, ease: "easeOut" }}

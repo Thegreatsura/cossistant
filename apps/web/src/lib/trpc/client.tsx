@@ -39,7 +39,7 @@ function getQueryClient() {
 export function TRPCReactProvider(
 	props: Readonly<{
 		children: React.ReactNode;
-	}>,
+	}>
 ) {
 	const queryClient = getQueryClient();
 
@@ -62,7 +62,7 @@ export function TRPCReactProvider(
 						(opts.direction === "down" && opts.result instanceof Error),
 				}),
 			],
-		}),
+		})
 	);
 
 	return (

@@ -19,7 +19,7 @@ export function BaseSubmitButton({
 			className={cn(props.className, "relative")}
 		>
 			<span
-				className={cn("flex items-center gap-2 ", {
+				className={cn("flex items-center gap-2", {
 					"opacity-0": isSubmitting,
 				})}
 			>

@@ -17,5 +17,5 @@ export const useConversationFocusStore = create<ConversationFocusStore>(
 		clearFocus: () =>
 			set({ focusedConversationId: null, shouldRestoreFocus: false }),
 		markFocusRestored: () => set({ shouldRestoreFocus: false }),
-	}),
+	})
 );

@@ -34,7 +34,7 @@ export const ResizableSidebar = ({
 						"border-r": position === "left",
 						"border-l": position === "right",
 						"border-transparent": !open,
-					},
+					}
 				)}
 				style={{
 					width: open ? DEFAULT_SIDEBAR_WIDTH : 0,
@@ -87,7 +87,7 @@ const SidebarHandle = ({
 		},
 		{
 			preventDefault: true,
-		},
+		}
 	);
 
 	const handleClick = () => {
@@ -122,7 +122,7 @@ const SidebarHandle = ({
 				{
 					"-right-[1px]": !isCollapsed && position === "right",
 					"-left-[1px]": !isCollapsed && position === "left",
-				},
+				}
 			)}
 			onClick={handleClick}
 			tabIndex={0}
@@ -137,7 +137,7 @@ const SidebarHandle = ({
 				<div
 					className={cn(
 						"group flex h-full items-center justify-center border-transparent transition-all hover:cursor-pointe",
-						position === "left" ? "border-r-2" : "border-l-2",
+						position === "left" ? "border-r-2" : "border-l-2"
 					)}
 				/>
 			</TooltipOnHover>

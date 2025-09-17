@@ -10,15 +10,15 @@ import {
 } from "@cossistant/types/realtime-events";
 import { WEBSOCKET_ERRORS } from "./websocket-errors";
 
-export interface ParsedMessage {
+export type ParsedMessage = {
 	type: string;
 	data?: unknown;
-}
+};
 
-export interface ValidatedMessage {
+export type ValidatedMessage = {
 	event: RealtimeEvent;
 	context: EventContext;
-}
+};
 
 /**
  * Parse and validate incoming WebSocket message
@@ -52,7 +52,7 @@ export function validateMessage(
 		visitorId?: string;
 		websiteId?: string;
 		organizationId?: string;
-	},
+	}
 ): ValidatedMessage {
 	// Validate event type
 	if (!isValidEventType(message.type)) {

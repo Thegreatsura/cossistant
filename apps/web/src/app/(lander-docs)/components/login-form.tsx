@@ -80,7 +80,7 @@ export function LoginForm() {
 		const reset = searchParams.get("reset");
 		if (reset === "success") {
 			setSuccessMessage(
-				"Password reset successful! You can now sign in with your new password.",
+				"Password reset successful! You can now sign in with your new password."
 			);
 		}
 	}, [searchParams]);
@@ -121,7 +121,7 @@ export function LoginForm() {
 			},
 			{
 				credentials: "include",
-			},
+			}
 		);
 	};
 

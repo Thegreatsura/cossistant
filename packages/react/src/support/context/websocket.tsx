@@ -52,7 +52,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 	onError,
 }) => {
 	const eventHandlersRef = useRef<Set<(event: RealtimeEvent) => void>>(
-		new Set(),
+		new Set()
 	);
 	const lastMessageRef = useRef<RealtimeEvent | null>(null);
 
@@ -92,7 +92,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 			return url.toString();
 		} catch (err) {
 			onError?.(
-				err instanceof Error ? err : new Error("Failed to build WebSocket URL"),
+				err instanceof Error ? err : new Error("Failed to build WebSocket URL")
 			);
 			return null;
 		}
@@ -106,7 +106,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 			if (closeEvent.code === 1008 || closeEvent.code === 1011) {
 				const err = new Error(
 					closeEvent.reason ||
-						"Authentication failed. Please check your API key configuration.",
+						"Authentication failed. Please check your API key configuration."
 				);
 				setConnectionError(err);
 				onError?.(err);
@@ -126,7 +126,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 			// Handle authentication failures
 			if (event.code === 1008 || event.code === 1011) {
 				const err = new Error(
-					event.reason || "Connection closed due to authentication failure",
+					event.reason || "Connection closed due to authentication failure"
 				);
 				setConnectionError(err);
 				onError?.(err);
@@ -174,7 +174,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 			}
 			sendMessage(JSON.stringify(event));
 		},
-		[sendMessage, readyState],
+		[sendMessage, readyState]
 	);
 
 	const subscribe = useCallback((handler: (event: RealtimeEvent) => void) => {
@@ -195,7 +195,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 			visitorId: visitorIdProp || null,
 			websiteId: websiteId || null,
 		}),
-		[readyState, send, subscribe, connectionError, visitorIdProp, websiteId],
+		[readyState, send, subscribe, connectionError, visitorIdProp, websiteId]
 	);
 
 	return (

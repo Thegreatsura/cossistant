@@ -4,20 +4,20 @@ import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import { useEffect } from "react";
 import { useWebSocket } from "../support/context/websocket";
 
-export interface UseRealtimeSupportOptions {
+export type UseRealtimeSupportOptions = {
 	onEvent?: (event: RealtimeEvent) => void;
-}
+};
 
-export interface UseRealtimeSupportResult {
+export type UseRealtimeSupportResult = {
 	isConnected: boolean;
 	isConnecting: boolean;
 	error: Error | null;
 	send: (event: RealtimeEvent) => void;
 	lastMessage: RealtimeEvent | null;
-}
+};
 
 export function useRealtimeSupport(
-	options: UseRealtimeSupportOptions = {},
+	options: UseRealtimeSupportOptions = {}
 ): UseRealtimeSupportResult {
 	const { onEvent } = options;
 	const { isConnected, isConnecting, error, send, subscribe, lastMessage } =

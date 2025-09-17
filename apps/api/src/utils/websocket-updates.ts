@@ -3,10 +3,10 @@ import { updateUserLastSeen } from "@api/db/queries/user";
 import { upsertVisitor } from "@api/db/queries/visitor";
 import type { WebSocketAuthSuccess as AuthResult } from "@api/ws/socket";
 
-interface UpdateTimestampsOptions {
+type UpdateTimestampsOptions = {
 	db: Database;
 	authResult: AuthResult;
-}
+};
 
 export async function updateLastSeenTimestamps({
 	db,

@@ -38,37 +38,37 @@ import { view, visitor, website } from "./website";
 
 export const messageTypeEnum = pgEnum(
 	"message_type",
-	enumToPgEnum(MessageType),
+	enumToPgEnum(MessageType)
 );
 
 export const conversationStatusEnum = pgEnum(
 	"conversation_status",
-	enumToPgEnum(ConversationStatus),
+	enumToPgEnum(ConversationStatus)
 );
 
 export const conversationPriorityEnum = pgEnum(
 	"conversation_priority",
-	enumToPgEnum(ConversationPriority),
+	enumToPgEnum(ConversationPriority)
 );
 
 export const conversationSentimentEnum = pgEnum(
 	"conversation_sentiment",
-	enumToPgEnum(ConversationSentiment),
+	enumToPgEnum(ConversationSentiment)
 );
 
 export const messageVisibilityEnum = pgEnum(
 	"message_visibility",
-	enumToPgEnum(MessageVisibility),
+	enumToPgEnum(MessageVisibility)
 );
 
 export const conversationEventTypeEnum = pgEnum(
 	"conversation_event_type",
-	enumToPgEnum(ConversationEventType),
+	enumToPgEnum(ConversationEventType)
 );
 
 export const conversationParticipationStatusEnum = pgEnum(
 	"conversation_participation_status",
-	enumToPgEnum(ConversationParticipationStatus),
+	enumToPgEnum(ConversationParticipationStatus)
 );
 
 export const conversation = pgTable(
@@ -83,7 +83,7 @@ export const conversation = pgTable(
 			.notNull(),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		visitorId: ulidReference("visitor_id").references(() => visitor.id, {
 			onDelete: "cascade",
@@ -105,10 +105,10 @@ export const conversation = pgTable(
 		lastMessageAt: timestamp("last_message_at"),
 		lastMessageBy: ulidNullableReference("last_message_by_id"),
 		resolvedByUserId: ulidNullableReference("resolved_by_user_id").references(
-			() => user.id,
+			() => user.id
 		),
 		resolvedByAiAgentId: ulidNullableReference(
-			"resolved_by_ai_agent_id",
+			"resolved_by_ai_agent_id"
 		).references(() => aiAgent.id),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date())
@@ -126,7 +126,7 @@ export const conversation = pgTable(
 		// Composite index for organization + priority queries
 		index("conversation_org_priority_idx").on(
 			table.organizationId,
-			table.priority,
+			table.priority
 		),
 		// Index for filtering conversations by website and status
 		index("conversation_website_status_idx").on(table.websiteId, table.status),
@@ -135,31 +135,31 @@ export const conversation = pgTable(
 		// Index for resolution data
 		index("conversation_org_resolved_idx").on(
 			table.organizationId,
-			table.resolvedAt,
+			table.resolvedAt
 		),
 		// Index for filtering conversations by website for the sync db
 		index("conversation_org_website_idx").on(table.websiteId, table.updatedAt),
 		index("conversation_org_first_response_idx").on(
 			table.organizationId,
-			table.firstResponseAt,
+			table.firstResponseAt
 		),
 		// Optimized composite index for listConversationsHeaders pagination by updatedAt
 		index("conversation_org_website_updated_idx").on(
 			table.organizationId,
 			table.websiteId,
 			table.updatedAt,
-			table.id,
+			table.id
 		),
 		// Optimized composite index for listConversationsHeaders pagination by createdAt
 		index("conversation_org_website_created_idx").on(
 			table.organizationId,
 			table.websiteId,
 			table.createdAt,
-			table.id,
+			table.id
 		),
 		// Index for soft delete queries
 		index("conversation_deleted_at_idx").on(table.deletedAt),
-	],
+	]
 );
 
 export const message = pgTable(
@@ -176,22 +176,22 @@ export const message = pgTable(
 			() => visitor.id,
 			{
 				onDelete: "set null",
-			},
+			}
 		),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		websiteId: ulidReference("website_id").references(() => website.id, {
 			onDelete: "cascade",
 		}),
 		conversationId: nanoidReference("conversation_id").references(
 			() => conversation.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		parentMessageId: ulidNullableReference("parent_message_id"),
 		aiAgentId: ulidNullableReference("ai_agent_id").references(
-			() => aiAgent.id,
+			() => aiAgent.id
 		),
 		modelUsed: text("model_used"),
 		visibility: messageVisibilityEnum("visibility")
@@ -213,7 +213,7 @@ export const message = pgTable(
 		// Composite index for organization + conversation queries
 		index("message_org_conversation_idx").on(
 			table.organizationId,
-			table.conversationId,
+			table.conversationId
 		),
 		// Index for filtering messages by user within organization
 		index("message_org_user_idx").on(table.organizationId, table.userId),
@@ -221,7 +221,7 @@ export const message = pgTable(
 		index("message_ai_agent_idx").on(table.aiAgentId),
 		index("message_org_created_at_idx").on(
 			table.organizationId,
-			table.createdAt,
+			table.createdAt
 		),
 		// Index for filtering messages by website for the sync db
 		index("message_org_website_idx").on(table.websiteId, table.updatedAt),
@@ -234,11 +234,11 @@ export const message = pgTable(
 		index("message_last_per_conversation_idx").on(
 			table.organizationId,
 			table.conversationId,
-			table.createdAt,
+			table.createdAt
 		),
 		// Index for soft delete queries
 		index("message_deleted_at_idx").on(table.deletedAt),
-	],
+	]
 );
 
 export const conversationSeen = pgTable(
@@ -247,11 +247,11 @@ export const conversationSeen = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		conversationId: nanoidReference("conversation_id").references(
 			() => conversation.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 
 		// exactly one of these is non-null
@@ -260,11 +260,11 @@ export const conversationSeen = pgTable(
 		}),
 		visitorId: ulidNullableReference("visitor_id").references(
 			() => visitor.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		aiAgentId: ulidNullableReference("ai_agent_id").references(
 			() => aiAgent.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 
 		lastSeenAt: timestamp("last_seen_at")
@@ -285,7 +285,7 @@ export const conversationSeen = pgTable(
 		uniqueIndex("cs_unique_user").on(t.conversationId, t.userId),
 		uniqueIndex("cs_unique_visitor").on(t.conversationId, t.visitorId),
 		uniqueIndex("cs_unique_ai").on(t.conversationId, t.aiAgentId),
-	],
+	]
 );
 
 export const conversationAssignee = pgTable(
@@ -294,21 +294,21 @@ export const conversationAssignee = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		conversationId: nanoidReference("conversation_id").references(
 			() => conversation.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		userId: ulidReference("user_id").references(() => user.id, {
 			onDelete: "cascade",
 		}),
 		assignedByUserId: ulidNullableReference("assigned_by_user_id").references(
 			() => user.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		assignedByAiAgentId: ulidNullableReference(
-			"assigned_by_ai_agent_id",
+			"assigned_by_ai_agent_id"
 		).references(() => aiAgent.id, { onDelete: "set null" }),
 		assignedAt: timestamp("assigned_at")
 			.$defaultFn(() => new Date())
@@ -324,9 +324,9 @@ export const conversationAssignee = pgTable(
 		index("conversation_assignee_user_idx").on(table.userId),
 		uniqueIndex("conversation_assignee_unique").on(
 			table.conversationId,
-			table.userId,
+			table.userId
 		),
-	],
+	]
 );
 
 export const conversationParticipant = pgTable(
@@ -335,11 +335,11 @@ export const conversationParticipant = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		conversationId: nanoidReference("conversation_id").references(
 			() => conversation.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		userId: ulidReference("user_id").references(() => user.id, {
 			onDelete: "cascade",
@@ -350,10 +350,10 @@ export const conversationParticipant = pgTable(
 		reason: text("reason"),
 		requestedByUserId: ulidNullableReference("requested_by_user_id").references(
 			() => user.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		requestedByAiAgentId: ulidNullableReference(
-			"requested_by_ai_agent_id",
+			"requested_by_ai_agent_id"
 		).references(() => aiAgent.id, { onDelete: "set null" }),
 		joinedAt: timestamp("joined_at")
 			.$defaultFn(() => new Date())
@@ -369,9 +369,9 @@ export const conversationParticipant = pgTable(
 		index("conversation_participant_user_idx").on(table.userId),
 		uniqueIndex("conversation_participant_unique").on(
 			table.conversationId,
-			table.userId,
+			table.userId
 		),
-	],
+	]
 );
 
 export const conversationEvent = pgTable(
@@ -380,28 +380,28 @@ export const conversationEvent = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		conversationId: nanoidReference("conversation_id").references(
 			() => conversation.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		type: conversationEventTypeEnum("type").notNull(),
 		actorUserId: ulidNullableReference("actor_user_id").references(
 			() => user.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		actorAiAgentId: ulidNullableReference("actor_ai_agent_id").references(
 			() => aiAgent.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		targetUserId: ulidNullableReference("target_user_id").references(
 			() => user.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		targetAiAgentId: ulidNullableReference("target_ai_agent_id").references(
 			() => aiAgent.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		message: text("message"),
 		metadata: jsonb("metadata"),
@@ -413,7 +413,7 @@ export const conversationEvent = pgTable(
 		index("conversation_event_org_idx").on(table.organizationId),
 		index("conversation_event_conv_idx").on(table.conversationId),
 		index("conversation_event_type_idx").on(table.type),
-	],
+	]
 );
 
 export const conversationView = pgTable(
@@ -422,11 +422,11 @@ export const conversationView = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		conversationId: nanoidReference("conversation_id").references(
 			() => conversation.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		viewId: ulidReference("view_id").references(() => view.id, {
 			onDelete: "cascade",
@@ -434,11 +434,11 @@ export const conversationView = pgTable(
 
 		addedByUserId: ulidNullableReference("added_by_user_id").references(
 			() => user.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		addedByAiAgentId: ulidNullableReference("added_by_ai_agent_id").references(
 			() => aiAgent.id,
-			{ onDelete: "set null" },
+			{ onDelete: "set null" }
 		),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date())
@@ -453,14 +453,14 @@ export const conversationView = pgTable(
 		index("conversation_view_org_conv_deleted_idx").on(
 			table.organizationId,
 			table.conversationId,
-			table.deletedAt,
+			table.deletedAt
 		),
 		uniqueIndex("conversation_view_unique").on(
 			table.conversationId,
-			table.viewId,
+			table.viewId
 		),
 		index("conversation_view_deleted_at_idx").on(table.deletedAt),
-	],
+	]
 );
 
 export const conversationRelations = relations(
@@ -484,7 +484,7 @@ export const conversationRelations = relations(
 		events: many(conversationEvent),
 		views: many(conversationView),
 		seenBy: many(conversationSeen),
-	}),
+	})
 );
 
 export const messageRelations = relations(message, ({ one }) => ({
@@ -537,7 +537,7 @@ export const conversationTagRelations = relations(
 			fields: [conversationView.addedByAiAgentId],
 			references: [aiAgent.id],
 		}),
-	}),
+	})
 );
 
 export type ConversationSelect = InferSelectModel<typeof conversation>;

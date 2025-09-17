@@ -144,7 +144,7 @@ export const Icon: React.FC<IconProps> = ({
 						{
 							"opacity-0": variant === "filled",
 						},
-						className,
+						className
 					)}
 					fill="none"
 					height="24"
@@ -167,7 +167,7 @@ export const Icon: React.FC<IconProps> = ({
 						{
 							"opacity-100": variant === "filled",
 						},
-						className,
+						className
 					)}
 					fill="none"
 					height="24"

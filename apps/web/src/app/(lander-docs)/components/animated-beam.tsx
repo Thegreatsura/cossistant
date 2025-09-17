@@ -5,7 +5,7 @@ import { type RefObject, useEffect, useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-export interface AnimatedBeamProps {
+export type AnimatedBeamProps = {
 	className?: string;
 	containerRef: RefObject<HTMLElement | null>; // Container ref
 	fromRef: RefObject<HTMLElement | null>;
@@ -23,9 +23,9 @@ export interface AnimatedBeamProps {
 	startYOffset?: number;
 	endXOffset?: number;
 	endYOffset?: number;
-}
+};
 
-export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
+export const AnimatedBeam = ({
 	className,
 	containerRef,
 	fromRef,
@@ -43,7 +43,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 	startYOffset = 0,
 	endXOffset = 0,
 	endYOffset = 0,
-}) => {
+}: AnimatedBeamProps) => {
 	const id = useId();
 	const [pathD, setPathD] = useState("");
 	const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
@@ -126,7 +126,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
 		<svg
 			className={cn(
 				"pointer-events-none absolute top-0 left-0 transform-gpu stroke-2",
-				className,
+				className
 			)}
 			fill="none"
 			height={svgDimensions.height}

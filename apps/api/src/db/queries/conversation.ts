@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT } from "@api/constants";
 import type { Database } from "@api/db";
 
 import {
@@ -38,7 +39,7 @@ export async function upsertConversation(
 		websiteId: string;
 		visitorId: string;
 		conversationId?: string;
-	},
+	}
 ) {
 	const newConversationId = params.conversationId ?? generateShortPrimaryId();
 	const now = new Date();
@@ -73,7 +74,7 @@ export async function listConversations(
 		status?: "open" | "closed";
 		orderBy?: "createdAt" | "updatedAt";
 		order?: "asc" | "desc";
-	},
+	}
 ) {
 	const page = params.page ?? 1;
 	const limit = params.limit ?? 3;
@@ -137,8 +138,8 @@ export async function listConversations(
 					inArray(message.conversationId, conversationIds),
 					eq(message.visibility, MessageVisibility.PUBLIC),
 					eq(message.type, MessageType.TEXT),
-					isNull(message.deletedAt),
-				),
+					isNull(message.deletedAt)
+				)
 			)
 			.orderBy(desc(message.createdAt));
 
@@ -176,7 +177,7 @@ export async function getConversationById(
 		organizationId: string;
 		websiteId: string;
 		conversationId: string;
-	},
+	}
 ) {
 	const [_conversation] = await db
 		.select()
@@ -185,8 +186,8 @@ export async function getConversationById(
 			and(
 				eq(conversation.id, params.conversationId),
 				eq(conversation.organizationId, params.organizationId),
-				eq(conversation.websiteId, params.websiteId),
-			),
+				eq(conversation.websiteId, params.websiteId)
+			)
 		);
 
 	if (!_conversation) {
@@ -203,8 +204,8 @@ export async function getConversationById(
 				eq(message.organizationId, params.organizationId),
 				eq(message.visibility, MessageVisibility.PUBLIC),
 				eq(message.type, MessageType.TEXT),
-				isNull(message.deletedAt),
-			),
+				isNull(message.deletedAt)
+			)
 		)
 		.orderBy(desc(message.createdAt))
 		.limit(1);
@@ -223,9 +224,9 @@ export async function listConversationsHeaders(
 		limit?: number;
 		cursor?: string | null;
 		orderBy?: "createdAt" | "updatedAt";
-	},
+	}
 ) {
-	const limit = params.limit ?? 50;
+	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 	const orderBy = params.orderBy ?? "updatedAt";
 
 	// Create a subquery for the last message per conversation using window function
@@ -258,8 +259,8 @@ export async function listConversationsHeaders(
 				eq(message.organizationId, params.organizationId),
 				eq(message.visibility, MessageVisibility.PUBLIC),
 				eq(message.type, MessageType.TEXT),
-				isNull(message.deletedAt),
-			),
+				isNull(message.deletedAt)
+			)
 		)
 		.as("last_msg");
 
@@ -268,15 +269,15 @@ export async function listConversationsHeaders(
 		.select({
 			conversationId: conversationView.conversationId,
 			viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-				"view_ids",
+				"view_ids"
 			),
 		})
 		.from(conversationView)
 		.where(
 			and(
 				eq(conversationView.organizationId, params.organizationId),
-				isNull(conversationView.deletedAt),
-			),
+				isNull(conversationView.deletedAt)
+			)
 		)
 		.groupBy(conversationView.conversationId)
 		.as("conv_views");
@@ -300,8 +301,8 @@ export async function listConversationsHeaders(
 				lt(conversation[orderBy], cursorDate),
 				and(
 					eq(conversation[orderBy], cursorDate),
-					lt(conversation.id, cursorId),
-				),
+					lt(conversation.id, cursorId)
+				)
 			);
 			if (cursorCondition) {
 				whereConditions.push(cursorCondition);
@@ -316,7 +317,7 @@ export async function listConversationsHeaders(
 
 			if (cursorConversation) {
 				whereConditions.push(
-					lt(conversation[orderBy], cursorConversation[orderBy]),
+					lt(conversation[orderBy], cursorConversation[orderBy])
 				);
 			}
 		}
@@ -358,14 +359,14 @@ export async function listConversationsHeaders(
 			lastMessageSubquery,
 			and(
 				eq(lastMessageSubquery.conversationId, conversation.id),
-				eq(lastMessageSubquery.rn, 1), // Only get the first (latest) message
-			),
+				eq(lastMessageSubquery.rn, 1) // Only get the first (latest) message
+			)
 		)
 		.leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
 		.where(and(...whereConditions))
 		.orderBy(
 			desc(conversation[orderBy]),
-			desc(conversation.id), // Secondary sort for stable pagination
+			desc(conversation.id) // Secondary sort for stable pagination
 		)
 		.limit(limit + 1);
 
@@ -443,9 +444,9 @@ export async function getConversationEvents(
 		websiteId: string;
 		limit?: number;
 		cursor?: Date | null;
-	},
+	}
 ) {
-	const limit = params.limit ?? 50;
+	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
 	// Build where clause
 	const whereConditions = [
@@ -455,7 +456,7 @@ export async function getConversationEvents(
 	// Add cursor condition if provided (gt for ascending order)
 	if (params.cursor) {
 		whereConditions.push(
-			gt(conversationEvent.createdAt, new Date(params.cursor)),
+			gt(conversationEvent.createdAt, new Date(params.cursor))
 		);
 	}
 

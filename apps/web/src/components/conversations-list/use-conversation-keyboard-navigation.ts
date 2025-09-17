@@ -39,7 +39,7 @@ export function useConversationKeyboardNavigation({
 			conversations.length > 0
 		) {
 			const index = conversations.findIndex(
-				(c) => c.id === focusedConversationId,
+				(c) => c.id === focusedConversationId
 			);
 			if (index !== -1) {
 				return index;
@@ -64,7 +64,7 @@ export function useConversationKeyboardNavigation({
 				container.scrollTop = itemBottom - container.clientHeight;
 			}
 		},
-		[itemHeight, parentRef],
+		[itemHeight, parentRef]
 	);
 
 	const moveFocus = useCallback(
@@ -86,7 +86,7 @@ export function useConversationKeyboardNavigation({
 				return newIndex;
 			});
 		},
-		[conversations.length, scrollToItem],
+		[conversations.length, scrollToItem]
 	);
 
 	const navigateToConversation = useCallback(() => {
@@ -132,7 +132,7 @@ export function useConversationKeyboardNavigation({
 			enableOnFormTags: false,
 			enableOnContentEditable: false,
 		},
-		[moveFocus, navigateToConversation, enabled],
+		[moveFocus, navigateToConversation, enabled]
 	);
 
 	// Restore focus from store on mount if needed
@@ -142,7 +142,7 @@ export function useConversationKeyboardNavigation({
 
 		if (shouldRestoreFocus && focusedConversationId) {
 			const index = conversations.findIndex(
-				(c) => c.id === focusedConversationId,
+				(c) => c.id === focusedConversationId
 			);
 			if (index !== -1) {
 				setFocusedIndex(index);

@@ -7,7 +7,6 @@ import {
 	isValidPublicApiKeyFormat,
 	isValidSecretApiKeyFormat,
 } from "@api/utils/api-keys";
-import { HTTPException } from "hono/http-exception";
 import { LRUCache } from "lru-cache";
 
 // Enable auth logging by setting ENABLE_AUTH_LOGS=true
@@ -21,16 +20,16 @@ const apiKeyCache = new LRUCache<string, ApiKeyWithWebsiteAndOrganization>({
 	ttl: 1000 * 60 * 30, // 30 minutes in milliseconds
 });
 
-export interface AuthValidationOptions {
+export type AuthValidationOptions = {
 	origin?: string;
 	protocol?: string;
 	hostname?: string;
-}
+};
 
-export interface AuthValidationResult {
+export type AuthValidationResult = {
 	apiKey: ApiKeyWithWebsiteAndOrganization;
 	isTestKey: boolean;
-}
+};
 
 export class AuthValidationError extends Error {
 	statusCode: number;
@@ -47,7 +46,7 @@ export class AuthValidationError extends Error {
  */
 async function getApiKeyFromCache(
 	key: string,
-	db: Database,
+	db: Database
 ): Promise<ApiKeyWithWebsiteAndOrganization | null> {
 	let apiKey = apiKeyCache.get(key) ?? null;
 
@@ -73,7 +72,7 @@ export function isTestApiKey(key: string): boolean {
  */
 export function validateDomain(
 	requestDomain: string,
-	whitelistedDomains: string[],
+	whitelistedDomains: string[]
 ): boolean {
 	return whitelistedDomains.some((domain) => {
 		let domainToCheck = domain;
@@ -91,7 +90,7 @@ export function validateDomain(
 
 		if (AUTH_LOGS_ENABLED) {
 			console.log(
-				`[AUTH] Checking domain: "${requestDomain}" against "${domainToCheck}" (original: "${domain}")`,
+				`[AUTH] Checking domain: "${requestDomain}" against "${domainToCheck}" (original: "${domain}")`
 			);
 		}
 
@@ -124,7 +123,7 @@ export function validateOriginHeader(origin: string | undefined): string {
 		}
 		throw new AuthValidationError(
 			403,
-			"Origin header is required for public key authentication. This API key can only be used from browser environments.",
+			"Origin header is required for public key authentication. This API key can only be used from browser environments."
 		);
 	}
 
@@ -134,7 +133,7 @@ export function validateOriginHeader(origin: string | undefined): string {
 		}
 		throw new AuthValidationError(
 			403,
-			"Requests from null origin are not allowed for public key authentication",
+			"Requests from null origin are not allowed for public key authentication"
 		);
 	}
 
@@ -170,7 +169,7 @@ export function parseAndValidateOriginUrl(origin: string): {
 			}
 			throw new AuthValidationError(
 				403,
-				"Only HTTP, HTTPS, WS, and WSS origins are allowed",
+				"Only HTTP, HTTPS, WS, and WSS origins are allowed"
 			);
 		}
 	} catch (error) {
@@ -205,7 +204,7 @@ function isLocalhostOrPrivateIP(hostname: string): boolean {
 export function validateHttpsRequirement(
 	apiKey: string,
 	protocol: string,
-	hostname: string,
+	hostname: string
 ): void {
 	// Test keys skip all validation
 	if (isTestApiKey(apiKey)) {
@@ -229,12 +228,12 @@ export function validateHttpsRequirement(
 		if (AUTH_LOGS_ENABLED) {
 			console.log(
 				"[AUTH] Non-test API key used with insecure protocol:",
-				protocol,
+				protocol
 			);
 		}
 		throw new AuthValidationError(
 			403,
-			"Production API keys can only be used over HTTPS/WSS connections",
+			"Production API keys can only be used over HTTPS/WSS connections"
 		);
 	}
 
@@ -244,7 +243,7 @@ export function validateHttpsRequirement(
 		}
 		throw new AuthValidationError(
 			403,
-			"Production API keys cannot be used from localhost. Please use a test API key for local development.",
+			"Production API keys cannot be used from localhost. Please use a test API key for local development."
 		);
 	}
 }
@@ -254,12 +253,12 @@ export function validateHttpsRequirement(
  */
 export function validateOriginForPublicKey(
 	apiKey: ApiKeyWithWebsiteAndOrganization,
-	options: AuthValidationOptions,
+	options: AuthValidationOptions
 ): void {
 	if (!apiKey.website) {
 		if (AUTH_LOGS_ENABLED) {
 			console.log(
-				"[AUTH] No website associated with API key, skipping origin validation",
+				"[AUTH] No website associated with API key, skipping origin validation"
 			);
 		}
 		return;
@@ -283,7 +282,7 @@ export function validateOriginForPublicKey(
 
 	const isWhitelisted = validateDomain(
 		hostname,
-		apiKey.website.whitelistedDomains,
+		apiKey.website.whitelistedDomains
 	);
 
 	if (AUTH_LOGS_ENABLED) {
@@ -303,14 +302,14 @@ export function validateOriginForPublicKey(
 		}
 		throw new AuthValidationError(
 			403,
-			`Domain ${hostname} is not whitelisted for this API key`,
+			`Domain ${hostname} is not whitelisted for this API key`
 		);
 	}
 
 	// Additional security: Log suspicious requests for monitoring
 	if (process.env.NODE_ENV === "production" && !AUTH_LOGS_ENABLED) {
 		console.log(
-			`Public key used from origin: ${validatedOrigin}, domain: ${hostname}`,
+			`Public key used from origin: ${validatedOrigin}, domain: ${hostname}`
 		);
 	}
 
@@ -324,7 +323,7 @@ export function validateOriginForPublicKey(
  */
 export async function authenticateWithPrivateKey(
 	privateKey: string,
-	db: Database,
+	db: Database
 ): Promise<ApiKeyWithWebsiteAndOrganization | null> {
 	if (!isValidSecretApiKeyFormat(privateKey)) {
 		throw new AuthValidationError(401, "Invalid private API key format");
@@ -339,7 +338,7 @@ export async function authenticateWithPrivateKey(
 export async function authenticateWithPublicKey(
 	publicKey: string,
 	db: Database,
-	options: AuthValidationOptions,
+	options: AuthValidationOptions
 ): Promise<ApiKeyWithWebsiteAndOrganization | null> {
 	if (AUTH_LOGS_ENABLED) {
 		console.log("[AUTH] Validating public key format:", {
@@ -384,7 +383,7 @@ export async function performAuthentication(
 	privateKey: string | undefined,
 	publicKey: string | undefined,
 	db: Database,
-	options: AuthValidationOptions,
+	options: AuthValidationOptions
 ): Promise<AuthValidationResult> {
 	let apiKey: ApiKeyWithWebsiteAndOrganization | null = null;
 	let usedKey: string | undefined;

@@ -18,7 +18,7 @@ export type TRPCContext = {
 
 export const createTRPCContext = async (
 	_: unknown,
-	c: Context<AuthType>,
+	c: Context<AuthType>
 ): Promise<TRPCContext> => {
 	const user = c.get("user") as typeof auth.$Infer.Session.user;
 	const session = c.get("session") as typeof auth.$Infer.Session.session;

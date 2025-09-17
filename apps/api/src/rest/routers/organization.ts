@@ -35,7 +35,7 @@ app.openapi(
 		const result = await getOrganizationById(db, organizationId);
 
 		return c.json(validateResponse(result, organizationResponseSchema));
-	},
+	}
 );
 
 export const organizationRouter = app;

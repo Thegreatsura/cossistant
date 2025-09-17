@@ -2,10 +2,10 @@ import * as React from "react";
 import { useSupportConfig } from "../support/context/config";
 import { useRenderElement } from "../utils/use-render-element";
 
-export interface WindowRenderProps {
+export type WindowRenderProps = {
 	isOpen: boolean;
 	close: () => void;
-}
+};
 
 export interface WindowProps
 	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
@@ -29,7 +29,7 @@ export const SupportWindow = React.forwardRef<HTMLDivElement, WindowProps>(
 			id = "cossistant-window",
 			...props
 		},
-		ref,
+		ref
 	) => {
 		const { isOpen, close, mode } = useSupportConfig();
 
@@ -81,9 +81,9 @@ export const SupportWindow = React.forwardRef<HTMLDivElement, WindowProps>(
 					children: content,
 				},
 				enabled: open,
-			},
+			}
 		);
-	},
+	}
 );
 
 SupportWindow.displayName = "SupportWindow";

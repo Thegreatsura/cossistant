@@ -16,7 +16,7 @@ import {
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { QUERY_KEYS } from "../utils/query-keys";
 
-export interface SendMessageOptions {
+export type SendMessageOptions = {
 	conversationId?: string | null;
 	message: string;
 	files?: File[];
@@ -24,27 +24,27 @@ export interface SendMessageOptions {
 	visitorId?: string;
 	onSuccess?: (conversationId: string, messageId: string) => void;
 	onError?: (error: Error) => void;
-}
+};
 
-interface SendMessageResult {
+export type SendMessageResult = {
 	conversationId: string;
 	messageId: string;
 	conversation?: CreateConversationResponseBody["conversation"];
 	initialMessages?: CreateConversationResponseBody["initialMessages"];
-}
+};
 
-interface OptimisticContext {
+export type OptimisticContext = {
 	optimisticConversationId: string;
 	optimisticMessageId: string;
 	wasNewConversation: boolean;
-}
+};
 
 // Helper function to create a new message
 function createMessage(
 	id: string,
 	content: string,
 	conversationId: string,
-	visitorId?: string,
+	visitorId?: string
 ): Message {
 	const now = new Date();
 	return {
@@ -66,7 +66,7 @@ function createMessage(
 function addOptimisticMessage(
 	queryClient: QueryClient,
 	conversationId: string,
-	message: Message,
+	message: Message
 ): void {
 	queryClient.setQueryData<InfiniteData<GetMessagesResponse>>(
 		QUERY_KEYS.messages(conversationId),
@@ -100,7 +100,7 @@ function addOptimisticMessage(
 				...old,
 				pages: newPages,
 			};
-		},
+		}
 	);
 }
 
@@ -108,7 +108,7 @@ function addOptimisticMessage(
 function rollbackOptimisticUpdates(
 	queryClient: QueryClient,
 	context: OptimisticContext,
-	defaultMessages: Message[] = [],
+	defaultMessages: Message[] = []
 ): void {
 	if (context.wasNewConversation) {
 		// Reset pending conversation messages to default
@@ -123,7 +123,7 @@ function rollbackOptimisticUpdates(
 					},
 				],
 				pageParams: [undefined],
-			},
+			}
 		);
 
 		// Remove the optimistic conversation from the conversations list
@@ -137,14 +137,14 @@ function rollbackOptimisticUpdates(
 				return {
 					...oldData,
 					conversations: oldData.conversations.filter(
-						(c) => c.id !== context.optimisticConversationId,
+						(c) => c.id !== context.optimisticConversationId
 					),
 					pagination: {
 						...oldData.pagination,
 						total: Math.max(0, oldData.pagination.total - 1),
 					},
 				};
-			},
+			}
 		);
 	} else {
 		// Remove just the optimistic message
@@ -158,7 +158,7 @@ function rollbackOptimisticUpdates(
 				const newPages = old.pages.map((page) => ({
 					...page,
 					messages: page.messages.filter(
-						(m) => m.id !== context.optimisticMessageId,
+						(m) => m.id !== context.optimisticMessageId
 					),
 				}));
 
@@ -166,7 +166,7 @@ function rollbackOptimisticUpdates(
 					...old,
 					pages: newPages,
 				};
-			},
+			}
 		);
 	}
 }
@@ -175,13 +175,13 @@ function rollbackOptimisticUpdates(
 function updateWithServerData(
 	queryClient: QueryClient,
 	data: SendMessageResult,
-	context: OptimisticContext,
+	context: OptimisticContext
 ): void {
 	if (context.wasNewConversation && data.conversation) {
 		// Update conversation with server data
 		queryClient.setQueryData<Conversation>(
 			QUERY_KEYS.conversation(data.conversationId),
-			data.conversation,
+			data.conversation
 		);
 
 		// Don't manually update conversations list - let invalidation handle it
@@ -200,7 +200,7 @@ function updateWithServerData(
 						},
 					],
 					pageParams: [undefined],
-				},
+				}
 			);
 		}
 	} else {
@@ -219,7 +219,7 @@ function updateWithServerData(
 					messages: page.messages.map((msg) =>
 						msg.id === context.optimisticMessageId
 							? { ...msg, id: data.messageId } // Update with server ID
-							: msg,
+							: msg
 					),
 				}));
 
@@ -227,7 +227,7 @@ function updateWithServerData(
 					...old,
 					pages: newPages,
 				};
-			},
+			}
 		);
 
 		// Then invalidate to ensure we have the latest data
@@ -238,7 +238,7 @@ function updateWithServerData(
 }
 
 export function useSendMessage(
-	client: CossistantClient | CossistantRestClient | null,
+	client: CossistantClient | CossistantRestClient | null
 ) {
 	const queryClient = useQueryClient();
 
@@ -269,7 +269,7 @@ export function useSendMessage(
 					userMessageId,
 					message,
 					newConversationId,
-					visitorId,
+					visitorId
 				);
 
 				// Combine default messages with the user's message
@@ -330,7 +330,7 @@ export function useSendMessage(
 					optimisticMessageId,
 					message,
 					conversationId,
-					visitorId,
+					visitorId
 				);
 
 				addOptimisticMessage(queryClient, conversationId, newMessage);
@@ -341,7 +341,7 @@ export function useSendMessage(
 					optimisticMessageId,
 					message,
 					optimisticConversationId,
-					visitorId,
+					visitorId
 				);
 
 				// Update the pending conversation messages
@@ -357,7 +357,7 @@ export function useSendMessage(
 							},
 						],
 						pageParams: [undefined],
-					},
+					}
 				);
 
 				// Optimistically add the new conversation to the conversations list
@@ -398,7 +398,7 @@ export function useSendMessage(
 							conversations: [
 								optimisticConversation,
 								...oldData.conversations.filter(
-									(c) => c.id !== optimisticConversationId,
+									(c) => c.id !== optimisticConversationId
 								),
 							].slice(0, 10),
 							pagination: {
@@ -406,7 +406,7 @@ export function useSendMessage(
 								total: oldData.pagination.total + 1,
 							},
 						};
-					},
+					}
 				);
 			}
 
@@ -444,7 +444,7 @@ export function useSendMessage(
 							oldData?.conversations?.map((c) => ({
 								id: c.id,
 								status: c.status,
-							})),
+							}))
 						);
 
 						if (!oldData) {
@@ -462,12 +462,12 @@ export function useSendMessage(
 
 						// First, remove the optimistic conversation if it exists
 						const filteredConversations = oldData.conversations.filter(
-							(c) => c.id !== context.optimisticConversationId,
+							(c) => c.id !== context.optimisticConversationId
 						);
 
 						// Then check if the actual conversation already exists
 						const existingIndex = filteredConversations.findIndex(
-							(c) => c.id === newConversation.id,
+							(c) => c.id === newConversation.id
 						);
 
 						let updatedConversations: typeof oldData.conversations;
@@ -486,7 +486,7 @@ export function useSendMessage(
 
 						console.log(
 							"[useSendMessage] Updated conversations:",
-							updatedConversations.map((c) => ({ id: c.id, status: c.status })),
+							updatedConversations.map((c) => ({ id: c.id, status: c.status }))
 						);
 
 						return {
@@ -498,7 +498,7 @@ export function useSendMessage(
 								total: oldData.pagination.total,
 							},
 						};
-					},
+					}
 				);
 			}
 
@@ -511,7 +511,7 @@ export function useSendMessage(
 				rollbackOptimisticUpdates(
 					queryClient,
 					context,
-					variables.defaultMessages,
+					variables.defaultMessages
 				);
 			}
 

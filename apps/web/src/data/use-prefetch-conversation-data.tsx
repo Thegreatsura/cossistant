@@ -33,14 +33,14 @@ export function usePrefetchConversationData() {
 
 		// Check if events data is already cached
 		const eventsCachedData = queryClient.getQueryData(
-			eventsQueryOptions.queryKey,
+			eventsQueryOptions.queryKey
 		);
 
 		if (!eventsCachedData) {
 			prefetchPromises.push(
 				queryClient.prefetchQuery(eventsQueryOptions).catch((error) => {
 					console.warn("Failed to prefetch conversation events:", error);
-				}),
+				})
 			);
 		}
 
@@ -55,14 +55,14 @@ export function usePrefetchConversationData() {
 
 		// Check if messages data is already cached
 		const messagesCachedData = queryClient.getQueryData(
-			messagesQueryOptions.queryKey,
+			messagesQueryOptions.queryKey
 		);
 
 		if (!messagesCachedData) {
 			prefetchPromises.push(
 				queryClient.prefetchQuery(messagesQueryOptions).catch((error) => {
 					console.warn("Failed to prefetch conversation messages:", error);
-				}),
+				})
 			);
 		}
 
@@ -74,14 +74,14 @@ export function usePrefetchConversationData() {
 
 		// Check if visitor data is already cached
 		const visitorCachedData = queryClient.getQueryData(
-			visitorQueryOptions.queryKey,
+			visitorQueryOptions.queryKey
 		);
 
 		if (!visitorCachedData) {
 			prefetchPromises.push(
 				queryClient.prefetchQuery(visitorQueryOptions).catch((error) => {
 					console.warn("Failed to prefetch visitor data:", error);
-				}),
+				})
 			);
 		}
 

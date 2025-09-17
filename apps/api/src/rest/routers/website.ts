@@ -139,7 +139,7 @@ websiteRouter.openapi(
 			db.query.member.findMany({
 				where: and(
 					eq(member.organizationId, website.organizationId),
-					or(eq(member.role, "admin"), eq(member.role, "owner")),
+					or(eq(member.role, "admin"), eq(member.role, "owner"))
 				),
 				with: {
 					user: true,
@@ -155,7 +155,7 @@ websiteRouter.openapi(
 				email: humanAgent.user.email,
 				image: humanAgent.user.image,
 				lastSeenAt: humanAgent.user.lastSeenAt ?? new Date(),
-			}),
+			})
 		);
 
 		// iso string indicating support activity
@@ -181,9 +181,9 @@ websiteRouter.openapi(
 						email: visitor.email,
 					},
 				},
-				publicWebsiteResponseSchema,
+				publicWebsiteResponseSchema
 			),
-			200,
+			200
 		);
-	},
+	}
 );

@@ -13,14 +13,14 @@ import {
 } from "../utils/message-cache";
 import { QUERY_KEYS } from "../utils/query-keys";
 
-export interface UseCreateConversationOptions {
+export type UseCreateConversationOptions = {
 	onSuccess?: (data: CreateConversationResponseBody) => void;
 	onError?: (error: Error) => void;
-}
+};
 
 export function useCreateConversation(
 	client: CossistantClient | CossistantRestClient | null,
-	options?: UseCreateConversationOptions,
+	options?: UseCreateConversationOptions
 ) {
 	const queryClient = useQueryClient();
 
@@ -59,7 +59,7 @@ export function useCreateConversation(
 			// Set optimistic data in query cache
 			queryClient.setQueryData<Conversation>(
 				QUERY_KEYS.conversation(conversationId),
-				optimisticConversation,
+				optimisticConversation
 			);
 
 			// Optimistically update the conversations list
@@ -97,7 +97,7 @@ export function useCreateConversation(
 							total: oldData.pagination.total + 1,
 						},
 					};
-				},
+				}
 			);
 
 			return { conversationId, optimisticConversation };
@@ -106,7 +106,7 @@ export function useCreateConversation(
 			// Update the conversation with server data
 			queryClient.setQueryData<Conversation>(
 				QUERY_KEYS.conversation(data.conversation.id),
-				data.conversation,
+				data.conversation
 			);
 
 			// Directly update the conversations list cache
@@ -138,7 +138,7 @@ export function useCreateConversation(
 
 					// Check if conversation already exists (in case of race conditions)
 					const existingIndex = oldData.conversations.findIndex(
-						(c) => c.id === data.conversation.id,
+						(c) => c.id === data.conversation.id
 					);
 
 					let updatedConversations: typeof oldData.conversations;
@@ -157,21 +157,21 @@ export function useCreateConversation(
 
 					console.log(
 						"[useCreateConversation] Updated conversations:",
-						updatedConversations.map((c) => ({ id: c.id, status: c.status })),
+						updatedConversations.map((c) => ({ id: c.id, status: c.status }))
 					);
 
 					return {
 						...oldData,
 						conversations: updatedConversations,
 					};
-				},
+				}
 			);
 
 			// Set initial messages if any
 			if (data.initialMessages.length > 0) {
 				queryClient.setQueryData<PaginatedMessagesCache>(
 					QUERY_KEYS.messages(data.conversation.id),
-					setInitialMessagesInCache(data.initialMessages),
+					setInitialMessagesInCache(data.initialMessages)
 				);
 			}
 
@@ -196,14 +196,14 @@ export function useCreateConversation(
 						return {
 							...oldData,
 							conversations: oldData.conversations.filter(
-								(c) => c.id !== context.conversationId,
+								(c) => c.id !== context.conversationId
 							),
 							pagination: {
 								...oldData.pagination,
 								total: Math.max(0, oldData.pagination.total - 1),
 							},
 						};
-					},
+					}
 				);
 			}
 

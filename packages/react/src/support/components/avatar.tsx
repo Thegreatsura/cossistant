@@ -18,7 +18,7 @@ export function Avatar({
 		<AvatarPrimitive
 			className={cn(
 				"flex size-9 items-center justify-center overflow-clip rounded-full bg-co-background-200 dark:bg-co-background-500",
-				className,
+				className
 			)}
 		>
 			{image && <AvatarImage alt={name} src={image} />}

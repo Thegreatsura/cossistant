@@ -35,7 +35,7 @@ export function TopbarButton({
 		{
 			enabled: !!shortcuts,
 			preventDefault: true,
-		},
+		}
 	);
 
 	return (
@@ -43,7 +43,7 @@ export function TopbarButton({
 			<Link
 				className={cn(
 					"group flex items-center gap-1 font-mono text-foreground/70 text-sm transition-colors hover:text-foreground",
-					className,
+					className
 				)}
 				href={href}
 			>

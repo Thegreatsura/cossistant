@@ -12,18 +12,18 @@ export const WebSocketErrorCode = {
 export type WebSocketErrorCode =
 	(typeof WebSocketErrorCode)[keyof typeof WebSocketErrorCode];
 
-export interface WebSocketError {
+export type WebSocketError = {
 	code: WebSocketErrorCode;
 	error: string;
 	message: string;
 	details?: unknown;
-}
+};
 
 export function createWebSocketError(
 	code: WebSocketErrorCode,
 	error: string,
 	message: string,
-	details?: unknown,
+	details?: unknown
 ): WebSocketError {
 	return {
 		code,
@@ -38,28 +38,28 @@ export const WEBSOCKET_ERRORS = {
 		createWebSocketError(
 			WebSocketErrorCode.AUTHENTICATION_FAILED,
 			"Authentication failed",
-			"Authentication failed: Provide a valid API key or be signed in.",
+			"Authentication failed: Provide a valid API key or be signed in."
 		),
 
 	identificationRequired: () =>
 		createWebSocketError(
 			WebSocketErrorCode.IDENTIFICATION_REQUIRED,
 			"Identification required",
-			"Either authenticate with credentials or provide a visitor ID via X-Visitor-Id header or query parameter.",
+			"Either authenticate with credentials or provide a visitor ID via X-Visitor-Id header or query parameter."
 		),
 
 	connectionNotAuthenticated: () =>
 		createWebSocketError(
 			WebSocketErrorCode.AUTHENTICATION_FAILED,
 			"Connection not authenticated",
-			"Please reconnect with valid authentication.",
+			"Please reconnect with valid authentication."
 		),
 
 	invalidEventType: (type?: string) =>
 		createWebSocketError(
 			WebSocketErrorCode.INVALID_MESSAGE_FORMAT,
 			"Invalid event type",
-			`Invalid event type: ${type || "unknown"}`,
+			`Invalid event type: ${type || "unknown"}`
 		),
 
 	invalidMessageFormat: (error?: unknown) =>
@@ -67,7 +67,7 @@ export const WEBSOCKET_ERRORS = {
 			WebSocketErrorCode.INVALID_MESSAGE_FORMAT,
 			"Invalid message format",
 			"The message format is invalid. Please check your message structure.",
-			error,
+			error
 		),
 
 	serverError: (error?: unknown) =>
@@ -75,7 +75,7 @@ export const WEBSOCKET_ERRORS = {
 			WebSocketErrorCode.SERVER_ERROR,
 			"Server error",
 			"An unexpected server error occurred. Please try again later.",
-			error,
+			error
 		),
 };
 

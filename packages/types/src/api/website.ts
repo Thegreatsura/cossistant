@@ -84,7 +84,7 @@ export const createWebsiteResponseSchema = z.object({
 					description: "The API key's type (public or private).",
 					example: APIKeyType.PUBLIC,
 				}),
-			}),
+			})
 		)
 		.openapi({
 			description: "The website's API keys.",

@@ -40,7 +40,7 @@ const getDefaultWebsiteToRedirectTo = ({
 	}
 
 	const website = orgs.find((org) =>
-		org.websites.some((w) => w.id === selectedWebsiteId),
+		org.websites.some((w) => w.id === selectedWebsiteId)
 	);
 
 	return {
@@ -59,7 +59,7 @@ export default async function Select() {
 
 	// If the user has a selected website already
 	const selectedWebsiteId = cookieStore.get(
-		SELECTED_WEBSITE_COOKIE_NAME,
+		SELECTED_WEBSITE_COOKIE_NAME
 	)?.value;
 
 	// If the user lands on this page and is not a member of any organization, we create a default one for them

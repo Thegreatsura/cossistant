@@ -13,7 +13,7 @@ export type PaginatedMessagesCache = InfiniteData<GetMessagesResponse>;
  */
 export function addMessageToCache(
 	cache: PaginatedMessagesCache | undefined,
-	message: Message,
+	message: Message
 ): PaginatedMessagesCache | undefined {
 	if (!cache) {
 		return;
@@ -51,7 +51,7 @@ export function addMessageToCache(
  * Creates a single page with all the messages
  */
 export function setInitialMessagesInCache(
-	messages: Message[],
+	messages: Message[]
 ): PaginatedMessagesCache {
 	return {
 		pages: [
@@ -70,7 +70,7 @@ export function setInitialMessagesInCache(
  */
 export function removeMessageFromCache(
 	cache: PaginatedMessagesCache | undefined,
-	messageId: string,
+	messageId: string
 ): PaginatedMessagesCache | undefined {
 	if (!cache) {
 		return;
@@ -93,7 +93,7 @@ export function removeMessageFromCache(
 export function updateMessageInCache(
 	cache: PaginatedMessagesCache | undefined,
 	messageId: string,
-	updater: (message: Message) => Message,
+	updater: (message: Message) => Message
 ): PaginatedMessagesCache | undefined {
 	if (!cache) {
 		return;
@@ -102,7 +102,7 @@ export function updateMessageInCache(
 	const newPages = cache.pages.map((page) => ({
 		...page,
 		messages: page.messages.map((msg) =>
-			msg.id === messageId ? updater(msg) : msg,
+			msg.id === messageId ? updater(msg) : msg
 		),
 	}));
 
@@ -116,7 +116,7 @@ export function updateMessageInCache(
  * Get all messages from the paginated cache as a flat array
  */
 export function getAllMessagesFromCache(
-	cache: PaginatedMessagesCache | undefined,
+	cache: PaginatedMessagesCache | undefined
 ): Message[] {
 	if (!cache?.pages) {
 		return [];

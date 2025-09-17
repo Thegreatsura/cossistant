@@ -39,7 +39,7 @@ export function ConversationHeaderNavigation() {
 			preventDefault: true,
 			enableOnContentEditable: false,
 			enableOnFormTags: false,
-		},
+		}
 	);
 
 	return (

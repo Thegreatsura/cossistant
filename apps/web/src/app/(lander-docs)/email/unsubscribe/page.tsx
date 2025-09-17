@@ -29,7 +29,7 @@ export default function UnsubscribePage() {
 			onError: (err) => {
 				setError(err.message || "Failed to unsubscribe");
 			},
-		}),
+		})
 	);
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +71,7 @@ export default function UnsubscribePage() {
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center ">
+		<div className="flex min-h-screen items-center justify-center">
 			<div className="w-full max-w-md p-8">
 				<div className="p-8">
 					<div className="mb-6 flex justify-center">

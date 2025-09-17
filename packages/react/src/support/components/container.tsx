@@ -6,13 +6,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as Primitive from "../../primitive";
 import { cn } from "../utils";
 
-export interface ContainerProps {
+export type ContainerProps = {
 	className?: string;
 	children: React.ReactNode;
 	mode?: "floating" | "responsive";
 	position?: "top" | "bottom";
 	align?: "right" | "left";
-}
+};
 
 export const Container: React.FC<ContainerProps> = ({
 	className,
@@ -101,7 +101,7 @@ export const Container: React.FC<ContainerProps> = ({
 					mode === "responsive" &&
 						"md:relative md:h-full md:w-full md:rounded-none md:border-0 md:shadow-none",
 
-					className,
+					className
 				)}
 				exit="exit"
 				initial="hidden"

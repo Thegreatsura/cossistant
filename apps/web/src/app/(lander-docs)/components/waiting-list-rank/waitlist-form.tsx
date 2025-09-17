@@ -72,7 +72,7 @@ export function WaitlistForm({ totalEntries }: { totalEntries: number }) {
 							toast("An error occurred during signup. Please try again.");
 						}
 					},
-				},
+				}
 			);
 
 			if (signUpResult.error) {
@@ -151,7 +151,7 @@ export function WaitlistForm({ totalEntries }: { totalEntries: number }) {
 									// Redirect to error page
 									router.push("/waitlist/joined/error");
 								},
-							},
+							}
 						)
 					}
 					size="lg"
@@ -178,7 +178,7 @@ export function WaitlistForm({ totalEntries }: { totalEntries: number }) {
 									// Redirect to error page
 									router.push("/waitlist/joined/error");
 								},
-							},
+							}
 						)
 					}
 					size="lg"

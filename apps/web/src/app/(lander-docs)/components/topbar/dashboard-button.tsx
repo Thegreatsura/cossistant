@@ -41,8 +41,8 @@ export async function DashboardButton() {
 				<Button className="h-auto p-1 pr-3">
 					<Avatar
 						className="size-7"
-						url={user.image}
 						fallbackName={user.name}
+						url={user.image}
 					/>
 					Dashboard
 				</Button>

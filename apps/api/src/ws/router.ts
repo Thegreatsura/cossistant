@@ -16,7 +16,7 @@ type EventContext = {
 
 type EventHandler<T extends RealtimeEventType> = (
 	ctx: EventContext,
-	data: RealtimeEventData<T>,
+	data: RealtimeEventData<T>
 ) => Promise<void> | void;
 
 type EventHandlers = {
@@ -79,7 +79,7 @@ const eventHandlers: EventHandlers = {
 				timestamp: new Date(data.timestamp).toISOString(),
 				contextConnectionId: ctx.connectionId,
 				websiteId: ctx.websiteId,
-			},
+			}
 		);
 
 		// Emit to dashboard so agents can see visitor disconnections
@@ -95,7 +95,7 @@ const eventHandlers: EventHandlers = {
 				lastSeen: new Date(data.lastSeen).toISOString(),
 				contextConnectionId: ctx.connectionId,
 				websiteId: ctx.websiteId,
-			},
+			}
 		);
 
 		// Emit to dashboard so agents can see presence updates
@@ -110,13 +110,13 @@ const eventHandlers: EventHandlers = {
  */
 export async function routeEvent<T extends RealtimeEventType>(
 	event: RealtimeEvent<T>,
-	context: EventContext,
+	context: EventContext
 ): Promise<void> {
 	const handler = eventHandlers[event.type] as EventHandler<T>;
 
 	if (!handler) {
 		console.error(
-			`[EventRouter] No handler found for event type: ${event.type}`,
+			`[EventRouter] No handler found for event type: ${event.type}`
 		);
 		return;
 	}

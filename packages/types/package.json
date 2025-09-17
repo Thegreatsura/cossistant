@@ -1,32 +1,32 @@
 {
-	"name": "@cossistant/types",
-	"version": "0.0.0",
-	"private": true,
-	"author": "Cossistant Team",
-	"description": "Shared TypeScript types for Cossistant packages",
-	"keywords": [
-		"types",
-		"typescript",
-		"shared",
-		"api"
-	],
-	"license": "MIT",
-	"exports": {
-		".": "./src/index.ts",
-		"./*": "./src/*.ts"
-	},
-	"main": "./src/index.ts",
-	"types": "./src/index.ts",
-	"sideEffects": false,
-	"scripts": {},
-	"files": [
-		"src"
-	],
-	"devDependencies": {
-		"@cossistant/typescript-config": "workspace:*"
-	},
-	"dependencies": {
-		"zod": "^4.1.8",
-		"@hono/zod-openapi": "^1.1.0"
-	}
+  "name": "@cossistant/types",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Cossistant Team",
+  "description": "Shared TypeScript types for Cossistant packages",
+  "keywords": [
+    "types",
+    "typescript",
+    "shared",
+    "api"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "scripts": {},
+  "files": [
+    "src"
+  ],
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*"
+  },
+  "dependencies": {
+    "zod": "^4.1.8",
+    "@hono/zod-openapi": "^1.1.0"
+  }
 }

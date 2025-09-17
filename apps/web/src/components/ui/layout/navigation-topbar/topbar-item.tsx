@@ -34,7 +34,7 @@ export function TopbarItem({
 			"bg-background-200 text-primary dark:bg-background-300": active,
 			"px-1 md:px-2": hideLabelOnMobile,
 		},
-		className,
+		className
 	);
 
 	const content = (
@@ -45,7 +45,7 @@ export function TopbarItem({
 						"flex size-5 shrink-0 items-center justify-center opacity-60 transition-all duration-100 group-hover/btn:rotate-[-4deg] group-hover/btn:opacity-80",
 						{
 							"rotate-[-2deg] opacity-100 group-hover/btn:opacity-100": active,
-						},
+						}
 					)}
 				>
 					<Icon

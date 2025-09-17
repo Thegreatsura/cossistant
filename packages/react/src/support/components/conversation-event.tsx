@@ -21,10 +21,10 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 }) => {
 	const isAI = event.actorAiAgentId !== null;
 	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === event.actorUserId,
+		(agent) => agent.id === event.actorUserId
 	);
 	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === event.actorAiAgentId,
+		(agent) => agent.id === event.actorAiAgentId
 	);
 
 	// Get the actor name

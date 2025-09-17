@@ -1,12 +1,8 @@
 import { type ConnectionInfo, pubsub } from "@api/lib/pubsub";
-import {
-	generateConnectionId,
-	type RawSocket,
-	type WebSocketAuthSuccess,
-} from "@api/ws/socket";
+import type { RawSocket, WebSocketAuthSuccess } from "@api/ws/socket";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ServerWebSocket } from "bun";
-import { WEBSOCKET_ERRORS, WebSocketErrorCode } from "./websocket-errors";
+import { WEBSOCKET_ERRORS } from "./websocket-errors";
 
 export type AuthResult = WebSocketAuthSuccess;
 
@@ -16,17 +12,17 @@ type WSContext = {
 	raw?: RawSocket;
 };
 
-interface ConnectionError {
+type ConnectionError = {
 	error: string;
 	message: string;
-}
+};
 
 export async function handleAuthenticationFailure(
 	ws: WSContext,
-	connectionId: string,
+	connectionId: string
 ): Promise<void> {
 	console.error(
-		`[WebSocket] Authentication failed for connection: ${connectionId}`,
+		`[WebSocket] Authentication failed for connection: ${connectionId}`
 	);
 	const error = WEBSOCKET_ERRORS.authenticationFailed();
 	ws.send(JSON.stringify(error));
@@ -35,10 +31,10 @@ export async function handleAuthenticationFailure(
 
 export async function handleIdentificationFailure(
 	ws: WSContext,
-	connectionId: string,
+	connectionId: string
 ): Promise<void> {
 	console.error(
-		`[WebSocket] No user ID or visitor ID provided for connection: ${connectionId}`,
+		`[WebSocket] No user ID or visitor ID provided for connection: ${connectionId}`
 	);
 	const error = WEBSOCKET_ERRORS.identificationRequired();
 	ws.send(JSON.stringify(error));
@@ -47,7 +43,7 @@ export async function handleIdentificationFailure(
 
 export async function createConnectionInfo(
 	connectionId: string,
-	authResult: AuthResult,
+	authResult: AuthResult
 ): Promise<ConnectionInfo> {
 	return {
 		connectionId,
@@ -71,7 +67,7 @@ export function storeConnectionId(ws: WSContext, connectionId: string): void {
 export function sendConnectionEstablishedMessage(
 	ws: WSContext,
 	connectionId: string,
-	authResult: AuthResult,
+	authResult: AuthResult
 ): void {
 	ws.send(
 		JSON.stringify({
@@ -84,13 +80,13 @@ export function sendConnectionEstablishedMessage(
 				websiteId: authResult.websiteId,
 				timestamp: Date.now(),
 			},
-		}),
+		})
 	);
 }
 
 export function createConnectionEvent(
 	authResult: AuthResult,
-	connectionId: string,
+	connectionId: string
 ): RealtimeEvent {
 	if (authResult.userId) {
 		return {
@@ -121,7 +117,7 @@ export function createConnectionEvent(
 }
 
 export async function updatePresenceIfNeeded(
-	authResult: AuthResult,
+	authResult: AuthResult
 ): Promise<void> {
 	if (authResult.websiteId) {
 		const presenceId = authResult.userId || authResult.visitorId;

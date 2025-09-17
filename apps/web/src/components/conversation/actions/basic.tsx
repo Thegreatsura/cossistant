@@ -11,13 +11,13 @@ export function ConversationBasicActions({
 	return (
 		<div className={cn("flex items-center gap-2 pr-1", className)}>
 			<TooltipOnHover content="Mark as resolved" shortcuts={["R"]}>
-				<Button variant="ghost" size="icon-small">
-					<Icon name="check" filledOnHover />
+				<Button size="icon-small" variant="ghost">
+					<Icon filledOnHover name="check" />
 				</Button>
 			</TooltipOnHover>
 			<TooltipOnHover content="Mark as archived" shortcuts={["Delete"]}>
-				<Button variant="ghost" size="icon-small">
-					<Icon name="archive" filledOnHover />
+				<Button size="icon-small" variant="ghost">
+					<Icon filledOnHover name="archive" />
 				</Button>
 			</TooltipOnHover>
 		</div>

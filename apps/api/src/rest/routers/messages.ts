@@ -88,7 +88,7 @@ messagesRouter.openapi(
 	async (c) => {
 		const { db, organization, query } = await safelyExtractRequestQuery(
 			c,
-			getMessagesRequestSchema,
+			getMessagesRequestSchema
 		);
 
 		const result = await getMessages(db, {
@@ -99,7 +99,7 @@ messagesRouter.openapi(
 		});
 
 		return c.json(validateResponse(result, getMessagesResponseSchema));
-	},
+	}
 );
 
 messagesRouter.openapi(
@@ -195,8 +195,8 @@ messagesRouter.openapi(
 			return c.json(
 				validateResponse(
 					{ error: "Visitor ID is required" },
-					z.object({ error: z.string() }),
-				),
+					z.object({ error: z.string() })
+				)
 			);
 		}
 
@@ -219,7 +219,7 @@ messagesRouter.openapi(
 		});
 
 		return c.json(
-			validateResponse({ message: sentMessage }, sendMessageResponseSchema),
+			validateResponse({ message: sentMessage }, sendMessageResponseSchema)
 		);
-	},
+	}
 );

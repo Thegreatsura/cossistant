@@ -7,13 +7,17 @@ import {
 } from "../../primitive/message";
 import { cn } from "../utils";
 
-export interface MessageProps {
+export type MessageProps = {
 	message: MessageType;
 	isLast?: boolean;
 	isSentByViewer?: boolean;
-}
+};
 
-export function Message({ message, isLast = false, isSentByViewer }: MessageProps) {
+export function Message({
+	message,
+	isLast = false,
+	isSentByViewer,
+}: MessageProps) {
 	return (
 		<PrimitiveMessage message={message}>
 			{({ isVisitor, isAI, timestamp }) => {
@@ -25,13 +29,13 @@ export function Message({ message, isLast = false, isSentByViewer }: MessageProp
 						className={cn(
 							"flex w-full gap-2",
 							isSentByViewerFinal && "flex-row-reverse",
-							!isSentByViewerFinal && "flex-row",
+							!isSentByViewerFinal && "flex-row"
 						)}
 					>
 						<div
 							className={cn(
 								"flex w-full flex-1 flex-col gap-1",
-								isSentByViewerFinal && "items-end",
+								isSentByViewerFinal && "items-end"
 							)}
 						>
 							<MessageContent
@@ -44,7 +48,7 @@ export function Message({ message, isLast = false, isSentByViewer }: MessageProp
 										"bg-primary text-primary-foreground": isSentByViewerFinal,
 										"rounded-br-sm": isLast && isSentByViewerFinal,
 										"rounded-bl-sm": isLast && !isSentByViewerFinal,
-									},
+									}
 								)}
 								renderMarkdown
 							/>

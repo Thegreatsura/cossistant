@@ -30,7 +30,7 @@ export const PageHeader = ({
 		<div
 			className={cn(
 				"absolute inset-x-0 top-0 flex h-14 w-full items-center justify-between gap-4 px-5",
-				className,
+				className
 			)}
 		>
 			{defaultBackPath && (
@@ -57,7 +57,7 @@ export const Page = ({
 		<div
 			className={cn(
 				"scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-500 relative flex h-full flex-1 flex-col overflow-y-auto p-4 pt-14",
-				className,
+				className
 			)}
 		>
 			{children}
@@ -77,7 +77,7 @@ export const CentralContainer = ({
 			<section
 				className={cn(
 					"flex h-full max-h-full rounded border border-primary/8 bg-background dark:bg-background-100",
-					className,
+					className
 				)}
 			>
 				{children}

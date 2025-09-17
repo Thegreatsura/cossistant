@@ -3,15 +3,15 @@ import type { GetConversationResponse } from "@cossistant/types/api/conversation
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "../utils/query-keys";
 
-export interface UseConversationResult {
+export type UseConversationResult = {
 	conversation: GetConversationResponse["conversation"] | null;
 	isLoading: boolean;
 	error: Error | null;
-}
+};
 
 export function useConversation(
 	client: CossistantClient | null,
-	conversationId: string | null,
+	conversationId: string | null
 ): UseConversationResult {
 	const { data, isLoading, error } = useQuery({
 		queryKey: QUERY_KEYS.conversation(conversationId),

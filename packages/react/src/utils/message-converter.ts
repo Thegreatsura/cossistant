@@ -10,7 +10,7 @@ import type { DefaultMessage } from "../provider";
 export function defaultMessagesToCreateMessages(
 	defaultMessages: DefaultMessage[],
 	conversationId: string,
-	visitorId?: string,
+	visitorId?: string
 ): CreateMessageSchema[] {
 	return defaultMessages.map((msg) => ({
 		id: generateMessageId(),
@@ -32,7 +32,7 @@ export function defaultMessagesToCreateMessages(
 export function defaultMessagesToMessages(
 	defaultMessages: DefaultMessage[],
 	conversationId: string,
-	visitorId?: string,
+	visitorId?: string
 ): Message[] {
 	const now = new Date();
 

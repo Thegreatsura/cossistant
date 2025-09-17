@@ -5,13 +5,13 @@ import type {
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
-export interface MessageListRenderProps {
+export type MessageListRenderProps = {
 	messageCount: number;
 	eventCount: number;
 	isLoading?: boolean;
 	hasMore?: boolean;
 	isEmpty: boolean;
-}
+};
 
 export interface MessageListProps
 	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
@@ -44,7 +44,7 @@ export const MessageList = React.forwardRef<HTMLDivElement, MessageListProps>(
 			onScrollStart,
 			...props
 		},
-		ref,
+		ref
 	) => {
 		const internalRef = React.useRef<HTMLDivElement>(null);
 		const scrollRef =
@@ -88,7 +88,7 @@ export const MessageList = React.forwardRef<HTMLDivElement, MessageListProps>(
 					onScrollEnd();
 				}
 			},
-			[onScrollStart, onScrollEnd],
+			[onScrollStart, onScrollEnd]
 		);
 
 		return useRenderElement(
@@ -109,9 +109,9 @@ export const MessageList = React.forwardRef<HTMLDivElement, MessageListProps>(
 					...props,
 					children: content,
 				},
-			},
+			}
 		);
-	},
+	}
 );
 
 MessageList.displayName = "MessageList";
@@ -139,7 +139,7 @@ export const MessageListContainer = React.forwardRef<
 				...props,
 				children,
 			},
-		},
+		}
 	);
 });
 
@@ -170,7 +170,7 @@ export const MessageListLoading = React.forwardRef<
 				...props,
 				children,
 			},
-		},
+		}
 	);
 });
 
@@ -201,7 +201,7 @@ export const MessageListEmpty = React.forwardRef<
 				...props,
 				children,
 			},
-		},
+		}
 	);
 });
 

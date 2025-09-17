@@ -3,10 +3,15 @@
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc/client";
 
-interface UseConversationHeadersOptions {
+type UseConversationHeadersOptions = {
 	limit?: number;
 	enabled?: boolean;
-}
+};
+
+const DEFAULT_PAGE_LIMIT = 50;
+
+// 5 minutes
+const STALE_TIME = 300_000_000;
 
 export function useConversationMessages({
 	websiteSlug,
@@ -33,9 +38,9 @@ export function useConversationMessages({
 				trpc.conversation.getConversationMessages.queryOptions({
 					websiteSlug,
 					conversationId,
-					limit: options?.limit ?? 50,
+					limit: options?.limit ?? DEFAULT_PAGE_LIMIT,
 					cursor: pageParam ?? null,
-				}),
+				})
 			);
 
 			return response;
@@ -43,7 +48,7 @@ export function useConversationMessages({
 		getNextPageParam: (lastPage) => lastPage.nextCursor,
 		initialPageParam: null as Date | null,
 		enabled: options?.enabled ?? true,
-		staleTime: 5 * 60 * 1000,
+		staleTime: STALE_TIME,
 	});
 
 	const messages = query.data?.pages.flatMap((page) => page.items) ?? [];

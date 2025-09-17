@@ -49,11 +49,11 @@ export type ConnectionData = {
 export type RawSocket = ServerWebSocket & { connectionId?: string };
 
 export type LocalConnectionRecord = {
-        socket: RawSocket;
-        websiteId?: string;
-        organizationId?: string;
-        userId?: string;
-        visitorId?: string;
+	socket: RawSocket;
+	websiteId?: string;
+	organizationId?: string;
+	userId?: string;
+	visitorId?: string;
 };
 
 export const localConnections = new Map<string, LocalConnectionRecord>();
@@ -80,7 +80,7 @@ export const { websocket, upgradeWebSocket } =
  * Get all active connections for a website (from Redis)
  */
 export async function getWebsiteConnections(
-	websiteId: string,
+	websiteId: string
 ): Promise<ConnectionInfo[]> {
 	return await pubsub.getWebsiteConnections(websiteId);
 }
@@ -89,7 +89,7 @@ export async function getWebsiteConnections(
  * Check if a connection is local to this server
  */
 export async function isLocalConnection(
-	connectionId: string,
+	connectionId: string
 ): Promise<boolean> {
 	return await pubsub.isLocalConnection(connectionId);
 }
@@ -98,31 +98,31 @@ export async function isLocalConnection(
  * Broadcast event to all local connections for a website
  */
 export function broadcastToWebsite(websiteId: string, event: unknown): void {
-        for (const [, connection] of localConnections) {
-                if (connection.websiteId !== websiteId) {
-                        continue;
-                }
+	for (const [, connection] of localConnections) {
+		if (connection.websiteId !== websiteId) {
+			continue;
+		}
 
-                try {
-                        connection.socket.send(JSON.stringify(event));
-                } catch {
-                        // Ignore send errors
-                }
-        }
+		try {
+			connection.socket.send(JSON.stringify(event));
+		} catch {
+			// Ignore send errors
+		}
+	}
 }
 
 /**
  * Send event to a specific connection
  */
 function sendToConnection(connectionId: string, event: unknown): void {
-        const connection = localConnections.get(connectionId);
-        if (connection) {
-                try {
-                        connection.socket.send(JSON.stringify(event));
-                } catch {
-                        // Ignore send errors
-                }
-        }
+	const connection = localConnections.get(connectionId);
+	if (connection) {
+		try {
+			connection.socket.send(JSON.stringify(event));
+		} catch {
+			// Ignore send errors
+		}
+	}
 }
 
 /**
@@ -130,7 +130,7 @@ function sendToConnection(connectionId: string, event: unknown): void {
  */
 async function ensureSubscriptions(
 	connectionId: string,
-	websiteId?: string,
+	websiteId?: string
 ): Promise<void> {
 	// Create subscription key based on context
 	const subscriptionKey = websiteId
@@ -143,124 +143,122 @@ async function ensureSubscriptions(
 	}
 
 	// Subscribe to events and broadcast to local WebSocket connections
-        const subscription = await pubsub.subscribeToChannels(
-                {
-                        websiteId,
-                        connectionId: websiteId ? undefined : connectionId,
-                },
-                async (event) => {
-                        if (websiteId) {
-                                broadcastToWebsite(websiteId, event);
-                        } else {
-                                sendToConnection(connectionId, event);
-                        }
-                },
-        );
+	const subscription = await pubsub.subscribeToChannels(
+		{
+			websiteId,
+			connectionId: websiteId ? undefined : connectionId,
+		},
+		async (event) => {
+			if (websiteId) {
+				broadcastToWebsite(websiteId, event);
+			} else {
+				sendToConnection(connectionId, event);
+			}
+		}
+	);
 
 	activeSubscriptions.set(subscriptionKey, subscription);
 	console.log(`[WebSocket] Created subscription: ${subscriptionKey}`);
 }
 
 async function cleanupConnection(connectionId: string): Promise<void> {
-        // Remove from local connections
-        localConnections.delete(connectionId);
+	// Remove from local connections
+	localConnections.delete(connectionId);
 
-        // Unregister from Redis
-        await pubsub.unregisterConnection(connectionId);
+	// Unregister from Redis
+	await pubsub.unregisterConnection(connectionId);
 
 	// Clean up any connection-specific subscriptions
 	const connSubscription = activeSubscriptions.get(
-		`connection:${connectionId}`,
+		`connection:${connectionId}`
 	);
 	if (connSubscription) {
 		await connSubscription.unsubscribe();
 		activeSubscriptions.delete(`connection:${connectionId}`);
 	}
 
-        console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
+	console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
 }
 
-export async function handleConnectionClose(connectionId: string): Promise<void> {
-        try {
-                const localConnection = localConnections.get(connectionId);
-                let userId = localConnection?.userId;
-                let visitorId = localConnection?.visitorId;
-                let websiteId = localConnection?.websiteId;
-                let organizationId = localConnection?.organizationId;
+export async function handleConnectionClose(
+	connectionId: string
+): Promise<void> {
+	try {
+		const localConnection = localConnections.get(connectionId);
+		let userId = localConnection?.userId;
+		let visitorId = localConnection?.visitorId;
+		let websiteId = localConnection?.websiteId;
+		let organizationId = localConnection?.organizationId;
 
-                if (
-                        (!userId && !visitorId) ||
-                        !websiteId ||
-                        !organizationId
-                ) {
-                        const connectionInfo = await pubsub.getConnectionInfo(connectionId);
+		if (!((userId || visitorId) && websiteId && organizationId)) {
+			const connectionInfo = await pubsub.getConnectionInfo(connectionId);
 
-                        if (connectionInfo) {
-                                userId ??= connectionInfo.userId;
-                                visitorId ??= connectionInfo.visitorId;
-                                websiteId ??= connectionInfo.websiteId;
-                                organizationId ??= connectionInfo.organizationId;
-                        }
-                }
+			if (connectionInfo) {
+				userId ??= connectionInfo.userId;
+				visitorId ??= connectionInfo.visitorId;
+				websiteId ??= connectionInfo.websiteId;
+				organizationId ??= connectionInfo.organizationId;
+			}
+		}
 
-                const timestamp = Date.now();
-                const context: EventContext = {
-                        connectionId,
-                        userId,
-                        visitorId,
-                        websiteId,
-                        organizationId,
-                        ws: undefined,
-                };
+		const timestamp = Date.now();
+		const context: EventContext = {
+			connectionId,
+			userId,
+			visitorId,
+			websiteId,
+			organizationId,
+			ws: undefined,
+		};
 
-                if (userId) {
-                        const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
-                                type: "USER_DISCONNECTED",
-                                data: {
-                                        userId,
-                                        connectionId,
-                                        timestamp,
-                                },
-                                timestamp,
-                        };
+		if (userId) {
+			const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
+				type: "USER_DISCONNECTED",
+				data: {
+					userId,
+					connectionId,
+					timestamp,
+				},
+				timestamp,
+			};
 
-                        await routeEvent(disconnectEvent, context);
-                } else if (visitorId) {
-                        const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
-                                type: "VISITOR_DISCONNECTED",
-                                data: {
-                                        visitorId,
-                                        connectionId,
-                                        timestamp,
-                                },
-                                timestamp,
-                        };
+			await routeEvent(disconnectEvent, context);
+		} else if (visitorId) {
+			const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
+				type: "VISITOR_DISCONNECTED",
+				data: {
+					visitorId,
+					connectionId,
+					timestamp,
+				},
+				timestamp,
+			};
 
-                        await routeEvent(disconnectEvent, context);
-                } else {
-                        // TODO: replace console.* with logger
-                        console.error(
-                                `[WebSocket] Missing connection metadata for ${connectionId} on close`,
-                        );
-                }
+			await routeEvent(disconnectEvent, context);
+		} else {
+			// TODO: replace console.* with logger
+			console.error(
+				`[WebSocket] Missing connection metadata for ${connectionId} on close`
+			);
+		}
 
-                const presenceId = userId ?? visitorId;
-                if (presenceId) {
-                        await pubsub.updatePresence(presenceId, "offline", websiteId);
-                }
-        } finally {
-                await cleanupConnection(connectionId);
-        }
+		const presenceId = userId ?? visitorId;
+		if (presenceId) {
+			await pubsub.updatePresence(presenceId, "offline", websiteId);
+		}
+	} finally {
+		await cleanupConnection(connectionId);
+	}
 }
 
 /**
  * Extract authentication credentials from WebSocket context
  */
 function extractAuthCredentials(c: Context): {
-        privateKey: string | undefined;
-        publicKey: string | undefined;
-        actualOrigin: string | undefined;
-        visitorId: string | undefined;
+	privateKey: string | undefined;
+	publicKey: string | undefined;
+	actualOrigin: string | undefined;
+	visitorId: string | undefined;
 } {
 	// Try headers first (for non-browser clients)
 	const authHeader = c.req.header("Authorization");
@@ -311,28 +309,28 @@ function extractAuthCredentials(c: Context): {
 		});
 	}
 
-        return { privateKey, publicKey, actualOrigin, visitorId };
+	return { privateKey, publicKey, actualOrigin, visitorId };
 }
 
 function extractSessionToken(c: Context): string | undefined {
-        const queryCandidates = [
-                c.req.query("sessionToken"),
-                c.req.query("sessionId"),
-                c.req.query("session"),
-        ];
+	const queryCandidates = [
+		c.req.query("sessionToken"),
+		c.req.query("sessionId"),
+		c.req.query("session"),
+	];
 
-        for (const candidate of queryCandidates) {
-                const normalized = normalizeSessionToken(candidate);
-                if (normalized) {
-                        return normalized;
-                }
-        }
+	for (const candidate of queryCandidates) {
+		const normalized = normalizeSessionToken(candidate);
+		if (normalized) {
+			return normalized;
+		}
+	}
 
-        const headerToken = normalizeSessionToken(
-                c.req.header("x-user-session-token"),
-        );
+	const headerToken = normalizeSessionToken(
+		c.req.header("x-user-session-token")
+	);
 
-        return headerToken;
+	return headerToken;
 }
 
 /**
@@ -388,7 +386,7 @@ function extractFromRequest(c: Context): {
  */
 function extractProtocolAndHostname(
 	c: Context,
-	actualOrigin: string | undefined,
+	actualOrigin: string | undefined
 ): { protocol: string | undefined; hostname: string | undefined } {
 	if (actualOrigin) {
 		return parseOriginDetails(actualOrigin);
@@ -411,22 +409,28 @@ function extractProtocolAndHostname(
 /**
  * Log authentication attempt if logging is enabled
  */
-function logAuthAttempt(
-        hasPrivateKey: boolean,
-        hasPublicKey: boolean,
-        hasSessionToken: boolean,
-        actualOrigin: string | undefined,
-        url: string,
-): void {
-        if (AUTH_LOGS_ENABLED) {
-                console.log("[WebSocket Auth] Authentication attempt:", {
-                        hasPrivateKey,
-                        hasPublicKey,
-                        hasSessionToken,
-                        origin: actualOrigin,
-                        url,
-                });
-        }
+function logAuthAttempt({
+	hasPrivateKey,
+	hasPublicKey,
+	hasSessionToken,
+	actualOrigin,
+	url,
+}: {
+	hasPrivateKey: boolean;
+	hasPublicKey: boolean;
+	hasSessionToken: boolean;
+	actualOrigin: string | undefined;
+	url: string;
+}): void {
+	if (AUTH_LOGS_ENABLED) {
+		console.log("[WebSocket Auth] Authentication attempt:", {
+			hasPrivateKey,
+			hasPublicKey,
+			hasSessionToken,
+			origin: actualOrigin,
+			url,
+		});
+	}
 }
 
 /**
@@ -466,7 +470,7 @@ export type WebSocketAuthSuccess = {
 async function performApiKeyAuthentication(
 	privateKey: string | undefined,
 	publicKey: string | undefined,
-	options: AuthValidationOptions,
+	options: AuthValidationOptions
 ): Promise<WebSocketAuthSuccess | null> {
 	try {
 		const result = await authenticateWithApiKey(privateKey, publicKey, options);
@@ -490,21 +494,21 @@ async function performApiKeyAuthentication(
  * Accept either API keys (public/private) or a Better Auth session via cookies
  */
 async function authenticateWebSocketConnection(
-	c: Context,
+	c: Context
 ): Promise<WebSocketAuthSuccess | null> {
 	try {
 		// Extract credentials
-                const { privateKey, publicKey, actualOrigin, visitorId } =
-                        extractAuthCredentials(c);
-                const sessionToken = extractSessionToken(c);
+		const { privateKey, publicKey, actualOrigin, visitorId } =
+			extractAuthCredentials(c);
+		const sessionToken = extractSessionToken(c);
 
-                logAuthAttempt(
-                        !!privateKey,
-                        !!publicKey,
-                        !!sessionToken,
-                        actualOrigin,
-                        c.req.url,
-                );
+		logAuthAttempt({
+			hasPrivateKey: !!privateKey,
+			hasPublicKey: !!publicKey,
+			hasSessionToken: !!sessionToken,
+			actualOrigin,
+			url: c.req.url,
+		});
 
 		// Extract protocol and hostname
 		const { protocol, hostname } = extractProtocolAndHostname(c, actualOrigin);
@@ -523,15 +527,15 @@ async function authenticateWebSocketConnection(
 			result = await performApiKeyAuthentication(
 				privateKey,
 				publicKey,
-				options,
+				options
 			);
-                } else {
-                        result = await authenticateWithSession(c, sessionToken);
+		} else {
+			result = await authenticateWithSession(c, sessionToken);
 
-                        if (!result && AUTH_LOGS_ENABLED) {
-                                console.log("[WebSocket Auth] No valid authentication method provided");
-                        }
-                }
+			if (!result && AUTH_LOGS_ENABLED) {
+				console.log("[WebSocket Auth] No valid authentication method provided");
+			}
+		}
 
 		// Add visitorId to the result if authentication was successful
 		if (result) {
@@ -557,13 +561,13 @@ async function authenticateWebSocketConnection(
 async function authenticateWithApiKey(
 	privateKey: string | undefined,
 	publicKey: string | undefined,
-	options: AuthValidationOptions,
+	options: AuthValidationOptions
 ): Promise<WebSocketAuthSuccess> {
 	const result = await performAuthentication(
 		privateKey,
 		publicKey,
 		db,
-		options,
+		options
 	);
 
 	const authSuccess: WebSocketAuthSuccess = {
@@ -577,23 +581,23 @@ async function authenticateWithApiKey(
 }
 
 async function authenticateWithSession(
-        c: Context,
-        sessionToken: string | undefined,
+	c: Context,
+	sessionToken: string | undefined
 ): Promise<WebSocketAuthSuccess | null> {
-        const session = await resolveSession(db, {
-                headers: c.req.raw.headers,
-                sessionToken,
-        });
-        if (!session) {
-                if (AUTH_LOGS_ENABLED) {
-                        console.log(
-                                sessionToken
-                                        ? "[WebSocket Auth] Session token invalid or expired"
-                                        : "[WebSocket Auth] No API key or session provided",
-                        );
-                }
-                return null;
-        }
+	const session = await resolveSession(db, {
+		headers: c.req.raw.headers,
+		sessionToken,
+	});
+	if (!session) {
+		if (AUTH_LOGS_ENABLED) {
+			console.log(
+				sessionToken
+					? "[WebSocket Auth] Session token invalid or expired"
+					: "[WebSocket Auth] No API key or session provided"
+			);
+		}
+		return null;
+	}
 
 	const organizationId = session.session.activeOrganizationId ?? null;
 	const activeTeamId = session.session.activeTeamId ?? null;
@@ -610,7 +614,7 @@ async function authenticateWithSession(
 
 	if (!organizationId && AUTH_LOGS_ENABLED) {
 		console.log(
-			"[WebSocket Auth] Session found but no active organization; proceeding without website context",
+			"[WebSocket Auth] Session found but no active organization; proceeding without website context"
 		);
 	}
 
@@ -668,43 +672,43 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			// Register connection in Redis for horizontal scaling
 			const connectionInfo = await createConnectionInfo(
 				connectionId,
-				authResult,
+				authResult
 			);
 			await pubsub.registerConnection(connectionInfo);
 
 			// Track socket locally for this server instance
-                        localConnections.set(connectionId, {
-                                socket: ws.raw as RawSocket,
-                                websiteId: authResult.websiteId,
-                                organizationId: authResult.organizationId,
-                                userId: authResult.userId,
-                                visitorId: authResult.visitorId,
-                        });
+			localConnections.set(connectionId, {
+				socket: ws.raw as RawSocket,
+				websiteId: authResult.websiteId,
+				organizationId: authResult.organizationId,
+				userId: authResult.userId,
+				visitorId: authResult.visitorId,
+			});
 			storeConnectionId(ws, connectionId);
 
 			console.log(
-				`[WebSocket] Connection opened: ${connectionId} for organization: ${authResult.organizationId}`,
+				`[WebSocket] Connection opened: ${connectionId} for organization: ${authResult.organizationId}`
 			);
 
 			// Send successful connection message
 			sendConnectionEstablishedMessage(ws, connectionId, authResult);
 
 			// Emit USER_CONNECTED or VISITOR_CONNECTED event based on authentication type
-                        try {
-                                const event = createConnectionEvent(authResult, connectionId);
-                                const context: EventContext = {
-                                        connectionId,
-                                        userId: authResult.userId,
-                                        visitorId: authResult.visitorId,
-                                        websiteId: authResult.websiteId,
-                                        organizationId: authResult.organizationId,
-                                        ws: undefined,
-                                };
-                                await routeEvent(event, context);
-                        } catch (error) {
-                                console.error("[WebSocket] Error creating connection event:", error);
-                                // Continue with connection setup even if event creation fails
-                        }
+			try {
+				const event = createConnectionEvent(authResult, connectionId);
+				const context: EventContext = {
+					connectionId,
+					userId: authResult.userId,
+					visitorId: authResult.visitorId,
+					websiteId: authResult.websiteId,
+					organizationId: authResult.organizationId,
+					ws: undefined,
+				};
+				await routeEvent(event, context);
+			} catch (error) {
+				console.error("[WebSocket] Error creating connection event:", error);
+				// Continue with connection setup even if event creation fails
+			}
 
 			// Set up subscriptions for this connection
 			await ensureSubscriptions(connectionId, authResult.websiteId);
@@ -716,24 +720,24 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			await updateLastSeenTimestamps({ db, authResult });
 		},
 
-                async onMessage(evt, ws) {
-                        // Get connectionId from the WebSocket
-                        const connectionId = getConnectionIdFromSocket(ws);
-                        const connection = connectionId
-                                ? localConnections.get(connectionId)
-                                : undefined;
+		async onMessage(evt, ws) {
+			// Get connectionId from the WebSocket
+			const connectionId = getConnectionIdFromSocket(ws);
+			const connection = connectionId
+				? localConnections.get(connectionId)
+				: undefined;
 
-                        if (!(connectionId && connection)) {
-                                console.error("[WebSocket] No connection found");
-                                sendError(ws, {
-                                        error: "Connection not authenticated",
-                                        message: "Please reconnect with valid authentication.",
-                                });
-                                return;
-                        }
+			if (!(connectionId && connection)) {
+				console.error("[WebSocket] No connection found");
+				sendError(ws, {
+					error: "Connection not authenticated",
+					message: "Please reconnect with valid authentication.",
+				});
+				return;
+			}
 
-                        try {
-                                const message = JSON.parse(evt.data.toString());
+			try {
+				const message = JSON.parse(evt.data.toString());
 
 				if (!(message.type && isValidEventType(message.type))) {
 					console.error(`[WebSocket] Invalid event type: ${message.type}`);
@@ -747,90 +751,80 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 				// Validate event data
 				const validatedData = validateRealtimeEvent(message.type, message.data);
 
-                                const event: RealtimeEvent = {
-                                        type: message.type,
-                                        data: validatedData,
-                                        timestamp: Date.now(),
-                                };
+				const event: RealtimeEvent = {
+					type: message.type,
+					data: validatedData,
+					timestamp: Date.now(),
+				};
 
-                                // Gather connection metadata from local cache, falling back to Redis
-                                let { userId, visitorId, websiteId, organizationId } = connection;
+				// Gather connection metadata from local cache, falling back to Redis
+				let { userId, visitorId, websiteId, organizationId } = connection;
 
-                                if (
-                                        (!userId && !visitorId) ||
-                                        !websiteId ||
-                                        !organizationId
-                                ) {
-                                        const connectionInfo = await pubsub.getConnectionInfo(
-                                                connectionId,
-                                        );
+				if (!((userId || visitorId) && websiteId && organizationId)) {
+					const connectionInfo = await pubsub.getConnectionInfo(connectionId);
 
-                                        if (connectionInfo) {
-                                                userId ??= connectionInfo.userId;
-                                                visitorId ??= connectionInfo.visitorId;
-                                                websiteId ??= connectionInfo.websiteId;
-                                                organizationId ??= connectionInfo.organizationId;
+					if (connectionInfo) {
+						userId ??= connectionInfo.userId;
+						visitorId ??= connectionInfo.visitorId;
+						websiteId ??= connectionInfo.websiteId;
+						organizationId ??= connectionInfo.organizationId;
 
-                                                localConnections.set(connectionId, {
-                                                        ...connection,
-                                                        userId,
-                                                        visitorId,
-                                                        websiteId,
-                                                        organizationId,
-                                                });
-                                        }
-                                }
+						localConnections.set(connectionId, {
+							...connection,
+							userId,
+							visitorId,
+							websiteId,
+							organizationId,
+						});
+					}
+				}
 
-                                if (
-                                        (!userId && !visitorId) ||
-                                        !websiteId ||
-                                        !organizationId
-                                ) {
-                                        console.error(
-                                                `[WebSocket] Missing connection metadata for ${connectionId}`,
-                                        );
-                                        sendError(ws, {
-                                                error: "Connection context unavailable",
-                                                message:
-                                                        "Unable to determine connection context. Please reconnect.",
-                                        });
-                                        return;
-                                }
+				if (!((userId || visitorId) && websiteId && organizationId)) {
+					console.error(
+						`[WebSocket] Missing connection metadata for ${connectionId}`
+					);
+					sendError(ws, {
+						error: "Connection context unavailable",
+						message:
+							"Unable to determine connection context. Please reconnect.",
+					});
+					return;
+				}
 
-                                const context: EventContext = {
-                                        connectionId,
-                                        userId,
-                                        visitorId,
-                                        websiteId,
-                                        organizationId,
-                                        ws: undefined,
-                                };
+				const context: EventContext = {
+					connectionId,
+					userId,
+					visitorId,
+					websiteId,
+					organizationId,
+					ws: undefined,
+				};
 
-                                await routeEvent(event, context);
-                        } catch (error) {
-                                console.error("[WebSocket] Error processing message:", error);
-                                ws.send(
-                                        JSON.stringify({
-                                                error: "Invalid message format",
+				await routeEvent(event, context);
+			} catch (error) {
+				console.error("[WebSocket] Error processing message:", error);
+				ws.send(
+					JSON.stringify({
+						error: "Invalid message format",
 						details: error instanceof Error ? error.message : "Unknown error",
-					}),
+					})
 				);
 			}
 		},
 
-                async onClose(evt, ws) {
-                        // Get connectionId from the WebSocket
-                        const connectionId = ws.raw
-                                ? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
-                                : undefined;
+		async onClose(evt, ws) {
+			// Get connectionId from the WebSocket
+			const connectionId = ws.raw
+				? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
+				: undefined;
 
 			if (!connectionId) {
 				console.error("[WebSocket] No connection ID found on close");
 				return;
 			}
 
-                        await handleConnectionClose(connectionId);
-                },
+			await handleConnectionClose(connectionId);
+		},
 
 		onError(evt, ws) {
 			// Get connectionId from the WebSocket

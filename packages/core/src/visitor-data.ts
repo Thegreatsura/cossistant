@@ -3,7 +3,7 @@
  * Moved from packages/react for better separation of concerns
  */
 
-interface VisitorData {
+type VisitorData = {
 	browser: string | null;
 	browserVersion: string | null;
 	os: string | null;
@@ -14,7 +14,7 @@ interface VisitorData {
 	timezone: string;
 	screenResolution: string;
 	viewport: string;
-}
+};
 
 // Browser detection patterns
 const EDGE_PATTERN = /Edg\/([0-9.]+)/;
@@ -134,7 +134,7 @@ const LINUX_PATTERN_DEVICE = /Linux/;
  * Detect device type from user agent
  */
 function detectDeviceType(
-	userAgent: string,
+	userAgent: string
 ): "desktop" | "mobile" | "tablet" | "unknown" {
 	const isMobile = MOBILE_PATTERN.test(userAgent);
 	const isTablet = TABLET_PATTERN.test(userAgent);

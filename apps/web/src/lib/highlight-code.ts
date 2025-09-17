@@ -20,11 +20,11 @@ export const transformers = [
 					node.properties["__npm__"] = raw;
 					node.properties["__yarn__"] = raw.replace(
 						"npx create-",
-						"yarn create ",
+						"yarn create "
 					);
 					node.properties["__pnpm__"] = raw.replace(
 						"npx create-",
-						"pnpm create ",
+						"pnpm create "
 					);
 					node.properties["__bun__"] = raw.replace("npx", "bunx --bun");
 				}
@@ -34,11 +34,11 @@ export const transformers = [
 					node.properties["__npm__"] = raw;
 					node.properties["__yarn__"] = raw.replace(
 						"npm create",
-						"yarn create",
+						"yarn create"
 					);
 					node.properties["__pnpm__"] = raw.replace(
 						"npm create",
-						"pnpm create",
+						"pnpm create"
 					);
 					node.properties["__bun__"] = raw.replace("npm create", "bun create");
 				}

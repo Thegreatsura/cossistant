@@ -46,7 +46,7 @@ export const user = pgTable(
 		index("user_banned_idx").on(table.banned),
 		// Index for presence queries (last_seen_at)
 		index("user_last_seen_at_idx").on(table.lastSeenAt),
-	],
+	]
 );
 
 export const session = pgTable(
@@ -77,7 +77,7 @@ export const session = pgTable(
 		index("session_active_team_idx").on(table.activeTeamId),
 		// Index for expired sessions cleanup
 		index("session_expires_at_idx").on(table.expiresAt),
-	],
+	]
 );
 
 export const account = pgTable(
@@ -106,7 +106,7 @@ export const account = pgTable(
 		index("account_user_idx").on(table.userId),
 		// Index for token expiration
 		index("account_token_expires_idx").on(table.accessTokenExpiresAt),
-	],
+	]
 );
 
 export const verification = pgTable(
@@ -117,10 +117,10 @@ export const verification = pgTable(
 		value: text("value").notNull(),
 		expiresAt: timestamp("expires_at").notNull(),
 		createdAt: timestamp("created_at").$defaultFn(
-			() => /* @__PURE__ */ new Date(),
+			() => /* @__PURE__ */ new Date()
 		),
 		updatedAt: timestamp("updated_at").$defaultFn(
-			() => /* @__PURE__ */ new Date(),
+			() => /* @__PURE__ */ new Date()
 		),
 	},
 	(table) => [
@@ -128,7 +128,7 @@ export const verification = pgTable(
 		index("verification_identifier_idx").on(table.identifier),
 		// Index for expired verifications cleanup
 		index("verification_expires_at_idx").on(table.expiresAt),
-	],
+	]
 );
 
 export const organization = pgTable(
@@ -144,7 +144,7 @@ export const organization = pgTable(
 	(table) => [
 		// Index for slug lookups
 		index("organization_slug_idx").on(table.slug),
-	],
+	]
 );
 
 export const member = pgTable(
@@ -153,7 +153,7 @@ export const member = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		userId: ulidReference("user_id").references(() => user.id, {
 			onDelete: "cascade",
@@ -170,7 +170,7 @@ export const member = pgTable(
 		index("member_user_idx").on(table.userId),
 		// Index for role-based queries
 		index("member_role_idx").on(table.role),
-	],
+	]
 );
 
 export const team = pgTable(
@@ -180,7 +180,7 @@ export const team = pgTable(
 		name: text("name").notNull(),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date())
@@ -194,7 +194,7 @@ export const team = pgTable(
 		index("team_org_idx").on(table.organizationId),
 		// Index for team name lookup within org
 		index("team_org_name_idx").on(table.organizationId, table.name),
-	],
+	]
 );
 
 export const teamMember = pgTable(
@@ -219,7 +219,7 @@ export const teamMember = pgTable(
 		index("team_member_team_idx").on(table.teamId),
 		// Index for user's teams lookup
 		index("team_member_user_idx").on(table.userId),
-	],
+	]
 );
 
 export const invitation = pgTable(
@@ -228,7 +228,7 @@ export const invitation = pgTable(
 		id: ulidPrimaryKey("id"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
-			{ onDelete: "cascade" },
+			{ onDelete: "cascade" }
 		),
 		email: text("email").notNull(),
 		role: text("role"),
@@ -252,7 +252,7 @@ export const invitation = pgTable(
 		index("invitation_expires_at_idx").on(table.expiresAt),
 		// Index for team invitations
 		index("invitation_team_idx").on(table.teamId),
-	],
+	]
 );
 
 // Relations

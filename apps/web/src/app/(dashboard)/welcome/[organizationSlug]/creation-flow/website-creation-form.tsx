@@ -134,7 +134,7 @@ export default function WebsiteCreationForm({
 												const value = e.target.value;
 												const domainWithoutProtocol = value.replace(
 													PROTOCOL_REGEX,
-													"",
+													""
 												);
 
 												field.onChange(domainWithoutProtocol);

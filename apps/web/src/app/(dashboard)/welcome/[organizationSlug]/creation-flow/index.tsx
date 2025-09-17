@@ -22,7 +22,7 @@ export default function CreationFlowWrapper({
 			onSuccess: (data) => {
 				setWebsite(data);
 			},
-		}),
+		})
 	);
 
 	if (!website) {

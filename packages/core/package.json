@@ -1,43 +1,43 @@
 {
-	"name": "@cossistant/core",
-	"version": "0.0.0",
-	"private": true,
-	"author": "Cossistant Team",
-	"description": "Core library for connecting to Cossistant API and managing data fetching",
-	"keywords": [
-		"api",
-		"websocket",
-		"rest",
-		"core",
-		"typescript",
-		"support-ai"
-	],
-	"license": "MIT",
-	"exports": {
-		".": {
-			"import": "./src/index.ts",
-			"require": "./src/index.ts",
-			"types": "./src/index.ts"
-		}
-	},
-	"main": "./src/index.ts",
-	"module": "./src/index.ts",
-	"types": "./src/index.ts",
-	"sideEffects": false,
-	"scripts": {
-		"build": "tsup"
-	},
-	"files": [
-		"dist"
-	],
-	"devDependencies": {
-		"@cossistant/typescript-config": "workspace:*",
-		"@cossistant/types": "workspace:*",
-		"tsup": "^8.5.0"
-	},
-	"dependencies": {
-		"nanoid": "^5.1.5",
-		"ulid": "^3.0.1",
-		"zod": "^4.1.8"
-	}
+  "name": "@cossistant/core",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Cossistant Team",
+  "description": "Core library for connecting to Cossistant API and managing data fetching",
+  "keywords": [
+    "api",
+    "websocket",
+    "rest",
+    "core",
+    "typescript",
+    "support-ai"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*",
+    "@cossistant/types": "workspace:*",
+    "tsup": "^8.5.0"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.5",
+    "ulid": "^3.0.1",
+    "zod": "^4.1.8"
+  }
 }
