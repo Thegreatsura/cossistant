@@ -65,15 +65,15 @@ export async function resolveSession(
                 tokensToCheck.delete(currentToken);
         }
 
+        const now = new Date();
         for (const token of tokensToCheck) {
                 const [res] = await db
                         .select()
                         .from(session)
-                        .where(eq(session.token, token))
+                        .where(and(eq(session.token, token), gt(session.expiresAt, now)))
                         .innerJoin(user, eq(session.userId, user.id))
                         .limit(1)
-                        .$withCache({ tag: "session" });
-
+                        .$withCache({ tag: `session:${token}` });
                 if (res) {
                         userSession = {
                                 session: res.session,
