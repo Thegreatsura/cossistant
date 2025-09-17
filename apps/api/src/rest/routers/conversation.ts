@@ -140,9 +140,10 @@ conversationRouter.openapi(
 
 		let initialMessages: Message[] = [];
 
-                if (body.defaultMessages.length > 0) {
+                const defaults = body.defaultMessages ?? [];
+                if (defaults.length > 0) {
                         initialMessages = await Promise.all(
-                                body.defaultMessages.map((msg) =>
+                                defaults.map((msg) =>
                                         createMessage({
                                                 db,
                                                 organizationId: organization.id,
