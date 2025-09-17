@@ -1,4 +1,5 @@
-import { getMessages, sendMessages } from "@api/db/queries/message";
+import { getMessages } from "@api/db/queries/message";
+import { createMessage } from "@api/utils/message";
 import {
 	safelyExtractRequestData,
 	safelyExtractRequestQuery,
@@ -200,22 +201,20 @@ messagesRouter.openapi(
 			);
 		}
 
-		const [sentMessage] = await sendMessages(db, {
+		const sentMessage = await createMessage({
+			db,
 			organizationId: organization.id,
 			websiteId: website.id,
 			conversationId: body.conversationId,
-			messages: [
-				{
-					bodyMd: body.message.bodyMd,
-					type: "text",
-					userId: null,
-					aiAgentId: null,
-					visitorId,
-					conversationId: body.conversationId,
-					createdAt: new Date(),
-					visibility: "public",
-				},
-			],
+			message: {
+				bodyMd: body.message.bodyMd,
+				type: body.message.type ?? undefined,
+				userId: body.message.userId ?? null,
+				aiAgentId: body.message.aiAgentId ?? null,
+				visitorId,
+				visibility: body.message.visibility ?? undefined,
+				createdAt: body.message.createdAt,
+			},
 		});
 
 		return c.json(

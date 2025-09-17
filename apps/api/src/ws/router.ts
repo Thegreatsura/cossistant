@@ -1,4 +1,4 @@
-import { emitToDashboard } from "@api/lib/pubsub";
+import { emitToAll, emitToDashboard } from "@api/lib/pubsub";
 import type {
 	RealtimeEvent,
 	RealtimeEventData,
@@ -102,6 +102,23 @@ const eventHandlers: EventHandlers = {
 		if (ctx.websiteId) {
 			await emitToDashboard(ctx.websiteId, "USER_PRESENCE_UPDATE", data);
 		}
+	},
+
+	MESSAGE_CREATED: async (_ctx, data) => {
+		console.log(
+			`[MESSAGE_CREATED] Message ${data.message.id} created for conversation ${data.conversationId}`,
+			{
+				websiteId: data.websiteId,
+				organizationId: data.organizationId,
+			}
+		);
+
+		await emitToAll(
+			data.conversationId,
+			data.websiteId,
+			"MESSAGE_CREATED",
+			data
+		);
 	},
 };
 
