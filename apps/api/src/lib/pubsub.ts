@@ -403,11 +403,11 @@ export class PubSubService {
 		}
 	}
 
-	async unregisterConnection(connectionId: string): Promise<void> {
-		const key = `connection:${connectionId}`;
-		const data = await redis.get<string>(key);
+        async unregisterConnection(connectionId: string): Promise<void> {
+                const key = `connection:${connectionId}`;
+                const data = await redis.get<string>(key);
 
-		if (data) {
+                if (data) {
 			const info = JSON.parse(data) as ConnectionInfo;
 
 			// Remove from website's connection set
@@ -419,14 +419,24 @@ export class PubSubService {
 			await redis.del(key);
 
 			console.log(`[PubSub] Unregistered connection: ${connectionId}`);
-		}
-	}
+                }
+        }
 
-	/**
-	 * Get all connections for a website
-	 */
-	async getWebsiteConnections(websiteId: string): Promise<ConnectionInfo[]> {
-		const connectionIds = await redis.smembers<string[]>(
+        /**
+         * Retrieve connection info directly from Redis
+         */
+        async getConnectionInfo(connectionId: string): Promise<ConnectionInfo | null> {
+                const key = `connection:${connectionId}`;
+                const data = await redis.get<string>(key);
+
+                return data ? (JSON.parse(data) as ConnectionInfo) : null;
+        }
+
+        /**
+         * Get all connections for a website
+         */
+        async getWebsiteConnections(websiteId: string): Promise<ConnectionInfo[]> {
+                const connectionIds = await redis.smembers<string[]>(
 			`website:${websiteId}:connections`,
 		);
 		if (!connectionIds || connectionIds.length === 0) {

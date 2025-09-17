@@ -1,12 +1,20 @@
-import { describe, expect, it } from "bun:test";
-import { APIKeyType } from "@cossistant/types";
+import { describe, expect, it, mock } from "bun:test";
 
-import {
-	generateApiKey,
-	hashApiKey,
-	isValidPublicApiKeyFormat,
-	isValidSecretApiKeyFormat,
-} from "./index";
+const APIKeyType = {
+        PRIVATE: "PRIVATE",
+        PUBLIC: "PUBLIC",
+} as const;
+
+mock.module("@cossistant/types", () => ({
+        APIKeyType,
+}));
+
+const {
+        generateApiKey,
+        hashApiKey,
+        isValidPublicApiKeyFormat,
+        isValidSecretApiKeyFormat,
+} = await import("./index");
 
 const HEX_REGEX = /^[0-9a-f]+$/;
 
