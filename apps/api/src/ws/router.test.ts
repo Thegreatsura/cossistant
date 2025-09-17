@@ -44,4 +44,32 @@ describe("routeEvent", () => {
                         event.data,
                 );
         });
+
+        it("emits VISITOR_CONNECTED to the dashboard when a visitor joins", async () => {
+                const { routeEvent } = await routerModulePromise;
+
+                const event: RealtimeEvent<"VISITOR_CONNECTED"> = {
+                        type: "VISITOR_CONNECTED",
+                        data: {
+                                visitorId: "visitor-123",
+                                connectionId: "conn-456",
+                                timestamp: Date.now(),
+                        },
+                        timestamp: Date.now(),
+                };
+
+                await routeEvent(event, {
+                        connectionId: "conn-456",
+                        visitorId: "visitor-123",
+                        websiteId: "website-abc",
+                        organizationId: "org-xyz",
+                });
+
+                expect(emitToDashboard).toHaveBeenCalledTimes(1);
+                expect(emitToDashboard).toHaveBeenCalledWith(
+                        "website-abc",
+                        "VISITOR_CONNECTED",
+                        event.data,
+                );
+        });
 });
