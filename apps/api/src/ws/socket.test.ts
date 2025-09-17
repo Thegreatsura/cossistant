@@ -1,5 +1,68 @@
-import { beforeEach, describe, expect, it } from "bun:test";
-import type { RawSocket } from "./socket";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+mock.module("@api/db", () => ({ db: {} }));
+mock.module("@api/db/queries/api-keys", () => ({}));
+mock.module("@api/db/schema", () => ({ website: {} }));
+mock.module("@api/lib/auth", () => ({ auth: {} }));
+mock.module("drizzle-orm", () => ({
+        eq: () => ({}),
+}));
+mock.module("hono/bun", () => ({
+        createBunWebSocket: () => ({
+                websocket: {},
+                upgradeWebSocket: () => ({}),
+        }),
+}));
+mock.module("@api/lib/auth-validation", () => ({
+        AuthValidationError: class extends Error {
+                statusCode = 401;
+        },
+        performAuthentication: async () => {
+                throw new Error("not implemented");
+        },
+}));
+mock.module("@api/utils/websocket-connection", () => ({
+        createConnectionEvent: () => ({
+                type: "USER_CONNECTED",
+                data: { userId: "user", connectionId: "conn", timestamp: Date.now() },
+                timestamp: Date.now(),
+        }),
+        createConnectionInfo: async () => ({
+                connectionId: "conn",
+                serverId: "server",
+                connectedAt: Date.now(),
+                lastHeartbeat: Date.now(),
+        }),
+        getConnectionIdFromSocket: () => undefined,
+        handleAuthenticationFailure: async () => {},
+        handleIdentificationFailure: async () => {},
+        sendConnectionEstablishedMessage: () => {},
+        sendError: () => {},
+        storeConnectionId: () => {},
+        updatePresenceIfNeeded: async () => {},
+}));
+mock.module("@api/utils/websocket-updates", () => ({
+        updateLastSeenTimestamps: async () => {},
+}));
+mock.module("@api/lib/pubsub", () => ({
+        pubsub: {
+                registerConnection: async () => {},
+                unregisterConnection: async () => {},
+                subscribeToChannels: async () => ({ unsubscribe: async () => {} }),
+                updatePresence: async () => {},
+                getServerId: () => "server",
+                getWebsiteConnections: async () => [],
+                isLocalConnection: async () => true,
+                getConnectionInfo: async () => null,
+        },
+        emitToDashboard: async () => {},
+}));
+mock.module("@cossistant/types/realtime-events", () => ({
+        isValidEventType: () => true,
+        validateRealtimeEvent: (_type: string, data: unknown) => data,
+}));
+
+type TestRawSocket = { send: (message: string) => void };
 
 process.env.RESEND_API_KEY = "test_resend_api_key";
 
@@ -22,19 +85,19 @@ describe("broadcastToWebsite", () => {
                         send: (message: string) => {
                                 matchingMessages.push(message);
                         },
-                } as unknown as RawSocket;
+                } as unknown as TestRawSocket;
 
                 const otherSocket = {
                         send: (message: string) => {
                                 otherMessages.push(message);
                         },
-                } as unknown as RawSocket;
+                } as unknown as TestRawSocket;
 
                 const noWebsiteSocket = {
                         send: (message: string) => {
                                 unscopedMessages.push(message);
                         },
-                } as unknown as RawSocket;
+                } as unknown as TestRawSocket;
 
                 localConnections.set("conn-1", {
                         socket: matchingSocket,

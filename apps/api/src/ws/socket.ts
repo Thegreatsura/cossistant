@@ -605,8 +605,8 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			await updateLastSeenTimestamps({ db, authResult });
 		},
 
-		onMessage(evt, ws) {
-			// Get connectionId from the WebSocket
+                async onMessage(evt, ws) {
+                        // Get connectionId from the WebSocket
                         const connectionId = getConnectionIdFromSocket(ws);
                         const connection = connectionId
                                 ? localConnections.get(connectionId)
@@ -618,11 +618,11 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
                                         error: "Connection not authenticated",
                                         message: "Please reconnect with valid authentication.",
                                 });
-				return;
-			}
+                                return;
+                        }
 
-			try {
-				const message = JSON.parse(evt.data.toString());
+                        try {
+                                const message = JSON.parse(evt.data.toString());
 
 				if (!(message.type && isValidEventType(message.type))) {
 					console.error(`[WebSocket] Invalid event type: ${message.type}`);
@@ -636,28 +636,71 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 				// Validate event data
 				const validatedData = validateRealtimeEvent(message.type, message.data);
 
-				const event: RealtimeEvent = {
-					type: message.type,
-					data: validatedData,
-					timestamp: Date.now(),
-				};
+                                const event: RealtimeEvent = {
+                                        type: message.type,
+                                        data: validatedData,
+                                        timestamp: Date.now(),
+                                };
 
-				// We'll need to get connection info from Redis for context
-				// For now, create minimal context with connectionId
-				const context: EventContext = {
-					connectionId,
-					userId: undefined, // Would need to fetch from Redis
-					websiteId: undefined, // Would need to fetch from Redis
-					organizationId: undefined, // Would need to fetch from Redis
-					ws: undefined,
-				};
+                                // Gather connection metadata from local cache, falling back to Redis
+                                let { userId, visitorId, websiteId, organizationId } = connection;
 
-				routeEvent(event, context);
-			} catch (error) {
-				console.error("[WebSocket] Error processing message:", error);
-				ws.send(
-					JSON.stringify({
-						error: "Invalid message format",
+                                if (
+                                        (!userId && !visitorId) ||
+                                        !websiteId ||
+                                        !organizationId
+                                ) {
+                                        const connectionInfo = await pubsub.getConnectionInfo(
+                                                connectionId,
+                                        );
+
+                                        if (connectionInfo) {
+                                                userId ??= connectionInfo.userId;
+                                                visitorId ??= connectionInfo.visitorId;
+                                                websiteId ??= connectionInfo.websiteId;
+                                                organizationId ??= connectionInfo.organizationId;
+
+                                                localConnections.set(connectionId, {
+                                                        ...connection,
+                                                        userId,
+                                                        visitorId,
+                                                        websiteId,
+                                                        organizationId,
+                                                });
+                                        }
+                                }
+
+                                if (
+                                        (!userId && !visitorId) ||
+                                        !websiteId ||
+                                        !organizationId
+                                ) {
+                                        console.error(
+                                                `[WebSocket] Missing connection metadata for ${connectionId}`,
+                                        );
+                                        sendError(ws, {
+                                                error: "Connection context unavailable",
+                                                message:
+                                                        "Unable to determine connection context. Please reconnect.",
+                                        });
+                                        return;
+                                }
+
+                                const context: EventContext = {
+                                        connectionId,
+                                        userId,
+                                        visitorId,
+                                        websiteId,
+                                        organizationId,
+                                        ws: undefined,
+                                };
+
+                                await routeEvent(event, context);
+                        } catch (error) {
+                                console.error("[WebSocket] Error processing message:", error);
+                                ws.send(
+                                        JSON.stringify({
+                                                error: "Invalid message format",
 						details: error instanceof Error ? error.message : "Unknown error",
 					}),
 				);
