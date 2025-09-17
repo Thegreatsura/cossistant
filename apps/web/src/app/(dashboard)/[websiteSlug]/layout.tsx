@@ -3,6 +3,7 @@ import { CentralContainer } from "@/components/ui/layout";
 import { NavigationTopbar } from "@/components/ui/layout/navigation-topbar";
 import { InboxesProvider } from "@/contexts/inboxes";
 import { WebsiteProvider } from "@/contexts/website";
+import { DashboardWebSocketProvider } from "./providers/websocket";
 import {
   getQueryClient,
   HydrateClient,
@@ -66,12 +67,14 @@ export default async function Layout({ children, params }: LayoutProps) {
   return (
     <HydrateClient>
       <WebsiteProvider websiteSlug={websiteSlug}>
-        <InboxesProvider websiteSlug={websiteSlug}>
-          <div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
-            <NavigationTopbar />
-            <CentralContainer>{children}</CentralContainer>
-          </div>
-        </InboxesProvider>
+        <DashboardWebSocketProvider>
+          <InboxesProvider websiteSlug={websiteSlug}>
+            <div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
+              <NavigationTopbar />
+              <CentralContainer>{children}</CentralContainer>
+            </div>
+          </InboxesProvider>
+        </DashboardWebSocketProvider>
       </WebsiteProvider>
     </HydrateClient>
   );
