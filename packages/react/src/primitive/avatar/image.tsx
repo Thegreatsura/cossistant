@@ -2,9 +2,9 @@ import * as React from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 import { useAvatarContext } from "./avatar";
 
-interface ImageState {
+type ImageState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
-}
+};
 
 export interface AvatarImageProps
 	extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> {

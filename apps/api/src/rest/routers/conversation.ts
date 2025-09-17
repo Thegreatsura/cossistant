@@ -1,6 +1,6 @@
 import { getVisitor } from "@api/db/queries";
 import {
-	getConversationById,
+	getConversationByIdWithLastMessage,
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
@@ -411,7 +411,7 @@ conversationRouter.openapi(
 			conversationId: c.req.param("conversationId"),
 		});
 
-		const conversation = await getConversationById(db, {
+		const conversation = await getConversationByIdWithLastMessage(db, {
 			organizationId: organization.id,
 			websiteId: website.id,
 			conversationId: params.conversationId,

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ok */
 import type { RouterOutputs } from "@api/trpc/types";
 import {
 	MessageGroupAvatar,
@@ -50,7 +51,7 @@ export function MessageGroup({
 	);
 
 	// Extract who has read up to the last message
-	const lastMessageId = messages[messages.length - 1]?.id;
+	const _lastMessageId = messages.at(-1)?.id;
 	const readByIds: string[] = [];
 
 	if (lastReadMessageIds) {
@@ -145,7 +146,9 @@ export function MessageGroup({
 									messageId={message.id}
 								>
 									{({ lastReaderIds }) => {
-										if (lastReaderIds.length === 0) return null;
+										if (lastReaderIds.length === 0) {
+											return null;
+										}
 
 										// Filter out the current user and the sender
 										const otherReaders = lastReaderIds.filter(
@@ -156,7 +159,9 @@ export function MessageGroup({
 												id !== firstMessage?.aiAgentId
 										);
 
-										if (otherReaders.length === 0) return null;
+										if (otherReaders.length === 0) {
+											return null;
+										}
 
 										// Get names/avatars of people who stopped reading here
 										const readerInfo = otherReaders
@@ -183,7 +188,9 @@ export function MessageGroup({
 											})
 											.filter(Boolean);
 
-										if (readerInfo.length === 0) return null;
+										if (readerInfo.length === 0) {
+											return null;
+										}
 
 										return (
 											<div

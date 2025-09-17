@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ok */
 import type {
 	ConversationEvent,
 	Message as MessageType,
@@ -56,11 +57,11 @@ const getSenderIdAndType = (
 };
 
 // Helper function to build read receipt data
-interface ReadReceiptData {
+type ReadReceiptData = {
 	seenByMap: Map<string, Set<string>>; // messageId -> Set of userIds who have seen it
 	lastReadMessageMap: Map<string, string>; // userId -> last messageId they read
 	unreadCountMap: Map<string, number>; // userId -> number of unread messages
-}
+};
 
 const buildReadReceiptData = (
 	seenData: ConversationSeen[],
@@ -84,7 +85,9 @@ const buildReadReceiptData = (
 	for (const seen of seenData) {
 		const seenTime = seen.updatedAt?.getTime() || 0;
 		const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
-		if (!viewerId) continue;
+		if (!viewerId) {
+			continue;
+		}
 
 		let lastReadMessage: MessageType | null = null;
 		let unreadCount = 0;
@@ -207,7 +210,9 @@ export const useGroupedMessages = ({
 
 			// Helper to check if a message has been seen by current viewer
 			isMessageSeenByViewer: (messageId: string): boolean => {
-				if (!currentViewerId) return false;
+				if (!currentViewerId) {
+					return false;
+				}
 				const seenBy = seenByMap.get(messageId);
 				return seenBy ? seenBy.has(currentViewerId) : false;
 			},
@@ -236,7 +241,9 @@ export const useGroupedMessages = ({
 			// Check if there are unread messages after a specific message
 			hasUnreadAfter: (messageId: string, userId: string): boolean => {
 				const lastRead = lastReadMessageMap.get(userId);
-				if (!lastRead) return true; // All messages are unread
+				if (!lastRead) {
+					return true; // All messages are unread
+				}
 
 				// Find the indices
 				const messageIndex = messages.findIndex((m) => m.id === messageId);
@@ -245,5 +252,5 @@ export const useGroupedMessages = ({
 				return messageIndex < lastReadIndex;
 			},
 		};
-	}, [messages, events, seenData, currentViewerId, viewerType]);
+	}, [messages, events, seenData, currentViewerId]);
 };

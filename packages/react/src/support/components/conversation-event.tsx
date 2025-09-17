@@ -8,11 +8,11 @@ import type React from "react";
 import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
 
-export interface ConversationEventProps {
+export type ConversationEventProps = {
 	event: ConversationEventType;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
-}
+};
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	event,

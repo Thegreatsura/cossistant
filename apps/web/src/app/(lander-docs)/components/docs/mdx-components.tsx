@@ -82,6 +82,7 @@ export const mdxComponents = {
 		/>
 	),
 	a: ({ className, ...props }: React.ComponentProps<"a">) => (
+		// biome-ignore lint/nursery/useAnchorHref: <explanation>
 		<a
 			className={cn("font-medium underline underline-offset-4", className)}
 			{...props}
@@ -114,6 +115,7 @@ export const mdxComponents = {
 	img: ({ className, alt, ...props }: React.ComponentProps<"img">) => (
 		// eslint-disable-next-line @next/next/no-img-element
 		// biome-ignore lint/performance/noImgElement: ok here
+		// biome-ignore lint/nursery/useImageSize: ok
 		<img alt={alt} className={cn("rounded", className)} {...props} />
 	),
 	hr: ({ ...props }: React.ComponentProps<"hr">) => (

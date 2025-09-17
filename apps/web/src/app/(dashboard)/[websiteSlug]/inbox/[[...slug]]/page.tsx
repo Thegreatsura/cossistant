@@ -6,12 +6,12 @@ import { ConversationsList } from "@/components/conversations-list";
 import { useInboxes } from "@/contexts/inboxes";
 import { useUserSession } from "@/contexts/website";
 
-interface DashboardPageProps {
+type DashboardPageProps = {
 	params: Promise<{
 		websiteSlug: string;
 		slug: string[];
 	}>;
-}
+};
 
 export default function ConversationRouterPage({ params }: DashboardPageProps) {
 	const { websiteSlug } = use(params);

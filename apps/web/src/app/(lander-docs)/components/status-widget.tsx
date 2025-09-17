@@ -55,10 +55,10 @@ async function getStatus(slug: string): Promise<{ status: Status }> {
 	}
 }
 
-interface StatusWidgetProps {
+type StatusWidgetProps = {
 	slug: string;
 	href?: string;
-}
+};
 
 export async function StatusWidget({ slug, href }: StatusWidgetProps) {
 	const { status } = await getStatus(slug);

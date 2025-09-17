@@ -3,19 +3,19 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 
-interface FrameworkPickerProps {
+type FrameworkPickerProps = {
 	value: string;
 	onValueChange: (value: string) => void;
 	className?: string;
-}
+};
 
-interface FrameworkPickerItemProps {
+type FrameworkPickerItemProps = {
 	value: string;
 	icon: React.ComponentType<{ className?: string }>;
 	label: string;
 	disabled?: boolean;
 	showSoon?: boolean;
-}
+};
 
 export const NextJsIcon = ({ className }: { className?: string }) => (
 	<svg

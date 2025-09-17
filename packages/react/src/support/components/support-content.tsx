@@ -9,12 +9,12 @@ import { cn } from "../utils";
 import { Bubble } from "./bubble";
 import { Container } from "./container";
 
-interface SupportContentProps {
+type SupportContentProps = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
 	mode?: "floating" | "responsive";
-}
+};
 
 export const SupportContent: React.FC<SupportContentProps> = ({
 	className,

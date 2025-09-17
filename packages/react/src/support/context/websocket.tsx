@@ -13,7 +13,7 @@ import {
 } from "react";
 import useWebSocketLib, { ReadyState } from "react-use-websocket";
 
-export interface WebSocketContextValue {
+export type WebSocketContextValue = {
 	isConnected: boolean;
 	isConnecting: boolean;
 	error: Error | null;
@@ -22,9 +22,9 @@ export interface WebSocketContextValue {
 	lastMessage: RealtimeEvent | null;
 	visitorId: string | null;
 	websiteId: string | null;
-}
+};
 
-interface WebSocketProviderProps {
+type WebSocketProviderProps = {
 	children: React.ReactNode;
 	publicKey?: string;
 	websiteId?: string;
@@ -34,7 +34,7 @@ interface WebSocketProviderProps {
 	onConnect?: () => void;
 	onDisconnect?: () => void;
 	onError?: (error: Error) => void;
-}
+};
 
 const DEFAULT_WS_URL = "wss://api.cossistant.com/ws";
 

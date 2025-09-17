@@ -16,11 +16,11 @@ import {
 } from "../utils/message-cache";
 import { QUERY_KEYS } from "../utils/query-keys";
 
-interface UseMessagesParams {
+type UseMessagesParams = {
 	client: CossistantClient | null;
 	conversationId: string | null;
 	defaultMessages?: Message[];
-}
+};
 
 export function useMessages({
 	client,

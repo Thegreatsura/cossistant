@@ -32,6 +32,8 @@ export function UserDropdown() {
 				case "m":
 					setTheme(resolvedTheme === "dark" ? "light" : "dark");
 					break;
+				default:
+					break;
 			}
 		},
 		{

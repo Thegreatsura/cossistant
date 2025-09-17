@@ -11,12 +11,12 @@ import {
 } from "@/lib/trpc/server";
 import { DashboardWebSocketProvider } from "./providers/websocket";
 
-interface LayoutProps {
+type LayoutProps = {
 	children: React.ReactNode;
 	params: Promise<{
 		websiteSlug: string;
 	}>;
-}
+};
 
 export default async function Layout({ children, params }: LayoutProps) {
 	const { websiteSlug } = await params;

@@ -7,7 +7,7 @@ import { cn } from "../utils";
 import Icon from "./icons";
 import { Watermark } from "./watermark";
 
-export interface MultimodalInputProps {
+export type MultimodalInputProps = {
 	className?: string;
 	value: string;
 	onChange: (value: string) => void;
@@ -22,7 +22,7 @@ export interface MultimodalInputProps {
 	maxFiles?: number;
 	maxFileSize?: number;
 	allowedFileTypes?: string[];
-}
+};
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	className,
@@ -168,10 +168,10 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	);
 };
 
-export interface SendButtonProps {
+export type SendButtonProps = {
 	className?: string;
 	disabled?: boolean;
-}
+};
 
 export const SendButton: React.FC<SendButtonProps> = ({
 	className,

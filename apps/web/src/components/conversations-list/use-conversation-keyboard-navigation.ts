@@ -5,13 +5,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useConversationFocusStore } from "@/contexts/inboxes/conversation-focus-store";
 
-interface UseConversationKeyboardNavigationProps {
+type UseConversationKeyboardNavigationProps = {
 	conversations: Array<{ id: string }>;
 	basePath: string;
 	parentRef: React.RefObject<HTMLDivElement | null>;
 	itemHeight: number;
 	enabled?: boolean;
-}
+};
 
 export function useConversationKeyboardNavigation({
 	conversations,
@@ -50,7 +50,9 @@ export function useConversationKeyboardNavigation({
 
 	const scrollToItem = useCallback(
 		(index: number) => {
-			if (!parentRef.current) return;
+			if (!parentRef.current) {
+				return;
+			}
 
 			const container = parentRef.current;
 			const itemTop = index * itemHeight;
@@ -108,7 +110,9 @@ export function useConversationKeyboardNavigation({
 	useHotkeys(
 		["ArrowUp", "ArrowDown", "k", "j", "Enter"],
 		(event, handler) => {
-			if (!enabled) return;
+			if (!enabled) {
+				return;
+			}
 
 			event.preventDefault();
 			event.stopPropagation();
@@ -125,6 +129,8 @@ export function useConversationKeyboardNavigation({
 				case "enter":
 					navigateToConversation();
 					break;
+				default:
+					break;
 			}
 		},
 		{
@@ -137,8 +143,9 @@ export function useConversationKeyboardNavigation({
 
 	// Restore focus from store on mount if needed
 	useEffect(() => {
-		if (!enabled || conversations.length === 0 || hasInitializedRef.current)
+		if (!enabled || conversations.length === 0 || hasInitializedRef.current) {
 			return;
+		}
 
 		if (shouldRestoreFocus && focusedConversationId) {
 			const index = conversations.findIndex(
@@ -164,6 +171,7 @@ export function useConversationKeyboardNavigation({
 		shouldRestoreFocus,
 		scrollToItem,
 		markFocusRestored,
+		focusedIndex,
 	]);
 
 	useEffect(() => {

@@ -16,17 +16,20 @@
         "noEmptyBlockStatements": "off",
         "useAwait": "off",
         "noArrayIndexKey": "off",
-        "noUnknownAtRules": "off"
+        "noUnknownAtRules": "off",
+        "noBitwiseOperators": "off"
       },
       "correctness": {
         "noUnusedImports": "off",
         "noUndeclaredVariables": "off",
-        "noUnusedFunctionParameters": "off"
+        "noUnusedFunctionParameters": "off",
+        "noUnusedVariables": "off"
       },
       "performance": {
         "noNamespaceImport": "off",
         "noBarrelFile": "off"
       },
+
       "style": {
         "noNestedTernary": "off",
         "noMagicNumbers": "off",

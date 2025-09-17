@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import Icon, { type IconName } from "../../icons";
 
-interface SidebarItemProps {
+type SidebarItemProps = {
 	children: ReactNode;
 	iconName?: IconName;
 	actions?: ReactNode;
@@ -14,7 +14,7 @@ interface SidebarItemProps {
 	onClick?: () => void;
 	className?: string;
 	active?: boolean;
-}
+};
 
 export function SidebarItem({
 	children,

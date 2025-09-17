@@ -39,12 +39,12 @@ export type IconName =
 	| "send"
 	| "menu";
 
-export interface IconProps {
+export type IconProps = {
 	name: IconName;
 	variant?: IconVariant;
 	className?: string;
 	filledOnHover?: boolean;
-}
+};
 
 // Thanks to Anron Icons
 const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {

@@ -32,7 +32,7 @@ export function Support({
 	const { website } = useSupport();
 
 	if (!website) {
-		return <></>;
+		return null;
 	}
 
 	return (

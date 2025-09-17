@@ -1,4 +1,5 @@
 import {
+	getConversationById,
 	getConversationEvents,
 	listConversationsHeaders,
 } from "@api/db/queries/conversation";
@@ -104,10 +105,8 @@ export const conversationRouter = createTRPCRouter({
 					userId: user.id,
 					websiteSlug: input.websiteSlug,
 				}),
-				db.query.conversation.findFirst({
-					where: (conversation, { eq }) =>
-						eq(conversation.id, input.conversationId),
-					columns: { id: true, websiteId: true },
+				getConversationById(db, {
+					conversationId: input.conversationId,
 				}),
 			]);
 
@@ -163,10 +162,8 @@ export const conversationRouter = createTRPCRouter({
 					userId: user.id,
 					websiteSlug: input.websiteSlug,
 				}),
-				db.query.conversation.findFirst({
-					where: (conversation, { eq }) =>
-						eq(conversation.id, input.conversationId),
-					columns: { id: true, websiteId: true },
+				getConversationById(db, {
+					conversationId: input.conversationId,
 				}),
 			]);
 

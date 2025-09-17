@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import { cn } from "../utils";
 import { CossistantLogo } from "./cossistant-branding";
 
-export interface WatermarkProps {
+export type WatermarkProps = {
 	className?: string;
-}
+};
 
 export const Watermark: React.FC<WatermarkProps> = ({ className }) => {
 	const { website } = useSupport();

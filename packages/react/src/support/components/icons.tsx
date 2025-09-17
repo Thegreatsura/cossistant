@@ -20,12 +20,12 @@ export type IconName =
 	| "articles"
 	| "chat";
 
-export interface IconProps {
+export type IconProps = {
 	name: IconName;
 	variant?: IconVariant;
 	className?: string;
 	filledOnHover?: boolean;
-}
+};
 
 // Thanks to Aaon for the icons
 const iconRegistry: Record<IconName, Record<IconVariant, string>> = {

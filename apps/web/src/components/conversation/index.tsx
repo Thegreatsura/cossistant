@@ -56,7 +56,7 @@ export function Conversation({
 	const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
 
 	const onFetchMoreIfNeeded = async () => {
-		const promises = [];
+		const promises: Promise<unknown>[] = [];
 
 		if (hasNextPageMessages) {
 			promises.push(fetchNextPageMessages());
@@ -70,7 +70,7 @@ export function Conversation({
 	};
 
 	if (!visitor) {
-		return <></>;
+		return null;
 	}
 
 	return (

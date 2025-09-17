@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/nursery/useUniqueElementIds: we don't care here */
-
 import type { RouterOutputs } from "@api/trpc/types";
 import {
 	MessageListContainer,
@@ -8,7 +6,6 @@ import {
 import { useGroupedMessages } from "@cossistant/react/support/hooks";
 import type {
 	AvailableAIAgent,
-	AvailableHumanAgent,
 	ConversationEvent as ConversationEventType,
 	Message as MessageType,
 } from "@cossistant/types";

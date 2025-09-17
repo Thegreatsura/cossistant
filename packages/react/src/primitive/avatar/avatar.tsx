@@ -1,9 +1,9 @@
 import * as React from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 
-interface AvatarState {
+type AvatarState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
-}
+};
 
 export interface AvatarProps
 	extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {

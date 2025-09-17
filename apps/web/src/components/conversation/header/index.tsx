@@ -10,7 +10,7 @@ export function ConversationHeader() {
 	const { selectedConversationId } = useInboxes();
 
 	if (!selectedConversationId) {
-		return <></>;
+		return null;
 	}
 
 	return (

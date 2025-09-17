@@ -23,7 +23,7 @@ function RegisterReferral() {
 		}
 	}, [redeemReferralCode]);
 
-	return <></>;
+	return null;
 }
 
 export default RegisterReferral;

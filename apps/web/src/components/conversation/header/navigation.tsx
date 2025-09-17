@@ -33,6 +33,8 @@ export function ConversationHeaderNavigation() {
 						navigateToNextConversation();
 					}
 					break;
+				default:
+					break;
 			}
 		},
 		{

@@ -2,11 +2,11 @@ import type React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../primitive";
 import { CossistantLogo } from "./cossistant-branding";
 
-export interface TypingIndicatorProps {
+export type TypingIndicatorProps = {
 	senderName?: string;
 	senderImage?: string;
 	isAI: boolean;
-}
+};
 
 export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
 	senderName,

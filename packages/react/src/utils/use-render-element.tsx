@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: works well here */
+/** biome-ignore-all lint/nursery/noUnnecessaryConditions: ok */
 
 import type { JSX } from "react";
 import * as React from "react";
@@ -12,18 +13,18 @@ type RenderFn<Props, State> = (
 	state: State
 ) => React.ReactElement;
 
-interface RenderProps<State, Tag extends IntrinsicTag> {
+type RenderProps<State, Tag extends IntrinsicTag> = {
 	render?: React.ReactElement | RenderFn<JSX.IntrinsicElements[Tag], State>;
 	className?: ClassName<State>;
 	asChild?: boolean;
-}
+};
 
-interface RenderParams<State, Tag extends IntrinsicTag> {
+type RenderParams<State, Tag extends IntrinsicTag> = {
 	state?: State;
 	ref?: React.Ref<any>;
 	props?: Partial<JSX.IntrinsicElements[Tag]>;
 	enabled?: boolean;
-}
+};
 
 function Slot({
 	children,

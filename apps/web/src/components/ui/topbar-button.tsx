@@ -6,7 +6,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { cn } from "@/lib/utils";
 import { TooltipOnHover } from "./tooltip";
 
-interface TopbarButtonProps {
+type TopbarButtonProps = {
 	href: string;
 	children: React.ReactNode;
 	className?: string;
@@ -14,7 +14,7 @@ interface TopbarButtonProps {
 	tooltip?: string;
 	shortcuts?: string[];
 	withBrackets?: boolean;
-}
+};
 
 export function TopbarButton({
 	href,

@@ -12,7 +12,7 @@ import { useFilteredConversations } from "./use-filtered-conversations";
 export type ConversationHeader =
 	RouterOutputs["conversation"]["listConversationsHeaders"]["items"][number];
 
-interface InboxesContextValue {
+type InboxesContextValue = {
 	statusCounts: {
 		open: number;
 		resolved: number;
@@ -33,14 +33,14 @@ interface InboxesContextValue {
 	basePath: string;
 	selectedViewId: string | null;
 	isLoading: boolean;
-}
+};
 
 const InboxesContext = createContext<InboxesContextValue | null>(null);
 
-interface InboxesProviderProps {
+type InboxesProviderProps = {
 	children: React.ReactNode;
 	websiteSlug: string;
-}
+};
 
 export function InboxesProvider({
 	children,

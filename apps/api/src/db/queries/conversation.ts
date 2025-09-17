@@ -171,7 +171,7 @@ export async function listConversations(
 	};
 }
 
-export async function getConversationById(
+export async function getConversationByIdWithLastMessage(
 	db: Database,
 	params: {
 		organizationId: string;
@@ -435,6 +435,21 @@ export async function listConversationsHeaders(
 		items: conversationsWithDetails,
 		nextCursor,
 	};
+}
+
+export async function getConversationById(
+	db: Database,
+	params: {
+		conversationId: string;
+	}
+) {
+	const [_conversation] = await db
+		.select()
+		.from(conversation)
+		.where(eq(conversation.id, params.conversationId))
+		.limit(1);
+
+	return _conversation;
 }
 
 export async function getConversationEvents(

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/nursery/useImageSize:ok */
 "use client";
 
 import { ConversationEvent } from "@cossistant/react/support/components/conversation-event";
@@ -184,7 +185,7 @@ const availableHumanAgents: AvailableHumanAgent[] = [
 		id: "anthony",
 		name: "Anthony",
 		image: anthonyAvatar,
-		lastOnlineAt: new Date().toISOString(),
+		lastSeenAt: new Date(),
 	},
 ];
 

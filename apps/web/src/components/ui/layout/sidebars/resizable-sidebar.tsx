@@ -24,43 +24,41 @@ export const ResizableSidebar = ({
 	const { open, toggle } = useSidebar({ position });
 
 	return (
-		<>
-			<aside
-				className={cn(
-					"relative flex p-0 transition-all duration-200 ease-in-out",
-					className,
-					{
-						"ml-[0px] p-0": !open,
-						"border-r": position === "left",
-						"border-l": position === "right",
-						"border-transparent": !open,
-					}
-				)}
-				style={{
-					width: open ? DEFAULT_SIDEBAR_WIDTH : 0,
-				}}
-			>
-				{open && (
-					<>
-						{children}
-						<SidebarHandle
-							hotkeys={[position === "right" ? "bracketright" : "bracketleft"]}
-							isCollapsed={!open}
-							onToggle={toggle}
-							position={position === "right" ? "left" : "right"}
-						/>
-					</>
-				)}
-				{!open && (
+		<aside
+			className={cn(
+				"relative flex p-0 transition-all duration-200 ease-in-out",
+				className,
+				{
+					"ml-[0px] p-0": !open,
+					"border-r": position === "left",
+					"border-l": position === "right",
+					"border-transparent": !open,
+				}
+			)}
+			style={{
+				width: open ? DEFAULT_SIDEBAR_WIDTH : 0,
+			}}
+		>
+			{open && (
+				<>
+					{children}
 					<SidebarHandle
 						hotkeys={[position === "right" ? "bracketright" : "bracketleft"]}
 						isCollapsed={!open}
 						onToggle={toggle}
 						position={position === "right" ? "left" : "right"}
 					/>
-				)}
-			</aside>
-		</>
+				</>
+			)}
+			{!open && (
+				<SidebarHandle
+					hotkeys={[position === "right" ? "bracketright" : "bracketleft"]}
+					isCollapsed={!open}
+					onToggle={toggle}
+					position={position === "right" ? "left" : "right"}
+				/>
+			)}
+		</aside>
 	);
 };
 

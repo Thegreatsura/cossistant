@@ -41,6 +41,8 @@ interface AvatarFallbackProps
 	children?: string;
 }
 
+const REGEX_SPLIT_INITIALS = /\s+/;
+
 function AvatarFallback({
 	className,
 	value,
@@ -49,7 +51,7 @@ function AvatarFallback({
 }: AvatarFallbackProps) {
 	const getInitials = (str: string) => {
 		return str
-			.split(/\s+/)
+			.split(REGEX_SPLIT_INITIALS)
 			.map((word) => word.charAt(0))
 			.join("")
 			.toUpperCase()

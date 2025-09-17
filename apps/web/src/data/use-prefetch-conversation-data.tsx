@@ -3,12 +3,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc/client";
 
-interface PrefetchConversationDataOptions {
+type PrefetchConversationDataOptions = {
 	websiteSlug: string;
 	conversationId: string;
 	visitorId: string;
 	limit?: number;
-}
+};
 
 export function usePrefetchConversationData() {
 	const trpc = useTRPC();
@@ -20,7 +20,7 @@ export function usePrefetchConversationData() {
 		visitorId,
 		limit = 50,
 	}: PrefetchConversationDataOptions) => {
-		const prefetchPromises = [];
+		const prefetchPromises: Promise<void>[] = [];
 
 		// Prefetch conversation events
 		const eventsQueryOptions =

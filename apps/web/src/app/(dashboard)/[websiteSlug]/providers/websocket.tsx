@@ -18,7 +18,7 @@ import useWebSocketLib, { ReadyState } from "react-use-websocket";
 import { useUserSession, useWebsite } from "@/contexts/website";
 import { getWebSocketUrl } from "@/lib/url";
 
-interface DashboardWebSocketContextValue {
+type DashboardWebSocketContextValue = {
 	isConnected: boolean;
 	isConnecting: boolean;
 	error: Error | null;
@@ -27,12 +27,12 @@ interface DashboardWebSocketContextValue {
 	lastMessage: RealtimeEvent | null;
 	userId: string | null;
 	websiteId: string | null;
-}
+};
 
-interface DashboardWebSocketProviderProps {
+type DashboardWebSocketProviderProps = {
 	children: ReactNode;
 	autoConnect?: boolean;
-}
+};
 
 const DashboardWebSocketContext =
 	createContext<DashboardWebSocketContextValue | null>(null);
@@ -246,9 +246,9 @@ export function useDashboardWebSocket(): DashboardWebSocketContextValue {
 	return context;
 }
 
-interface UseDashboardRealtimeOptions {
+type UseDashboardRealtimeOptions = {
 	onEvent?: (event: RealtimeEvent) => void;
-}
+};
 
 export function useDashboardRealtime(
 	options: UseDashboardRealtimeOptions = {}

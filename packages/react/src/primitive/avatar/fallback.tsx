@@ -2,10 +2,10 @@ import * as React from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 import { useAvatarContext } from "./avatar";
 
-interface FallbackState {
+type FallbackState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
 	initials?: string;
-}
+};
 
 export interface AvatarFallbackProps
 	extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {

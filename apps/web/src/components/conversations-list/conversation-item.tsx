@@ -9,13 +9,13 @@ import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 
-interface ConversationItemProps {
+type ConversationItemProps = {
 	href: string;
 	header: ConversationHeader;
 	websiteSlug: string;
 	focused?: boolean;
 	setFocused?: () => void;
-}
+};
 
 export function ConversationItem({
 	href,
@@ -68,9 +68,7 @@ export function ConversationItem({
 					<span className="shrink-0 pr-2 text-primary/40 text-xs">
 						{formatTimeAgo(lastMessagePreview.createdAt)}
 					</span>
-				) : (
-					<></>
-				)}
+				) : null}
 			</div>
 		</Link>
 	);

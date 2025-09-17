@@ -14,7 +14,7 @@ import { formatTimeAgo } from "../utils/time";
 import { Avatar } from "./avatar";
 import Icon from "./icons";
 
-export interface ConversationButtonLinkProps {
+export type ConversationButtonLinkProps = {
 	conversation: Conversation;
 	onClick?: () => void;
 	className?: string | ((state: ConversationButtonLinkState) => string);
@@ -22,9 +22,9 @@ export interface ConversationButtonLinkProps {
 		props: React.HTMLProps<HTMLButtonElement>,
 		state: ConversationButtonLinkState
 	) => React.ReactElement;
-}
+};
 
-export interface ConversationButtonLinkState {
+export type ConversationButtonLinkState = {
 	conversation: Conversation;
 	lastMessage: {
 		content: string;
@@ -33,7 +33,7 @@ export interface ConversationButtonLinkState {
 		senderName?: string;
 		senderImage?: string | null;
 	} | null;
-}
+};
 
 function getLastMessageInfo(
 	message: NonNullable<Conversation["lastMessage"]>,

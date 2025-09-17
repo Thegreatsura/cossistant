@@ -9,7 +9,7 @@ import { createContext, useContext } from "react";
 import { authClient, type Session } from "@/lib/auth/client";
 import { useTRPC } from "@/lib/trpc/client";
 
-interface WebsiteContextValue {
+type WebsiteContextValue = {
 	session: Session["session"];
 	user: Session["user"];
 	website: RouterOutputs["website"]["getBySlug"];
@@ -17,14 +17,14 @@ interface WebsiteContextValue {
 	isLoading: boolean;
 	views: RouterOutputs["view"]["list"];
 	error: TRPCClientErrorBase<DefaultErrorShape> | null;
-}
+};
 
 const WebsiteContext = createContext<WebsiteContextValue | null>(null);
 
-interface WebsiteProviderProps {
+type WebsiteProviderProps = {
 	children: React.ReactNode;
 	websiteSlug: string;
-}
+};
 
 export function WebsiteProvider({
 	children,
@@ -66,7 +66,7 @@ export function WebsiteProvider({
 
 	// If no session data, we should redirect to the login page? Should be handle server side, so we should be ok here
 	if (!sessionData) {
-		return <></>;
+		return null;
 	}
 
 	return (
