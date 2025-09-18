@@ -1,21 +1,42 @@
 "use client";
 
 import type { RealtimeEvent } from "@cossistant/types";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWebsite } from "@/contexts/website";
+import { createRealtimeEventDispatcher } from "./events";
 import { useDashboardRealtime } from "./websocket";
 
 export function DashboardRealtimeProvider({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
-    console.log("[Dashboard Realtime] Event received", event);
-  }, []);
+	const queryClient = useQueryClient();
+	const website = useWebsite();
 
-  const { isConnected: isRealtimeConnected } = useDashboardRealtime({
-    onEvent: handleRealtimeEvent,
-  });
+	const dispatchEvent = useMemo(
+		() =>
+			createRealtimeEventDispatcher({
+				queryClient,
+				website: {
+					id: website.id,
+					slug: website.slug,
+				},
+			}),
+		[queryClient, website.id, website.slug]
+	);
 
-  return children;
+	const handleRealtimeEvent = useCallback(
+		(event: RealtimeEvent) => {
+			dispatchEvent(event);
+		},
+		[dispatchEvent]
+	);
+
+	useDashboardRealtime({
+		onEvent: handleRealtimeEvent,
+	});
+
+	return children;
 }
