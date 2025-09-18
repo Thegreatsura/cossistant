@@ -1,6 +1,6 @@
+export { createRealtimeEventDispatcher, handlers } from "./registry";
 export type {
 	RealtimeEventHandler,
 	RealtimeEventHandlerContext,
 	RealtimeEventHandlerParams,
 } from "./types";
-export { createRealtimeEventDispatcher } from "./registry";

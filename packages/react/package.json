@@ -49,6 +49,7 @@
     "./hooks": "./src/hooks/index.ts",
     "./hooks/*": "./src/hooks/*.ts",
     "./support.css": "./src/support/support.css",
+    "./realtime": "./src/realtime/index.ts",
     "./utils": "./src/utils/index.ts",
     "./utils/*": "./src/utils/*.ts"
   },

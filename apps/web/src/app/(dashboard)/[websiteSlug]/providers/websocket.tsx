@@ -271,6 +271,7 @@ export function useDashboardRealtime(
 		isConnecting: context.isConnecting,
 		error: context.error,
 		send: context.send,
+		subscribe: context.subscribe,
 		lastMessage: context.lastMessage,
 	};
 }

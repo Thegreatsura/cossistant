@@ -1,10 +1,11 @@
 "use client";
 
-import type { RealtimeEvent } from "@cossistant/types";
-import { useCallback, useMemo } from "react";
+import { useRealtimeEvents } from "@cossistant/next";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import { useWebsite } from "@/contexts/website";
-import { createRealtimeEventDispatcher } from "./events";
+import { handlers } from "./events";
+import type { DashboardRealtimeContext } from "./events/types";
 import { useDashboardRealtime } from "./websocket";
 
 export function DashboardRealtimeProvider({
@@ -14,28 +15,35 @@ export function DashboardRealtimeProvider({
 }) {
 	const queryClient = useQueryClient();
 	const website = useWebsite();
+	const { subscribe } = useDashboardRealtime();
 
-	const dispatchEvent = useMemo(
-		() =>
-			createRealtimeEventDispatcher({
-				queryClient,
-				website: {
-					id: website.id,
-					slug: website.slug,
-				},
-			}),
-		[queryClient, website.id, website.slug]
+	const dashboardContext = useMemo<DashboardRealtimeContext>(
+		() => ({
+			website: {
+				id: website.id,
+				slug: website.slug,
+			},
+		}),
+		[website.id, website.slug]
 	);
 
-	const handleRealtimeEvent = useCallback(
-		(event: RealtimeEvent) => {
-			dispatchEvent(event);
-		},
-		[dispatchEvent]
+	const subscription = useCallback(
+		(handler: Parameters<typeof subscribe>[0]) => subscribe(handler),
+		[subscribe]
 	);
 
-	useDashboardRealtime({
-		onEvent: handleRealtimeEvent,
+	const realtimeContext = useMemo(
+		() => ({
+			queryClient,
+			...dashboardContext,
+		}),
+		[queryClient, dashboardContext]
+	);
+
+	useRealtimeEvents<DashboardRealtimeContext>({
+		context: realtimeContext,
+		handlers,
+		subscribe: subscription,
 	});
 
 	return children;

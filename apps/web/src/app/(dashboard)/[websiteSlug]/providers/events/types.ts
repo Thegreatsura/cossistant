@@ -1,28 +1,28 @@
 import type {
-	RealtimeEvent,
-	RealtimeEventType,
-} from "@cossistant/types/realtime-events";
-import type { QueryClient } from "@tanstack/react-query";
+	RealtimeEventHandler as BaseRealtimeEventHandler,
+	RealtimeEventHandlerContext as BaseRealtimeEventHandlerContext,
+	RealtimeEventHandlerParams as BaseRealtimeEventHandlerParams,
+	RealtimeEventHandlersMap as BaseRealtimeEventHandlersMap,
+} from "@cossistant/next/realtime";
+import type { RealtimeEventType } from "@cossistant/types/realtime-events";
 
 type WebsiteContext = {
 	id: string;
 	slug: string;
 };
 
-export type RealtimeEventHandlerContext = {
-	queryClient: QueryClient;
+export type DashboardRealtimeContext = {
 	website: WebsiteContext;
 };
 
-export type RealtimeEventHandlerParams<T extends RealtimeEventType> = {
-	event: RealtimeEvent<T>;
-	context: RealtimeEventHandlerContext;
-};
+export type RealtimeEventHandlerContext =
+	BaseRealtimeEventHandlerContext<DashboardRealtimeContext>;
 
-export type RealtimeEventHandler<T extends RealtimeEventType> = (
-	params: RealtimeEventHandlerParams<T>
-) => void | Promise<void>;
+export type RealtimeEventHandlerParams<T extends RealtimeEventType> =
+	BaseRealtimeEventHandlerParams<T, DashboardRealtimeContext>;
 
-export type RealtimeEventHandlersMap = {
-	[T in RealtimeEventType]?: RealtimeEventHandler<T>[];
-};
+export type RealtimeEventHandler<T extends RealtimeEventType> =
+	BaseRealtimeEventHandler<T, DashboardRealtimeContext>;
+
+export type RealtimeEventHandlersMap =
+	BaseRealtimeEventHandlersMap<DashboardRealtimeContext>;
