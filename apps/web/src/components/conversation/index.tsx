@@ -16,142 +16,105 @@ import { MessagesList } from "./messages/list";
 import { MultimodalInput } from "./multimodal-input";
 
 type ConversationProps = {
-	conversationId: string;
-	visitorId: string;
-	websiteSlug: string;
-	currentUserId: string;
+  conversationId: string;
+  visitorId: string;
+  websiteSlug: string;
+  currentUserId: string;
 };
 
 const isMessageCreatedEvent = (
-	event: RealtimeEvent
+  event: RealtimeEvent
 ): event is RealtimeEvent<"MESSAGE_CREATED"> => {
-	return event.type === "MESSAGE_CREATED";
+  return event.type === "MESSAGE_CREATED";
 };
 
 export function Conversation({
-	conversationId,
-	visitorId,
-	currentUserId,
-	websiteSlug,
+  conversationId,
+  visitorId,
+  currentUserId,
+  websiteSlug,
 }: ConversationProps) {
-	const handleRealtimeEvent = React.useCallback(
-		(event: RealtimeEvent) => {
-			if (!isMessageCreatedEvent(event)) {
-				return;
-			}
+  const {
+    message,
+    files,
+    isSubmitting,
+    error,
+    setMessage,
+    addFiles,
+    removeFile,
+    clearFiles,
+    submit,
+    reset,
+    isValid,
+    canSubmit,
+  } = useMultimodalInput();
 
-			if (event.data.conversationId !== conversationId) {
-				return;
-			}
+  const members = useWebsiteMembers();
 
-			console.log("[Dashboard] Realtime message received", {
-				conversationId,
-				messageId: event.data.message.id,
-				sender:
-					event.data.message.userId === currentUserId
-						? "self"
-						: event.data.message.visitorId === visitorId
-							? "visitor"
-							: "teammate",
-			});
-		},
-		[conversationId, currentUserId, visitorId]
-	);
+  const {
+    messages,
+    fetchNextPage: fetchNextPageMessages,
+    hasNextPage: hasNextPageMessages,
+  } = useConversationMessages({ conversationId, websiteSlug });
 
-	const { isConnected: isRealtimeConnected } = useDashboardRealtime({
-		onEvent: handleRealtimeEvent,
-	});
+  const {
+    events,
+    fetchNextPage: fetchNextPageEvents,
+    hasNextPage: hasNextPageEvents,
+  } = useConversationEvents({ conversationId, websiteSlug });
 
-	React.useEffect(() => {
-		if (isRealtimeConnected) {
-			console.log("[Dashboard] WebSocket connected", {
-				conversationId,
-				websiteSlug,
-			});
-		}
-	}, [conversationId, isRealtimeConnected, websiteSlug]);
+  const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
 
-	const {
-		message,
-		files,
-		isSubmitting,
-		error,
-		setMessage,
-		addFiles,
-		removeFile,
-		clearFiles,
-		submit,
-		reset,
-		isValid,
-		canSubmit,
-	} = useMultimodalInput();
+  const onFetchMoreIfNeeded = async () => {
+    const promises: Promise<unknown>[] = [];
 
-	const members = useWebsiteMembers();
+    if (hasNextPageMessages) {
+      promises.push(fetchNextPageMessages());
+    }
 
-	const {
-		messages,
-		fetchNextPage: fetchNextPageMessages,
-		hasNextPage: hasNextPageMessages,
-	} = useConversationMessages({ conversationId, websiteSlug });
+    if (hasNextPageEvents) {
+      promises.push(fetchNextPageEvents());
+    }
 
-	const {
-		events,
-		fetchNextPage: fetchNextPageEvents,
-		hasNextPage: hasNextPageEvents,
-	} = useConversationEvents({ conversationId, websiteSlug });
+    await Promise.all(promises);
+  };
 
-	const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
+  if (!visitor) {
+    return null;
+  }
 
-	const onFetchMoreIfNeeded = async () => {
-		const promises: Promise<unknown>[] = [];
-
-		if (hasNextPageMessages) {
-			promises.push(fetchNextPageMessages());
-		}
-
-		if (hasNextPageEvents) {
-			promises.push(fetchNextPageEvents());
-		}
-
-		await Promise.all(promises);
-	};
-
-	if (!visitor) {
-		return null;
-	}
-
-	return (
-		<>
-			<Page className="relative px-[1px] py-0">
-				<div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-14 bg-gradient-to-b from-co-background/50 to-transparent dark:from-co-background-100/80" />
-				<ConversationHeader />
-				<MessagesList
-					availableAIAgents={[]}
-					currentUserId={currentUserId}
-					events={events}
-					messages={messages}
-					onFetchMoreIfNeeded={onFetchMoreIfNeeded}
-					teamMembers={members}
-					visitor={visitor}
-				/>
-				<MultimodalInput
-					allowedFileTypes={["image/*", "application/pdf", "text/*"]}
-					error={error}
-					files={files}
-					isSubmitting={isSubmitting}
-					maxFileSize={10 * 1024 * 1024}
-					maxFiles={2}
-					onChange={setMessage}
-					onFileSelect={addFiles}
-					onRemoveFile={removeFile}
-					onSubmit={submit}
-					placeholder="Type your message..."
-					value={message}
-				/>
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-30 bg-gradient-to-t from-co-background to-transparent dark:from-co-background-100/90" />
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-co-background/50 via-co-background to-transparent dark:from-co-background-100/90 dark:via-co-background-100" />
-			</Page>
-			<VisitorSidebar isLoading={isLoading} visitor={visitor} />
-		</>
-	);
+  return (
+    <>
+      <Page className="relative px-[1px] py-0">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-14 bg-gradient-to-b from-co-background/50 to-transparent dark:from-co-background-100/80" />
+        <ConversationHeader />
+        <MessagesList
+          availableAIAgents={[]}
+          currentUserId={currentUserId}
+          events={events}
+          messages={messages}
+          onFetchMoreIfNeeded={onFetchMoreIfNeeded}
+          teamMembers={members}
+          visitor={visitor}
+        />
+        <MultimodalInput
+          allowedFileTypes={["image/*", "application/pdf", "text/*"]}
+          error={error}
+          files={files}
+          isSubmitting={isSubmitting}
+          maxFileSize={10 * 1024 * 1024}
+          maxFiles={2}
+          onChange={setMessage}
+          onFileSelect={addFiles}
+          onRemoveFile={removeFile}
+          onSubmit={submit}
+          placeholder="Type your message..."
+          value={message}
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-30 bg-gradient-to-t from-co-background to-transparent dark:from-co-background-100/90" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-co-background/50 via-co-background to-transparent dark:from-co-background-100/90 dark:via-co-background-100" />
+      </Page>
+      <VisitorSidebar isLoading={isLoading} visitor={visitor} />
+    </>
+  );
 }
