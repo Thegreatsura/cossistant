@@ -58,6 +58,8 @@ function createMessage(
 		createdAt: now,
 		updatedAt: now,
 		deletedAt: null,
+		parentMessageId: null,
+		modelUsed: null,
 		visibility: MessageVisibility.PUBLIC,
 	};
 }

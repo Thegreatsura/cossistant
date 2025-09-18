@@ -4,7 +4,7 @@ import {
 	MessageContent,
 	MessageTimestamp,
 	Message as PrimitiveMessage,
-} from "../../primitive/message";
+} from "../../primitives/message";
 import { cn } from "../utils";
 
 export type MessageProps = {

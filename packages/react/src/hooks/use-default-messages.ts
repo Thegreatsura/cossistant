@@ -42,6 +42,8 @@ export function useDefaultMessages({
 							? message.senderId || null
 							: null,
 					visibility: MessageVisibility.PUBLIC,
+					parentMessageId: null,
+					modelUsed: null,
 				};
 			}),
 		[

@@ -1,5 +1,3 @@
-"use client";
-
 import "./support.css";
 
 import type React from "react";
@@ -55,10 +53,10 @@ export function Support({
 
 export default Support;
 
+export { useVisitor } from "../hooks/use-visitor";
 export { useSupportConfig } from "./context/config";
 export type { WebSocketContextValue } from "./context/websocket";
 export { useWebSocket, WebSocketProvider } from "./context/websocket";
-export { useVisitor } from "./hooks/use-visitor";
 
 // Export the store for direct access if needed
 export { useSupportStore } from "./store";

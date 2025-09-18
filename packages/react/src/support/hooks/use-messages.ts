@@ -118,6 +118,8 @@ export function useSendMessage(
 				updatedAt: new Date(),
 				deletedAt: null,
 				conversationId: conversationId || "",
+				parentMessageId: null,
+				modelUsed: null,
 			};
 
 			// Add the optimistic message to the cache

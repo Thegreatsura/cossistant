@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
-import * as Primitive from "../../primitive";
+import * as Primitive from "../../primitives";
 import { cn } from "../utils";
 import Icon from "./icons";
 

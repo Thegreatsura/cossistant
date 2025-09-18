@@ -5,7 +5,7 @@ export type {
 } from "./hooks/use-realtime-support";
 export { useRealtimeSupport } from "./hooks/use-realtime-support";
 export { useClient } from "./hooks/use-rest-client";
-export * as Primitives from "./primitive";
+export * as Primitives from "./primitives";
 export * from "./provider";
 export * from "./support";
 export type { UseConversationResult } from "./support/hooks/use-conversation";

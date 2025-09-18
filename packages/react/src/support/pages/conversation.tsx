@@ -1,4 +1,4 @@
-import { useDefaultMessages } from "@cossistant/react/support/hooks/use-default-messages";
+import { useDefaultMessages } from "@cossistant/react/hooks/use-default-messages";
 import type {
 	ConversationEvent,
 	Message as MessageType,

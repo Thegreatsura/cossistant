@@ -42,17 +42,15 @@
   "license": "MIT",
   "homepage": "https://cossistant.com",
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "require": "./src/index.ts"
-    },
-    "./primitive": {
-      "types": "./src/primitive/index.ts",
-      "import": "./src/primitive/index.ts",
-      "require": "./src/primitive/index.ts"
-    },
-    "./support.css": "./src/support/support.css"
+    ".": "./src/index.ts",
+    "./primitives": "./src/primitives/index.ts",
+    "./primitives/*": "./src/primitives/*.ts",
+    "./support": "./src/support/index.tsx",
+    "./hooks": "./src/hooks/index.ts",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./support.css": "./src/support/support.css",
+    "./utils": "./src/utils/index.ts",
+    "./utils/*": "./src/utils/*.ts"
   },
   "main": "./src/index.ts",
   "module": "./src/index.ts",
@@ -61,31 +59,12 @@
     "*.css"
   ],
   "scripts": {
-    "build": "tsup && bun run build:css",
+    "build": "tsdown && bun run build:css",
     "build:css": "bunx @tailwindcss/cli -i src/support/support.css -o dist/support.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify"
   },
   "files": [
     "dist"
   ],
-  "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      },
-      "./primitive": {
-        "types": "./dist/primitive/index.d.ts",
-        "import": "./dist/primitive/index.mjs",
-        "require": "./dist/primitive/index.cjs"
-      },
-      "./support.css": "./dist/support.css"
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts"
-  },
   "dependencies": {
     "@cossistant/core": "workspace:*",
     "@cossistant/types": "workspace:*",

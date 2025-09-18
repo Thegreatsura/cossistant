@@ -1,5 +1,5 @@
 import type React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "../../primitive";
+import { Avatar, AvatarFallback, AvatarImage } from "../../primitives";
 import { CossistantLogo } from "./cossistant-branding";
 
 export type TypingIndicatorProps = {

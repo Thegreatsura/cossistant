@@ -3,5 +3,5 @@ export {
 	type GroupedMessage,
 	type UseGroupedMessagesProps,
 	useGroupedMessages,
-} from "./use-grouped-messages";
-export { useVisitor } from "./use-visitor";
+} from "../../hooks/use-grouped-messages";
+export { useVisitor } from "../../hooks/use-visitor";

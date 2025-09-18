@@ -24,16 +24,9 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "sideEffects": false,
-  "scripts": {
-    "build": "tsup"
-  },
-  "files": [
-    "dist"
-  ],
   "devDependencies": {
     "@cossistant/typescript-config": "workspace:*",
-    "@cossistant/types": "workspace:*",
-    "tsup": "^8.5.0"
+    "@cossistant/types": "workspace:*"
   },
   "dependencies": {
     "nanoid": "^5.1.5",

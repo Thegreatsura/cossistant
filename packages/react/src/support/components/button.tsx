@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
-import { Button as ButtonPrimitive } from "../../primitive/button";
+import { Button as ButtonPrimitive } from "../../primitives/button";
 import { cn } from "../utils";
 
 const buttonVariants = cva(

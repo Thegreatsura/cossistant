@@ -2,7 +2,7 @@ import {
 	AvatarFallback,
 	AvatarImage,
 	Avatar as AvatarPrimitive,
-} from "../../primitive/avatar";
+} from "../../primitives/avatar";
 import { cn } from "../utils";
 
 export function Avatar({

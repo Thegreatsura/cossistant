@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as Primitive from "../../primitive";
+import * as Primitive from "../../primitives";
 import { cn } from "../utils";
 
 export type ContainerProps = {

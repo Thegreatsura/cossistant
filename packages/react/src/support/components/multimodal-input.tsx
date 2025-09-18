@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useRef } from "react";
-import * as Primitive from "../../primitive";
+import * as Primitive from "../../primitives";
 import { cn } from "../utils";
 import Icon from "./icons";
 import { Watermark } from "./watermark";

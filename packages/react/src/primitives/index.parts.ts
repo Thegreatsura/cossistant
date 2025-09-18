@@ -8,6 +8,7 @@ export {
 	MessageGroupAvatar,
 	MessageGroupContent,
 	MessageGroupHeader,
+	MessageGroupReadIndicator,
 } from "./message-group";
 export {
 	MessageList,

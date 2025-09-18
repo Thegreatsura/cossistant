@@ -9,7 +9,7 @@ import type React from "react";
 import {
 	MessageListContainer,
 	MessageList as PrimitiveMessageList,
-} from "../../primitive/message-list";
+} from "../../primitives/message-list";
 import { useGroupedMessages } from "../hooks";
 import { cn } from "../utils";
 import { ConversationEvent as ConversationEventComponent } from "./conversation-event";

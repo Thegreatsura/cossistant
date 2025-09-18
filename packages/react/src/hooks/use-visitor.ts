@@ -1,5 +1,5 @@
 import type { PublicVisitor, VisitorMetadata } from "@cossistant/types";
-import { useSupport } from "../..";
+import { useSupport } from "..";
 
 export type UseVisitorReturn = {
 	visitor: PublicVisitor | null;

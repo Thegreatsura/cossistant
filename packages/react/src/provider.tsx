@@ -1,8 +1,5 @@
-"use client";
-
 import type { CossistantClient } from "@cossistant/core";
 import type { PublicWebsiteResponse, SenderType } from "@cossistant/types";
-import type { ListConversationsResponse } from "@cossistant/types/api/conversation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
 import { useClient } from "./hooks/use-rest-client";

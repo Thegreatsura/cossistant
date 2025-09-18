@@ -11,7 +11,7 @@ import {
 	MessageGroupContent,
 	MessageGroupHeader,
 	MessageGroup as PrimitiveMessageGroup,
-} from "../../primitive/message-group";
+} from "../../primitives/message-group";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
