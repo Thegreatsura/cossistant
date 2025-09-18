@@ -14,18 +14,12 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "rootDir": "./src",
-    "outDir": "./dist",
     "paths": {
-      "@cossistant/react": ["./src"],
-      "@cossistant/react/*": ["./src/*"],
-      "@cossistant/core": ["../core/src"],
-      "@cossistant/core/*": ["../core/src/*"],
-      "@cossistant/types": ["../types/src"],
-      "@cossistant/types/*": ["../types/src/*"]
+      "@cossistant/react": ["../react/src"],
+      "@cossistant/react/*": ["../react/src/*"]
     }
   },
-  "include": ["src/**/*", "src/**/*.d.ts"],
+  "include": ["src/**/*", "src/**/*.d.ts", "tsdown.config.ts"],
   "exclude": [
     "**/.*/",
     "**/build",

@@ -1,9 +1,9 @@
 {
-  "name": "@cossistant/react",
+  "name": "@cossistant/next",
   "version": "0.0.0",
   "private": false,
   "author": "Cossistant team",
-  "description": "Headless React SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
+  "description": "Next.js-ready SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
   "keywords": [
     "react",
     "react-hooks",
@@ -37,7 +37,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cossistantcom/cossistant.git",
-    "directory": "packages/react"
+    "directory": "packages/next"
   },
   "license": "MIT",
   "homepage": "https://cossistant.com",
@@ -59,42 +59,21 @@
     "*.css"
   ],
   "scripts": {
-    "build": "tsdown && bun run build:css",
-    "build:css": "bunx @tailwindcss/cli -i src/support/support.css -o dist/support.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify"
+    "build": "tsdown"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@cossistant/core": "workspace:*",
-    "@cossistant/types": "workspace:*",
-    "nanoid": "^5.1.5",
-    "react-markdown": "^10.1.0",
-    "react-use-websocket": "^4.13.0",
-    "tailwind-merge": "^3.3.1",
-    "ulid": "^3.0.1",
-    "zustand": "^5.0.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.13",
-    "postcss": "^8.5.6",
-    "@cossistant/typescript-config": "workspace:*",
-    "autoprefixer": "^10.4.21",
-    "@tanstack/react-query": "^5.89.0"
+    "@cossistant/react": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18 <20",
     "react-dom": ">=18 <20",
-    "@types/react": "^18 || ^19",
-    "@tanstack/react-query": "^5.0.0",
-    "motion": "^12.18.1",
-    "tailwindcss": "*"
+    "next": ">=13.5.2 || ^14.0.0 || ^15.0.0"
   },
   "peerDependenciesMeta": {
     "@types/react": {
-      "optional": true
-    },
-    "tailwindcss": {
       "optional": true
     }
   },
