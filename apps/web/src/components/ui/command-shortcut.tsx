@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const DeleteIcon = ({ className }: { className?: string }) => {
@@ -27,9 +30,14 @@ export const CommandShortcut = ({
 }: React.HTMLAttributes<Omit<HTMLSpanElement, "children">> & {
 	children: string[];
 }) => {
-	const isMac =
-		typeof window !== "undefined" &&
-		window.navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+	const [isMac, setIsMac] = React.useState(false);
+
+	React.useEffect(() => {
+		setIsMac(
+			typeof window !== "undefined" &&
+			window.navigator.platform.toUpperCase().indexOf("MAC") >= 0
+		);
+	}, []);
 
 	const renderChild = (child: string) => {
 		if (child === "Delete" || child === "delete") {

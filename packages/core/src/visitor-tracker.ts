@@ -18,6 +18,9 @@ function getStorageKey(websiteId: string): string {
  */
 function isLocalStorageAvailable(): boolean {
 	try {
+		if (typeof window === "undefined" || !window.localStorage) {
+			return false;
+		}
 		const testKey = "__cossistant_test__";
 		localStorage.setItem(testKey, "test");
 		localStorage.removeItem(testKey);
@@ -36,6 +39,9 @@ export function getVisitorId(websiteId: string): string | null {
 	}
 
 	try {
+		if (typeof window === "undefined") {
+			return null;
+		}
 		const data = localStorage.getItem(getStorageKey(websiteId));
 		if (!data) {
 			return null;
@@ -66,6 +72,9 @@ export function setVisitorId(websiteId: string, visitorId: string): void {
 			timestamp: Date.now(),
 			websiteId,
 		};
+		if (typeof window === "undefined") {
+			return;
+		}
 		const key = getStorageKey(websiteId);
 		localStorage.setItem(key, JSON.stringify(data));
 	} catch {
@@ -82,6 +91,9 @@ export function clearVisitorId(websiteId: string): void {
 	}
 
 	try {
+		if (typeof window === "undefined") {
+			return;
+		}
 		localStorage.removeItem(getStorageKey(websiteId));
 	} catch {
 		// Silently fail - visitor tracking is not critical
@@ -97,6 +109,9 @@ export function clearAllVisitorIds(): void {
 	}
 
 	try {
+		if (typeof window === "undefined") {
+			return;
+		}
 		const keys = Object.keys(localStorage).filter((key) =>
 			key.startsWith(STORAGE_KEY_PREFIX)
 		);
@@ -120,6 +135,9 @@ export function getExistingVisitorId(
 	}
 
 	try {
+		if (typeof window === "undefined") {
+			return null;
+		}
 		// Find all visitor keys in localStorage
 		const keys = Object.keys(localStorage).filter((key) =>
 			key.startsWith(STORAGE_KEY_PREFIX)
@@ -127,7 +145,7 @@ export function getExistingVisitorId(
 
 		// Check each one to see if we have a valid visitor ID
 		for (const key of keys) {
-			const data = localStorage.getItem(key);
+			const data = typeof window !== "undefined" ? localStorage.getItem(key) : null;
 			if (!data) {
 				continue;
 			}

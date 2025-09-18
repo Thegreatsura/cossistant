@@ -1,47 +1,43 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": ["**/.env"],
+  "globalDependencies": [
+    "**/.env"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_COSSISSTANT_KEY"
+  ],
   "ui": "tui",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "env": [
-        "DATABASE_HOST",
-        "DATABASE_PORT",
-        "DATABASE_USERNAME",
-        "DATABASE_PASSWORD",
-        "DATABASE_NAME",
-        "BETTER_AUTH_URL",
-        "BETTER_AUTH_SECRET",
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET",
-        "UPSTASH_REDIS_REST_URL",
-        "UPSTASH_REDIS_REST_TOKEN",
-        "API_KEY_SECRET",
-        "RESEND_API_KEY",
-        "RESEND_AUDIENCE_ID",
-        "GITHUB_CLIENT_ID",
-        "GITHUB_CLIENT_SECRET",
-        "PUBLIC_APP_URL",
-        "QSTASH_TOKEN",
-        "QSTASH_URL",
-        "QSTASH_CURRENT_SIGNING_KEY",
-        "QSTASH_NEXT_SIGNING_KEY",
-        "NEXT_PUBLIC_COSSISSTANT_KEY"
+      "dependsOn": [
+        "^build"
       ],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "@cossistant/core#build": {
-      "outputs": ["dist/**"]
+      "outputs": [
+        "dist/**"
+      ]
     },
     "@cossistant/types#build": {
-      "outputs": ["dist/**"]
+      "outputs": [
+        "dist/**"
+      ]
     },
     "@cossistant/react#build": {
-      "outputs": ["dist/**"]
+      "outputs": [
+        "dist/**"
+      ]
     },
     "@cossistant/api#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "env": [
         "DATABASE_HOST",
         "DATABASE_PORT",
@@ -65,13 +61,19 @@
         "QSTASH_CURRENT_SIGNING_KEY",
         "QSTASH_NEXT_SIGNING_KEY"
       ],
-      "outputs": ["server"]
+      "outputs": [
+        "server"
+      ]
     },
     "@cossistant/transactional#build": {
-      "outputs": ["dist/**"]
+      "outputs": [
+        "dist/**"
+      ]
     },
     "@cossistant/location#build": {
-      "outputs": ["dist/**"]
+      "outputs": [
+        "dist/**"
+      ]
     },
     "@cossistant/web#build": {
       "dependsOn": [
@@ -80,7 +82,6 @@
         "@cossistant/types#build",
         "@cossistant/react#build"
       ],
-      "env": ["NEXT_PUBLIC_COSSISSTANT_KEY"],
       "inputs": [
         "$TURBO_DEFAULT$",
         ".env.production.local",
@@ -88,13 +89,20 @@
         ".env.production",
         ".env"
       ],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": [
+        "^check-types"
+      ]
     },
     "dev": {
       "cache": false,
