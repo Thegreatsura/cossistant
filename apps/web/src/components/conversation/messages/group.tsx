@@ -6,7 +6,7 @@ import {
   MessageGroupHeader,
   MessageGroupReadIndicator,
   MessageGroup as PrimitiveMessageGroup,
-} from "@cossistant/react/primitives/message-group";
+} from "@cossistant/next/primitives";
 import type {
   AvailableAIAgent,
   Message as MessageType,

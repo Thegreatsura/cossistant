@@ -17,7 +17,7 @@
     "@cossistant/api": "workspace:*",
     "@cossistant/core": "workspace:*",
     "@cossistant/location": "workspace:*",
-    "@cossistant/react": "workspace:*",
+    "@cossistant/next": "workspace:*",
     "@cossistant/transactional": "workspace:*",
     "@cossistant/types": "workspace:*",
     "@hookform/resolvers": "^5.2.2",

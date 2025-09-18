@@ -1,9 +1,9 @@
 import type { RouterOutputs } from "@api/trpc/types";
+import { useGroupedMessages } from "@cossistant/next/hooks/use-grouped-messages";
 import {
   MessageListContainer,
   MessageList as PrimitiveMessageList,
-} from "@cossistant/react/primitives/message-list";
-import { useGroupedMessages } from "@cossistant/react/support/hooks";
+} from "@cossistant/next/primitives";
 import type {
   AvailableAIAgent,
   ConversationEvent as ConversationEventType,

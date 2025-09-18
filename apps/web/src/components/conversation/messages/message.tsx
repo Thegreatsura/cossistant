@@ -2,7 +2,7 @@ import {
   MessageContent,
   MessageTimestamp,
   Message as PrimitiveMessage,
-} from "@cossistant/react/primitives/message";
+} from "@cossistant/next/primitives";
 import type { Message as MessageType } from "@cossistant/types";
 import type React from "react";
 import { cn } from "@/lib/utils";

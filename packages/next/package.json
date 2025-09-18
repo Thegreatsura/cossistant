@@ -44,7 +44,6 @@
   "exports": {
     ".": "./src/index.ts",
     "./primitives": "./src/primitives/index.ts",
-    "./primitives/*": "./src/primitives/*.ts",
     "./support": "./src/support/index.tsx",
     "./hooks": "./src/hooks/index.ts",
     "./hooks/*": "./src/hooks/*.ts",
@@ -65,7 +64,8 @@
     "dist"
   ],
   "dependencies": {
-    "@cossistant/react": "workspace:*"
+    "@cossistant/react": "workspace:*",
+    "tailwindcss": "^4.1.13"
   },
   "peerDependencies": {
     "react": ">=18 <20",
