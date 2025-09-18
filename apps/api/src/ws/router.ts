@@ -1,9 +1,28 @@
-import { emitToAll, emitToDashboard } from "@api/lib/pubsub";
 import type {
 	RealtimeEvent,
-	RealtimeEventData,
 	RealtimeEventType,
 } from "@cossistant/types/realtime-events";
+
+type DispatchOptions = {
+	exclude?: string | string[];
+};
+
+type ConnectionDispatcher = (
+	connectionId: string,
+	event: RealtimeEvent
+) => void;
+
+type VisitorDispatcher = (
+	visitorId: string,
+	event: RealtimeEvent,
+	options?: DispatchOptions
+) => void;
+
+type WebsiteDispatcher = (
+	websiteId: string,
+	event: RealtimeEvent,
+	options?: DispatchOptions
+) => void;
 
 type EventContext = {
 	connectionId: string;
@@ -12,11 +31,14 @@ type EventContext = {
 	websiteId?: string;
 	organizationId?: string;
 	ws?: WebSocket;
+	sendToConnection?: ConnectionDispatcher;
+	sendToVisitor?: VisitorDispatcher;
+	sendToWebsite?: WebsiteDispatcher;
 };
 
 type EventHandler<T extends RealtimeEventType> = (
 	ctx: EventContext,
-	data: RealtimeEventData<T>
+	event: RealtimeEvent<T>
 ) => Promise<void> | void;
 
 type EventHandlers = {
@@ -25,11 +47,12 @@ type EventHandlers = {
 
 /**
  * Event handlers for each realtime event type
- * Each handler receives context and validated data
- * Handlers now also emit events via pub/sub to reach other connections
+ * Each handler receives context, the full event payload, and forwards it to
+ * relevant local connections using the provided dispatch helpers.
  */
 const eventHandlers: EventHandlers = {
-	USER_CONNECTED: async (ctx, data) => {
+	USER_CONNECTED: (ctx, event) => {
+		const data = event.data;
 		console.log(`[USER_CONNECTED] User ${data.userId} connected`, {
 			connectionId: data.connectionId,
 			timestamp: new Date(data.timestamp).toISOString(),
@@ -37,13 +60,15 @@ const eventHandlers: EventHandlers = {
 			websiteId: ctx.websiteId,
 		});
 
-		// Emit to dashboard so agents can see user connections
 		if (ctx.websiteId) {
-			await emitToDashboard(ctx.websiteId, "USER_CONNECTED", data);
+			ctx.sendToWebsite?.(ctx.websiteId, event, {
+				exclude: ctx.connectionId,
+			});
 		}
 	},
 
-	USER_DISCONNECTED: async (ctx, data) => {
+	USER_DISCONNECTED: (ctx, event) => {
+		const data = event.data;
 		console.log(`[USER_DISCONNECTED] User ${data.userId} disconnected`, {
 			connectionId: data.connectionId,
 			timestamp: new Date(data.timestamp).toISOString(),
@@ -51,13 +76,15 @@ const eventHandlers: EventHandlers = {
 			websiteId: ctx.websiteId,
 		});
 
-		// Emit to dashboard so agents can see user disconnections
 		if (ctx.websiteId) {
-			await emitToDashboard(ctx.websiteId, "USER_DISCONNECTED", data);
+			ctx.sendToWebsite?.(ctx.websiteId, event, {
+				exclude: ctx.connectionId,
+			});
 		}
 	},
 
-	VISITOR_CONNECTED: async (ctx, data) => {
+	VISITOR_CONNECTED: (ctx, event) => {
+		const data = event.data;
 		console.log(`[VISITOR_CONNECTED] Visitor ${data.visitorId} connected`, {
 			connectionId: data.connectionId,
 			timestamp: new Date(data.timestamp).toISOString(),
@@ -65,13 +92,13 @@ const eventHandlers: EventHandlers = {
 			websiteId: ctx.websiteId,
 		});
 
-		// Emit to dashboard so agents can see visitor connections
 		if (ctx.websiteId) {
-			await emitToDashboard(ctx.websiteId, "VISITOR_CONNECTED", data);
+			ctx.sendToWebsite?.(ctx.websiteId, event);
 		}
 	},
 
-	VISITOR_DISCONNECTED: async (ctx, data) => {
+	VISITOR_DISCONNECTED: (ctx, event) => {
+		const data = event.data;
 		console.log(
 			`[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`,
 			{
@@ -82,13 +109,13 @@ const eventHandlers: EventHandlers = {
 			}
 		);
 
-		// Emit to dashboard so agents can see visitor disconnections
 		if (ctx.websiteId) {
-			await emitToDashboard(ctx.websiteId, "VISITOR_DISCONNECTED", data);
+			ctx.sendToWebsite?.(ctx.websiteId, event);
 		}
 	},
 
-	USER_PRESENCE_UPDATE: async (ctx, data) => {
+	USER_PRESENCE_UPDATE: (ctx, event) => {
+		const data = event.data;
 		console.log(
 			`[USER_PRESENCE_UPDATE] User ${data.userId} status: ${data.status}`,
 			{
@@ -98,13 +125,15 @@ const eventHandlers: EventHandlers = {
 			}
 		);
 
-		// Emit to dashboard so agents can see presence updates
 		if (ctx.websiteId) {
-			await emitToDashboard(ctx.websiteId, "USER_PRESENCE_UPDATE", data);
+			ctx.sendToWebsite?.(ctx.websiteId, event, {
+				exclude: ctx.connectionId,
+			});
 		}
 	},
 
-	MESSAGE_CREATED: async (_ctx, data) => {
+	MESSAGE_CREATED: (ctx, event) => {
+		const data = event.data;
 		console.log(
 			`[MESSAGE_CREATED] Message ${data.message.id} created for conversation ${data.conversationId}`,
 			{
@@ -113,12 +142,15 @@ const eventHandlers: EventHandlers = {
 			}
 		);
 
-		await emitToAll(
-			data.conversationId,
-			data.websiteId,
-			"MESSAGE_CREATED",
-			data
-		);
+		const websiteId = data.websiteId ?? ctx.websiteId;
+		if (websiteId) {
+			ctx.sendToWebsite?.(websiteId, event);
+		}
+
+		const visitorId = data.message.visitorId ?? ctx.visitorId;
+		if (visitorId) {
+			ctx.sendToVisitor?.(visitorId, event);
+		}
 	},
 };
 
@@ -139,10 +171,10 @@ export async function routeEvent<T extends RealtimeEventType>(
 	}
 
 	try {
-		await handler(context, event.data);
+		await handler(context, event);
 	} catch (error) {
 		console.error(`[EventRouter] Error handling ${event.type}:`, error);
 	}
 }
 
-export type { EventContext, EventHandler };
+export type { EventContext, EventHandler, ConnectionDispatcher, VisitorDispatcher, WebsiteDispatcher, DispatchOptions };

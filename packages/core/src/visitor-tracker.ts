@@ -145,7 +145,8 @@ export function getExistingVisitorId(
 
 		// Check each one to see if we have a valid visitor ID
 		for (const key of keys) {
-			const data = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+			const data =
+				typeof window !== "undefined" ? localStorage.getItem(key) : null;
 			if (!data) {
 				continue;
 			}

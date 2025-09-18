@@ -35,7 +35,7 @@ export const CommandShortcut = ({
 	React.useEffect(() => {
 		setIsMac(
 			typeof window !== "undefined" &&
-			window.navigator.platform.toUpperCase().indexOf("MAC") >= 0
+				window.navigator.platform.toUpperCase().indexOf("MAC") >= 0
 		);
 	}, []);
 

@@ -1,6 +1,11 @@
 import type { Database } from "@api/db";
 import { sendMessages } from "@api/db/queries/message";
-import { emitToAll } from "@api/lib/pubsub";
+import {
+	sendEventToConnection,
+	sendEventToVisitor,
+	sendEventToWebsite,
+} from "@api/ws/socket";
+import { routeEvent } from "@api/ws/router";
 import type {
 	Message,
 	MessageType,
@@ -11,7 +16,10 @@ import {
 	MessageVisibility as MessageVisibilityValues,
 	messageSchema,
 } from "@cossistant/types";
-import type { RealtimeEventData } from "@cossistant/types/realtime-events";
+import type {
+	RealtimeEvent,
+	RealtimeEventData,
+} from "@cossistant/types/realtime-events";
 
 export function prepareMessageForInsert(bodyMd: string) {
 	const normalized = bodyMd.normalize("NFC");
@@ -94,16 +102,27 @@ export async function createMessage(
 
 	const parsedMessage = messageSchema.parse(createdMessage);
 
-	await emitToAll(
+const realtimePayload = serializeMessageForRealtime(parsedMessage, {
 		conversationId,
 		websiteId,
-		"MESSAGE_CREATED",
-		serializeMessageForRealtime(parsedMessage, {
-			conversationId,
-			websiteId,
-			organizationId,
-		})
-	);
+		organizationId,
+	});
+
+	const event: RealtimeEvent<"MESSAGE_CREATED"> = {
+		type: "MESSAGE_CREATED",
+		data: realtimePayload,
+		timestamp: Date.now(),
+	};
+
+	await routeEvent(event, {
+		connectionId: "server",
+		websiteId,
+		visitorId: realtimePayload.message.visitorId ?? undefined,
+		organizationId,
+		sendToConnection: sendEventToConnection,
+		sendToVisitor: sendEventToVisitor,
+		sendToWebsite: sendEventToWebsite,
+	});
 
 	return parsedMessage;
 }

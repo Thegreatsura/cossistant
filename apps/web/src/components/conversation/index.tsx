@@ -1,6 +1,9 @@
 "use client";
 
 import { useMultimodalInput } from "@cossistant/react/hooks/use-multimodal-input";
+import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import React from "react";
+import { useDashboardRealtime } from "@/app/(dashboard)/[websiteSlug]/providers/websocket";
 import { useWebsiteMembers } from "@/contexts/website";
 
 import { useConversationEvents } from "@/data/use-conversation-events";
@@ -19,12 +22,55 @@ type ConversationProps = {
 	currentUserId: string;
 };
 
+const isMessageCreatedEvent = (
+	event: RealtimeEvent
+): event is RealtimeEvent<"MESSAGE_CREATED"> => {
+	return event.type === "MESSAGE_CREATED";
+};
+
 export function Conversation({
 	conversationId,
 	visitorId,
 	currentUserId,
 	websiteSlug,
 }: ConversationProps) {
+	const handleRealtimeEvent = React.useCallback(
+		(event: RealtimeEvent) => {
+			if (!isMessageCreatedEvent(event)) {
+				return;
+			}
+
+			if (event.data.conversationId !== conversationId) {
+				return;
+			}
+
+			console.log("[Dashboard] Realtime message received", {
+				conversationId,
+				messageId: event.data.message.id,
+				sender:
+					event.data.message.userId === currentUserId
+						? "self"
+						: event.data.message.visitorId === visitorId
+							? "visitor"
+							: "teammate",
+			});
+		},
+		[conversationId, currentUserId, visitorId]
+	);
+
+	const { isConnected: isRealtimeConnected } = useDashboardRealtime({
+		onEvent: handleRealtimeEvent,
+	});
+
+	React.useEffect(() => {
+		if (isRealtimeConnected) {
+			console.log("[Dashboard] WebSocket connected", {
+				conversationId,
+				websiteSlug,
+			});
+		}
+	}, [conversationId, isRealtimeConnected, websiteSlug]);
+
 	const {
 		message,
 		files,

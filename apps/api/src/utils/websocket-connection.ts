@@ -1,4 +1,3 @@
-import { type ConnectionInfo, pubsub } from "@api/lib/pubsub";
 import {
 	WEBSOCKET_ERRORS,
 	WebSocketErrorCode,
@@ -47,22 +46,6 @@ export async function handleIdentificationFailure(
 	const error = WEBSOCKET_ERRORS.identificationRequired();
 	ws.send(JSON.stringify(error));
 	ws.close(error.code, error.error);
-}
-
-export async function createConnectionInfo(
-	connectionId: string,
-	authResult: AuthResult
-): Promise<ConnectionInfo> {
-	return {
-		connectionId,
-		serverId: pubsub.getServerId(),
-		userId: authResult.userId,
-		visitorId: authResult.visitorId,
-		websiteId: authResult.websiteId,
-		organizationId: authResult.organizationId,
-		connectedAt: Date.now(),
-		lastHeartbeat: Date.now(),
-	};
 }
 
 export function storeConnectionId(ws: WSContext, connectionId: string): void {
@@ -132,12 +115,20 @@ export function createConnectionEvent(
 export async function updatePresenceIfNeeded(
 	authResult: AuthResult
 ): Promise<void> {
-	if (authResult.websiteId) {
-		const presenceId = authResult.userId || authResult.visitorId;
-		if (presenceId) {
-			await pubsub.updatePresence(presenceId, "online", authResult.websiteId);
-		}
+	if (!authResult.websiteId) {
+		return;
 	}
+
+	const presenceId = authResult.userId || authResult.visitorId;
+	if (!presenceId) {
+		return;
+	}
+
+	console.log("[WebSocket] Presence update (local-only)", {
+		status: "online",
+		presenceId,
+		websiteId: authResult.websiteId,
+	});
 }
 
 export function getConnectionIdFromSocket(ws: WSContext): string | undefined {

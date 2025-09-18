@@ -6,7 +6,6 @@
 export {
 	type AuthResult,
 	createConnectionEvent,
-	createConnectionInfo,
 	getConnectionIdFromSocket,
 	handleAuthenticationFailure,
 	handleIdentificationFailure,
