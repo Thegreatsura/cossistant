@@ -1,14 +1,11 @@
 "use client";
 
 import { useMultimodalInput } from "@cossistant/react/hooks/use-multimodal-input";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
-import React from "react";
-import { useDashboardRealtime } from "@/app/(dashboard)/[websiteSlug]/providers/websocket";
 import { useWebsiteMembers } from "@/contexts/website";
-
 import { useConversationEvents } from "@/data/use-conversation-events";
 import { useConversationMessages } from "@/data/use-conversation-messages";
 import { useVisitor } from "@/data/use-visitor";
+import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { Page } from "../ui/layout";
 import { VisitorSidebar } from "../ui/layout/sidebars/visitor/visitor-sidebar";
 import { ConversationHeader } from "./header";
@@ -22,11 +19,7 @@ type ConversationProps = {
 	currentUserId: string;
 };
 
-const isMessageCreatedEvent = (
-	event: RealtimeEvent
-): event is RealtimeEvent<"MESSAGE_CREATED"> => {
-	return event.type === "MESSAGE_CREATED";
-};
+const MESSAGES_PAGE_LIMIT = 50;
 
 export function Conversation({
 	conversationId,
@@ -34,6 +27,13 @@ export function Conversation({
 	currentUserId,
 	websiteSlug,
 }: ConversationProps) {
+	const { submit: submitConversationMessage } = useSendConversationMessage({
+		conversationId,
+		websiteSlug,
+		currentUserId,
+		pageLimit: MESSAGES_PAGE_LIMIT,
+	});
+
 	const {
 		message,
 		files,
@@ -47,7 +47,12 @@ export function Conversation({
 		reset,
 		isValid,
 		canSubmit,
-	} = useMultimodalInput();
+	} = useMultimodalInput({
+		onSubmit: submitConversationMessage,
+		onError: (submitError) => {
+			console.error("Failed to send message", submitError);
+		},
+	});
 
 	const members = useWebsiteMembers();
 
@@ -55,7 +60,11 @@ export function Conversation({
 		messages,
 		fetchNextPage: fetchNextPageMessages,
 		hasNextPage: hasNextPageMessages,
-	} = useConversationMessages({ conversationId, websiteSlug });
+	} = useConversationMessages({
+		conversationId,
+		websiteSlug,
+		options: { limit: MESSAGES_PAGE_LIMIT },
+	});
 
 	const {
 		events,
