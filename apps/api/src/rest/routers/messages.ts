@@ -206,6 +206,7 @@ messagesRouter.openapi(
 			organizationId: organization.id,
 			websiteId: website.id,
 			conversationId: body.conversationId,
+			conversationVisitorId: visitorId,
 			message: {
 				bodyMd: body.message.bodyMd,
 				type: body.message.type ?? undefined,

@@ -12,7 +12,10 @@ import { AvatarStack } from "../components/avatar-stack";
 import { Header } from "../components/header";
 import { MessageList } from "../components/message-list";
 import { MultimodalInput } from "../components/multimodal-input";
-import { useMessages } from "../hooks/use-messages";
+import {
+	addRealtimeSupportMessageToCache,
+	useMessages,
+} from "../hooks/use-messages";
 import { useSendMessage } from "../hooks/use-send-message";
 import { useSupportNavigation } from "../store";
 
@@ -49,8 +52,14 @@ export const ConversationPage = ({
 	messages = [],
 	events = [],
 }: ConversationPageProps) => {
-	const { website, availableAIAgents, availableHumanAgents, client, visitor } =
-		useSupport();
+	const {
+		website,
+		availableAIAgents,
+		availableHumanAgents,
+		client,
+		visitor,
+		queryClient,
+	} = useSupport();
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
 
 	// Determine if we have a real conversation or pending one
@@ -92,8 +101,32 @@ export const ConversationPage = ({
 				origin:
 					event.data.message.visitorId === visitor?.id ? "self" : "remote",
 			});
+
+			const message: MessageType = {
+				id: event.data.message.id,
+				bodyMd: event.data.message.bodyMd,
+				type: event.data.message.type as MessageType["type"],
+				userId: event.data.message.userId,
+				aiAgentId: event.data.message.aiAgentId,
+				parentMessageId: event.data.message.parentMessageId,
+				modelUsed: event.data.message.modelUsed,
+				visitorId: event.data.message.visitorId,
+				conversationId: event.data.message.conversationId,
+				createdAt: new Date(event.data.message.createdAt),
+				updatedAt: new Date(event.data.message.updatedAt),
+				deletedAt: event.data.message.deletedAt
+					? new Date(event.data.message.deletedAt)
+					: null,
+				visibility: event.data.message.visibility as MessageType["visibility"],
+			};
+
+			addRealtimeSupportMessageToCache(
+				queryClient,
+				event.data.conversationId,
+				message
+			);
 		},
-		[realConversationId, visitor?.id]
+		[queryClient, realConversationId, visitor?.id]
 	);
 
 	const { isConnected: isRealtimeConnected } = useRealtimeSupport({

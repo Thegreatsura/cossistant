@@ -119,4 +119,49 @@ describe("MESSAGE_CREATED handler", () => {
 		expect(sendToVisitor).toHaveBeenCalledTimes(1);
 		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-1", event]);
 	});
+
+	it("falls back to context visitor when message has no visitorId", async () => {
+		const event: RealtimeEvent<"MESSAGE_CREATED"> = {
+			type: "MESSAGE_CREATED",
+			data: {
+				message: {
+					id: "msg-ctx-1",
+					bodyMd: "from agent",
+					type: "text",
+					userId: "user-2",
+					aiAgentId: null,
+					visitorId: null,
+					organizationId: "org-ctx",
+					websiteId: "site-ctx",
+					conversationId: "conv-ctx",
+					parentMessageId: null,
+					modelUsed: null,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+					visibility: "public",
+				},
+				conversationId: "conv-ctx",
+				websiteId: "site-ctx",
+				organizationId: "org-ctx",
+			},
+			timestamp: Date.now(),
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-ctx",
+			websiteId: "site-ctx",
+			visitorId: "visitor-from-context",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual([
+			"visitor-from-context",
+			event,
+		]);
+	});
 });

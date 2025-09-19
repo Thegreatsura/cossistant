@@ -149,6 +149,7 @@ conversationRouter.openapi(
 						organizationId: organization.id,
 						websiteId: website.id,
 						conversationId: conversation.id,
+						conversationVisitorId: conversation.visitorId,
 						message: {
 							bodyMd: msg.bodyMd,
 							type: msg.type ?? undefined,

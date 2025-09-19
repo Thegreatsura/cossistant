@@ -250,6 +250,7 @@ export const conversationRouter = createTRPCRouter({
 				organizationId: websiteData.organizationId,
 				websiteId: websiteData.id,
 				conversationId: input.conversationId,
+				conversationVisitorId: conversation.visitorId,
 				message: {
 					bodyMd: input.bodyMd,
 					type: input.type,

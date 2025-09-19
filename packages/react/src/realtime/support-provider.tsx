@@ -5,6 +5,7 @@ import { useCallback, useMemo } from "react";
 import { useRealtimeSupport } from "../hooks/use-realtime-support";
 import { useSupport } from "../provider";
 import { addRealtimeSupportMessageToCache } from "../support/hooks/use-messages";
+import { QUERY_KEYS } from "../support/utils/query-keys";
 import {
   createMessageCreatedHandler,
   type RealtimeEventHandler,
@@ -66,6 +67,10 @@ function createSupportMessageCreatedHandler(): RealtimeEventHandler<
         event.data.conversationId,
         message
       );
+
+      context.queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.messages(event.data.conversationId),
+      });
     },
   });
 }

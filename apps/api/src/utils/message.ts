@@ -32,6 +32,7 @@ export type CreateMessageOptions = {
 	organizationId: string;
 	websiteId: string;
 	conversationId: string;
+	conversationVisitorId?: string | null;
 	message: {
 		bodyMd: string;
 		type?: MessageType;
@@ -114,10 +115,22 @@ const realtimePayload = serializeMessageForRealtime(parsedMessage, {
 		timestamp: Date.now(),
 	};
 
+	let targetVisitorId =
+		options.conversationVisitorId ??
+		realtimePayload.message.visitorId ??
+		undefined;
+
+	if (!targetVisitorId) {
+		targetVisitorId = await resolveConversationVisitorId(
+			options.db,
+			conversationId
+		);
+	}
+
 	await routeEvent(event, {
 		connectionId: "server",
 		websiteId,
-		visitorId: realtimePayload.message.visitorId ?? undefined,
+		visitorId: targetVisitorId,
 		organizationId,
 		sendToConnection: sendEventToConnection,
 		sendToVisitor: sendEventToVisitor,
@@ -125,4 +138,34 @@ const realtimePayload = serializeMessageForRealtime(parsedMessage, {
 	});
 
 	return parsedMessage;
+}
+
+type GetConversationByIdFn = (typeof import("@api/db/queries/conversation"))[
+	"getConversationById"
+];
+
+let getConversationByIdCached: GetConversationByIdFn | null = null;
+
+async function resolveConversationVisitorId(
+	db: Database,
+	conversationId: string
+): Promise<string | undefined> {
+	try {
+		if (!getConversationByIdCached) {
+			const module = await import("@api/db/queries/conversation");
+			getConversationByIdCached = module.getConversationById;
+		}
+
+		const conversationRecord = await getConversationByIdCached?.(db, {
+			conversationId,
+		});
+
+		return conversationRecord?.visitorId ?? undefined;
+	} catch (error) {
+		console.error("[MESSAGE_CREATED] Failed to resolve conversation visitor", {
+			error,
+			conversationId,
+		});
+		return undefined;
+	}
 }
