@@ -40,7 +40,6 @@ export type CossistantContextValue = {
   isLoading: boolean;
   error: Error | null;
   client: CossistantClient | null;
-  queryClient: QueryClient;
 };
 
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
@@ -58,8 +57,7 @@ function SupportProviderInner({
   onWsConnect,
   onWsDisconnect,
   onWsError,
-  queryClient,
-}: CossistantProviderProps & { queryClient: QueryClient }) {
+}: CossistantProviderProps) {
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [_defaultMessages, _setDefaultMessages] = React.useState<
     DefaultMessage[]
@@ -130,7 +128,6 @@ function SupportProviderInner({
       setDefaultMessages,
       quickOptions: _quickOptions,
       setQuickOptions,
-      queryClient,
     }),
     [
       website,
@@ -140,7 +137,6 @@ function SupportProviderInner({
       client,
       _defaultMessages,
       _quickOptions,
-      queryClient,
       setDefaultMessages,
       setQuickOptions,
       setUnreadCountStable,
@@ -159,7 +155,7 @@ function SupportProviderInner({
         websiteId={website?.id}
         wsUrl={wsUrl}
       >
-        <SupportRealtimeProvider>{children}</SupportRealtimeProvider>
+        {children}
       </WebSocketProvider>
     </SupportContext.Provider>
   );
@@ -203,7 +199,6 @@ export function SupportProvider({
         onWsDisconnect={onWsDisconnect}
         onWsError={onWsError}
         publicKey={publicKey}
-        queryClient={activeQueryClient}
         quickOptions={quickOptions}
         wsUrl={wsUrl}
       >

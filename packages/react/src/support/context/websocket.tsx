@@ -102,7 +102,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
   // Always call useWebSocketLib with a consistent value to avoid hook order issues
   // Use a dummy URL when we don't want to connect to ensure consistent hook calls
-  const webSocketUrl = socketUrl || "ws://dummy-url-for-consistency";
+  const webSocketUrl = socketUrl;
   const shouldConnect = socketUrl !== null;
 
   const { sendMessage, lastMessage, readyState } = useWebSocketLib(

@@ -1,10 +1,11 @@
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { Message } from "@cossistant/types/schemas";
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { useRealtimeSupport } from "../hooks/use-realtime-support";
 import { useSupport } from "../provider";
-import { addRealtimeSupportMessageToCache } from "../support/hooks/use-messages";
+import { upsertRealtimeMessageInCache } from "../support/hooks/use-messages";
 import { QUERY_KEYS } from "../support/utils/query-keys";
 import {
   createMessageCreatedHandler,
@@ -50,27 +51,40 @@ function createSupportMessageCreatedHandler(): RealtimeEventHandler<
 > {
   return createMessageCreatedHandler<SupportRealtimeContext, Message>({
     shouldHandleEvent: ({ event, context }) => {
-      if (!context.websiteId) {
-        return false;
-      }
+      // console.log("shouldHandleEvent", {
+      //   event: event.type,
+      //   websiteId: event.data.websiteId,
+      //   contextWebsiteId: context.websiteId,
+      // });
 
-      if (context.websiteId && event.data.websiteId !== context.websiteId) {
-        return false;
-      }
+      // // If we don't have a websiteId in context yet (still loading),
+      // // accept all messages - they'll be filtered by conversation anyway
+      // if (!context.websiteId) {
+      //   return true;
+      // }
+
+      // // If we have a websiteId, only handle messages for our website
+      // if (event.data.websiteId !== context.websiteId) {
+      //   return false;
+      // }
 
       return true;
     },
     mapEventToMessage: ({ event }) => toSupportMessage(event.data.message),
     onMessage: ({ context, event, message }) => {
-      addRealtimeSupportMessageToCache(
+      console.log("[SupportRealtimeProvider] onMessage", {
+        conversationId: event.data.conversationId,
+        messageId: message.id,
+        hasQueryClient: !!context.queryClient,
+        queryCacheSize:
+          context.queryClient?.getQueryCache?.()?.getAll?.()?.length || 0,
+        message,
+      });
+      upsertRealtimeMessageInCache(
         context.queryClient,
         event.data.conversationId,
         message
       );
-
-      context.queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.messages(event.data.conversationId),
-      });
     },
   });
 }
@@ -80,8 +94,16 @@ export function SupportRealtimeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { queryClient, website } = useSupport();
+  // Use useQueryClient from React Query instead of from useSupport
+  const queryClient = useQueryClient();
+  const { website } = useSupport();
   const { subscribe } = useRealtimeSupport();
+
+  console.log("[SupportRealtimeProvider] Context values:", {
+    hasQueryClient: !!queryClient,
+    queryCacheSize: queryClient?.getQueryCache?.()?.getAll?.()?.length || 0,
+    websiteId: website?.id,
+  });
 
   const realtimeContext = useMemo<
     RealtimeEventHandlerContext<SupportRealtimeContext>

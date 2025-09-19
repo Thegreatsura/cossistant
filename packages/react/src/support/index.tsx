@@ -36,14 +36,16 @@ export function Support({
 
   return (
     <>
-      <SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
-        <SupportContent
-          align={align}
-          className={className}
-          mode={mode}
-          position={position}
-        />
-      </SupportConfigProvider>
+      <SupportRealtimeProvider>
+        <SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
+          <SupportContent
+            align={align}
+            className={className}
+            mode={mode}
+            position={position}
+          />
+        </SupportConfigProvider>
+      </SupportRealtimeProvider>
       <SupportConfig
         defaultMessages={defaultMessages}
         quickOptions={quickOptions}

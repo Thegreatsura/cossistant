@@ -1,65 +1,139 @@
-import type { GetMessagesResponse } from "@cossistant/types/api/message";
-import type { Message } from "@cossistant/types/schemas";
+import type { Message } from "@cossistant/types";
 import type { InfiniteData } from "@tanstack/react-query";
 
-/**
- * Type for the paginated messages cache structure
- */
-export type PaginatedMessagesCache = InfiniteData<GetMessagesResponse>;
+// Type for the paginated response
+export type PaginatedMessagesResponse = {
+  messages: Message[];
+  nextCursor?: string;
+  hasNextPage: boolean;
+};
+
+// Type for the infinite query cache structure
+export type PaginatedMessagesCache = InfiniteData<PaginatedMessagesResponse>;
 
 /**
- * Add a message to the paginated cache
- * Adds the message to the last page of the cache
+ * Sort messages by creation date (oldest first)
  */
-export function addMessageToCache(
-  cache: PaginatedMessagesCache | undefined,
+function sortMessagesByCreatedAt(messages: Message[]): Message[] {
+  return [...messages].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+  );
+}
+
+/**
+ * Initialize infinite data structure with a single message
+ */
+function initializeInfiniteData(
+  message: Message,
+  existing?: PaginatedMessagesCache
+): PaginatedMessagesCache {
+  const firstPageParam =
+    existing && existing.pageParams.length > 0
+      ? existing.pageParams[0]
+      : undefined;
+
+  return {
+    pages: [
+      {
+        messages: [message],
+        nextCursor: undefined,
+        hasNextPage: false,
+      },
+    ],
+    pageParams: [firstPageParam],
+  };
+}
+
+/**
+ * Upsert a message into the paginated cache
+ * - Updates existing message if found
+ * - Adds new message to the first page if not found
+ */
+export function upsertMessageInCache(
+  existing: PaginatedMessagesCache | undefined,
   message: Message
-): PaginatedMessagesCache | undefined {
-  if (!cache) {
-    return {
-      pages: [
-        {
-          messages: [message],
-          nextCursor: undefined,
-          hasNextPage: false,
-        },
-      ],
-      pageParams: [undefined],
+): PaginatedMessagesCache {
+  console.log("[upsertMessageInCache] Called with:", {
+    hasExisting: !!existing,
+    pagesCount: existing?.pages?.length,
+    messageId: message.id,
+  });
+
+  // Initialize cache if it doesn't exist
+  if (!existing || existing.pages.length === 0) {
+    console.log("[upsertMessageInCache] Initializing new cache");
+    return initializeInfiniteData(message, existing);
+  }
+
+  let messageExists = false;
+
+  // First pass: check if message exists and update it
+  const pages = existing.pages.map((page) => {
+    const currentMessages = [...page.messages];
+    const existingIndex = currentMessages.findIndex(
+      (msg) => msg.id === message.id
+    );
+
+    if (existingIndex !== -1) {
+      messageExists = true;
+      currentMessages[existingIndex] = message;
+      return {
+        ...page,
+        messages: sortMessagesByCreatedAt(currentMessages),
+      };
+    }
+
+    return page;
+  });
+
+  // If message doesn't exist, add it to the first page (most recent)
+  if (!messageExists && pages.length > 0 && pages[0]) {
+    const firstPage = pages[0];
+    pages[0] = {
+      ...firstPage,
+      messages: sortMessagesByCreatedAt([...firstPage.messages, message]),
+      hasNextPage: firstPage.hasNextPage,
     };
   }
 
-  const existingMessage = cache.pages.some((page) =>
-    page.messages.some((cachedMessage) => cachedMessage.id === message.id)
-  );
+  return {
+    pages,
+    pageParams: [...existing.pageParams],
+  };
+}
 
-  if (existingMessage) {
-    return cache;
+/**
+ * Remove a message from the paginated cache
+ */
+export function removeMessageFromCache(
+  existing: PaginatedMessagesCache | undefined,
+  messageId: string
+): PaginatedMessagesCache | undefined {
+  if (!existing) {
+    return existing;
   }
 
-  const newPages = [...cache.pages];
-  const lastPageIndex = newPages.length - 1;
+  let removed = false;
 
-  if (lastPageIndex >= 0) {
-    const lastPage = newPages[lastPageIndex];
-    if (lastPage) {
-      newPages[lastPageIndex] = {
-        ...lastPage,
-        messages: [...lastPage.messages, message],
-        hasNextPage: lastPage.hasNextPage ?? false,
+  const pages = existing.pages.map((page) => {
+    const filtered = page.messages.filter((msg) => msg.id !== messageId);
+    if (filtered.length !== page.messages.length) {
+      removed = true;
+      return {
+        ...page,
+        messages: filtered,
       };
     }
-  } else {
-    // If no pages exist, create a new page with the message
-    newPages.push({
-      messages: [message],
-      nextCursor: undefined,
-      hasNextPage: false,
-    });
+    return page;
+  });
+
+  if (!removed) {
+    return existing;
   }
 
   return {
-    ...cache,
-    pages: newPages,
+    pages,
+    pageParams: [...existing.pageParams],
   };
 }
 
@@ -67,13 +141,13 @@ export function addMessageToCache(
  * Set initial messages in the cache
  * Creates a single page with all the messages
  */
-export function setInitialMessagesInCache(
+export function setMessagesInCache(
   messages: Message[]
 ): PaginatedMessagesCache {
   return {
     pages: [
       {
-        messages,
+        messages: sortMessagesByCreatedAt(messages),
         nextCursor: undefined,
         hasNextPage: false,
       },
@@ -83,54 +157,12 @@ export function setInitialMessagesInCache(
 }
 
 /**
- * Remove a message from the paginated cache by ID
+ * Alias for setMessagesInCache for backward compatibility
  */
-export function removeMessageFromCache(
-  cache: PaginatedMessagesCache | undefined,
-  messageId: string
-): PaginatedMessagesCache | undefined {
-  if (!cache) {
-    return;
-  }
-
-  const newPages = cache.pages.map((page) => ({
-    ...page,
-    messages: page.messages.filter((msg) => msg.id !== messageId),
-  }));
-
-  return {
-    ...cache,
-    pages: newPages,
-  };
-}
+export const setInitialMessagesInCache = setMessagesInCache;
 
 /**
- * Update a message in the paginated cache
- */
-export function updateMessageInCache(
-  cache: PaginatedMessagesCache | undefined,
-  messageId: string,
-  updater: (message: Message) => Message
-): PaginatedMessagesCache | undefined {
-  if (!cache) {
-    return;
-  }
-
-  const newPages = cache.pages.map((page) => ({
-    ...page,
-    messages: page.messages.map((msg) =>
-      msg.id === messageId ? updater(msg) : msg
-    ),
-  }));
-
-  return {
-    ...cache,
-    pages: newPages,
-  };
-}
-
-/**
- * Get all messages from the paginated cache as a flat array
+ * Get all messages from the paginated cache
  */
 export function getAllMessagesFromCache(
   cache: PaginatedMessagesCache | undefined

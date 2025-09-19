@@ -1,161 +1,224 @@
 import type { CossistantClient } from "@cossistant/core";
-import type {
-  GetMessagesResponse,
-  SendMessageRequest,
-} from "@cossistant/types/api/message";
-import type { Message } from "@cossistant/types/schemas";
+import type { Message } from "@cossistant/types";
 import {
   type QueryClient,
   useInfiniteQuery,
-  useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { PENDING_CONVERSATION_ID } from "../../utils/id";
+import React from "react";
 import {
-  addMessageToCache,
   type PaginatedMessagesCache,
+  type PaginatedMessagesResponse,
+  removeMessageFromCache,
+  setMessagesInCache,
+  upsertMessageInCache,
 } from "../utils/message-cache";
-import { QUERY_KEYS } from "../utils/query-keys";
 
-type UseMessagesParams = {
+const QUERY_KEYS = {
+  messages: (conversationId: string) =>
+    ["support", "messages", conversationId, { type: "infinite" }] as const,
+};
+
+type UseMessagesOptions = {
   client: CossistantClient | null;
-  conversationId: string | null;
+  conversationId: string;
   defaultMessages?: Message[];
+  pageSize?: number;
+  enabled?: boolean;
 };
 
 export function useMessages({
   client,
   conversationId,
   defaultMessages = [],
-}: UseMessagesParams) {
-  const hasRealConversation =
-    Boolean(conversationId) && conversationId !== PENDING_CONVERSATION_ID;
+  pageSize = 50,
+  enabled = true,
+}: UseMessagesOptions) {
+  const queryClient = useQueryClient();
+  const queryKey = QUERY_KEYS.messages(conversationId);
 
-  const query = useInfiniteQuery({
-    queryKey: QUERY_KEYS.messages(conversationId),
+  console.log("[useMessages] Hook called with:", {
+    conversationId,
+    queryKey,
+    hasQueryClient: !!queryClient,
+    queryCacheSize: queryClient.getQueryCache().getAll().length,
+  });
+
+  // Check if we already have cached data from realtime events
+  const existingData =
+    queryClient.getQueryData<PaginatedMessagesCache>(queryKey);
+
+  const query = useInfiniteQuery<PaginatedMessagesResponse>({
+    queryKey,
     queryFn: async ({ pageParam }) => {
-      if (!(client && conversationId)) {
-        throw new Error("Client and conversation ID required");
-      }
-
-      // For pending conversations, return default messages as a single page
-      if (!hasRealConversation) {
+      // If no client or it's a pending conversation, return default messages
+      if (!client || conversationId === "pending") {
         return {
           messages: defaultMessages,
           nextCursor: undefined,
           hasNextPage: false,
-        } as GetMessagesResponse;
+        };
       }
 
-      // For real conversations, fetch from server
-      const response = await client.getConversationMessages({
-        conversationId,
-        cursor: pageParam,
-        limit: 50,
-      });
+      try {
+        const response = await client.getConversationMessages({
+          conversationId,
+          limit: pageSize,
+          cursor: pageParam as string | undefined,
+        });
 
-      return response;
+        return {
+          messages: response.messages,
+          nextCursor: response.nextCursor,
+          hasNextPage: response.hasNextPage,
+        };
+      } catch (error) {
+        console.error("Failed to fetch messages:", error);
+        return {
+          messages: [],
+          nextCursor: undefined,
+          hasNextPage: false,
+        };
+      }
     },
-    initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    enabled: Boolean(client && conversationId),
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    initialPageParam: undefined as string | undefined,
+    enabled: enabled && !!client,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    // Use existing cached data if available (from realtime events)
+    initialData: existingData,
   });
 
   // Flatten all pages into a single array of messages
-  const messages = query.data?.pages?.flatMap((page) => page.messages) ?? [];
+  const messages = React.useMemo(() => {
+    console.log(
+      "[useMessages] Computing messages from query data:",
+      query.data
+    );
+    if (!query.data?.pages) {
+      return defaultMessages;
+    }
+    const flatMessages = query.data.pages.flatMap((page) => page.messages);
+    console.log("[useMessages] Flattened messages count:", flatMessages.length);
+    return flatMessages;
+  }, [query.data, defaultMessages]);
+
+  // Debug: Log when query data changes
+  React.useEffect(() => {
+    console.log("[useMessages] Query data changed:", {
+      conversationId,
+      dataVersion: query.dataUpdatedAt,
+      pagesCount: query.data?.pages?.length,
+      totalMessages: query.data?.pages?.flatMap((p) => p.messages).length,
+    });
+  }, [query.data, query.dataUpdatedAt, conversationId]);
 
   return {
-    ...query,
-    data: messages,
+    messages,
+    data: query.data,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
 
-// Hook to send a message
-export function useSendMessage(
-  client: CossistantClient | null,
-  conversationId: string | null
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (message: SendMessageRequest["message"]) => {
-      if (!client) {
-        throw new Error("Client required");
-      }
-      if (!conversationId) {
-        throw new Error("Conversation ID required");
-      }
-
-      const response = await client.sendMessage({
-        conversationId,
-        message,
-      });
-
-      return response.message;
-    },
-    onMutate: async (newMessage) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: QUERY_KEYS.messages(conversationId),
-      });
-
-      // Snapshot previous value
-      const previousMessages = queryClient.getQueryData<PaginatedMessagesCache>(
-        QUERY_KEYS.messages(conversationId)
-      );
-
-      // Optimistically update to the new value
-      const optimisticMessage: Message = {
-        id: `temp-${Date.now()}`,
-        bodyMd: newMessage.bodyMd,
-        type: newMessage.type || "text",
-        userId: newMessage.userId || null,
-        visitorId: newMessage.visitorId || null,
-        aiAgentId: newMessage.aiAgentId || null,
-        visibility: newMessage.visibility || "public",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-        conversationId: conversationId || "",
-        parentMessageId: null,
-        modelUsed: null,
-      };
-
-      // Add the optimistic message to the cache
-      queryClient.setQueryData<PaginatedMessagesCache>(
-        QUERY_KEYS.messages(conversationId),
-        (old) => addMessageToCache(old, optimisticMessage)
-      );
-
-      return { previousMessages };
-    },
-    onError: (err, newMessage, context) => {
-      // If mutation fails, use the context to roll back
-      if (context?.previousMessages) {
-        queryClient.setQueryData(
-          QUERY_KEYS.messages(conversationId),
-          context.previousMessages
-        );
-      }
-    },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.messages(conversationId),
-      });
-    },
-  });
-}
-
-export function addRealtimeSupportMessageToCache(
+/**
+ * Add or update a message in the query cache from realtime events
+ */
+export function upsertRealtimeMessageInCache(
   queryClient: QueryClient,
   conversationId: string,
   message: Message
 ) {
-  queryClient.setQueryData<PaginatedMessagesCache>(
-    QUERY_KEYS.messages(conversationId),
-    (cache) => addMessageToCache(cache, message)
+  const queryKey = QUERY_KEYS.messages(conversationId);
+
+  console.log("[upsertRealtimeMessageInCache] Updating cache", {
+    queryKey,
+    conversationId,
+    messageId: message.id,
+    hasQueryClient: !!queryClient,
+    queryCacheSize: queryClient.getQueryCache().getAll().length,
+  });
+
+  // Check if the query exists
+  const query = queryClient.getQueryCache().find({
+    queryKey,
+    exact: true,
+  });
+
+  if (query) {
+    console.log("[upsertRealtimeMessageInCache] Query exists, updating it");
+    const oldData = queryClient.getQueryData<PaginatedMessagesCache>(queryKey);
+    const newData = upsertMessageInCache(oldData, message);
+    queryClient.setQueryData<PaginatedMessagesCache>(queryKey, newData);
+  } else {
+    console.log(
+      "[upsertRealtimeMessageInCache] Query doesn't exist yet, creating it"
+    );
+    // Initialize the query with the new message
+    queryClient.setQueryData<PaginatedMessagesCache>(queryKey, {
+      pages: [
+        {
+          messages: [message],
+          nextCursor: undefined,
+          hasNextPage: false,
+        },
+      ],
+      pageParams: [undefined],
+    });
+  }
+
+  // Force React Query to notify subscribers
+  queryClient.invalidateQueries({
+    queryKey,
+    exact: true,
+  });
+}
+
+/**
+ * Remove a message from the query cache
+ */
+export function removeMessageFromQueryCache(
+  queryClient: QueryClient,
+  conversationId: string,
+  messageId: string
+) {
+  const queryKey = QUERY_KEYS.messages(conversationId);
+
+  queryClient.setQueryData<PaginatedMessagesCache>(queryKey, (oldData) =>
+    removeMessageFromCache(oldData, messageId)
   );
+}
+
+/**
+ * Set initial messages in the query cache
+ */
+export function setMessagesInQueryCache(
+  queryClient: QueryClient,
+  conversationId: string,
+  messages: Message[]
+) {
+  const queryKey = QUERY_KEYS.messages(conversationId);
+
+  queryClient.setQueryData<PaginatedMessagesCache>(
+    queryKey,
+    setMessagesInCache(messages)
+  );
+}
+
+/**
+ * Cancel any ongoing queries for messages
+ */
+export async function cancelMessagesQueries(
+  queryClient: QueryClient,
+  conversationId: string
+) {
+  const queryKey = QUERY_KEYS.messages(conversationId);
+  await queryClient.cancelQueries({ queryKey });
 }
