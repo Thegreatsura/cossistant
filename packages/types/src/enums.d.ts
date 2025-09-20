@@ -13,8 +13,7 @@ export type SenderType = (typeof SenderType)[keyof typeof SenderType];
 export declare const ConversationStatus: {
 	readonly OPEN: "open";
 	readonly RESOLVED: "resolved";
-	readonly BLOCKED: "blocked";
-	readonly PENDING: "pending";
+	readonly SPAM: "spam";
 };
 export type ConversationStatus =
 	(typeof ConversationStatus)[keyof typeof ConversationStatus];
@@ -47,6 +46,13 @@ export declare const ConversationParticipationStatus: {
 	readonly LEFT: "left";
 	readonly DECLINED: "declined";
 };
+export declare const ConversationSentiment: {
+	readonly POSITIVE: "positive";
+	readonly NEGATIVE: "negative";
+	readonly NEUTRAL: "neutral";
+};
+export type ConversationSentiment =
+	(typeof ConversationSentiment)[keyof typeof ConversationSentiment];
 export type ConversationParticipationStatus =
 	(typeof ConversationParticipationStatus)[keyof typeof ConversationParticipationStatus];
 export type ConversationEventType =

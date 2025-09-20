@@ -1,6 +1,7 @@
 import { env } from "@api/env";
-import { upstashCache } from "drizzle-orm/cache/upstash";
+import { RedisClient } from "bun";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { bunRedisCache } from "./cache/bun-redis-cache";
 import * as schema from "./schema";
 
 let _db: NodePgDatabase<typeof schema> | null = null;
@@ -20,10 +21,8 @@ const createDb = (): NodePgDatabase<typeof schema> => {
 			ssl:
 				env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 		},
-		cache: upstashCache({
-			url: env.UPSTASH_REDIS_REST_URL,
-
-			token: env.UPSTASH_REDIS_REST_TOKEN,
+		cache: bunRedisCache({
+			redisClient: new RedisClient(env.REDIS_URL),
 			config: { ex: 60 },
 		}),
 		schema,

@@ -31,14 +31,6 @@ export const env = {
 	DATABASE_USERNAME: getEnvVariable("DATABASE_USERNAME"),
 	DATABASE_PASSWORD: getEnvVariable("DATABASE_PASSWORD"),
 	DATABASE_NAME: getEnvVariable("DATABASE_NAME"),
-	UPSTASH_REDIS_REST_URL: getEnvVariable(
-		"UPSTASH_REDIS_REST_URL",
-		"http://localhost:8079"
-	),
-	UPSTASH_REDIS_REST_TOKEN: getEnvVariable(
-		"UPSTASH_REDIS_REST_TOKEN",
-		"example_token"
-	),
 	REDIS_URL: getEnvVariable("REDIS_URL", "redis://localhost:6379"),
 	BETTER_AUTH_URL: getEnvVariable("BETTER_AUTH_URL"),
 	BETTER_AUTH_SECRET: getEnvVariable("BETTER_AUTH_SECRET"),

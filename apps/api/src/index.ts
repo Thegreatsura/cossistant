@@ -1,5 +1,11 @@
 import { env } from "@api/env";
 import { auth } from "@api/lib/auth";
+import {
+	authRateLimiter,
+	defaultRateLimiter,
+	trpcRateLimiter,
+	websocketRateLimiter,
+} from "@api/middleware/rate-limit";
 import { routers } from "@api/rest/routers";
 import { createTRPCContext } from "@api/trpc/init";
 import { origamiTRPCRouter } from "@api/trpc/routers/_app";
@@ -80,6 +86,9 @@ app.use(
 	})
 );
 
+// Apply rate limiting before session handling
+app.use("/trpc/*", trpcRateLimiter);
+
 app.use("/trpc/*", async (c, next) => {
 	const session = await getTRPCSession(db, {
 		headers: c.req.raw.headers,
@@ -98,6 +107,8 @@ app.use("/trpc/*", async (c, next) => {
 	return next();
 });
 
+// Auth routes with strict rate limiting
+app.use("/api/auth/*", authRateLimiter);
 app.all("/api/auth/*", async (c) => {
 	return await auth.handler(c.req.raw);
 });
@@ -111,12 +122,14 @@ app.use(
 	})
 );
 
+// REST API routes with default rate limiting
+app.use("/v1/*", defaultRateLimiter);
 app.route("/v1", routers);
 
-// Upstash Workflows routes
 app.route("/workflow", workflowsRouters);
 
-// WebSocket endpoint for real-time communication
+// WebSocket endpoint for real-time communication with rate limiting
+app.use("/ws", websocketRateLimiter);
 app.get("/ws", upgradedWebsocket);
 
 app.doc("/openapi", {

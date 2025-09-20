@@ -1,37 +1,21 @@
-import { env } from "@api/env";
 import { TRPCError } from "@trpc/server";
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import type { TRPCContext } from "../init";
 
-const redis = new Redis({
-	url: env.UPSTASH_REDIS_REST_URL,
-	token: env.UPSTASH_REDIS_REST_TOKEN,
-});
-
-const ratelimit = new Ratelimit({
-	redis,
-	limiter: Ratelimit.slidingWindow(5, "1 m"), // 5 requests per minute
-	analytics: true,
-	prefix: "@cossistant/trpc",
-});
-
+/**
+ * Rate limiting middleware for TRPC procedures
+ * Note: The actual rate limiting is now handled at the Hono middleware level
+ * This is kept for TRPC-specific rate limiting if needed
+ */
 export const withRateLimitMiddleware = async (opts: {
 	ctx: TRPCContext;
 	// biome-ignore lint/suspicious/noExplicitAny: ok here
 	next: () => Promise<any>;
 }) => {
-	// Get IP from context - this will need to be passed through from the request
-	const identifier = "anonymous"; // Default fallback
+	// Rate limiting is now handled at the Hono level
+	// This middleware can be used for additional TRPC-specific rate limiting
+	// For example, you could implement user-based or procedure-specific limits here
 
-	const { success, reset } = await ratelimit.limit(identifier);
-
-	if (!success) {
-		throw new TRPCError({
-			code: "TOO_MANY_REQUESTS",
-			message: `Rate limit exceeded. Try again in ${Math.round((reset - Date.now()) / 1000)} seconds.`,
-		});
-	}
-
+	// For now, just pass through to the next middleware
+	// The Hono rate limiter will have already applied limits before we get here
 	return opts.next();
 };
