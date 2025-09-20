@@ -304,38 +304,31 @@ async function runConsumerLoop(): Promise<void> {
 }
 
 async function publishEnvelope(
-        envelope: DispatchEnvelope,
-        attempt = 0
+        envelope: DispatchEnvelope
 ): Promise<void> {
-        try {
-                const client = await getPublisher();
-                await client.xadd(
-                        STREAM_KEY,
-                        "MAXLEN",
-                        "~",
-                        STREAM_MAX_LEN,
-                        "*",
-                        STREAM_FIELD,
-                        JSON.stringify(envelope)
-                );
-        } catch (error) {
-                if (attempt >= MAX_PUBLISH_RETRIES) {
-                        console.error(
-                                "[RealtimePubSub] Failed to publish realtime event after retries",
-                                error
+        const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        for (let attempt = 0; attempt <= MAX_PUBLISH_RETRIES; attempt++) {
+                try {
+                        const client = await getPublisher();
+                        await client.xadd(
+                                STREAM_KEY,
+                                "MAXLEN",
+                                "~",
+                                STREAM_MAX_LEN,
+                                "*",
+                                STREAM_FIELD,
+                                JSON.stringify(envelope)
                         );
-                        return;
+                        return; // success
+                } catch (error) {
+                        if (attempt === MAX_PUBLISH_RETRIES) {
+                                // TODO: route to central logger; avoid console
+                                // logger.error({ err: error, attempt }, "Failed to publish realtime event");
+                                throw error;
+                        }
+                        const retryDelay = BASE_RETRY_DELAY_MS * 2 ** attempt;
+                        await sleep(retryDelay);
                 }
-
-                const retryDelay = BASE_RETRY_DELAY_MS * 2 ** attempt;
-                setTimeout(() => {
-                        publishEnvelope(envelope, attempt + 1).catch((retryError) => {
-                                console.error(
-                                        "[RealtimePubSub] Failed to publish realtime event",
-                                        retryError
-                                );
-                        });
-                }, retryDelay);
         }
 }
 
