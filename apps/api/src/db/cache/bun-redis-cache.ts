@@ -1,5 +1,5 @@
-/// <reference types="bun-types" />
 /** biome-ignore-all lint/nursery/noUnnecessaryConditions: ok */
+/** biome-ignore-all lint/complexity/noVoid: ok */
 /** biome-ignore-all lint/complexity/useOptionalChain:ok */
 /** biome-ignore-all lint/suspicious/noExplicitAny:ok */
 /** biome-ignore-all lint/style/useConsistentMemberAccessibility:ok */
@@ -7,13 +7,15 @@
 /** biome-ignore-all lint/style/noNonNullAssertion:ok */
 /** biome-ignore-all lint/nursery/useMaxParams: ok */
 
-import { RedisClient } from "bun";
 import { getTableName, Table } from "drizzle-orm";
 import type { MutationOption } from "drizzle-orm/cache/core";
 import { Cache } from "drizzle-orm/cache/core";
 import type { CacheConfig } from "drizzle-orm/cache/core/types";
-
 import { entityKind, is } from "drizzle-orm/entity";
+import type { RedisClientType } from "redis";
+import { getRedis } from "../../redis";
+
+type RedisClient = RedisClientType;
 
 const getByTagScript = `
 local tagsMapKey = KEYS[1] -- tags map key
@@ -110,6 +112,14 @@ export class BunRedisCache extends Cache {
   ) {
     super();
     this.internalConfig = this.toInternalConfig(config);
+    this.redis.on("error", (error) => {
+      console.error("[BunRedisCache] Redis client error", error);
+    });
+    if (!this.redis.isOpen) {
+      void this.redis.connect().catch((error) => {
+        console.error("[BunRedisCache] Failed to connect to Redis", error);
+      });
+    }
   }
 
   public strategy() {
@@ -137,26 +147,24 @@ export class BunRedisCache extends Cache {
     isAutoInvalidate?: boolean
   ): Promise<any[] | undefined> {
     if (!isAutoInvalidate) {
-      const result = await this.redis.hmget(
+      const rawValue = await this.redis.hGet(
         BunRedisCache.nonAutoInvalidateTablePrefix,
-        [key]
+        key
       );
-      return result === null ? undefined : (result as any[]);
+      return this.deserialize(rawValue);
     }
 
     if (isTag) {
-      const result = await this.redis.send("EVAL", [
-        getByTagScript,
-        "1",
-        BunRedisCache.tagsMapKey,
-        key,
-      ]);
-      return result === null ? undefined : (result as any[]);
+      const result = (await this.redis.eval(getByTagScript, {
+        keys: [BunRedisCache.tagsMapKey],
+        arguments: [key],
+      })) as string | null;
+      return this.deserialize(result);
     }
 
     const compositeKey = this.getCompositeKey(tables);
-    const result = await this.redis.hmget(compositeKey, [key]);
-    return result === null ? undefined : (result as any[]);
+    const rawValue = await this.redis.hGet(compositeKey, key);
+    return this.deserialize(rawValue);
   }
 
   override async put(
@@ -169,20 +177,23 @@ export class BunRedisCache extends Cache {
     const isAutoInvalidate = tables.length !== 0;
     const ttlSeconds =
       config && config.ex ? config.ex : this.internalConfig.seconds;
+    const serializedResponse = this.serialize(response);
 
     if (!isAutoInvalidate) {
       if (isTag) {
-        await this.redis.hmset(BunRedisCache.tagsMapKey, [
+        await this.redis.hSet(
+          BunRedisCache.tagsMapKey,
           key,
-          BunRedisCache.nonAutoInvalidateTablePrefix,
-        ]);
+          BunRedisCache.nonAutoInvalidateTablePrefix
+        );
         await this.redis.expire(BunRedisCache.tagsMapKey, ttlSeconds);
       }
 
-      await this.redis.hmset(BunRedisCache.nonAutoInvalidateTablePrefix, [
+      await this.redis.hSet(
+        BunRedisCache.nonAutoInvalidateTablePrefix,
         key,
-        response,
-      ]);
+        serializedResponse
+      );
       await this.redis.expire(
         BunRedisCache.nonAutoInvalidateTablePrefix,
         ttlSeconds
@@ -192,17 +203,17 @@ export class BunRedisCache extends Cache {
 
     const compositeKey = this.getCompositeKey(tables);
 
-    await this.redis.hmset(compositeKey, [key, response]);
+    await this.redis.hSet(compositeKey, key, serializedResponse);
     await this.redis.expire(compositeKey, ttlSeconds);
 
     if (isTag) {
-      await this.redis.hmset(BunRedisCache.tagsMapKey, [key, compositeKey]);
+      await this.redis.hSet(BunRedisCache.tagsMapKey, key, compositeKey);
       await this.redis.expire(BunRedisCache.tagsMapKey, ttlSeconds);
     }
 
     for (const table of tables) {
       const tableSetKey = this.addTablePrefix(table);
-      await this.redis.sadd(tableSetKey, compositeKey);
+      await this.redis.sAdd(tableSetKey, compositeKey);
     }
   }
 
@@ -225,14 +236,34 @@ export class BunRedisCache extends Cache {
       this.addTablePrefix(table)
     );
     const keys = [BunRedisCache.tagsMapKey, ...compositeTableSets];
-    const numKeys = keys.length;
+    const tagArguments = tags.map((tag) => String(tag));
+    await this.redis.eval(onMutateScript, {
+      keys,
+      arguments: tagArguments,
+    });
+  }
 
-    await this.redis.send("EVAL", [
-      onMutateScript,
-      numKeys.toString(),
-      ...keys,
-      ...tags,
-    ]);
+  private serialize(value: unknown): string {
+    try {
+      const serialized = JSON.stringify(value);
+      return typeof serialized === "string" ? serialized : "null";
+    } catch (error) {
+      console.error("[BunRedisCache] Failed to serialize cache value", error);
+      throw error;
+    }
+  }
+
+  private deserialize(value: string | null | undefined): any[] | undefined {
+    if (value === null || value === undefined) {
+      return;
+    }
+
+    try {
+      return JSON.parse(value) as any[];
+    } catch (error) {
+      console.error("[BunRedisCache] Failed to parse cached value", error);
+      return;
+    }
   }
 
   private addTablePrefix = (table: string) =>
@@ -243,7 +274,7 @@ export class BunRedisCache extends Cache {
 }
 
 export function bunRedisCache({
-  url,
+  url: _url,
   redisClient,
   config,
   global = false,
@@ -253,7 +284,6 @@ export function bunRedisCache({
   config?: CacheConfig;
   global?: boolean;
 }): BunRedisCache {
-  const redis = redisClient ?? new RedisClient(url);
-
+  const redis = redisClient ?? getRedis();
   return new BunRedisCache(redis, config, global);
 }

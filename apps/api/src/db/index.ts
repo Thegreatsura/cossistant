@@ -1,5 +1,4 @@
 import { env } from "@api/env";
-import { RedisClient } from "bun";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { bunRedisCache } from "./cache/bun-redis-cache";
 import * as schema from "./schema";
@@ -22,7 +21,6 @@ const createDb = (): NodePgDatabase<typeof schema> => {
 				env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 		},
 		cache: bunRedisCache({
-			redisClient: new RedisClient(env.REDIS_URL),
 			config: { ex: 60 },
 		}),
 		schema,
