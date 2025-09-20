@@ -575,6 +575,14 @@ async function authenticateWebSocketConnection(
 		if (result) {
 			result.visitorId = visitorId;
 			if (websiteIdParam) {
+				// Only allow website override for session-based auth,
+				// or when it matches the API key's bound website.
+				if (result.apiKey) {
+					const boundId = result.apiKey.website?.id;
+					if (boundId && boundId !== websiteIdParam) {
+						throw new AuthValidationError(403, "Website mismatch for API key");
+					}
+				}
 				result.websiteId = websiteIdParam;
 			}
 			logAuthSuccess(result);
