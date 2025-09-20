@@ -4,13 +4,13 @@ import RedisStore from "rate-limit-redis";
 import { getRedis, waitForRedis } from "../redis";
 
 /**
- * Create a Redis store for hono-rate-limiter using node-redis so that multiple
+ * Create a Redis store for hono-rate-limiter using ioredis so that multiple
  * API replicas can share throttling state.
  */
 export function createRedisRateLimitStore(): Store {
-  if (!env.REDIS_URL) {
-    throw new Error("REDIS_URL is not configured");
-  }
+	if (!env.REDIS_URL) {
+		throw new Error("REDIS_URL is not configured");
+	}
 
 	const redisClient = getRedis();
 	const connectPromise = waitForRedis().catch((error) => {
@@ -18,45 +18,46 @@ export function createRedisRateLimitStore(): Store {
 		throw error;
 	});
 
-  const store = new RedisStore({
-    sendCommand: async (...args: string[]) => {
-      try {
-        await connectPromise;
-        return await redisClient.sendCommand(args);
-      } catch (error) {
-        console.error("Redis rate limit command error:", error);
-        throw error;
-      }
-    },
-    prefix: "rate-limit:",
-  });
+	const store = new RedisStore({
+		sendCommand: async (...args: string[]) => {
+			try {
+				await connectPromise;
+				const [command, ...commandArgs] = args;
+				return await redisClient.call(command, ...commandArgs);
+			} catch (error) {
+				console.error("Redis rate limit command error:", error);
+				throw error;
+			}
+		},
+		prefix: "rate-limit:",
+	});
 
-  return store as unknown as Store;
+	return store as unknown as Store;
 }
 
 /**
  * Create an in-memory fallback store for development
  */
 export function createMemoryRateLimitStore(): Store {
-  // This will use the default MemoryStore from hono-rate-limiter
-  return undefined as unknown as Store; // Let hono-rate-limiter use its default
+	// This will use the default MemoryStore from hono-rate-limiter
+	return undefined as unknown as Store; // Let hono-rate-limiter use its default
 }
 
 /**
  * Get the appropriate rate limit store based on environment
  */
 export function getRateLimitStore(): Store | undefined {
-  // Use Redis in production, memory store in development
-  if (env.NODE_ENV === "production" || env.REDIS_URL) {
-    try {
-      return createRedisRateLimitStore();
-    } catch (error) {
-      console.error("Failed to create Redis rate limit store:", error);
-      console.warn("Falling back to memory store");
-      return; // Fall back to default memory store
-    }
-  }
+	// Use Redis in production, memory store in development
+	if (env.NODE_ENV === "production" || env.REDIS_URL) {
+		try {
+			return createRedisRateLimitStore();
+		} catch (error) {
+			console.error("Failed to create Redis rate limit store:", error);
+			console.warn("Falling back to memory store");
+			return; // Fall back to default memory store
+		}
+	}
 
-  // In development without Redis, use memory store
-  return; // Use default memory store
+	// In development without Redis, use memory store
+	return; // Use default memory store
 }

@@ -12,10 +12,10 @@ import type { MutationOption } from "drizzle-orm/cache/core";
 import { Cache } from "drizzle-orm/cache/core";
 import type { CacheConfig } from "drizzle-orm/cache/core/types";
 import { entityKind, is } from "drizzle-orm/entity";
-import type { RedisClientType } from "redis";
+import type Redis from "ioredis";
 import { getRedis } from "../../redis";
 
-type RedisClient = RedisClientType;
+type RedisClient = Redis;
 
 const getByTagScript = `
 local tagsMapKey = KEYS[1] -- tags map key
@@ -68,222 +68,226 @@ end
 type ExpireOptions = "NX" | "nx" | "XX" | "xx" | "GT" | "gt" | "LT" | "lt";
 
 export class BunRedisCache extends Cache {
-  static override readonly [entityKind]: string = "BunRedisCache";
-  /**
-   * Prefix for sets which denote the composite table names for each unique table
-   *
-   * Example: In the composite table set of "table1", you may find
-   * `${compositeTablePrefix}table1,table2` and `${compositeTablePrefix}table1,table3`
-   */
-  private static compositeTableSetPrefix = "__CTS__";
-  /**
-   * Prefix for hashes which map hash or tags to cache values
-   */
-  private static compositeTablePrefix = "__CT__";
-  /**
-   * Key which holds the mapping of tags to composite table names
-   *
-   * Using this tagsMapKey, you can find the composite table name for a given tag
-   * and get the cache value for that tag:
-   *
-   * ```ts
-   * const compositeTable = redis.hget(tagsMapKey, 'tag1')
-   * console.log(compositeTable) // `${compositeTablePrefix}table1,table2`
-   *
-   * const cachevalue = redis.hget(compositeTable, 'tag1')
-   */
-  private static tagsMapKey = "__tagsMap__";
-  /**
-   * Queries whose auto invalidation is false aren't stored in their respective
-   * composite table hashes because those hashes are deleted when a mutation
-   * occurs on related tables.
-   *
-   * Instead, they are stored in a separate hash with the prefix
-   * `__nonAutoInvalidate__` to prevent them from being deleted when a mutation
-   */
-  private static nonAutoInvalidateTablePrefix = "__nonAutoInvalidate__";
+	static override readonly [entityKind]: string = "BunRedisCache";
+	/**
+	 * Prefix for sets which denote the composite table names for each unique table
+	 *
+	 * Example: In the composite table set of "table1", you may find
+	 * `${compositeTablePrefix}table1,table2` and `${compositeTablePrefix}table1,table3`
+	 */
+	private static compositeTableSetPrefix = "__CTS__";
+	/**
+	 * Prefix for hashes which map hash or tags to cache values
+	 */
+	private static compositeTablePrefix = "__CT__";
+	/**
+	 * Key which holds the mapping of tags to composite table names
+	 *
+	 * Using this tagsMapKey, you can find the composite table name for a given tag
+	 * and get the cache value for that tag:
+	 *
+	 * ```ts
+	 * const compositeTable = redis.hget(tagsMapKey, 'tag1')
+	 * console.log(compositeTable) // `${compositeTablePrefix}table1,table2`
+	 *
+	 * const cachevalue = redis.hget(compositeTable, 'tag1')
+	 */
+	private static tagsMapKey = "__tagsMap__";
+	/**
+	 * Queries whose auto invalidation is false aren't stored in their respective
+	 * composite table hashes because those hashes are deleted when a mutation
+	 * occurs on related tables.
+	 *
+	 * Instead, they are stored in a separate hash with the prefix
+	 * `__nonAutoInvalidate__` to prevent them from being deleted when a mutation
+	 */
+	private static nonAutoInvalidateTablePrefix = "__nonAutoInvalidate__";
 
-  private internalConfig: { seconds: number; hexOptions?: ExpireOptions };
+	private internalConfig: { seconds: number; hexOptions?: ExpireOptions };
 
-  constructor(
-    public redis: RedisClient,
-    config?: CacheConfig,
-    protected useGlobally?: boolean
-  ) {
-    super();
-    this.internalConfig = this.toInternalConfig(config);
-    this.redis.on("error", (error) => {
-      console.error("[BunRedisCache] Redis client error", error);
-    });
-    if (!this.redis.isOpen) {
-      void this.redis.connect().catch((error) => {
-        console.error("[BunRedisCache] Failed to connect to Redis", error);
-      });
-    }
-  }
+	constructor(
+		public redis: RedisClient,
+		config?: CacheConfig,
+		protected useGlobally?: boolean
+	) {
+		super();
+		this.internalConfig = this.toInternalConfig(config);
+		this.redis.on("error", (error) => {
+			console.error("[BunRedisCache] Redis client error", error);
+		});
+		if (this.redis.status === "wait") {
+			void this.redis.connect().catch((error) => {
+				console.error("[BunRedisCache] Failed to connect to Redis", error);
+			});
+		}
+	}
 
-  public strategy() {
-    return this.useGlobally ? "all" : "explicit";
-  }
+	public strategy() {
+		return this.useGlobally ? "all" : "explicit";
+	}
 
-  private toInternalConfig(config?: CacheConfig): {
-    seconds: number;
-    hexOptions?: ExpireOptions;
-  } {
-    return config
-      ? {
-          seconds: config.ex!,
-          hexOptions: config.hexOptions,
-        }
-      : {
-          seconds: 1,
-        };
-  }
+	private toInternalConfig(config?: CacheConfig): {
+		seconds: number;
+		hexOptions?: ExpireOptions;
+	} {
+		return config
+			? {
+					seconds: config.ex!,
+					hexOptions: config.hexOptions,
+				}
+			: {
+					seconds: 1,
+				};
+	}
 
-  override async get(
-    key: string,
-    tables: string[],
-    isTag = false,
-    isAutoInvalidate?: boolean
-  ): Promise<any[] | undefined> {
-    if (!isAutoInvalidate) {
-      const rawValue = await this.redis.hGet(
-        BunRedisCache.nonAutoInvalidateTablePrefix,
-        key
-      );
-      return this.deserialize(rawValue);
-    }
+	override async get(
+		key: string,
+		tables: string[],
+		isTag = false,
+		isAutoInvalidate?: boolean
+	): Promise<any[] | undefined> {
+		if (!isAutoInvalidate) {
+			const rawValue = await this.redis.hget(
+				BunRedisCache.nonAutoInvalidateTablePrefix,
+				key
+			);
+			return this.deserialize(rawValue);
+		}
 
-    if (isTag) {
-      const result = (await this.redis.eval(getByTagScript, {
-        keys: [BunRedisCache.tagsMapKey],
-        arguments: [key],
-      })) as string | null;
-      return this.deserialize(result);
-    }
+		if (isTag) {
+			const result = (await this.redis.eval(
+				getByTagScript,
+				1,
+				BunRedisCache.tagsMapKey,
+				key
+			)) as string | null;
+			return this.deserialize(result);
+		}
 
-    const compositeKey = this.getCompositeKey(tables);
-    const rawValue = await this.redis.hGet(compositeKey, key);
-    return this.deserialize(rawValue);
-  }
+		const compositeKey = this.getCompositeKey(tables);
+		const rawValue = await this.redis.hget(compositeKey, key);
+		return this.deserialize(rawValue);
+	}
 
-  override async put(
-    key: string,
-    response: any,
-    tables: string[],
-    isTag = false,
-    config?: CacheConfig
-  ): Promise<void> {
-    const isAutoInvalidate = tables.length !== 0;
-    const ttlSeconds =
-      config && config.ex ? config.ex : this.internalConfig.seconds;
-    const serializedResponse = this.serialize(response);
+	override async put(
+		key: string,
+		response: any,
+		tables: string[],
+		isTag = false,
+		config?: CacheConfig
+	): Promise<void> {
+		const isAutoInvalidate = tables.length !== 0;
+		const ttlSeconds =
+			config && config.ex ? config.ex : this.internalConfig.seconds;
+		const serializedResponse = this.serialize(response);
 
-    if (!isAutoInvalidate) {
-      if (isTag) {
-        await this.redis.hSet(
-          BunRedisCache.tagsMapKey,
-          key,
-          BunRedisCache.nonAutoInvalidateTablePrefix
-        );
-        await this.redis.expire(BunRedisCache.tagsMapKey, ttlSeconds);
-      }
+		if (!isAutoInvalidate) {
+			if (isTag) {
+				await this.redis.hset(
+					BunRedisCache.tagsMapKey,
+					key,
+					BunRedisCache.nonAutoInvalidateTablePrefix
+				);
+				await this.redis.expire(BunRedisCache.tagsMapKey, ttlSeconds);
+			}
 
-      await this.redis.hSet(
-        BunRedisCache.nonAutoInvalidateTablePrefix,
-        key,
-        serializedResponse
-      );
-      await this.redis.expire(
-        BunRedisCache.nonAutoInvalidateTablePrefix,
-        ttlSeconds
-      );
-      return;
-    }
+			await this.redis.hset(
+				BunRedisCache.nonAutoInvalidateTablePrefix,
+				key,
+				serializedResponse
+			);
+			await this.redis.expire(
+				BunRedisCache.nonAutoInvalidateTablePrefix,
+				ttlSeconds
+			);
+			return;
+		}
 
-    const compositeKey = this.getCompositeKey(tables);
+		const compositeKey = this.getCompositeKey(tables);
 
-    await this.redis.hSet(compositeKey, key, serializedResponse);
-    await this.redis.expire(compositeKey, ttlSeconds);
+		await this.redis.hset(compositeKey, key, serializedResponse);
+		await this.redis.expire(compositeKey, ttlSeconds);
 
-    if (isTag) {
-      await this.redis.hSet(BunRedisCache.tagsMapKey, key, compositeKey);
-      await this.redis.expire(BunRedisCache.tagsMapKey, ttlSeconds);
-    }
+		if (isTag) {
+			await this.redis.hset(BunRedisCache.tagsMapKey, key, compositeKey);
+			await this.redis.expire(BunRedisCache.tagsMapKey, ttlSeconds);
+		}
 
-    for (const table of tables) {
-      const tableSetKey = this.addTablePrefix(table);
-      await this.redis.sAdd(tableSetKey, compositeKey);
-    }
-  }
+		for (const table of tables) {
+			const tableSetKey = this.addTablePrefix(table);
+			await this.redis.sadd(tableSetKey, compositeKey);
+		}
+	}
 
-  override async onMutate(params: MutationOption) {
-    const tags = Array.isArray(params.tags)
-      ? params.tags
-      : params.tags
-        ? [params.tags]
-        : [];
-    const tables = Array.isArray(params.tables)
-      ? params.tables
-      : params.tables
-        ? [params.tables]
-        : [];
-    const tableNames: string[] = tables.map((table) =>
-      is(table, Table) ? getTableName(table) : (table as string)
-    );
+	override async onMutate(params: MutationOption) {
+		const tags = Array.isArray(params.tags)
+			? params.tags
+			: params.tags
+				? [params.tags]
+				: [];
+		const tables = Array.isArray(params.tables)
+			? params.tables
+			: params.tables
+				? [params.tables]
+				: [];
+		const tableNames: string[] = tables.map((table) =>
+			is(table, Table) ? getTableName(table) : (table as string)
+		);
 
-    const compositeTableSets = tableNames.map((table) =>
-      this.addTablePrefix(table)
-    );
-    const keys = [BunRedisCache.tagsMapKey, ...compositeTableSets];
-    const tagArguments = tags.map((tag) => String(tag));
-    await this.redis.eval(onMutateScript, {
-      keys,
-      arguments: tagArguments,
-    });
-  }
+		const compositeTableSets = tableNames.map((table) =>
+			this.addTablePrefix(table)
+		);
+		const keys = [BunRedisCache.tagsMapKey, ...compositeTableSets];
+		const tagArguments = tags.map((tag) => String(tag));
+		await this.redis.eval(
+			onMutateScript,
+			keys.length,
+			...keys,
+			...tagArguments
+		);
+	}
 
-  private serialize(value: unknown): string {
-    try {
-      const serialized = JSON.stringify(value);
-      return typeof serialized === "string" ? serialized : "null";
-    } catch (error) {
-      console.error("[BunRedisCache] Failed to serialize cache value", error);
-      throw error;
-    }
-  }
+	private serialize(value: unknown): string {
+		try {
+			const serialized = JSON.stringify(value);
+			return typeof serialized === "string" ? serialized : "null";
+		} catch (error) {
+			console.error("[BunRedisCache] Failed to serialize cache value", error);
+			throw error;
+		}
+	}
 
-  private deserialize(value: string | null | undefined): any[] | undefined {
-    if (value === null || value === undefined) {
-      return;
-    }
+	private deserialize(value: string | null | undefined): any[] | undefined {
+		if (value === null || value === undefined) {
+			return;
+		}
 
-    try {
-      return JSON.parse(value) as any[];
-    } catch (error) {
-      console.error("[BunRedisCache] Failed to parse cached value", error);
-      return;
-    }
-  }
+		try {
+			return JSON.parse(value) as any[];
+		} catch (error) {
+			console.error("[BunRedisCache] Failed to parse cached value", error);
+			return;
+		}
+	}
 
-  private addTablePrefix = (table: string) =>
-    `${BunRedisCache.compositeTableSetPrefix}${table}`;
+	private addTablePrefix = (table: string) =>
+		`${BunRedisCache.compositeTableSetPrefix}${table}`;
 
-  private getCompositeKey = (tables: string[]) =>
-    `${BunRedisCache.compositeTablePrefix}${tables.sort().join(",")}`;
+	private getCompositeKey = (tables: string[]) =>
+		`${BunRedisCache.compositeTablePrefix}${tables.sort().join(",")}`;
 }
 
 export function bunRedisCache({
-  url: _url,
-  redisClient,
-  config,
-  global = false,
+	url: _url,
+	redisClient,
+	config,
+	global = false,
 }: {
-  url?: string;
-  redisClient?: RedisClient;
-  config?: CacheConfig;
-  global?: boolean;
+	url?: string;
+	redisClient?: RedisClient;
+	config?: CacheConfig;
+	global?: boolean;
 }): BunRedisCache {
-  const redis = redisClient ?? getRedis();
-  return new BunRedisCache(redis, config, global);
+	const redis = redisClient ?? getRedis();
+	return new BunRedisCache(redis, config, global);
 }
