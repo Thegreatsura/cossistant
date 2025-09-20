@@ -1,6 +1,6 @@
 import { env } from "@api/env";
 import type { Store } from "hono-rate-limiter";
-import RedisStore from "rate-limit-redis";
+import RedisStore, { type RedisReply } from "rate-limit-redis";
 import { getRedis, waitForRedis } from "../redis";
 
 /**
@@ -23,7 +23,7 @@ export function createRedisRateLimitStore(): Store {
 			try {
 				await connectPromise;
 				const [command, ...commandArgs] = args;
-				return await redisClient.call(command, ...commandArgs);
+				return (await redisClient.call(command, ...commandArgs)) as RedisReply;
 			} catch (error) {
 				console.error("Redis rate limit command error:", error);
 				throw error;
