@@ -1,8 +1,8 @@
 import { env } from "@api/env";
 import {
-        isValidEventType,
-        type RealtimeEvent,
-        validateRealtimeEvent,
+	isValidEventType,
+	type RealtimeEvent,
+	validateRealtimeEvent,
 } from "@cossistant/types/realtime-events";
 import Redis, { type RedisOptions } from "ioredis";
 import type { DispatchOptions } from "./router";
@@ -10,26 +10,26 @@ import type { DispatchOptions } from "./router";
 const STREAM_KEY = "realtime:dispatch";
 const STREAM_MAX_LEN = 10_000;
 const STREAM_FIELD = "payload";
-const STREAM_BLOCK_MS = 5_000;
+const STREAM_BLOCK_MS = 5000;
 const STREAM_BATCH_SIZE = 50;
 const MAX_PUBLISH_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 100;
-const CURSOR_PERSIST_INTERVAL_MS = 1_000;
+const CURSOR_PERSIST_INTERVAL_MS = 1000;
 const CURSOR_KEY_PREFIX = "realtime:cursor:";
 
 const instanceId = `api-${process.pid ?? "pid"}-${Math.random()
-        .toString(36)
-        .slice(2, 10)}`;
+	.toString(36)
+	.slice(2, 10)}`;
 
 const redisOptions: RedisOptions = {
-        lazyConnect: true,
-        maxRetriesPerRequest: null,
-        enableAutoPipelining: true,
-        reconnectOnError: (error) => {
-                console.error("[RealtimeRedis] Connection error", error);
-                return true;
-        },
-        retryStrategy: (attempt) => Math.min(1000 * attempt, 5000),
+	lazyConnect: true,
+	maxRetriesPerRequest: null,
+	enableAutoPipelining: true,
+	reconnectOnError: (error) => {
+		console.error("[RealtimeRedis] Connection error", error);
+		return true;
+	},
+	retryStrategy: (attempt) => Math.min(1000 * attempt, 5000),
 };
 
 let publisher: Redis | null = null;
@@ -47,9 +47,9 @@ type DispatchTarget =
 	  };
 
 type DispatchEnvelope = {
-        sourceId: string;
-        target: DispatchTarget;
-        event: RealtimeEvent;
+	sourceId: string;
+	target: DispatchTarget;
+	event: RealtimeEvent;
 };
 
 type LocalDispatchers = {
@@ -75,83 +75,82 @@ let cursorPersistTimer: ReturnType<typeof setTimeout> | null = null;
 const instanceCursorKey = `${CURSOR_KEY_PREFIX}${instanceId}`;
 
 function setInitialLastSeenId(): void {
-        lastSeenId = "$";
+	lastSeenId = "$";
 }
 
 function markProcessed(id: string): void {
-        lastProcessedId = id;
+	lastProcessedId = id;
 
-        if (cursorPersistTimer) {
-                return;
-        }
+	if (cursorPersistTimer) {
+		return;
+	}
 
-        cursorPersistTimer = setTimeout(() => {
-                cursorPersistTimer = null;
-                const idToPersist = lastProcessedId;
-                if (!idToPersist || idToPersist === "$") {
-                        return;
-                }
+	cursorPersistTimer = setTimeout(() => {
+		cursorPersistTimer = null;
+		const idToPersist = lastProcessedId;
+		if (!idToPersist || idToPersist === "$") {
+			return;
+		}
 
-                void getPublisher()
-                        .then((client) => client.set(instanceCursorKey, idToPersist))
-                        .catch((error) => {
-                                console.error(
-                                        "[RealtimeStreams] Failed to persist cursor", error
-                                );
-                        });
-        }, CURSOR_PERSIST_INTERVAL_MS);
+		// biome-ignore lint/complexity/noVoid: ok for usecase
+		void getPublisher()
+			.then((client) => client.set(instanceCursorKey, idToPersist))
+			.catch((error) => {
+				console.error("[RealtimeStreams] Failed to persist cursor", error);
+			});
+	}, CURSOR_PERSIST_INTERVAL_MS);
 }
 
 function createRedisClient(role: "publisher" | "subscriber"): Redis {
-        const client = new Redis(env.REDIS_URL, redisOptions);
-        client.on("error", (error) => {
-                console.error(`[RealtimeRedis] ${role} error`, error);
-        });
-        client.on("end", () => {
-                console.warn(`[RealtimeRedis] ${role} connection ended`);
-        });
+	const client = new Redis(env.REDIS_URL, redisOptions);
+	client.on("error", (error) => {
+		console.error(`[RealtimeRedis] ${role} error`, error);
+	});
+	client.on("end", () => {
+		console.warn(`[RealtimeRedis] ${role} connection ended`);
+	});
 
-        return client;
+	return client;
 }
 
 async function getPublisher(): Promise<Redis> {
-        if (!publisher) {
-                publisher = createRedisClient("publisher");
-        }
+	if (!publisher) {
+		publisher = createRedisClient("publisher");
+	}
 
-        if (publisher.status === "wait") {
-                await publisher.connect();
-        }
+	if (publisher.status === "wait") {
+		await publisher.connect();
+	}
 
-        return publisher;
+	return publisher;
 }
 
 async function getSubscriber(): Promise<Redis> {
-        if (!subscriber) {
-                subscriber = createRedisClient("subscriber");
-        }
+	if (!subscriber) {
+		subscriber = createRedisClient("subscriber");
+	}
 
-        if (subscriber.status === "wait") {
-                await subscriber.connect();
-        }
+	if (subscriber.status === "wait") {
+		await subscriber.connect();
+	}
 
-        return subscriber;
+	return subscriber;
 }
 
 async function loadCursor(): Promise<void> {
-        try {
-            const client = await getPublisher();
-            const storedCursor = await client.get(instanceCursorKey);
-            if (storedCursor) {
-                    lastSeenId = storedCursor;
-                    lastProcessedId = storedCursor;
-            } else {
-                    setInitialLastSeenId();
-            }
-        } catch (error) {
-                console.error("[RealtimeStreams] Failed to load cursor", error);
-                setInitialLastSeenId();
-        }
+	try {
+		const client = await getPublisher();
+		const storedCursor = await client.get(instanceCursorKey);
+		if (storedCursor) {
+			lastSeenId = storedCursor;
+			lastProcessedId = storedCursor;
+		} else {
+			setInitialLastSeenId();
+		}
+	} catch (error) {
+		console.error("[RealtimeStreams] Failed to load cursor", error);
+		setInitialLastSeenId();
+	}
 }
 
 function normalizeExclude(options?: DispatchOptions): string[] | undefined {
@@ -215,132 +214,147 @@ function handleEnvelope(envelope: DispatchEnvelope | undefined): void {
 			}
 			default: {
 				const exhaustiveCheck: never = target;
-                                console.error(
-                                        "[RealtimePubSub] Unsupported dispatch target",
-                                        exhaustiveCheck
-                                );
-                        }
-                }
-        } catch (error) {
-                console.error("[RealtimePubSub] Failed to dispatch realtime event", error);
-        }
+				console.error(
+					"[RealtimePubSub] Unsupported dispatch target",
+					exhaustiveCheck
+				);
+			}
+		}
+	} catch (error) {
+		console.error("[RealtimePubSub] Failed to dispatch realtime event", error);
+	}
 }
 
 function fieldsToRecord(fields: string[]): Record<string, string> {
-        const record: Record<string, string> = {};
-        for (let index = 0; index < fields.length; index += 2) {
-                const key = fields[index];
-                const value = fields[index + 1];
-                if (typeof key === "string" && typeof value === "string") {
-                        record[key] = value;
-                }
-        }
+	const record: Record<string, string> = {};
+	for (let index = 0; index < fields.length; index += 2) {
+		const key = fields[index];
+		const value = fields[index + 1];
+		if (typeof key === "string" && typeof value === "string") {
+			record[key] = value;
+		}
+	}
 
-        return record;
+	return record;
 }
 
 function parseStreamEntry(fields: string[]): DispatchEnvelope | null {
-        const record = fieldsToRecord(fields);
-        const payload = record[STREAM_FIELD];
+	const record = fieldsToRecord(fields);
+	const payload = record[STREAM_FIELD];
 
-        if (!payload) {
-                return null;
-        }
+	if (!payload) {
+		return null;
+	}
 
-        try {
-                const parsed = JSON.parse(payload) as DispatchEnvelope;
-                return parsed;
-        } catch (error) {
-                console.error("[RealtimeStreams] Failed to parse payload", error);
-                return null;
-        }
+	try {
+		const parsed = JSON.parse(payload) as DispatchEnvelope;
+		return parsed;
+	} catch (error) {
+		console.error("[RealtimeStreams] Failed to parse payload", error);
+		return null;
+	}
+}
+
+async function processStreamEntries(
+	entries: [string, string[]][]
+): Promise<void> {
+	for (const [id, fields] of entries) {
+		const envelope = parseStreamEntry(fields);
+		if (!envelope) {
+			continue;
+		}
+
+		lastSeenId = id;
+		markProcessed(id);
+		handleEnvelope(envelope);
+	}
 }
 
 async function runConsumerLoop(): Promise<void> {
-        if (consumerRunning || !dispatchersRef) {
-                return;
-        }
+	if (!dispatchersRef) {
+		return;
+	}
 
-        consumerRunning = true;
+	// biome-ignore lint/nursery/noUnnecessaryConditions: ok for usecase
+	if (consumerRunning) {
+		return;
+	}
 
-        await loadCursor();
+	consumerRunning = true;
 
-        while (dispatchersRef) {
-                try {
-                        const client = await getSubscriber();
-                        const response = await client.xread(
-                                "BLOCK",
-                                STREAM_BLOCK_MS,
-                                "COUNT",
-                                STREAM_BATCH_SIZE,
-                                "STREAMS",
-                                STREAM_KEY,
-                                lastSeenId
-                        );
+	await loadCursor();
 
-                        if (!response) {
-                                continue;
-                        }
+	while (dispatchersRef) {
+		try {
+			const client = await getSubscriber();
+			// Work around ioredis typing issue with BLOCK and COUNT parameters
+			const response = await (
+				client.xread as (
+					...args: unknown[]
+				) => Promise<[string, [string, string[]][]][] | null>
+			)(
+				"BLOCK",
+				STREAM_BLOCK_MS,
+				"COUNT",
+				STREAM_BATCH_SIZE,
+				"STREAMS",
+				STREAM_KEY,
+				lastSeenId
+			);
 
-                        for (const [, entries] of response) {
-                                for (const [id, fields] of entries) {
-                                        const envelope = parseStreamEntry(fields);
-                                        if (!envelope) {
-                                                continue;
-                                        }
+			if (!response) {
+				continue;
+			}
 
-                                        lastSeenId = id;
-                                        markProcessed(id);
-                                        handleEnvelope(envelope);
-                                }
-                        }
-                } catch (error) {
-                        console.error("[RealtimeStreams] Consumer loop error", error);
-                        await new Promise((resolve) => setTimeout(resolve, 1000));
-                }
-        }
+			for (const [, entries] of response) {
+				await processStreamEntries(entries);
+			}
+		} catch (error) {
+			console.error("[RealtimeStreams] Consumer loop error", error);
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+	}
 
-        consumerRunning = false;
+	consumerRunning = false;
 }
 
-async function publishEnvelope(
-        envelope: DispatchEnvelope
-): Promise<void> {
-        const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-        for (let attempt = 0; attempt <= MAX_PUBLISH_RETRIES; attempt++) {
-                try {
-                        const client = await getPublisher();
-                        await client.xadd(
-                                STREAM_KEY,
-                                "MAXLEN",
-                                "~",
-                                STREAM_MAX_LEN,
-                                "*",
-                                STREAM_FIELD,
-                                JSON.stringify(envelope)
-                        );
-                        return; // success
-                } catch (error) {
-                        if (attempt === MAX_PUBLISH_RETRIES) {
-                                // TODO: route to central logger; avoid console
-                                // logger.error({ err: error, attempt }, "Failed to publish realtime event");
-                                throw error;
-                        }
-                        const retryDelay = BASE_RETRY_DELAY_MS * 2 ** attempt;
-                        await sleep(retryDelay);
-                }
-        }
+async function publishEnvelope(envelope: DispatchEnvelope): Promise<void> {
+	const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+	for (let attempt = 0; attempt <= MAX_PUBLISH_RETRIES; attempt++) {
+		try {
+			const client = await getPublisher();
+			await client.xadd(
+				STREAM_KEY,
+				"MAXLEN",
+				"~",
+				STREAM_MAX_LEN,
+				"*",
+				STREAM_FIELD,
+				JSON.stringify(envelope)
+			);
+			return; // success
+		} catch (error) {
+			if (attempt === MAX_PUBLISH_RETRIES) {
+				// TODO: route to central logger; avoid console
+				// logger.error({ err: error, attempt }, "Failed to publish realtime event");
+				throw error;
+			}
+			const retryDelay = BASE_RETRY_DELAY_MS * 2 ** attempt;
+			await sleep(retryDelay);
+		}
+	}
 }
 
 export function initializeRealtimePubSub(dispatchers: LocalDispatchers): void {
-        dispatchersRef = dispatchers;
+	dispatchersRef = dispatchers;
 
-        void runConsumerLoop();
+	// biome-ignore lint/complexity/noVoid: ok for usecase
+	void runConsumerLoop();
 }
 
 export function publishToConnection(
-        connectionId: string,
-        event: RealtimeEvent
+	connectionId: string,
+	event: RealtimeEvent
 ): Promise<void> {
 	const envelope: DispatchEnvelope = {
 		sourceId: instanceId,

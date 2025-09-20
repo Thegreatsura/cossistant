@@ -12,7 +12,7 @@ import type { ServerWebSocket } from "bun";
 
 export type AuthResult = WebSocketAuthSuccess;
 
-type WSContext = {
+export type WSContext = {
 	send: (data: string | ArrayBuffer) => void;
 	close: (code?: number, reason?: string) => void;
 	raw?: RawSocket;

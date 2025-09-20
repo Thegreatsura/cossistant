@@ -1,11 +1,11 @@
 import type { Database } from "@api/db";
 import { sendMessages } from "@api/db/queries/message";
+import { routeEvent } from "@api/ws/router";
 import {
 	sendEventToConnection,
 	sendEventToVisitor,
 	sendEventToWebsite,
 } from "@api/ws/socket";
-import { routeEvent } from "@api/ws/router";
 import type {
 	Message,
 	MessageType,
@@ -103,7 +103,7 @@ export async function createMessage(
 
 	const parsedMessage = messageSchema.parse(createdMessage);
 
-const realtimePayload = serializeMessageForRealtime(parsedMessage, {
+	const realtimePayload = serializeMessageForRealtime(parsedMessage, {
 		conversationId,
 		websiteId,
 		organizationId,
@@ -140,9 +140,8 @@ const realtimePayload = serializeMessageForRealtime(parsedMessage, {
 	return parsedMessage;
 }
 
-type GetConversationByIdFn = (typeof import("@api/db/queries/conversation"))[
-	"getConversationById"
-];
+type GetConversationByIdFn =
+	typeof import("@api/db/queries/conversation")["getConversationById"];
 
 let getConversationByIdCached: GetConversationByIdFn | null = null;
 
@@ -166,6 +165,6 @@ async function resolveConversationVisitorId(
 			error,
 			conversationId,
 		});
-		return undefined;
+		return;
 	}
 }

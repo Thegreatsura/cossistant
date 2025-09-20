@@ -17,11 +17,14 @@ import {
 	sendError,
 	storeConnectionId,
 	updatePresenceIfNeeded,
+	type WSContext,
 } from "@api/utils/websocket-connection";
 import { updateLastSeenTimestamps } from "@api/utils/websocket-updates";
 import {
 	isValidEventType,
 	type RealtimeEvent,
+	type RealtimeEventData,
+	type RealtimeEventType,
 	validateRealtimeEvent,
 } from "@cossistant/types/realtime-events";
 import type { ServerWebSocket } from "bun";
@@ -105,10 +108,8 @@ export const sendEventToWebsite: WebsiteDispatcher = (
 	});
 };
 
-type SocketContext = {
-	raw?: RawSocket;
-	send: (data: string) => void;
-};
+// Use WSContext type from websocket-connection.ts for consistency
+type SocketContext = WSContext;
 
 type ConnectionContextDetails = Pick<
 	EventContext,
@@ -186,7 +187,15 @@ function parseRealtimeEventMessage(
 		return null;
 	}
 
-	const validatedData = validateRealtimeEvent(message.type, message.data);
+	let validatedData: RealtimeEventData<RealtimeEventType>;
+
+	try {
+		validatedData = validateRealtimeEvent(message.type, message.data);
+	} catch (error) {
+		console.error("[WebSocket] Event validation failed:", error);
+		sendInvalidFormatResponse(ws, error);
+		return null;
+	}
 
 	return {
 		type: message.type,
@@ -523,6 +532,55 @@ async function performApiKeyAuthentication(
 }
 
 /**
+ * Validate and apply website override to authentication result
+ */
+function applyWebsiteOverride(
+	result: WebSocketAuthSuccess,
+	websiteIdParam: string | undefined
+): void {
+	if (!websiteIdParam) {
+		return;
+	}
+
+	// Only allow website override for session-based auth,
+	// or when it matches the API key's bound website.
+	if (result.apiKey) {
+		const boundId = result.apiKey.website?.id;
+		if (boundId && boundId !== websiteIdParam) {
+			throw new AuthValidationError(403, "Website mismatch for API key");
+		}
+	}
+	result.websiteId = websiteIdParam;
+}
+
+/**
+ * Perform the actual authentication based on available credentials
+ */
+async function performWebSocketAuth(
+	c: Context,
+	credentials: {
+		privateKey: string | undefined;
+		publicKey: string | undefined;
+		sessionToken: string | undefined;
+	},
+	options: AuthValidationOptions
+): Promise<WebSocketAuthSuccess | null> {
+	const { privateKey, publicKey, sessionToken } = credentials;
+
+	if (privateKey || publicKey) {
+		return await performApiKeyAuthentication(privateKey, publicKey, options);
+	}
+
+	const result = await authenticateWithSession(c, sessionToken);
+
+	if (!result && AUTH_LOGS_ENABLED) {
+		console.log("[WebSocket Auth] No valid authentication method provided");
+	}
+
+	return result;
+}
+
+/**
  * Authenticate WebSocket connection
  * Accept either API keys (public/private) or a Better Auth session via cookies
  */
@@ -555,36 +613,16 @@ async function authenticateWebSocketConnection(
 		};
 
 		// Authenticate with API key or session
-		let result: WebSocketAuthSuccess | null = null;
+		const result = await performWebSocketAuth(
+			c,
+			{ privateKey, publicKey, sessionToken },
+			options
+		);
 
-		if (privateKey || publicKey) {
-			result = await performApiKeyAuthentication(
-				privateKey,
-				publicKey,
-				options
-			);
-		} else {
-			result = await authenticateWithSession(c, sessionToken);
-
-			if (!result && AUTH_LOGS_ENABLED) {
-				console.log("[WebSocket Auth] No valid authentication method provided");
-			}
-		}
-
-		// Add visitorId to the result if authentication was successful
+		// Add visitorId and website override if authentication was successful
 		if (result) {
 			result.visitorId = visitorId;
-			if (websiteIdParam) {
-				// Only allow website override for session-based auth,
-				// or when it matches the API key's bound website.
-				if (result.apiKey) {
-					const boundId = result.apiKey.website?.id;
-					if (boundId && boundId !== websiteIdParam) {
-						throw new AuthValidationError(403, "Website mismatch for API key");
-					}
-				}
-				result.websiteId = websiteIdParam;
-			}
+			applyWebsiteOverride(result, websiteIdParam);
 			logAuthSuccess(result);
 		}
 
