@@ -11,10 +11,17 @@ type VisitorData = {
 	osVersion: string | null;
 	device: string | null;
 	deviceType: "desktop" | "mobile" | "tablet" | "unknown";
-	language: string;
-	timezone: string;
-	screenResolution: string;
-	viewport: string;
+	language: string | null;
+	timezone: string | null;
+	screenResolution: string | null;
+	viewport: string | null;
+	ip: string | null;
+	city: string | null;
+	region: string | null;
+	country: string | null;
+	countryCode: string | null;
+	latitude: number | null;
+	longitude: number | null;
 };
 
 // Browser detection patterns
@@ -189,11 +196,19 @@ function isBrowser(): boolean {
 	return typeof window !== "undefined" && typeof navigator !== "undefined";
 }
 
+function inferCityFromTimezone(timezone: string | null): string | null {
+	if (!timezone?.includes("/")) {
+		return null;
+	}
+	const [, city] = timezone.split("/");
+	return city ? city.replace(/_/g, " ") : null;
+}
+
 /**
  * Collect visitor data from the browser environment
  * Returns null if not in browser environment
  */
-export function collectVisitorData(): VisitorData | null {
+export async function collectVisitorData(): Promise<VisitorData | null> {
 	if (!isBrowser()) {
 		return null;
 	}
@@ -201,6 +216,9 @@ export function collectVisitorData(): VisitorData | null {
 	const userAgent = navigator.userAgent || "";
 	const { browser, version: browserVersion } = parseBrowser(userAgent);
 	const { os, version: osVersion } = parseOS(userAgent);
+	const language = navigator.language || null;
+	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+	const inferredCity = inferCityFromTimezone(timezone);
 
 	return {
 		browser,
@@ -209,16 +227,23 @@ export function collectVisitorData(): VisitorData | null {
 		osVersion,
 		device: getDeviceName(userAgent),
 		deviceType: detectDeviceType(userAgent),
-		language: navigator.language || "en-US",
-		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+		language,
+		timezone,
 		screenResolution:
 			typeof window !== "undefined" && window.screen
 				? `${window.screen.width}x${window.screen.height}`
-				: "unknown",
+				: null,
 		viewport:
 			typeof window !== "undefined"
 				? `${window.innerWidth}x${window.innerHeight}`
-				: "unknown",
+				: null,
+		ip: null,
+		city: inferredCity,
+		region: null,
+		country: null,
+		countryCode: null,
+		latitude: null,
+		longitude: null,
 	};
 }
 

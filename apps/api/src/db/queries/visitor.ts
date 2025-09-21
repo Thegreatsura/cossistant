@@ -10,16 +10,23 @@ export async function upsertVisitor(
 		organizationId: string;
 		visitorId?: string | null;
 		visitorData?: {
-			browser?: string;
-			browserVersion?: string;
-			os?: string;
-			osVersion?: string;
-			device?: string;
-			deviceType?: string;
-			language?: string;
-			timezone?: string;
-			screenResolution?: string;
-			viewport?: string;
+			browser?: string | null;
+			browserVersion?: string | null;
+			os?: string | null;
+			osVersion?: string | null;
+			device?: string | null;
+			deviceType?: string | null;
+			language?: string | null;
+			timezone?: string | null;
+			screenResolution?: string | null;
+			viewport?: string | null;
+			ip?: string | null;
+			city?: string | null;
+			region?: string | null;
+			country?: string | null;
+			countryCode?: string | null;
+			latitude?: number | null;
+			longitude?: number | null;
 		};
 	}
 ) {
@@ -44,6 +51,13 @@ export async function upsertVisitor(
 			timezone: params.visitorData.timezone,
 			screenResolution: params.visitorData.screenResolution,
 			viewport: params.visitorData.viewport,
+			ip: params.visitorData.ip,
+			city: params.visitorData.city,
+			region: params.visitorData.region,
+			country: params.visitorData.country,
+			countryCode: params.visitorData.countryCode,
+			latitude: params.visitorData.latitude,
+			longitude: params.visitorData.longitude,
 		}),
 	};
 
@@ -62,6 +76,13 @@ export async function upsertVisitor(
 			timezone: params.visitorData.timezone,
 			screenResolution: params.visitorData.screenResolution,
 			viewport: params.visitorData.viewport,
+			ip: params.visitorData.ip,
+			city: params.visitorData.city,
+			region: params.visitorData.region,
+			country: params.visitorData.country,
+			countryCode: params.visitorData.countryCode,
+			latitude: params.visitorData.latitude,
+			longitude: params.visitorData.longitude,
 		}),
 	};
 

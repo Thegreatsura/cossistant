@@ -13,7 +13,12 @@ import type {
 	SendMessageResponse,
 } from "@cossistant/types/api/message";
 import { CossistantRestClient } from "./rest-client";
-import type { CossistantConfig, PublicWebsiteResponse } from "./types";
+import type {
+	CossistantConfig,
+	PublicWebsiteResponse,
+	VisitorMetadata,
+	VisitorResponse,
+} from "./types";
 
 export class CossistantClient {
 	private restClient: CossistantRestClient;
@@ -42,6 +47,12 @@ export class CossistantClient {
 
 	setWebsiteContext(websiteId: string, visitorId?: string): void {
 		this.restClient.setWebsiteContext(websiteId, visitorId);
+	}
+
+	async updateVisitorMetadata(
+		metadata: VisitorMetadata
+	): Promise<VisitorResponse> {
+		return this.restClient.updateVisitorMetadata(metadata);
 	}
 
 	// Conversation management

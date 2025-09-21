@@ -1,6 +1,17 @@
 import { z } from "@hono/zod-openapi";
 
 /**
+ * Visitor metadata are stored as key value pairs
+ * Values can be strings, numbers, booleans, or null
+ */
+export const visitorMetadataSchema = z.record(
+	z.string(),
+	z.string().or(z.number()).or(z.boolean()).or(z.null())
+);
+
+export type VisitorMetadata = z.infer<typeof visitorMetadataSchema>;
+
+/**
  * Visitor data update request schema
  */
 export const updateVisitorRequestSchema = z.object({
@@ -147,8 +158,7 @@ export const updateVisitorRequestSchema = z.object({
 			example: "1920x900",
 		})
 		.optional(),
-	metadata: z
-		.record(z.string(), z.any())
+	metadata: visitorMetadataSchema
 		.openapi({
 			description: "Additional custom metadata for the visitor.",
 			example: { plan: "premium", role: "admin" },
@@ -158,17 +168,16 @@ export const updateVisitorRequestSchema = z.object({
 
 export type UpdateVisitorRequest = z.infer<typeof updateVisitorRequestSchema>;
 
-/**
- * Visitor metadata are stored as key value pairs
- * Values can be strings, numbers, booleans, or null
- * We don't want to use z.any() here because it's too loose
- */
-export const visitorMetadataSchema = z.record(
-	z.string(),
-	z.string().or(z.number()).or(z.boolean()).or(z.null())
-);
+export const updateVisitorMetadataRequestSchema = z.object({
+	metadata: visitorMetadataSchema.openapi({
+		description: "Metadata payload to merge into the visitor's profile.",
+		example: { plan: "premium", role: "admin" },
+	}),
+});
 
-export type VisitorMetadata = z.infer<typeof visitorMetadataSchema>;
+export type UpdateVisitorMetadataRequest = z.infer<
+	typeof updateVisitorMetadataRequestSchema
+>;
 
 export const visitorProfileSchema = z.object({
 	id: z.string().ulid().openapi({

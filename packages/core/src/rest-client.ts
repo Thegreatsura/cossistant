@@ -17,13 +17,26 @@ import {
 	CossistantAPIError,
 	type CossistantConfig,
 	type PublicWebsiteResponse,
+	type UpdateVisitorRequest,
+	type VisitorMetadata,
+	type VisitorResponse,
 } from "./types";
 import { generateConversationId } from "./utils";
+import { collectVisitorData } from "./visitor-data";
 import {
 	getExistingVisitorId,
 	getVisitorId,
 	setVisitorId,
 } from "./visitor-tracker";
+
+type VisitorResponsePayload = Omit<
+	VisitorResponse,
+	"createdAt" | "updatedAt" | "lastSeenAt"
+> & {
+	createdAt: string;
+	updatedAt: string;
+	lastSeenAt: string | null;
+};
 
 export class CossistantRestClient {
 	private config: CossistantConfig;
@@ -63,6 +76,71 @@ export class CossistantRestClient {
 
 		if (config.organizationId) {
 			this.baseHeaders["X-Organization-ID"] = config.organizationId;
+		}
+	}
+
+	private normalizeVisitorResponse(
+		payload: VisitorResponsePayload
+	): VisitorResponse {
+		return {
+			...payload,
+			createdAt: new Date(payload.createdAt),
+			updatedAt: new Date(payload.updatedAt),
+			lastSeenAt: payload.lastSeenAt ? new Date(payload.lastSeenAt) : null,
+		};
+	}
+
+	private resolveVisitorId(): string {
+		if (this.visitorId) {
+			return this.visitorId;
+		}
+
+		if (this.websiteId) {
+			const storedVisitorId = getVisitorId(this.websiteId);
+			if (storedVisitorId) {
+				this.visitorId = storedVisitorId;
+				return storedVisitorId;
+			}
+		}
+
+		throw new Error("Visitor ID is required");
+	}
+
+	private async syncVisitorSnapshot(visitorId: string): Promise<void> {
+		try {
+			const visitorData = await collectVisitorData();
+			if (!visitorData) {
+				return;
+			}
+
+			const payload = Object.entries(visitorData).reduce<
+				Partial<UpdateVisitorRequest>
+			>((acc, [key, value]) => {
+				if (value === null || value === undefined) {
+					return acc;
+				}
+				(acc as Record<string, unknown>)[key] = value;
+				return acc;
+			}, {});
+
+			if (Object.keys(payload).length === 0) {
+				return;
+			}
+
+			await this.request<VisitorResponsePayload>(`/visitors/${visitorId}`, {
+				method: "PATCH",
+				body: JSON.stringify(payload),
+				headers: {
+					"X-Visitor-Id": visitorId,
+				},
+			});
+		} catch (error) {
+			if (
+				typeof console !== "undefined" &&
+				typeof console.warn === "function"
+			) {
+				console.warn("Failed to sync visitor data", error);
+			}
 		}
 	}
 
@@ -125,6 +203,7 @@ export class CossistantRestClient {
 		if (response.visitor?.id) {
 			this.visitorId = response.visitor.id;
 			setVisitorId(response.id, response.visitor.id);
+			this.syncVisitorSnapshot(response.visitor.id);
 		}
 
 		return response;
@@ -137,6 +216,24 @@ export class CossistantRestClient {
 			this.visitorId = visitorId;
 			setVisitorId(websiteId, visitorId);
 		}
+	}
+
+	async updateVisitorMetadata(
+		metadata: VisitorMetadata
+	): Promise<VisitorResponse> {
+		const visitorId = this.resolveVisitorId();
+		const response = await this.request<VisitorResponsePayload>(
+			`/visitors/${visitorId}/metadata`,
+			{
+				method: "PATCH",
+				body: JSON.stringify({ metadata }),
+				headers: {
+					"X-Visitor-Id": visitorId,
+				},
+			}
+		);
+
+		return this.normalizeVisitorResponse(response);
 	}
 
 	async createConversation(
