@@ -1,7 +1,10 @@
 import type { Database } from "@api/db";
 import { visitor } from "@api/db/schema";
 import { generateULID } from "@api/utils/db/ids";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+
+export type VisitorRecord = typeof visitor.$inferSelect;
+type VisitorInsert = typeof visitor.$inferInsert;
 
 export async function upsertVisitor(
 	db: Database,
@@ -140,4 +143,85 @@ export async function getVisitorComplete(
 	});
 
 	return _visitor;
+}
+
+export async function findVisitorForWebsite(
+	db: Database,
+	params: {
+		visitorId: string;
+		websiteId: string;
+	}
+): Promise<VisitorRecord | null> {
+	const [record] = await db
+		.select()
+		.from(visitor)
+		.where(
+			and(
+				eq(visitor.id, params.visitorId),
+				eq(visitor.websiteId, params.websiteId)
+			)
+		)
+		.limit(1);
+
+	return record ?? null;
+}
+
+export async function updateVisitorForWebsite(
+	db: Database,
+	params: {
+		visitorId: string;
+		websiteId: string;
+		data: Partial<VisitorInsert>;
+	}
+): Promise<VisitorRecord | null> {
+	const [updated] = await db
+		.update(visitor)
+		.set(params.data)
+		.where(
+			and(
+				eq(visitor.id, params.visitorId),
+				eq(visitor.websiteId, params.websiteId)
+			)
+		)
+		.returning();
+
+	return updated ?? null;
+}
+
+export async function mergeVisitorMetadataForWebsite(
+	db: Database,
+	params: {
+		visitorId: string;
+		websiteId: string;
+		metadata: NonNullable<VisitorInsert["metadata"]>;
+		updatedAt?: Date;
+	}
+): Promise<VisitorRecord | null> {
+	const existing = await findVisitorForWebsite(db, {
+		visitorId: params.visitorId,
+		websiteId: params.websiteId,
+	});
+
+	if (!existing) {
+		return null;
+	}
+
+	const existingMetadata =
+		typeof existing.metadata === "object" && existing.metadata !== null
+			? (existing.metadata as Record<string, unknown>)
+			: {};
+
+	const mergedMetadata = {
+		...existingMetadata,
+		...params.metadata,
+	};
+
+	return updateVisitorForWebsite(db, {
+		visitorId: params.visitorId,
+		websiteId: params.websiteId,
+		data: {
+			metadata: mergedMetadata,
+			updatedAt: params.updatedAt ?? new Date(),
+		},
+	});
 }

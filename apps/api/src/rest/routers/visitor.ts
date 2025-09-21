@@ -1,4 +1,9 @@
-import { visitor } from "@api/db/schema/website";
+import type { VisitorRecord } from "@api/db/queries/visitor";
+import {
+	findVisitorForWebsite,
+	mergeVisitorMetadataForWebsite,
+	updateVisitorForWebsite,
+} from "@api/db/queries/visitor";
 import {
 	safelyExtractRequestData,
 	validateResponse,
@@ -11,15 +16,12 @@ import {
 	visitorResponseSchema,
 } from "@cossistant/types";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { z } from "zod";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
 import type { RestContext } from "../types";
 
 export const visitorRouter = new OpenAPIHono<RestContext>();
-
-type VisitorRecord = typeof visitor.$inferSelect;
 
 function formatVisitorResponse(record: VisitorRecord): VisitorResponse {
 	return {
@@ -261,6 +263,17 @@ visitorRouter.openapi(
 				},
 				description: "Unauthorized - Invalid API key",
 			},
+			404: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							error: z.string(),
+							message: z.string(),
+						}),
+					},
+				},
+				description: "Visitor not found",
+			},
 			500: {
 				content: {
 					"application/json": {
@@ -287,6 +300,13 @@ visitorRouter.openapi(
 			);
 			const visitorId = c.req.param("id");
 
+			if (!visitorId) {
+				return c.json(
+					{ error: "NOT_FOUND", message: "Visitor not found" },
+					404
+				);
+			}
+
 			if (!website?.id) {
 				return c.json(
 					{ error: "UNAUTHORIZED", message: "Invalid API key" },
@@ -294,33 +314,25 @@ visitorRouter.openapi(
 				);
 			}
 
-			const [existingVisitor] = await db
-				.select()
-				.from(visitor)
-				.where(
-					and(eq(visitor.id, visitorId), eq(visitor.websiteId, website.id))
-				)
-				.limit(1);
+			const now = new Date();
+			const networkContext = extractNetworkContext(c.req);
+			const updatedVisitor = await updateVisitorForWebsite(db, {
+				visitorId,
+				websiteId: website.id,
+				data: {
+					...body,
+					...networkContext,
+					lastSeenAt: now,
+					updatedAt: now,
+				},
+			});
 
-			if (!existingVisitor) {
+			if (!updatedVisitor) {
 				return c.json(
 					{ error: "NOT_FOUND", message: "Visitor not found" },
 					404
 				);
 			}
-
-			const now = new Date();
-			const networkContext = extractNetworkContext(c.req);
-			const [updatedVisitor] = await db
-				.update(visitor)
-				.set({
-					...body,
-					...networkContext,
-					lastSeenAt: now,
-					updatedAt: now,
-				})
-				.where(eq(visitor.id, visitorId))
-				.returning();
 
 			const response = formatVisitorResponse(updatedVisitor);
 
@@ -433,6 +445,13 @@ visitorRouter.openapi(
 			);
 			const visitorId = c.req.param("id");
 
+			if (!visitorId) {
+				return c.json(
+					{ error: "NOT_FOUND", message: "Visitor not found" },
+					404
+				);
+			}
+
 			if (!website?.id) {
 				return c.json(
 					{ error: "UNAUTHORIZED", message: "Invalid API key" },
@@ -440,35 +459,18 @@ visitorRouter.openapi(
 				);
 			}
 
-			const [existingVisitor] = await db
-				.select()
-				.from(visitor)
-				.where(
-					and(eq(visitor.id, visitorId), eq(visitor.websiteId, website.id))
-				)
-				.limit(1);
+			const updatedVisitor = await mergeVisitorMetadataForWebsite(db, {
+				visitorId,
+				websiteId: website.id,
+				metadata: body.metadata,
+			});
 
-			if (!existingVisitor) {
+			if (!updatedVisitor) {
 				return c.json(
 					{ error: "NOT_FOUND", message: "Visitor not found" },
 					404
 				);
 			}
-
-			const now = new Date();
-			const mergedMetadata = {
-				...(existingVisitor.metadata ?? {}),
-				...body.metadata,
-			};
-
-			const [updatedVisitor] = await db
-				.update(visitor)
-				.set({
-					metadata: mergedMetadata,
-					updatedAt: now,
-				})
-				.where(eq(visitor.id, visitorId))
-				.returning();
 
 			const response = formatVisitorResponse(updatedVisitor);
 
@@ -535,6 +537,17 @@ visitorRouter.openapi(
 				},
 				description: "Unauthorized - Invalid API key",
 			},
+			500: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							error: z.string(),
+							message: z.string(),
+						}),
+					},
+				},
+				description: "Internal server error",
+			},
 		},
 		security: [
 			{
@@ -547,6 +560,13 @@ visitorRouter.openapi(
 			const { db, website } = await safelyExtractRequestData(c);
 			const visitorId = c.req.param("id");
 
+			if (!visitorId) {
+				return c.json(
+					{ error: "NOT_FOUND", message: "Visitor not found" },
+					404
+				);
+			}
+
 			if (!website?.id) {
 				return c.json(
 					{ error: "UNAUTHORIZED", message: "Invalid API key" },
@@ -554,13 +574,10 @@ visitorRouter.openapi(
 				);
 			}
 
-			const [visitorRecord] = await db
-				.select()
-				.from(visitor)
-				.where(
-					and(eq(visitor.id, visitorId), eq(visitor.websiteId, website.id))
-				)
-				.limit(1);
+			const visitorRecord = await findVisitorForWebsite(db, {
+				visitorId,
+				websiteId: website.id,
+			});
 
 			if (!visitorRecord) {
 				return c.json(
