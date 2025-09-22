@@ -13,6 +13,7 @@ import {
 	setMessagesInCache,
 	upsertMessageInCache,
 } from "../utils/message-cache";
+import { PENDING_CONVERSATION_ID } from "../../utils/id";
 
 const QUERY_KEYS = {
 	messages: (conversationId: string) =>
@@ -52,7 +53,7 @@ export function useMessages({
 		queryKey,
 		queryFn: async ({ pageParam }) => {
 			// If no client or it's a pending conversation, return default messages
-			if (!client || conversationId === "pending") {
+			if (!client || conversationId === PENDING_CONVERSATION_ID) {
 				return {
 					messages: defaultMessages,
 					nextCursor: undefined,
