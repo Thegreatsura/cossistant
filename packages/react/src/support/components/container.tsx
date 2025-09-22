@@ -86,7 +86,9 @@ export const Container: React.FC<ContainerProps> = ({
 					// Common base styles
 					"flex flex-col overflow-hidden overscroll-none bg-co-background",
 
-					"max-md:fixed max-md:inset-0",
+					mode === "floating"
+						? "max-md:fixed max-md:inset-0"
+						: "max-md:relative max-md:h-full max-md:w-full",
 
 					// Desktop floating mode
 					mode === "floating" && [
