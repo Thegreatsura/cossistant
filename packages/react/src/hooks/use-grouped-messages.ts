@@ -26,13 +26,15 @@ export type ConversationEventItem = {
 
 export type ConversationItem = GroupedMessage | ConversationEventItem;
 
-export type UseGroupedMessagesProps = {
+export type Props = {
 	messages: MessageType[];
 	events?: ConversationEvent[];
 	seenData?: ConversationSeen[];
 	currentViewerId?: string; // The ID of the current viewer (visitor, user, or AI agent)
 	viewerType?: SenderType; // Type of the current viewer
 };
+
+export type UseGroupedMessagesProps = Props;
 
 // Helper function to determine sender ID and type from a message
 const getSenderIdAndType = (
@@ -171,13 +173,19 @@ const getItemTimestamp = (item: ConversationItem): number => {
 	return item.firstMessageTime.getTime();
 };
 
+/**
+ * Batches sequential messages from the same sender into groups and enriches
+ * them with read-receipt helpers so UIs can render conversation timelines with
+ * minimal effort. Seen data is normalised into quick lookup maps for unread
+ * indicators.
+ */
 export const useGroupedMessages = ({
 	messages,
 	events = [],
 	seenData = [],
 	currentViewerId,
 	viewerType,
-}: UseGroupedMessagesProps) => {
+}: Props) => {
 	return useMemo(() => {
 		// Group messages by sender
 		const groupedMessages = groupMessagesBySender(messages);

@@ -28,6 +28,11 @@ export type UseMultimodalInputReturn = {
 	canSubmit: boolean;
 };
 
+/**
+ * Manages message text, file attachments and validation for the multimodal
+ * composer component. Provides ergonomic helpers for submit flows and error
+ * reporting.
+ */
 export const useMultimodalInput = ({
 	onSubmit,
 	onError,

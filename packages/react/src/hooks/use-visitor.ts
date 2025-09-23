@@ -25,6 +25,10 @@ function safeError(message: string, error: unknown): void {
 	}
 }
 
+/**
+ * Exposes the current visitor plus a safe helper to update metadata while
+ * guarding against missing client or visitor context.
+ */
 export function useVisitor(): UseVisitorReturn {
 	const { website, client } = useSupport();
 	const visitor = website?.visitor || null;

@@ -15,6 +15,11 @@ export type UseRealtimeSupportResult = {
 	subscribe: (handler: (event: RealtimeEvent) => void) => () => void;
 };
 
+/**
+ * Subscribes to websocket updates pushed by the provider-level
+ * `WebSocketProvider`. Delegates low-level connection state while optionally
+ * invoking the consumer supplied `onEvent` handler for every realtime event.
+ */
 export function useRealtimeSupport(
 	options: UseRealtimeSupportOptions = {}
 ): UseRealtimeSupportResult {

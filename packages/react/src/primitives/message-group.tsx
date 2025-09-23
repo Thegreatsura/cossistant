@@ -2,6 +2,10 @@ import type { Message as MessageType, SenderType } from "@cossistant/types";
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
+/**
+ * Shape returned to render-prop children describing the grouped message state
+ * and viewer specific flags.
+ */
 export type MessageGroupRenderProps = {
 	// Sender information
 	senderType: SenderType;
@@ -26,8 +30,10 @@ export type MessageGroupRenderProps = {
 	seenByIds?: string[]; // IDs of users who have seen the last message in group
 };
 
-export interface MessageGroupProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageGroupProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?:
 		| React.ReactNode
 		| ((props: MessageGroupRenderProps) => React.ReactNode);
@@ -42,9 +48,18 @@ export interface MessageGroupProps
 	// Seen data
 	seenByIds?: string[]; // IDs of users who have seen these messages
 	lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
-}
+};
 
-export const MessageGroup = React.forwardRef<HTMLDivElement, MessageGroupProps>(
+/**
+ * Groups sequential messages from the same sender and exposes render helpers
+ * that describe who sent the batch and whether the active viewer has seen it.
+ * Consumers can either render their own layout via a render prop or rely on
+ * slotted children.
+ */
+export const MessageGroup = (() => {
+	type Props = MessageGroupProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
 	(
 		{
 			children,
@@ -52,7 +67,6 @@ export const MessageGroup = React.forwardRef<HTMLDivElement, MessageGroupProps>(
 			asChild = false,
 			messages = [],
 			viewerId,
-			viewerType,
 			seenByIds = [],
 			lastReadMessageIds,
 			...props
@@ -133,41 +147,55 @@ export const MessageGroup = React.forwardRef<HTMLDivElement, MessageGroupProps>(
 			}
 		);
 	}
-);
+	);
 
-MessageGroup.displayName = "MessageGroup";
+	Component.displayName = "MessageGroup";
+	return Component;
+})();
 
-export interface MessageGroupAvatarProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageGroupAvatarProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	asChild?: boolean;
 	className?: string;
-}
+};
 
-export const MessageGroupAvatar = React.forwardRef<
-	HTMLDivElement,
-	MessageGroupAvatarProps
->(({ children, className, asChild = false, ...props }, ref) => {
-	return useRenderElement(
-		"div",
-		{
-			className,
-			asChild,
-		},
-		{
-			ref,
-			props: {
-				...props,
-				children,
-			},
+/**
+ * Optional slot rendered next to a grouped batch to display an avatar, agent
+ * badge or any other sender metadata supplied by the consumer UI.
+ */
+export const MessageGroupAvatar = (() => {
+	type Props = MessageGroupAvatarProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		({ children, className, asChild = false, ...props }, ref) => {
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children,
+					},
+				}
+			);
 		}
 	);
-});
 
-MessageGroupAvatar.displayName = "MessageGroupAvatar";
+	Component.displayName = "MessageGroupAvatar";
+	return Component;
+})();
 
-export interface MessageGroupHeaderProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageGroupHeaderProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?:
 		| React.ReactNode
 		| ((props: {
@@ -180,79 +208,99 @@ export interface MessageGroupHeaderProps
 	name?: string;
 	senderId?: string;
 	senderType?: SenderType;
-}
+};
 
-export const MessageGroupHeader = React.forwardRef<
-	HTMLDivElement,
-	MessageGroupHeaderProps
->(
-	(
-		{
-			children,
-			className,
-			asChild = false,
-			name,
-			senderId,
-			senderType,
-			...props
-		},
-		ref
-	) => {
-		const content =
-			typeof children === "function"
-				? children({ name, senderId, senderType })
-				: children;
+/**
+ * Decorative or semantic wrapper rendered above a message batch. Useful for
+ * injecting agent names, timestamps or custom status labels tied to the sender
+ * metadata supplied by `MessageGroup`.
+ */
+export const MessageGroupHeader = (() => {
+	type Props = MessageGroupHeaderProps;
 
-		return useRenderElement(
-			"div",
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		(
 			{
+				children,
 				className,
-				asChild,
+				asChild = false,
+				name,
+				senderId,
+				senderType,
+				...props
 			},
-			{
-				ref,
-				props: {
-					...props,
-					children: content,
+			ref
+		) => {
+			const content =
+				typeof children === "function"
+					? children({ name, senderId, senderType })
+					: children;
+
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
 				},
-			}
-		);
-	}
-);
+				{
+					ref,
+					props: {
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-MessageGroupHeader.displayName = "MessageGroupHeader";
+	Component.displayName = "MessageGroupHeader";
+	return Component;
+})();
 
-export interface MessageGroupContentProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageGroupContentProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	asChild?: boolean;
 	className?: string;
-}
+};
 
-export const MessageGroupContent = React.forwardRef<
-	HTMLDivElement,
-	MessageGroupContentProps
->(({ children, className, asChild = false, ...props }, ref) => {
-	return useRenderElement(
-		"div",
-		{
-			className,
-			asChild,
-		},
-		{
-			ref,
-			props: {
-				...props,
-				children,
-			},
+/**
+ * Container for the actual message bubbles within a batch. Consumers can
+ * override the structure while inheriting layout props passed down from the
+ * parent group.
+ */
+export const MessageGroupContent = (() => {
+	type Props = MessageGroupContentProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		({ children, className, asChild = false, ...props }, ref) => {
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children,
+					},
+				}
+			);
 		}
 	);
-});
 
-MessageGroupContent.displayName = "MessageGroupContent";
+	Component.displayName = "MessageGroupContent";
+	return Component;
+})();
 
-export interface MessageGroupSeenIndicatorProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageGroupSeenIndicatorProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?:
 		| React.ReactNode
 		| ((props: {
@@ -262,38 +310,49 @@ export interface MessageGroupSeenIndicatorProps
 	asChild?: boolean;
 	className?: string;
 	seenByIds?: string[];
-}
+};
 
-export const MessageGroupSeenIndicator = React.forwardRef<
-	HTMLDivElement,
-	MessageGroupSeenIndicatorProps
->(({ children, className, asChild = false, seenByIds = [], ...props }, ref) => {
-	const hasBeenSeen = seenByIds.length > 0;
-	const content =
-		typeof children === "function"
-			? children({ seenByIds, hasBeenSeen })
-			: children;
+/**
+ * Utility slot for showing who has viewed the most recent message in the
+ * group. Works with simple text children or a render prop for advanced
+ * displays.
+ */
+export const MessageGroupSeenIndicator = (() => {
+	type Props = MessageGroupSeenIndicatorProps;
 
-	return useRenderElement(
-		"div",
-		{
-			className,
-			asChild,
-		},
-		{
-			ref,
-			props: {
-				...props,
-				children: content,
-			},
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		({ children, className, asChild = false, seenByIds = [], ...props }, ref) => {
+			const hasBeenSeen = seenByIds.length > 0;
+			const content =
+				typeof children === "function"
+					? children({ seenByIds, hasBeenSeen })
+					: children;
+
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children: content,
+					},
+				}
+			);
 		}
 	);
-});
 
-MessageGroupSeenIndicator.displayName = "MessageGroupSeenIndicator";
+	Component.displayName = "MessageGroupSeenIndicator";
+	return Component;
+})();
 
-export interface MessageGroupReadIndicatorProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageGroupReadIndicatorProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?:
 		| React.ReactNode
 		| ((props: {
@@ -304,56 +363,63 @@ export interface MessageGroupReadIndicatorProps
 	className?: string;
 	messageId: string;
 	lastReadMessageIds?: Map<string, string>;
-}
+};
 
-export const MessageGroupReadIndicator = React.forwardRef<
-	HTMLDivElement,
-	MessageGroupReadIndicatorProps
->(
-	(
-		{
-			children,
-			className,
-			asChild = false,
-			messageId,
-			lastReadMessageIds,
-			...props
-		},
-		ref
-	) => {
-		// Find all users who stopped reading at this message
-		const lastReaderIds: string[] = [];
-		const readers: Array<{ userId: string; isLastRead: boolean }> = [];
+/**
+ * Renders read receipts for the tail message in a group. It surfaces the list
+ * of readers and callers can decide whether to render avatars, tooltips or a
+ * basic label.
+ */
+export const MessageGroupReadIndicator = (() => {
+	type Props = MessageGroupReadIndicatorProps;
 
-		if (lastReadMessageIds) {
-			lastReadMessageIds.forEach((lastMessageId, userId) => {
-				if (lastMessageId === messageId) {
-					lastReaderIds.push(userId);
-					readers.push({ userId, isLastRead: true });
-				}
-			});
-		}
-
-		const content =
-			typeof children === "function"
-				? children({ readers, lastReaderIds })
-				: children;
-
-		return useRenderElement(
-			"div",
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		(
 			{
+				children,
 				className,
-				asChild,
+				asChild = false,
+				messageId,
+				lastReadMessageIds,
+				...props
 			},
-			{
-				ref,
-				props: {
-					...props,
-					children: content,
-				},
-			}
-		);
-	}
-);
+			ref
+		) => {
+			// Find all users who stopped reading at this message
+			const lastReaderIds: string[] = [];
+			const readers: Array<{ userId: string; isLastRead: boolean }> = [];
 
-MessageGroupReadIndicator.displayName = "MessageGroupReadIndicator";
+			if (lastReadMessageIds) {
+				lastReadMessageIds.forEach((lastMessageId, userId) => {
+					if (lastMessageId === messageId) {
+						lastReaderIds.push(userId);
+						readers.push({ userId, isLastRead: true });
+					}
+				});
+			}
+
+			const content =
+				typeof children === "function"
+					? children({ readers, lastReaderIds })
+					: children;
+
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
+
+	Component.displayName = "MessageGroupReadIndicator";
+	return Component;
+})();

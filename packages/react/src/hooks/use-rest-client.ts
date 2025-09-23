@@ -9,6 +9,12 @@ export type UseClientResult = {
 	error: Error | null;
 };
 
+/**
+ * Creates a memoised `CossistantClient` instance using the provided endpoints
+ * and public key. When no key is passed the hook falls back to environment
+ * variables and surfaces missing configuration errors through the returned
+ * `error` field.
+ */
 export function useClient(
 	publicKey: string | undefined,
 	apiUrl = "https://api.cossistant.com/v1",

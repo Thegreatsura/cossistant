@@ -5,6 +5,10 @@ import type {
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
+/**
+ * High-level state of the list handed to render-prop children so they can show
+ * skeletons, empty states or pagination affordances.
+ */
 export type MessageListRenderProps = {
 	messageCount: number;
 	eventCount: number;
@@ -13,8 +17,10 @@ export type MessageListRenderProps = {
 	isEmpty: boolean;
 };
 
-export interface MessageListProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageListProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?:
 		| React.ReactNode
 		| ((props: MessageListRenderProps) => React.ReactNode);
@@ -27,25 +33,32 @@ export interface MessageListProps
 	autoScroll?: boolean;
 	onScrollEnd?: () => void;
 	onScrollStart?: () => void;
-}
+};
 
-export const MessageList = React.forwardRef<HTMLDivElement, MessageListProps>(
-	(
-		{
-			children,
-			className,
-			asChild = false,
-			messages = [],
-			events = [],
-			isLoading = false,
-			hasMore = false,
-			autoScroll = true,
-			onScrollEnd,
-			onScrollStart,
-			...props
-		},
-		ref
-	) => {
+/**
+ * Scrollable log that wires auto-scroll behaviour, live-region semantics and
+ * pagination callbacks for support conversations.
+ */
+export const MessageList = (() => {
+	type Props = MessageListProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		(
+			{
+				children,
+				className,
+				asChild = false,
+				messages = [],
+				events = [],
+				isLoading = false,
+				hasMore = false,
+				autoScroll = true,
+				onScrollEnd,
+				onScrollStart,
+				...props
+			},
+			ref
+		) => {
 		const internalRef = React.useRef<HTMLDivElement>(null);
 		const scrollRef =
 			(ref as React.MutableRefObject<HTMLDivElement>) || internalRef;
@@ -110,118 +123,150 @@ export const MessageList = React.forwardRef<HTMLDivElement, MessageListProps>(
 			[onScrollStart, onScrollEnd]
 		);
 
-		return useRenderElement(
-			"div",
-			{
-				className,
-				asChild,
-			},
-			{
-				ref: scrollRef,
-				state: renderProps,
-				props: {
-					role: "log",
-					"aria-label": "Message list",
-					"aria-live": "polite",
-					"aria-relevant": "additions",
-					onScroll: handleScroll,
-					...props,
-					children: content,
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
 				},
-			}
-		);
-	}
-);
+				{
+					ref: scrollRef,
+					state: renderProps,
+					props: {
+						role: "log",
+						"aria-label": "Message list",
+						"aria-live": "polite",
+						"aria-relevant": "additions",
+						onScroll: handleScroll,
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-MessageList.displayName = "MessageList";
+	Component.displayName = "MessageList";
+	return Component;
+})();
 
-export interface MessageListContainerProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageListContainerProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	asChild?: boolean;
 	className?: string;
-}
+};
 
-export const MessageListContainer = React.forwardRef<
-	HTMLDivElement,
-	MessageListContainerProps
->(({ children, className, asChild = false, ...props }, ref) => {
-	return useRenderElement(
-		"div",
-		{
-			className,
-			asChild,
-		},
-		{
-			ref,
-			props: {
-				...props,
-				children,
-			},
+/**
+ * Wrapper around the scrollable list giving consumers an easy hook to add
+ * padding, backgrounds or transitions without touching the core list logic.
+ */
+export const MessageListContainer = (() => {
+	type Props = MessageListContainerProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		({ children, className, asChild = false, ...props }, ref) => {
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children,
+					},
+				}
+			);
 		}
 	);
-});
 
-MessageListContainer.displayName = "MessageListContainer";
+	Component.displayName = "MessageListContainer";
+	return Component;
+})();
 
-export interface MessageListLoadingProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageListLoadingProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	asChild?: boolean;
 	className?: string;
-}
+};
 
-export const MessageListLoading = React.forwardRef<
-	HTMLDivElement,
-	MessageListLoadingProps
->(({ children, className, asChild = false, ...props }, ref) => {
-	return useRenderElement(
-		"div",
-		{
-			className,
-			asChild,
-		},
-		{
-			ref,
-			props: {
-				role: "status",
-				"aria-label": "Loading messages",
-				...props,
-				children,
-			},
+/**
+ * Accessible status region for loading more messages. Lets host apps render
+ * skeletons or shimmer states without reimplementing ARIA wiring.
+ */
+export const MessageListLoading = (() => {
+	type Props = MessageListLoadingProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		({ children, className, asChild = false, ...props }, ref) => {
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						role: "status",
+						"aria-label": "Loading messages",
+						...props,
+						children,
+					},
+				}
+			);
 		}
 	);
-});
 
-MessageListLoading.displayName = "MessageListLoading";
+	Component.displayName = "MessageListLoading";
+	return Component;
+})();
 
-export interface MessageListEmptyProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type MessageListEmptyProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	asChild?: boolean;
 	className?: string;
-}
+};
 
-export const MessageListEmpty = React.forwardRef<
-	HTMLDivElement,
-	MessageListEmptyProps
->(({ children, className, asChild = false, ...props }, ref) => {
-	return useRenderElement(
-		"div",
-		{
-			className,
-			asChild,
-		},
-		{
-			ref,
-			props: {
-				role: "status",
-				"aria-label": "No messages",
-				...props,
-				children,
-			},
+/**
+ * Placeholder state rendered when no messages are present. Uses a polite status
+ * region so screen readers announce the absence of messages.
+ */
+export const MessageListEmpty = (() => {
+	type Props = MessageListEmptyProps;
+
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		({ children, className, asChild = false, ...props }, ref) => {
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						role: "status",
+						"aria-label": "No messages",
+						...props,
+						children,
+					},
+				}
+			);
 		}
 	);
-});
 
-MessageListEmpty.displayName = "MessageListEmpty";
+	Component.displayName = "MessageListEmpty";
+	return Component;
+})();

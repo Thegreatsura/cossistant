@@ -1,57 +1,63 @@
 import "./support.css";
 
-import type React from "react";
 import { SupportConfig } from "../config";
 import { type DefaultMessage, useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportContent } from "./components/support-content";
 import { SupportConfigProvider } from "./context/config";
 
-export type SupportProps = {
-	className?: string;
-	position?: "top" | "bottom";
-	align?: "right" | "left";
-	// Display the support widget in a floating window or in responsive mode (takes the full width / height of the parent)
-	mode?: "floating" | "responsive";
-	quickOptions?: string[];
-	defaultMessages?: DefaultMessage[];
-	defaultOpen?: boolean;
+export type Props = {
+  className?: string;
+  position?: "top" | "bottom";
+  align?: "right" | "left";
+  // Display the support widget in a floating window or in responsive mode (takes the full width / height of the parent)
+  mode?: "floating" | "responsive";
+  quickOptions?: string[];
+  defaultMessages?: DefaultMessage[];
+  defaultOpen?: boolean;
 };
 
+export type SupportProps = Props;
+
 // Internal component that needs the conversation context
+/**
+ * Orchestrates the end-user support experience by nesting realtime, config and
+ * content providers. Renders nothing until website data is available to avoid
+ * flashing incomplete UI.
+ */
 export function Support({
-	className,
-	position = "bottom",
-	align = "right",
-	mode = "floating",
-	quickOptions,
-	defaultMessages,
-	defaultOpen,
-}: SupportProps) {
-	const { website } = useSupport();
+  className,
+  position = "bottom",
+  align = "right",
+  mode = "floating",
+  quickOptions,
+  defaultMessages,
+  defaultOpen,
+}: Props) {
+  const { website } = useSupport();
 
-	if (!website) {
-		return null;
-	}
+  if (!website) {
+    return null;
+  }
 
-	return (
-		<>
-			<SupportRealtimeProvider>
-				<SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
-					<SupportContent
-						align={align}
-						className={className}
-						mode={mode}
-						position={position}
-					/>
-				</SupportConfigProvider>
-			</SupportRealtimeProvider>
-			<SupportConfig
-				defaultMessages={defaultMessages}
-				quickOptions={quickOptions}
-			/>
-		</>
-	);
+  return (
+    <>
+      <SupportRealtimeProvider>
+        <SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
+          <SupportContent
+            align={align}
+            className={className}
+            mode={mode}
+            position={position}
+          />
+        </SupportConfigProvider>
+      </SupportRealtimeProvider>
+      <SupportConfig
+        defaultMessages={defaultMessages}
+        quickOptions={quickOptions}
+      />
+    </>
+  );
 }
 
 export default Support;

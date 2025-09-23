@@ -6,91 +6,102 @@ type ImageState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
 };
 
-export interface AvatarImageProps
-	extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> {
+export type AvatarImageProps = Omit<
+	React.ImgHTMLAttributes<HTMLImageElement>,
+	"src" | "alt"
+> & {
 	src: string;
 	alt?: string;
 	asChild?: boolean;
 	className?: string;
 	onLoadingStatusChange?: (status: ImageState["imageLoadingStatus"]) => void;
-}
+};
 
-export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
-	(
-		{
-			src,
-			alt = "",
-			className,
-			asChild = false,
-			onLoadingStatusChange,
-			...props
-		},
-		ref
-	) => {
-		const { imageLoadingStatus, onImageLoadingStatusChange } =
-			useAvatarContext();
+/**
+ * Controlled `<img>` that syncs its loading status back to the avatar context
+ * so fallbacks know when to display.
+ */
+export const AvatarImage = (() => {
+	type Props = AvatarImageProps;
 
-		const imageRef = React.useRef<HTMLImageElement>(null);
-		// biome-ignore lint/style/noNonNullAssertion: ok
-		React.useImperativeHandle(ref, () => imageRef.current!);
-
-		const updateImageLoadingStatus = React.useCallback(
-			(status: ImageState["imageLoadingStatus"]) => {
-				onImageLoadingStatusChange(status);
-				onLoadingStatusChange?.(status);
+	const Component = React.forwardRef<HTMLImageElement, Props>(
+		(
+			{
+				src,
+				alt = "",
+				className,
+				asChild = false,
+				onLoadingStatusChange,
+				...props
 			},
-			[onImageLoadingStatusChange, onLoadingStatusChange]
-		);
+			ref
+		) => {
+			const { imageLoadingStatus, onImageLoadingStatusChange } =
+				useAvatarContext();
 
-		React.useLayoutEffect(() => {
-			if (!src) {
-				updateImageLoadingStatus("error");
-				return;
-			}
+			const imageRef = React.useRef<HTMLImageElement>(null);
+			// biome-ignore lint/style/noNonNullAssertion: ok
+			React.useImperativeHandle(ref, () => imageRef.current!);
 
-			let isMounted = true;
-			const image = new Image();
+			const updateImageLoadingStatus = React.useCallback(
+				(status: ImageState["imageLoadingStatus"]) => {
+					onImageLoadingStatusChange(status);
+					onLoadingStatusChange?.(status);
+				},
+				[onImageLoadingStatusChange, onLoadingStatusChange]
+			);
 
-			const updateStatus = (status: ImageState["imageLoadingStatus"]) => {
-				if (!isMounted) {
+			React.useLayoutEffect(() => {
+				if (!src) {
+					updateImageLoadingStatus("error");
 					return;
 				}
-				updateImageLoadingStatus(status);
+
+				let isMounted = true;
+				const image = new Image();
+
+				const updateStatus = (status: ImageState["imageLoadingStatus"]) => {
+					if (!isMounted) {
+						return;
+					}
+					updateImageLoadingStatus(status);
+				};
+
+				updateStatus("loading");
+
+				image.onload = () => updateStatus("loaded");
+				image.onerror = () => updateStatus("error");
+				image.src = src;
+
+				return () => {
+					isMounted = false;
+				};
+			}, [src, updateImageLoadingStatus]);
+
+			const state: ImageState = {
+				imageLoadingStatus,
 			};
 
-			updateStatus("loading");
-
-			image.onload = () => updateStatus("loaded");
-			image.onerror = () => updateStatus("error");
-			image.src = src;
-
-			return () => {
-				isMounted = false;
-			};
-		}, [src, updateImageLoadingStatus]);
-
-		const state: ImageState = {
-			imageLoadingStatus,
-		};
-
-		return useRenderElement(
-			"img",
-			{
-				asChild,
-				className,
-			},
-			{
-				ref: imageRef,
-				state,
-				enabled: imageLoadingStatus === "loaded",
-				props: {
-					...props,
-					src,
-					alt,
+			return useRenderElement(
+				"img",
+				{
+					asChild,
+					className,
 				},
-			}
-		);
-	}
-);
+				{
+					ref: imageRef,
+					state,
+					enabled: imageLoadingStatus === "loaded",
+					props: {
+						...props,
+						src,
+						alt,
+					},
+				}
+			);
+		}
+	);
 
-AvatarImage.displayName = "AvatarImage";
+	Component.displayName = "AvatarImage";
+	return Component;
+})();

@@ -8,7 +8,7 @@ import { WebSocketProvider } from "./support";
 import { useConversations } from "./support/hooks/use-conversations";
 import { useWebsiteData } from "./support/hooks/use-website-data";
 
-export type CossistantProviderProps = {
+export type Props = {
 	children: React.ReactNode;
 	defaultOpen?: boolean;
 	apiUrl?: string;
@@ -22,6 +22,8 @@ export type CossistantProviderProps = {
 	onWsError?: (error: Error) => void;
 	queryClient?: QueryClient;
 };
+
+export type CossistantProviderProps = Props;
 
 export type DefaultMessage = {
 	content: string;
@@ -46,6 +48,10 @@ const SupportContext = React.createContext<CossistantContextValue | undefined>(
 	undefined
 );
 
+/**
+ * Internal implementation that wires the React Query cache, REST client and
+ * websocket provider together before exposing the combined context.
+ */
 function SupportProviderInner({
 	children,
 	apiUrl,
@@ -57,7 +63,7 @@ function SupportProviderInner({
 	onWsConnect,
 	onWsDisconnect,
 	onWsError,
-}: CossistantProviderProps) {
+}: Props) {
 	const [unreadCount, setUnreadCount] = React.useState(0);
 	const [_defaultMessages, _setDefaultMessages] = React.useState<
 		DefaultMessage[]
@@ -161,6 +167,12 @@ function SupportProviderInner({
 	);
 }
 
+/**
+ * Hosts the entire customer support widget ecosystem by handing out context
+ * about the current website, visitor, unread counts, realtime subscriptions
+ * and the REST client. Provide your Cossistant public key plus optional
+ * defaults to configure the widget behaviour.
+ */
 export function SupportProvider({
 	children,
 	apiUrl = "https://api.cossistant.com/v1",
@@ -173,7 +185,7 @@ export function SupportProvider({
 	onWsDisconnect,
 	onWsError,
 	queryClient,
-}: CossistantProviderProps) {
+}: Props) {
 	// Create a default QueryClient if none provided
 	const [defaultQueryClient] = React.useState(
 		() =>
@@ -208,6 +220,10 @@ export function SupportProvider({
 	);
 }
 
+/**
+ * Convenience hook that exposes the aggregated support context. Throws when it
+ * is consumed outside of `SupportProvider` to catch integration mistakes.
+ */
 export function useSupport() {
 	const context = React.useContext(SupportContext);
 	if (!context) {

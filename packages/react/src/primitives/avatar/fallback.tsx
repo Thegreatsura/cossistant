@@ -7,14 +7,16 @@ type FallbackState = {
 	initials?: string;
 };
 
-export interface AvatarFallbackProps
-	extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {
+export type AvatarFallbackProps = Omit<
+	React.HTMLAttributes<HTMLSpanElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	name?: string;
 	delayMs?: number;
 	asChild?: boolean;
 	className?: string;
-}
+};
 
 const getInitials = (name: string): string => {
 	const names = name.trim().split(" ");
@@ -33,60 +35,66 @@ const getInitials = (name: string): string => {
 	return (firstInitial + lastInitial).toUpperCase();
 };
 
-export const AvatarFallback = React.forwardRef<
-	HTMLSpanElement,
-	AvatarFallbackProps
->(
-	(
-		{ children, name = "", delayMs = 0, className, asChild = false, ...props },
-		ref
-	) => {
-		const { imageLoadingStatus } = useAvatarContext();
-		const [canRender, setCanRender] = React.useState(delayMs === 0);
+/**
+ * Displays initials or custom content while the avatar image loads or fails.
+ * Optional delay avoids flashes when images load instantly.
+ */
+export const AvatarFallback = (() => {
+	type Props = AvatarFallbackProps;
 
-		React.useEffect(() => {
-			if (delayMs > 0) {
-				const timerId = window.setTimeout(() => setCanRender(true), delayMs);
-				return () => window.clearTimeout(timerId);
-			}
-		}, [delayMs]);
+	const Component = React.forwardRef<HTMLSpanElement, Props>(
+		(
+			{ children, name = "", delayMs = 0, className, asChild = false, ...props },
+			ref
+		) => {
+			const { imageLoadingStatus } = useAvatarContext();
+			const [canRender, setCanRender] = React.useState(delayMs === 0);
 
-		const initials = React.useMemo(() => {
-			if (name) {
-				return getInitials(name);
-			}
-			return "";
-		}, [name]);
+			React.useEffect(() => {
+				if (delayMs > 0) {
+					const timerId = window.setTimeout(() => setCanRender(true), delayMs);
+					return () => window.clearTimeout(timerId);
+				}
+			}, [delayMs]);
 
-		const state: FallbackState = {
-			imageLoadingStatus,
-			initials,
-		};
+			const initials = React.useMemo(() => {
+				if (name) {
+					return getInitials(name);
+				}
+				return "";
+			}, [name]);
 
-		const shouldRender =
-			canRender &&
-			imageLoadingStatus !== "loaded" &&
-			imageLoadingStatus !== "loading";
+			const state: FallbackState = {
+				imageLoadingStatus,
+				initials,
+			};
 
-		const content = children || initials;
+			const shouldRender =
+				canRender &&
+				imageLoadingStatus !== "loaded" &&
+				imageLoadingStatus !== "loading";
 
-		return useRenderElement(
-			"span",
-			{
-				asChild,
-				className,
-			},
-			{
-				ref,
-				state,
-				enabled: shouldRender,
-				props: {
-					...props,
-					children: content,
+			const content = children || initials;
+
+			return useRenderElement(
+				"span",
+				{
+					asChild,
+					className,
 				},
-			}
-		);
-	}
-);
+				{
+					ref,
+					state,
+					enabled: shouldRender,
+					props: {
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-AvatarFallback.displayName = "AvatarFallback";
+	Component.displayName = "AvatarFallback";
+	return Component;
+})();

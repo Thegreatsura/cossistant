@@ -3,8 +3,10 @@ import { useSupport } from "../provider";
 import { useSupportConfig } from "../support";
 import { useRenderElement } from "../utils/use-render-element";
 
-export interface SupportBubbleProps
-	extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+export type SupportBubbleProps = Omit<
+	React.ButtonHTMLAttributes<HTMLButtonElement>,
+	"children"
+> & {
 	children?:
 		| React.ReactNode
 		| ((props: {
@@ -14,39 +16,47 @@ export interface SupportBubbleProps
 		  }) => React.ReactNode);
 	asChild?: boolean;
 	className?: string;
-}
+};
 
-export const SupportBubble = React.forwardRef<
-	HTMLButtonElement,
-	SupportBubbleProps
->(({ children, className, asChild = false, ...props }, ref) => {
-	const { isOpen, toggle } = useSupportConfig();
-	const { unreadCount } = useSupport();
+/**
+ * Floating action button that toggles the support window. Exposes widget state
+ * and unread counts to render-prop children for fully custom UI shells.
+ */
+export const SupportBubble = (() => {
+	type Props = SupportBubbleProps;
 
-	const renderProps = { isOpen, unreadCount, toggle };
+	const Component = React.forwardRef<HTMLButtonElement, Props>(
+		({ children, className, asChild = false, ...props }, ref) => {
+			const { isOpen, toggle } = useSupportConfig();
+			const { unreadCount } = useSupport();
 
-	const content =
-		typeof children === "function" ? children(renderProps) : children;
+			const renderProps = { isOpen, unreadCount, toggle };
 
-	return useRenderElement(
-		"button",
-		{
-			asChild,
-			className,
-		},
-		{
-			ref,
-			state: renderProps,
-			props: {
-				type: "button",
-				"aria-haspopup": "dialog",
-				"aria-expanded": isOpen,
-				onClick: toggle,
-				...props,
-				children: content,
-			},
+			const content =
+				typeof children === "function" ? children(renderProps) : children;
+
+			return useRenderElement(
+				"button",
+				{
+					asChild,
+					className,
+				},
+				{
+					ref,
+					state: renderProps,
+					props: {
+						type: "button",
+						"aria-haspopup": "dialog",
+						"aria-expanded": isOpen,
+						onClick: toggle,
+						...props,
+						children: content,
+					},
+				}
+			);
 		}
 	);
-});
 
-SupportBubble.displayName = "SupportBubble";
+	Component.displayName = "SupportBubble";
+	return Component;
+})();

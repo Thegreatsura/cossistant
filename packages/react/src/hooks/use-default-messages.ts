@@ -8,11 +8,17 @@ import {
 import { useMemo } from "react";
 import { useSupport } from "../provider";
 
-export function useDefaultMessages({
-	conversationId,
-}: {
+type Props = {
 	conversationId: string;
-}): Message[] {
+};
+
+/**
+ * Mirrors the provider-configured default messages into a conversation shape so
+ * that welcome content renders immediately while the backend conversation is
+ * still being created. Agent fallbacks are resolved against available humans
+ * and AI agents exposed by the provider context.
+ */
+export function useDefaultMessages({ conversationId }: Props): Message[] {
 	const { defaultMessages, availableAIAgents, availableHumanAgents } =
 		useSupport();
 

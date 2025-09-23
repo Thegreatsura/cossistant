@@ -7,83 +7,95 @@ export type WindowRenderProps = {
 	close: () => void;
 };
 
-export interface WindowProps
-	extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+export type WindowProps = Omit<
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
+> & {
 	isOpen?: boolean;
 	onOpenChange?: (open: boolean) => void;
 	children?: React.ReactNode | ((props: WindowRenderProps) => React.ReactNode);
 	asChild?: boolean;
 	closeOnEscape?: boolean;
 	id?: string;
-}
+};
 
-export const SupportWindow = React.forwardRef<HTMLDivElement, WindowProps>(
-	(
-		{
-			isOpen: isOpenProp,
-			onOpenChange,
-			children,
-			className,
-			asChild = false,
-			closeOnEscape = true,
-			id = "cossistant-window",
-			...props
-		},
-		ref
-	) => {
-		const { isOpen, close, mode } = useSupportConfig();
+/**
+ * Host container for the support experience. Handles responsive mode, escape
+ * key dismissal and propagates render props so callers can take over the
+ * layout.
+ */
+export const SupportWindow = (() => {
+	type Props = WindowProps;
 
-		// In responsive mode, window is always open
-		// Otherwise use normal open/close logic
-		const open = mode === "responsive" ? true : (isOpenProp ?? isOpen ?? false);
+	const Component = React.forwardRef<HTMLDivElement, Props>(
+		(
+			{
+				isOpen: isOpenProp,
+				onOpenChange,
+				children,
+				className,
+				asChild = false,
+				closeOnEscape = true,
+				id = "cossistant-window",
+				...props
+			},
+			ref
+		) => {
+			const { isOpen, close, mode } = useSupportConfig();
 
-		const closeFn = React.useCallback(() => {
-			if (onOpenChange) {
-				onOpenChange(false);
-			} else if (close) {
-				close();
-			}
-		}, [onOpenChange, close]);
+			// In responsive mode, window is always open
+			// Otherwise use normal open/close logic
+			const open = mode === "responsive" ? true : (isOpenProp ?? isOpen ?? false);
 
-		// Close on Escape
-		React.useEffect(() => {
-			if (!(open && closeOnEscape)) {
-				return;
-			}
-			const onKey = (e: KeyboardEvent) => {
-				if (e.key === "Escape") {
+			const closeFn = React.useCallback(() => {
+				if (onOpenChange) {
+					onOpenChange(false);
+				} else if (close) {
 					close();
 				}
-			};
-			window.addEventListener("keydown", onKey);
-			return () => window.removeEventListener("keydown", onKey);
-		}, [open, close, closeOnEscape]);
+			}, [onOpenChange, close]);
 
-		const renderProps: WindowRenderProps = { isOpen: open, close: closeFn };
+			// Close on Escape
+			React.useEffect(() => {
+				if (!(open && closeOnEscape)) {
+					return;
+				}
+				const onKey = (e: KeyboardEvent) => {
+					if (e.key === "Escape") {
+						close();
+					}
+				};
+				window.addEventListener("keydown", onKey);
+				return () => window.removeEventListener("keydown", onKey);
+			}, [open, close, closeOnEscape]);
 
-		const content =
-			typeof children === "function" ? children(renderProps) : children;
+			const renderProps: WindowRenderProps = { isOpen: open, close: closeFn };
 
-		return useRenderElement(
-			"div",
-			{
-				className,
-				asChild,
-			},
-			{
-				ref,
-				state: renderProps,
-				props: {
-					role: "dialog",
-					"aria-modal": "true",
-					id,
-					...props,
-					children: content,
+			const content =
+				typeof children === "function" ? children(renderProps) : children;
+
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
 				},
-				enabled: open,
-			}
-		);
-	}
-);
+				{
+					ref,
+					state: renderProps,
+					props: {
+						role: "dialog",
+						"aria-modal": "true",
+						id,
+						...props,
+						children: content,
+					},
+					enabled: open,
+				}
+			);
+		}
+	);
 
-SupportWindow.displayName = "SupportWindow";
+	Component.displayName = "SupportWindow";
+	return Component;
+})();

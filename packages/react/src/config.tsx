@@ -3,23 +3,17 @@
 import * as React from "react";
 import { type DefaultMessage, useSupport } from "./provider";
 
-export type SupportConfigProps = {
+export type Props = {
 	defaultMessages?: DefaultMessage[];
 	quickOptions?: string[];
 };
 
 /**
- * @description
- * This component is used to configure the support widget.
- * It is used to set the default messages and quick options.
- * @param defaultMessages - The default messages to set.
- * @param quickOptions - The quick options to set.
+ * Couples provider state with static configuration so host apps can declare
+ * canned greetings or quick reply chips. Whenever `defaultMessages` or
+ * `quickOptions` change the values propagate through the support context.
  */
-
-export const SupportConfig = ({
-	defaultMessages,
-	quickOptions,
-}: SupportConfigProps) => {
+export const SupportConfig = ({ defaultMessages, quickOptions }: Props) => {
 	const { setDefaultMessages, setQuickOptions } = useSupport();
 
 	// Only update when the arrays actually change content
@@ -39,3 +33,6 @@ export const SupportConfig = ({
 };
 
 SupportConfig.displayName = "SupportConfig";
+
+// Preserve previous named export for downstream imports.
+export type SupportConfigProps = Props;

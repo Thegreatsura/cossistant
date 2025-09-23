@@ -89,21 +89,19 @@ function createSupportMessageCreatedHandler(): RealtimeEventHandler<
 	});
 }
 
-export function SupportRealtimeProvider({
-	children,
-}: {
+type Props = {
 	children: React.ReactNode;
-}) {
+};
+
+/**
+ * Bridges websocket events into the React Query cache so conversation queries
+ * reflect inbound messages without refetching.
+ */
+export function SupportRealtimeProvider({ children }: Props) {
 	// Use useQueryClient from React Query instead of from useSupport
 	const queryClient = useQueryClient();
 	const { website } = useSupport();
 	const { subscribe } = useRealtimeSupport();
-
-	console.log("[SupportRealtimeProvider] Context values:", {
-		hasQueryClient: !!queryClient,
-		queryCacheSize: queryClient?.getQueryCache?.()?.getAll?.()?.length || 0,
-		websiteId: website?.id,
-	});
 
 	const realtimeContext = useMemo<
 		RealtimeEventHandlerContext<SupportRealtimeContext>
