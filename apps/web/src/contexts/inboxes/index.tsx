@@ -27,6 +27,7 @@ type InboxesContextValue = {
 	navigateToPreviousConversation: () => void;
 	conversations: ConversationHeader[];
 	selectedConversationStatus: ConversationStatus | "archived" | null;
+	selectedConversation: ConversationHeader | null;
 	selectedConversationIndex: number;
 	selectedVisitorId: string | null;
 	selectedConversationId: string | null;
@@ -70,6 +71,7 @@ export function InboxesProvider({
 		isLoading,
 		statusCounts,
 		selectedConversationIndex,
+		selectedConversation,
 		selectedVisitorId,
 		goBack,
 		nextConversation,
@@ -90,6 +92,7 @@ export function InboxesProvider({
 				conversations,
 				selectedConversationStatus,
 				selectedConversationId,
+				selectedConversation,
 				selectedVisitorId,
 				basePath,
 				selectedViewId,

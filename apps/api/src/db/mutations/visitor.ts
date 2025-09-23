@@ -29,3 +29,28 @@ export async function blockVisitor(
 
 	return updatedVisitor ?? null;
 }
+
+export async function unblockVisitor(
+	db: Database,
+	params: { visitor: VisitorRecord; actorUserId: string }
+) {
+	const updatedAt = new Date();
+
+	const [updatedVisitor] = await db
+		.update(visitor)
+		.set({
+			blockedAt: null,
+			blockedByUserId: null,
+			updatedAt,
+		})
+		.where(
+			and(
+				eq(visitor.id, params.visitor.id),
+				eq(visitor.organizationId, params.visitor.organizationId),
+				eq(visitor.websiteId, params.visitor.websiteId)
+			)
+		)
+		.returning();
+
+	return updatedVisitor ?? null;
+}

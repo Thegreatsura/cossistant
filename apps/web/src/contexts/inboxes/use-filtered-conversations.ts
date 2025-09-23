@@ -50,32 +50,31 @@ function matchesStatusFilter(
 	conversation: ConversationHeader,
 	selectedStatus: ConversationStatusFilter
 ): boolean {
-	if (!selectedStatus) {
-		return true;
+	const statusFilter = selectedStatus ?? ConversationStatus.OPEN;
+
+	if (statusFilter === "archived") {
+		return conversation.deletedAt !== null;
 	}
 
-	switch (selectedStatus) {
-		case "open":
+	switch (statusFilter) {
+		case ConversationStatus.OPEN:
 			return (
 				conversation.status === ConversationStatus.OPEN &&
 				!conversation.deletedAt
 			);
-		case "resolved":
+		case ConversationStatus.RESOLVED:
 			return (
 				(conversation.status === ConversationStatus.RESOLVED ||
 					conversation.resolvedAt !== null) &&
 				!conversation.deletedAt
 			);
-		case "spam":
+		case ConversationStatus.SPAM:
 			return (
 				conversation.status === ConversationStatus.SPAM &&
 				!conversation.deletedAt
 			);
-		case "archived":
-			return conversation.deletedAt !== null;
 		default: {
-			// Handle enum exhaustiveness
-			const _exhaustive: never = selectedStatus;
+			const _exhaustive: never = statusFilter;
 			return true;
 		}
 	}
@@ -184,9 +183,17 @@ export function useFilteredConversations({
 		? (indexMap.get(selectedConversationId) ?? -1)
 		: -1;
 
-	const selectedConversation = selectedConversationId
-		? conversationMap.get(selectedConversationId) || null
-		: null;
+	const selectedConversation = useMemo(() => {
+		if (!selectedConversationId) {
+			return null;
+		}
+
+		return (
+			unfilteredConversations.find(
+				(conversation) => conversation.id === selectedConversationId
+			) ?? null
+		);
+	}, [selectedConversationId, unfilteredConversations]);
 
 	const nextConversation =
 		currentIndex >= 0 && currentIndex < conversations.length - 1
@@ -224,8 +231,13 @@ export function useFilteredConversations({
 	);
 
 	const getConversationById = useCallback(
-		(conversationId: string) => conversationMap.get(conversationId) || null,
-		[conversationMap]
+		(conversationId: string) =>
+			conversationMap.get(conversationId) ||
+			unfilteredConversations.find(
+				(conversation) => conversation.id === conversationId
+			) ||
+			null,
+		[conversationMap, unfilteredConversations]
 	);
 
 	return {
@@ -234,6 +246,7 @@ export function useFilteredConversations({
 		indexMap,
 		statusCounts,
 		selectedConversationIndex: currentIndex,
+		selectedConversation,
 		selectedVisitorId: selectedConversation?.visitorId || null,
 		totalCount: conversations.length,
 		isLoading,

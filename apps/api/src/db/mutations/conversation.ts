@@ -71,6 +71,53 @@ export async function resolveConversation(
 	return updated;
 }
 
+export async function reopenConversation(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const reopenedAt = new Date();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			status: ConversationStatus.OPEN,
+			resolvedAt: null,
+			resolvedByUserId: null,
+			resolvedByAiAgentId: null,
+			resolutionTime: null,
+			updatedAt: reopenedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversation.id),
+				eq(conversation.organizationId, params.conversation.organizationId),
+				eq(conversation.websiteId, params.conversation.websiteId)
+			)
+		)
+		.returning();
+
+	if (!updated) {
+		return null;
+	}
+
+	await db.insert(conversationEvent).values({
+		id: generateULID(),
+		organizationId: params.conversation.organizationId,
+		conversationId: params.conversation.id,
+		type: ConversationEventType.REOPENED,
+		actorUserId: params.actorUserId,
+		actorAiAgentId: null,
+		targetUserId: null,
+		targetAiAgentId: null,
+		createdAt: reopenedAt,
+	});
+
+	return updated;
+}
+
 export async function markConversationAsSpam(
 	db: Database,
 	params: {
@@ -121,6 +168,57 @@ export async function markConversationAsSpam(
 	return updated;
 }
 
+export async function markConversationAsNotSpam(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const updatedAt = new Date();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			status: ConversationStatus.OPEN,
+			resolvedAt: null,
+			resolvedByUserId: null,
+			resolvedByAiAgentId: null,
+			resolutionTime: null,
+			updatedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversation.id),
+				eq(conversation.organizationId, params.conversation.organizationId),
+				eq(conversation.websiteId, params.conversation.websiteId)
+			)
+		)
+		.returning();
+
+	if (!updated) {
+		return null;
+	}
+
+	await db.insert(conversationEvent).values({
+		id: generateULID(),
+		conversationId: params.conversation.id,
+		organizationId: params.conversation.organizationId,
+		type: ConversationEventType.STATUS_CHANGED,
+		actorUserId: params.actorUserId,
+		metadata: {
+			previousStatus: params.conversation.status,
+			newStatus: ConversationStatus.OPEN,
+		},
+		actorAiAgentId: null,
+		targetUserId: null,
+		targetAiAgentId: null,
+		createdAt: updatedAt,
+	});
+
+	return updated;
+}
+
 export async function archiveConversation(
 	db: Database,
 	params: {
@@ -159,6 +257,49 @@ export async function archiveConversation(
 			archived: true,
 		},
 		createdAt: archivedAt,
+	});
+
+	return updated;
+}
+
+export async function unarchiveConversation(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const unarchivedAt = new Date();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			deletedAt: null,
+			updatedAt: unarchivedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversation.id),
+				eq(conversation.organizationId, params.conversation.organizationId),
+				eq(conversation.websiteId, params.conversation.websiteId)
+			)
+		)
+		.returning();
+
+	if (!updated) {
+		return null;
+	}
+
+	await db.insert(conversationEvent).values({
+		id: generateULID(),
+		conversationId: params.conversation.id,
+		organizationId: params.conversation.organizationId,
+		type: ConversationEventType.STATUS_CHANGED,
+		actorUserId: params.actorUserId,
+		metadata: {
+			archived: false,
+		},
+		createdAt: unarchivedAt,
 	});
 
 	return updated;

@@ -1,10 +1,13 @@
 import {
 	archiveConversation,
 	type ConversationRecord,
+	markConversationAsNotSpam,
 	markConversationAsRead,
 	markConversationAsSpam,
 	markConversationAsUnread,
+	reopenConversation,
 	resolveConversation,
+	unarchiveConversation,
 } from "@api/db/mutations/conversation";
 import {
 	getConversationById,
@@ -280,6 +283,35 @@ export const conversationRouter = createTRPCRouter({
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
+	markOpen: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await reopenConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to reopen conversation",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
 	markSpam: protectedProcedure
 		.input(
 			z.object({
@@ -309,6 +341,35 @@ export const conversationRouter = createTRPCRouter({
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
+	markNotSpam: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsNotSpam(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to mark conversation as not spam",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
 	markArchived: protectedProcedure
 		.input(
 			z.object({
@@ -332,6 +393,35 @@ export const conversationRouter = createTRPCRouter({
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
 					message: "Unable to archive conversation",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	markUnarchived: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await unarchiveConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to unarchive conversation",
 				});
 			}
 

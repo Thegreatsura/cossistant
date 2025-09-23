@@ -7,7 +7,8 @@ import { MoreConversationActions } from "../actions/more";
 import { ConversationHeaderNavigation } from "./navigation";
 
 export function ConversationHeader() {
-	const { selectedConversationId, selectedVisitorId } = useInboxes();
+	const { selectedConversationId, selectedVisitorId, selectedConversation } =
+		useInboxes();
 
 	if (!selectedConversationId) {
 		return null;
@@ -20,11 +21,16 @@ export function ConversationHeader() {
 				<ConversationBasicActions
 					className="gap-3 pr-0"
 					conversationId={selectedConversationId}
+					deletedAt={selectedConversation?.deletedAt ?? null}
+					status={selectedConversation?.status}
 					visitorId={selectedVisitorId}
 				/>
 				<MoreConversationActions
 					conversationId={selectedConversationId}
+					status={selectedConversation?.status}
 					visitorId={selectedVisitorId}
+					visitorIsBlocked={selectedConversation?.visitor.isBlocked ?? null}
+					deletedAt={selectedConversation?.deletedAt ?? null}
 				/>
 			</div>
 		</PageHeader>

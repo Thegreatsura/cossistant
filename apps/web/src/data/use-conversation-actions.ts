@@ -32,6 +32,7 @@ type BaseConversationMutationVariables =
 type MarkReadVariables = RouterInputs["conversation"]["markRead"];
 type MarkUnreadVariables = RouterInputs["conversation"]["markUnread"];
 type BlockVisitorVariables = RouterInputs["visitor"]["block"];
+type UnblockVisitorVariables = RouterInputs["visitor"]["unblock"];
 
 type TRPCError = TRPCClientErrorLike<OrigamiTRPCRouter>;
 
@@ -48,19 +49,27 @@ type UseConversationActionsParams = {
 
 type UseConversationActionsReturn = {
 	markResolved: () => Promise<ConversationMutationResponse>;
+	markOpen: () => Promise<ConversationMutationResponse>;
 	markSpam: () => Promise<ConversationMutationResponse>;
+	markNotSpam: () => Promise<ConversationMutationResponse>;
 	markArchived: () => Promise<ConversationMutationResponse>;
+	markUnarchived: () => Promise<ConversationMutationResponse>;
 	markRead: () => Promise<ConversationMutationResponse>;
 	markUnread: () => Promise<ConversationMutationResponse>;
 	blockVisitor: () => Promise<BlockVisitorResponse>;
+	unblockVisitor: () => Promise<BlockVisitorResponse>;
 	isAnyPending: boolean;
 	pendingAction: {
 		markResolved: boolean;
+		markOpen: boolean;
 		markSpam: boolean;
+		markNotSpam: boolean;
 		markArchived: boolean;
+		markUnarchived: boolean;
 		markRead: boolean;
 		markUnread: boolean;
 		blockVisitor: boolean;
+		unblockVisitor: boolean;
 	};
 };
 
@@ -183,6 +192,39 @@ export function useConversationActions({
 		},
 	});
 
+	const markOpenMutation = useMutation<
+		ConversationMutationResponse,
+		TRPCError,
+		BaseConversationMutationVariables,
+		MutationContext
+	>({
+		...trpc.conversation.markOpen.mutationOptions(),
+		onMutate: async () => {
+			const context = await prepareContext();
+			const now = new Date();
+
+			applyOptimisticUpdate((existing) => ({
+				...existing,
+				status: ConversationStatus.OPEN,
+				resolvedAt: null,
+				resolvedByUserId: null,
+				resolvedByAiAgentId: null,
+				resolutionTime: null,
+				updatedAt: now,
+			}));
+
+			return context;
+		},
+		onError: (_error, _variables, context) => {
+			restoreContext(context);
+		},
+		onSuccess: (data) => {
+			applyOptimisticUpdate((existing) =>
+				mergeWithServerConversation(existing, data.conversation)
+			);
+		},
+	});
+
 	const markSpamMutation = useMutation<
 		ConversationMutationResponse,
 		TRPCError,
@@ -215,6 +257,39 @@ export function useConversationActions({
 		},
 	});
 
+	const markNotSpamMutation = useMutation<
+		ConversationMutationResponse,
+		TRPCError,
+		BaseConversationMutationVariables,
+		MutationContext
+	>({
+		...trpc.conversation.markNotSpam.mutationOptions(),
+		onMutate: async () => {
+			const context = await prepareContext();
+			const now = new Date();
+
+			applyOptimisticUpdate((existing) => ({
+				...existing,
+				status: ConversationStatus.OPEN,
+				resolvedAt: null,
+				resolvedByUserId: null,
+				resolvedByAiAgentId: null,
+				resolutionTime: null,
+				updatedAt: now,
+			}));
+
+			return context;
+		},
+		onError: (_error, _variables, context) => {
+			restoreContext(context);
+		},
+		onSuccess: (data) => {
+			applyOptimisticUpdate((existing) =>
+				mergeWithServerConversation(existing, data.conversation)
+			);
+		},
+	});
+
 	const markArchivedMutation = useMutation<
 		ConversationMutationResponse,
 		TRPCError,
@@ -229,6 +304,35 @@ export function useConversationActions({
 			applyOptimisticUpdate((existing) => ({
 				...existing,
 				deletedAt: now,
+				updatedAt: now,
+			}));
+
+			return context;
+		},
+		onError: (_error, _variables, context) => {
+			restoreContext(context);
+		},
+		onSuccess: (data) => {
+			applyOptimisticUpdate((existing) =>
+				mergeWithServerConversation(existing, data.conversation)
+			);
+		},
+	});
+
+	const markUnarchivedMutation = useMutation<
+		ConversationMutationResponse,
+		TRPCError,
+		BaseConversationMutationVariables,
+		MutationContext
+	>({
+		...trpc.conversation.markUnarchived.mutationOptions(),
+		onMutate: async () => {
+			const context = await prepareContext();
+			const now = new Date();
+
+			applyOptimisticUpdate((existing) => ({
+				...existing,
+				deletedAt: null,
 				updatedAt: now,
 			}));
 
@@ -285,6 +389,7 @@ export function useConversationActions({
 		...trpc.visitor.block.mutationOptions(),
 		onMutate: async () => {
 			const context = await prepareContext();
+			const blockedAt = new Date();
 
 			if (effectiveVisitorId) {
 				const visitorQueryKey = trpc.conversation.getVisitorById.queryOptions({
@@ -297,8 +402,6 @@ export function useConversationActions({
 					queryClient.getQueryData(visitorQueryKey) ?? null;
 
 				queryClient.setQueryData(visitorQueryKey, (existing) => {
-					const blockedAt = new Date();
-
 					if (!existing) {
 						return existing;
 					}
@@ -307,10 +410,33 @@ export function useConversationActions({
 						...existing,
 						blockedAt,
 						blockedByUserId: user.id,
+						isBlocked: true,
 						updatedAt: blockedAt,
 					};
 				});
 			}
+
+			applyOptimisticUpdate((existing) => {
+				if (!effectiveVisitorId) {
+					return existing;
+				}
+
+				const visitor = existing.visitor;
+				if (!visitor || visitor.id !== effectiveVisitorId) {
+					return existing;
+				}
+
+				return {
+					...existing,
+					visitor: {
+						...visitor,
+						blockedAt,
+						blockedByUserId: user.id,
+						isBlocked: true,
+					},
+					updatedAt: blockedAt,
+				};
+			});
 
 			return context;
 		},
@@ -318,9 +444,123 @@ export function useConversationActions({
 			restoreContext(context);
 		},
 		onSuccess: (data, _variables, context) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
+			applyOptimisticUpdate((existing) => {
+				const merged = mergeWithServerConversation(existing, data.conversation);
+
+				if (!effectiveVisitorId) {
+					return merged;
+				}
+
+				const visitor = merged.visitor;
+				if (!visitor || visitor.id !== effectiveVisitorId) {
+					return merged;
+				}
+
+				return {
+					...merged,
+					visitor: {
+						...visitor,
+						blockedAt: data.visitor.blockedAt,
+						blockedByUserId: data.visitor.blockedByUserId,
+						isBlocked: data.visitor.isBlocked,
+						lastSeenAt: data.visitor.lastSeenAt ?? visitor.lastSeenAt,
+					},
+				};
+			});
+
+			if (context?.visitorQueryKey) {
+				queryClient.setQueryData(context.visitorQueryKey, data.visitor);
+			}
+		},
+	});
+
+	const unblockVisitorMutation = useMutation<
+		BlockVisitorResponse,
+		TRPCError,
+		UnblockVisitorVariables,
+		MutationContext
+	>({
+		...trpc.visitor.unblock.mutationOptions(),
+		onMutate: async () => {
+			const context = await prepareContext();
+			const unblockedAt = new Date();
+
+			if (effectiveVisitorId) {
+				const visitorQueryKey = trpc.conversation.getVisitorById.queryOptions({
+					websiteSlug: website.slug,
+					visitorId: effectiveVisitorId,
+				}).queryKey;
+
+				context.visitorQueryKey = visitorQueryKey;
+				context.previousVisitor =
+					queryClient.getQueryData(visitorQueryKey) ?? null;
+
+				queryClient.setQueryData(visitorQueryKey, (existing) => {
+					if (!existing) {
+						return existing;
+					}
+
+					return {
+						...existing,
+						blockedAt: null,
+						blockedByUserId: null,
+						isBlocked: false,
+						updatedAt: unblockedAt,
+					};
+				});
+			}
+
+			applyOptimisticUpdate((existing) => {
+				if (!effectiveVisitorId) {
+					return existing;
+				}
+
+				const visitor = existing.visitor;
+				if (!visitor || visitor.id !== effectiveVisitorId) {
+					return existing;
+				}
+
+				return {
+					...existing,
+					visitor: {
+						...visitor,
+						blockedAt: null,
+						blockedByUserId: null,
+						isBlocked: false,
+					},
+					updatedAt: unblockedAt,
+				};
+			});
+
+			return context;
+		},
+		onError: (_error, _variables, context) => {
+			restoreContext(context);
+		},
+		onSuccess: (data, _variables, context) => {
+			applyOptimisticUpdate((existing) => {
+				const merged = mergeWithServerConversation(existing, data.conversation);
+
+				if (!effectiveVisitorId) {
+					return merged;
+				}
+
+				const visitor = merged.visitor;
+				if (!visitor || visitor.id !== effectiveVisitorId) {
+					return merged;
+				}
+
+				return {
+					...merged,
+					visitor: {
+						...visitor,
+						blockedAt: data.visitor.blockedAt,
+						blockedByUserId: data.visitor.blockedByUserId,
+						isBlocked: data.visitor.isBlocked,
+						lastSeenAt: data.visitor.lastSeenAt ?? visitor.lastSeenAt,
+					},
+				};
+			});
 
 			if (context?.visitorQueryKey) {
 				queryClient.setQueryData(context.visitorQueryKey, data.visitor);
@@ -337,6 +577,15 @@ export function useConversationActions({
 		[conversationId, markResolvedMutation, website.slug]
 	);
 
+	const markOpen = useCallback(
+		() =>
+			markOpenMutation.mutateAsync({
+				conversationId,
+				websiteSlug: website.slug,
+			}),
+		[conversationId, markOpenMutation, website.slug]
+	);
+
 	const markSpam = useCallback(
 		() =>
 			markSpamMutation.mutateAsync({
@@ -346,6 +595,15 @@ export function useConversationActions({
 		[conversationId, markSpamMutation, website.slug]
 	);
 
+	const markNotSpam = useCallback(
+		() =>
+			markNotSpamMutation.mutateAsync({
+				conversationId,
+				websiteSlug: website.slug,
+			}),
+		[conversationId, markNotSpamMutation, website.slug]
+	);
+
 	const markArchived = useCallback(
 		() =>
 			markArchivedMutation.mutateAsync({
@@ -353,6 +611,15 @@ export function useConversationActions({
 				websiteSlug: website.slug,
 			}),
 		[conversationId, markArchivedMutation, website.slug]
+	);
+
+	const markUnarchived = useCallback(
+		() =>
+			markUnarchivedMutation.mutateAsync({
+				conversationId,
+				websiteSlug: website.slug,
+			}),
+		[conversationId, markUnarchivedMutation, website.slug]
 	);
 
 	const markRead = useCallback(
@@ -382,27 +649,48 @@ export function useConversationActions({
 		[blockVisitorMutation, conversationId, website.slug]
 	);
 
+	const unblockVisitor = useCallback(
+		() =>
+			unblockVisitorMutation.mutateAsync({
+				conversationId,
+				websiteSlug: website.slug,
+			}),
+		[conversationId, unblockVisitorMutation, website.slug]
+	);
+
 	return {
 		markResolved,
+		markOpen,
 		markSpam,
+		markNotSpam,
 		markArchived,
+		markUnarchived,
 		markRead,
 		markUnread,
 		blockVisitor,
+		unblockVisitor,
 		isAnyPending:
 			markResolvedMutation.isPending ||
+			markOpenMutation.isPending ||
 			markSpamMutation.isPending ||
+			markNotSpamMutation.isPending ||
 			markArchivedMutation.isPending ||
+			markUnarchivedMutation.isPending ||
 			markReadMutation.isPending ||
 			markUnreadMutation.isPending ||
-			blockVisitorMutation.isPending,
+			blockVisitorMutation.isPending ||
+			unblockVisitorMutation.isPending,
 		pendingAction: {
 			markResolved: markResolvedMutation.isPending,
+			markOpen: markOpenMutation.isPending,
 			markSpam: markSpamMutation.isPending,
+			markNotSpam: markNotSpamMutation.isPending,
 			markArchived: markArchivedMutation.isPending,
+			markUnarchived: markUnarchivedMutation.isPending,
 			markRead: markReadMutation.isPending,
 			markUnread: markUnreadMutation.isPending,
 			blockVisitor: blockVisitorMutation.isPending,
+			unblockVisitor: unblockVisitorMutation.isPending,
 		},
 	};
 }

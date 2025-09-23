@@ -1,3 +1,4 @@
+import { ConversationStatus } from "@cossistant/types";
 import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,20 +18,54 @@ export function MoreConversationActions({
 	className,
 	conversationId,
 	visitorId,
+	status,
+	visitorIsBlocked,
+	deletedAt,
 }: {
 	className?: string;
 	conversationId: string;
 	visitorId?: string | null;
+	status?: ConversationStatus;
+	visitorIsBlocked?: boolean | null;
+	deletedAt?: Date | null;
 }) {
 	const {
 		markResolved,
+		markOpen,
 		markArchived,
+		markUnarchived,
 		markRead,
 		markUnread,
 		markSpam,
+		markNotSpam,
 		blockVisitor,
+		unblockVisitor,
 		pendingAction,
 	} = useConversationActions({ conversationId, visitorId });
+
+	const isResolved = status === ConversationStatus.RESOLVED;
+	const isSpam = status === ConversationStatus.SPAM;
+	const isArchived = deletedAt !== null;
+	const isBlocked = Boolean(visitorIsBlocked);
+	const canToggleBlock = Boolean(visitorId);
+
+	const resolveLabel = isResolved ? "Mark unresolved" : "Mark resolved";
+	const spamLabel = isSpam ? "Mark not spam" : "Mark spam";
+	const archiveLabel = isArchived ? "Unarchive" : "Mark archived";
+	const blockLabel = isBlocked ? "Unblock visitor" : "Block visitor";
+
+	const resolvePending = isResolved
+		? pendingAction.markOpen
+		: pendingAction.markResolved;
+	const spamPending = isSpam
+		? pendingAction.markNotSpam
+		: pendingAction.markSpam;
+	const archivePending = isArchived
+		? pendingAction.markUnarchived
+		: pendingAction.markArchived;
+	const blockPending = isBlocked
+		? pendingAction.unblockVisitor
+		: pendingAction.blockVisitor;
 
 	const handleCopyId = useCallback(async () => {
 		try {
@@ -72,24 +107,32 @@ export function MoreConversationActions({
 				>
 					<DropdownMenuGroup>
 						<DropdownMenuItem
-							disabled={pendingAction.markResolved}
+							disabled={resolvePending}
 							onSelect={async (event) => {
 								event.preventDefault();
+								if (isResolved) {
+									await markOpen();
+									return;
+								}
 								await markResolved();
 							}}
 							shortcuts={["R"]}
 						>
-							Mark resolved
+							{resolveLabel}
 						</DropdownMenuItem>
 						<DropdownMenuItem
-							disabled={pendingAction.markArchived}
+							disabled={archivePending}
 							onSelect={async (event) => {
 								event.preventDefault();
+								if (isArchived) {
+									await markUnarchived();
+									return;
+								}
 								await markArchived();
 							}}
 							shortcuts={["Delete"]}
 						>
-							Mark archived
+							{archiveLabel}
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							disabled={pendingAction.markRead}
@@ -111,26 +154,34 @@ export function MoreConversationActions({
 							Mark as unread
 						</DropdownMenuItem>
 						<DropdownMenuItem
-							disabled={pendingAction.markSpam}
+							disabled={spamPending}
 							onSelect={async (event) => {
 								event.preventDefault();
+								if (isSpam) {
+									await markNotSpam();
+									return;
+								}
 								await markSpam();
 							}}
 							shortcuts={["P"]}
 						>
-							Mark spam
+							{spamLabel}
 						</DropdownMenuItem>
 						<DropdownMenuItem
-							disabled={!visitorId || pendingAction.blockVisitor}
+							disabled={!canToggleBlock || blockPending}
 							onSelect={async (event) => {
 								event.preventDefault();
 								if (!visitorId) {
 									return;
 								}
+								if (isBlocked) {
+									await unblockVisitor();
+									return;
+								}
 								await blockVisitor();
 							}}
 						>
-							Block visitor
+							{blockLabel}
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
 					<DropdownMenuSeparator />
