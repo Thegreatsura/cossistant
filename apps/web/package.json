@@ -59,7 +59,7 @@
     "dexie": "^4.2.0",
     "dexie-react-hooks": "^4.2.0",
     "drizzle-orm": "0.44.5",
-    "fumadocs-core": "^15.7.12",
+    "fumadocs-core": "^15.7.13",
     "fumadocs-mdx": "^12.0.0",
     "fumadocs-ui": "^15.7.12",
     "hono": "^4.9.7",
