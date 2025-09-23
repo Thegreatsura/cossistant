@@ -5,7 +5,10 @@ type AvatarState = {
 	imageLoadingStatus: "idle" | "loading" | "loaded" | "error";
 };
 
-export type AvatarProps = Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> & {
+export type AvatarProps = Omit<
+	React.HTMLAttributes<HTMLSpanElement>,
+	"children"
+> & {
 	children?: React.ReactNode;
 	asChild?: boolean;
 	className?: string;

@@ -335,6 +335,8 @@ export async function listConversationsHeaders(
 			visitorEmail: visitor.email,
 			visitorAvatar: visitor.image,
 			visitorLastSeenAt: visitor.lastSeenAt,
+			visitorBlockedAt: visitor.blockedAt,
+			visitorBlockedByUserId: visitor.blockedByUserId,
 			// Last message fields (filtered by ROW_NUMBER = 1)
 			lastMessageId: lastMessageSubquery.id,
 			lastMessageBodyMd: lastMessageSubquery.bodyMd,
@@ -424,6 +426,9 @@ export async function listConversationsHeaders(
 				email: row.visitorEmail,
 				avatar: row.visitorAvatar,
 				lastSeenAt: row.visitorLastSeenAt,
+				blockedAt: row.visitorBlockedAt,
+				blockedByUserId: row.visitorBlockedByUserId,
+				isBlocked: Boolean(row.visitorBlockedAt),
 			},
 			viewIds: row.viewIds || [],
 			lastMessageAt: row.lastMessageCreatedAt ?? null,

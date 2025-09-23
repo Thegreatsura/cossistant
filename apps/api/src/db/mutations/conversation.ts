@@ -1,0 +1,217 @@
+import type { Database } from "@api/db";
+import {
+	conversation,
+	conversationEvent,
+	conversationSeen,
+} from "@api/db/schema";
+import { generateULID } from "@api/utils/db/ids";
+import { ConversationEventType, ConversationStatus } from "@cossistant/types";
+import type { InferSelectModel } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+
+export type ConversationRecord = InferSelectModel<typeof conversation>;
+
+function computeResolutionTime(
+	conversationRecord: ConversationRecord,
+	resolvedAt: Date
+): number | null {
+	if (!conversationRecord.startedAt) {
+		return conversationRecord.resolutionTime ?? null;
+	}
+
+	const durationMs =
+		resolvedAt.getTime() - conversationRecord.startedAt.getTime();
+	return durationMs > 0 ? Math.round(durationMs / 1000) : 0;
+}
+
+export async function resolveConversation(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const resolvedAt = new Date();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			status: ConversationStatus.RESOLVED,
+			resolvedAt,
+			resolvedByUserId: params.actorUserId,
+			resolvedByAiAgentId: null,
+			resolutionTime: computeResolutionTime(params.conversation, resolvedAt),
+			updatedAt: resolvedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversation.id),
+				eq(conversation.organizationId, params.conversation.organizationId),
+				eq(conversation.websiteId, params.conversation.websiteId)
+			)
+		)
+		.returning();
+
+	if (!updated) {
+		return null;
+	}
+
+	await db.insert(conversationEvent).values({
+		id: generateULID(),
+		organizationId: params.conversation.organizationId,
+		conversationId: params.conversation.id,
+		type: ConversationEventType.RESOLVED,
+		actorUserId: params.actorUserId,
+		actorAiAgentId: null,
+		targetUserId: null,
+		targetAiAgentId: null,
+		createdAt: resolvedAt,
+	});
+
+	return updated;
+}
+
+export async function markConversationAsSpam(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const updatedAt = new Date();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			status: ConversationStatus.SPAM,
+			resolvedAt: null,
+			resolvedByUserId: null,
+			resolvedByAiAgentId: null,
+			updatedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversation.id),
+				eq(conversation.organizationId, params.conversation.organizationId),
+				eq(conversation.websiteId, params.conversation.websiteId)
+			)
+		)
+		.returning();
+
+	if (!updated) {
+		return null;
+	}
+
+	await db.insert(conversationEvent).values({
+		id: generateULID(),
+		conversationId: params.conversation.id,
+		organizationId: params.conversation.organizationId,
+		type: ConversationEventType.STATUS_CHANGED,
+		actorUserId: params.actorUserId,
+		actorAiAgentId: null,
+		targetUserId: null,
+		targetAiAgentId: null,
+		metadata: {
+			previousStatus: params.conversation.status,
+			newStatus: ConversationStatus.SPAM,
+		},
+		createdAt: updatedAt,
+	});
+
+	return updated;
+}
+
+export async function archiveConversation(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const archivedAt = new Date();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			deletedAt: archivedAt,
+			updatedAt: archivedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversation.id),
+				eq(conversation.organizationId, params.conversation.organizationId),
+				eq(conversation.websiteId, params.conversation.websiteId)
+			)
+		)
+		.returning();
+
+	if (!updated) {
+		return null;
+	}
+
+	await db.insert(conversationEvent).values({
+		id: generateULID(),
+		conversationId: params.conversation.id,
+		organizationId: params.conversation.organizationId,
+		type: ConversationEventType.STATUS_CHANGED,
+		actorUserId: params.actorUserId,
+		metadata: {
+			archived: true,
+		},
+		createdAt: archivedAt,
+	});
+
+	return updated;
+}
+
+export async function markConversationAsRead(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	const updatedAt = new Date();
+
+	await db
+		.insert(conversationSeen)
+		.values({
+			id: generateULID(),
+			conversationId: params.conversation.id,
+			organizationId: params.conversation.organizationId,
+			userId: params.actorUserId,
+			visitorId: null,
+			aiAgentId: null,
+			lastSeenAt: updatedAt,
+			createdAt: updatedAt,
+			updatedAt,
+		})
+		.onConflictDoUpdate({
+			target: [conversationSeen.conversationId, conversationSeen.userId],
+			set: {
+				lastSeenAt: updatedAt,
+				updatedAt,
+			},
+		});
+
+	return params.conversation;
+}
+
+export async function markConversationAsUnread(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		actorUserId: string;
+	}
+) {
+	await db
+		.delete(conversationSeen)
+		.where(
+			and(
+				eq(conversationSeen.conversationId, params.conversation.id),
+				eq(conversationSeen.userId, params.actorUserId)
+			)
+		);
+
+	return params.conversation;
+}

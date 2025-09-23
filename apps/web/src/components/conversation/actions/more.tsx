@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -9,15 +10,50 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
+import { useConversationActions } from "@/data/use-conversation-actions";
 import { cn } from "@/lib/utils";
 
 export function MoreConversationActions({
 	className,
 	conversationId,
+	visitorId,
 }: {
 	className?: string;
 	conversationId: string;
+	visitorId?: string | null;
 }) {
+	const {
+		markResolved,
+		markArchived,
+		markRead,
+		markUnread,
+		markSpam,
+		blockVisitor,
+		pendingAction,
+	} = useConversationActions({ conversationId, visitorId });
+
+	const handleCopyId = useCallback(async () => {
+		try {
+			if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+				return;
+			}
+			await navigator.clipboard.writeText(conversationId);
+		} catch (error) {
+			console.error("Failed to copy conversation id", error);
+		}
+	}, [conversationId]);
+
+	const handleCopyUrl = useCallback(async () => {
+		try {
+			if (typeof window === "undefined" || !navigator.clipboard?.writeText) {
+				return;
+			}
+			await navigator.clipboard.writeText(window.location.href);
+		} catch (error) {
+			console.error("Failed to copy conversation URL", error);
+		}
+	}, []);
+
 	return (
 		<div className={cn("flex items-center gap-2 pr-1", className)}>
 			<DropdownMenu>
@@ -35,27 +71,83 @@ export function MoreConversationActions({
 					sideOffset={4}
 				>
 					<DropdownMenuGroup>
-						<DropdownMenuItem onSelect={() => {}} shortcuts={["R"]}>
+						<DropdownMenuItem
+							disabled={pendingAction.markResolved}
+							onSelect={async (event) => {
+								event.preventDefault();
+								await markResolved();
+							}}
+							shortcuts={["R"]}
+						>
 							Mark resolved
 						</DropdownMenuItem>
-						<DropdownMenuItem onSelect={() => {}} shortcuts={["Delete"]}>
+						<DropdownMenuItem
+							disabled={pendingAction.markArchived}
+							onSelect={async (event) => {
+								event.preventDefault();
+								await markArchived();
+							}}
+							shortcuts={["Delete"]}
+						>
 							Mark archived
 						</DropdownMenuItem>
-						<DropdownMenuItem onSelect={() => {}} shortcuts={["U"]}>
+						<DropdownMenuItem
+							disabled={pendingAction.markRead}
+							onSelect={async (event) => {
+								event.preventDefault();
+								await markRead();
+							}}
+							shortcuts={["U"]}
+						>
 							Mark as read
 						</DropdownMenuItem>
-						<DropdownMenuItem onSelect={() => {}} shortcuts={["P"]}>
+						<DropdownMenuItem
+							disabled={pendingAction.markUnread}
+							onSelect={async (event) => {
+								event.preventDefault();
+								await markUnread();
+							}}
+						>
+							Mark as unread
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							disabled={pendingAction.markSpam}
+							onSelect={async (event) => {
+								event.preventDefault();
+								await markSpam();
+							}}
+							shortcuts={["P"]}
+						>
 							Mark spam
 						</DropdownMenuItem>
-						<DropdownMenuItem onSelect={() => {}}>
+						<DropdownMenuItem
+							disabled={!visitorId || pendingAction.blockVisitor}
+							onSelect={async (event) => {
+								event.preventDefault();
+								if (!visitorId) {
+									return;
+								}
+								await blockVisitor();
+							}}
+						>
 							Block visitor
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onSelect={() => {}}>
+					<DropdownMenuItem
+						onSelect={async (event) => {
+							event.preventDefault();
+							await handleCopyId();
+						}}
+					>
 						Copy conversation ID
 					</DropdownMenuItem>
-					<DropdownMenuItem onSelect={() => {}}>
+					<DropdownMenuItem
+						onSelect={async (event) => {
+							event.preventDefault();
+							await handleCopyUrl();
+						}}
+					>
 						Copy conversation URL
 					</DropdownMenuItem>
 				</DropdownMenuContent>

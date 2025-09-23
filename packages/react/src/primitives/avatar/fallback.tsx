@@ -44,7 +44,14 @@ export const AvatarFallback = (() => {
 
 	const Component = React.forwardRef<HTMLSpanElement, Props>(
 		(
-			{ children, name = "", delayMs = 0, className, asChild = false, ...props },
+			{
+				children,
+				name = "",
+				delayMs = 0,
+				className,
+				asChild = false,
+				...props
+			},
 			ref
 		) => {
 			const { imageLoadingStatus } = useAvatarContext();

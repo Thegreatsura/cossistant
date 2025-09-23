@@ -204,6 +204,18 @@ export const visitorProfileSchema = z.object({
 		description: "When the visitor was last seen.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
+	blockedAt: z.date().nullable().openapi({
+		description: "When the visitor was blocked, if applicable.",
+		example: "2024-01-01T12:00:00.000Z",
+	}),
+	blockedByUserId: z.string().nullable().openapi({
+		description: "Identifier of the team member who blocked the visitor.",
+		example: "01JG000000000000000000001",
+	}),
+	isBlocked: z.boolean().openapi({
+		description: "Whether the visitor is currently blocked.",
+		example: true,
+	}),
 });
 
 /**
@@ -323,6 +335,18 @@ export const visitorResponseSchema = z.object({
 			"The organization's unique identifier that the visitor belongs to.",
 		example: "01JG000000000000000000000",
 	}),
+	blockedAt: z.date().nullable().openapi({
+		description: "When the visitor was blocked, if applicable.",
+		example: "2024-01-01T12:00:00.000Z",
+	}),
+	blockedByUserId: z.string().nullable().openapi({
+		description: "Identifier of the team member who blocked the visitor.",
+		example: "01JG000000000000000000001",
+	}),
+	isBlocked: z.boolean().openapi({
+		description: "Whether the visitor is currently blocked.",
+		example: true,
+	}),
 });
 
 export type Visitor = z.infer<typeof visitorResponseSchema>;
@@ -347,6 +371,10 @@ export const publicVisitorResponseSchema = z.object({
 	email: z.string().email().nullable().openapi({
 		description: "The visitor's email address, if provided or identified.",
 		example: "john.doe@example.com",
+	}),
+	isBlocked: z.boolean().openapi({
+		description: "Whether the visitor is currently blocked.",
+		example: false,
 	}),
 });
 

@@ -8,6 +8,8 @@ export {
 	messageSchema,
 } from "./schemas";
 export * from "./sync";
+export * from "./trpc/conversation";
+export * from "./trpc/visitor";
 
 export type CossistantConfig = {
 	apiUrl: string;

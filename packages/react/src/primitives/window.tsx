@@ -45,7 +45,8 @@ export const SupportWindow = (() => {
 
 			// In responsive mode, window is always open
 			// Otherwise use normal open/close logic
-			const open = mode === "responsive" ? true : (isOpenProp ?? isOpen ?? false);
+			const open =
+				mode === "responsive" ? true : (isOpenProp ?? isOpen ?? false);
 
 			const closeFn = React.useCallback(() => {
 				if (onOpenChange) {

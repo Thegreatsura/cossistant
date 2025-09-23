@@ -60,93 +60,93 @@ export const MessageGroup = (() => {
 	type Props = MessageGroupProps;
 
 	const Component = React.forwardRef<HTMLDivElement, Props>(
-	(
-		{
-			children,
-			className,
-			asChild = false,
-			messages = [],
-			viewerId,
-			seenByIds = [],
-			lastReadMessageIds,
-			...props
-		},
-		ref
-	) => {
-		// Determine sender type from first message in group
-		const firstMessage = messages[0];
-		// biome-ignore lint/style/useAtIndex: ok
-		const lastMessage = messages[messages.length - 1];
-
-		// Determine sender info
-		let senderId = "";
-		let senderType: SenderType;
-
-		if (firstMessage?.visitorId) {
-			senderId = firstMessage.visitorId;
-			senderType = "visitor" as SenderType;
-		} else if (firstMessage?.aiAgentId) {
-			senderId = firstMessage.aiAgentId;
-			senderType = "ai" as SenderType;
-		} else if (firstMessage?.userId) {
-			senderId = firstMessage.userId;
-			senderType = "team_member" as SenderType;
-		} else {
-			// Fallback
-			senderId = firstMessage?.id || "unknown";
-			senderType = "team_member" as SenderType;
-		}
-
-		// Determine POV
-		const isSentByViewer = viewerId ? senderId === viewerId : false;
-		const isReceivedByViewer = viewerId ? senderId !== viewerId : true;
-
-		// Convenience flags
-		const isVisitor = senderType === "visitor";
-		const isAI = senderType === "ai";
-		const isTeamMember = senderType === "team_member";
-
-		// Check if viewer has seen these messages
-		const hasBeenSeenByViewer = viewerId
-			? seenByIds.includes(viewerId)
-			: undefined;
-
-		const renderProps: MessageGroupRenderProps = {
-			senderType,
-			senderId,
-			isSentByViewer,
-			isReceivedByViewer,
-			isVisitor,
-			isAI,
-			isTeamMember,
-			messageCount: messages.length,
-			firstMessageId: firstMessage?.id,
-			lastMessageId: lastMessage?.id,
-			hasBeenSeenByViewer,
-			seenByIds,
-		};
-
-		const content =
-			typeof children === "function" ? children(renderProps) : children;
-
-		return useRenderElement(
-			"div",
+		(
 			{
+				children,
 				className,
-				asChild,
+				asChild = false,
+				messages = [],
+				viewerId,
+				seenByIds = [],
+				lastReadMessageIds,
+				...props
 			},
-			{
-				ref,
-				state: renderProps,
-				props: {
-					role: "group",
-					"aria-label": `Message group from ${senderType}`,
-					...props,
-					children: content,
-				},
+			ref
+		) => {
+			// Determine sender type from first message in group
+			const firstMessage = messages[0];
+			// biome-ignore lint/style/useAtIndex: ok
+			const lastMessage = messages[messages.length - 1];
+
+			// Determine sender info
+			let senderId = "";
+			let senderType: SenderType;
+
+			if (firstMessage?.visitorId) {
+				senderId = firstMessage.visitorId;
+				senderType = "visitor" as SenderType;
+			} else if (firstMessage?.aiAgentId) {
+				senderId = firstMessage.aiAgentId;
+				senderType = "ai" as SenderType;
+			} else if (firstMessage?.userId) {
+				senderId = firstMessage.userId;
+				senderType = "team_member" as SenderType;
+			} else {
+				// Fallback
+				senderId = firstMessage?.id || "unknown";
+				senderType = "team_member" as SenderType;
 			}
-		);
-	}
+
+			// Determine POV
+			const isSentByViewer = viewerId ? senderId === viewerId : false;
+			const isReceivedByViewer = viewerId ? senderId !== viewerId : true;
+
+			// Convenience flags
+			const isVisitor = senderType === "visitor";
+			const isAI = senderType === "ai";
+			const isTeamMember = senderType === "team_member";
+
+			// Check if viewer has seen these messages
+			const hasBeenSeenByViewer = viewerId
+				? seenByIds.includes(viewerId)
+				: undefined;
+
+			const renderProps: MessageGroupRenderProps = {
+				senderType,
+				senderId,
+				isSentByViewer,
+				isReceivedByViewer,
+				isVisitor,
+				isAI,
+				isTeamMember,
+				messageCount: messages.length,
+				firstMessageId: firstMessage?.id,
+				lastMessageId: lastMessage?.id,
+				hasBeenSeenByViewer,
+				seenByIds,
+			};
+
+			const content =
+				typeof children === "function" ? children(renderProps) : children;
+
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					state: renderProps,
+					props: {
+						role: "group",
+						"aria-label": `Message group from ${senderType}`,
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
 	);
 
 	Component.displayName = "MessageGroup";
@@ -321,7 +321,10 @@ export const MessageGroupSeenIndicator = (() => {
 	type Props = MessageGroupSeenIndicatorProps;
 
 	const Component = React.forwardRef<HTMLDivElement, Props>(
-		({ children, className, asChild = false, seenByIds = [], ...props }, ref) => {
+		(
+			{ children, className, asChild = false, seenByIds = [], ...props },
+			ref
+		) => {
 			const hasBeenSeen = seenByIds.length > 0;
 			const content =
 				typeof children === "function"

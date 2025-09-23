@@ -6,6 +6,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import React from "react";
+import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import {
 	type PaginatedMessagesCache,
 	type PaginatedMessagesResponse,
@@ -13,7 +14,6 @@ import {
 	setMessagesInCache,
 	upsertMessageInCache,
 } from "../utils/message-cache";
-import { PENDING_CONVERSATION_ID } from "../../utils/id";
 
 const QUERY_KEYS = {
 	messages: (conversationId: string) =>

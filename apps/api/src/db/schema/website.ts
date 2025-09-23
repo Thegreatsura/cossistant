@@ -126,6 +126,11 @@ export const visitor = pgTable(
 		userId: ulidNullableReference("user_id").references(() => user.id, {
 			onDelete: "set null",
 		}),
+		blockedAt: timestamp("blocked_at"),
+		blockedByUserId: ulidNullableReference("blocked_by_user_id").references(
+			() => user.id,
+			{ onDelete: "set null" }
+		),
 		lastSeenAt: timestamp("last_seen_at"),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date())

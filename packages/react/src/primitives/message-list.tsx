@@ -59,69 +59,69 @@ export const MessageList = (() => {
 			},
 			ref
 		) => {
-		const internalRef = React.useRef<HTMLDivElement>(null);
-		const scrollRef =
-			(ref as React.MutableRefObject<HTMLDivElement>) || internalRef;
+			const internalRef = React.useRef<HTMLDivElement>(null);
+			const scrollRef =
+				(ref as React.MutableRefObject<HTMLDivElement>) || internalRef;
 
-		const isInitialRender = React.useRef(true);
-		const previousMessageCount = React.useRef(messages.length);
-		const previousEventCount = React.useRef(events.length);
+			const isInitialRender = React.useRef(true);
+			const previousMessageCount = React.useRef(messages.length);
+			const previousEventCount = React.useRef(events.length);
 
-		const renderProps: MessageListRenderProps = {
-			messageCount: messages.length,
-			eventCount: events.length,
-			isLoading,
-			hasMore,
-			isEmpty: messages.length === 0 && events.length === 0,
-		};
+			const renderProps: MessageListRenderProps = {
+				messageCount: messages.length,
+				eventCount: events.length,
+				isLoading,
+				hasMore,
+				isEmpty: messages.length === 0 && events.length === 0,
+			};
 
-		const content =
-			typeof children === "function" ? children(renderProps) : children;
+			const content =
+				typeof children === "function" ? children(renderProps) : children;
 
-		// Auto-scroll to bottom when new messages are added
-		React.useEffect(() => {
-			if (autoScroll && scrollRef.current) {
-				const hasNewMessages =
-					messages.length > previousMessageCount.current ||
-					events.length > previousEventCount.current;
+			// Auto-scroll to bottom when new messages are added
+			React.useEffect(() => {
+				if (autoScroll && scrollRef.current) {
+					const hasNewMessages =
+						messages.length > previousMessageCount.current ||
+						events.length > previousEventCount.current;
 
-				// Only scroll if there are new messages or it's the first render
-				if (hasNewMessages || isInitialRender.current) {
-					// On first render, scroll instantly to avoid animation
-					// For new messages, scroll smoothly
-					const behavior = isInitialRender.current ? "instant" : "smooth";
+					// Only scroll if there are new messages or it's the first render
+					if (hasNewMessages || isInitialRender.current) {
+						// On first render, scroll instantly to avoid animation
+						// For new messages, scroll smoothly
+						const behavior = isInitialRender.current ? "instant" : "smooth";
 
-					scrollRef.current.scrollTo({
-						top: scrollRef.current.scrollHeight,
-						behavior,
-					});
+						scrollRef.current.scrollTo({
+							top: scrollRef.current.scrollHeight,
+							behavior,
+						});
+					}
+
+					// Update refs for next render
+					previousMessageCount.current = messages.length;
+					previousEventCount.current = events.length;
+					isInitialRender.current = false;
 				}
+			}, [messages.length, events.length, autoScroll, scrollRef]);
 
-				// Update refs for next render
-				previousMessageCount.current = messages.length;
-				previousEventCount.current = events.length;
-				isInitialRender.current = false;
-			}
-		}, [messages.length, events.length, autoScroll, scrollRef]);
+			// Handle scroll events for infinite scrolling
+			const handleScroll = React.useCallback(
+				(e: React.UIEvent<HTMLDivElement>) => {
+					const element = e.currentTarget;
+					const { scrollTop, scrollHeight, clientHeight } = element;
 
-		// Handle scroll events for infinite scrolling
-		const handleScroll = React.useCallback(
-			(e: React.UIEvent<HTMLDivElement>) => {
-				const element = e.currentTarget;
-				const { scrollTop, scrollHeight, clientHeight } = element;
+					// Check if scrolled to top
+					if (scrollTop === 0 && onScrollStart) {
+						onScrollStart();
+					}
 
-				// Check if scrolled to top
-				if (scrollTop === 0 && onScrollStart) {
-					onScrollStart();
-				}
-
-				// Check if scrolled to bottom
-				if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
-					onScrollEnd();
-				}
-			},
-			[onScrollStart, onScrollEnd]
-		);
+					// Check if scrolled to bottom
+					if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
+						onScrollEnd();
+					}
+				},
+				[onScrollStart, onScrollEnd]
+			);
 
 			return useRenderElement(
 				"div",

@@ -5,6 +5,7 @@ import { conversationRouter } from "./conversation";
 import { resendRouter } from "./resend";
 import { userRouter } from "./user";
 import { viewRouter } from "./view";
+import { visitorRouter } from "./visitor";
 import { waitlistRouter } from "./waitlist";
 import { websiteRouter } from "./website";
 
@@ -15,6 +16,7 @@ export const origamiTRPCRouter = createTRPCRouter({
 	waitlist: waitlistRouter,
 	conversation: conversationRouter,
 	view: viewRouter,
+	visitor: visitorRouter,
 });
 
 // export type definition of API

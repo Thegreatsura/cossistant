@@ -1,4 +1,12 @@
 import {
+	archiveConversation,
+	type ConversationRecord,
+	markConversationAsRead,
+	markConversationAsSpam,
+	markConversationAsUnread,
+	resolveConversation,
+} from "@api/db/mutations/conversation";
+import {
 	getConversationById,
 	getConversationEvents,
 	listConversationsHeaders,
@@ -9,15 +17,23 @@ import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { createMessage } from "@api/utils/message";
 import {
 	conversationEventSchema,
+	conversationMutationResponseSchema,
+	listConversationHeadersResponseSchema,
 	MessageType,
 	MessageVisibility,
 	messageSchema,
-	visitorProfileSchema,
 	visitorResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
+import { loadConversationContext } from "../utils/conversation";
+
+function toConversationOutput(record: ConversationRecord) {
+	return {
+		...record,
+	};
+}
 
 export const conversationRouter = createTRPCRouter({
 	listConversationsHeaders: protectedProcedure
@@ -28,36 +44,7 @@ export const conversationRouter = createTRPCRouter({
 				cursor: z.string().nullable().optional(),
 			})
 		)
-		.output(
-			z.object({
-				items: z.array(
-					z.object({
-						id: z.string(),
-						status: z.string(),
-						priority: z.string(),
-						organizationId: z.string(),
-						visitorId: z.string(),
-						visitor: visitorProfileSchema,
-						websiteId: z.string(),
-						channel: z.string(),
-						title: z.string().nullable(),
-						resolutionTime: z.number().nullable(),
-						startedAt: z.date().nullable(),
-						firstResponseAt: z.date().nullable(),
-						resolvedAt: z.date().nullable(),
-						resolvedByUserId: z.string().nullable(),
-						resolvedByAiAgentId: z.string().nullable(),
-						createdAt: z.date(),
-						updatedAt: z.date(),
-						deletedAt: z.date().nullable(),
-						lastMessageAt: z.date().nullable(),
-						lastMessagePreview: messageSchema.nullable(),
-						viewIds: z.array(z.string()),
-					})
-				),
-				nextCursor: z.string().nullable(),
-			})
-		)
+		.output(listConversationHeadersResponseSchema)
 		.query(async ({ ctx: { db, user }, input }) => {
 			const websiteData = await getWebsiteBySlugWithAccess(db, {
 				userId: user.id,
@@ -264,6 +251,137 @@ export const conversationRouter = createTRPCRouter({
 			return { message: createdMessage };
 		}),
 
+	markResolved: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await resolveConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to resolve conversation",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	markSpam: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsSpam(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to mark conversation as spam",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	markArchived: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await archiveConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to archive conversation",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	markRead: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsRead(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	markUnread: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsUnread(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
 	getVisitorById: protectedProcedure
 		.input(
 			z.object({
@@ -310,6 +428,7 @@ export const conversationRouter = createTRPCRouter({
 				createdAt: visitor.createdAt,
 				updatedAt: visitor.updatedAt,
 				lastSeenAt: visitor.lastSeenAt ?? null,
+				isBlocked: Boolean(visitor.blockedAt),
 			};
 		}),
 });

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 
-type ConversationItemProps = {
+type Props = {
 	href: string;
 	header: ConversationHeader;
 	websiteSlug: string;
@@ -23,7 +23,7 @@ export function ConversationItem({
 	websiteSlug,
 	focused = false,
 	setFocused,
-}: ConversationItemProps) {
+}: Props) {
 	const { visitor, lastMessagePreview } = header;
 	const { prefetchConversation } = usePrefetchConversationData();
 
@@ -63,7 +63,10 @@ export function ConversationItem({
 			</div>
 			<div className="flex items-center gap-1">
 				{focused ? (
-					<ConversationBasicActions />
+					<ConversationBasicActions
+						conversationId={header.id}
+						visitorId={header.visitorId}
+					/>
 				) : lastMessagePreview ? (
 					<span className="shrink-0 pr-2 text-primary/40 text-xs">
 						{formatTimeAgo(lastMessagePreview.createdAt)}
