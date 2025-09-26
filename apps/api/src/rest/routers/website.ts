@@ -179,6 +179,7 @@ websiteRouter.openapi(
 						externalId: visitor.externalId,
 						name: visitor.name,
 						email: visitor.email,
+						isBlocked: Boolean(visitor.blockedAt),
 					},
 				},
 				publicWebsiteResponseSchema
