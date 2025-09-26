@@ -6,7 +6,7 @@ export const EscapeIframeAnimation = () => {
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className="relative w-full px-6 text-center font-mono text-primary/80 text-xs md:w-fit lg:px-0 lg:text-left"
+      className="relative w-full px-6 text-center font-mono text-primary/80 text-xs md:w-fit lg:px-0 lg:pr-3 lg:text-left"
       initial={{ opacity: 0 }}
       transition={{ duration: 0.5, delay: 2 }}
     >
