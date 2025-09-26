@@ -80,6 +80,7 @@ export const conversationSeenSchema = z.object({
 	userId: z.string().nullable(),
 	visitorId: z.string().nullable(),
 	aiAgentId: z.string().nullable(),
+	lastSeenAt: z.date(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	deletedAt: z.date().nullable(),

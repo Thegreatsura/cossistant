@@ -1,5 +1,7 @@
+import defaultMdxComponents from "fumadocs-ui/mdx";
 import Image from "next/image";
 import Link from "next/link";
+
 import { CodeBlockCommand } from "@/components/code-block-command";
 import { CodeBlockWrapper } from "@/components/code-block-wrapper";
 import { CodeCollapsibleWrapper } from "@/components/code-collapsible-wrapper";
@@ -21,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 export const mdxComponents = {
+	...defaultMdxComponents,
 	h1: ({ className, ...props }: React.ComponentProps<"h1">) => (
 		<h1
 			className={cn(

@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
 		remotePatterns: [new URL("https://cdn.cossistant.com/**")],
 	},
 	devIndicators: false,
+	async rewrites() {
+		return [
+			{
+				source: "/docs/:path*.mdx",
+				destination: "/llms.mdx/:path*",
+			},
+		];
+	},
 };
 
 export default withMDX(nextConfig);

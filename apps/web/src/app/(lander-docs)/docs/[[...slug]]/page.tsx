@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { ThreeLogo } from "@/components/ui/three-logo";
+import { GITHUB_URL } from "@/constants";
 import { source } from "@/lib/source";
 import { absoluteUrl } from "@/lib/utils";
 import { DocsTableOfContents } from "../../components/docs/docs-toc";
 import { mdxComponents } from "../../components/docs/mdx-components";
+import { LLMCopyButton, ViewOptions } from "../../components/page-actions";
 
 export const revalidate = false;
 export const dynamic = "force-static";
@@ -131,6 +133,13 @@ export default async function Page(props: {
 									{doc.description}
 								</p>
 							)}
+							<div className="flex flex-row items-center gap-2 border-b pt-2 pb-6">
+								<LLMCopyButton markdownUrl={`${page.url}.mdx`} />
+								<ViewOptions
+									githubUrl={`${GITHUB_URL}/blob/main/apps/web/content/docs/${page.path}`}
+									markdownUrl={`${page.url}.mdx`}
+								/>
+							</div>
 						</div>
 						{links ? (
 							<div className="flex items-center space-x-2 pt-4">

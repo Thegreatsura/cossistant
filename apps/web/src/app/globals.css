@@ -336,35 +336,6 @@
 		color: var(--color-code-foreground);
 	}
 
-	[data-line-numbers] {
-		display: grid;
-		min-width: 100%;
-		white-space: pre;
-		border: 0;
-		background: transparent;
-		padding: 0;
-		counter-reset: line;
-		box-decoration-break: clone;
-	}
-
-	[data-line-numbers] [data-line]::before {
-		font-size: var(--text-sm);
-		counter-increment: line;
-		content: counter(line);
-		display: inline-block;
-		width: calc(var(--spacing) * 16);
-		padding-right: calc(var(--spacing) * 6);
-		text-align: right;
-		color: var(--color-code-number);
-		background-color: var(--background-100);
-		position: sticky;
-		left: 0;
-	}
-
-	[data-line-numbers] [data-highlighted-line][data-line]::before {
-		background-color: var(--color-code-highlight);
-	}
-
 	[data-line] {
 		padding-top: calc(var(--spacing) * 0.5);
 		padding-bottom: calc(var(--spacing) * 0.5);

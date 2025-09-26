@@ -360,6 +360,11 @@ export function useConversationActions({
 			restoreContext(context);
 		},
 		onSuccess: async () => {
+			const now = new Date();
+			applyOptimisticUpdate((existing) => ({
+				...existing,
+				lastSeenAt: now,
+			}));
 			await queryClient.invalidateQueries({ queryKey: headersQueryKey });
 		},
 	});
@@ -376,6 +381,10 @@ export function useConversationActions({
 			restoreContext(context);
 		},
 		onSuccess: async () => {
+			applyOptimisticUpdate((existing) => ({
+				...existing,
+				lastSeenAt: null,
+			}));
 			await queryClient.invalidateQueries({ queryKey: headersQueryKey });
 		},
 	});

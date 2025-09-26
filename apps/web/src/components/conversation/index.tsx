@@ -1,7 +1,10 @@
 "use client";
 
 import { useMultimodalInput } from "@cossistant/react/hooks/use-multimodal-input";
+import { useEffect, useMemo, useRef } from "react";
+import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
+import { useConversationActions } from "@/data/use-conversation-actions";
 import { useConversationEvents } from "@/data/use-conversation-events";
 import { useConversationMessages } from "@/data/use-conversation-messages";
 import { useVisitor } from "@/data/use-visitor";
@@ -55,6 +58,13 @@ export function Conversation({
 	});
 
 	const members = useWebsiteMembers();
+	const { selectedConversation } = useInboxes();
+	const { markRead } = useConversationActions({
+		conversationId,
+		visitorId,
+	});
+
+	const lastMarkedMessageIdRef = useRef<string | null>(null);
 
 	const {
 		messages,
@@ -73,6 +83,52 @@ export function Conversation({
 	} = useConversationEvents({ conversationId, websiteSlug });
 
 	const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
+
+	const lastMessage = useMemo(() => messages.at(-1) ?? null, [messages]);
+
+	useEffect(() => {
+		if (!lastMessage) {
+			return;
+		}
+
+		if (!selectedConversation || selectedConversation.id !== conversationId) {
+			lastMarkedMessageIdRef.current = null;
+			return;
+		}
+
+		if (lastMessage.userId === currentUserId) {
+			lastMarkedMessageIdRef.current = lastMessage.id;
+			return;
+		}
+
+		const lastMessageCreatedAt = new Date(lastMessage.createdAt);
+		const lastSeenAt = selectedConversation.lastSeenAt
+			? new Date(selectedConversation.lastSeenAt)
+			: null;
+
+		if (lastSeenAt && lastSeenAt >= lastMessageCreatedAt) {
+			lastMarkedMessageIdRef.current = lastMessage.id;
+			return;
+		}
+
+		if (lastMarkedMessageIdRef.current === lastMessage.id) {
+			return;
+		}
+
+		markRead()
+			.then(() => {
+				lastMarkedMessageIdRef.current = lastMessage.id;
+			})
+			.catch(() => {
+				// no-op: we'll retry on next render if needed
+			});
+	}, [
+		conversationId,
+		currentUserId,
+		lastMessage,
+		markRead,
+		selectedConversation,
+	]);
 
 	const onFetchMoreIfNeeded = async () => {
 		const promises: Promise<unknown>[] = [];

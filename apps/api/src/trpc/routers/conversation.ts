@@ -65,6 +65,7 @@ export const conversationRouter = createTRPCRouter({
 			const result = await listConversationsHeaders(db, {
 				organizationId: websiteData.organizationId,
 				websiteId: websiteData.id,
+				userId: user.id,
 				limit: input.limit,
 				cursor: input.cursor,
 			});

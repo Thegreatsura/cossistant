@@ -124,6 +124,7 @@ export declare const conversationSeenSchema: z.ZodObject<
 		userId: z.ZodNullable<z.ZodString>;
 		visitorId: z.ZodNullable<z.ZodString>;
 		aiAgentId: z.ZodNullable<z.ZodString>;
+		lastSeenAt: z.ZodDate;
 		createdAt: z.ZodDate;
 		updatedAt: z.ZodDate;
 		deletedAt: z.ZodNullable<z.ZodDate>;

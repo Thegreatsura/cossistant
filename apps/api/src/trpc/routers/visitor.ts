@@ -1,7 +1,7 @@
 import {
 	blockVisitor,
-	type VisitorRecord,
 	unblockVisitor,
+	type VisitorRecord,
 } from "@api/db/mutations/visitor";
 import { getVisitorComplete } from "@api/db/queries/visitor";
 import { blockVisitorResponseSchema } from "@cossistant/types";

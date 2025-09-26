@@ -4,6 +4,7 @@ import type { Database } from "@api/db";
 import {
 	conversation,
 	conversationEvent,
+	conversationSeen,
 	conversationView,
 	type MessageSelect,
 	message,
@@ -221,6 +222,7 @@ export async function listConversationsHeaders(
 	params: {
 		organizationId: string;
 		websiteId: string;
+		userId: string;
 		limit?: number;
 		cursor?: string | null;
 		orderBy?: "createdAt" | "updatedAt";
@@ -354,6 +356,7 @@ export async function listConversationsHeaders(
 			lastMessageParentMessageId: lastMessageSubquery.parentMessageId,
 			// Aggregated view IDs
 			viewIds: viewsSubquery.viewIds,
+			userLastSeenAt: conversationSeen.lastSeenAt,
 		})
 		.from(conversation)
 		.innerJoin(visitor, eq(conversation.visitorId, visitor.id))
@@ -362,6 +365,13 @@ export async function listConversationsHeaders(
 			and(
 				eq(lastMessageSubquery.conversationId, conversation.id),
 				eq(lastMessageSubquery.rn, 1) // Only get the first (latest) message
+			)
+		)
+		.leftJoin(
+			conversationSeen,
+			and(
+				eq(conversationSeen.conversationId, conversation.id),
+				eq(conversationSeen.userId, params.userId)
 			)
 		)
 		.leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
@@ -432,6 +442,7 @@ export async function listConversationsHeaders(
 			},
 			viewIds: row.viewIds || [],
 			lastMessageAt: row.lastMessageCreatedAt ?? null,
+			lastSeenAt: row.userLastSeenAt ?? null,
 			lastMessagePreview: lastMessage,
 		};
 	});

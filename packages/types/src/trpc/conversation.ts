@@ -80,6 +80,7 @@ export const conversationHeaderSchema = z.object({
 	updatedAt: z.date(),
 	deletedAt: z.date().nullable(),
 	lastMessageAt: z.date().nullable(),
+	lastSeenAt: z.date().nullable(),
 	lastMessagePreview: messageSchema.nullable(),
 	viewIds: z.array(z.string()),
 });

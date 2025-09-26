@@ -27,10 +27,10 @@ export function ConversationHeader() {
 				/>
 				<MoreConversationActions
 					conversationId={selectedConversationId}
+					deletedAt={selectedConversation?.deletedAt ?? null}
 					status={selectedConversation?.status}
 					visitorId={selectedVisitorId}
 					visitorIsBlocked={selectedConversation?.visitor.isBlocked ?? null}
-					deletedAt={selectedConversation?.deletedAt ?? null}
 				/>
 			</div>
 		</PageHeader>
