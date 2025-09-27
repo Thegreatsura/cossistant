@@ -3,10 +3,10 @@ import type { PublicWebsiteResponse, SenderType } from "@cossistant/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
 import { useClient } from "./hooks/use-rest-client";
+import { useWebsiteStore } from "./hooks/use-website-store";
 import { SupportRealtimeProvider } from "./realtime";
 import { WebSocketProvider } from "./support";
 import { useConversations } from "./support/hooks/use-conversations";
-import { useWebsiteData } from "./support/hooks/use-website-data";
 
 export type Props = {
 	children: React.ReactNode;
@@ -86,8 +86,8 @@ function SupportProviderInner({
 		}
 	}, [quickOptions]);
 
-	const { client, error: clientError } = useClient(publicKey, apiUrl, wsUrl);
-	const { website, isLoading, error: websiteError } = useWebsiteData(client);
+        const { client, error: clientError } = useClient(publicKey, apiUrl, wsUrl);
+        const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 
 	// Prefetch conversations
 	useConversations(client, {

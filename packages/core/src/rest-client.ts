@@ -212,13 +212,29 @@ export class CossistantRestClient {
 	}
 
 	// Manually prime website and visitor context when the caller already has it
-	setWebsiteContext(websiteId: string, visitorId?: string): void {
-		this.websiteId = websiteId;
-		if (visitorId) {
-			this.visitorId = visitorId;
-			setVisitorId(websiteId, visitorId);
-		}
-	}
+        setWebsiteContext(websiteId: string, visitorId?: string): void {
+                this.websiteId = websiteId;
+                if (visitorId) {
+                        this.visitorId = visitorId;
+                        setVisitorId(websiteId, visitorId);
+                }
+        }
+
+        getCurrentWebsiteId(): string | null {
+                return this.websiteId;
+        }
+
+        getCurrentVisitorId(): string | null {
+                if (this.visitorId) {
+                        return this.visitorId;
+                }
+
+                if (!this.websiteId) {
+                        return null;
+                }
+
+                return getVisitorId(this.websiteId) ?? null;
+        }
 
 	async updateVisitorMetadata(
 		metadata: VisitorMetadata

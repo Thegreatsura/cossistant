@@ -4,3 +4,4 @@ export * from "./use-multimodal-input";
 export * from "./use-realtime-support";
 export * from "./use-rest-client";
 export * from "./use-visitor";
+export * from "./use-client-query";
