@@ -13,6 +13,7 @@ import {
 } from "@api/db/schema";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 
+import type { ConversationSeen } from "@cossistant/types";
 import {
 	ConversationStatus,
 	MessageType,
@@ -396,6 +397,41 @@ export async function listConversationsHeaders(
 		}
 	}
 
+	const conversationIds = items.map((row) => row.conversation.id);
+
+	const seenDataMap = new Map<string, ConversationSeen[]>();
+
+	if (conversationIds.length > 0) {
+		const seenRows = await db
+			.select({
+				id: conversationSeen.id,
+				conversationId: conversationSeen.conversationId,
+				userId: conversationSeen.userId,
+				visitorId: conversationSeen.visitorId,
+				aiAgentId: conversationSeen.aiAgentId,
+				lastSeenAt: conversationSeen.lastSeenAt,
+				createdAt: conversationSeen.createdAt,
+				updatedAt: conversationSeen.updatedAt,
+			})
+			.from(conversationSeen)
+			.where(
+				and(
+					eq(conversationSeen.organizationId, params.organizationId),
+					inArray(conversationSeen.conversationId, conversationIds)
+				)
+			)
+			.orderBy(desc(conversationSeen.lastSeenAt));
+
+		for (const seen of seenRows) {
+			const collection = seenDataMap.get(seen.conversationId) ?? [];
+			collection.push({
+				...seen,
+				deletedAt: null,
+			});
+			seenDataMap.set(seen.conversationId, collection);
+		}
+	}
+
 	// Transform results (much simpler now!)
 	const conversationsWithDetails = items.map((row) => {
 		// Build last message object if it exists
@@ -444,6 +480,7 @@ export async function listConversationsHeaders(
 			lastMessageAt: row.lastMessageCreatedAt ?? null,
 			lastSeenAt: row.userLastSeenAt ?? null,
 			lastMessagePreview: lastMessage,
+			seenData: seenDataMap.get(row.conversation.id) ?? [],
 		};
 	});
 

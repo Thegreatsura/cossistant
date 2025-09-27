@@ -5,7 +5,7 @@ import {
 	ConversationSentiment,
 	ConversationStatus,
 } from "../enums";
-import { messageSchema } from "../schemas";
+import { conversationSeenSchema, messageSchema } from "../schemas";
 
 export const conversationStatusSchema = z.enum([
 	ConversationStatus.OPEN,
@@ -83,6 +83,7 @@ export const conversationHeaderSchema = z.object({
 	lastSeenAt: z.date().nullable(),
 	lastMessagePreview: messageSchema.nullable(),
 	viewIds: z.array(z.string()),
+	seenData: z.array(conversationSeenSchema),
 });
 
 export const listConversationHeadersResponseSchema = z.object({

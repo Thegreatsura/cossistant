@@ -1,5 +1,6 @@
-import { updateConversationHeaderInCache } from "@/data/conversation-header-cache";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { ConversationHeader } from "@/data/conversation-header-cache";
+import { updateConversationHeaderInCache } from "@/data/conversation-header-cache";
 import type { RealtimeEventHandler } from "../types";
 
 type ConversationSeenEvent = RealtimeEvent<"CONVERSATION_SEEN">;
@@ -42,9 +43,142 @@ function shouldUpdateVisitorTimestamp(
 	);
 }
 
-export const handleConversationSeen: RealtimeEventHandler<"CONVERSATION_SEEN"> = (
-	{ event, context }
-) => {
+type UpdateResult = {
+	header: ConversationHeader;
+	changed: boolean;
+};
+
+function maybeUpdateVisitorLastSeen(
+	header: ConversationHeader,
+	event: ConversationSeenEvent,
+	lastSeenAtTime: number
+): UpdateResult {
+	if (!shouldUpdateVisitorTimestamp(event, header.visitorId)) {
+		return { header, changed: false };
+	}
+
+	const currentLastSeen = header.visitor.lastSeenAt?.getTime?.();
+
+	if (currentLastSeen === lastSeenAtTime) {
+		return { header, changed: false };
+	}
+
+	const nextDate = new Date(lastSeenAtTime);
+
+	return {
+		header: {
+			...header,
+			visitor: {
+				...header.visitor,
+				lastSeenAt: nextDate,
+			},
+		},
+		changed: true,
+	};
+}
+
+function maybeUpdateCurrentUserLastSeen(
+	header: ConversationHeader,
+	event: ConversationSeenEvent,
+	currentUserId: string | null | undefined,
+	lastSeenAtTime: number
+): UpdateResult {
+	if (!(event.data.userId && currentUserId)) {
+		return { header, changed: false };
+	}
+
+	if (event.data.userId !== currentUserId) {
+		return { header, changed: false };
+	}
+
+	const currentLastSeen = header.lastSeenAt?.getTime?.();
+
+	if (currentLastSeen === lastSeenAtTime) {
+		return { header, changed: false };
+	}
+
+	const nextDate = new Date(lastSeenAtTime);
+
+	return {
+		header: {
+			...header,
+			lastSeenAt: nextDate,
+		},
+		changed: true,
+	};
+}
+
+type SeenEntry = ConversationHeader["seenData"][number];
+
+function buildActorPredicates(event: ConversationSeenEvent) {
+	const predicates: ((seen: SeenEntry) => boolean)[] = [];
+
+	if (event.data.userId) {
+		predicates.push((seen) => seen.userId === event.data.userId);
+	}
+
+	if (event.data.visitorId) {
+		predicates.push((seen) => seen.visitorId === event.data.visitorId);
+	}
+
+	if (event.data.aiAgentId) {
+		predicates.push((seen) => seen.aiAgentId === event.data.aiAgentId);
+	}
+
+	return predicates;
+}
+
+function maybeUpdateSeenEntries(
+	header: ConversationHeader,
+	event: ConversationSeenEvent,
+	lastSeenAtTime: number
+): UpdateResult {
+	const predicates = buildActorPredicates(event);
+
+	if (predicates.length === 0 || header.seenData.length === 0) {
+		return { header, changed: false };
+	}
+
+	let didChange = false;
+
+	const nextDate = new Date(lastSeenAtTime);
+
+	const nextSeenData = header.seenData.map((seen) => {
+		const matchesActor = predicates.some((predicate) => predicate(seen));
+
+		if (!matchesActor) {
+			return seen;
+		}
+
+		if (seen.lastSeenAt.getTime() === lastSeenAtTime) {
+			return seen;
+		}
+
+		didChange = true;
+
+		return {
+			...seen,
+			lastSeenAt: nextDate,
+			updatedAt: nextDate,
+		};
+	});
+
+	if (!didChange) {
+		return { header, changed: false };
+	}
+
+	return {
+		header: {
+			...header,
+			seenData: nextSeenData,
+		},
+		changed: true,
+	};
+}
+
+export const handleConversationSeen: RealtimeEventHandler<
+	"CONVERSATION_SEEN"
+> = ({ event, context }) => {
 	if (event.data.websiteId !== context.website.id) {
 		return;
 	}
@@ -73,37 +207,32 @@ export const handleConversationSeen: RealtimeEventHandler<"CONVERSATION_SEEN"> =
 			queryKey,
 			event.data.conversationId,
 			(header) => {
-				let hasChanged = false;
-				let nextHeader = header;
+				const visitorUpdate = maybeUpdateVisitorLastSeen(
+					header,
+					event,
+					lastSeenAtTime
+				);
+				const userUpdate = maybeUpdateCurrentUserLastSeen(
+					visitorUpdate.header,
+					event,
+					context.userId,
+					lastSeenAtTime
+				);
+				const seenEntriesUpdate = maybeUpdateSeenEntries(
+					userUpdate.header,
+					event,
+					lastSeenAtTime
+				);
 
 				if (
-					shouldUpdateVisitorTimestamp(event, header.visitorId) &&
-					header.visitor.lastSeenAt?.getTime?.() !== lastSeenAtTime
+					visitorUpdate.changed ||
+					userUpdate.changed ||
+					seenEntriesUpdate.changed
 				) {
-					nextHeader = {
-						...nextHeader,
-						visitor: {
-							...nextHeader.visitor,
-							lastSeenAt: new Date(lastSeenAtTime),
-						},
-					};
-					hasChanged = true;
+					return seenEntriesUpdate.header;
 				}
 
-				if (
-					event.data.userId &&
-					context.userId &&
-					event.data.userId === context.userId &&
-					nextHeader.lastSeenAt?.getTime?.() !== lastSeenAtTime
-				) {
-					nextHeader = {
-						...nextHeader,
-						lastSeenAt: new Date(lastSeenAtTime),
-					};
-					hasChanged = true;
-				}
-
-				return hasChanged ? nextHeader : header;
+				return header;
 			}
 		);
 	}
