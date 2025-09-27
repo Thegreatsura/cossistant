@@ -311,8 +311,8 @@ export async function markConversationAsRead(
 		conversation: ConversationRecord;
 		actorUserId: string;
 	}
-) {
-	const updatedAt = new Date();
+): Promise<{ conversation: ConversationRecord; lastSeenAt: Date }> {
+	const lastSeenAt = new Date();
 
 	await db
 		.insert(conversationSeen)
@@ -323,19 +323,52 @@ export async function markConversationAsRead(
 			userId: params.actorUserId,
 			visitorId: null,
 			aiAgentId: null,
+			lastSeenAt,
+			createdAt: lastSeenAt,
+			updatedAt: lastSeenAt,
+		})
+		.onConflictDoUpdate({
+			target: [conversationSeen.conversationId, conversationSeen.userId],
+			set: {
+				lastSeenAt,
+				updatedAt: lastSeenAt,
+			},
+		});
+
+	return { conversation: params.conversation, lastSeenAt };
+}
+
+export async function markConversationAsSeenByVisitor(
+	db: Database,
+	params: {
+		conversation: ConversationRecord;
+		visitorId: string;
+	}
+) {
+	const updatedAt = new Date();
+
+	await db
+		.insert(conversationSeen)
+		.values({
+			id: generateULID(),
+			conversationId: params.conversation.id,
+			organizationId: params.conversation.organizationId,
+			userId: null,
+			visitorId: params.visitorId,
+			aiAgentId: null,
 			lastSeenAt: updatedAt,
 			createdAt: updatedAt,
 			updatedAt,
 		})
 		.onConflictDoUpdate({
-			target: [conversationSeen.conversationId, conversationSeen.userId],
+			target: [conversationSeen.conversationId, conversationSeen.visitorId],
 			set: {
 				lastSeenAt: updatedAt,
 				updatedAt,
 			},
 		});
 
-	return params.conversation;
+	return updatedAt;
 }
 
 export async function markConversationAsUnread(

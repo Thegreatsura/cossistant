@@ -5,6 +5,8 @@ import type {
 	GetConversationResponse,
 	ListConversationsRequest,
 	ListConversationsResponse,
+	MarkConversationSeenRequestBody,
+	MarkConversationSeenResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
 	GetMessagesRequest,
@@ -72,6 +74,14 @@ export class CossistantClient {
 		params: GetConversationRequest
 	): Promise<GetConversationResponse> {
 		return this.restClient.getConversation(params);
+	}
+
+	async markConversationSeen(
+		params: {
+			conversationId: string;
+		} & Partial<MarkConversationSeenRequestBody>
+	): Promise<MarkConversationSeenResponseBody> {
+		return this.restClient.markConversationSeen(params);
 	}
 
 	// Message management

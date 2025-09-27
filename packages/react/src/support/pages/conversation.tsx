@@ -3,7 +3,6 @@ import type {
 	Message as MessageType,
 } from "@cossistant/types";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
-import { useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { useSupport } from "../..";
 import { useDefaultMessages } from "../../hooks/use-default-messages";
@@ -53,10 +52,11 @@ export const ConversationPage = ({
 	messages = [],
 	events = [],
 }: ConversationPageProps) => {
-	const queryClient = useQueryClient();
 	const { website, availableAIAgents, availableHumanAgents, client, visitor } =
 		useSupport();
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+	const lastSeenMessageIdRef = React.useRef<string | null>(null);
+	const markSeenInFlightRef = React.useRef(false);
 
 	// Determine if we have a real conversation or pending one
 	const hasRealConversation = conversationId !== PENDING_CONVERSATION_ID;
@@ -145,6 +145,55 @@ export const ConversationPage = ({
 		fetchedMessages.length > 0 ? fetchedMessages : messages;
 	const actualIsSubmitting = isSubmitting || sendMessage.isPending;
 	const actualError = error || messagesQuery.error;
+	const lastMessage = React.useMemo(
+		() => actualMessages.at(-1) ?? null,
+		[actualMessages]
+	);
+
+	React.useEffect(() => {
+		lastSeenMessageIdRef.current = null;
+		markSeenInFlightRef.current = false;
+	}, [realConversationId]);
+
+	React.useEffect(() => {
+		if (
+			!client ||
+			!realConversationId ||
+			!visitor?.id ||
+			!lastMessage ||
+			lastMessage.visitorId === visitor.id
+		) {
+			if (lastMessage && lastMessage.visitorId === visitor?.id) {
+				lastSeenMessageIdRef.current = lastMessage.id;
+			}
+			return;
+		}
+
+		if (lastSeenMessageIdRef.current === lastMessage.id) {
+			return;
+		}
+
+		if (markSeenInFlightRef.current) {
+			return;
+		}
+
+		markSeenInFlightRef.current = true;
+
+		client
+			.markConversationSeen({ conversationId: realConversationId })
+			.then(() => {
+				lastSeenMessageIdRef.current = lastMessage.id;
+			})
+			.catch((markSeenError) => {
+				console.error(
+					"Failed to mark conversation as seen:",
+					markSeenError
+				);
+			})
+			.finally(() => {
+				markSeenInFlightRef.current = false;
+			});
+	}, [client, realConversationId, visitor?.id, lastMessage]);
 
 	const handleGoBack = () => {
 		if (canGoBack) {

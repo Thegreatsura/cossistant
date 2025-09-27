@@ -165,3 +165,210 @@ describe("MESSAGE_CREATED handler", () => {
 		]);
 	});
 });
+
+describe("CONVERSATION_SEEN handler", () => {
+	beforeEach(() => {
+		sendToWebsite.mockReset();
+		sendToVisitor.mockReset();
+		sendToConnection.mockReset();
+	});
+
+	it("broadcasts to dashboards and conversation visitor", async () => {
+		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
+			type: "CONVERSATION_SEEN",
+			data: {
+				conversationId: "conv-seen-1",
+				websiteId: "site-seen",
+				organizationId: "org-seen",
+				conversationVisitorId: "visitor-xyz",
+				lastSeenAt: new Date().toISOString(),
+				actorType: "user",
+				actorId: "user-actor",
+				userId: "user-actor",
+				visitorId: null,
+				aiAgentId: null,
+			},
+			timestamp: Date.now(),
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-seen",
+			websiteId: "site-seen",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToWebsite.mock.calls[0]).toEqual(["site-seen", event]);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual([
+			"visitor-xyz",
+			event,
+		]);
+	});
+
+	it("emits to actor visitor when visitor sees conversation", async () => {
+		const visitorId = "visitor-actor";
+		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
+			type: "CONVERSATION_SEEN",
+			data: {
+				conversationId: "conv-seen-2",
+				websiteId: "site-seen",
+				organizationId: "org-seen",
+				conversationVisitorId: visitorId,
+				lastSeenAt: new Date().toISOString(),
+				actorType: "visitor",
+				actorId: visitorId,
+				userId: null,
+				visitorId,
+				aiAgentId: null,
+			},
+			timestamp: Date.now(),
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-seen",
+			websiteId: "site-seen",
+			visitorId,
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual([visitorId, event]);
+	});
+});
+
+describe("CONVERSATION_TYPING handler", () => {
+	beforeEach(() => {
+		sendToWebsite.mockReset();
+		sendToVisitor.mockReset();
+		sendToConnection.mockReset();
+	});
+
+	it("broadcasts typing state to dashboards and visitors", async () => {
+		const event: RealtimeEvent<"CONVERSATION_TYPING"> = {
+			type: "CONVERSATION_TYPING",
+			data: {
+				conversationId: "conv-typing",
+				websiteId: "site-typing",
+				organizationId: "org-typing",
+				conversationVisitorId: "visitor-owner",
+				actorType: "user",
+				actorId: "user-123",
+				isTyping: true,
+				userId: "user-123",
+				visitorId: null,
+				aiAgentId: null,
+			},
+			timestamp: Date.now(),
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-typing",
+			websiteId: "site-typing",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToWebsite.mock.calls[0]).toEqual(["site-typing", event]);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-owner", event]);
+	});
+});
+
+describe("CONVERSATION_EVENT_CREATED handler", () => {
+	beforeEach(() => {
+		sendToWebsite.mockReset();
+		sendToVisitor.mockReset();
+		sendToConnection.mockReset();
+	});
+
+	it("broadcasts timeline events to dashboards and visitor", async () => {
+		const event: RealtimeEvent<"CONVERSATION_EVENT_CREATED"> = {
+			type: "CONVERSATION_EVENT_CREATED",
+			data: {
+				conversationId: "conv-event",
+				websiteId: "site-event",
+				organizationId: "org-event",
+				conversationVisitorId: "visitor-event",
+				event: {
+					id: "evt-1",
+					conversationId: "conv-event",
+					organizationId: "org-event",
+					type: "STATUS_CHANGED",
+					actorUserId: "user-1",
+					actorAiAgentId: null,
+					targetUserId: null,
+					targetAiAgentId: null,
+					message: null,
+					metadata: null,
+					createdAt: new Date().toISOString(),
+				},
+			},
+			timestamp: Date.now(),
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-event",
+			websiteId: "site-event",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToWebsite.mock.calls[0]).toEqual(["site-event", event]);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-event", event]);
+	});
+});
+
+describe("CONVERSATION_CREATED handler", () => {
+	beforeEach(() => {
+		sendToWebsite.mockReset();
+		sendToVisitor.mockReset();
+		sendToConnection.mockReset();
+	});
+
+	it("broadcasts new conversations to dashboards and visitor", async () => {
+		const event: RealtimeEvent<"CONVERSATION_CREATED"> = {
+			type: "CONVERSATION_CREATED",
+			data: {
+				conversation: {
+					id: "conv-created",
+					organizationId: "org-created",
+					websiteId: "site-created",
+					visitorId: "visitor-created",
+					status: "open",
+					priority: null,
+					title: null,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				},
+				websiteId: "site-created",
+				organizationId: "org-created",
+				visitorId: "visitor-created",
+			},
+			timestamp: Date.now(),
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-created",
+			websiteId: "site-created",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToWebsite.mock.calls[0]).toEqual(["site-created", event]);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-created", event]);
+	});
+});

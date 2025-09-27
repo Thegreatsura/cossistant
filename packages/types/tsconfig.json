@@ -15,6 +15,7 @@
     "noErrorTruncation": false,
     "allowJs": true,
     "skipLibCheck": true,
+    "outDir": "./dist",
     "allowImportingTsExtensions": true,
     "paths": {
       "@cossistant/types": ["./src"],

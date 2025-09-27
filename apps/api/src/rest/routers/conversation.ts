@@ -1,3 +1,4 @@
+import { markConversationAsSeenByVisitor } from "@api/db/mutations/conversation";
 import { getVisitor } from "@api/db/queries";
 import {
 	getConversationByIdWithLastMessage,
@@ -5,6 +6,7 @@ import {
 	upsertConversation,
 } from "@api/db/queries/conversation";
 import { createMessage } from "@api/utils/message";
+import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
 import {
 	safelyExtractRequestData,
 	safelyExtractRequestQuery,
@@ -17,6 +19,8 @@ import {
 	getConversationResponseSchema,
 	listConversationsRequestSchema,
 	listConversationsResponseSchema,
+	markConversationSeenRequestSchema,
+	markConversationSeenResponseSchema,
 } from "@cossistant/types/api/conversation";
 import type { Message } from "@cossistant/types/schemas";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
@@ -452,5 +456,150 @@ conversationRouter.openapi(
 		};
 
 		return c.json(validateResponse(apiResponse, getConversationResponseSchema));
+	}
+);
+
+conversationRouter.openapi(
+	{
+		method: "post",
+		path: "/{conversationId}/seen",
+		summary: "Mark a conversation as seen by the visitor",
+		description:
+			"Record a visitor's last seen timestamp for a specific conversation.",
+		tags: ["Conversations"],
+		request: {
+			body: {
+				required: false,
+				content: {
+					"application/json": {
+						schema: markConversationSeenRequestSchema,
+					},
+				},
+			},
+		},
+		responses: {
+			200: {
+				description: "Conversation seen timestamp recorded",
+				content: {
+					"application/json": {
+						schema: markConversationSeenResponseSchema,
+					},
+				},
+			},
+			400: {
+				description: "Invalid request",
+				content: {
+					"application/json": {
+						schema: z.object({ error: z.string() }),
+					},
+				},
+			},
+			404: {
+				description: "Conversation not found",
+				content: {
+					"application/json": {
+						schema: z.object({ error: z.string() }),
+					},
+				},
+			},
+		},
+		security: [
+			{
+				"Public API Key": [],
+			},
+		],
+		parameters: [
+			{
+				name: "conversationId",
+				in: "path",
+				description: "The ID of the conversation to mark as seen",
+				required: true,
+				schema: {
+					type: "string",
+				},
+			},
+			{
+				name: "X-Public-Key",
+				in: "header",
+				description:
+					"Public API key for browser-based authentication. Can only be used from whitelisted domains. Format: `pk_[live|test]_...`",
+				required: false,
+				schema: {
+					type: "string",
+					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
+					example:
+						"pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+				},
+			},
+			{
+				name: "X-Visitor-Id",
+				in: "header",
+				description: "Visitor ID from localStorage.",
+				required: false,
+				schema: {
+					type: "string",
+					pattern: "^[0-9A-HJKMNP-TV-Z]{26}$",
+					example: "01JG000000000000000000000",
+				},
+			},
+		],
+	},
+	async (c) => {
+		const { db, website, organization, body, visitorIdHeader } =
+			await safelyExtractRequestData(c, markConversationSeenRequestSchema);
+
+		const params = getConversationRequestSchema.parse({
+			conversationId: c.req.param("conversationId"),
+		});
+
+		const visitor = await getVisitor(db, {
+			visitorId: body.visitorId || visitorIdHeader,
+			externalVisitorId: body.externalVisitorId,
+		});
+
+		if (!visitor || visitor.websiteId !== website.id) {
+			return c.json(
+				{
+					error:
+						"Visitor not found, please pass a valid visitorId or externalVisitorId",
+				},
+				400
+			);
+		}
+
+		const conversationRecord = await getConversationByIdWithLastMessage(db, {
+			organizationId: organization.id,
+			websiteId: website.id,
+			conversationId: params.conversationId,
+		});
+
+		if (!conversationRecord || conversationRecord.visitorId !== visitor.id) {
+			return c.json(
+				{
+					error: "Conversation not found",
+				},
+				404
+			);
+		}
+
+		const lastSeenAt = await markConversationAsSeenByVisitor(db, {
+			conversation: conversationRecord,
+			visitorId: visitor.id,
+		});
+
+		await emitConversationSeenEvent({
+			conversation: conversationRecord,
+			actor: { type: "visitor", visitorId: visitor.id },
+			lastSeenAt,
+		});
+
+		const response = {
+			conversationId: conversationRecord.id,
+			lastSeenAt,
+		};
+
+		return c.json(
+			validateResponse(response, markConversationSeenResponseSchema)
+		);
 	}
 );

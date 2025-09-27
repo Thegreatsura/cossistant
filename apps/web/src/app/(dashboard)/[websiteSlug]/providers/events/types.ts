@@ -13,6 +13,7 @@ type WebsiteContext = {
 
 export type DashboardRealtimeContext = {
 	website: WebsiteContext;
+	userId: string | null;
 };
 
 export type RealtimeEventHandlerContext =

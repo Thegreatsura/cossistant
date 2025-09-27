@@ -5,6 +5,8 @@ import type {
 	GetConversationResponse,
 	ListConversationsRequest,
 	ListConversationsResponse,
+	MarkConversationSeenRequestBody,
+	MarkConversationSeenResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
 	GetMessagesRequest,
@@ -445,6 +447,51 @@ export class CossistantRestClient {
 				createdAt: new Date(response.conversation.createdAt),
 				updatedAt: new Date(response.conversation.updatedAt),
 			} as Conversation,
+		};
+	}
+
+	async markConversationSeen(
+		params: {
+			conversationId: string;
+		} & Partial<MarkConversationSeenRequestBody>
+	): Promise<MarkConversationSeenResponseBody> {
+		const storedVisitorId = this.websiteId
+			? getVisitorId(this.websiteId)
+			: undefined;
+		const visitorId = params.visitorId || storedVisitorId;
+
+		if (!visitorId && !params.externalVisitorId) {
+			throw new Error(
+				"Visitor ID or external visitor ID is required to mark a conversation as seen"
+			);
+		}
+
+		const headers: Record<string, string> = {};
+		if (visitorId) {
+			headers["X-Visitor-Id"] = visitorId;
+		}
+
+		const body: MarkConversationSeenRequestBody = {};
+		if (params.visitorId) {
+			body.visitorId = params.visitorId;
+		}
+
+		if (params.externalVisitorId) {
+			body.externalVisitorId = params.externalVisitorId;
+		}
+
+		const response = await this.request<{
+			conversationId: string;
+			lastSeenAt: string;
+	}>(`/conversations/${params.conversationId}/seen`, {
+			method: "POST",
+			body: JSON.stringify(body),
+			headers,
+		});
+
+		return {
+			conversationId: response.conversationId,
+			lastSeenAt: new Date(response.lastSeenAt),
 		};
 	}
 

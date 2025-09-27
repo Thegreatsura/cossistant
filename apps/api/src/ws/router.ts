@@ -152,6 +152,119 @@ const eventHandlers: EventHandlers = {
 			ctx.sendToVisitor?.(visitorId, event);
 		}
 	},
+
+	CONVERSATION_SEEN: (ctx, event) => {
+		const data = event.data;
+		console.log(
+			`[CONVERSATION_SEEN] Conversation ${data.conversationId} seen by ${data.actorType}`,
+			{
+				actorId: data.actorId,
+				websiteId: data.websiteId,
+				conversationVisitorId: data.conversationVisitorId,
+			}
+		);
+
+		const websiteId = data.websiteId ?? ctx.websiteId;
+		if (websiteId) {
+			ctx.sendToWebsite?.(websiteId, event);
+		}
+
+		const visitorTargets = new Set<string>();
+		if (data.conversationVisitorId) {
+			visitorTargets.add(data.conversationVisitorId);
+		}
+		if (data.visitorId) {
+			visitorTargets.add(data.visitorId);
+		}
+		if (ctx.visitorId) {
+			visitorTargets.add(ctx.visitorId);
+		}
+
+		for (const visitorId of visitorTargets) {
+			ctx.sendToVisitor?.(visitorId, event);
+		}
+	},
+
+	CONVERSATION_TYPING: (ctx, event) => {
+		const data = event.data;
+		console.log(
+			`[CONVERSATION_TYPING] Conversation ${data.conversationId} actor ${data.actorType} typing=${data.isTyping}`,
+			{
+				actorId: data.actorId,
+				websiteId: data.websiteId,
+			}
+		);
+
+		const websiteId = data.websiteId ?? ctx.websiteId;
+		if (websiteId) {
+			ctx.sendToWebsite?.(websiteId, event);
+		}
+
+		const visitorTargets = new Set<string>();
+		if (data.conversationVisitorId) {
+			visitorTargets.add(data.conversationVisitorId);
+		}
+		if (data.visitorId) {
+			visitorTargets.add(data.visitorId);
+		}
+		if (ctx.visitorId) {
+			visitorTargets.add(ctx.visitorId);
+		}
+
+		for (const visitorId of visitorTargets) {
+			ctx.sendToVisitor?.(visitorId, event);
+		}
+	},
+
+	CONVERSATION_EVENT_CREATED: (ctx, event) => {
+		const data = event.data;
+		console.log(
+			`[CONVERSATION_EVENT_CREATED] Event ${data.event.id} for conversation ${data.conversationId}`,
+			{
+				websiteId: data.websiteId,
+				organizationId: data.organizationId,
+				type: data.event.type,
+			}
+		);
+
+		const websiteId = data.websiteId ?? ctx.websiteId;
+		if (websiteId) {
+			ctx.sendToWebsite?.(websiteId, event);
+		}
+
+		const visitorTargets = new Set<string>();
+		if (data.conversationVisitorId) {
+			visitorTargets.add(data.conversationVisitorId);
+		}
+		if (ctx.visitorId) {
+			visitorTargets.add(ctx.visitorId);
+		}
+
+		for (const visitorId of visitorTargets) {
+			ctx.sendToVisitor?.(visitorId, event);
+		}
+	},
+
+	CONVERSATION_CREATED: (ctx, event) => {
+		const data = event.data;
+		console.log(
+			`[CONVERSATION_CREATED] Conversation ${data.conversation.id} created`,
+			{
+				websiteId: data.websiteId,
+				organizationId: data.organizationId,
+				visitorId: data.visitorId,
+			}
+		);
+
+		const websiteId = data.websiteId ?? ctx.websiteId;
+		if (websiteId) {
+			ctx.sendToWebsite?.(websiteId, event);
+		}
+
+		if (data.visitorId) {
+			ctx.sendToVisitor?.(data.visitorId, event);
+		}
+	},
 };
 
 /**

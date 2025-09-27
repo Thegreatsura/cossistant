@@ -10,6 +10,7 @@ export type MessageGroupRenderProps = {
 	// Sender information
 	senderType: SenderType;
 	senderId: string;
+	viewerType?: SenderType;
 
 	// POV flags - who is viewing
 	isSentByViewer: boolean; // True if the current viewer sent these messages
@@ -69,10 +70,12 @@ export const MessageGroup = (() => {
 				viewerId,
 				seenByIds = [],
 				lastReadMessageIds,
-				...props
+				...restProps
 			},
 			ref
 		) => {
+			const { viewerType, ...elementProps } = restProps;
+
 			// Determine sender type from first message in group
 			const firstMessage = messages[0];
 			// biome-ignore lint/style/useAtIndex: ok
@@ -98,8 +101,16 @@ export const MessageGroup = (() => {
 			}
 
 			// Determine POV
-			const isSentByViewer = viewerId ? senderId === viewerId : false;
-			const isReceivedByViewer = viewerId ? senderId !== viewerId : true;
+			const isSentByViewer = viewerId
+				? senderId === viewerId
+				: viewerType
+					? senderType === viewerType
+					: false;
+			const isReceivedByViewer = viewerId
+				? senderId !== viewerId
+				: viewerType
+					? senderType !== viewerType
+					: true;
 
 			// Convenience flags
 			const isVisitor = senderType === "visitor";
@@ -114,6 +125,7 @@ export const MessageGroup = (() => {
 			const renderProps: MessageGroupRenderProps = {
 				senderType,
 				senderId,
+				viewerType,
 				isSentByViewer,
 				isReceivedByViewer,
 				isVisitor,
@@ -141,7 +153,7 @@ export const MessageGroup = (() => {
 					props: {
 						role: "group",
 						"aria-label": `Message group from ${senderType}`,
-						...props,
+						...elementProps,
 						children: content,
 					},
 				}
