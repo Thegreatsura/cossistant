@@ -135,3 +135,40 @@ export const getConversationResponseSchema = z
 export type GetConversationResponse = z.infer<
 	typeof getConversationResponseSchema
 >;
+
+export const markConversationSeenRequestSchema = z
+	.object({
+		visitorId: z.string().optional().openapi({
+			description:
+				"Visitor ID associated with the conversation. Optional if provided via the X-Visitor-Id header.",
+		}),
+		externalVisitorId: z.string().optional().openapi({
+			description:
+				"External visitor identifier used when the visitor has not been assigned an internal visitorId.",
+		}),
+	})
+	.openapi({
+		description:
+			"Body for marking a conversation as seen. Either visitorId or externalVisitorId must be provided via body or headers.",
+	});
+
+export type MarkConversationSeenRequestBody = z.infer<
+	typeof markConversationSeenRequestSchema
+>;
+
+export const markConversationSeenResponseSchema = z
+	.object({
+		conversationId: z.string().openapi({
+			description: "The ID of the conversation that was marked as seen",
+		}),
+		lastSeenAt: z.date().openapi({
+			description: "Timestamp indicating when the visitor last saw the conversation",
+		}),
+	})
+	.openapi({
+		description: "Response confirming the conversation has been marked as seen",
+	});
+
+export type MarkConversationSeenResponseBody = z.infer<
+	typeof markConversationSeenResponseSchema
+>;
