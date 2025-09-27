@@ -25,6 +25,7 @@ export function createStore<TState>(initialState: TState): Store<TState> {
 	};
 
 	const queueNotify = () => {
+		// biome-ignore lint/nursery/noUnnecessaryConditions: ok
 		if (isQueued) {
 			return;
 		}

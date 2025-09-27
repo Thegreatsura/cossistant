@@ -17,8 +17,8 @@ import {
 import { getConversationMessages } from "@api/db/queries/message";
 import { getVisitorComplete } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
-import { createMessage } from "@api/utils/message";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
+import { createMessage } from "@api/utils/message";
 import {
 	conversationEventSchema,
 	conversationMutationResponseSchema,
@@ -446,9 +446,9 @@ export const conversationRouter = createTRPCRouter({
 			);
 			const { conversation: updatedConversation, lastSeenAt } =
 				await markConversationAsRead(db, {
-				conversation,
-				actorUserId: user.id,
-			});
+					conversation,
+					actorUserId: user.id,
+				});
 
 			await emitConversationSeenEvent({
 				conversation: updatedConversation,

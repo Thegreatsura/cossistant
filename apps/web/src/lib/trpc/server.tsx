@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noVoid: ok in this file */
 /** biome-ignore-all lint/suspicious/noExplicitAny: ok in this file */
 import "server-only";
 

@@ -212,29 +212,29 @@ export class CossistantRestClient {
 	}
 
 	// Manually prime website and visitor context when the caller already has it
-        setWebsiteContext(websiteId: string, visitorId?: string): void {
-                this.websiteId = websiteId;
-                if (visitorId) {
-                        this.visitorId = visitorId;
-                        setVisitorId(websiteId, visitorId);
-                }
-        }
+	setWebsiteContext(websiteId: string, visitorId?: string): void {
+		this.websiteId = websiteId;
+		if (visitorId) {
+			this.visitorId = visitorId;
+			setVisitorId(websiteId, visitorId);
+		}
+	}
 
-        getCurrentWebsiteId(): string | null {
-                return this.websiteId;
-        }
+	getCurrentWebsiteId(): string | null {
+		return this.websiteId;
+	}
 
-        getCurrentVisitorId(): string | null {
-                if (this.visitorId) {
-                        return this.visitorId;
-                }
+	getCurrentVisitorId(): string | null {
+		if (this.visitorId) {
+			return this.visitorId;
+		}
 
-                if (!this.websiteId) {
-                        return null;
-                }
+		if (!this.websiteId) {
+			return null;
+		}
 
-                return getVisitorId(this.websiteId) ?? null;
-        }
+		return getVisitorId(this.websiteId) ?? null;
+	}
 
 	async updateVisitorMetadata(
 		metadata: VisitorMetadata
@@ -476,7 +476,7 @@ export class CossistantRestClient {
 			: undefined;
 		const visitorId = params.visitorId || storedVisitorId;
 
-		if (!visitorId && !params.externalVisitorId) {
+		if (!(visitorId || params.externalVisitorId)) {
 			throw new Error(
 				"Visitor ID or external visitor ID is required to mark a conversation as seen"
 			);
@@ -499,7 +499,7 @@ export class CossistantRestClient {
 		const response = await this.request<{
 			conversationId: string;
 			lastSeenAt: string;
-	}>(`/conversations/${params.conversationId}/seen`, {
+		}>(`/conversations/${params.conversationId}/seen`, {
 			method: "POST",
 			body: JSON.stringify(body),
 			headers,

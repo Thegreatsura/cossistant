@@ -162,7 +162,8 @@ export const markConversationSeenResponseSchema = z
 			description: "The ID of the conversation that was marked as seen",
 		}),
 		lastSeenAt: z.date().openapi({
-			description: "Timestamp indicating when the visitor last saw the conversation",
+			description:
+				"Timestamp indicating when the visitor last saw the conversation",
 		}),
 	})
 	.openapi({

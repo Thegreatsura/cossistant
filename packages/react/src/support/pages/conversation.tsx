@@ -153,14 +153,11 @@ export const ConversationPage = ({
 	React.useEffect(() => {
 		lastSeenMessageIdRef.current = null;
 		markSeenInFlightRef.current = false;
-	}, [realConversationId]);
+	}, []);
 
 	React.useEffect(() => {
 		if (
-			!client ||
-			!realConversationId ||
-			!visitor?.id ||
-			!lastMessage ||
+			!(client && realConversationId && visitor?.id && lastMessage) ||
 			lastMessage.visitorId === visitor.id
 		) {
 			if (lastMessage && lastMessage.visitorId === visitor?.id) {
@@ -185,10 +182,7 @@ export const ConversationPage = ({
 				lastSeenMessageIdRef.current = lastMessage.id;
 			})
 			.catch((markSeenError) => {
-				console.error(
-					"Failed to mark conversation as seen:",
-					markSeenError
-				);
+				console.error("Failed to mark conversation as seen:", markSeenError);
 			})
 			.finally(() => {
 				markSeenInFlightRef.current = false;

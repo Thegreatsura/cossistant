@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ok */
 import type {
 	ConversationEvent,
 	Message as MessageType,

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CossistantClient } from "@cossistant/core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type QueryStatus = "idle" | "loading" | "success" | "error";
 
@@ -16,7 +16,7 @@ type QueryFn<TData, TArgs> = (
 
 type UseClientQueryOptions<TData, TArgs> = {
 	client: CossistantClient | null;
-	queryKey: ReadonlyArray<unknown> | string;
+	queryKey: readonly unknown[] | string;
 	queryFn: QueryFn<TData, TArgs>;
 	enabled?: boolean;
 	refetchInterval?: number | false;
@@ -41,7 +41,7 @@ function toError(error: unknown): Error {
 	return new Error(typeof error === "string" ? error : "Unknown error");
 }
 
-function toHash(key: ReadonlyArray<unknown> | string): string {
+function toHash(key: readonly unknown[] | string): string {
 	if (typeof key === "string") {
 		return key;
 	}
@@ -93,7 +93,7 @@ export function useClientQuery<TData, TArgs = void>(
 
 	useEffect(() => {
 		latestArgsRef.current = initialArgs;
-	}, [keyHash, initialArgs]);
+	}, [initialArgs]);
 
 	useEffect(() => {
 		if (previousKeyRef.current !== keyHash) {
@@ -106,11 +106,11 @@ export function useClientQuery<TData, TArgs = void>(
 
 	useEffect(() => {
 		fetchIdRef.current += 1;
-	}, [client]);
+	}, []);
 
 	const execute = useCallback(
 		async (args?: TArgs, ignoreEnabled = false): Promise<TData | undefined> => {
-			if (!client || (!enabled && !ignoreEnabled)) {
+			if (!(client && (enabled || ignoreEnabled))) {
 				return stateRef.current.data;
 			}
 
@@ -160,11 +160,12 @@ export function useClientQuery<TData, TArgs = void>(
 	);
 
 	useEffect(() => {
-		if (!client || !enabled) {
+		if (!(client && enabled)) {
 			return;
 		}
 
-		const shouldFetch = keyChangedRef.current || (!hasFetchedRef.current && refetchOnMount);
+		const shouldFetch =
+			keyChangedRef.current || (!hasFetchedRef.current && refetchOnMount);
 
 		if (!shouldFetch) {
 			return;
@@ -173,10 +174,10 @@ export function useClientQuery<TData, TArgs = void>(
 		keyChangedRef.current = false;
 		hasFetchedRef.current = true;
 		void execute(latestArgsRef.current);
-	}, [client, enabled, execute, keyHash, refetchOnMount]);
+	}, [client, enabled, execute, refetchOnMount]);
 
 	useEffect(() => {
-		if (!client || !enabled) {
+		if (!(client && enabled)) {
 			return;
 		}
 
@@ -184,7 +185,11 @@ export function useClientQuery<TData, TArgs = void>(
 			return;
 		}
 
-		if (refetchInterval === false || refetchInterval === null || refetchInterval <= 0) {
+		if (
+			refetchInterval === false ||
+			refetchInterval === null ||
+			refetchInterval <= 0
+		) {
 			return;
 		}
 
@@ -207,7 +212,7 @@ export function useClientQuery<TData, TArgs = void>(
 		}
 
 		const handleRefetch = () => {
-			if (!client || !enabled) {
+			if (!(client && enabled)) {
 				return;
 			}
 
@@ -247,4 +252,3 @@ export function useClientQuery<TData, TArgs = void>(
 		refetch,
 	};
 }
-

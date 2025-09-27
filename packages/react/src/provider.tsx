@@ -86,8 +86,8 @@ function SupportProviderInner({
 		}
 	}, [quickOptions]);
 
-        const { client, error: clientError } = useClient(publicKey, apiUrl, wsUrl);
-        const { website, isLoading, error: websiteError } = useWebsiteStore(client);
+	const { client, error: clientError } = useClient(publicKey, apiUrl, wsUrl);
+	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 
 	// Prefetch conversations
 	useConversations(client, {

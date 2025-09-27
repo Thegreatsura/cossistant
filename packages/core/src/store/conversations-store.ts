@@ -27,8 +27,8 @@ function isSameMessage(
 	if (a === b) {
 		return true;
 	}
-	if (!a || !b) {
-		return !a && !b;
+	if (!(a && b)) {
+		return !(a || b);
 	}
 	return (
 		a.id === b.id &&
@@ -57,7 +57,7 @@ function isSameConversation(a: Conversation, b: Conversation): boolean {
 		a.websiteId === b.websiteId &&
 		isSameDate(a.createdAt, b.createdAt) &&
 		isSameDate(a.updatedAt, b.updatedAt) &&
-		isSameMessage(a.lastMessage ?? null, b.lastMessage ?? null)
+		isSameMessage(a.lastMessage ?? undefined, b.lastMessage ?? undefined)
 	);
 }
 
@@ -70,7 +70,7 @@ function mergeMap(
 
 	for (const conversation of incoming) {
 		const previous = next[conversation.id];
-		if (!previous || !isSameConversation(previous, conversation)) {
+		if (!(previous && isSameConversation(previous, conversation))) {
 			if (!changed) {
 				next = { ...next };
 				changed = true;
@@ -113,6 +113,7 @@ function mergeOrder(
 		changed = true;
 	}
 
+	// biome-ignore lint/nursery/noUnnecessaryConditions: ok
 	return changed ? [next, true] : [existing, false];
 }
 
@@ -123,8 +124,8 @@ function isSamePagination(
 	if (a === b) {
 		return true;
 	}
-	if (!a || !b) {
-		return !a && !b;
+	if (!(a && b)) {
+		return !(a || b);
 	}
 	return (
 		a.page === b.page &&
@@ -145,9 +146,12 @@ function applyList(
 		response.conversations.map((conversation) => conversation.id),
 		response.pagination.page
 	);
-	const paginationChanged = !isSamePagination(state.pagination, response.pagination);
+	const paginationChanged = !isSamePagination(
+		state.pagination,
+		response.pagination
+	);
 
-	if (!mapChanged && !idsChanged && !paginationChanged) {
+	if (!(mapChanged || idsChanged || paginationChanged)) {
 		return state;
 	}
 
@@ -163,8 +167,12 @@ function applyConversation(
 	conversation: Conversation
 ): ConversationsState {
 	const previous = state.byId[conversation.id];
-	const sameConversation = previous ? isSameConversation(previous, conversation) : false;
-	const byId = sameConversation ? state.byId : { ...state.byId, [conversation.id]: conversation };
+	const sameConversation = previous
+		? isSameConversation(previous, conversation)
+		: false;
+	const byId = sameConversation
+		? state.byId
+		: { ...state.byId, [conversation.id]: conversation };
 	const hasId = state.ids.includes(conversation.id);
 	const ids = hasId ? state.ids : [...state.ids, conversation.id];
 
@@ -206,7 +214,9 @@ export function getConversations(
 	const state = store.getState();
 	return state.ids
 		.map((id) => state.byId[id])
-		.filter((conversation): conversation is Conversation => conversation !== undefined);
+		.filter(
+			(conversation): conversation is Conversation => conversation !== undefined
+		);
 }
 
 export function getConversationById(

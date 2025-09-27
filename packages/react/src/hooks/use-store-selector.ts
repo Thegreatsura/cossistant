@@ -19,10 +19,17 @@ export function useStoreSelector<TState, TSelected>(
 			onStoreChange();
 		});
 
-	const snapshot = useSyncExternalStore(subscribe, () => store.getState(), () => store.getState());
+	const snapshot = useSyncExternalStore(
+		subscribe,
+		() => store.getState(),
+		() => store.getState()
+	);
 	const selected = selector(snapshot);
 
-	if (selectionRef.current === undefined || !isEqual(selectionRef.current, selected)) {
+	if (
+		selectionRef.current === undefined ||
+		!isEqual(selectionRef.current, selected)
+	) {
 		selectionRef.current = selected;
 	}
 

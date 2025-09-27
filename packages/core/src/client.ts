@@ -1,3 +1,4 @@
+import type { RealtimeEvent } from "@cossistant/types";
 import type {
 	CreateConversationRequestBody,
 	CreateConversationResponseBody,
@@ -14,67 +15,70 @@ import type {
 	SendMessageRequest,
 	SendMessageResponse,
 } from "@cossistant/types/api/message";
-import type { RealtimeEvent } from "@cossistant/types";
-import { ConversationStatus, MessageType, MessageVisibility } from "@cossistant/types/enums";
+import {
+	ConversationStatus,
+	MessageType,
+	MessageVisibility,
+} from "@cossistant/types/enums";
 import type { Conversation, Message } from "@cossistant/types/schemas";
 import { CossistantRestClient } from "./rest-client";
-import type {
-        CossistantConfig,
-        PublicWebsiteResponse,
-        VisitorMetadata,
-        VisitorResponse,
-} from "./types";
 import {
-        createConversationsStore,
-        type ConversationsStore,
+	type ConversationsStore,
+	createConversationsStore,
 } from "./store/conversations-store";
 import {
-        createMessagesStore,
-        type MessagesStore,
+	createMessagesStore,
+	type MessagesStore,
 } from "./store/messages-store";
 import {
-        createWebsiteStore,
-        type WebsiteStore,
-        type WebsiteState,
+	createWebsiteStore,
+	type WebsiteState,
+	type WebsiteStore,
 } from "./store/website-store";
+import type {
+	CossistantConfig,
+	PublicWebsiteResponse,
+	VisitorMetadata,
+	VisitorResponse,
+} from "./types";
 import { generateConversationId, generateMessageId } from "./utils";
 
 type PendingConversation = {
-        conversation: Conversation;
-        defaultMessages: Message[];
+	conversation: Conversation;
+	defaultMessages: Message[];
 };
 
 type InitiateConversationParams = {
-        conversationId?: string;
-        visitorId?: string | null;
-        websiteId?: string | null;
-        title?: string;
-        status?: Conversation["status"];
-        defaultMessages?: Message[];
+	conversationId?: string;
+	visitorId?: string | null;
+	websiteId?: string | null;
+	title?: string;
+	status?: Conversation["status"];
+	defaultMessages?: Message[];
 };
 
 type InitiateConversationResult = {
-        conversationId: string;
-        conversation: Conversation;
-        defaultMessages: Message[];
+	conversationId: string;
+	conversation: Conversation;
+	defaultMessages: Message[];
 };
 
 export class CossistantClient {
-        private restClient: CossistantRestClient;
-        private config: CossistantConfig;
-        private pendingConversations = new Map<string, PendingConversation>();
-        private websiteRequest: Promise<PublicWebsiteResponse> | null = null;
-        readonly conversationsStore: ConversationsStore;
-        readonly messagesStore: MessagesStore;
-        readonly websiteStore: WebsiteStore;
+	private restClient: CossistantRestClient;
+	private config: CossistantConfig;
+	private pendingConversations = new Map<string, PendingConversation>();
+	private websiteRequest: Promise<PublicWebsiteResponse> | null = null;
+	readonly conversationsStore: ConversationsStore;
+	readonly messagesStore: MessagesStore;
+	readonly websiteStore: WebsiteStore;
 
-        constructor(config: CossistantConfig) {
-                this.config = config;
-                this.restClient = new CossistantRestClient(config);
-                this.conversationsStore = createConversationsStore();
-                this.messagesStore = createMessagesStore();
-                this.websiteStore = createWebsiteStore();
-        }
+	constructor(config: CossistantConfig) {
+		this.config = config;
+		this.restClient = new CossistantRestClient(config);
+		this.conversationsStore = createConversationsStore();
+		this.messagesStore = createMessagesStore();
+		this.websiteStore = createWebsiteStore();
+	}
 
 	// Configuration updates
 	updateConfiguration(config: Partial<CossistantConfig>): void {
@@ -88,45 +92,47 @@ export class CossistantClient {
 	}
 
 	// Website information
-        async fetchWebsite(params: { force?: boolean } = {}): Promise<PublicWebsiteResponse> {
-                const { force = false } = params;
-                const current: WebsiteState = this.websiteStore.getState();
+	async fetchWebsite(
+		params: { force?: boolean } = {}
+	): Promise<PublicWebsiteResponse> {
+		const { force = false } = params;
+		const current: WebsiteState = this.websiteStore.getState();
 
-                if (!force) {
-                        if (current.status === "success" && current.website) {
-                                return current.website;
-                        }
-                        if (this.websiteRequest) {
-                                return this.websiteRequest;
-                        }
-                }
+		if (!force) {
+			if (current.status === "success" && current.website) {
+				return current.website;
+			}
+			if (this.websiteRequest) {
+				return this.websiteRequest;
+			}
+		}
 
-                this.websiteStore.setLoading();
+		this.websiteStore.setLoading();
 
-                const request = this.restClient
-                        .getWebsite()
-                        .then((website) => {
-                                this.websiteStore.setWebsite(website);
-                                return website;
-                        })
-                        .catch((error) => {
-                                this.websiteStore.setError(error);
-                                throw error;
-                        })
-                        .finally(() => {
-                                if (this.websiteRequest === request) {
-                                        this.websiteRequest = null;
-                                }
-                        });
+		const request = this.restClient
+			.getWebsite()
+			.then((website) => {
+				this.websiteStore.setWebsite(website);
+				return website;
+			})
+			.catch((error) => {
+				this.websiteStore.setError(error);
+				throw error;
+			})
+			.finally(() => {
+				if (this.websiteRequest === request) {
+					this.websiteRequest = null;
+				}
+			});
 
-                this.websiteRequest = request;
+		this.websiteRequest = request;
 
-                return request;
-        }
+		return request;
+	}
 
-        async getWebsite(): Promise<PublicWebsiteResponse> {
-                return this.fetchWebsite({ force: true });
-        }
+	async getWebsite(): Promise<PublicWebsiteResponse> {
+		return this.fetchWebsite({ force: true });
+	}
 
 	setWebsiteContext(websiteId: string, visitorId?: string): void {
 		this.restClient.setWebsiteContext(websiteId, visitorId);
@@ -139,74 +145,80 @@ export class CossistantClient {
 	}
 
 	// Conversation management
-        initiateConversation(params: InitiateConversationParams = {}): InitiateConversationResult {
-                const conversationId = params.conversationId ?? generateConversationId();
-                const now = new Date();
-                const defaultMessages = (params.defaultMessages ?? []).map(normalizeMessage);
-                const existing = this.conversationsStore.getState().byId[conversationId];
-                const baseVisitorId = params.visitorId ?? this.restClient.getCurrentVisitorId() ?? "";
-                const baseWebsiteId = params.websiteId ?? this.restClient.getCurrentWebsiteId() ?? "";
+	initiateConversation(
+		params: InitiateConversationParams = {}
+	): InitiateConversationResult {
+		const conversationId = params.conversationId ?? generateConversationId();
+		const now = new Date();
+		const defaultMessages = (params.defaultMessages ?? []).map(
+			normalizeMessage
+		);
+		const existing = this.conversationsStore.getState().byId[conversationId];
+		const baseVisitorId =
+			params.visitorId ?? this.restClient.getCurrentVisitorId() ?? "";
+		const baseWebsiteId =
+			params.websiteId ?? this.restClient.getCurrentWebsiteId() ?? "";
 
-                const conversation: Conversation = existing
-                        ? {
-                                  ...existing,
-                                  title: params.title ?? existing.title,
-                                  status: params.status ?? existing.status,
-                                  updatedAt: now,
-                                  lastMessage: defaultMessages.at(-1) ?? existing.lastMessage,
-                          }
-                        : {
-                                  id: conversationId,
-                                  title: params.title,
-                                  createdAt: now,
-                                  updatedAt: now,
-                                  visitorId: baseVisitorId,
-                                  websiteId: baseWebsiteId,
-                                  status: params.status ?? ConversationStatus.OPEN,
-                                  lastMessage: defaultMessages.at(-1),
-                          };
+		const conversation: Conversation = existing
+			? {
+					...existing,
+					title: params.title ?? existing.title,
+					status: params.status ?? existing.status,
+					updatedAt: now,
+					lastMessage: defaultMessages.at(-1) ?? existing.lastMessage,
+				}
+			: {
+					id: conversationId,
+					title: params.title,
+					createdAt: now,
+					updatedAt: now,
+					visitorId: baseVisitorId,
+					websiteId: baseWebsiteId,
+					status: params.status ?? ConversationStatus.OPEN,
+					lastMessage: defaultMessages.at(-1),
+				};
 
-                this.conversationsStore.ingestConversation(conversation);
+		this.conversationsStore.ingestConversation(conversation);
 
-                if (defaultMessages.length > 0) {
-                        this.messagesStore.ingestPage(conversationId, {
-                                messages: defaultMessages,
-                                hasNextPage: false,
-                                nextCursor: undefined,
-                        });
-                }
+		if (defaultMessages.length > 0) {
+			this.messagesStore.ingestPage(conversationId, {
+				messages: defaultMessages,
+				hasNextPage: false,
+				nextCursor: undefined,
+			});
+		}
 
-                this.pendingConversations.set(conversationId, {
-                        conversation,
-                        defaultMessages,
-                });
+		this.pendingConversations.set(conversationId, {
+			conversation,
+			defaultMessages,
+		});
 
-                return { conversationId, conversation, defaultMessages };
-        }
+		return { conversationId, conversation, defaultMessages };
+	}
 
-        async createConversation(
-                params?: Partial<CreateConversationRequestBody>
-        ): Promise<CreateConversationResponseBody> {
-                const response = await this.restClient.createConversation(params);
-                this.conversationsStore.ingestConversation(response.conversation);
-                return response;
-        }
+	async createConversation(
+		params?: Partial<CreateConversationRequestBody>
+	): Promise<CreateConversationResponseBody> {
+		const response = await this.restClient.createConversation(params);
+		this.conversationsStore.ingestConversation(response.conversation);
+		return response;
+	}
 
-        async listConversations(
-                params?: Partial<ListConversationsRequest>
-        ): Promise<ListConversationsResponse> {
-                const response = await this.restClient.listConversations(params);
-                this.conversationsStore.ingestList(response);
-                return response;
-        }
+	async listConversations(
+		params?: Partial<ListConversationsRequest>
+	): Promise<ListConversationsResponse> {
+		const response = await this.restClient.listConversations(params);
+		this.conversationsStore.ingestList(response);
+		return response;
+	}
 
-        async getConversation(
-                params: GetConversationRequest
-        ): Promise<GetConversationResponse> {
-                const response = await this.restClient.getConversation(params);
-                this.conversationsStore.ingestConversation(response.conversation);
-                return response;
-        }
+	async getConversation(
+		params: GetConversationRequest
+	): Promise<GetConversationResponse> {
+		const response = await this.restClient.getConversation(params);
+		this.conversationsStore.ingestConversation(response.conversation);
+		return response;
+	}
 
 	async markConversationSeen(
 		params: {
@@ -217,114 +229,118 @@ export class CossistantClient {
 	}
 
 	// Message management
-        async getConversationMessages(
-                params: GetMessagesRequest
-        ): Promise<GetMessagesResponse> {
-                const response = await this.restClient.getConversationMessages(params);
-                this.messagesStore.ingestPage(params.conversationId, {
-                        messages: response.messages,
-                        hasNextPage: response.hasNextPage,
-                        nextCursor: response.nextCursor,
-                });
-                return response;
-        }
+	async getConversationMessages(
+		params: GetMessagesRequest
+	): Promise<GetMessagesResponse> {
+		const response = await this.restClient.getConversationMessages(params);
+		this.messagesStore.ingestPage(params.conversationId, {
+			messages: response.messages,
+			hasNextPage: response.hasNextPage,
+			nextCursor: response.nextCursor,
+		});
+		return response;
+	}
 
-        async sendMessage(
-                params: SendMessageRequest & { createIfPending?: boolean }
-        ): Promise<
-                SendMessageResponse & {
-                        conversation?: Conversation;
-                        initialMessages?: Message[];
-                        wasConversationCreated?: boolean;
-                }
-        > {
-                const { createIfPending, ...rest } = params;
-                const optimisticId = rest.message.id ?? generateMessageId();
-                const createdAt = rest.message.createdAt ?? new Date();
+	async sendMessage(
+		params: SendMessageRequest & { createIfPending?: boolean }
+	): Promise<
+		SendMessageResponse & {
+			conversation?: Conversation;
+			initialMessages?: Message[];
+			wasConversationCreated?: boolean;
+		}
+	> {
+		const { createIfPending, ...rest } = params;
+		const optimisticId = rest.message.id ?? generateMessageId();
+		const createdAt = rest.message.createdAt ?? new Date();
 
-                const optimisticMessage: Message = {
-                        id: optimisticId,
-                        bodyMd: rest.message.bodyMd,
-                        type: (rest.message.type ?? MessageType.TEXT) as Message["type"],
-                        userId: rest.message.userId ?? null,
-                        aiAgentId: rest.message.aiAgentId ?? null,
-                        parentMessageId: null,
-                        modelUsed: null,
-                        visitorId: rest.message.visitorId ?? null,
-                        conversationId: rest.conversationId,
-                        createdAt,
-                        updatedAt: createdAt,
-                        deletedAt: null,
-                        visibility: (rest.message.visibility ?? MessageVisibility.PUBLIC) as Message["visibility"],
-                };
+		const optimisticMessage: Message = {
+			id: optimisticId,
+			bodyMd: rest.message.bodyMd,
+			type: (rest.message.type ?? MessageType.TEXT) as Message["type"],
+			userId: rest.message.userId ?? null,
+			aiAgentId: rest.message.aiAgentId ?? null,
+			parentMessageId: null,
+			modelUsed: null,
+			visitorId: rest.message.visitorId ?? null,
+			conversationId: rest.conversationId,
+			createdAt,
+			updatedAt: createdAt,
+			deletedAt: null,
+			visibility: (rest.message.visibility ??
+				MessageVisibility.PUBLIC) as Message["visibility"],
+		};
 
-                this.messagesStore.ingestMessage(optimisticMessage);
+		this.messagesStore.ingestMessage(optimisticMessage);
 
-                const pending = this.pendingConversations.get(rest.conversationId);
+		const pending = this.pendingConversations.get(rest.conversationId);
 
-                if (pending && createIfPending !== false) {
-                        try {
-                                const response = await this.restClient.createConversation({
-                                        conversationId: rest.conversationId,
-                                        defaultMessages: [...pending.defaultMessages, optimisticMessage],
-                                });
+		if (pending && createIfPending !== false) {
+			try {
+				const response = await this.restClient.createConversation({
+					conversationId: rest.conversationId,
+					defaultMessages: [...pending.defaultMessages, optimisticMessage],
+				});
 
-                                this.conversationsStore.ingestConversation(response.conversation);
-                                this.messagesStore.removeMessage(rest.conversationId, optimisticId);
-                                this.messagesStore.ingestPage(rest.conversationId, {
-                                        messages: response.initialMessages,
-                                        hasNextPage: false,
-                                        nextCursor: undefined,
-                                });
+				this.conversationsStore.ingestConversation(response.conversation);
+				this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+				this.messagesStore.ingestPage(rest.conversationId, {
+					messages: response.initialMessages,
+					hasNextPage: false,
+					nextCursor: undefined,
+				});
 
-                                this.pendingConversations.delete(rest.conversationId);
+				this.pendingConversations.delete(rest.conversationId);
 
-                                return {
-                                        message: response.initialMessages[response.initialMessages.length - 1] ??
-                                                response.initialMessages[0],
-                                        conversation: response.conversation,
-                                        initialMessages: response.initialMessages,
-                                        wasConversationCreated: true,
-                                } satisfies SendMessageResponse & {
-                                        conversation: Conversation;
-                                        initialMessages: Message[];
-                                        wasConversationCreated: true;
-                                };
-                        } catch (error) {
-                                this.messagesStore.removeMessage(rest.conversationId, optimisticId);
-                                throw error;
-                        }
-                }
+				return {
+					message:
+						response.initialMessages.at(-1) ?? response.initialMessages[0],
+					conversation: response.conversation,
+					initialMessages: response.initialMessages,
+					wasConversationCreated: true,
+				} satisfies SendMessageResponse & {
+					conversation: Conversation;
+					initialMessages: Message[];
+					wasConversationCreated: true;
+				};
+			} catch (error) {
+				this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+				throw error;
+			}
+		}
 
-                const payload: SendMessageRequest = {
-                        ...rest,
-                        message: {
-                                ...rest.message,
-                                id: optimisticId,
-                                createdAt,
-                        },
-                };
+		const payload: SendMessageRequest = {
+			...rest,
+			message: {
+				...rest.message,
+				id: optimisticId,
+				createdAt,
+			},
+		};
 
-                try {
-                        const response = await this.restClient.sendMessage(payload);
-                        this.messagesStore.finalizeMessage(rest.conversationId, optimisticId, response.message);
-                        return response;
-                } catch (error) {
-                        this.messagesStore.removeMessage(rest.conversationId, optimisticId);
-                        throw error;
-                }
-        }
+		try {
+			const response = await this.restClient.sendMessage(payload);
+			this.messagesStore.finalizeMessage(
+				rest.conversationId,
+				optimisticId,
+				response.message
+			);
+			return response;
+		} catch (error) {
+			this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+			throw error;
+		}
+	}
 
-
-        handleRealtimeEvent(event: RealtimeEvent): void {
-                switch (event.type) {
-                        case "MESSAGE_CREATED":
-                                this.messagesStore.ingestRealtime(event);
-                                break;
-                        default:
-                                break;
-                }
-        }
+	handleRealtimeEvent(event: RealtimeEvent): void {
+		switch (event.type) {
+			case "MESSAGE_CREATED":
+				this.messagesStore.ingestRealtime(event);
+				break;
+			default:
+				break;
+		}
+	}
 
 	// Cleanup method
 	destroy(): void {
@@ -333,11 +349,10 @@ export class CossistantClient {
 }
 
 function normalizeMessage(message: Message): Message {
-        return {
-                ...message,
-                createdAt: new Date(message.createdAt),
-                updatedAt: new Date(message.updatedAt),
-                deletedAt: message.deletedAt ? new Date(message.deletedAt) : null,
-        };
+	return {
+		...message,
+		createdAt: new Date(message.createdAt),
+		updatedAt: new Date(message.updatedAt),
+		deletedAt: message.deletedAt ? new Date(message.deletedAt) : null,
+	};
 }
-

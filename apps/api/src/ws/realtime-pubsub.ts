@@ -92,7 +92,6 @@ function markProcessed(id: string): void {
 			return;
 		}
 
-		// biome-ignore lint/complexity/noVoid: ok for usecase
 		void getPublisher()
 			.then((client) => client.set(instanceCursorKey, idToPersist))
 			.catch((error) => {
@@ -348,7 +347,6 @@ async function publishEnvelope(envelope: DispatchEnvelope): Promise<void> {
 export function initializeRealtimePubSub(dispatchers: LocalDispatchers): void {
 	dispatchersRef = dispatchers;
 
-	// biome-ignore lint/complexity/noVoid: ok for usecase
 	void runConsumerLoop();
 }
 

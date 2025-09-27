@@ -87,7 +87,6 @@ type GenerateMetadataOptions = {
 	noIndex?: boolean;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Ok
 export function generateSiteMetadata({
 	title,
 	description,

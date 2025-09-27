@@ -29,7 +29,10 @@
         "noNamespaceImport": "off",
         "noBarrelFile": "off"
       },
-
+      "complexity": {
+        "noVoid": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      },
       "style": {
         "noNestedTernary": "off",
         "noMagicNumbers": "off",

@@ -1,6 +1,10 @@
-import { useMemo } from "react";
-import type { CossistantClient, WebsiteState, WebsiteStore } from "@cossistant/core";
+import type {
+	CossistantClient,
+	WebsiteState,
+	WebsiteStore,
+} from "@cossistant/core";
 import type { PublicWebsiteResponse } from "@cossistant/types";
+import { useMemo } from "react";
 import { useClientQuery } from "./use-client-query";
 import { useStoreSelector } from "./use-store-selector";
 
@@ -78,8 +82,13 @@ export function useWebsiteStore(
 		initialData: state.website ?? undefined,
 	});
 
-	const error = useMemo(() => toError(state, query.error), [state, query.error]);
-	const isLoading = client ? query.isLoading || state.status === "loading" || state.status === "idle" : false;
+	const error = useMemo(
+		() => toError(state, query.error),
+		[state, query.error]
+	);
+	const isLoading = client
+		? query.isLoading || state.status === "loading" || state.status === "idle"
+		: false;
 
 	const refresh = () => {
 		if (!client) {

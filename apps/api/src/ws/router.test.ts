@@ -202,10 +202,7 @@ describe("CONVERSATION_SEEN handler", () => {
 		expect(sendToWebsite).toHaveBeenCalledTimes(1);
 		expect(sendToWebsite.mock.calls[0]).toEqual(["site-seen", event]);
 		expect(sendToVisitor).toHaveBeenCalledTimes(1);
-		expect(sendToVisitor.mock.calls[0]).toEqual([
-			"visitor-xyz",
-			event,
-		]);
+		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-xyz", event]);
 	});
 
 	it("emits to actor visitor when visitor sees conversation", async () => {

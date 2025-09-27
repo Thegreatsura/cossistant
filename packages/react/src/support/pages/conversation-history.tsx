@@ -12,9 +12,9 @@ import { Watermark } from "../components/watermark";
 import { useSupportNavigation } from "../store/support-store";
 
 export const ConversationHistoryPage: React.FC = () => {
-        const { goBack, canGoBack, navigate } = useSupportNavigation();
-        const { availableAIAgents, availableHumanAgents } = useSupport();
-        const { conversations } = useConversations();
+	const { goBack, canGoBack, navigate } = useSupportNavigation();
+	const { availableAIAgents, availableHumanAgents } = useSupport();
+	const { conversations } = useConversations();
 	const [visibleCount, setVisibleCount] = useState(4);
 
 	const handleGoBack = () => {

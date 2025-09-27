@@ -13,10 +13,9 @@ import { Watermark } from "../components/watermark";
 import { useSupportNavigation } from "../store/support-store";
 
 export const HomePage = () => {
-        const { website, availableHumanAgents, visitor, quickOptions } =
-                useSupport();
-        const { navigate } = useSupportNavigation();
-        const { conversations } = useConversations();
+	const { website, availableHumanAgents, visitor, quickOptions } = useSupport();
+	const { navigate } = useSupportNavigation();
+	const { conversations } = useConversations();
 
 	const handleStartConversation = (initialMessage?: string) => () =>
 		navigate({

@@ -80,7 +80,6 @@ function parsePreferredLocale(headerValue: string | null): string | null {
 
 // RFC 7239 Forwarded header can contain multiple comma-separated entries. Each entry can
 // hold a `for=` directive that may include quotes, IPv6 brackets, or port information.
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: works fine
 function parseForwardedHeader(headerValue: string | null): string | null {
 	if (!headerValue) {
 		return null;

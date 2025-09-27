@@ -1,65 +1,68 @@
-import { useMemo } from "react";
 import type {
-        ConversationPagination,
-        ConversationsState,
-        CossistantClient,
+	ConversationPagination,
+	ConversationsState,
+	CossistantClient,
 } from "@cossistant/core";
 import type {
-        ListConversationsRequest,
-        ListConversationsResponse,
+	ListConversationsRequest,
+	ListConversationsResponse,
 } from "@cossistant/types/api/conversation";
-import { useSupport } from "../../provider";
+import { useMemo } from "react";
 import { useClientQuery } from "../../hooks/use-client-query";
 import { useStoreSelector } from "../../hooks/use-store-selector";
+import { useSupport } from "../../provider";
 
 type ConversationsSelection = {
-        conversations: ListConversationsResponse["conversations"];
-        pagination: ConversationPagination | null;
+	conversations: ListConversationsResponse["conversations"];
+	pagination: ConversationPagination | null;
 };
 
 const EMPTY_STATE: ConversationsState = {
-        ids: [],
-        byId: {},
-        pagination: null,
+	ids: [],
+	byId: {},
+	pagination: null,
 };
 
 const EMPTY_STORE = {
-        getState: (): ConversationsState => EMPTY_STATE,
-        subscribe: () => () => {
-                // noop
-        },
+	getState: (): ConversationsState => EMPTY_STATE,
+	subscribe: () => () => {
+		// noop
+	},
 };
 
 const DEFAULT_OPTIONS: UseConversationsOptions = {
-        limit: undefined,
-        page: undefined,
-        order: undefined,
-        orderBy: undefined,
-        status: undefined,
-        enabled: true,
-        refetchInterval: false,
-        refetchOnWindowFocus: true,
+	limit: undefined,
+	page: undefined,
+	order: undefined,
+	orderBy: undefined,
+	status: undefined,
+	enabled: true,
+	refetchInterval: false,
+	refetchOnWindowFocus: true,
 };
 
 function isClientLike(value: unknown): value is CossistantClient {
-        return (
-                typeof value === "object" &&
-                value !== null &&
-                typeof (value as CossistantClient).listConversations === "function"
-        );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as CossistantClient).listConversations === "function"
+	);
 }
 
-function areSelectionsEqual(a: ConversationsSelection, b: ConversationsSelection): boolean {
+function areSelectionsEqual(
+	a: ConversationsSelection,
+	b: ConversationsSelection
+): boolean {
 	if (a.pagination !== b.pagination) {
-		if (!a.pagination || !b.pagination) {
+		if (!(a.pagination && b.pagination)) {
 			return false;
 		}
 		if (
-				a.pagination.page !== b.pagination.page ||
-				a.pagination.limit !== b.pagination.limit ||
-				a.pagination.total !== b.pagination.total ||
-				a.pagination.totalPages !== b.pagination.totalPages ||
-				a.pagination.hasMore !== b.pagination.hasMore
+			a.pagination.page !== b.pagination.page ||
+			a.pagination.limit !== b.pagination.limit ||
+			a.pagination.total !== b.pagination.total ||
+			a.pagination.totalPages !== b.pagination.totalPages ||
+			a.pagination.hasMore !== b.pagination.hasMore
 		) {
 			return false;
 		}
@@ -78,115 +81,135 @@ function areSelectionsEqual(a: ConversationsSelection, b: ConversationsSelection
 	return true;
 }
 
-export type UseConversationsOptions = Partial<Omit<ListConversationsRequest, "visitorId" | "externalVisitorId">> & {
-        enabled?: boolean;
-        refetchInterval?: number | false;
-        refetchOnWindowFocus?: boolean;
+export type UseConversationsOptions = Partial<
+	Omit<ListConversationsRequest, "visitorId" | "externalVisitorId">
+> & {
+	enabled?: boolean;
+	refetchInterval?: number | false;
+	refetchOnWindowFocus?: boolean;
 };
 
 export type UseConversationsResult = {
-        conversations: ListConversationsResponse["conversations"];
-        pagination: ConversationPagination | null;
-        isLoading: boolean;
-        error: Error | null;
-        refetch: (
-                args?: Partial<ListConversationsRequest>
-        ) => Promise<ListConversationsResponse | undefined>;
+	conversations: ListConversationsResponse["conversations"];
+	pagination: ConversationPagination | null;
+	isLoading: boolean;
+	error: Error | null;
+	refetch: (
+		args?: Partial<ListConversationsRequest>
+	) => Promise<ListConversationsResponse | undefined>;
 };
 
-export function useConversations(options?: UseConversationsOptions): UseConversationsResult;
 export function useConversations(
-        client: CossistantClient | null,
-        options?: UseConversationsOptions
+	options?: UseConversationsOptions
 ): UseConversationsResult;
+
 export function useConversations(
-        clientOrOptions?: CossistantClient | null | UseConversationsOptions,
-        maybeOptions?: UseConversationsOptions
+	client: CossistantClient | null,
+	options?: UseConversationsOptions
+): UseConversationsResult;
+
+export function useConversations(
+	clientOrOptions?: CossistantClient | null | UseConversationsOptions,
+	maybeOptions?: UseConversationsOptions
 ): UseConversationsResult {
-        let client: CossistantClient | null;
-        let resolvedOptions: UseConversationsOptions;
+	const { client } = useSupport();
+	let resolvedOptions: UseConversationsOptions;
 
-        if (isClientLike(clientOrOptions) || clientOrOptions === null) {
-                client = clientOrOptions ?? null;
-                resolvedOptions = { ...DEFAULT_OPTIONS, ...(maybeOptions ?? {}) };
-        } else {
-                const support = useSupport();
-                client = support.client;
-                resolvedOptions = { ...DEFAULT_OPTIONS, ...(clientOrOptions ?? {}) };
-        }
+	if (isClientLike(clientOrOptions) || clientOrOptions === null) {
+		resolvedOptions = { ...DEFAULT_OPTIONS, ...(maybeOptions ?? {}) };
+	} else {
+		resolvedOptions = { ...DEFAULT_OPTIONS, ...(clientOrOptions ?? {}) };
+	}
 
-        const store = client?.conversationsStore ?? EMPTY_STORE;
+	const store = client?.conversationsStore ?? EMPTY_STORE;
 
-        const selection = useStoreSelector(
-                store,
-                (state): ConversationsSelection => ({
-                        conversations: state.ids
-                                .map((id) => state.byId[id])
-                                .filter((conversation): conversation is ListConversationsResponse["conversations"][number] =>
-                                        Boolean(conversation)
-                                ),
-                        pagination: state.pagination,
-                }),
-                areSelectionsEqual
-        );
+	const selection = useStoreSelector(
+		store,
+		(state): ConversationsSelection => ({
+			conversations: state.ids
+				.map((id) => state.byId[id])
+				.filter(
+					(
+						conversation
+					): conversation is ListConversationsResponse["conversations"][number] =>
+						Boolean(conversation)
+				),
+			pagination: state.pagination,
+		}),
+		areSelectionsEqual
+	);
 
-        const {
-                enabled,
-                refetchInterval,
-                refetchOnWindowFocus,
-                ...requestDefaults
-        } = resolvedOptions;
+	const { enabled, refetchInterval, refetchOnWindowFocus, requestDefaults } =
+		useMemo(() => {
+			const {
+				enabled: enabledOption,
+				refetchInterval: refetchIntervalOption,
+				refetchOnWindowFocus: refetchOnWindowFocusOption,
+				...requestDefaultsOption
+			} = resolvedOptions;
 
-        const clientKey = useMemo(() => {
-                if (!client) {
-                        return "no-client";
-                }
-                const configuration = client.getConfiguration();
-                return `${configuration.publicKey ?? "anon"}|${configuration.apiUrl ?? ""}`;
-        }, [client]);
+			return {
+				enabled: enabledOption,
+				refetchInterval: refetchIntervalOption,
+				refetchOnWindowFocus: refetchOnWindowFocusOption,
+				requestDefaults: requestDefaultsOption,
+			};
+		}, [resolvedOptions]);
 
-        const { refetch: queryRefetch, isLoading: queryLoading, error } = useClientQuery<
-                ListConversationsResponse,
-                Partial<ListConversationsRequest>
-        >({
-                client,
-                queryKey: [
-                        "conversations",
-                        clientKey,
-                        requestDefaults.limit ?? null,
-                        requestDefaults.page ?? null,
-                        requestDefaults.status ?? null,
-                        requestDefaults.orderBy ?? null,
-                        requestDefaults.order ?? null,
-                ],
-                queryFn: (instance, args) =>
-                        instance.listConversations({
-                                ...requestDefaults,
-                                ...args,
-                        }),
-                enabled: Boolean(client && enabled),
-                refetchInterval,
-                refetchOnWindowFocus,
-                refetchOnMount: selection.conversations.length === 0,
-                initialArgs: requestDefaults,
-        });
+	const clientKey = useMemo(() => {
+		if (!client) {
+			return "no-client";
+		}
+		const configuration = client.getConfiguration();
+		return `${configuration.publicKey ?? "anon"}|${configuration.apiUrl ?? ""}`;
+	}, [client]);
 
-        const refetch = useMemo(() => {
-                return (args?: Partial<ListConversationsRequest>) =>
-                        queryRefetch({
-                                ...requestDefaults,
-                                ...args,
-                        });
-        }, [queryRefetch, requestDefaults]);
+	const {
+		refetch: queryRefetch,
+		isLoading: queryLoading,
+		error,
+	} = useClientQuery<
+		ListConversationsResponse,
+		Partial<ListConversationsRequest>
+	>({
+		client,
+		queryKey: [
+			"conversations",
+			clientKey,
+			requestDefaults.limit ?? null,
+			requestDefaults.page ?? null,
+			requestDefaults.status ?? null,
+			requestDefaults.orderBy ?? null,
+			requestDefaults.order ?? null,
+		],
+		queryFn: (instance, args) =>
+			instance.listConversations({
+				...requestDefaults,
+				...args,
+			}),
+		enabled: Boolean(client && enabled),
+		refetchInterval,
+		refetchOnWindowFocus,
+		refetchOnMount: selection.conversations.length === 0,
+		initialArgs: requestDefaults,
+	});
 
-        const isInitialLoad = selection.conversations.length === 0;
-        const isLoading = isInitialLoad ? queryLoading : false;
+	const refetch = useMemo(() => {
+		return (args?: Partial<ListConversationsRequest>) =>
+			queryRefetch({
+				...requestDefaults,
+				...args,
+			});
+	}, [queryRefetch, requestDefaults]);
 
-        return {
-                conversations: selection.conversations,
-                pagination: selection.pagination,
-                isLoading,
-                error,
-                refetch,
-        };
+	const isInitialLoad = selection.conversations.length === 0;
+	const isLoading = isInitialLoad ? queryLoading : false;
+
+	return {
+		conversations: selection.conversations,
+		pagination: selection.pagination,
+		isLoading,
+		error,
+		refetch,
+	};
 }

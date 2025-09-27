@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: ok here */
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 

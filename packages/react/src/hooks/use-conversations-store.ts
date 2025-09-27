@@ -11,12 +11,15 @@ type ConversationSelection = {
 	pagination: ConversationPagination | null;
 };
 
-function areSelectionsEqual(a: ConversationSelection, b: ConversationSelection): boolean {
+function areSelectionsEqual(
+	a: ConversationSelection,
+	b: ConversationSelection
+): boolean {
 	if (a === b) {
 		return true;
 	}
 	if (a.pagination !== b.pagination) {
-		if (!a.pagination || !b.pagination) {
+		if (!(a.pagination && b.pagination)) {
 			return false;
 		}
 		if (
@@ -44,7 +47,9 @@ export function useConversationsStore(): ConversationSelection {
 	const { client } = useSupport();
 
 	if (!client) {
-		throw new Error("useConversationsStore requires a configured Cossistant client");
+		throw new Error(
+			"useConversationsStore requires a configured Cossistant client"
+		);
 	}
 
 	return useStoreSelector(
@@ -52,18 +57,25 @@ export function useConversationsStore(): ConversationSelection {
 		(state: ConversationsState) => ({
 			conversations: state.ids
 				.map((id) => state.byId[id])
-				.filter((conversation): conversation is Conversation => conversation !== undefined),
+				.filter(
+					(conversation): conversation is Conversation =>
+						conversation !== undefined
+				),
 			pagination: state.pagination,
 		}),
 		areSelectionsEqual
 	);
 }
 
-export function useConversationById(conversationId: string | null): Conversation | null {
+export function useConversationById(
+	conversationId: string | null
+): Conversation | null {
 	const { client } = useSupport();
 
 	if (!client) {
-		throw new Error("useConversationById requires a configured Cossistant client");
+		throw new Error(
+			"useConversationById requires a configured Cossistant client"
+		);
 	}
 
 	return useStoreSelector(client.conversationsStore, (state) => {

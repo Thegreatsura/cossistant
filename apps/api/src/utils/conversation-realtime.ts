@@ -1,5 +1,5 @@
 import type { ConversationRecord } from "@api/db/mutations/conversation";
-import { conversationEvent } from "@api/db/schema";
+import type { conversationEvent } from "@api/db/schema";
 import { routeEvent } from "@api/ws/router";
 import {
 	sendEventToConnection,
@@ -64,6 +64,8 @@ function mapActor(actor: ConversationRealtimeActor) {
 				userId: null,
 				aiAgentId: actor.aiAgentId,
 			};
+		default:
+			throw new Error("Unknown actor type");
 	}
 }
 
@@ -80,7 +82,6 @@ export async function emitConversationSeenEvent({
 			conversationId: conversation.id,
 			websiteId: conversation.websiteId,
 			organizationId: conversation.organizationId,
-			conversationVisitorId: conversation.visitorId,
 			lastSeenAt: lastSeenAt.toISOString(),
 			...actorPayload,
 		},
@@ -112,7 +113,6 @@ export async function emitConversationTypingEvent({
 			conversationId: conversation.id,
 			websiteId: conversation.websiteId,
 			organizationId: conversation.organizationId,
-			conversationVisitorId: conversation.visitorId,
 			isTyping,
 			...actorPayload,
 		},
@@ -128,79 +128,5 @@ export async function emitConversationTypingEvent({
 		sendToConnection: sendEventToConnection,
 		sendToVisitor: sendEventToVisitor,
 		sendToWebsite: sendEventToWebsite,
-	});
-}
-
-export async function emitConversationEventCreated({
-	conversation,
-	event,
-}: TimelineEventParams) {
-	const payload: RealtimeEvent<"CONVERSATION_EVENT_CREATED"> = {
-		type: "CONVERSATION_EVENT_CREATED",
-		data: {
-			conversationId: conversation.id,
-			websiteId: conversation.websiteId,
-			organizationId: conversation.organizationId,
-			conversationVisitorId: conversation.visitorId,
-			event: {
-				id: event.id,
-				conversationId: event.conversationId,
-				organizationId: event.organizationId,
-				type: event.type,
-				actorUserId: event.actorUserId,
-				actorAiAgentId: event.actorAiAgentId,
-				targetUserId: event.targetUserId,
-				targetAiAgentId: event.targetAiAgentId,
-				message: event.message ?? null,
-				metadata: (event.metadata as Record<string, unknown> | null | undefined) ?? null,
-				createdAt: event.createdAt.toISOString(),
-			},
-		},
-		timestamp: Date.now(),
-	};
-
-	await routeEvent(payload, {
-		connectionId: "server",
-		organizationId: conversation.organizationId,
-		websiteId: conversation.websiteId,
-		sendToConnection: sendEventToConnection,
-		sendToVisitor: sendEventToVisitor,
-		sendToWebsite: sendEventToWebsite,
-		visitorId: conversation.visitorId,
-	});
-}
-
-export async function emitConversationCreatedEvent({
-	conversation,
-}: ConversationCreatedEventParams) {
-	const payload: RealtimeEvent<"CONVERSATION_CREATED"> = {
-		type: "CONVERSATION_CREATED",
-		data: {
-			conversation: {
-				id: conversation.id,
-				organizationId: conversation.organizationId,
-				websiteId: conversation.websiteId,
-				visitorId: conversation.visitorId,
-				status: conversation.status,
-				priority: (conversation as { priority?: string | null }).priority ?? null,
-				title: conversation.title ?? null,
-				createdAt: conversation.createdAt.toISOString(),
-				updatedAt: conversation.updatedAt.toISOString(),
-			},
-			websiteId: conversation.websiteId,
-			organizationId: conversation.organizationId,
-			visitorId: conversation.visitorId,
-		},
-		timestamp: Date.now(),
-	};
-
-	await routeEvent(payload, {
-		connectionId: "server",
-		organizationId: conversation.organizationId,
-		websiteId: conversation.websiteId,
-		sendToConnection: sendEventToConnection,
-		sendToVisitor: sendEventToVisitor,
-		sendToWebsite: sendEventToWebsite,
-		visitorId: conversation.visitorId,
 	});
 }

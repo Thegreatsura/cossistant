@@ -1,5 +1,4 @@
 /** biome-ignore-all lint/nursery/noUnnecessaryConditions: ok */
-/** biome-ignore-all lint/complexity/noVoid: ok */
 /** biome-ignore-all lint/complexity/useOptionalChain:ok */
 /** biome-ignore-all lint/suspicious/noExplicitAny:ok */
 /** biome-ignore-all lint/style/useConsistentMemberAccessibility:ok */

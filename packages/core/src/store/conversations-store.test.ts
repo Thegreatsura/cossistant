@@ -8,7 +8,9 @@ import {
 	getConversations,
 } from "./conversations-store";
 
-function createMockConversation(overrides: Partial<Conversation> = {}): Conversation {
+function createMockConversation(
+	overrides: Partial<Conversation> = {}
+): Conversation {
 	const base: Conversation = {
 		id: "conv-1",
 		title: "Support conversation",
@@ -40,7 +42,9 @@ function createMockConversation(overrides: Partial<Conversation> = {}): Conversa
 	return {
 		...conversation,
 		lastMessage:
-			overrides.lastMessage === undefined ? defaultLastMessage : overrides.lastMessage,
+			overrides.lastMessage === undefined
+				? defaultLastMessage
+				: overrides.lastMessage,
 	};
 }
 
@@ -121,7 +125,10 @@ describe("conversations store", () => {
 		store.ingestList(createListResponse([first, second]));
 
 		const conversations = getConversations(store);
-		expect(conversations.map((conversation) => conversation.id)).toEqual(["conv-1", "conv-2"]);
+		expect(conversations.map((conversation) => conversation.id)).toEqual([
+			"conv-1",
+			"conv-2",
+		]);
 		expect(getConversationById(store, "conv-1")).toEqual(first);
 		expect(getConversationById(store, "missing")).toBeUndefined();
 	});
