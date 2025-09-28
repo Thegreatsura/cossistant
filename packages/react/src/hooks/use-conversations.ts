@@ -1,13 +1,9 @@
-import type {
-	ConversationPagination,
-	ConversationsState,
-	CossistantClient,
-} from "@cossistant/core";
+import type { ConversationPagination } from "@cossistant/core";
 import type {
 	ListConversationsRequest,
 	ListConversationsResponse,
 } from "@cossistant/types/api/conversation";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useSupport } from "../provider";
 import { useStoreSelector } from "./store/use-store-selector";
 import { useClientQuery } from "./utils/use-client-query";
@@ -17,68 +13,31 @@ type ConversationsSelection = {
 	pagination: ConversationPagination | null;
 };
 
-const EMPTY_STATE: ConversationsState = {
-	ids: [],
-	byId: {},
-	pagination: null,
-};
-
-const EMPTY_STORE = {
-	getState: (): ConversationsState => EMPTY_STATE,
-	subscribe: () => () => {
-		// noop
-	},
-};
-
-const DEFAULT_OPTIONS: UseConversationsOptions = {
-	limit: undefined,
-	page: undefined,
-	order: undefined,
-	orderBy: undefined,
-	status: undefined,
-	enabled: true,
-	refetchInterval: false,
-	refetchOnWindowFocus: true,
-};
-
-function isClientLike(value: unknown): value is CossistantClient {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		typeof (value as CossistantClient).listConversations === "function"
-	);
-}
-
 function areSelectionsEqual(
-	a: ConversationsSelection,
-	b: ConversationsSelection
+        a: ConversationsSelection,
+        b: ConversationsSelection
 ): boolean {
-	if (a.pagination !== b.pagination) {
-		if (!(a.pagination && b.pagination)) {
-			return false;
-		}
-		if (
-			a.pagination.page !== b.pagination.page ||
-			a.pagination.limit !== b.pagination.limit ||
-			a.pagination.total !== b.pagination.total ||
-			a.pagination.totalPages !== b.pagination.totalPages ||
-			a.pagination.hasMore !== b.pagination.hasMore
-		) {
-			return false;
-		}
+	const samePagination =
+		a.pagination === b.pagination ||
+		(Boolean(a.pagination) &&
+			Boolean(b.pagination) &&
+			a.pagination?.page === b.pagination?.page &&
+			a.pagination?.limit === b.pagination?.limit &&
+			a.pagination?.total === b.pagination?.total &&
+			a.pagination?.totalPages === b.pagination?.totalPages &&
+			a.pagination?.hasMore === b.pagination?.hasMore);
+
+	if (!samePagination) {
+		return false;
 	}
 
 	if (a.conversations.length !== b.conversations.length) {
 		return false;
 	}
 
-	for (let index = 0; index < a.conversations.length; index += 1) {
-		if (a.conversations[index] !== b.conversations[index]) {
-			return false;
-		}
-	}
-
-	return true;
+	return a.conversations.every(
+		(conversation, index) => conversation === b.conversations[index]
+	);
 }
 
 export type UseConversationsOptions = Partial<
@@ -90,43 +49,42 @@ export type UseConversationsOptions = Partial<
 };
 
 export type UseConversationsResult = {
-	conversations: ListConversationsResponse["conversations"];
-	pagination: ConversationPagination | null;
-	isLoading: boolean;
-	error: Error | null;
-	refetch: (
-		args?: Partial<ListConversationsRequest>
-	) => Promise<ListConversationsResponse | undefined>;
+        conversations: ListConversationsResponse["conversations"];
+        pagination: ConversationPagination | null;
+        isLoading: boolean;
+        error: Error | null;
+        refetch: (
+                args?: Partial<ListConversationsRequest>
+        ) => Promise<ListConversationsResponse | undefined>;
 };
 
 export function useConversations(
-	options?: UseConversationsOptions
-): UseConversationsResult;
-
-export function useConversations(
-	client: CossistantClient | null,
-	options?: UseConversationsOptions
-): UseConversationsResult;
-
-export function useConversations(
-	clientOrOptions?: CossistantClient | null | UseConversationsOptions,
-	maybeOptions?: UseConversationsOptions
+        options: UseConversationsOptions = {}
 ): UseConversationsResult {
-	const { client } = useSupport();
-	let resolvedOptions: UseConversationsOptions;
+        const { client } = useSupport();
 
-	if (isClientLike(clientOrOptions) || clientOrOptions === null) {
-		resolvedOptions = { ...DEFAULT_OPTIONS, ...(maybeOptions ?? {}) };
-	} else {
-		resolvedOptions = { ...DEFAULT_OPTIONS, ...(clientOrOptions ?? {}) };
-	}
+        const {
+                limit,
+                page,
+                order,
+                orderBy,
+                status,
+                enabled = true,
+                refetchInterval = false,
+                refetchOnWindowFocus = true,
+        } = options;
 
-	const store = client?.conversationsStore ?? EMPTY_STORE;
+        const requestDefaults = useMemo(
+                () => ({ limit, page, status, orderBy, order }),
+                [limit, page, status, orderBy, order]
+        );
 
-	const selection = useStoreSelector(
-		store,
-		(state): ConversationsSelection => ({
-			conversations: state.ids
+        const store = client.conversationsStore;
+
+        const selection = useStoreSelector(
+                store,
+                (state): ConversationsSelection => ({
+                        conversations: state.ids
 				.map((id) => state.byId[id])
 				.filter(
 					(
@@ -139,68 +97,32 @@ export function useConversations(
 		areSelectionsEqual
 	);
 
-	const { enabled, refetchInterval, refetchOnWindowFocus, requestDefaults } =
-		useMemo(() => {
-			const {
-				enabled: enabledOption,
-				refetchInterval: refetchIntervalOption,
-				refetchOnWindowFocus: refetchOnWindowFocusOption,
-				...requestDefaultsOption
-			} = resolvedOptions;
+        const { refetch: queryRefetch, isLoading: queryLoading, error } = useClientQuery<
+                ListConversationsResponse,
+                Partial<ListConversationsRequest>
+        >({
+                client,
+                queryFn: (instance, args) =>
+                        instance.listConversations({
+                                ...requestDefaults,
+                                ...args,
+                        }),
+                enabled,
+                refetchInterval,
+                refetchOnWindowFocus,
+                refetchOnMount: selection.conversations.length === 0,
+                initialArgs: requestDefaults,
+                dependencies: [limit, page, status, orderBy, order],
+        });
 
-			return {
-				enabled: enabledOption,
-				refetchInterval: refetchIntervalOption,
-				refetchOnWindowFocus: refetchOnWindowFocusOption,
-				requestDefaults: requestDefaultsOption,
-			};
-		}, [resolvedOptions]);
-
-	const clientKey = useMemo(() => {
-		if (!client) {
-			return "no-client";
-		}
-		const configuration = client.getConfiguration();
-		return `${configuration.publicKey ?? "anon"}|${configuration.apiUrl ?? ""}`;
-	}, [client]);
-
-	const {
-		refetch: queryRefetch,
-		isLoading: queryLoading,
-		error,
-	} = useClientQuery<
-		ListConversationsResponse,
-		Partial<ListConversationsRequest>
-	>({
-		client,
-		queryKey: [
-			"conversations",
-			clientKey,
-			requestDefaults.limit ?? null,
-			requestDefaults.page ?? null,
-			requestDefaults.status ?? null,
-			requestDefaults.orderBy ?? null,
-			requestDefaults.order ?? null,
-		],
-		queryFn: (instance, args) =>
-			instance.listConversations({
-				...requestDefaults,
-				...args,
-			}),
-		enabled: Boolean(client && enabled),
-		refetchInterval,
-		refetchOnWindowFocus,
-		refetchOnMount: selection.conversations.length === 0,
-		initialArgs: requestDefaults,
-	});
-
-	const refetch = useMemo(() => {
-		return (args?: Partial<ListConversationsRequest>) =>
-			queryRefetch({
-				...requestDefaults,
-				...args,
-			});
-	}, [queryRefetch, requestDefaults]);
+        const refetch = useCallback(
+                (args?: Partial<ListConversationsRequest>) =>
+                        queryRefetch({
+                                ...requestDefaults,
+                                ...args,
+                        }),
+                [queryRefetch, requestDefaults]
+        );
 
 	const isInitialLoad = selection.conversations.length === 0;
 	const isLoading = isInitialLoad ? queryLoading : false;
