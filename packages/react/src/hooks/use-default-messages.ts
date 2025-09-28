@@ -6,9 +6,9 @@ import {
 	SenderType,
 } from "@cossistant/types";
 import { useMemo } from "react";
-import { useSupport } from "../../provider";
+import { useSupport } from "../provider";
 
-type Props = {
+type UseDefaultMessagesParams = {
 	conversationId: string;
 };
 
@@ -18,7 +18,9 @@ type Props = {
  * still being created. Agent fallbacks are resolved against available humans
  * and AI agents exposed by the provider context.
  */
-export function useDefaultMessages({ conversationId }: Props): Message[] {
+export function useDefaultMessages({
+	conversationId,
+}: UseDefaultMessagesParams): Message[] {
 	const { defaultMessages, availableAIAgents, availableHumanAgents } =
 		useSupport();
 

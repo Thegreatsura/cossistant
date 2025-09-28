@@ -25,9 +25,7 @@ export type WindowProps = Omit<
  * layout.
  */
 export const SupportWindow = (() => {
-	type Props = WindowProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, WindowProps>(
 		(
 			{
 				isOpen: isOpenProp,

@@ -1,8 +1,14 @@
 "use client";
 
+export * from "./use-client-query";
+export * from "./use-conversation";
+export * from "./use-conversation-messages";
+export * from "./use-conversations";
+export * from "./use-create-conversation";
 export * from "./use-default-messages";
 export * from "./use-grouped-messages";
 export * from "./use-multimodal-input";
 export * from "./use-realtime-support";
 export * from "./use-rest-client";
+export * from "./use-send-message";
 export * from "./use-visitor";

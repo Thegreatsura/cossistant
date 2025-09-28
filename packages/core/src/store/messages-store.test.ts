@@ -265,6 +265,10 @@ describe("CossistantClient message integration", () => {
 	});
 
 	it("handles realtime message created events", () => {
+		client.conversationsStore.ingestConversation(
+			createMockConversation({ id: "conv-1" })
+		);
+
 		const event = {
 			type: "MESSAGE_CREATED",
 			timestamp: Date.now(),
@@ -297,6 +301,13 @@ describe("CossistantClient message integration", () => {
 		const stored = client.messagesStore.getState().conversations["conv-1"];
 		expect(stored?.messages).toHaveLength(1);
 		expect(stored?.messages[0].id).toBe("msg-realtime");
+
+		const conversation =
+			client.conversationsStore.getState().byId["conv-1"];
+		expect(conversation?.lastMessage?.id).toBe("msg-realtime");
+		expect(conversation?.updatedAt.getTime()).toBe(
+			new Date("2024-01-03T00:00:00.000Z").getTime()
+		);
 	});
 
 	it("initiates a local conversation with default messages", () => {

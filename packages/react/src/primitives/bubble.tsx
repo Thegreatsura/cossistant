@@ -23,9 +23,7 @@ export type SupportBubbleProps = Omit<
  * and unread counts to render-prop children for fully custom UI shells.
  */
 export const SupportBubble = (() => {
-	type Props = SupportBubbleProps;
-
-	const Component = React.forwardRef<HTMLButtonElement, Props>(
+	const Component = React.forwardRef<HTMLButtonElement, SupportBubbleProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			const { isOpen, toggle } = useSupportConfig();
 			const { unreadCount } = useSupport();

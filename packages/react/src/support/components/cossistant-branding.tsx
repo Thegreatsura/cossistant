@@ -1,10 +1,10 @@
 import { cn } from "../utils";
 
-type Props = {
+type CossistantLogoProps = {
 	className?: string;
 };
 
-export function CossistantLogo({ className }: Props) {
+export function CossistantLogo({ className }: CossistantLogoProps) {
 	return (
 		<svg
 			className={cn("h-5 w-5", className)}

@@ -18,28 +18,21 @@ export function DashboardRealtimeProvider({
 	const { subscribe } = useDashboardRealtime();
 	const { user } = useUserSession();
 
-	const dashboardContext = useMemo<DashboardRealtimeContext>(
+	const subscription = useCallback(
+		(handler: Parameters<typeof subscribe>[0]) => subscribe(handler),
+		[subscribe]
+	);
+
+	const realtimeContext = useMemo<DashboardRealtimeContext>(
 		() => ({
+			queryClient,
 			website: {
 				id: website.id,
 				slug: website.slug,
 			},
 			userId: user?.id ?? null,
 		}),
-		[website.id, website.slug, user?.id]
-	);
-
-	const subscription = useCallback(
-		(handler: Parameters<typeof subscribe>[0]) => subscribe(handler),
-		[subscribe]
-	);
-
-	const realtimeContext = useMemo(
-		() => ({
-			queryClient,
-			...dashboardContext,
-		}),
-		[queryClient, dashboardContext]
+		[queryClient, website.id, website.slug, user?.id]
 	);
 
 	useRealtimeEvents<DashboardRealtimeContext>({

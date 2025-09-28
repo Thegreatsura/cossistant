@@ -6,7 +6,7 @@ import { SupportRealtimeProvider } from "../realtime";
 import { SupportContent } from "./components/support-content";
 import { SupportConfigProvider } from "./context/config";
 
-export type Props = {
+export type SupportProps = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
@@ -16,8 +16,6 @@ export type Props = {
 	defaultMessages?: DefaultMessage[];
 	defaultOpen?: boolean;
 };
-
-export type SupportProps = Props;
 
 // Internal component that needs the conversation context
 /**
@@ -33,7 +31,7 @@ export function Support({
 	quickOptions,
 	defaultMessages,
 	defaultOpen,
-}: Props) {
+}: SupportProps) {
 	const { website } = useSupport();
 
 	if (!website) {

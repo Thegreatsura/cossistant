@@ -5,8 +5,8 @@ import type {
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import React from "react";
 import { useConversationMessages, useSupport } from "../..";
+import { useDefaultMessages } from "../../hooks/use-default-messages";
 import { useSendMessage } from "../../hooks/use-send-message";
-import { useDefaultMessages } from "../../hooks/utils/use-default-messages";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { AvatarStack } from "../components/avatar-stack";
 import { Header } from "../components/header";

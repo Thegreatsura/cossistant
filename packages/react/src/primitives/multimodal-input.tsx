@@ -21,9 +21,7 @@ export type MultimodalInputProps = Omit<
  * `asChild`.
  */
 export const MultimodalInput = (() => {
-	type Props = MultimodalInputProps;
-
-	const Component = React.forwardRef<HTMLTextAreaElement, Props>(
+	const Component = React.forwardRef<HTMLTextAreaElement, MultimodalInputProps>(
 		(
 			{
 				value,
@@ -141,9 +139,7 @@ export type FileInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
  * chat UIs want an explicit attachment button.
  */
 export const FileInput = (() => {
-	type Props = FileInputProps;
-
-	const Component = React.forwardRef<HTMLInputElement, Props>(
+	const Component = React.forwardRef<HTMLInputElement, FileInputProps>(
 		({ onFileSelect, asChild = false, className, ...props }, ref) => {
 			const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 				const files = Array.from(e.target.files || []);

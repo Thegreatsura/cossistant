@@ -309,12 +309,17 @@ export class CossistantClient {
 			}
 		}
 
+		const {
+			createdAt: _createdAt,
+			updatedAt: _updatedAt,
+			...restMessage
+		} = rest.message;
+
 		const payload: SendMessageRequest = {
 			...rest,
 			message: {
-				...rest.message,
+				...restMessage,
 				id: optimisticId,
-				createdAt,
 			},
 		};
 
@@ -334,9 +339,22 @@ export class CossistantClient {
 
 	handleRealtimeEvent(event: RealtimeEvent): void {
 		switch (event.type) {
-			case "MESSAGE_CREATED":
-				this.messagesStore.ingestRealtime(event);
+			case "MESSAGE_CREATED": {
+				const message = this.messagesStore.ingestRealtime(event);
+				const existingConversation =
+					this.conversationsStore.getState().byId[message.conversationId];
+
+				if (existingConversation) {
+					const nextConversation = {
+						...existingConversation,
+						updatedAt: message.updatedAt,
+						lastMessage: message,
+					};
+
+					this.conversationsStore.ingestConversation(nextConversation);
+				}
 				break;
+			}
 			default:
 				break;
 		}

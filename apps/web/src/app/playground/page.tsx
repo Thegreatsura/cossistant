@@ -1,12 +1,12 @@
 "use client";
 
-import { useRealtimeSupport } from "@cossistant/react/hooks/use-realtime-support";
-import type { DefaultMessage } from "@cossistant/react/provider";
-import Support, { useSupportConfig } from "@cossistant/react/support";
+import { useRealtimeSupport } from "@cossistant/next/hooks/use-realtime-support";
+import type { DefaultMessage } from "@cossistant/next/provider";
+import { Support, useSupportConfig } from "@cossistant/next/support";
 import { SenderType } from "@cossistant/types";
 import { motion } from "motion/react";
 import Image from "next/image";
-import { Logo, LogoText } from "@/components/ui/logo";
+import { LogoText } from "@/components/ui/logo";
 
 function PlaygroundPropDisplay({
 	name,

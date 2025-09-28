@@ -1,4 +1,14 @@
 export * from "./config";
+export {
+	useConversationById,
+	useConversationsStore,
+} from "./hooks/store/use-conversations-store";
+export type {
+	UseWebsiteStoreOptions,
+	UseWebsiteStoreResult,
+} from "./hooks/store/use-website-store";
+export { useWebsiteStore } from "./hooks/store/use-website-store";
+export { useClientQuery } from "./hooks/use-client-query";
 export type {
 	UseConversationOptions,
 	UseConversationResult,
@@ -14,10 +24,6 @@ export type {
 	UseConversationsResult,
 } from "./hooks/use-conversations";
 export { useConversations } from "./hooks/use-conversations";
-export {
-	useConversationById,
-	useConversationsStore,
-} from "./hooks/use-conversations-store";
 export type {
 	CreateConversationVariables,
 	UseCreateConversationOptions,
@@ -25,23 +31,17 @@ export type {
 } from "./hooks/use-create-conversation";
 export { useCreateConversation } from "./hooks/use-create-conversation";
 export type {
+	UseRealtimeSupportOptions,
+	UseRealtimeSupportResult,
+} from "./hooks/use-realtime-support";
+export { useRealtimeSupport } from "./hooks/use-realtime-support";
+export { useClient } from "./hooks/use-rest-client";
+export type {
 	SendMessageOptions,
 	SendMessageResult,
 	UseSendMessageResult,
 } from "./hooks/use-send-message";
 export { useSendMessage } from "./hooks/use-send-message";
-export type {
-	UseWebsiteStoreOptions,
-	UseWebsiteStoreResult,
-} from "./hooks/use-website-store";
-export { useWebsiteStore } from "./hooks/use-website-store";
-export { useClientQuery } from "./hooks/utils/use-client-query";
-export type {
-	UseRealtimeSupportOptions,
-	UseRealtimeSupportResult,
-} from "./hooks/utils/use-realtime-support";
-export { useRealtimeSupport } from "./hooks/utils/use-realtime-support";
-export { useClient } from "./hooks/utils/use-rest-client";
 export * as Primitives from "./primitives";
 export * from "./provider";
 export * from "./realtime";

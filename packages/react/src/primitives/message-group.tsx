@@ -58,9 +58,7 @@ export type MessageGroupProps = Omit<
  * slotted children.
  */
 export const MessageGroup = (() => {
-	type Props = MessageGroupProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageGroupProps>(
 		(
 			{
 				children,
@@ -179,9 +177,7 @@ export type MessageGroupAvatarProps = Omit<
  * badge or any other sender metadata supplied by the consumer UI.
  */
 export const MessageGroupAvatar = (() => {
-	type Props = MessageGroupAvatarProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageGroupAvatarProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			return useRenderElement(
 				"div",
@@ -228,9 +224,7 @@ export type MessageGroupHeaderProps = Omit<
  * metadata supplied by `MessageGroup`.
  */
 export const MessageGroupHeader = (() => {
-	type Props = MessageGroupHeaderProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageGroupHeaderProps>(
 		(
 			{
 				children,
@@ -284,9 +278,7 @@ export type MessageGroupContentProps = Omit<
  * parent group.
  */
 export const MessageGroupContent = (() => {
-	type Props = MessageGroupContentProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageGroupContentProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			return useRenderElement(
 				"div",
@@ -330,9 +322,10 @@ export type MessageGroupSeenIndicatorProps = Omit<
  * displays.
  */
 export const MessageGroupSeenIndicator = (() => {
-	type Props = MessageGroupSeenIndicatorProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<
+		HTMLDivElement,
+		MessageGroupSeenIndicatorProps
+	>(
 		(
 			{ children, className, asChild = false, seenByIds = [], ...props },
 			ref
@@ -386,9 +379,10 @@ export type MessageGroupReadIndicatorProps = Omit<
  * basic label.
  */
 export const MessageGroupReadIndicator = (() => {
-	type Props = MessageGroupReadIndicatorProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<
+		HTMLDivElement,
+		MessageGroupReadIndicatorProps
+	>(
 		(
 			{
 				children,

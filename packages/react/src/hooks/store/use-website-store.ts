@@ -5,7 +5,7 @@ import type {
 } from "@cossistant/core";
 import type { PublicWebsiteResponse } from "@cossistant/types";
 import { useMemo } from "react";
-import { useClientQuery } from "../utils/use-client-query";
+import { useClientQuery } from "../use-client-query";
 import { useStoreSelector } from "./use-store-selector";
 
 const EMPTY_STATE: WebsiteState = {

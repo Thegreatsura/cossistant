@@ -1,3 +1,7 @@
 "use client";
 
-export { useRealtimeSupport } from "@cossistant/react/hooks/use-realtime-support";
+export {
+	type UseRealtimeSupportOptions,
+	type UseRealtimeSupportResult,
+	useRealtimeSupport,
+} from "@cossistant/react/hooks/use-realtime-support";

@@ -1,7 +1,8 @@
+import type { CossistantClient } from "@cossistant/core";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type React from "react";
 import { useCallback, useMemo } from "react";
-import { useRealtimeSupport } from "../hooks/utils/use-realtime-support";
+import { useRealtimeSupport } from "../hooks/use-realtime-support";
 import { useSupport } from "../provider";
 
 import {
@@ -12,18 +13,21 @@ import {
 
 type SupportRealtimeContext = {
 	websiteId: string | null;
+	client: CossistantClient;
 };
 
-type Props = {
+type SupportRealtimeProviderProps = {
 	children: React.ReactNode;
 };
 
 /**
- * Bridges websocket events into the React Query cache so conversation queries
- * reflect inbound messages without refetching.
+ * Bridges websocket events into the core client stores so support hooks stay
+ * in sync without forcing refetches.
  */
-export function SupportRealtimeProvider({ children }: Props) {
-	const { website } = useSupport();
+export function SupportRealtimeProvider({
+	children,
+}: SupportRealtimeProviderProps) {
+	const { website, client } = useSupport();
 	const { subscribe } = useRealtimeSupport();
 
 	const realtimeContext = useMemo<
@@ -31,13 +35,25 @@ export function SupportRealtimeProvider({ children }: Props) {
 	>(
 		() => ({
 			websiteId: website?.id ?? null,
+			client,
 		}),
-		[website?.id]
+		[website?.id, client]
 	);
 
 	const handlers = useMemo<RealtimeEventHandlersMap<SupportRealtimeContext>>(
 		() => ({
-			// MESSAGE_CREATED: [createSupportMessageCreatedHandler()],
+			MESSAGE_CREATED: [
+				({ event, context }) => {
+					if (
+						context.websiteId &&
+						event.data.websiteId !== context.websiteId
+					) {
+						return;
+					}
+
+					context.client.handleRealtimeEvent(event);
+				},
+			],
 		}),
 		[]
 	);

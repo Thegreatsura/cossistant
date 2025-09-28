@@ -3,7 +3,7 @@
 import * as React from "react";
 import { type DefaultMessage, useSupport } from "./provider";
 
-export type Props = {
+export type SupportConfigProps = {
 	defaultMessages?: DefaultMessage[];
 	quickOptions?: string[];
 };
@@ -13,7 +13,10 @@ export type Props = {
  * canned greetings or quick reply chips. Whenever `defaultMessages` or
  * `quickOptions` change the values propagate through the support context.
  */
-export const SupportConfig = ({ defaultMessages, quickOptions }: Props) => {
+export const SupportConfig = ({
+	defaultMessages,
+	quickOptions,
+}: SupportConfigProps) => {
 	const { setDefaultMessages, setQuickOptions } = useSupport();
 
 	// Only update when the arrays actually change content
@@ -33,6 +36,3 @@ export const SupportConfig = ({ defaultMessages, quickOptions }: Props) => {
 };
 
 SupportConfig.displayName = "SupportConfig";
-
-// Preserve previous named export for downstream imports.
-export type SupportConfigProps = Props;

@@ -188,7 +188,7 @@ function normalizeRealtimeMessage(event: MessageCreatedEvent): Message {
 export type MessagesStore = Store<MessagesState> & {
 	ingestPage(conversationId: string, page: ConversationMessagesState): void;
 	ingestMessage(message: Message): void;
-	ingestRealtime(event: MessageCreatedEvent): void;
+	ingestRealtime(event: MessageCreatedEvent): Message;
 	removeMessage(conversationId: string, messageId: string): void;
 	finalizeMessage(
 		conversationId: string,
@@ -213,6 +213,7 @@ export function createMessagesStore(
 		ingestRealtime(event) {
 			const message = normalizeRealtimeMessage(event);
 			store.setState((state) => applyMessage(state, message));
+			return message;
 		},
 		removeMessage(conversationId, messageId) {
 			store.setState((state) =>

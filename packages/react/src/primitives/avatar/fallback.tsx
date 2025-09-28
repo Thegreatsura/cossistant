@@ -40,9 +40,7 @@ const getInitials = (name: string): string => {
  * Optional delay avoids flashes when images load instantly.
  */
 export const AvatarFallback = (() => {
-	type Props = AvatarFallbackProps;
-
-	const Component = React.forwardRef<HTMLSpanElement, Props>(
+	const Component = React.forwardRef<HTMLSpanElement, AvatarFallbackProps>(
 		(
 			{
 				children,

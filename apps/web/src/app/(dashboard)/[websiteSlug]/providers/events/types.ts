@@ -5,6 +5,7 @@ import type {
 	RealtimeEventHandlersMap as BaseRealtimeEventHandlersMap,
 } from "@cossistant/next/realtime";
 import type { RealtimeEventType } from "@cossistant/types/realtime-events";
+import type { QueryClient } from "@tanstack/react-query";
 
 type WebsiteContext = {
 	id: string;
@@ -12,6 +13,7 @@ type WebsiteContext = {
 };
 
 export type DashboardRealtimeContext = {
+	queryClient: QueryClient;
 	website: WebsiteContext;
 	userId: string | null;
 };

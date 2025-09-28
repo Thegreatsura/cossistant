@@ -41,9 +41,7 @@ export const useAvatarContext = () => {
  * children so consumers can compose initials, images and status rings.
  */
 export const Avatar = (() => {
-	type Props = AvatarProps;
-
-	const Component = React.forwardRef<HTMLSpanElement, Props>(
+	const Component = React.forwardRef<HTMLSpanElement, AvatarProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			const [imageLoadingStatus, setImageLoadingStatus] =
 				React.useState<AvatarState["imageLoadingStatus"]>("idle");

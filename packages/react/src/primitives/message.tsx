@@ -31,9 +31,7 @@ export type MessageProps = Omit<
  * sender type into convenient render props for custom bubble layouts.
  */
 export const Message = (() => {
-	type Props = MessageProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageProps>(
 		({ children, className, asChild = false, message, ...props }, ref) => {
 			// Determine sender type from message properties
 			const isVisitor = message.visitorId !== null;
@@ -155,9 +153,7 @@ export type MessageContentProps = Omit<
  * formatting.
  */
 export const MessageContent = (() => {
-	type Props = MessageContentProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageContentProps>(
 		(
 			{
 				children,
@@ -222,9 +218,7 @@ export type MessageTimestampProps = Omit<
  * render prop for custom time displays while preserving semantic markup.
  */
 export const MessageTimestamp = (() => {
-	type Props = MessageTimestampProps;
-
-	const Component = React.forwardRef<HTMLSpanElement, Props>(
+	const Component = React.forwardRef<HTMLSpanElement, MessageTimestampProps>(
 		(
 			{
 				children,

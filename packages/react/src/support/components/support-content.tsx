@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import type React from "react";
-import { useMultimodalInput } from "../../hooks/utils/use-multimodal-input";
+import { useMultimodalInput } from "../../hooks/use-multimodal-input";
 
 import { SupportRouter } from "../router";
 import { cn } from "../utils";

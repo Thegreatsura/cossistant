@@ -4,6 +4,12 @@ export type {
 	UseCreateConversationResult,
 } from "../../hooks/use-create-conversation";
 export { useCreateConversation } from "../../hooks/use-create-conversation";
+export {
+	type ConversationEventItem,
+	type GroupedMessage,
+	type UseGroupedMessagesProps,
+	useGroupedMessages,
+} from "../../hooks/use-grouped-messages";
 export type {
 	SendMessageOptions,
 	SendMessageResult,
@@ -11,10 +17,4 @@ export type {
 } from "../../hooks/use-send-message";
 export { useSendMessage } from "../../hooks/use-send-message";
 export { useVisitor } from "../../hooks/use-visitor";
-export {
-	type ConversationEventItem,
-	type GroupedMessage,
-	type UseGroupedMessagesProps,
-	useGroupedMessages,
-} from "../../hooks/utils/use-grouped-messages";
 export { useWebsite } from "./use-website";

@@ -40,9 +40,7 @@ export type MessageListProps = Omit<
  * pagination callbacks for support conversations.
  */
 export const MessageList = (() => {
-	type Props = MessageListProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageListProps>(
 		(
 			{
 				children,
@@ -164,9 +162,7 @@ export type MessageListContainerProps = Omit<
  * padding, backgrounds or transitions without touching the core list logic.
  */
 export const MessageListContainer = (() => {
-	type Props = MessageListContainerProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageListContainerProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			return useRenderElement(
 				"div",
@@ -203,9 +199,7 @@ export type MessageListLoadingProps = Omit<
  * skeletons or shimmer states without reimplementing ARIA wiring.
  */
 export const MessageListLoading = (() => {
-	type Props = MessageListLoadingProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageListLoadingProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			return useRenderElement(
 				"div",
@@ -244,9 +238,7 @@ export type MessageListEmptyProps = Omit<
  * region so screen readers announce the absence of messages.
  */
 export const MessageListEmpty = (() => {
-	type Props = MessageListEmptyProps;
-
-	const Component = React.forwardRef<HTMLDivElement, Props>(
+	const Component = React.forwardRef<HTMLDivElement, MessageListEmptyProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
 			return useRenderElement(
 				"div",

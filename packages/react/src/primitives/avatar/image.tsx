@@ -22,9 +22,7 @@ export type AvatarImageProps = Omit<
  * so fallbacks know when to display.
  */
 export const AvatarImage = (() => {
-	type Props = AvatarImageProps;
-
-	const Component = React.forwardRef<HTMLImageElement, Props>(
+	const Component = React.forwardRef<HTMLImageElement, AvatarImageProps>(
 		(
 			{
 				src,

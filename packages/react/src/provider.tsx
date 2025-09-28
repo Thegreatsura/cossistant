@@ -3,11 +3,10 @@ import type { PublicWebsiteResponse, SenderType } from "@cossistant/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
 import { useWebsiteStore } from "./hooks/store/use-website-store";
-import { useConversations } from "./hooks/use-conversations";
-import { useClient } from "./hooks/utils/use-rest-client";
+import { useClient } from "./hooks/use-rest-client";
 import { WebSocketProvider } from "./support";
 
-export type Props = {
+export type SupportProviderProps = {
 	children: React.ReactNode;
 	defaultOpen?: boolean;
 	apiUrl?: string;
@@ -22,7 +21,7 @@ export type Props = {
 	queryClient?: QueryClient;
 };
 
-export type CossistantProviderProps = Props;
+export type CossistantProviderProps = SupportProviderProps;
 
 export type DefaultMessage = {
 	content: string;
@@ -62,7 +61,7 @@ function SupportProviderInner({
 	onWsConnect,
 	onWsDisconnect,
 	onWsError,
-}: Props) {
+}: SupportProviderProps) {
 	const [unreadCount, setUnreadCount] = React.useState(0);
 	const [_defaultMessages, _setDefaultMessages] = React.useState<
 		DefaultMessage[]
@@ -179,7 +178,7 @@ export function SupportProvider({
 	onWsDisconnect,
 	onWsError,
 	queryClient,
-}: Props) {
+}: SupportProviderProps) {
 	// Create a default QueryClient if none provided
 	const [defaultQueryClient] = React.useState(
 		() =>

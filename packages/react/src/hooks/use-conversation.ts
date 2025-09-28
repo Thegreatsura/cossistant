@@ -4,7 +4,7 @@ import type {
 } from "@cossistant/types/api/conversation";
 import { useSupport } from "../provider";
 import { useStoreSelector } from "./store/use-store-selector";
-import { useClientQuery } from "./utils/use-client-query";
+import { useClientQuery } from "./use-client-query";
 
 export type UseConversationOptions = {
 	enabled?: boolean;

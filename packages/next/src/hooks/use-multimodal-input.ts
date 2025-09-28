@@ -1,3 +1,7 @@
 "use client";
 
-export { useMultimodalInput } from "@cossistant/react/hooks/use-multimodal-input";
+export {
+	type UseMultimodalInputOptions,
+	type UseMultimodalInputReturn,
+	useMultimodalInput,
+} from "@cossistant/react/hooks/use-multimodal-input";

@@ -6,7 +6,7 @@ import type {
 import { useCallback, useMemo } from "react";
 import { useSupport } from "../provider";
 import { useStoreSelector } from "./store/use-store-selector";
-import { useClientQuery } from "./utils/use-client-query";
+import { useClientQuery } from "./use-client-query";
 
 const EMPTY_STATE: ConversationMessagesState = {
 	messages: [],

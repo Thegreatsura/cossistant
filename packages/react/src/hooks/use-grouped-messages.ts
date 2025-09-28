@@ -25,7 +25,7 @@ export type ConversationEventItem = {
 
 export type ConversationItem = GroupedMessage | ConversationEventItem;
 
-export type Props = {
+export type UseGroupedMessagesOptions = {
 	messages: MessageType[];
 	events?: ConversationEvent[];
 	seenData?: ConversationSeen[];
@@ -33,7 +33,7 @@ export type Props = {
 	viewerType?: SenderType; // Type of the current viewer
 };
 
-export type UseGroupedMessagesProps = Props;
+export type UseGroupedMessagesProps = UseGroupedMessagesOptions;
 
 // Helper function to determine sender ID and type from a message
 const getSenderIdAndType = (
@@ -184,7 +184,7 @@ export const useGroupedMessages = ({
 	seenData = [],
 	currentViewerId,
 	viewerType,
-}: Props) => {
+}: UseGroupedMessagesOptions) => {
 	return useMemo(() => {
 		// Group messages by sender
 		const groupedMessages = groupMessagesBySender(messages);

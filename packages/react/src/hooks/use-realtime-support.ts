@@ -1,6 +1,6 @@
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import { useEffect } from "react";
-import { useWebSocket } from "../../support/context/websocket";
+import { useWebSocket } from "../support/context/websocket";
 
 export type UseRealtimeSupportOptions = {
 	onEvent?: (event: RealtimeEvent) => void;

@@ -12,9 +12,7 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
  * semantics.
  */
 export const Button = (() => {
-	type Props = ButtonProps;
-
-	const Component = React.forwardRef<HTMLButtonElement, Props>(
+	const Component = React.forwardRef<HTMLButtonElement, ButtonProps>(
 		({ className, asChild = false, ...props }, ref) => {
 			return useRenderElement(
 				"button",
