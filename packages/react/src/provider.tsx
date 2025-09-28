@@ -40,7 +40,7 @@ export type CossistantContextValue = {
 	setUnreadCount: (count: number) => void;
 	isLoading: boolean;
 	error: Error | null;
-	client: CossistantClient | null;
+        client: CossistantClient;
 };
 
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
@@ -70,8 +70,6 @@ function SupportProviderInner({
 	const [_quickOptions, _setQuickOptions] = React.useState<string[]>(
 		quickOptions || []
 	);
-	const [isClientPrimed, setIsClientPrimed] = React.useState(false);
-
 	// Update state when props change (for initial values from provider)
 	React.useEffect(() => {
 		if (defaultMessages && defaultMessages.length > 0) {
@@ -85,26 +83,23 @@ function SupportProviderInner({
 		}
 	}, [quickOptions]);
 
-	const { client, error: clientError } = useClient(publicKey, apiUrl, wsUrl);
-	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
+        const { client } = useClient(publicKey, apiUrl, wsUrl);
+        const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 
 	// Prefetch conversations
 	// useConversations(client, {
 	//   enabled: !!website && !!website.visitor && isClientPrimed,
 	// });
 
-	const error = clientError || websiteError;
+        const error = websiteError;
 
 	// Prime REST client with website/visitor context so headers are sent reliably
 	React.useEffect(() => {
-		if (client && website) {
-			// @ts-expect-error internal priming: safe in our library context
-			client.restClient?.setWebsiteContext?.(website.id, website.visitor?.id);
-			setIsClientPrimed(true);
-		} else {
-			setIsClientPrimed(false);
-		}
-	}, [client, website]);
+                if (website) {
+                        // @ts-expect-error internal priming: safe in our library context
+                        client.restClient?.setWebsiteContext?.(website.id, website.visitor?.id);
+                }
+        }, [client, website]);
 
 	const setDefaultMessages = React.useCallback(
 		(messages: DefaultMessage[]) => _setDefaultMessages(messages),

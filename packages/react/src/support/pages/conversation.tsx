@@ -12,7 +12,7 @@ import { Header } from "../components/header";
 import { MessageList } from "../components/message-list";
 import { MultimodalInput } from "../components/multimodal-input";
 
-import { useSendMessage } from "../hooks/use-send-message";
+import { useSendMessage } from "../../hooks/use-send-message";
 import { useSupportNavigation } from "../store";
 
 type ConversationPageProps = {
@@ -60,7 +60,7 @@ export const ConversationPage = ({
 	// Messages are already flattened in the hook
 	const fetchedMessages = messagesQuery.messages;
 
-	const sendMessage = useSendMessage(client);
+        const sendMessage = useSendMessage({ client });
 
 	const handleSubmit = React.useCallback(() => {
 		if (!message.trim() && files.length === 0) {

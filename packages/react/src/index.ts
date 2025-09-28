@@ -30,10 +30,22 @@ export * from "./provider";
 export * from "./realtime";
 export * from "./support";
 export type {
-	UseConversationOptions,
-	UseConversationResult,
-} from "./support/hooks/use-conversation";
-export { useConversation } from "./support/hooks/use-conversation";
+        CreateConversationVariables,
+        UseCreateConversationOptions,
+        UseCreateConversationResult,
+} from "./hooks/use-create-conversation";
+export { useCreateConversation } from "./hooks/use-create-conversation";
+export type {
+        SendMessageOptions,
+        SendMessageResult,
+        UseSendMessageResult,
+} from "./hooks/use-send-message";
+export { useSendMessage } from "./hooks/use-send-message";
+export type {
+        UseConversationOptions,
+        UseConversationResult,
+} from "./hooks/use-conversation";
+export { useConversation } from "./hooks/use-conversation";
 export type {
 	UseWebsiteOptions,
 	UseWebsiteResult,
