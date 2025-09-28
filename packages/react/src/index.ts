@@ -1,5 +1,10 @@
 export * from "./config";
 export type {
+	UseConversationOptions,
+	UseConversationResult,
+} from "./hooks/use-conversation";
+export { useConversation } from "./hooks/use-conversation";
+export type {
 	UseConversationMessagesOptions,
 	UseConversationMessagesResult,
 } from "./hooks/use-conversation-messages";
@@ -13,6 +18,18 @@ export {
 	useConversationById,
 	useConversationsStore,
 } from "./hooks/use-conversations-store";
+export type {
+	CreateConversationVariables,
+	UseCreateConversationOptions,
+	UseCreateConversationResult,
+} from "./hooks/use-create-conversation";
+export { useCreateConversation } from "./hooks/use-create-conversation";
+export type {
+	SendMessageOptions,
+	SendMessageResult,
+	UseSendMessageResult,
+} from "./hooks/use-send-message";
+export { useSendMessage } from "./hooks/use-send-message";
 export type {
 	UseWebsiteStoreOptions,
 	UseWebsiteStoreResult,
@@ -29,23 +46,6 @@ export * as Primitives from "./primitives";
 export * from "./provider";
 export * from "./realtime";
 export * from "./support";
-export type {
-        CreateConversationVariables,
-        UseCreateConversationOptions,
-        UseCreateConversationResult,
-} from "./hooks/use-create-conversation";
-export { useCreateConversation } from "./hooks/use-create-conversation";
-export type {
-        SendMessageOptions,
-        SendMessageResult,
-        UseSendMessageResult,
-} from "./hooks/use-send-message";
-export { useSendMessage } from "./hooks/use-send-message";
-export type {
-        UseConversationOptions,
-        UseConversationResult,
-} from "./hooks/use-conversation";
-export { useConversation } from "./hooks/use-conversation";
 export type {
 	UseWebsiteOptions,
 	UseWebsiteResult,

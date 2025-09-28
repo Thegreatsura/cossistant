@@ -7,15 +7,15 @@ type QueryFn<TData, TArgs> = (
 ) => Promise<TData>;
 
 type UseClientQueryOptions<TData, TArgs> = {
-        client: CossistantClient;
-        queryFn: QueryFn<TData, TArgs>;
-        enabled?: boolean;
-        refetchInterval?: number | false;
+	client: CossistantClient;
+	queryFn: QueryFn<TData, TArgs>;
+	enabled?: boolean;
+	refetchInterval?: number | false;
 	refetchOnWindowFocus?: boolean;
 	refetchOnMount?: boolean;
 	initialData?: TData;
 	initialArgs?: TArgs;
-	dependencies?: ReadonlyArray<unknown>;
+	dependencies?: readonly unknown[];
 };
 
 type UseClientQueryResult<TData, TArgs> = {
@@ -33,7 +33,7 @@ function toError(error: unknown): Error {
 	return new Error(typeof error === "string" ? error : "Unknown error");
 }
 
-const EMPTY_DEPENDENCIES: ReadonlyArray<unknown> = [];
+const EMPTY_DEPENDENCIES: readonly unknown[] = [];
 
 export function useClientQuery<TData, TArgs = void>(
 	options: UseClientQueryOptions<TData, TArgs>
@@ -52,9 +52,9 @@ export function useClientQuery<TData, TArgs = void>(
 
 	const [data, setData] = useState<TData | undefined>(initialData);
 	const [error, setError] = useState<Error | null>(null);
-        const [isLoading, setIsLoading] = useState(
-                initialData === undefined && Boolean(enabled)
-        );
+	const [isLoading, setIsLoading] = useState(
+		initialData === undefined && Boolean(enabled)
+	);
 
 	const dataRef = useRef(data);
 	dataRef.current = data;
@@ -80,9 +80,9 @@ export function useClientQuery<TData, TArgs = void>(
 
 	const execute = useCallback(
 		async (args?: TArgs, ignoreEnabled = false): Promise<TData | undefined> => {
-                        if (!(enabled || ignoreEnabled)) {
-                                return dataRef.current;
-                        }
+			if (!(enabled || ignoreEnabled)) {
+				return dataRef.current;
+			}
 
 			const nextArgs = args ?? argsRef.current;
 			argsRef.current = nextArgs;
@@ -119,14 +119,14 @@ export function useClientQuery<TData, TArgs = void>(
 				throw normalized;
 			}
 		},
-                [client, enabled]
-        );
+		[client, enabled]
+	);
 
-        useEffect(() => {
-                if (!enabled) {
-                        setIsLoading(false);
-                        return;
-                }
+	useEffect(() => {
+		if (!enabled) {
+			setIsLoading(false);
+			return;
+		}
 
 		const shouldFetchInitially = hasMountedRef.current
 			? true
@@ -139,12 +139,12 @@ export function useClientQuery<TData, TArgs = void>(
 		}
 
 		void execute(argsRef.current);
-        }, [enabled, execute, refetchOnMount, ...dependencies]);
+	}, [enabled, execute, refetchOnMount, ...dependencies]);
 
-        useEffect(() => {
-                if (!enabled) {
-                        return;
-                }
+	useEffect(() => {
+		if (!enabled) {
+			return;
+		}
 
 		if (
 			refetchInterval === false ||
@@ -162,10 +162,10 @@ export function useClientQuery<TData, TArgs = void>(
 		return () => {
 			window.clearInterval(timer);
 		};
-        }, [client, enabled, execute, refetchInterval]);
+	}, [enabled, execute, refetchInterval]);
 
-        useEffect(() => {
-                if (
+	useEffect(() => {
+		if (
 			!refetchOnWindowFocus ||
 			typeof window === "undefined" ||
 			typeof document === "undefined"
@@ -173,13 +173,13 @@ export function useClientQuery<TData, TArgs = void>(
 			return;
 		}
 
-                const handleRefetch = () => {
-                        if (!enabled) {
-                                return;
-                        }
+		const handleRefetch = () => {
+			if (!enabled) {
+				return;
+			}
 
-                        void execute(argsRef.current);
-                };
+			void execute(argsRef.current);
+		};
 
 		const onFocus = () => {
 			void handleRefetch();
@@ -198,7 +198,7 @@ export function useClientQuery<TData, TArgs = void>(
 			window.removeEventListener("focus", onFocus);
 			document.removeEventListener("visibilitychange", onVisibilityChange);
 		};
-        }, [client, enabled, execute, refetchOnWindowFocus]);
+	}, [enabled, execute, refetchOnWindowFocus]);
 
 	const refetch = useCallback(
 		async (args?: TArgs) => {

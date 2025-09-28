@@ -40,7 +40,7 @@ export type CossistantContextValue = {
 	setUnreadCount: (count: number) => void;
 	isLoading: boolean;
 	error: Error | null;
-        client: CossistantClient;
+	client: CossistantClient;
 };
 
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
@@ -83,23 +83,23 @@ function SupportProviderInner({
 		}
 	}, [quickOptions]);
 
-        const { client } = useClient(publicKey, apiUrl, wsUrl);
-        const { website, isLoading, error: websiteError } = useWebsiteStore(client);
+	const { client } = useClient(publicKey, apiUrl, wsUrl);
+	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 
 	// Prefetch conversations
 	// useConversations(client, {
 	//   enabled: !!website && !!website.visitor && isClientPrimed,
 	// });
 
-        const error = websiteError;
+	const error = websiteError;
 
 	// Prime REST client with website/visitor context so headers are sent reliably
 	React.useEffect(() => {
-                if (website) {
-                        // @ts-expect-error internal priming: safe in our library context
-                        client.restClient?.setWebsiteContext?.(website.id, website.visitor?.id);
-                }
-        }, [client, website]);
+		if (website) {
+			// @ts-expect-error internal priming: safe in our library context
+			client.restClient?.setWebsiteContext?.(website.id, website.visitor?.id);
+		}
+	}, [client, website]);
 
 	const setDefaultMessages = React.useCallback(
 		(messages: DefaultMessage[]) => _setDefaultMessages(messages),

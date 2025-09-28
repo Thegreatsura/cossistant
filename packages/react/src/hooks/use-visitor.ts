@@ -30,7 +30,7 @@ function safeError(message: string, error: unknown): void {
  * guarding against missing client or visitor context.
  */
 export function useVisitor(): UseVisitorReturn {
-        const { website, client } = useSupport();
+	const { website, client } = useSupport();
 	const visitor = website?.visitor || null;
 	const visitorId = visitor?.id ?? null;
 
@@ -38,11 +38,11 @@ export function useVisitor(): UseVisitorReturn {
 		(metadata: VisitorMetadata) => Promise<VisitorResponse | null>
 	>(
 		async (metadata) => {
-                        if (!visitorId) {
-                                safeWarn(
-                                        "No visitor is associated with this session; metadata update skipped"
-                                );
-                                return null;
+			if (!visitorId) {
+				safeWarn(
+					"No visitor is associated with this session; metadata update skipped"
+				);
+				return null;
 			}
 
 			try {

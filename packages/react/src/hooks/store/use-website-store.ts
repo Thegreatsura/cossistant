@@ -1,4 +1,8 @@
-import type { CossistantClient, WebsiteState, WebsiteStore } from "@cossistant/core";
+import type {
+	CossistantClient,
+	WebsiteState,
+	WebsiteStore,
+} from "@cossistant/core";
 import type { PublicWebsiteResponse } from "@cossistant/types";
 import { useMemo } from "react";
 import { useClientQuery } from "../utils/use-client-query";
@@ -36,44 +40,46 @@ function toError(state: WebsiteState, fallback: Error | null): Error | null {
 }
 
 export function useWebsiteStore(
-        client: CossistantClient,
-        options: UseWebsiteStoreOptions = {}
+	client: CossistantClient,
+	options: UseWebsiteStoreOptions = {}
 ): UseWebsiteStoreResult {
-        const store = client.websiteStore ?? ((): WebsiteStore => {
-                throw new Error("Website store is not available on the client instance");
-        })();
-        const state = useStoreSelector(store, (current) => current);
+	const store =
+		client.websiteStore ??
+		((): WebsiteStore => {
+			throw new Error("Website store is not available on the client instance");
+		})();
+	const state = useStoreSelector(store, (current) => current);
 
-        const query = useClientQuery<PublicWebsiteResponse, { force?: boolean }>({
-                client,
-                queryFn: (instance, params) => instance.fetchWebsite(params ?? {}),
-                enabled: true,
-                refetchInterval: options.refetchInterval ?? false,
-                refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
-                refetchOnMount: state.status === "idle",
-                initialData: state.website ?? undefined,
-        });
+	const query = useClientQuery<PublicWebsiteResponse, { force?: boolean }>({
+		client,
+		queryFn: (instance, params) => instance.fetchWebsite(params ?? {}),
+		enabled: true,
+		refetchInterval: options.refetchInterval ?? false,
+		refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
+		refetchOnMount: state.status === "idle",
+		initialData: state.website ?? undefined,
+	});
 
 	const error = useMemo(
 		() => toError(state, query.error),
 		[state, query.error]
 	);
-        const isLoading =
-                query.isLoading || state.status === "loading" || state.status === "idle";
+	const isLoading =
+		query.isLoading || state.status === "loading" || state.status === "idle";
 
-        const refresh = () => {
-                return query
-                        .refetch({ force: true })
-                        .then((result) => result ?? client.websiteStore.getState().website)
-                        .catch(() => client.websiteStore.getState().website)
-                        .then((website) => website ?? null);
-        };
+	const refresh = () => {
+		return query
+			.refetch({ force: true })
+			.then((result) => result ?? client.websiteStore.getState().website)
+			.catch(() => client.websiteStore.getState().website)
+			.then((website) => website ?? null);
+	};
 
-        return {
-                website: state.website,
-                status: state.status,
-                isLoading,
-                error,
-                refresh,
-        };
+	return {
+		website: state.website,
+		status: state.status,
+		isLoading,
+		error,
+		refresh,
+	};
 }

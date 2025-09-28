@@ -37,16 +37,16 @@ export function useConversationMessages(
 	conversationId: string,
 	options: UseConversationMessagesOptions = {}
 ): UseConversationMessagesResult {
-        const { client } = useSupport();
-        const store = client.messagesStore;
+	const { client } = useSupport();
+	const store = client.messagesStore;
 
-        if (!store) {
-                throw new Error("Messages store is not available on the client instance");
-        }
+	if (!store) {
+		throw new Error("Messages store is not available on the client instance");
+	}
 
-        const selection = useStoreSelector(store, (state) => {
-                return state.conversations[conversationId] ?? EMPTY_STATE;
-        });
+	const selection = useStoreSelector(store, (state) => {
+		return state.conversations[conversationId] ?? EMPTY_STATE;
+	});
 
 	const baseArgs = useMemo(() => {
 		return {
@@ -63,31 +63,31 @@ export function useConversationMessages(
 		GetMessagesResponse,
 		Pick<GetMessagesRequest, "cursor" | "limit">
 	>({
-                client,
-                queryFn: (instance, args) =>
-                        instance.getConversationMessages({
-                                conversationId,
-                                limit: args?.limit ?? baseArgs.limit,
-                                cursor: args?.cursor ?? baseArgs.cursor,
-                        }),
-                enabled: options.enabled ?? true,
-                refetchInterval: options.refetchInterval ?? false,
-                refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
-                refetchOnMount: selection.messages.length === 0,
-                initialArgs: baseArgs,
-                dependencies: [conversationId, baseArgs.limit, baseArgs.cursor ?? null],
-        });
+		client,
+		queryFn: (instance, args) =>
+			instance.getConversationMessages({
+				conversationId,
+				limit: args?.limit ?? baseArgs.limit,
+				cursor: args?.cursor ?? baseArgs.cursor,
+			}),
+		enabled: options.enabled ?? true,
+		refetchInterval: options.refetchInterval ?? false,
+		refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
+		refetchOnMount: selection.messages.length === 0,
+		initialArgs: baseArgs,
+		dependencies: [conversationId, baseArgs.limit, baseArgs.cursor ?? null],
+	});
 
-        const refetch = useCallback(
-                (args?: Pick<GetMessagesRequest, "cursor" | "limit">) => {
-                        return queryRefetch({
-                                limit: baseArgs.limit,
-                                cursor: baseArgs.cursor,
-                                ...args,
-                        });
-                },
-                [queryRefetch, baseArgs]
-        );
+	const refetch = useCallback(
+		(args?: Pick<GetMessagesRequest, "cursor" | "limit">) => {
+			return queryRefetch({
+				limit: baseArgs.limit,
+				cursor: baseArgs.cursor,
+				...args,
+			});
+		},
+		[queryRefetch, baseArgs]
+	);
 
 	const fetchNextPage = useCallback(() => {
 		if (!(selection.hasNextPage && selection.nextCursor)) {

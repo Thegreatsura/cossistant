@@ -14,8 +14,8 @@ type ConversationsSelection = {
 };
 
 function areSelectionsEqual(
-        a: ConversationsSelection,
-        b: ConversationsSelection
+	a: ConversationsSelection,
+	b: ConversationsSelection
 ): boolean {
 	const samePagination =
 		a.pagination === b.pagination ||
@@ -49,42 +49,42 @@ export type UseConversationsOptions = Partial<
 };
 
 export type UseConversationsResult = {
-        conversations: ListConversationsResponse["conversations"];
-        pagination: ConversationPagination | null;
-        isLoading: boolean;
-        error: Error | null;
-        refetch: (
-                args?: Partial<ListConversationsRequest>
-        ) => Promise<ListConversationsResponse | undefined>;
+	conversations: ListConversationsResponse["conversations"];
+	pagination: ConversationPagination | null;
+	isLoading: boolean;
+	error: Error | null;
+	refetch: (
+		args?: Partial<ListConversationsRequest>
+	) => Promise<ListConversationsResponse | undefined>;
 };
 
 export function useConversations(
-        options: UseConversationsOptions = {}
+	options: UseConversationsOptions = {}
 ): UseConversationsResult {
-        const { client } = useSupport();
+	const { client } = useSupport();
 
-        const {
-                limit,
-                page,
-                order,
-                orderBy,
-                status,
-                enabled = true,
-                refetchInterval = false,
-                refetchOnWindowFocus = true,
-        } = options;
+	const {
+		limit,
+		page,
+		order,
+		orderBy,
+		status,
+		enabled = true,
+		refetchInterval = false,
+		refetchOnWindowFocus = true,
+	} = options;
 
-        const requestDefaults = useMemo(
-                () => ({ limit, page, status, orderBy, order }),
-                [limit, page, status, orderBy, order]
-        );
+	const requestDefaults = useMemo(
+		() => ({ limit, page, status, orderBy, order }),
+		[limit, page, status, orderBy, order]
+	);
 
-        const store = client.conversationsStore;
+	const store = client.conversationsStore;
 
-        const selection = useStoreSelector(
-                store,
-                (state): ConversationsSelection => ({
-                        conversations: state.ids
+	const selection = useStoreSelector(
+		store,
+		(state): ConversationsSelection => ({
+			conversations: state.ids
 				.map((id) => state.byId[id])
 				.filter(
 					(
@@ -97,32 +97,36 @@ export function useConversations(
 		areSelectionsEqual
 	);
 
-        const { refetch: queryRefetch, isLoading: queryLoading, error } = useClientQuery<
-                ListConversationsResponse,
-                Partial<ListConversationsRequest>
-        >({
-                client,
-                queryFn: (instance, args) =>
-                        instance.listConversations({
-                                ...requestDefaults,
-                                ...args,
-                        }),
-                enabled,
-                refetchInterval,
-                refetchOnWindowFocus,
-                refetchOnMount: selection.conversations.length === 0,
-                initialArgs: requestDefaults,
-                dependencies: [limit, page, status, orderBy, order],
-        });
+	const {
+		refetch: queryRefetch,
+		isLoading: queryLoading,
+		error,
+	} = useClientQuery<
+		ListConversationsResponse,
+		Partial<ListConversationsRequest>
+	>({
+		client,
+		queryFn: (instance, args) =>
+			instance.listConversations({
+				...requestDefaults,
+				...args,
+			}),
+		enabled,
+		refetchInterval,
+		refetchOnWindowFocus,
+		refetchOnMount: selection.conversations.length === 0,
+		initialArgs: requestDefaults,
+		dependencies: [limit, page, status, orderBy, order],
+	});
 
-        const refetch = useCallback(
-                (args?: Partial<ListConversationsRequest>) =>
-                        queryRefetch({
-                                ...requestDefaults,
-                                ...args,
-                        }),
-                [queryRefetch, requestDefaults]
-        );
+	const refetch = useCallback(
+		(args?: Partial<ListConversationsRequest>) =>
+			queryRefetch({
+				...requestDefaults,
+				...args,
+			}),
+		[queryRefetch, requestDefaults]
+	);
 
 	const isInitialLoad = selection.conversations.length === 0;
 	const isLoading = isInitialLoad ? queryLoading : false;
