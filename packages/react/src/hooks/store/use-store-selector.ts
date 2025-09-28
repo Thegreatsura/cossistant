@@ -12,7 +12,7 @@ export function useStoreSelector<TState, TSelected>(
 	selector: (state: TState) => TSelected,
 	isEqual: (previous: TSelected, next: TSelected) => boolean = Object.is
 ): TSelected {
-	const selectionRef = useRef<TSelected>();
+	const selectionRef = useRef<TSelected>(undefined);
 
 	const subscribe = (onStoreChange: () => void) =>
 		store.subscribe(() => {

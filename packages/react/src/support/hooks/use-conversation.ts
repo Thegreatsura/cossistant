@@ -3,8 +3,8 @@ import type {
 	GetConversationRequest,
 	GetConversationResponse,
 } from "@cossistant/types/api/conversation";
-import { useClientQuery } from "../../hooks/use-client-query";
-import { useStoreSelector } from "../../hooks/use-store-selector";
+import { useStoreSelector } from "../../hooks/store/use-store-selector";
+import { useClientQuery } from "../../hooks/utils/use-client-query";
 import { useSupport } from "../../provider";
 
 const EMPTY_STATE: ConversationsState = {

@@ -4,18 +4,14 @@ import type {
 } from "@cossistant/types";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import React from "react";
-import { useSupport } from "../..";
-import { useDefaultMessages } from "../../hooks/use-default-messages";
-import { useRealtimeSupport } from "../../hooks/use-realtime-support";
+import { useConversationMessages, useSupport } from "../..";
+import { useDefaultMessages } from "../../hooks/utils/use-default-messages";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { AvatarStack } from "../components/avatar-stack";
 import { Header } from "../components/header";
 import { MessageList } from "../components/message-list";
 import { MultimodalInput } from "../components/multimodal-input";
-import {
-	upsertRealtimeMessageInCache,
-	useMessages,
-} from "../hooks/use-messages";
+
 import { useSendMessage } from "../hooks/use-send-message";
 import { useSupportNavigation } from "../store";
 
@@ -31,12 +27,6 @@ type ConversationPageProps = {
 	submit: () => void;
 	messages?: MessageType[];
 	events: ConversationEvent[];
-};
-
-const isMessageCreatedEvent = (
-	event: RealtimeEvent
-): event is RealtimeEvent<"MESSAGE_CREATED"> => {
-	return event.type === "MESSAGE_CREATED";
 };
 
 export const ConversationPage = ({
@@ -65,38 +55,12 @@ export const ConversationPage = ({
 		conversationId,
 	});
 
-	const messagesQuery = useMessages({
-		client,
-		conversationId,
-		defaultMessages,
-	});
+	const messagesQuery = useConversationMessages(conversationId);
 
 	// Messages are already flattened in the hook
 	const fetchedMessages = messagesQuery.messages;
 
 	const sendMessage = useSendMessage(client);
-
-	// const handleRealtimeEvent = React.useCallback(
-	//   (event: RealtimeEvent) => {
-	//     if (!isMessageCreatedEvent(event)) {
-	//       return;
-	//     }
-
-	//     if (!realConversationId) {
-	//       return;
-	//     }
-
-	//     if (event.data.conversationId !== realConversationId) {
-	//       return;
-	//     }
-
-	//     const isOwnMessage = event.data.message.visitorId === visitor?.id;
-
-	//     console.log("[Support Widget] Realtime message received", {
-	//       conversationId: event.data.conversationId,
-	//       messageId: event.data.message.id,
-	//       origin: isOwnMessage ? "self" : "remote",
-	//     });
 
 	const handleSubmit = React.useCallback(() => {
 		if (!message.trim() && files.length === 0) {

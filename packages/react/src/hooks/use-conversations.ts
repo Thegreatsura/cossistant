@@ -8,9 +8,9 @@ import type {
 	ListConversationsResponse,
 } from "@cossistant/types/api/conversation";
 import { useMemo } from "react";
-import { useClientQuery } from "../../hooks/use-client-query";
-import { useStoreSelector } from "../../hooks/use-store-selector";
-import { useSupport } from "../../provider";
+import { useSupport } from "../provider";
+import { useStoreSelector } from "./store/use-store-selector";
+import { useClientQuery } from "./utils/use-client-query";
 
 type ConversationsSelection = {
 	conversations: ListConversationsResponse["conversations"];

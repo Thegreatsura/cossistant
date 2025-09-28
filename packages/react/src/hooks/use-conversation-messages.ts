@@ -8,8 +8,8 @@ import type {
 } from "@cossistant/types/api/message";
 import { useCallback, useMemo } from "react";
 import { useSupport } from "../provider";
-import { useClientQuery } from "./use-client-query";
-import { useStoreSelector } from "./use-store-selector";
+import { useStoreSelector } from "./store/use-store-selector";
+import { useClientQuery } from "./utils/use-client-query";
 
 const EMPTY_STATE: ConversationMessagesState = {
 	messages: [],

@@ -1,8 +1,8 @@
+export { useVisitor } from "../../hooks/use-visitor";
 export {
 	type ConversationEventItem,
 	type GroupedMessage,
 	type UseGroupedMessagesProps,
 	useGroupedMessages,
-} from "../../hooks/use-grouped-messages";
-export { useVisitor } from "../../hooks/use-visitor";
+} from "../../hooks/utils/use-grouped-messages";
 export { useWebsite } from "./use-website";

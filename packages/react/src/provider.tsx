@@ -2,11 +2,10 @@ import type { CossistantClient } from "@cossistant/core";
 import type { PublicWebsiteResponse, SenderType } from "@cossistant/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
-import { useClient } from "./hooks/use-rest-client";
-import { useWebsiteStore } from "./hooks/use-website-store";
-import { SupportRealtimeProvider } from "./realtime";
+import { useWebsiteStore } from "./hooks/store/use-website-store";
+import { useConversations } from "./hooks/use-conversations";
+import { useClient } from "./hooks/utils/use-rest-client";
 import { WebSocketProvider } from "./support";
-import { useConversations } from "./support/hooks/use-conversations";
 
 export type Props = {
 	children: React.ReactNode;
@@ -90,9 +89,9 @@ function SupportProviderInner({
 	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 
 	// Prefetch conversations
-	useConversations(client, {
-		enabled: !!website && !!website.visitor && isClientPrimed,
-	});
+	// useConversations(client, {
+	//   enabled: !!website && !!website.visitor && isClientPrimed,
+	// });
 
 	const error = clientError || websiteError;
 
