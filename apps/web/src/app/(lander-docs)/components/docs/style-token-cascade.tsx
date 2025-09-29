@@ -27,7 +27,7 @@ const tokens = [
 export function StyleTokenCascade() {
   return (
     <div className="my-10 grid gap-0">
-      <div className="border border-border/60 bg-background-100/60 p-6 shadow-sm dark:bg-background-200/50">
+      <div className="border border-border/60 bg-background-100/60 p-6 dark:bg-background-200/50">
         <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
           Example
         </p>
@@ -42,7 +42,7 @@ export function StyleTokenCascade() {
       <div className="grid gap-0 md:grid-cols-3">
         {tokens.map((step, index) => (
           <div
-            className="hover:-translate-y-0.5 relative flex flex-col border border-border/60 bg-background-100/60 p-5 shadow-sm ring-1 ring-transparent transition hover:bg-background-100/80 hover:shadow-md dark:bg-background-200/50"
+            className="hover:-translate-y-0.5 relative flex flex-col border border-border/60 bg-background-100/60 p-5 ring-1 ring-transparent transition hover:bg-background-100/80 dark:bg-background-200/50"
             key={step.variable}
           >
             <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
@@ -64,7 +64,7 @@ export function StyleTokenCascade() {
           </div>
         ))}
       </div>
-      <div className="border border-border/60 bg-background-100/60 p-6 shadow-sm dark:bg-background-200/50">
+      <div className="border border-border/60 bg-background-100/60 p-6dark:bg-background-200/50">
         <p className="text-muted-foreground text-sm">
           Result: `--co-background` resolves to the first value in the list.
           Every other token (`--co-foreground`, `--co-border`, etc.) follows the
