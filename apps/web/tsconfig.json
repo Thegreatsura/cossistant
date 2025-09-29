@@ -12,7 +12,9 @@
       "@/docs-source/*": ["./.source/*"],
       "@api/*": ["../api/src/*"],
       "@cossistant/react/*": ["../../packages/react/src/*"],
-      "@cossistant/react": ["../../packages/react/src"]
+      "@cossistant/react": ["../../packages/react/src"],
+      "@cossistant/next/*": ["../../packages/next/src/*"],
+      "@cossistant/next": ["../../packages/next/src"]
     },
     "skipLibCheck": true
   },
