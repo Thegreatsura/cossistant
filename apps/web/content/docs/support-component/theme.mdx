@@ -1,0 +1,45 @@
+---
+title: Theme
+description: How the Support widget adopts your design tokens.
+---
+
+## Philosophy
+The Support widget reads host variables first, so existing Shadcn or Tailwind tokens seamlessly flow into the experience. Widget-specific overrides live under the `co-` namespace, which keeps every style scoped to the mount point and avoids bleeding into the rest of your dashboard.
+
+## Token Cascade
+| Widget token | First value used | Fallback |
+| --- | --- | --- |
+| `--co-radius` | `--co-theme-radius` | `--radius` -> `0.625rem` |
+| `--co-background` | `--co-theme-background` | `--background` -> light default |
+| `--co-foreground` | `--co-theme-foreground` | `--foreground` -> dark default |
+| `--co-border` | `--co-theme-border` | `--border` -> `oklch(92.2% 0 0)` |
+| `--co-accent` | `--co-theme-accent` | `--accent` -> `--primary` -> `oklch(20.5% 0 0)` |
+| `--co-ring` | `--co-theme-ring` | `--ring` -> `--primary` |
+| `--co-muted` | `--co-theme-muted` | `--muted` -> derived mix |
+| `--co-muted-foreground` | `--co-theme-muted-foreground` | `--muted-foreground` -> derived mix |
+
+Background shades (`--co-background-50` -> `--co-background-600`) are generated with `color-mix`, darkening `--co-background` with the current foreground. Browsers that lack `color-mix` automatically fall back to the baked-in oklch values used before, so legacy themes stay stable.
+
+## Overriding Styles
+Apply overrides on the widget container. Host tokens continue to win, but any `--co-theme-*` variable lets you fine-tune the experience without touching global CSS:
+
+```css
+.cossistant {
+	--co-theme-background: oklch(0.96 0.02 140);
+	--co-theme-accent: var(--brand-primary);
+	--co-theme-radius: 12px;
+}
+```
+
+If your app does not expose Shadcn tokens, set the `co-theme` variables anywhere in your stylesheet:
+
+```css
+:root {
+	--co-theme-background: #0f172a;
+	--co-theme-foreground: #f1f5f9;
+	--co-theme-accent: #38bdf8;
+	--co-theme-accent-foreground: #0b1120;
+}
+```
+
+Dark mode inherits host variables automatically. For manual control, add `data-color-scheme="dark"` on the widget wrapper to switch to the dark fallback palette.
