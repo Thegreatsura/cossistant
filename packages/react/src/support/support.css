@@ -70,37 +70,37 @@
 		/* Neutral shades derived from the background */
 		--co-background-50-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 98%,
+			var(--co-background-base) 88%,
 			var(--co-foreground-base)
 		);
 		--co-background-100-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 96%,
+			var(--co-background-base) 90%,
 			var(--co-foreground-base)
 		);
 		--co-background-200-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 94%,
+			var(--co-background-base) 92%,
 			var(--co-foreground-base)
 		);
 		--co-background-300-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 92%,
+			var(--co-background-base) 94%,
 			var(--co-foreground-base)
 		);
 		--co-background-400-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 90%,
+			var(--co-background-base) 96%,
 			var(--co-foreground-base)
 		);
 		--co-background-500-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 88%,
+			var(--co-background-base) 97%,
 			var(--co-foreground-base)
 		);
 		--co-background-600-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 86%,
+			var(--co-background-base) 98%,
 			var(--co-foreground-base)
 		);
 
@@ -120,31 +120,31 @@
 		--co-background: var(--co-background-base);
 		--co-background-50: var(
 			--co-theme-background-50,
-			var(--co-background-50-mix, oklch(98.5% 0 0))
+			var(--co-background-50-mix, oklch(92% 0 0))
 		);
 		--co-background-100: var(
 			--co-theme-background-100,
-			var(--co-background-100-mix, oklch(98% 0 0))
+			var(--co-background-100-mix, oklch(93% 0 0))
 		);
 		--co-background-200: var(
 			--co-theme-background-200,
-			var(--co-background-200-mix, oklch(97% 0 0))
+			var(--co-background-200-mix, oklch(94% 0 0))
 		);
 		--co-background-300: var(
 			--co-theme-background-300,
-			var(--co-background-300-mix, oklch(96% 0 0))
+			var(--co-background-300-mix, oklch(95% 0 0))
 		);
 		--co-background-400: var(
 			--co-theme-background-400,
-			var(--co-background-400-mix, oklch(94% 0 0))
+			var(--co-background-400-mix, oklch(96% 0 0))
 		);
 		--co-background-500: var(
 			--co-theme-background-500,
-			var(--co-background-500-mix, oklch(92% 0 0))
+			var(--co-background-500-mix, oklch(97% 0 0))
 		);
 		--co-background-600: var(
 			--co-theme-background-600,
-			var(--co-background-600-mix, oklch(91% 0 0))
+			var(--co-background-600-mix, oklch(98% 0 0))
 		);
 
 		--co-foreground: var(--co-foreground-base);
@@ -257,37 +257,37 @@
 
 		--co-background-50-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 60%,
+			var(--co-background-base) 98%,
 			var(--co-foreground-base)
 		);
 		--co-background-100-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 65%,
+			var(--co-background-base) 96%,
 			var(--co-foreground-base)
 		);
 		--co-background-200-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 70%,
+			var(--co-background-base) 94%,
 			var(--co-foreground-base)
 		);
 		--co-background-300-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 75%,
+			var(--co-background-base) 92%,
 			var(--co-foreground-base)
 		);
 		--co-background-400-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 80%,
+			var(--co-background-base) 90%,
 			var(--co-foreground-base)
 		);
 		--co-background-500-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 85%,
+			var(--co-background-base) 88%,
 			var(--co-foreground-base)
 		);
 		--co-background-600-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 90%,
+			var(--co-background-base) 86%,
 			var(--co-foreground-base)
 		);
 
