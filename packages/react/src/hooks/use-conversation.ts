@@ -2,9 +2,9 @@ import type {
   GetConversationRequest,
   GetConversationResponse,
 } from "@cossistant/types/api/conversation";
-import { useStoreSelector } from "../../hooks/private/store/use-store-selector";
-import { useClientQuery } from "../../hooks/private/use-client-query";
-import { useSupport } from "../../provider";
+import { useSupport } from "../provider";
+import { useStoreSelector } from "./private/store/use-store-selector";
+import { useClientQuery } from "./private/use-client-query";
 
 export type UseConversationOptions = {
   enabled?: boolean;

@@ -1,12 +1,8 @@
 import type { CossistantClient } from "@cossistant/core";
-import type { SenderType } from "@cossistant/types";
-import type {
-  CreateConversationRequestBody,
-  CreateConversationResponseBody,
-} from "@cossistant/types/api/conversation";
-import type { Conversation } from "@cossistant/types/schemas";
+import type { CreateConversationResponseBody } from "@cossistant/types/api/conversation";
+import type { Conversation, Message } from "@cossistant/types/schemas";
 import { useCallback, useState } from "react";
-import { useSupport } from "../../provider";
+import { useSupport } from "../provider";
 
 export type UseCreateConversationOptions = {
   client?: CossistantClient;
@@ -14,12 +10,14 @@ export type UseCreateConversationOptions = {
   onError?: (error: Error) => void;
 };
 
-export type CreateConversationVariables =
-  Partial<CreateConversationRequestBody> & {
-    websiteId?: string | null;
-    status?: Conversation["status"];
-    title?: string | null;
-  };
+export type CreateConversationVariables = {
+  conversationId?: string;
+  defaultMessages?: Message[];
+  visitorId?: string;
+  websiteId?: string | null;
+  status?: Conversation["status"];
+  title?: string | null;
+};
 
 export type UseCreateConversationResult = {
   mutate: (variables?: CreateConversationVariables) => void;
@@ -61,30 +59,28 @@ export function useCreateConversation(
       setError(null);
 
       try {
-        const { websiteId, status, title, ...candidateVariables } = variables;
         const {
+          websiteId,
+          status,
+          title,
           conversationId: providedConversationId,
           defaultMessages = [],
-          ...requestBody
-        } = candidateVariables as Partial<CreateConversationRequestBody>;
+          visitorId,
+        } = variables;
 
-        const resolvedVisitorId = requestBody.visitorId;
-
-        const { conversationId, defaultMessages: preparedMessages } =
-          client.initiateConversation({
-            conversationId: providedConversationId ?? undefined,
-            defaultMessages,
-            visitorId: resolvedVisitorId ?? undefined,
-            websiteId: websiteId ?? undefined,
-            status: status ?? undefined,
-            title: title ?? undefined,
-          });
-
-        const response = await client.createConversation({
-          ...requestBody,
-          conversationId,
-          defaultMessages: preparedMessages,
+        const initiated = client.initiateConversation({
+          conversationId: providedConversationId ?? undefined,
+          defaultMessages,
+          visitorId: visitorId ?? undefined,
+          websiteId: websiteId ?? undefined,
+          status: status ?? undefined,
+          title: title ?? undefined,
         });
+
+        const response: CreateConversationResponseBody = {
+          conversation: initiated.conversation,
+          initialMessages: initiated.defaultMessages,
+        };
 
         setIsPending(false);
         setError(null);
