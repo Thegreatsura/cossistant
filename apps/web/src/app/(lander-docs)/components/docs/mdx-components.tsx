@@ -11,6 +11,7 @@ import { ComponentSource } from "@/components/component-source";
 
 import { CopyButton } from "@/components/copy-button";
 import { TypeTable } from "@/components/type-table";
+import StyleTokenCascade from "./style-token-cascade";
 import {
 	Accordion,
 	AccordionContent,
@@ -369,4 +370,5 @@ export const mdxComponents = {
 		<CodeBlockWrapper className="rounded-md border" {...props} />
 	),
 	TypeTable,
+	StyleTokenCascade,
 };

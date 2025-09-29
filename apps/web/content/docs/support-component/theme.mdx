@@ -4,21 +4,32 @@ description: How the Support widget adopts your design tokens.
 ---
 
 ## Philosophy
-The Support widget reads host variables first, so existing Shadcn or Tailwind tokens seamlessly flow into the experience. Widget-specific overrides live under the `co-` namespace, which keeps every style scoped to the mount point and avoids bleeding into the rest of your dashboard.
+The Support widget borrows your site colors whenever it can. It only exposes variables that start with `co-`, so the rest of your Tailwind or Shadcn setup stays untouched.
 
-## Token Cascade
-| Widget token | First value used | Fallback |
-| --- | --- | --- |
-| `--co-radius` | `--co-theme-radius` | `--radius` -> `0.625rem` |
-| `--co-background` | `--co-theme-background` | `--background` -> light default |
-| `--co-foreground` | `--co-theme-foreground` | `--foreground` -> dark default |
-| `--co-border` | `--co-theme-border` | `--border` -> `oklch(92.2% 0 0)` |
-| `--co-accent` | `--co-theme-accent` | `--accent` -> `--primary` -> `oklch(20.5% 0 0)` |
-| `--co-ring` | `--co-theme-ring` | `--ring` -> `--primary` |
-| `--co-muted` | `--co-theme-muted` | `--muted` -> derived mix |
-| `--co-muted-foreground` | `--co-theme-muted-foreground` | `--muted-foreground` -> derived mix |
+## How we pick a value
+For every style variable the widget checks three places, always in the same order:
 
-Background shades (`--co-background-50` -> `--co-background-600`) are generated with `color-mix`, darkening `--co-background` with the current foreground. Browsers that lack `color-mix` automatically fall back to the baked-in oklch values used before, so legacy themes stay stable.
+1. A widget-only override you place on `.cossistant` (`--co-theme-*`).
+2. The host app token, such as Shadcn's `--background`, `--radius`, or `--primary`.
+3. A baked-in default from Cossistant so the widget always renders sensibly.
+
+| Final widget variable | Step 1: widget override (`--co-theme-*`) | Step 2: site variable | Step 3: built-in default |
+| --- | --- | --- | --- |
+| `--co-radius` | `--co-theme-radius` | `--radius` | `0.625rem` |
+| `--co-background` | `--co-theme-background` | `--background` | Soft white (`oklch(99% 0 0)`) |
+| `--co-foreground` | `--co-theme-foreground` | `--foreground` | Deep gray (`oklch(14.5% 0 0)`) |
+| `--co-border` | `--co-theme-border` | `--border` | Light gray (`oklch(92.2% 0 0)`) |
+| `--co-accent` | `--co-theme-accent` | `--accent` or `--primary` | Indigo (`oklch(20.5% 0 0)`) |
+| `--co-ring` | `--co-theme-ring` | `--ring` or `--primary` | Same indigo |
+| `--co-muted` | `--co-theme-muted` | `--muted` | Blend of background + foreground |
+| `--co-muted-foreground` | `--co-theme-muted-foreground` | `--muted-foreground` | Softer text blend |
+
+Background shades (`--co-background-50` -> `--co-background-600`) are created with `color-mix`, gently blending the base background with the text color. If a browser cannot do `color-mix`, we fall back to safe neutral values.
+
+<StyleTokenCascade />
+
+## Light and dark mode
+The widget follows the mode your site is in. If your layout toggles a `.dark` class we adapt automatically. You can also force the dark palette by adding `data-color-scheme="dark"` to the `.cossistant` wrapper. The three-step lookup stays the same—we only swap in darker defaults at Step 3 when needed.
 
 ## Overriding Styles
 Apply overrides on the widget container. Host tokens continue to win, but any `--co-theme-*` variable lets you fine-tune the experience without touching global CSS:
@@ -41,5 +52,3 @@ If your app does not expose Shadcn tokens, set the `co-theme` variables anywhere
 	--co-theme-accent-foreground: #0b1120;
 }
 ```
-
-Dark mode inherits host variables automatically. For manual control, add `data-color-scheme="dark"` on the widget wrapper to switch to the dark fallback palette.
