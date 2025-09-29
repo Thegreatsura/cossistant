@@ -5,4 +5,4 @@ export {
 	type UseCreateConversationOptions,
 	type UseCreateConversationResult,
 	useCreateConversation,
-} from "@cossistant/react/hooks/use-create-conversation";
+} from "@cossistant/react/hooks/private/use-create-conversation";

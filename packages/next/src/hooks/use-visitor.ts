@@ -1,6 +1,6 @@
 "use client";
 
 export {
-	type UseVisitorReturn,
-	useVisitor,
+  type UseVisitorReturn,
+  useVisitor,
 } from "@cossistant/react/hooks/use-visitor";

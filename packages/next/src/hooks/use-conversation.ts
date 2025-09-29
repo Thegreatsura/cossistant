@@ -4,4 +4,4 @@ export {
 	type UseConversationOptions,
 	type UseConversationResult,
 	useConversation,
-} from "@cossistant/react/hooks/use-conversation";
+} from "@cossistant/react/hooks/private/use-conversation";

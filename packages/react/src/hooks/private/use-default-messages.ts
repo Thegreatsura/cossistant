@@ -6,7 +6,7 @@ import {
 	SenderType,
 } from "@cossistant/types";
 import { useMemo } from "react";
-import { useSupport } from "../provider";
+import { useSupport } from "../../provider";
 
 type UseDefaultMessagesParams = {
 	conversationId: string;

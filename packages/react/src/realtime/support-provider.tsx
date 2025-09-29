@@ -2,7 +2,7 @@ import type { CossistantClient } from "@cossistant/core";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type React from "react";
 import { useCallback, useMemo } from "react";
-import { useRealtimeSupport } from "../hooks/use-realtime-support";
+import { useRealtimeSupport } from "../hooks/private/use-realtime-support";
 import { useSupport } from "../provider";
 
 import {
@@ -44,10 +44,7 @@ export function SupportRealtimeProvider({
 		() => ({
 			MESSAGE_CREATED: [
 				({ event, context }) => {
-					if (
-						context.websiteId &&
-						event.data.websiteId !== context.websiteId
-					) {
+					if (context.websiteId && event.data.websiteId !== context.websiteId) {
 						return;
 					}
 

@@ -1,15 +1,15 @@
+export {
+	type ConversationEventItem,
+	type GroupedMessage,
+	type UseGroupedMessagesProps,
+	useGroupedMessages,
+} from "../../hooks/private/use-grouped-messages";
 export type {
 	CreateConversationVariables,
 	UseCreateConversationOptions,
 	UseCreateConversationResult,
 } from "../../hooks/use-create-conversation";
 export { useCreateConversation } from "../../hooks/use-create-conversation";
-export {
-	type ConversationEventItem,
-	type GroupedMessage,
-	type UseGroupedMessagesProps,
-	useGroupedMessages,
-} from "../../hooks/use-grouped-messages";
 export type {
 	SendMessageOptions,
 	SendMessageResult,

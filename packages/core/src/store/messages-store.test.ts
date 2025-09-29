@@ -302,8 +302,7 @@ describe("CossistantClient message integration", () => {
 		expect(stored?.messages).toHaveLength(1);
 		expect(stored?.messages[0].id).toBe("msg-realtime");
 
-		const conversation =
-			client.conversationsStore.getState().byId["conv-1"];
+		const conversation = client.conversationsStore.getState().byId["conv-1"];
 		expect(conversation?.lastMessage?.id).toBe("msg-realtime");
 		expect(conversation?.updatedAt.getTime()).toBe(
 			new Date("2024-01-03T00:00:00.000Z").getTime()

@@ -1,8 +1,8 @@
 import type {
 	UseWebsiteStoreOptions,
 	UseWebsiteStoreResult,
-} from "../../hooks/store/use-website-store";
-import { useWebsiteStore } from "../../hooks/store/use-website-store";
+} from "../../hooks/private/store/use-website-store";
+import { useWebsiteStore } from "../../hooks/private/store/use-website-store";
 import { useSupport } from "../../provider";
 
 export type UseWebsiteOptions = UseWebsiteStoreOptions;

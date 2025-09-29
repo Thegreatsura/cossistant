@@ -1,12 +1,12 @@
+import { useConversationMessages } from "@cossistant/react/hooks/use-conversation-messages";
 import type {
 	ConversationEvent,
 	Message as MessageType,
 } from "@cossistant/types";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import React from "react";
-import { useConversationMessages, useSupport } from "../..";
-import { useDefaultMessages } from "../../hooks/use-default-messages";
+import { useDefaultMessages } from "../../hooks/private/use-default-messages";
 import { useSendMessage } from "../../hooks/use-send-message";
+import { useSupport } from "../../provider";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { AvatarStack } from "../components/avatar-stack";
 import { Header } from "../components/header";

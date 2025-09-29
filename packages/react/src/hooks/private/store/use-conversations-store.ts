@@ -3,7 +3,7 @@ import type {
 	ConversationsState,
 } from "@cossistant/core";
 import type { Conversation } from "@cossistant/types";
-import { useSupport } from "../../provider";
+import { useSupport } from "../../../provider";
 import { useStoreSelector } from "./use-store-selector";
 
 type ConversationSelection = {

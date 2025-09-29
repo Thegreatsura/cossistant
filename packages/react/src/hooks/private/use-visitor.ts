@@ -4,7 +4,7 @@ import type {
 	VisitorResponse,
 } from "@cossistant/types";
 import { useCallback } from "react";
-import { useSupport } from "..";
+import { useSupport } from "../provider";
 
 export type UseVisitorReturn = {
 	visitor: PublicVisitor | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMultimodalInput } from "@cossistant/react/hooks/use-multimodal-input";
+import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
 import { useEffect, useMemo, useRef } from "react";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";

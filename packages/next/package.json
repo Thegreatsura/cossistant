@@ -46,7 +46,7 @@
     "./primitives": "./src/primitives/index.ts",
     "./support": "./src/support/index.tsx",
     "./hooks": "./src/hooks/index.ts",
-    "./hooks/*": "./src/hooks/*.ts",
+    "./hooks/*": "./src/hooks/*",
     "./support.css": "./src/support/support.css",
     "./realtime": "./src/realtime/index.ts",
     "./utils": "./src/utils/index.ts",
