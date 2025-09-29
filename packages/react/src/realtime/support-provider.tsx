@@ -6,18 +6,18 @@ import { useRealtimeSupport } from "../hooks/use-realtime-support";
 import { useSupport } from "../provider";
 
 import {
-  type RealtimeEventHandlerContext,
-  type RealtimeEventHandlersMap,
-  useRealtimeEvents,
+	type RealtimeEventHandlerContext,
+	type RealtimeEventHandlersMap,
+	useRealtimeEvents,
 } from "./index";
 
 type SupportRealtimeContext = {
-  websiteId: string | null;
-  client: CossistantClient;
+	websiteId: string | null;
+	client: CossistantClient;
 };
 
 type SupportRealtimeProviderProps = {
-  children: React.ReactNode;
+	children: React.ReactNode;
 };
 
 /**
@@ -25,46 +25,46 @@ type SupportRealtimeProviderProps = {
  * in sync without forcing refetches.
  */
 export function SupportRealtimeProvider({
-  children,
+	children,
 }: SupportRealtimeProviderProps) {
-  const { website, client } = useSupport();
-  const { subscribe } = useRealtimeSupport();
+	const { website, client } = useSupport();
+	const { subscribe } = useRealtimeSupport();
 
-  const realtimeContext = useMemo<
-    RealtimeEventHandlerContext<SupportRealtimeContext>
-  >(
-    () => ({
-      websiteId: website?.id ?? null,
-      client,
-    }),
-    [website?.id, client]
-  );
+	const realtimeContext = useMemo<
+		RealtimeEventHandlerContext<SupportRealtimeContext>
+	>(
+		() => ({
+			websiteId: website?.id ?? null,
+			client,
+		}),
+		[website?.id, client]
+	);
 
-  const handlers = useMemo<RealtimeEventHandlersMap<SupportRealtimeContext>>(
-    () => ({
-      MESSAGE_CREATED: [
-        ({ event, context }) => {
-          if (context.websiteId && event.data.websiteId !== context.websiteId) {
-            return;
-          }
+	const handlers = useMemo<RealtimeEventHandlersMap<SupportRealtimeContext>>(
+		() => ({
+			MESSAGE_CREATED: [
+				({ event, context }) => {
+					if (context.websiteId && event.data.websiteId !== context.websiteId) {
+						return;
+					}
 
-          context.client.handleRealtimeEvent(event);
-        },
-      ],
-    }),
-    []
-  );
+					context.client.handleRealtimeEvent(event);
+				},
+			],
+		}),
+		[]
+	);
 
-  const subscribeToEvents = useCallback(
-    (handler: (event: RealtimeEvent) => void) => subscribe(handler),
-    [subscribe]
-  );
+	const subscribeToEvents = useCallback(
+		(handler: (event: RealtimeEvent) => void) => subscribe(handler),
+		[subscribe]
+	);
 
-  useRealtimeEvents<SupportRealtimeContext>({
-    context: realtimeContext,
-    handlers,
-    subscribe: subscribeToEvents,
-  });
+	useRealtimeEvents<SupportRealtimeContext>({
+		context: realtimeContext,
+		handlers,
+		subscribe: subscribeToEvents,
+	});
 
-  return <>{children}</>;
+	return <>{children}</>;
 }
