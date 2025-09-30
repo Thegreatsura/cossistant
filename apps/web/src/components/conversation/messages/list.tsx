@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@api/trpc/types";
-import { useGroupedMessages } from "@cossistant/next/hooks/use-grouped-messages";
+import { useGroupedMessages } from "@cossistant/next/hooks";
 import {
 	MessageListContainer,
 	MessageList as PrimitiveMessageList,

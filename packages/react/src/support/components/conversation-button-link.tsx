@@ -1,15 +1,10 @@
 import { type Conversation, ConversationStatus } from "@cossistant/types";
-import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useMemo } from "react";
-import { useSupport } from "../..";
+import { useConversationMessages, useSupport } from "../..";
 import { useRenderElement } from "../../utils/use-render-element";
 import { cn } from "../utils";
-import {
-	getAllMessagesFromCache,
-	type PaginatedMessagesCache,
-} from "../utils/message-cache";
-import { QUERY_KEYS } from "../utils/query-keys";
+
 import { formatTimeAgo } from "../utils/time";
 import { Avatar } from "./avatar";
 import Icon from "./icons";
@@ -81,18 +76,13 @@ export function ConversationButtonLink({
 	...props
 }: ConversationButtonLinkProps) {
 	const { availableHumanAgents, website } = useSupport();
-	const queryClient = useQueryClient();
+	const { messages } = useConversationMessages(conversation.id);
 
 	// Process the last message (memoized to avoid expensive recomputation)
 	const lastMessage = useMemo(() => {
-		// Check for cached messages for this conversation
-		const cachedMessages = queryClient.getQueryData<PaginatedMessagesCache>(
-			QUERY_KEYS.messages(conversation.id)
-		);
-		const allMessages = getAllMessagesFromCache(cachedMessages);
 		const cachedLastMessage =
 			// biome-ignore lint/style/useAtIndex: ok here
-			allMessages.length > 0 ? allMessages[allMessages.length - 1] : null;
+			messages.length > 0 ? messages[messages.length - 1] : null;
 
 		// Use cached message if available, otherwise use conversation's lastMessage
 		const messageToDisplay = cachedLastMessage || conversation.lastMessage;
@@ -100,13 +90,7 @@ export function ConversationButtonLink({
 		return messageToDisplay
 			? getLastMessageInfo(messageToDisplay, availableHumanAgents, website)
 			: null;
-	}, [
-		queryClient,
-		conversation.id,
-		conversation.lastMessage,
-		availableHumanAgents,
-		website,
-	]);
+	}, [messages, conversation.lastMessage, availableHumanAgents, website]);
 
 	const state: ConversationButtonLinkState = {
 		conversation,

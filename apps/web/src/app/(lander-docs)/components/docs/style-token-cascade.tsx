@@ -64,7 +64,7 @@ export function StyleTokenCascade() {
 					</div>
 				))}
 			</div>
-			<div className="border border-border/60 bg-background-100/60 p-6dark:bg-background-200/50">
+			<div className="border border-border/60 bg-background-100/60 p-6 dark:bg-background-200/50">
 				<p className="text-muted-foreground text-sm">
 					Result: `--co-background` resolves to the first value in the list.
 					Every other token (`--co-foreground`, `--co-border`, etc.) follows the

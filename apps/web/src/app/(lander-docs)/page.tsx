@@ -21,7 +21,7 @@ export default async function Landing() {
 						<EscapeIframeAnimation />
 						<div className="my-auto flex flex-col items-center gap-2 px-4 lg:items-start">
 							<h1 className="text-pretty text-center font-f37-stout text-[36px] leading-tight md:text-5xl lg:text-left xl:text-6xl">
-								Less support, better support.
+								Ship the best customer support for your SaaS.
 							</h1>
 							<h3 className="w-full text-center text-base text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full lg:text-balance lg:text-left">
 								Human + AI agent support your users love in under 10 lines of

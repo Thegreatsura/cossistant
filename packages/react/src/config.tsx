@@ -1,7 +1,8 @@
 "use client";
 
+import type { DefaultMessage } from "@cossistant/types";
 import * as React from "react";
-import { type DefaultMessage, useSupport } from "./provider";
+import { useSupport } from "./provider";
 
 export type SupportConfigProps = {
 	defaultMessages?: DefaultMessage[];

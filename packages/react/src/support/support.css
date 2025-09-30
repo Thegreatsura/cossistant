@@ -3,11 +3,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
-	* {
-		@apply border-border;
-	}
-
 	.cossistant {
+		@apply border-co-border;
 		@apply scroll-smooth;
 		color-scheme: inherit;
 
@@ -19,6 +16,11 @@
 		--co-font-mono: var(
 			--co-theme-font-mono,
 			var(--font-mono, "Geist Mono", "Inter Mono", monospace)
+		);
+
+		--co-border-color: var(
+			--co-theme-border-color,
+			var(--color-border, oklch(92.2% 0 0))
 		);
 
 		/* Core surfaces */
@@ -207,6 +209,10 @@
 		--co-foreground-base: var(
 			--co-theme-foreground,
 			var(--foreground, oklch(98.5% 0 0))
+		);
+		--co-border-color: var(
+			--co-theme-border-color,
+			var(--color-border, oklch(26.9% 0 0))
 		);
 		--co-popover-base: var(
 			--co-theme-popover,

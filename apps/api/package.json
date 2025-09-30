@@ -31,6 +31,7 @@
     "@hono/trpc-server": "^0.4.0",
     "@hono/zod-openapi": "^1.1.0",
     "@hono/zod-validator": "^0.7.2",
+    "@polar-sh/hono": "^0.3.9",
     "@react-email/render": "^1.2.3",
     "@trpc/server": "^11.5.1",
     "@types/node": "^24.5.0",

@@ -18,6 +18,7 @@ import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { db } from "./db";
 import { getTRPCSession } from "./db/queries/session";
+import { polarRouters } from "./polar";
 import { workflowsRouters } from "./workflows";
 import { upgradedWebsocket, websocket } from "./ws/socket";
 
@@ -125,6 +126,8 @@ app.use(
 // REST API routes with default rate limiting
 app.use("/v1/*", defaultRateLimiter);
 app.route("/v1", routers);
+
+app.route("/polar", polarRouters);
 
 app.route("/workflow", workflowsRouters);
 

@@ -59,7 +59,7 @@ const fieldVariants = cva("not-prose pe-2 text-fd-muted-foreground");
 
 export function TypeTable({ type }: { type: Record<string, TypeNode> }) {
 	return (
-		<div className="@container my-6 flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-fd-card p-1 text-fd-card-foreground text-sm">
+		<div className="@container my-6 flex flex-col overflow-hidden border border-border/40 bg-fd-card p-1 text-fd-card-foreground text-sm">
 			<div className="not-prose flex items-center px-3 py-1 font-medium text-fd-muted-foreground">
 				<p className="w-[25%]">Prop</p>
 				<p className="@max-xl:hidden">Type</p>
@@ -93,8 +93,8 @@ function Item({
 	return (
 		<Collapsible
 			className={cn(
-				"overflow-hidden rounded-xl border border-border/40 transition-all",
-				open ? "not-last:mb-2 bg-fd-background shadow-sm" : "border-transparent"
+				"overflow-hidden border border-border/40 transition-all",
+				open ? "not-last:mb-2 bg-fd-background" : "border-transparent"
 			)}
 			onOpenChange={setOpen}
 			open={open}

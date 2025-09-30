@@ -6,11 +6,11 @@ import type {
 	SenderType,
 } from "@cossistant/types";
 import type React from "react";
+import { useGroupedMessages } from "../../hooks/private/use-grouped-messages";
 import {
 	MessageListContainer,
 	MessageList as PrimitiveMessageList,
 } from "../../primitives/message-list";
-import { useGroupedMessages } from "../hooks";
 import { cn } from "../utils";
 import { ConversationEvent as ConversationEventComponent } from "./conversation-event";
 import { MessageGroup } from "./message-group";
