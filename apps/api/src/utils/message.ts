@@ -20,15 +20,15 @@ export function prepareMessageForInsert(bodyMd: string) {
 }
 
 export type CreateMessageOptions = {
-        db: Database;
-        organizationId: string;
-        websiteId: string;
-        conversationId: string;
-        conversationOwnerVisitorId?: string | null;
-        message: {
-                bodyMd: string;
-                type?: MessageType;
-                userId?: string | null;
+	db: Database;
+	organizationId: string;
+	websiteId: string;
+	conversationId: string;
+	conversationOwnerVisitorId?: string | null;
+	message: {
+		bodyMd: string;
+		type?: MessageType;
+		userId?: string | null;
 		aiAgentId?: string | null;
 		visitorId?: string | null;
 		visibility?: MessageVisibility;
@@ -101,10 +101,10 @@ export async function createMessage(
 		organizationId,
 	});
 
-        let targetVisitorId =
-                options.conversationOwnerVisitorId ??
-                realtimePayload.message.visitorId ??
-                undefined;
+	let targetVisitorId =
+		options.conversationOwnerVisitorId ??
+		realtimePayload.message.visitorId ??
+		undefined;
 
 	if (!targetVisitorId) {
 		targetVisitorId = await resolveConversationVisitorId(
@@ -113,11 +113,11 @@ export async function createMessage(
 		);
 	}
 
-        await realtimeEmitter.emit("MESSAGE_CREATED", realtimePayload, {
-                websiteId,
-                visitorId: targetVisitorId ?? null,
-                organizationId,
-        });
+	await realtimeEmitter.emit("MESSAGE_CREATED", realtimePayload, {
+		websiteId,
+		visitorId: targetVisitorId ?? null,
+		organizationId,
+	});
 
 	return parsedMessage;
 }

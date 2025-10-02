@@ -85,46 +85,48 @@ export function sendConnectionEstablishedMessage(
 }
 
 export function createConnectionEvent(
-        authResult: AuthResult,
-        connectionId: string
+	authResult: AuthResult,
+	connectionId: string
 ): RealtimeEvent {
-        const timestamp = Date.now();
+	const timestamp = Date.now();
 
-        if (!(authResult.websiteId && authResult.organizationId)) {
-                throw new Error("Missing website or organization metadata for connection event");
-        }
+	if (!(authResult.websiteId && authResult.organizationId)) {
+		throw new Error(
+			"Missing website or organization metadata for connection event"
+		);
+	}
 
-        if (authResult.userId) {
-                return {
-                        type: "USER_CONNECTED",
-                        payload: {
-                                userId: authResult.userId,
-                                connectionId,
-                                timestamp,
-                        },
-                        timestamp,
-                        websiteId: authResult.websiteId,
-                        organizationId: authResult.organizationId,
-                        visitorId: null,
-                };
-        }
+	if (authResult.userId) {
+		return {
+			type: "USER_CONNECTED",
+			payload: {
+				userId: authResult.userId,
+				connectionId,
+				timestamp,
+			},
+			timestamp,
+			websiteId: authResult.websiteId,
+			organizationId: authResult.organizationId,
+			visitorId: null,
+		};
+	}
 
-        if (!authResult.visitorId) {
-                throw new Error("No visitorId available for visitor connection");
-        }
+	if (!authResult.visitorId) {
+		throw new Error("No visitorId available for visitor connection");
+	}
 
-        return {
-                type: "VISITOR_CONNECTED",
-                payload: {
-                        visitorId: authResult.visitorId,
-                        connectionId,
-                        timestamp,
-                },
-                timestamp,
-                websiteId: authResult.websiteId,
-                organizationId: authResult.organizationId,
-                visitorId: authResult.visitorId,
-        };
+	return {
+		type: "VISITOR_CONNECTED",
+		payload: {
+			visitorId: authResult.visitorId,
+			connectionId,
+			timestamp,
+		},
+		timestamp,
+		websiteId: authResult.websiteId,
+		organizationId: authResult.organizationId,
+		visitorId: authResult.visitorId,
+	};
 }
 
 export async function updatePresenceIfNeeded(

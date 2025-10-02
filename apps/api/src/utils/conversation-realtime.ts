@@ -70,37 +70,45 @@ export async function emitConversationSeenEvent({
 }: SeenEventParams) {
 	const actorPayload = mapActor(actor);
 
-        await realtimeEmitter.emit("CONVERSATION_SEEN", {
-                conversationId: conversation.id,
-                websiteId: conversation.websiteId,
-                organizationId: conversation.organizationId,
-                lastSeenAt: lastSeenAt.toISOString(),
-                ...actorPayload,
-        }, {
-                organizationId: conversation.organizationId,
-                websiteId: conversation.websiteId,
-                userId: actorPayload.userId,
-                visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
-        });
+	await realtimeEmitter.emit(
+		"CONVERSATION_SEEN",
+		{
+			conversationId: conversation.id,
+			websiteId: conversation.websiteId,
+			organizationId: conversation.organizationId,
+			lastSeenAt: lastSeenAt.toISOString(),
+			...actorPayload,
+		},
+		{
+			organizationId: conversation.organizationId,
+			websiteId: conversation.websiteId,
+			userId: actorPayload.userId,
+			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
+		}
+	);
 }
 
 export async function emitConversationTypingEvent({
-        conversation,
-        actor,
-        isTyping,
+	conversation,
+	actor,
+	isTyping,
 }: TypingEventParams) {
-        const actorPayload = mapActor(actor);
+	const actorPayload = mapActor(actor);
 
-        await realtimeEmitter.emit("CONVERSATION_TYPING", {
-                conversationId: conversation.id,
-                websiteId: conversation.websiteId,
-                organizationId: conversation.organizationId,
-                isTyping,
-                ...actorPayload,
-        }, {
-                organizationId: conversation.organizationId,
-                websiteId: conversation.websiteId,
-                userId: actorPayload.userId,
-                visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
-        });
+	await realtimeEmitter.emit(
+		"CONVERSATION_TYPING",
+		{
+			conversationId: conversation.id,
+			websiteId: conversation.websiteId,
+			organizationId: conversation.organizationId,
+			isTyping,
+			...actorPayload,
+		},
+		{
+			organizationId: conversation.organizationId,
+			websiteId: conversation.websiteId,
+			userId: actorPayload.userId,
+			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
+		}
+	);
 }

@@ -177,13 +177,13 @@ function handleEnvelope(envelope: DispatchEnvelope | undefined): void {
 		return;
 	}
 
-        try {
-                validateRealtimeEvent(event.type, event.payload);
-        } catch (error) {
-                console.error(
-                        "[RealtimePubSub] Ignoring event with invalid payload",
-                        error
-                );
+	try {
+		validateRealtimeEvent(event.type, event.payload);
+	} catch (error) {
+		console.error(
+			"[RealtimePubSub] Ignoring event with invalid payload",
+			error
+		);
 		return;
 	}
 

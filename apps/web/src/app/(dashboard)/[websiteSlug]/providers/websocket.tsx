@@ -6,35 +6,35 @@ import { useUserSession, useWebsite } from "@/contexts/website";
 import { getWebSocketUrl } from "@/lib/url";
 
 type DashboardWebSocketProviderProps = {
-        children: ReactNode;
+	children: ReactNode;
 };
 
 export function DashboardWebSocketProvider({
-        children,
+	children,
 }: DashboardWebSocketProviderProps) {
-        const { session, user } = useUserSession();
-        const website = useWebsite();
-        const sessionToken = session?.token ?? null;
+	const { session, user } = useUserSession();
+	const website = useWebsite();
+	const sessionToken = session?.token ?? null;
 
-        return (
-                <RealtimeProvider
-                        wsUrl={getWebSocketUrl()}
-                        auth={
-                                sessionToken
-                                        ? {
-                                                  kind: "session" as const,
-                                                  sessionToken,
-                                                  websiteId: website?.id ?? null,
-                                                  userId: user?.id ?? null,
-                                          }
-                                        : null
-                        }
-                        autoConnect={Boolean(sessionToken)}
-                        onError={(error) => {
-                                console.error("[DashboardRealtime] WebSocket error", error);
-                        }}
-                >
-                        {children}
-                </RealtimeProvider>
-        );
+	return (
+		<RealtimeProvider
+			auth={
+				sessionToken
+					? {
+							kind: "session" as const,
+							sessionToken,
+							websiteId: website?.id ?? null,
+							userId: user?.id ?? null,
+						}
+					: null
+			}
+			autoConnect={Boolean(sessionToken)}
+			onError={(error) => {
+				console.error("[DashboardRealtime] WebSocket error", error);
+			}}
+			wsUrl={getWebSocketUrl()}
+		>
+			{children}
+		</RealtimeProvider>
+	);
 }

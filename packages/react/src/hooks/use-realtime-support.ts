@@ -7,14 +7,14 @@ export type UseRealtimeSupportOptions = {
 };
 
 export type UseRealtimeSupportResult = {
-        isConnected: boolean;
-        isConnecting: boolean;
-        error: Error | null;
-        send: (event: RealtimeEvent) => void;
-        lastEvent: RealtimeEvent | null;
-        /** @deprecated Use `lastEvent` instead. */
-        lastMessage: RealtimeEvent | null;
-        subscribe: (handler: (event: RealtimeEvent) => void) => () => void;
+	isConnected: boolean;
+	isConnecting: boolean;
+	error: Error | null;
+	send: (event: RealtimeEvent) => void;
+	lastEvent: RealtimeEvent | null;
+	/** @deprecated Use `lastEvent` instead. */
+	lastMessage: RealtimeEvent | null;
+	subscribe: (handler: (event: RealtimeEvent) => void) => () => void;
 };
 
 /**
@@ -26,8 +26,8 @@ export function useRealtimeSupport(
 	options: UseRealtimeSupportOptions = {}
 ): UseRealtimeSupportResult {
 	const { onEvent } = options;
-        const { isConnected, isConnecting, error, send, subscribe, lastEvent } =
-                useWebSocket();
+	const { isConnected, isConnecting, error, send, subscribe, lastEvent } =
+		useWebSocket();
 
 	// Subscribe to WebSocket events
 	useEffect(() => {
@@ -38,13 +38,13 @@ export function useRealtimeSupport(
 		}
 	}, [onEvent, subscribe]);
 
-        return {
-                isConnected,
-                isConnecting,
-                error,
-                send,
-                subscribe,
-                lastEvent,
-                lastMessage: lastEvent,
-        };
+	return {
+		isConnected,
+		isConnecting,
+		error,
+		send,
+		subscribe,
+		lastEvent,
+		lastMessage: lastEvent,
+	};
 }

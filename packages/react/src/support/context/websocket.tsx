@@ -1,93 +1,99 @@
 "use client";
 
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type React from "react";
 import { createContext, useContext, useMemo } from "react";
 import {
-        RealtimeProvider,
-        type RealtimeAuthConfig,
-        type RealtimeContextValue,
-        useRealtimeConnection,
+  type RealtimeAuthConfig,
+  type RealtimeContextValue,
+  RealtimeProvider,
+  useRealtimeConnection,
 } from "../../realtime";
 
 type WebSocketContextValue = RealtimeContextValue;
 
 type WebSocketProviderProps = {
-        children: React.ReactNode;
-        publicKey?: string;
-        websiteId?: string;
-        visitorId?: string;
-        wsUrl?: string;
-        autoConnect?: boolean;
-        onConnect?: () => void;
-        onDisconnect?: () => void;
-        onError?: (error: Error) => void;
+  children: React.ReactNode;
+  publicKey?: string;
+  websiteId?: string;
+  visitorId?: string;
+  wsUrl?: string;
+  autoConnect?: boolean;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onError?: (error: Error) => void;
 };
 
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 function createVisitorAuthConfig({
-        visitorId,
-        websiteId,
-        publicKey,
-}: Pick<WebSocketProviderProps, "visitorId" | "websiteId" | "publicKey">): RealtimeAuthConfig | null {
-        const normalizedVisitorId = visitorId?.trim();
-        if (!normalizedVisitorId) {
-                return null;
-        }
+  visitorId,
+  websiteId,
+  publicKey,
+}: Pick<
+  WebSocketProviderProps,
+  "visitorId" | "websiteId" | "publicKey"
+>): RealtimeAuthConfig | null {
+  const normalizedVisitorId = visitorId?.trim();
+  if (!normalizedVisitorId) {
+    return null;
+  }
 
-        return {
-                kind: "visitor",
-                visitorId: normalizedVisitorId,
-                websiteId: websiteId?.trim() || null,
-                publicKey: publicKey?.trim() || null,
-        } satisfies RealtimeAuthConfig;
+  return {
+    kind: "visitor",
+    visitorId: normalizedVisitorId,
+    websiteId: websiteId?.trim() || null,
+    publicKey: publicKey?.trim() || null,
+  } satisfies RealtimeAuthConfig;
 }
 
 type WebSocketBridgeProps = {
-        children: React.ReactNode;
+  children: React.ReactNode;
 };
 
 const WebSocketBridge: React.FC<WebSocketBridgeProps> = ({ children }) => {
-        const connection = useRealtimeConnection();
-        const value = useMemo(() => connection, [connection]);
-        return <WebSocketContext.Provider value={value}>{children}</WebSocketContext.Provider>;
+  const connection = useRealtimeConnection();
+  const value = useMemo(() => connection, [connection]);
+  return (
+    <WebSocketContext.Provider value={value}>
+      {children}
+    </WebSocketContext.Provider>
+  );
 };
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
-        children,
-        publicKey,
-        websiteId,
-        visitorId,
-        wsUrl,
-        autoConnect = true,
-        onConnect,
-        onDisconnect,
-        onError,
+  children,
+  publicKey,
+  websiteId,
+  visitorId,
+  wsUrl,
+  autoConnect = true,
+  onConnect,
+  onDisconnect,
+  onError,
 }) => {
-        const auth = createVisitorAuthConfig({ publicKey, websiteId, visitorId });
+  const auth = createVisitorAuthConfig({ publicKey, websiteId, visitorId });
 
-        return (
-                <RealtimeProvider
-                        wsUrl={wsUrl}
-                        auth={auth}
-                        autoConnect={autoConnect}
-                        onConnect={onConnect}
-                        onDisconnect={onDisconnect}
-                        onError={onError}
-                >
-                        <WebSocketBridge>{children}</WebSocketBridge>
-                </RealtimeProvider>
-        );
+  return (
+    <RealtimeProvider
+      auth={auth}
+      autoConnect={autoConnect}
+      onConnect={onConnect}
+      onDisconnect={onDisconnect}
+      onError={onError}
+      wsUrl={wsUrl}
+    >
+      <WebSocketBridge>{children}</WebSocketBridge>
+    </RealtimeProvider>
+  );
 };
 
 export const useWebSocket = (): WebSocketContextValue => {
-        const context = useContext(WebSocketContext);
-        if (!context) {
-                throw new Error("useWebSocket must be used within WebSocketProvider");
-        }
-        return context;
+  const context = useContext(WebSocketContext);
+  if (!context) {
+    throw new Error("useWebSocket must be used within WebSocketProvider");
+  }
+  return context;
 };
 
 export type { WebSocketContextValue, WebSocketProviderProps };
-export type { RealtimeEvent };
+export type { RealtimeEvent } from "@cossistant/types/realtime-events";

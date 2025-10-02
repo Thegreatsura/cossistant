@@ -1,12 +1,12 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 type WebsiteContext = {
-        id: string;
-        slug: string;
+	id: string;
+	slug: string;
 };
 
 export type DashboardRealtimeContext = {
-        queryClient: QueryClient;
-        website: WebsiteContext;
-        userId: string | null;
+	queryClient: QueryClient;
+	website: WebsiteContext;
+	userId: string | null;
 };

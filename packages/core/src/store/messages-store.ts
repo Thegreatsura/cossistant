@@ -167,22 +167,22 @@ function finalizeMessage(
 }
 
 function normalizeRealtimeMessage(event: MessageCreatedEvent): Message {
-        const raw = event.payload.message;
-        return {
-                id: raw.id,
-                bodyMd: raw.bodyMd,
+	const raw = event.payload.message;
+	return {
+		id: raw.id,
+		bodyMd: raw.bodyMd,
 		type: raw.type as Message["type"],
 		userId: raw.userId,
 		aiAgentId: raw.aiAgentId,
 		parentMessageId: raw.parentMessageId ?? null,
 		modelUsed: raw.modelUsed ?? null,
 		visitorId: raw.visitorId,
-                conversationId: raw.conversationId,
-                createdAt: new Date(raw.createdAt),
-                updatedAt: new Date(raw.updatedAt),
-                deletedAt: raw.deletedAt ? new Date(raw.deletedAt) : null,
-                visibility: raw.visibility as Message["visibility"],
-        };
+		conversationId: raw.conversationId,
+		createdAt: new Date(raw.createdAt),
+		updatedAt: new Date(raw.updatedAt),
+		deletedAt: raw.deletedAt ? new Date(raw.deletedAt) : null,
+		visibility: raw.visibility as Message["visibility"],
+	};
 }
 
 export type MessagesStore = Store<MessagesState> & {

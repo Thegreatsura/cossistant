@@ -6,8 +6,8 @@ import { useSupport } from "../provider";
 import { useRealtime } from "./use-realtime";
 
 type SupportRealtimeContext = {
-        websiteId: string | null;
-        client: CossistantClient;
+	websiteId: string | null;
+	client: CossistantClient;
 };
 
 type SupportRealtimeProviderProps = {
@@ -19,43 +19,43 @@ type SupportRealtimeProviderProps = {
  * in sync without forcing refetches.
  */
 export function SupportRealtimeProvider({
-        children,
+	children,
 }: SupportRealtimeProviderProps) {
-        const { website, client } = useSupport();
+	const { website, client } = useSupport();
 
-        const realtimeContext = useMemo<SupportRealtimeContext>(
-                () => ({
-                        websiteId: website?.id ?? null,
-                        client,
-                }),
-                [website?.id, client]
-        );
+	const realtimeContext = useMemo<SupportRealtimeContext>(
+		() => ({
+			websiteId: website?.id ?? null,
+			client,
+		}),
+		[website?.id, client]
+	);
 
-        const events = useMemo(
-                () => ({
-                        MESSAGE_CREATED: (
-                                _data: RealtimeEvent["payload"],
-                                { event, context }: { event: RealtimeEvent; context: SupportRealtimeContext }
-                        ) => {
-                                if (
-                                        context.websiteId &&
-                                        event.websiteId !== context.websiteId
-                                ) {
-                                        return;
-                                }
+	const events = useMemo(
+		() => ({
+			MESSAGE_CREATED: (
+				_data: RealtimeEvent["payload"],
+				{
+					event,
+					context,
+				}: { event: RealtimeEvent; context: SupportRealtimeContext }
+			) => {
+				if (context.websiteId && event.websiteId !== context.websiteId) {
+					return;
+				}
 
-                                context.client.handleRealtimeEvent(event);
-                        },
-                }),
-                []
-        );
+				context.client.handleRealtimeEvent(event);
+			},
+		}),
+		[]
+	);
 
-        useRealtime<SupportRealtimeContext>({
-                context: realtimeContext,
-                events,
-                websiteId: realtimeContext.websiteId,
-                visitorId: website?.visitor?.id ?? null,
-        });
+	useRealtime<SupportRealtimeContext>({
+		context: realtimeContext,
+		events,
+		websiteId: realtimeContext.websiteId,
+		visitorId: website?.visitor?.id ?? null,
+	});
 
-        return <>{children}</>;
+	return <>{children}</>;
 }

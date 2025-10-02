@@ -51,16 +51,16 @@ describe("createMessage", () => {
 	it("dispatches events to website and visitor", async () => {
 		const { createMessage } = await import("./message");
 
-                await createMessage({
-                        db: {} as never,
-                        organizationId: "org-1",
-                        websiteId: "site-1",
-                        conversationId: "conv-1",
-                        conversationOwnerVisitorId: "visitor-123",
-                        message: {
-                                bodyMd: "agent reply",
-                                type: "text",
-                                userId: "user-1",
+		await createMessage({
+			db: {} as never,
+			organizationId: "org-1",
+			websiteId: "site-1",
+			conversationId: "conv-1",
+			conversationOwnerVisitorId: "visitor-123",
+			message: {
+				bodyMd: "agent reply",
+				type: "text",
+				userId: "user-1",
 			},
 		});
 

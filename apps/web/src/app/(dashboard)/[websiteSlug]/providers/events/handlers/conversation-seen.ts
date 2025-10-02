@@ -34,12 +34,13 @@ function extractHeadersQueryInput(
 }
 
 function shouldUpdateVisitorTimestamp(
-        event: ConversationSeenEvent,
-        headersVisitorId: string
+	event: ConversationSeenEvent,
+	headersVisitorId: string
 ) {
-        return (
-                Boolean(event.payload.visitorId) && event.payload.visitorId === headersVisitorId
-        );
+	return (
+		Boolean(event.payload.visitorId) &&
+		event.payload.visitorId === headersVisitorId
+	);
 }
 
 type UpdateResult = {
@@ -82,13 +83,13 @@ function maybeUpdateCurrentUserLastSeen(
 	currentUserId: string | null | undefined,
 	lastSeenAtTime: number
 ): UpdateResult {
-        if (!(event.payload.userId && currentUserId)) {
-                return { header, changed: false };
-        }
+	if (!(event.payload.userId && currentUserId)) {
+		return { header, changed: false };
+	}
 
-        if (event.payload.userId !== currentUserId) {
-                return { header, changed: false };
-        }
+	if (event.payload.userId !== currentUserId) {
+		return { header, changed: false };
+	}
 
 	const currentLastSeen = header.lastSeenAt?.getTime?.();
 
@@ -112,19 +113,19 @@ type SeenEntry = ConversationHeader["seenData"][number];
 function buildActorPredicates(event: ConversationSeenEvent) {
 	const predicates: ((seen: SeenEntry) => boolean)[] = [];
 
-        if (event.payload.userId) {
-                predicates.push((seen) => seen.userId === event.payload.userId);
-        }
+	if (event.payload.userId) {
+		predicates.push((seen) => seen.userId === event.payload.userId);
+	}
 
-        if (event.payload.visitorId) {
-                predicates.push((seen) => seen.visitorId === event.payload.visitorId);
-        }
+	if (event.payload.visitorId) {
+		predicates.push((seen) => seen.visitorId === event.payload.visitorId);
+	}
 
-        if (event.payload.aiAgentId) {
-                predicates.push((seen) => seen.aiAgentId === event.payload.aiAgentId);
-        }
+	if (event.payload.aiAgentId) {
+		predicates.push((seen) => seen.aiAgentId === event.payload.aiAgentId);
+	}
 
-        return predicates;
+	return predicates;
 }
 
 function maybeUpdateSeenEntries(
@@ -176,17 +177,17 @@ function maybeUpdateSeenEntries(
 }
 
 export function handleConversationSeen({
-        event,
-        context,
+	event,
+	context,
 }: {
-        event: ConversationSeenEvent;
-        context: DashboardRealtimeContext;
+	event: ConversationSeenEvent;
+	context: DashboardRealtimeContext;
 }) {
-        if (event.websiteId !== context.website.id) {
-                return;
-        }
+	if (event.websiteId !== context.website.id) {
+		return;
+	}
 
-        const lastSeenAt = new Date(event.payload.lastSeenAt);
+	const lastSeenAt = new Date(event.payload.lastSeenAt);
 	const lastSeenAtTime = lastSeenAt.getTime();
 
 	const queries = context.queryClient
@@ -208,7 +209,7 @@ export function handleConversationSeen({
 		updateConversationHeaderInCache(
 			context.queryClient,
 			queryKey,
-                        event.payload.conversationId,
+			event.payload.conversationId,
 			(header) => {
 				const visitorUpdate = maybeUpdateVisitorLastSeen(
 					header,
@@ -238,5 +239,5 @@ export function handleConversationSeen({
 				return header;
 			}
 		);
-        }
+	}
 }
