@@ -259,8 +259,11 @@ export class CossistantRestClient {
   ): Promise<CreateConversationResponseBody> {
     const conversationId = params.conversationId || generateConversationId();
 
-    // Get visitor ID from storage if we have the website ID
-    const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
+    // Get visitor ID from storage if we have the website ID, or use the provided one
+    const storedVisitorId = this.websiteId
+      ? getVisitorId(this.websiteId)
+      : undefined;
+    const visitorId = params.visitorId || storedVisitorId;
 
     if (!visitorId) {
       throw new Error("Visitor ID is required");
@@ -268,7 +271,7 @@ export class CossistantRestClient {
 
     const body: CreateConversationRequestBody = {
       conversationId,
-      visitorId: params.visitorId || visitorId,
+      visitorId,
       externalVisitorId: params.externalVisitorId,
       defaultMessages: params.defaultMessages || [],
       channel: params.channel || "widget",
@@ -353,8 +356,11 @@ export class CossistantRestClient {
   async listConversations(
     params: Partial<ListConversationsRequest> = {}
   ): Promise<ListConversationsResponse> {
-    // Get visitor ID from storage if we have the website ID
-    const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
+    // Get visitor ID from storage if we have the website ID, or use the provided one
+    const storedVisitorId = this.websiteId
+      ? getVisitorId(this.websiteId)
+      : undefined;
+    const visitorId = params.visitorId || storedVisitorId;
 
     if (!(visitorId || params.externalVisitorId)) {
       throw new Error("Visitor ID or external visitor ID is required");
@@ -363,9 +369,8 @@ export class CossistantRestClient {
     // Create query parameters
     const queryParams = new URLSearchParams();
 
-    if (params.visitorId || visitorId) {
-      // biome-ignore lint/style/noNonNullAssertion: ok here
-      queryParams.set("visitorId", params.visitorId || visitorId!);
+    if (visitorId) {
+      queryParams.set("visitorId", visitorId);
     }
 
     if (params.externalVisitorId) {
