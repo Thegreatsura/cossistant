@@ -201,16 +201,16 @@ messagesRouter.openapi(
 			);
 		}
 
-		const sentMessage = await createMessage({
-			db,
-			organizationId: organization.id,
-			websiteId: website.id,
-			conversationId: body.conversationId,
-			conversationVisitorId: visitorId,
-			message: {
-				bodyMd: body.message.bodyMd,
-				type: body.message.type ?? undefined,
-				userId: body.message.userId ?? null,
+                const sentMessage = await createMessage({
+                        db,
+                        organizationId: organization.id,
+                        websiteId: website.id,
+                        conversationId: body.conversationId,
+                        conversationOwnerVisitorId: visitorId,
+                        message: {
+                                bodyMd: body.message.bodyMd,
+                                type: body.message.type ?? undefined,
+                                userId: body.message.userId ?? null,
 				aiAgentId: body.message.aiAgentId ?? null,
 				visitorId,
 				visibility: body.message.visibility ?? undefined,

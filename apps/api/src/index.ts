@@ -21,12 +21,14 @@ import { getTRPCSession } from "./db/queries/session";
 import { polarRouters } from "./polar";
 import { workflowsRouters } from "./workflows";
 import { upgradedWebsocket, websocket } from "./ws/socket";
+import { realtimeEmitter } from "./realtime/emitter";
 
 const app = new OpenAPIHono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null;
-	};
+        Variables: {
+                user: typeof auth.$Infer.Session.user | null;
+                session: typeof auth.$Infer.Session.session | null;
+                realtime: typeof realtimeEmitter;
+        };
 }>();
 
 const acceptedOrigins = [
@@ -41,6 +43,12 @@ const acceptedOrigins = [
 
 // Logger middleware
 app.use(logger());
+
+// Attach realtime emitter to the context
+app.use("*", async (c, next) => {
+        c.set("realtime", realtimeEmitter);
+        await next();
+});
 
 // Secure headers middleware
 app.use(secureHeaders());

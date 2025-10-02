@@ -14,48 +14,54 @@ describe("routeEvent", () => {
 		sendToConnection.mockReset();
 	});
 
-	it("routes presence updates to website connections", async () => {
-		const event: RealtimeEvent<"USER_PRESENCE_UPDATE"> = {
-			type: "USER_PRESENCE_UPDATE",
-			data: {
-				userId: "user-123",
-				status: "online",
-				lastSeen: Date.now(),
-			},
-			timestamp: Date.now(),
-		};
+        it("routes presence updates to website connections", async () => {
+                const event: RealtimeEvent<"USER_PRESENCE_UPDATE"> = {
+                        type: "USER_PRESENCE_UPDATE",
+                        payload: {
+                                userId: "user-123",
+                                status: "online",
+                                lastSeen: Date.now(),
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "website-789",
+                        organizationId: "org-1",
+                        visitorId: null,
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-123",
-			websiteId: "website-789",
-			sendToWebsite,
-			sendToVisitor,
-			sendToConnection,
-		});
+                await routeEvent(event, {
+                        connectionId: "conn-123",
+                        websiteId: "website-789",
+                        sendToWebsite,
+                        sendToVisitor,
+                        sendToConnection,
+                });
 
-		expect(sendToWebsite).toHaveBeenCalledTimes(1);
-		expect(sendToWebsite.mock.calls[0]).toEqual([
-			"website-789",
-			event,
-			{ exclude: "conn-123" },
-		]);
-		expect(sendToVisitor).not.toHaveBeenCalled();
-	});
+                expect(sendToWebsite).toHaveBeenCalledTimes(1);
+                expect(sendToWebsite.mock.calls[0]).toEqual([
+                        "website-789",
+                        event,
+                        { exclude: "conn-123" },
+                ]);
+                expect(sendToVisitor).not.toHaveBeenCalled();
+        });
 
-	it("routes visitor events to dashboards", async () => {
-		const event: RealtimeEvent<"VISITOR_CONNECTED"> = {
-			type: "VISITOR_CONNECTED",
-			data: {
-				visitorId: "visitor-123",
-				connectionId: "conn-456",
-				timestamp: Date.now(),
-			},
-			timestamp: Date.now(),
-		};
+        it("routes visitor events to dashboards", async () => {
+                const event: RealtimeEvent<"VISITOR_CONNECTED"> = {
+                        type: "VISITOR_CONNECTED",
+                        payload: {
+                                visitorId: "visitor-123",
+                                connectionId: "conn-456",
+                                timestamp: Date.now(),
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "website-abc",
+                        organizationId: "org-1",
+                        visitorId: "visitor-123",
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-456",
-			websiteId: "website-abc",
+                await routeEvent(event, {
+                        connectionId: "conn-456",
+                        websiteId: "website-abc",
 			sendToWebsite,
 			sendToVisitor,
 			sendToConnection,
@@ -77,15 +83,15 @@ describe("MESSAGE_CREATED handler", () => {
 		sendToConnection.mockReset();
 	});
 
-	it("forwards messages to dashboards and the matching visitor", async () => {
-		const event: RealtimeEvent<"MESSAGE_CREATED"> = {
-			type: "MESSAGE_CREATED",
-			data: {
-				message: {
-					id: "msg-1",
-					bodyMd: "hello",
-					type: "text",
-					userId: "user-1",
+        it("forwards messages to dashboards and the matching visitor", async () => {
+                const event: RealtimeEvent<"MESSAGE_CREATED"> = {
+                        type: "MESSAGE_CREATED",
+                        payload: {
+                                message: {
+                                        id: "msg-1",
+                                        bodyMd: "hello",
+                                        type: "text",
+                                        userId: "user-1",
 					aiAgentId: null,
 					visitorId: "visitor-1",
 					organizationId: "org-1",
@@ -101,13 +107,16 @@ describe("MESSAGE_CREATED handler", () => {
 				conversationId: "conv-1",
 				websiteId: "site-1",
 				organizationId: "org-1",
-			},
-			timestamp: Date.now(),
-		};
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-1",
+                        organizationId: "org-1",
+                        visitorId: "visitor-1",
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-1",
-			websiteId: "site-1",
+                await routeEvent(event, {
+                        connectionId: "conn-1",
+                        websiteId: "site-1",
 			visitorId: "visitor-1",
 			sendToWebsite,
 			sendToVisitor,
@@ -120,20 +129,20 @@ describe("MESSAGE_CREATED handler", () => {
 		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-1", event]);
 	});
 
-	it("falls back to context visitor when message has no visitorId", async () => {
-		const event: RealtimeEvent<"MESSAGE_CREATED"> = {
-			type: "MESSAGE_CREATED",
-			data: {
-				message: {
-					id: "msg-ctx-1",
-					bodyMd: "from agent",
-					type: "text",
-					userId: "user-2",
-					aiAgentId: null,
-					visitorId: null,
-					organizationId: "org-ctx",
-					websiteId: "site-ctx",
-					conversationId: "conv-ctx",
+        it("falls back to context visitor when message has no visitorId", async () => {
+                const event: RealtimeEvent<"MESSAGE_CREATED"> = {
+                        type: "MESSAGE_CREATED",
+                        payload: {
+                                message: {
+                                        id: "msg-ctx-1",
+                                        bodyMd: "from agent",
+                                        type: "text",
+                                        userId: "user-2",
+                                        aiAgentId: null,
+                                        visitorId: null,
+                                        organizationId: "org-ctx",
+                                        websiteId: "site-ctx",
+                                        conversationId: "conv-ctx",
 					parentMessageId: null,
 					modelUsed: null,
 					createdAt: new Date().toISOString(),
@@ -143,14 +152,17 @@ describe("MESSAGE_CREATED handler", () => {
 				},
 				conversationId: "conv-ctx",
 				websiteId: "site-ctx",
-				organizationId: "org-ctx",
-			},
-			timestamp: Date.now(),
-		};
+                                organizationId: "org-ctx",
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-ctx",
+                        organizationId: "org-ctx",
+                        visitorId: "visitor-from-context",
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-ctx",
-			websiteId: "site-ctx",
+                await routeEvent(event, {
+                        connectionId: "conn-ctx",
+                        websiteId: "site-ctx",
 			visitorId: "visitor-from-context",
 			sendToWebsite,
 			sendToVisitor,
@@ -159,11 +171,11 @@ describe("MESSAGE_CREATED handler", () => {
 
 		expect(sendToWebsite).toHaveBeenCalledTimes(1);
 		expect(sendToVisitor).toHaveBeenCalledTimes(1);
-		expect(sendToVisitor.mock.calls[0]).toEqual([
-			"visitor-from-context",
-			event,
-		]);
-	});
+                expect(sendToVisitor.mock.calls[0]).toEqual([
+                        "visitor-from-context",
+                        event,
+                ]);
+        });
 });
 
 describe("CONVERSATION_SEEN handler", () => {
@@ -173,31 +185,34 @@ describe("CONVERSATION_SEEN handler", () => {
 		sendToConnection.mockReset();
 	});
 
-	it("broadcasts to dashboards and conversation visitor", async () => {
-		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
-			type: "CONVERSATION_SEEN",
-			data: {
-				conversationId: "conv-seen-1",
-				websiteId: "site-seen",
-				organizationId: "org-seen",
-				conversationVisitorId: "visitor-xyz",
-				lastSeenAt: new Date().toISOString(),
-				actorType: "user",
-				actorId: "user-actor",
-				userId: "user-actor",
-				visitorId: null,
+        it("broadcasts to dashboards and conversation visitor", async () => {
+                const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
+                        type: "CONVERSATION_SEEN",
+                        payload: {
+                                conversationId: "conv-seen-1",
+                                websiteId: "site-seen",
+                                organizationId: "org-seen",
+                                lastSeenAt: new Date().toISOString(),
+                                actorType: "user",
+                                actorId: "user-actor",
+                                userId: "user-actor",
+                                visitorId: null,
 				aiAgentId: null,
-			},
-			timestamp: Date.now(),
-		};
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-seen",
+                        organizationId: "org-seen",
+                        visitorId: "visitor-xyz",
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-seen",
-			websiteId: "site-seen",
-			sendToWebsite,
-			sendToVisitor,
-			sendToConnection,
-		});
+                await routeEvent(event, {
+                        connectionId: "conn-seen",
+                        websiteId: "site-seen",
+                        visitorId: "visitor-xyz",
+                        sendToWebsite,
+                        sendToVisitor,
+                        sendToConnection,
+                });
 
 		expect(sendToWebsite).toHaveBeenCalledTimes(1);
 		expect(sendToWebsite.mock.calls[0]).toEqual(["site-seen", event]);
@@ -207,22 +222,24 @@ describe("CONVERSATION_SEEN handler", () => {
 
 	it("emits to actor visitor when visitor sees conversation", async () => {
 		const visitorId = "visitor-actor";
-		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
-			type: "CONVERSATION_SEEN",
-			data: {
-				conversationId: "conv-seen-2",
-				websiteId: "site-seen",
-				organizationId: "org-seen",
-				conversationVisitorId: visitorId,
-				lastSeenAt: new Date().toISOString(),
-				actorType: "visitor",
-				actorId: visitorId,
-				userId: null,
-				visitorId,
+                const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
+                        type: "CONVERSATION_SEEN",
+                        payload: {
+                                conversationId: "conv-seen-2",
+                                websiteId: "site-seen",
+                                organizationId: "org-seen",
+                                lastSeenAt: new Date().toISOString(),
+                                actorType: "visitor",
+                                actorId: visitorId,
+                                userId: null,
+                                visitorId,
 				aiAgentId: null,
-			},
-			timestamp: Date.now(),
-		};
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-seen",
+                        organizationId: "org-seen",
+                        visitorId,
+                };
 
 		await routeEvent(event, {
 			connectionId: "conn-seen",
@@ -247,30 +264,33 @@ describe("CONVERSATION_TYPING handler", () => {
 	});
 
 	it("broadcasts typing state to dashboards and visitors", async () => {
-		const event: RealtimeEvent<"CONVERSATION_TYPING"> = {
-			type: "CONVERSATION_TYPING",
-			data: {
-				conversationId: "conv-typing",
-				websiteId: "site-typing",
-				organizationId: "org-typing",
-				conversationVisitorId: "visitor-owner",
-				actorType: "user",
-				actorId: "user-123",
-				isTyping: true,
-				userId: "user-123",
-				visitorId: null,
+                const event: RealtimeEvent<"CONVERSATION_TYPING"> = {
+                        type: "CONVERSATION_TYPING",
+                        payload: {
+                                conversationId: "conv-typing",
+                                websiteId: "site-typing",
+                                organizationId: "org-typing",
+                                actorType: "user",
+                                actorId: "user-123",
+                                isTyping: true,
+                                userId: "user-123",
+                                visitorId: null,
 				aiAgentId: null,
-			},
-			timestamp: Date.now(),
-		};
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-typing",
+                        organizationId: "org-typing",
+                        visitorId: "visitor-owner",
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-typing",
-			websiteId: "site-typing",
-			sendToWebsite,
-			sendToVisitor,
-			sendToConnection,
-		});
+                await routeEvent(event, {
+                        connectionId: "conn-typing",
+                        websiteId: "site-typing",
+                        visitorId: "visitor-owner",
+                        sendToWebsite,
+                        sendToVisitor,
+                        sendToConnection,
+                });
 
 		expect(sendToWebsite).toHaveBeenCalledTimes(1);
 		expect(sendToWebsite.mock.calls[0]).toEqual(["site-typing", event]);
@@ -287,18 +307,18 @@ describe("CONVERSATION_EVENT_CREATED handler", () => {
 	});
 
 	it("broadcasts timeline events to dashboards and visitor", async () => {
-		const event: RealtimeEvent<"CONVERSATION_EVENT_CREATED"> = {
-			type: "CONVERSATION_EVENT_CREATED",
-			data: {
-				conversationId: "conv-event",
-				websiteId: "site-event",
-				organizationId: "org-event",
-				conversationVisitorId: "visitor-event",
-				event: {
-					id: "evt-1",
-					conversationId: "conv-event",
-					organizationId: "org-event",
-					type: "STATUS_CHANGED",
+                const event: RealtimeEvent<"CONVERSATION_EVENT_CREATED"> = {
+                        type: "CONVERSATION_EVENT_CREATED",
+                        payload: {
+                                conversationId: "conv-event",
+                                websiteId: "site-event",
+                                organizationId: "org-event",
+                                visitorId: null,
+                                event: {
+                                        id: "evt-1",
+                                        conversationId: "conv-event",
+                                        organizationId: "org-event",
+                                        type: "STATUS_CHANGED",
 					actorUserId: "user-1",
 					actorAiAgentId: null,
 					targetUserId: null,
@@ -307,17 +327,21 @@ describe("CONVERSATION_EVENT_CREATED handler", () => {
 					metadata: null,
 					createdAt: new Date().toISOString(),
 				},
-			},
-			timestamp: Date.now(),
-		};
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-event",
+                        organizationId: "org-event",
+                        visitorId: "visitor-event",
+                };
 
-		await routeEvent(event, {
-			connectionId: "conn-event",
-			websiteId: "site-event",
-			sendToWebsite,
-			sendToVisitor,
-			sendToConnection,
-		});
+                await routeEvent(event, {
+                        connectionId: "conn-event",
+                        websiteId: "site-event",
+                        visitorId: "visitor-event",
+                        sendToWebsite,
+                        sendToVisitor,
+                        sendToConnection,
+                });
 
 		expect(sendToWebsite).toHaveBeenCalledTimes(1);
 		expect(sendToWebsite.mock.calls[0]).toEqual(["site-event", event]);
@@ -334,14 +358,14 @@ describe("CONVERSATION_CREATED handler", () => {
 	});
 
 	it("broadcasts new conversations to dashboards and visitor", async () => {
-		const event: RealtimeEvent<"CONVERSATION_CREATED"> = {
-			type: "CONVERSATION_CREATED",
-			data: {
-				conversation: {
-					id: "conv-created",
-					organizationId: "org-created",
-					websiteId: "site-created",
-					visitorId: "visitor-created",
+                const event: RealtimeEvent<"CONVERSATION_CREATED"> = {
+                        type: "CONVERSATION_CREATED",
+                        payload: {
+                                conversation: {
+                                        id: "conv-created",
+                                        organizationId: "org-created",
+                                        websiteId: "site-created",
+                                        visitorId: "visitor-created",
 					status: "open",
 					priority: null,
 					title: null,
@@ -351,9 +375,12 @@ describe("CONVERSATION_CREATED handler", () => {
 				websiteId: "site-created",
 				organizationId: "org-created",
 				visitorId: "visitor-created",
-			},
-			timestamp: Date.now(),
-		};
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-created",
+                        organizationId: "org-created",
+                        visitorId: "visitor-created",
+                };
 
 		await routeEvent(event, {
 			connectionId: "conn-created",

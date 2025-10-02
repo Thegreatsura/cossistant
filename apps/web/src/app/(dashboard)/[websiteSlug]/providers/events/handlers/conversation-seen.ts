@@ -1,7 +1,7 @@
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationHeader } from "@/data/conversation-header-cache";
 import { updateConversationHeaderInCache } from "@/data/conversation-header-cache";
-import type { RealtimeEventHandler } from "../types";
+import type { DashboardRealtimeContext } from "../types";
 
 type ConversationSeenEvent = RealtimeEvent<"CONVERSATION_SEEN">;
 
@@ -34,10 +34,12 @@ function extractHeadersQueryInput(
 }
 
 function shouldUpdateVisitorTimestamp(
-	event: ConversationSeenEvent,
-	headersVisitorId: string
+        event: ConversationSeenEvent,
+        headersVisitorId: string
 ) {
-	return event.data.visitorId && event.data.visitorId === headersVisitorId;
+        return (
+                Boolean(event.payload.visitorId) && event.payload.visitorId === headersVisitorId
+        );
 }
 
 type UpdateResult = {
@@ -80,13 +82,13 @@ function maybeUpdateCurrentUserLastSeen(
 	currentUserId: string | null | undefined,
 	lastSeenAtTime: number
 ): UpdateResult {
-	if (!(event.data.userId && currentUserId)) {
-		return { header, changed: false };
-	}
+        if (!(event.payload.userId && currentUserId)) {
+                return { header, changed: false };
+        }
 
-	if (event.data.userId !== currentUserId) {
-		return { header, changed: false };
-	}
+        if (event.payload.userId !== currentUserId) {
+                return { header, changed: false };
+        }
 
 	const currentLastSeen = header.lastSeenAt?.getTime?.();
 
@@ -110,19 +112,19 @@ type SeenEntry = ConversationHeader["seenData"][number];
 function buildActorPredicates(event: ConversationSeenEvent) {
 	const predicates: ((seen: SeenEntry) => boolean)[] = [];
 
-	if (event.data.userId) {
-		predicates.push((seen) => seen.userId === event.data.userId);
-	}
+        if (event.payload.userId) {
+                predicates.push((seen) => seen.userId === event.payload.userId);
+        }
 
-	if (event.data.visitorId) {
-		predicates.push((seen) => seen.visitorId === event.data.visitorId);
-	}
+        if (event.payload.visitorId) {
+                predicates.push((seen) => seen.visitorId === event.payload.visitorId);
+        }
 
-	if (event.data.aiAgentId) {
-		predicates.push((seen) => seen.aiAgentId === event.data.aiAgentId);
-	}
+        if (event.payload.aiAgentId) {
+                predicates.push((seen) => seen.aiAgentId === event.payload.aiAgentId);
+        }
 
-	return predicates;
+        return predicates;
 }
 
 function maybeUpdateSeenEntries(
@@ -173,14 +175,18 @@ function maybeUpdateSeenEntries(
 	};
 }
 
-export const handleConversationSeen: RealtimeEventHandler<
-	"CONVERSATION_SEEN"
-> = ({ event, context }) => {
-	if (event.data.websiteId !== context.website.id) {
-		return;
-	}
+export function handleConversationSeen({
+        event,
+        context,
+}: {
+        event: ConversationSeenEvent;
+        context: DashboardRealtimeContext;
+}) {
+        if (event.websiteId !== context.website.id) {
+                return;
+        }
 
-	const lastSeenAt = new Date(event.data.lastSeenAt);
+        const lastSeenAt = new Date(event.payload.lastSeenAt);
 	const lastSeenAtTime = lastSeenAt.getTime();
 
 	const queries = context.queryClient
@@ -202,7 +208,7 @@ export const handleConversationSeen: RealtimeEventHandler<
 		updateConversationHeaderInCache(
 			context.queryClient,
 			queryKey,
-			event.data.conversationId,
+                        event.payload.conversationId,
 			(header) => {
 				const visitorUpdate = maybeUpdateVisitorLastSeen(
 					header,
@@ -232,5 +238,5 @@ export const handleConversationSeen: RealtimeEventHandler<
 				return header;
 			}
 		);
-	}
-};
+        }
+}

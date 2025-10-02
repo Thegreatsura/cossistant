@@ -237,16 +237,16 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
-			const createdMessage = await createMessage({
-				db,
-				organizationId: websiteData.organizationId,
-				websiteId: websiteData.id,
-				conversationId: input.conversationId,
-				conversationVisitorId: conversation.visitorId,
-				message: {
-					bodyMd: input.bodyMd,
-					type: input.type,
-					visibility: input.visibility,
+                        const createdMessage = await createMessage({
+                                db,
+                                organizationId: websiteData.organizationId,
+                                websiteId: websiteData.id,
+                                conversationId: input.conversationId,
+                                conversationOwnerVisitorId: conversation.visitorId,
+                                message: {
+                                        bodyMd: input.bodyMd,
+                                        type: input.type,
+                                        visibility: input.visibility,
 					userId: user.id,
 					visitorId: null,
 					aiAgentId: null,

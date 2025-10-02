@@ -1,11 +1,6 @@
 import type { Database } from "@api/db";
 import { sendMessages } from "@api/db/queries/message";
-import { routeEvent } from "@api/ws/router";
-import {
-	sendEventToConnection,
-	sendEventToVisitor,
-	sendEventToWebsite,
-} from "@api/ws/socket";
+import { realtimeEmitter } from "@api/realtime/emitter";
 import type {
 	Message,
 	MessageType,
@@ -16,10 +11,7 @@ import {
 	MessageVisibility as MessageVisibilityValues,
 	messageSchema,
 } from "@cossistant/types";
-import type {
-	RealtimeEvent,
-	RealtimeEventData,
-} from "@cossistant/types/realtime-events";
+import type { RealtimeEventData } from "@cossistant/types/realtime-events";
 
 export function prepareMessageForInsert(bodyMd: string) {
 	const normalized = bodyMd.normalize("NFC");
@@ -28,15 +20,15 @@ export function prepareMessageForInsert(bodyMd: string) {
 }
 
 export type CreateMessageOptions = {
-	db: Database;
-	organizationId: string;
-	websiteId: string;
-	conversationId: string;
-	conversationVisitorId?: string | null;
-	message: {
-		bodyMd: string;
-		type?: MessageType;
-		userId?: string | null;
+        db: Database;
+        organizationId: string;
+        websiteId: string;
+        conversationId: string;
+        conversationOwnerVisitorId?: string | null;
+        message: {
+                bodyMd: string;
+                type?: MessageType;
+                userId?: string | null;
 		aiAgentId?: string | null;
 		visitorId?: string | null;
 		visibility?: MessageVisibility;
@@ -109,16 +101,10 @@ export async function createMessage(
 		organizationId,
 	});
 
-	const event: RealtimeEvent<"MESSAGE_CREATED"> = {
-		type: "MESSAGE_CREATED",
-		data: realtimePayload,
-		timestamp: Date.now(),
-	};
-
-	let targetVisitorId =
-		options.conversationVisitorId ??
-		realtimePayload.message.visitorId ??
-		undefined;
+        let targetVisitorId =
+                options.conversationOwnerVisitorId ??
+                realtimePayload.message.visitorId ??
+                undefined;
 
 	if (!targetVisitorId) {
 		targetVisitorId = await resolveConversationVisitorId(
@@ -127,15 +113,11 @@ export async function createMessage(
 		);
 	}
 
-	await routeEvent(event, {
-		connectionId: "server",
-		websiteId,
-		visitorId: targetVisitorId,
-		organizationId,
-		sendToConnection: sendEventToConnection,
-		sendToVisitor: sendEventToVisitor,
-		sendToWebsite: sendEventToWebsite,
-	});
+        await realtimeEmitter.emit("MESSAGE_CREATED", realtimePayload, {
+                websiteId,
+                visitorId: targetVisitorId ?? null,
+                organizationId,
+        });
 
 	return parsedMessage;
 }

@@ -148,16 +148,16 @@ conversationRouter.openapi(
 		if (defaults.length > 0) {
 			initialMessages = await Promise.all(
 				defaults.map((msg) =>
-					createMessage({
-						db,
-						organizationId: organization.id,
-						websiteId: website.id,
-						conversationId: conversation.id,
-						conversationVisitorId: conversation.visitorId,
-						message: {
-							bodyMd: msg.bodyMd,
-							type: msg.type ?? undefined,
-							userId: msg.userId ?? null,
+                                        createMessage({
+                                                db,
+                                                organizationId: organization.id,
+                                                websiteId: website.id,
+                                                conversationId: conversation.id,
+                                                conversationOwnerVisitorId: conversation.visitorId,
+                                                message: {
+                                                        bodyMd: msg.bodyMd,
+                                                        type: msg.type ?? undefined,
+                                                        userId: msg.userId ?? null,
 							aiAgentId: msg.aiAgentId ?? null,
 							visitorId: msg.visitorId ?? null,
 							visibility: msg.visibility ?? undefined,

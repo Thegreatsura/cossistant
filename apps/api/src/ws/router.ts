@@ -1,6 +1,6 @@
 import type {
-	RealtimeEvent,
-	RealtimeEventType,
+        RealtimeEvent,
+        RealtimeEventType,
 } from "@cossistant/types/realtime-events";
 
 type DispatchOptions = {
@@ -37,13 +37,73 @@ type EventContext = {
 };
 
 type EventHandler<T extends RealtimeEventType> = (
-	ctx: EventContext,
-	event: RealtimeEvent<T>
+        ctx: EventContext,
+        event: RealtimeEvent<T>
 ) => Promise<void> | void;
 
 type EventHandlers = {
-	[K in RealtimeEventType]: EventHandler<K>;
+        [K in RealtimeEventType]: EventHandler<K>;
 };
+
+type WebsiteDispatchRule =
+        | boolean
+        | { excludeConnection?: boolean };
+
+type DispatchRule = {
+        website: WebsiteDispatchRule;
+        visitor: boolean;
+};
+
+type DispatchRuleOverrides = Partial<DispatchRule>;
+
+const DEFAULT_DISPATCH_RULE: DispatchRule = {
+        website: true,
+        visitor: true,
+};
+
+const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> = {
+        USER_CONNECTED: { website: { excludeConnection: true }, visitor: false },
+        USER_DISCONNECTED: { website: { excludeConnection: true }, visitor: false },
+        USER_PRESENCE_UPDATE: { website: { excludeConnection: true }, visitor: false },
+        VISITOR_CONNECTED: { website: true, visitor: false },
+        VISITOR_DISCONNECTED: { website: true, visitor: false },
+        CONVERSATION_EVENT_CREATED: { website: true, visitor: true },
+        CONVERSATION_CREATED: { website: true, visitor: true },
+        CONVERSATION_SEEN: { website: true, visitor: true },
+        CONVERSATION_TYPING: { website: true, visitor: true },
+        MESSAGE_CREATED: { website: true, visitor: true },
+};
+
+function resolveWebsiteDispatchOptions(
+        rule: WebsiteDispatchRule | undefined,
+        ctx: EventContext
+): DispatchOptions | undefined {
+        if (!rule) {
+                return undefined;
+        }
+
+        if (typeof rule === "boolean") {
+                return undefined;
+        }
+
+        if (rule.excludeConnection && ctx.connectionId) {
+                return { exclude: ctx.connectionId } satisfies DispatchOptions;
+        }
+
+        return undefined;
+}
+
+function dispatchEvent(ctx: EventContext, event: RealtimeEvent, rules: DispatchRule): void {
+        const websiteTarget = event.websiteId ?? ctx.websiteId;
+        if (websiteTarget && ctx.sendToWebsite && rules.website) {
+                        const options = resolveWebsiteDispatchOptions(rules.website, ctx);
+                        ctx.sendToWebsite(websiteTarget, event, options);
+        }
+
+        if (rules.visitor && event.visitorId && ctx.sendToVisitor) {
+                ctx.sendToVisitor(event.visitorId, event);
+        }
+}
 
 /**
  * Event handlers for each realtime event type
@@ -51,220 +111,117 @@ type EventHandlers = {
  * relevant local connections using the provided dispatch helpers.
  */
 const eventHandlers: EventHandlers = {
-	USER_CONNECTED: (ctx, event) => {
-		const data = event.data;
-		console.log(`[USER_CONNECTED] User ${data.userId} connected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: ctx.websiteId,
-		});
+        USER_CONNECTED: (ctx, event) => {
+                const data = event.payload;
+                console.log(`[USER_CONNECTED] User ${data.userId} connected`, {
+                        connectionId: data.connectionId,
+                        timestamp: new Date(data.timestamp).toISOString(),
+                        contextConnectionId: ctx.connectionId,
+                        websiteId: event.websiteId,
+                });
+        },
 
-		if (ctx.websiteId) {
-			ctx.sendToWebsite?.(ctx.websiteId, event, {
-				exclude: ctx.connectionId,
-			});
-		}
-	},
+        USER_DISCONNECTED: (ctx, event) => {
+                const data = event.payload;
+                console.log(`[USER_DISCONNECTED] User ${data.userId} disconnected`, {
+                        connectionId: data.connectionId,
+                        timestamp: new Date(data.timestamp).toISOString(),
+                        contextConnectionId: ctx.connectionId,
+                        websiteId: event.websiteId,
+                });
+        },
 
-	USER_DISCONNECTED: (ctx, event) => {
-		const data = event.data;
-		console.log(`[USER_DISCONNECTED] User ${data.userId} disconnected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: ctx.websiteId,
-		});
+        VISITOR_CONNECTED: (ctx, event) => {
+                const data = event.payload;
+                console.log(`[VISITOR_CONNECTED] Visitor ${data.visitorId} connected`, {
+                        connectionId: data.connectionId,
+                        timestamp: new Date(data.timestamp).toISOString(),
+                        contextConnectionId: ctx.connectionId,
+                        websiteId: event.websiteId,
+                });
+        },
 
-		if (ctx.websiteId) {
-			ctx.sendToWebsite?.(ctx.websiteId, event, {
-				exclude: ctx.connectionId,
-			});
-		}
-	},
+        VISITOR_DISCONNECTED: (ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`,
+                        {
+                                connectionId: data.connectionId,
+                                timestamp: new Date(data.timestamp).toISOString(),
+                                contextConnectionId: ctx.connectionId,
+                                websiteId: event.websiteId,
+                        }
+                );
+        },
 
-	VISITOR_CONNECTED: (ctx, event) => {
-		const data = event.data;
-		console.log(`[VISITOR_CONNECTED] Visitor ${data.visitorId} connected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: ctx.websiteId,
-		});
+        USER_PRESENCE_UPDATE: (ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[USER_PRESENCE_UPDATE] User ${data.userId} status: ${data.status}`,
+                        {
+                                lastSeen: new Date(data.lastSeen).toISOString(),
+                                contextConnectionId: ctx.connectionId,
+                                websiteId: event.websiteId,
+                        }
+                );
+        },
 
-		if (ctx.websiteId) {
-			ctx.sendToWebsite?.(ctx.websiteId, event);
-		}
-	},
+        MESSAGE_CREATED: (_ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[MESSAGE_CREATED] Message ${data.message.id} created for conversation ${data.conversationId}`,
+                        {
+                                websiteId: event.websiteId,
+                                organizationId: event.organizationId,
+                        }
+                );
+        },
 
-	VISITOR_DISCONNECTED: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`,
-			{
-				connectionId: data.connectionId,
-				timestamp: new Date(data.timestamp).toISOString(),
-				contextConnectionId: ctx.connectionId,
-				websiteId: ctx.websiteId,
-			}
-		);
+        CONVERSATION_SEEN: (_ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[CONVERSATION_SEEN] Conversation ${data.conversationId} seen by ${data.actorType}`,
+                        {
+                                actorId: data.actorId,
+                                websiteId: event.websiteId,
+                        }
+                );
+        },
 
-		if (ctx.websiteId) {
-			ctx.sendToWebsite?.(ctx.websiteId, event);
-		}
-	},
+        CONVERSATION_TYPING: (_ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[CONVERSATION_TYPING] Conversation ${data.conversationId} actor ${data.actorType} typing=${data.isTyping}`,
+                        {
+                                actorId: data.actorId,
+                                websiteId: event.websiteId,
+                        }
+                );
+        },
 
-	USER_PRESENCE_UPDATE: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[USER_PRESENCE_UPDATE] User ${data.userId} status: ${data.status}`,
-			{
-				lastSeen: new Date(data.lastSeen).toISOString(),
-				contextConnectionId: ctx.connectionId,
-				websiteId: ctx.websiteId,
-			}
-		);
+        CONVERSATION_EVENT_CREATED: (_ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[CONVERSATION_EVENT_CREATED] Event ${data.event.id} for conversation ${data.conversationId}`,
+                        {
+                                websiteId: event.websiteId,
+                                organizationId: event.organizationId,
+                                type: data.event.type,
+                        }
+                );
+        },
 
-		if (ctx.websiteId) {
-			ctx.sendToWebsite?.(ctx.websiteId, event, {
-				exclude: ctx.connectionId,
-			});
-		}
-	},
-
-	MESSAGE_CREATED: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[MESSAGE_CREATED] Message ${data.message.id} created for conversation ${data.conversationId}`,
-			{
-				websiteId: data.websiteId,
-				organizationId: data.organizationId,
-			}
-		);
-
-		const websiteId = data.websiteId ?? ctx.websiteId;
-		if (websiteId) {
-			ctx.sendToWebsite?.(websiteId, event);
-		}
-
-		const visitorId = data.message.visitorId ?? ctx.visitorId;
-		if (visitorId) {
-			ctx.sendToVisitor?.(visitorId, event);
-		}
-	},
-
-	CONVERSATION_SEEN: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[CONVERSATION_SEEN] Conversation ${data.conversationId} seen by ${data.actorType}`,
-			{
-				actorId: data.actorId,
-				websiteId: data.websiteId,
-				conversationVisitorId: data.conversationVisitorId,
-			}
-		);
-
-		const websiteId = data.websiteId ?? ctx.websiteId;
-		if (websiteId) {
-			ctx.sendToWebsite?.(websiteId, event);
-		}
-
-		const visitorTargets = new Set<string>();
-		if (data.conversationVisitorId) {
-			visitorTargets.add(data.conversationVisitorId);
-		}
-		if (data.visitorId) {
-			visitorTargets.add(data.visitorId);
-		}
-		if (ctx.visitorId) {
-			visitorTargets.add(ctx.visitorId);
-		}
-
-		for (const visitorId of visitorTargets) {
-			ctx.sendToVisitor?.(visitorId, event);
-		}
-	},
-
-	CONVERSATION_TYPING: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[CONVERSATION_TYPING] Conversation ${data.conversationId} actor ${data.actorType} typing=${data.isTyping}`,
-			{
-				actorId: data.actorId,
-				websiteId: data.websiteId,
-			}
-		);
-
-		const websiteId = data.websiteId ?? ctx.websiteId;
-		if (websiteId) {
-			ctx.sendToWebsite?.(websiteId, event);
-		}
-
-		const visitorTargets = new Set<string>();
-		if (data.conversationVisitorId) {
-			visitorTargets.add(data.conversationVisitorId);
-		}
-		if (data.visitorId) {
-			visitorTargets.add(data.visitorId);
-		}
-		if (ctx.visitorId) {
-			visitorTargets.add(ctx.visitorId);
-		}
-
-		for (const visitorId of visitorTargets) {
-			ctx.sendToVisitor?.(visitorId, event);
-		}
-	},
-
-	CONVERSATION_EVENT_CREATED: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[CONVERSATION_EVENT_CREATED] Event ${data.event.id} for conversation ${data.conversationId}`,
-			{
-				websiteId: data.websiteId,
-				organizationId: data.organizationId,
-				type: data.event.type,
-			}
-		);
-
-		const websiteId = data.websiteId ?? ctx.websiteId;
-		if (websiteId) {
-			ctx.sendToWebsite?.(websiteId, event);
-		}
-
-		const visitorTargets = new Set<string>();
-		if (data.conversationVisitorId) {
-			visitorTargets.add(data.conversationVisitorId);
-		}
-		if (ctx.visitorId) {
-			visitorTargets.add(ctx.visitorId);
-		}
-
-		for (const visitorId of visitorTargets) {
-			ctx.sendToVisitor?.(visitorId, event);
-		}
-	},
-
-	CONVERSATION_CREATED: (ctx, event) => {
-		const data = event.data;
-		console.log(
-			`[CONVERSATION_CREATED] Conversation ${data.conversation.id} created`,
-			{
-				websiteId: data.websiteId,
-				organizationId: data.organizationId,
-				visitorId: data.visitorId,
-			}
-		);
-
-		const websiteId = data.websiteId ?? ctx.websiteId;
-		if (websiteId) {
-			ctx.sendToWebsite?.(websiteId, event);
-		}
-
-		if (data.visitorId) {
-			ctx.sendToVisitor?.(data.visitorId, event);
-		}
-	},
+        CONVERSATION_CREATED: (_ctx, event) => {
+                const data = event.payload;
+                console.log(
+                        `[CONVERSATION_CREATED] Conversation ${data.conversation.id} created`,
+                        {
+                                websiteId: event.websiteId,
+                                organizationId: event.organizationId,
+                                visitorId: data.visitorId,
+                        }
+                );
+        },
 };
 
 /**
@@ -283,11 +240,19 @@ export async function routeEvent<T extends RealtimeEventType>(
 		return;
 	}
 
-	try {
-		await handler(context, event);
-	} catch (error) {
-		console.error(`[EventRouter] Error handling ${event.type}:`, error);
-	}
+        try {
+                await handler(context, event);
+        } catch (error) {
+                console.error(`[EventRouter] Error handling ${event.type}:`, error);
+        }
+
+        const overrides = dispatchRules[event.type];
+        const rules: DispatchRule = {
+                website: overrides?.website ?? DEFAULT_DISPATCH_RULE.website,
+                visitor: overrides?.visitor ?? DEFAULT_DISPATCH_RULE.visitor,
+        };
+
+        dispatchEvent(context, event, rules);
 }
 
 export type {

@@ -269,15 +269,15 @@ describe("CossistantClient message integration", () => {
 			createMockConversation({ id: "conv-1" })
 		);
 
-		const event = {
-			type: "MESSAGE_CREATED",
-			timestamp: Date.now(),
-			data: {
-				message: {
-					id: "msg-realtime",
-					bodyMd: "stream",
-					type: "text",
-					userId: "user-1",
+                const event = {
+                        type: "MESSAGE_CREATED",
+                        timestamp: Date.now(),
+                        payload: {
+                                message: {
+                                        id: "msg-realtime",
+                                        bodyMd: "stream",
+                                        type: "text",
+                                        userId: "user-1",
 					aiAgentId: null,
 					visitorId: "visitor-1",
 					organizationId: "org-1",
@@ -292,9 +292,12 @@ describe("CossistantClient message integration", () => {
 				},
 				conversationId: "conv-1",
 				websiteId: "site-1",
-				organizationId: "org-1",
-			},
-		} satisfies RealtimeEvent<"MESSAGE_CREATED">;
+                                organizationId: "org-1",
+                        },
+                        websiteId: "site-1",
+                        organizationId: "org-1",
+                        visitorId: "visitor-1",
+                } satisfies RealtimeEvent<"MESSAGE_CREATED">;
 
 		client.handleRealtimeEvent(event);
 

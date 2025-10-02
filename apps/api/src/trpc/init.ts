@@ -1,6 +1,7 @@
 import type { Database } from "@api/db";
 import { db } from "@api/db";
 import type { AuthType, auth } from "@api/lib/auth";
+import type { RealtimeEmitter } from "@api/realtime/emitter";
 import { getGeoContext } from "@api/utils/geo";
 import { initTRPC } from "@trpc/server";
 import type { Context } from "hono";
@@ -10,10 +11,11 @@ import { withPrimaryDbMiddleware } from "./middleware/db";
 import { withRateLimitMiddleware } from "./middleware/rate-limit";
 
 export type TRPCContext = {
-	user: typeof auth.$Infer.Session.user;
-	session: typeof auth.$Infer.Session.session;
-	db: Database;
-	geo: ReturnType<typeof getGeoContext>;
+        user: typeof auth.$Infer.Session.user;
+        session: typeof auth.$Infer.Session.session;
+        db: Database;
+        geo: ReturnType<typeof getGeoContext>;
+        realtime: RealtimeEmitter;
 };
 
 export const createTRPCContext = async (
@@ -23,14 +25,15 @@ export const createTRPCContext = async (
 	const user = c.get("user") as typeof auth.$Infer.Session.user;
 	const session = c.get("session") as typeof auth.$Infer.Session.session;
 
-	const geo = getGeoContext(c.req);
+        const geo = getGeoContext(c.req);
 
-	return {
-		user,
-		session,
-		geo,
-		db,
-	};
+        return {
+                user,
+                session,
+                geo,
+                db,
+                realtime: c.get("realtime") as RealtimeEmitter,
+        };
 };
 
 const t = initTRPC.context<TRPCContext>().create({

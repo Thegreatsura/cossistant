@@ -164,11 +164,52 @@ function sendInvalidFormatResponse(ws: SocketContext, error: unknown): void {
 	);
 }
 
+type ParsedInboundEvent = {
+        type: RealtimeEventType;
+        payload: RealtimeEventData<RealtimeEventType>;
+};
+
+function extractVisitorIdFromPayload(payload: unknown): string | null {
+        if (!payload || typeof payload !== "object") {
+                return null;
+        }
+
+        if ("visitorId" in payload) {
+                const value = (payload as { visitorId?: unknown }).visitorId;
+                if (typeof value === "string" && value.length > 0) {
+                        return value;
+                }
+        }
+
+        if ("message" in payload) {
+                const messageVisitorId = (payload as {
+                        message?: { visitorId?: unknown } | null;
+                }).message?.visitorId;
+                if (typeof messageVisitorId === "string" && messageVisitorId.length > 0) {
+                        return messageVisitorId;
+                }
+        }
+
+        if ("conversation" in payload) {
+                const conversationVisitorId = (payload as {
+                        conversation?: { visitorId?: unknown } | null;
+                }).conversation?.visitorId;
+                if (
+                        typeof conversationVisitorId === "string" &&
+                        conversationVisitorId.length > 0
+                ) {
+                        return conversationVisitorId;
+                }
+        }
+
+        return null;
+}
+
 function parseRealtimeEventMessage(
-	rawMessage: unknown,
-	ws: SocketContext
-): RealtimeEvent | null {
-	let message: { data: unknown; type?: string };
+        rawMessage: unknown,
+        ws: SocketContext
+): ParsedInboundEvent | null {
+        let message: { data?: unknown; payload?: unknown; type?: string };
 
 	try {
 		message = JSON.parse(String(rawMessage));
@@ -187,21 +228,23 @@ function parseRealtimeEventMessage(
 		return null;
 	}
 
-	let validatedData: RealtimeEventData<RealtimeEventType>;
+        const payloadCandidate =
+                message.payload !== undefined ? message.payload : message.data;
 
-	try {
-		validatedData = validateRealtimeEvent(message.type, message.data);
-	} catch (error) {
-		console.error("[WebSocket] Event validation failed:", error);
-		sendInvalidFormatResponse(ws, error);
-		return null;
-	}
+        let validatedData: RealtimeEventData<RealtimeEventType>;
 
-	return {
-		type: message.type,
-		data: validatedData,
-		timestamp: Date.now(),
-	};
+        try {
+                validatedData = validateRealtimeEvent(message.type, payloadCandidate);
+        } catch (error) {
+                console.error("[WebSocket] Event validation failed:", error);
+                sendInvalidFormatResponse(ws, error);
+                return null;
+        }
+
+        return {
+                type: message.type,
+                payload: validatedData,
+        };
 }
 
 // Enable auth logging by setting ENABLE_AUTH_LOGS=true
@@ -245,12 +288,19 @@ export async function handleConnectionClose(
 			return;
 		}
 
-		const timestamp = Date.now();
-		const context: EventContext = {
-			connectionId,
-			userId,
-			visitorId,
-			websiteId,
+                if (!(websiteId && organizationId)) {
+                        console.error(
+                                `[WebSocket] Missing routing metadata for ${connectionId} on close`
+                        );
+                        return;
+                }
+
+                const timestamp = Date.now();
+                const context: EventContext = {
+                        connectionId,
+                        userId,
+                        visitorId,
+                        websiteId,
 			organizationId,
 			sendToConnection: sendEventToConnection,
 			sendToVisitor: sendEventToVisitor,
@@ -258,31 +308,37 @@ export async function handleConnectionClose(
 			ws: undefined,
 		};
 
-		if (userId) {
-			const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
-				type: "USER_DISCONNECTED",
-				data: {
-					userId,
-					connectionId,
-					timestamp,
-				},
-				timestamp,
-			};
+                if (userId) {
+                        const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
+                                type: "USER_DISCONNECTED",
+                                payload: {
+                                        userId,
+                                        connectionId,
+                                        timestamp,
+                                },
+                                timestamp,
+                                organizationId: organizationId!,
+                                websiteId: websiteId!,
+                                visitorId: null,
+                        };
 
-			await routeEvent(disconnectEvent, context);
-		} else if (visitorId) {
-			const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
-				type: "VISITOR_DISCONNECTED",
-				data: {
-					visitorId,
-					connectionId,
-					timestamp,
-				},
-				timestamp,
-			};
+                        await routeEvent(disconnectEvent, context);
+                } else if (visitorId) {
+                        const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
+                                type: "VISITOR_DISCONNECTED",
+                                payload: {
+                                        visitorId,
+                                        connectionId,
+                                        timestamp,
+                                },
+                                timestamp,
+                                organizationId: organizationId!,
+                                websiteId: websiteId!,
+                                visitorId,
+                        };
 
-			await routeEvent(disconnectEvent, context);
-		} else {
+                        await routeEvent(disconnectEvent, context);
+                } else {
 			// TODO: replace console.* with logger
 			console.error(
 				`[WebSocket] Missing connection metadata for ${connectionId} on close`
@@ -803,18 +859,23 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 			await updateLastSeenTimestamps({ db, authResult });
 		},
 
-		async onMessage(evt, ws) {
-			const activeConnection = resolveActiveConnection(ws);
+                async onMessage(evt, ws) {
+                        const activeConnection = resolveActiveConnection(ws);
 
-			if (!activeConnection) {
-				return;
-			}
+                        if (!activeConnection) {
+                                return;
+                        }
 
-			const event = parseRealtimeEventMessage(evt.data, ws);
+                        if (typeof evt.data === "string" && evt.data === "ping") {
+                                ws.send("pong");
+                                return;
+                        }
 
-			if (!event) {
-				return;
-			}
+                        const parsed = parseRealtimeEventMessage(evt.data, ws);
+
+                        if (!parsed) {
+                                return;
+                        }
 
 			const metadata = resolveConnectionContextDetails(
 				activeConnection.connectionId,
@@ -835,12 +896,24 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 				ws: undefined,
 			};
 
-			try {
-				await routeEvent(event, context);
-			} catch (error) {
-				console.error("[WebSocket] Error processing message:", error);
-				sendInvalidFormatResponse(ws, error);
-			}
+                        try {
+                                const event: RealtimeEvent = {
+                                        type: parsed.type,
+                                        payload: parsed.payload,
+                                        timestamp: Date.now(),
+                                        organizationId: metadata.organizationId!,
+                                        websiteId: metadata.websiteId!,
+                                        visitorId:
+                                                extractVisitorIdFromPayload(parsed.payload) ??
+                                                metadata.visitorId ??
+                                                null,
+                                };
+
+                                await routeEvent(event, context);
+                        } catch (error) {
+                                console.error("[WebSocket] Error processing message:", error);
+                                sendInvalidFormatResponse(ws, error);
+                        }
 		},
 
 		async onClose(evt, ws) {

@@ -1,45 +1,70 @@
 "use client";
 
-import { useRealtimeEvents } from "@cossistant/next";
+import {
+        type RealtimeEventHandlersMap,
+        useRealtime,
+} from "@cossistant/next/realtime";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useUserSession, useWebsite } from "@/contexts/website";
-import { handlers } from "./events";
+import { handleConversationSeen } from "./events/handlers/conversation-seen";
+import { handleMessageCreated } from "./events/handlers/message-created";
 import type { DashboardRealtimeContext } from "./events/types";
-import { useDashboardRealtime } from "./websocket";
 
 export function DashboardRealtimeProvider({
-	children,
+        children,
 }: {
-	children: React.ReactNode;
+        children: ReactNode;
 }) {
-	const queryClient = useQueryClient();
-	const website = useWebsite();
-	const { subscribe } = useDashboardRealtime();
-	const { user } = useUserSession();
+        const queryClient = useQueryClient();
+        const website = useWebsite();
+        const { user } = useUserSession();
 
-	const subscription = useCallback(
-		(handler: Parameters<typeof subscribe>[0]) => subscribe(handler),
-		[subscribe]
-	);
+        const realtimeContext = useMemo<DashboardRealtimeContext>(
+                () => ({
+                        queryClient,
+                        website: {
+                                id: website.id,
+                                slug: website.slug,
+                        },
+                        userId: user?.id ?? null,
+                }),
+                [queryClient, website.id, website.slug, user?.id]
+        );
 
-	const realtimeContext = useMemo<DashboardRealtimeContext>(
-		() => ({
-			queryClient,
-			website: {
-				id: website.id,
-				slug: website.slug,
-			},
-			userId: user?.id ?? null,
-		}),
-		[queryClient, website.id, website.slug, user?.id]
-	);
+        const events = useMemo<RealtimeEventHandlersMap<DashboardRealtimeContext>>(
+                () => ({
+                        MESSAGE_CREATED: [
+                                (_data, meta) => {
+                                        void handleMessageCreated({
+                                                event: meta.event,
+                                                context: meta.context,
+                                        });
+                                },
+                        ],
+                        CONVERSATION_SEEN: [
+                                (_data, meta) => {
+                                        void handleConversationSeen({
+                                                event: meta.event,
+                                                context: meta.context,
+                                        });
+                                },
+                        ],
+                }),
+                []
+        );
 
-	useRealtimeEvents<DashboardRealtimeContext>({
-		context: realtimeContext,
-		handlers,
-		subscribe: subscription,
-	});
+        useRealtime<DashboardRealtimeContext>({
+                context: realtimeContext,
+                websiteId: website.id,
+                events,
+                onEventError: (error, event) => {
+                        console.error("[DashboardRealtime] handler failed", {
+                                error,
+                                eventType: event.type,
+                        });
+                },
+        });
 
-	return children;
+        return children;
 }

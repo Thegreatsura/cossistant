@@ -91,25 +91,30 @@ export const RealtimeEvents = {
 
 export type RealtimeEventType = keyof typeof RealtimeEvents;
 
+export type RealtimeEventPayload<T extends RealtimeEventType> = z.infer<
+        (typeof RealtimeEvents)[T]
+>;
+
 export type RealtimeEvent<T extends RealtimeEventType = RealtimeEventType> = {
-	type: T;
-	data: z.infer<(typeof RealtimeEvents)[T]>;
-	timestamp: number;
+        type: T;
+        payload: RealtimeEventPayload<T>;
+        timestamp: number;
+        organizationId: string;
+        websiteId: string;
+        visitorId: string | null;
 };
 
-export type RealtimeEventData<T extends RealtimeEventType> = z.infer<
-	(typeof RealtimeEvents)[T]
->;
+export type RealtimeEventData<T extends RealtimeEventType> = RealtimeEventPayload<T>;
 
 /**
  * Validates an event against its schema
  */
 export function validateRealtimeEvent<T extends RealtimeEventType>(
-	type: T,
-	data: unknown
-): RealtimeEventData<T> {
-	const schema = RealtimeEvents[type];
-	return schema.parse(data) as RealtimeEventData<T>;
+        type: T,
+        data: unknown
+): RealtimeEventPayload<T> {
+        const schema = RealtimeEvents[type];
+        return schema.parse(data) as RealtimeEventPayload<T>;
 }
 
 /**
