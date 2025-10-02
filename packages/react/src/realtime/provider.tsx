@@ -194,8 +194,8 @@ function parseWebSocketMessage(rawText: string): ParsedMessage {
 
   // Handle CONNECTION_ESTABLISHED
   if (messageType === "CONNECTION_ESTABLISHED") {
-    const data = (parsed as { data?: unknown }).data;
-    const connectionId = extractStringField(data, "connectionId");
+    const payload = (parsed as { payload?: unknown }).payload;
+    const connectionId = extractStringField(payload, "connectionId");
     return { type: "connection-established", connectionId };
   }
 
@@ -239,10 +239,8 @@ function constructRealtimeEvent(parsed: unknown): RealtimeEvent | null {
 
   const eventType = type as RealtimeEvent["type"];
 
-  // Extract payload from either 'payload' or 'data' field
-  const payloadSource =
-    (parsed as { payload?: unknown }).payload ??
-    (parsed as { data?: unknown }).data;
+  // Extract payload directly
+  const payloadSource = (parsed as { payload?: unknown }).payload;
 
   let payload: RealtimeEvent["payload"];
   try {
