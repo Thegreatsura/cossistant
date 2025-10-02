@@ -272,7 +272,7 @@ describe("CossistantClient message integration", () => {
 		const event = {
 			type: "MESSAGE_CREATED",
 			timestamp: Date.now(),
-			data: {
+			payload: {
 				message: {
 					id: "msg-realtime",
 					bodyMd: "stream",
@@ -294,6 +294,9 @@ describe("CossistantClient message integration", () => {
 				websiteId: "site-1",
 				organizationId: "org-1",
 			},
+			websiteId: "site-1",
+			organizationId: "org-1",
+			visitorId: "visitor-1",
 		} satisfies RealtimeEvent<"MESSAGE_CREATED">;
 
 		client.handleRealtimeEvent(event);

@@ -1,12 +1,6 @@
 import type { ConversationRecord } from "@api/db/mutations/conversation";
 import type { conversationEvent } from "@api/db/schema";
-import { routeEvent } from "@api/ws/router";
-import {
-	sendEventToConnection,
-	sendEventToVisitor,
-	sendEventToWebsite,
-} from "@api/ws/socket";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import { realtimeEmitter } from "@api/realtime/emitter";
 import type { InferSelectModel } from "drizzle-orm";
 
 type ConversationEventRecord = InferSelectModel<typeof conversationEvent>;
@@ -76,28 +70,22 @@ export async function emitConversationSeenEvent({
 }: SeenEventParams) {
 	const actorPayload = mapActor(actor);
 
-	const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
-		type: "CONVERSATION_SEEN",
-		data: {
+	await realtimeEmitter.emit(
+		"CONVERSATION_SEEN",
+		{
 			conversationId: conversation.id,
 			websiteId: conversation.websiteId,
 			organizationId: conversation.organizationId,
 			lastSeenAt: lastSeenAt.toISOString(),
 			...actorPayload,
 		},
-		timestamp: Date.now(),
-	};
-
-	await routeEvent(event, {
-		connectionId: "server",
-		organizationId: conversation.organizationId,
-		websiteId: conversation.websiteId,
-		userId: actorPayload.userId ?? undefined,
-		visitorId: actorPayload.visitorId ?? undefined,
-		sendToConnection: sendEventToConnection,
-		sendToVisitor: sendEventToVisitor,
-		sendToWebsite: sendEventToWebsite,
-	});
+		{
+			organizationId: conversation.organizationId,
+			websiteId: conversation.websiteId,
+			userId: actorPayload.userId,
+			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
+		}
+	);
 }
 
 export async function emitConversationTypingEvent({
@@ -107,26 +95,20 @@ export async function emitConversationTypingEvent({
 }: TypingEventParams) {
 	const actorPayload = mapActor(actor);
 
-	const event: RealtimeEvent<"CONVERSATION_TYPING"> = {
-		type: "CONVERSATION_TYPING",
-		data: {
+	await realtimeEmitter.emit(
+		"CONVERSATION_TYPING",
+		{
 			conversationId: conversation.id,
 			websiteId: conversation.websiteId,
 			organizationId: conversation.organizationId,
 			isTyping,
 			...actorPayload,
 		},
-		timestamp: Date.now(),
-	};
-
-	await routeEvent(event, {
-		connectionId: "server",
-		organizationId: conversation.organizationId,
-		websiteId: conversation.websiteId,
-		userId: actorPayload.userId ?? undefined,
-		visitorId: actorPayload.visitorId ?? undefined,
-		sendToConnection: sendEventToConnection,
-		sendToVisitor: sendEventToVisitor,
-		sendToWebsite: sendEventToWebsite,
-	});
+		{
+			organizationId: conversation.organizationId,
+			websiteId: conversation.websiteId,
+			userId: actorPayload.userId,
+			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
+		}
+	);
 }

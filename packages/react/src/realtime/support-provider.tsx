@@ -1,15 +1,9 @@
 import type { CossistantClient } from "@cossistant/core";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type React from "react";
-import { useCallback, useMemo } from "react";
-import { useRealtimeSupport } from "../hooks/use-realtime-support";
+import { useMemo } from "react";
 import { useSupport } from "../provider";
-
-import {
-	type RealtimeEventHandlerContext,
-	type RealtimeEventHandlersMap,
-	useRealtimeEvents,
-} from "./index";
+import { useRealtime } from "./use-realtime";
 
 type SupportRealtimeContext = {
 	websiteId: string | null;
@@ -28,11 +22,8 @@ export function SupportRealtimeProvider({
 	children,
 }: SupportRealtimeProviderProps) {
 	const { website, client } = useSupport();
-	const { subscribe } = useRealtimeSupport();
 
-	const realtimeContext = useMemo<
-		RealtimeEventHandlerContext<SupportRealtimeContext>
-	>(
+	const realtimeContext = useMemo<SupportRealtimeContext>(
 		() => ({
 			websiteId: website?.id ?? null,
 			client,
@@ -40,30 +31,30 @@ export function SupportRealtimeProvider({
 		[website?.id, client]
 	);
 
-	const handlers = useMemo<RealtimeEventHandlersMap<SupportRealtimeContext>>(
+	const events = useMemo(
 		() => ({
-			MESSAGE_CREATED: [
-				({ event, context }) => {
-					if (context.websiteId && event.data.websiteId !== context.websiteId) {
-						return;
-					}
+			MESSAGE_CREATED: (
+				_data: RealtimeEvent["payload"],
+				{
+					event,
+					context,
+				}: { event: RealtimeEvent; context: SupportRealtimeContext }
+			) => {
+				if (context.websiteId && event.websiteId !== context.websiteId) {
+					return;
+				}
 
-					context.client.handleRealtimeEvent(event);
-				},
-			],
+				context.client.handleRealtimeEvent(event);
+			},
 		}),
 		[]
 	);
 
-	const subscribeToEvents = useCallback(
-		(handler: (event: RealtimeEvent) => void) => subscribe(handler),
-		[subscribe]
-	);
-
-	useRealtimeEvents<SupportRealtimeContext>({
+	useRealtime<SupportRealtimeContext>({
 		context: realtimeContext,
-		handlers,
-		subscribe: subscribeToEvents,
+		events,
+		websiteId: realtimeContext.websiteId,
+		visitorId: website?.visitor?.id ?? null,
 	});
 
 	return <>{children}</>;

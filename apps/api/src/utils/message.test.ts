@@ -56,7 +56,7 @@ describe("createMessage", () => {
 			organizationId: "org-1",
 			websiteId: "site-1",
 			conversationId: "conv-1",
-			conversationVisitorId: "visitor-123",
+			conversationOwnerVisitorId: "visitor-123",
 			message: {
 				bodyMd: "agent reply",
 				type: "text",

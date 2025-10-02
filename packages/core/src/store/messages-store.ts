@@ -167,7 +167,7 @@ function finalizeMessage(
 }
 
 function normalizeRealtimeMessage(event: MessageCreatedEvent): Message {
-	const raw = event.data.message;
+	const raw = event.payload.message;
 	return {
 		id: raw.id,
 		bodyMd: raw.bodyMd,

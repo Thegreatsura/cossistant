@@ -11,6 +11,8 @@ export type UseRealtimeSupportResult = {
 	isConnecting: boolean;
 	error: Error | null;
 	send: (event: RealtimeEvent) => void;
+	lastEvent: RealtimeEvent | null;
+	/** @deprecated Use `lastEvent` instead. */
 	lastMessage: RealtimeEvent | null;
 	subscribe: (handler: (event: RealtimeEvent) => void) => () => void;
 };
@@ -24,7 +26,7 @@ export function useRealtimeSupport(
 	options: UseRealtimeSupportOptions = {}
 ): UseRealtimeSupportResult {
 	const { onEvent } = options;
-	const { isConnected, isConnecting, error, send, subscribe, lastMessage } =
+	const { isConnected, isConnecting, error, send, subscribe, lastEvent } =
 		useWebSocket();
 
 	// Subscribe to WebSocket events
@@ -42,6 +44,7 @@ export function useRealtimeSupport(
 		error,
 		send,
 		subscribe,
-		lastMessage,
+		lastEvent,
+		lastMessage: lastEvent,
 	};
 }

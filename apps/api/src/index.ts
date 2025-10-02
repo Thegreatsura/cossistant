@@ -19,6 +19,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { db } from "./db";
 import { getTRPCSession } from "./db/queries/session";
 import { polarRouters } from "./polar";
+import { realtimeEmitter } from "./realtime/emitter";
 import { workflowsRouters } from "./workflows";
 import { upgradedWebsocket, websocket } from "./ws/socket";
 
@@ -26,6 +27,7 @@ const app = new OpenAPIHono<{
 	Variables: {
 		user: typeof auth.$Infer.Session.user | null;
 		session: typeof auth.$Infer.Session.session | null;
+		realtime: typeof realtimeEmitter;
 	};
 }>();
 
@@ -41,6 +43,12 @@ const acceptedOrigins = [
 
 // Logger middleware
 app.use(logger());
+
+// Attach realtime emitter to the context
+app.use("*", async (c, next) => {
+	c.set("realtime", realtimeEmitter);
+	await next();
+});
 
 // Secure headers middleware
 app.use(secureHeaders());

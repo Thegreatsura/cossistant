@@ -40,8 +40,11 @@ mock.module("@api/lib/auth-validation", () => ({
 mock.module("@api/utils/websocket-connection", () => ({
 	createConnectionEvent: () => ({
 		type: "USER_CONNECTED",
-		data: { userId: "user", connectionId: "conn", timestamp: Date.now() },
+		payload: { userId: "user", connectionId: "conn", timestamp: Date.now() },
 		timestamp: Date.now(),
+		organizationId: "org",
+		websiteId: "site",
+		visitorId: null,
 	}),
 	getConnectionIdFromSocket: () => {},
 	handleAuthenticationFailure: async () => {},
@@ -97,10 +100,12 @@ describe("handleConnectionClose", () => {
 		expect(routeEventCalls).toHaveLength(1);
 		const [event, context] = routeEventCalls[0];
 		expect(event.type).toBe("USER_DISCONNECTED");
-		expect(event.data).toMatchObject({
+		expect(event.payload).toMatchObject({
 			userId: "user-1",
 			connectionId: "conn-user",
 		});
+		expect(event.organizationId).toBe("org-1");
+		expect(event.websiteId).toBe("website-1");
 		expect(context).toMatchObject({
 			connectionId: "conn-user",
 			userId: "user-1",
@@ -127,10 +132,13 @@ describe("handleConnectionClose", () => {
 		expect(routeEventCalls).toHaveLength(1);
 		const [event, context] = routeEventCalls[0];
 		expect(event.type).toBe("VISITOR_DISCONNECTED");
-		expect(event.data).toMatchObject({
+		expect(event.payload).toMatchObject({
 			visitorId: "visitor-1",
 			connectionId: "conn-visitor",
 		});
+		expect(event.organizationId).toBe("org-9");
+		expect(event.websiteId).toBe("website-9");
+		expect(event.visitorId).toBe("visitor-1");
 		expect(context).toMatchObject({
 			connectionId: "conn-visitor",
 			visitorId: "visitor-1",

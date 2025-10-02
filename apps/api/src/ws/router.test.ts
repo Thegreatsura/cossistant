@@ -17,12 +17,15 @@ describe("routeEvent", () => {
 	it("routes presence updates to website connections", async () => {
 		const event: RealtimeEvent<"USER_PRESENCE_UPDATE"> = {
 			type: "USER_PRESENCE_UPDATE",
-			data: {
+			payload: {
 				userId: "user-123",
 				status: "online",
 				lastSeen: Date.now(),
 			},
 			timestamp: Date.now(),
+			websiteId: "website-789",
+			organizationId: "org-1",
+			visitorId: null,
 		};
 
 		await routeEvent(event, {
@@ -45,12 +48,15 @@ describe("routeEvent", () => {
 	it("routes visitor events to dashboards", async () => {
 		const event: RealtimeEvent<"VISITOR_CONNECTED"> = {
 			type: "VISITOR_CONNECTED",
-			data: {
+			payload: {
 				visitorId: "visitor-123",
 				connectionId: "conn-456",
 				timestamp: Date.now(),
 			},
 			timestamp: Date.now(),
+			websiteId: "website-abc",
+			organizationId: "org-1",
+			visitorId: "visitor-123",
 		};
 
 		await routeEvent(event, {
@@ -80,7 +86,7 @@ describe("MESSAGE_CREATED handler", () => {
 	it("forwards messages to dashboards and the matching visitor", async () => {
 		const event: RealtimeEvent<"MESSAGE_CREATED"> = {
 			type: "MESSAGE_CREATED",
-			data: {
+			payload: {
 				message: {
 					id: "msg-1",
 					bodyMd: "hello",
@@ -103,6 +109,9 @@ describe("MESSAGE_CREATED handler", () => {
 				organizationId: "org-1",
 			},
 			timestamp: Date.now(),
+			websiteId: "site-1",
+			organizationId: "org-1",
+			visitorId: "visitor-1",
 		};
 
 		await routeEvent(event, {
@@ -123,7 +132,7 @@ describe("MESSAGE_CREATED handler", () => {
 	it("falls back to context visitor when message has no visitorId", async () => {
 		const event: RealtimeEvent<"MESSAGE_CREATED"> = {
 			type: "MESSAGE_CREATED",
-			data: {
+			payload: {
 				message: {
 					id: "msg-ctx-1",
 					bodyMd: "from agent",
@@ -146,6 +155,9 @@ describe("MESSAGE_CREATED handler", () => {
 				organizationId: "org-ctx",
 			},
 			timestamp: Date.now(),
+			websiteId: "site-ctx",
+			organizationId: "org-ctx",
+			visitorId: "visitor-from-context",
 		};
 
 		await routeEvent(event, {
@@ -176,11 +188,10 @@ describe("CONVERSATION_SEEN handler", () => {
 	it("broadcasts to dashboards and conversation visitor", async () => {
 		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
 			type: "CONVERSATION_SEEN",
-			data: {
+			payload: {
 				conversationId: "conv-seen-1",
 				websiteId: "site-seen",
 				organizationId: "org-seen",
-				conversationVisitorId: "visitor-xyz",
 				lastSeenAt: new Date().toISOString(),
 				actorType: "user",
 				actorId: "user-actor",
@@ -189,11 +200,15 @@ describe("CONVERSATION_SEEN handler", () => {
 				aiAgentId: null,
 			},
 			timestamp: Date.now(),
+			websiteId: "site-seen",
+			organizationId: "org-seen",
+			visitorId: "visitor-xyz",
 		};
 
 		await routeEvent(event, {
 			connectionId: "conn-seen",
 			websiteId: "site-seen",
+			visitorId: "visitor-xyz",
 			sendToWebsite,
 			sendToVisitor,
 			sendToConnection,
@@ -209,11 +224,10 @@ describe("CONVERSATION_SEEN handler", () => {
 		const visitorId = "visitor-actor";
 		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
 			type: "CONVERSATION_SEEN",
-			data: {
+			payload: {
 				conversationId: "conv-seen-2",
 				websiteId: "site-seen",
 				organizationId: "org-seen",
-				conversationVisitorId: visitorId,
 				lastSeenAt: new Date().toISOString(),
 				actorType: "visitor",
 				actorId: visitorId,
@@ -222,6 +236,9 @@ describe("CONVERSATION_SEEN handler", () => {
 				aiAgentId: null,
 			},
 			timestamp: Date.now(),
+			websiteId: "site-seen",
+			organizationId: "org-seen",
+			visitorId,
 		};
 
 		await routeEvent(event, {
@@ -249,11 +266,10 @@ describe("CONVERSATION_TYPING handler", () => {
 	it("broadcasts typing state to dashboards and visitors", async () => {
 		const event: RealtimeEvent<"CONVERSATION_TYPING"> = {
 			type: "CONVERSATION_TYPING",
-			data: {
+			payload: {
 				conversationId: "conv-typing",
 				websiteId: "site-typing",
 				organizationId: "org-typing",
-				conversationVisitorId: "visitor-owner",
 				actorType: "user",
 				actorId: "user-123",
 				isTyping: true,
@@ -262,11 +278,15 @@ describe("CONVERSATION_TYPING handler", () => {
 				aiAgentId: null,
 			},
 			timestamp: Date.now(),
+			websiteId: "site-typing",
+			organizationId: "org-typing",
+			visitorId: "visitor-owner",
 		};
 
 		await routeEvent(event, {
 			connectionId: "conn-typing",
 			websiteId: "site-typing",
+			visitorId: "visitor-owner",
 			sendToWebsite,
 			sendToVisitor,
 			sendToConnection,
@@ -289,11 +309,11 @@ describe("CONVERSATION_EVENT_CREATED handler", () => {
 	it("broadcasts timeline events to dashboards and visitor", async () => {
 		const event: RealtimeEvent<"CONVERSATION_EVENT_CREATED"> = {
 			type: "CONVERSATION_EVENT_CREATED",
-			data: {
+			payload: {
 				conversationId: "conv-event",
 				websiteId: "site-event",
 				organizationId: "org-event",
-				conversationVisitorId: "visitor-event",
+				visitorId: null,
 				event: {
 					id: "evt-1",
 					conversationId: "conv-event",
@@ -309,11 +329,15 @@ describe("CONVERSATION_EVENT_CREATED handler", () => {
 				},
 			},
 			timestamp: Date.now(),
+			websiteId: "site-event",
+			organizationId: "org-event",
+			visitorId: "visitor-event",
 		};
 
 		await routeEvent(event, {
 			connectionId: "conn-event",
 			websiteId: "site-event",
+			visitorId: "visitor-event",
 			sendToWebsite,
 			sendToVisitor,
 			sendToConnection,
@@ -336,7 +360,7 @@ describe("CONVERSATION_CREATED handler", () => {
 	it("broadcasts new conversations to dashboards and visitor", async () => {
 		const event: RealtimeEvent<"CONVERSATION_CREATED"> = {
 			type: "CONVERSATION_CREATED",
-			data: {
+			payload: {
 				conversation: {
 					id: "conv-created",
 					organizationId: "org-created",
@@ -353,6 +377,9 @@ describe("CONVERSATION_CREATED handler", () => {
 				visitorId: "visitor-created",
 			},
 			timestamp: Date.now(),
+			websiteId: "site-created",
+			organizationId: "org-created",
+			visitorId: "visitor-created",
 		};
 
 		await routeEvent(event, {

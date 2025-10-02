@@ -20,8 +20,6 @@ export const Header: React.FC<HeaderProps> = ({
 
 	return (
 		<div className={cn("absolute inset-x-0 top-0 z-10 h-18", className)}>
-			<div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-co-background to-transparent" />
-			<div className="pointer-events-none absolute inset-0 z-0 h-30 bg-gradient-to-b from-co-background via-co-background to-transparent" />
 			<div className="absolute inset-0 z-10 flex items-center justify-between gap-3 px-4">
 				<div className="flex flex-1 items-center gap-3">
 					{onGoBack && (

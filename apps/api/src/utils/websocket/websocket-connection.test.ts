@@ -32,18 +32,17 @@ describe("createConnectionEvent", () => {
 			organizationId: "org-002",
 		};
 
-		const event = createConnectionEvent(authResult, "conn-abc") as {
-			type: string;
-			data: Record<string, unknown>;
-			timestamp: number;
-		};
+		const event = createConnectionEvent(authResult, "conn-abc");
 
 		expect(event.type).toBe("USER_CONNECTED");
-		expect(event.data).toMatchObject({
+		expect(event.payload).toMatchObject({
 			userId: "user-123",
 			connectionId: "conn-abc",
 		});
-		expect(typeof event.data.timestamp).toBe("number");
+		expect(event.websiteId).toBe("site-001");
+		expect(event.organizationId).toBe("org-002");
+		expect(event.visitorId).toBeNull();
+		expect(typeof event.payload.timestamp).toBe("number");
 		expect(typeof event.timestamp).toBe("number");
 	});
 
@@ -54,26 +53,25 @@ describe("createConnectionEvent", () => {
 			organizationId: "org-002",
 		};
 
-		const event = createConnectionEvent(authResult, "conn-def") as {
-			type: string;
-			data: Record<string, unknown>;
-			timestamp: number;
-		};
+		const event = createConnectionEvent(authResult, "conn-def");
 
 		expect(event.type).toBe("VISITOR_CONNECTED");
-		expect(event.data).toMatchObject({
+		expect(event.payload).toMatchObject({
 			visitorId: "visitor-456",
 			connectionId: "conn-def",
 		});
-		expect(typeof event.data.timestamp).toBe("number");
+		expect(event.websiteId).toBe("site-001");
+		expect(event.organizationId).toBe("org-002");
+		expect(event.visitorId).toBe("visitor-456");
+		expect(typeof event.payload.timestamp).toBe("number");
 		expect(typeof event.timestamp).toBe("number");
 	});
 
-	it("throws when neither user nor visitor identifiers are provided", () => {
+	it("throws when routing metadata is missing", () => {
 		const authResult = {} as AuthResult;
 
 		expect(() => createConnectionEvent(authResult, "conn-ghi")).toThrow(
-			"No visitorId available for visitor connection"
+			"Missing website or organization metadata for connection event"
 		);
 	});
 });
