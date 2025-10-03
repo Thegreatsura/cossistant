@@ -20,8 +20,9 @@ type SeenEventParams = BaseRealtimeContext & {
 };
 
 type TypingEventParams = BaseRealtimeContext & {
-	actor: ConversationRealtimeActor;
-	isTyping: boolean;
+        actor: ConversationRealtimeActor;
+        isTyping: boolean;
+        visitorPreview?: string | null;
 };
 
 type TimelineEventParams = BaseRealtimeContext & {
@@ -89,24 +90,30 @@ export async function emitConversationSeenEvent({
 }
 
 export async function emitConversationTypingEvent({
-	conversation,
-	actor,
-	isTyping,
+        conversation,
+        actor,
+        isTyping,
+        visitorPreview,
 }: TypingEventParams) {
-	const actorPayload = mapActor(actor);
+        const actorPayload = mapActor(actor);
+        const previewForEvent =
+                actor.type === "visitor" && isTyping && visitorPreview
+                        ? visitorPreview.slice(0, 2000)
+                        : null;
 
-	await realtimeEmitter.emit(
-		"CONVERSATION_TYPING",
-		{
-			conversationId: conversation.id,
-			websiteId: conversation.websiteId,
-			organizationId: conversation.organizationId,
-			isTyping,
-			...actorPayload,
-		},
-		{
-			organizationId: conversation.organizationId,
-			websiteId: conversation.websiteId,
+        await realtimeEmitter.emit(
+                "CONVERSATION_TYPING",
+                {
+                        conversationId: conversation.id,
+                        websiteId: conversation.websiteId,
+                        organizationId: conversation.organizationId,
+                        isTyping,
+                        visitorPreview: previewForEvent,
+                        ...actorPayload,
+                },
+                {
+                        organizationId: conversation.organizationId,
+                        websiteId: conversation.websiteId,
 			userId: actorPayload.userId,
 			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
 		}

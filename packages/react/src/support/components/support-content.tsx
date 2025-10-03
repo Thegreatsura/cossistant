@@ -29,8 +29,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 		error,
 		setMessage,
 		addFiles,
-		removeFile,
-		submit,
+removeFile,
 	} = useMultimodalInput({
 		onSubmit: async (data) => {},
 		onError: () => {},
@@ -72,7 +71,6 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 					message={message}
 					removeFile={removeFile}
 					setMessage={setMessage}
-					submit={submit}
 				/>
 			</Container>
 		</motion.div>

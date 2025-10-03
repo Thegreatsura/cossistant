@@ -17,7 +17,10 @@ import {
 import { getConversationMessages } from "@api/db/queries/message";
 import { getVisitorComplete } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
-import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
+import {
+        emitConversationSeenEvent,
+        emitConversationTypingEvent,
+} from "@api/utils/conversation-realtime";
 import { createMessage } from "@api/utils/message";
 import {
 	conversationEventSchema,
@@ -459,11 +462,11 @@ export const conversationRouter = createTRPCRouter({
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
-	markUnread: protectedProcedure
-		.input(
-			z.object({
-				conversationId: z.string(),
-				websiteSlug: z.string(),
+        markUnread: protectedProcedure
+                .input(
+                        z.object({
+                                conversationId: z.string(),
+                                websiteSlug: z.string(),
 			})
 		)
 		.output(conversationMutationResponseSchema)
@@ -478,13 +481,45 @@ export const conversationRouter = createTRPCRouter({
 				actorUserId: user.id,
 			});
 
-			return { conversation: toConversationOutput(updatedConversation) };
-		}),
+                        return { conversation: toConversationOutput(updatedConversation) };
+                }),
 
-	getVisitorById: protectedProcedure
-		.input(
-			z.object({
-				visitorId: z.string(),
+        setTyping: protectedProcedure
+                .input(
+                        z.object({
+                                conversationId: z.string(),
+                                websiteSlug: z.string(),
+                                isTyping: z.boolean(),
+                        })
+                )
+                .output(
+                        z.object({
+                                success: z.literal(true),
+                        })
+                )
+                .mutation(async ({ ctx: { db, user }, input }) => {
+                        const { conversation } = await loadConversationContext(
+                                db,
+                                user.id,
+                                {
+                                        websiteSlug: input.websiteSlug,
+                                        conversationId: input.conversationId,
+                                }
+                        );
+
+                        await emitConversationTypingEvent({
+                                conversation,
+                                actor: { type: "user", userId: user.id },
+                                isTyping: input.isTyping,
+                        });
+
+                        return { success: true } as const;
+                }),
+
+        getVisitorById: protectedProcedure
+                .input(
+                        z.object({
+                                visitorId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)

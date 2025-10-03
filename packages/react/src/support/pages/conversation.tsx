@@ -6,6 +6,7 @@ import type {
 import React from "react";
 import { useDefaultMessages } from "../../hooks/private/use-default-messages";
 import { useCreateConversation } from "../../hooks/use-create-conversation";
+import { useVisitorTypingReporter } from "../../hooks/private/use-visitor-typing-reporter";
 import { useSendMessage } from "../../hooks/use-send-message";
 import { useSupport } from "../../provider";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
@@ -24,7 +25,6 @@ type ConversationPageProps = {
 	setMessage: (message: string) => void;
 	addFiles: (files: File[]) => void;
 	removeFile: (index: number) => void;
-	submit: () => void;
 	messages?: MessageType[];
 	events: ConversationEvent[];
 };
@@ -38,7 +38,6 @@ export const ConversationPage = ({
 	setMessage,
 	addFiles,
 	removeFile,
-	submit,
 	messages = [],
 	events = [],
 }: ConversationPageProps) => {
@@ -65,6 +64,20 @@ export const ConversationPage = ({
 	const fetchedMessages = messagesQuery.messages;
 
 	const sendMessage = useSendMessage({ client });
+	const {
+		handleInputChange: handleTypingChange,
+		handleSubmit: handleTypingSubmit,
+		stop: stopTyping,
+	} = useVisitorTypingReporter({
+		client: client ?? null,
+		conversationId: realConversationId,
+	});
+
+	React.useEffect(() => {
+		return () => {
+			stopTyping();
+		};
+	}, [stopTyping]);
 
 	React.useEffect(() => {
 		if (hasRealConversation || bootstrapAttemptedRef.current) {
@@ -105,49 +118,59 @@ export const ConversationPage = ({
 		website?.id,
 	]);
 
-	const handleSubmit = React.useCallback(() => {
-		if (!message.trim() && files.length === 0) {
-			return;
-		}
+        const handleSubmit = React.useCallback(() => {
+                if (!message.trim() && files.length === 0) {
+                        return;
+                }
 
-		sendMessage.mutate({
-			conversationId: realConversationId,
-			message: message.trim(),
-			files,
-			defaultMessages,
-			visitorId: visitor?.id,
-			onSuccess: (newConversationId, messageId) => {
-				// If we created a new conversation, replace the current navigation state
-				// to avoid having to click back twice
-				if (
-					!hasRealConversation &&
-					newConversationId !== PENDING_CONVERSATION_ID
-				) {
-					replace({
-						page: "CONVERSATION",
-						params: { conversationId: newConversationId },
-					});
-				}
+                handleTypingSubmit();
 
-				setMessage("");
-			},
-			onError: (_error) => {
-				console.error("Failed to send message:", _error);
-			},
-		});
-	}, [
-		message,
-		files,
-		realConversationId,
-		hasRealConversation,
-		defaultMessages,
-		visitor?.id,
-		sendMessage,
-		replace,
-		setMessage,
-	]);
+                sendMessage.mutate({
+                        conversationId: realConversationId,
+                        message: message.trim(),
+                        files,
+                        defaultMessages,
+                        visitorId: visitor?.id,
+                        onSuccess: (newConversationId, messageId) => {
+                                if (
+                                        !hasRealConversation &&
+                                        newConversationId !== PENDING_CONVERSATION_ID
+                                ) {
+                                        replace({
+                                                page: "CONVERSATION",
+                                                params: { conversationId: newConversationId },
+                                        });
+                                }
 
-	// Use our custom submit handler instead of the passed one
+                                setMessage("");
+                                handleTypingChange("");
+                        },
+                        onError: (_error) => {
+                                console.error("Failed to send message:", _error);
+                        },
+                });
+        }, [
+                message,
+                files,
+                realConversationId,
+                hasRealConversation,
+                defaultMessages,
+                visitor?.id,
+                sendMessage,
+                replace,
+                setMessage,
+                handleTypingSubmit,
+                handleTypingChange,
+        ]);
+
+	const handleMessageChange = React.useCallback(
+		(value: string) => {
+			setMessage(value);
+			handleTypingChange(value);
+		},
+		[setMessage, handleTypingChange]
+	);
+
 	const actualMessages =
 		fetchedMessages.length > 0
 			? fetchedMessages
@@ -232,6 +255,7 @@ export const ConversationPage = ({
 				availableAIAgents={availableAIAgents}
 				availableHumanAgents={availableHumanAgents}
 				className="min-h-0 flex-1"
+				conversationId={conversationId}
 				currentVisitorId={visitor?.id}
 				events={events}
 				messages={actualMessages}
@@ -243,7 +267,7 @@ export const ConversationPage = ({
 					error={actualError}
 					files={files}
 					isSubmitting={actualIsSubmitting}
-					onChange={setMessage}
+					onChange={handleMessageChange}
 					onFileSelect={addFiles}
 					onRemoveFile={removeFile}
 					onSubmit={handleSubmit}

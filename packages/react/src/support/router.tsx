@@ -13,7 +13,6 @@ export const SupportRouter: React.FC<{
 	setMessage: (message: string) => void;
 	addFiles: (files: File[]) => void;
 	removeFile: (index: number) => void;
-	submit: () => void;
 }> = ({
 	message,
 	files,
@@ -22,7 +21,6 @@ export const SupportRouter: React.FC<{
 	setMessage,
 	addFiles,
 	removeFile,
-	submit,
 }) => {
 	const { current } = useSupportNavigation();
 
@@ -45,7 +43,6 @@ export const SupportRouter: React.FC<{
 					message={message}
 					removeFile={removeFile}
 					setMessage={setMessage}
-					submit={submit}
 				/>
 			);
 

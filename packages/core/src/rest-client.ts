@@ -7,6 +7,8 @@ import type {
   ListConversationsResponse,
   MarkConversationSeenRequestBody,
   MarkConversationSeenResponseBody,
+  SetConversationTypingRequestBody,
+  SetConversationTypingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
   GetMessagesRequest,
@@ -513,6 +515,66 @@ export class CossistantRestClient {
     return {
       conversationId: response.conversationId,
       lastSeenAt: new Date(response.lastSeenAt),
+    };
+  }
+
+  async setConversationTyping(
+    params: {
+      conversationId: string;
+      isTyping: boolean;
+      visitorPreview?: string | null;
+      visitorId?: string;
+      externalVisitorId?: string;
+    }
+  ): Promise<SetConversationTypingResponseBody> {
+    const storedVisitorId = this.websiteId
+      ? getVisitorId(this.websiteId)
+      : undefined;
+    const visitorId = params.visitorId || storedVisitorId;
+
+    if (!(visitorId || params.externalVisitorId)) {
+      throw new Error(
+        "Visitor ID or external visitor ID is required to report typing state"
+      );
+    }
+
+    const headers: Record<string, string> = {};
+    if (visitorId) {
+      headers["X-Visitor-Id"] = visitorId;
+    }
+
+    const body: SetConversationTypingRequestBody = {
+      isTyping: params.isTyping,
+    };
+
+    if (params.visitorId) {
+      body.visitorId = params.visitorId;
+    }
+
+    if (params.externalVisitorId) {
+      body.externalVisitorId = params.externalVisitorId;
+    }
+
+    if (params.visitorPreview && params.isTyping) {
+      body.visitorPreview = params.visitorPreview.slice(0, 2000);
+    }
+
+    const response = await this.request<{
+      conversationId: string;
+      isTyping: boolean;
+      visitorPreview: string | null;
+      sentAt: string;
+    }>(`/conversations/${params.conversationId}/typing`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers,
+    });
+
+    return {
+      conversationId: response.conversationId,
+      isTyping: response.isTyping,
+      visitorPreview: response.visitorPreview,
+      sentAt: new Date(response.sentAt),
     };
   }
 

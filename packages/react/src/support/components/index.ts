@@ -12,5 +12,9 @@ export type { MessageListProps } from "./message-list";
 export { MessageList } from "./message-list";
 export { SendButton } from "./multimodal-input";
 export { SupportContent } from "./support-content";
-export type { TypingIndicatorProps } from "./typing-indicator";
-export { TypingIndicator } from "./typing-indicator";
+export type {
+TypingIndicatorProps,
+TypingParticipant,
+TypingParticipantType,
+} from "../../primitives/typing-indicator";
+export { TypingIndicator } from "../../primitives/typing-indicator";

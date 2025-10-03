@@ -5,7 +5,10 @@ import {
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
-import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
+import {
+        emitConversationSeenEvent,
+        emitConversationTypingEvent,
+} from "@api/utils/conversation-realtime";
 import { createMessage } from "@api/utils/message";
 import {
 	safelyExtractRequestData,
@@ -16,11 +19,13 @@ import {
 	createConversationRequestSchema,
 	createConversationResponseSchema,
 	getConversationRequestSchema,
-	getConversationResponseSchema,
-	listConversationsRequestSchema,
-	listConversationsResponseSchema,
-	markConversationSeenRequestSchema,
-	markConversationSeenResponseSchema,
+        getConversationResponseSchema,
+        listConversationsRequestSchema,
+        listConversationsResponseSchema,
+        markConversationSeenRequestSchema,
+        markConversationSeenResponseSchema,
+        setConversationTypingRequestSchema,
+        setConversationTypingResponseSchema,
 } from "@cossistant/types/api/conversation";
 import type { Message } from "@cossistant/types/schemas";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
@@ -447,9 +452,9 @@ conversationRouter.openapi(
 );
 
 conversationRouter.openapi(
-	{
-		method: "post",
-		path: "/{conversationId}/seen",
+        {
+                method: "post",
+                path: "/{conversationId}/seen",
 		summary: "Mark a conversation as seen by the visitor",
 		description:
 			"Record a visitor's last seen timestamp for a specific conversation.",
@@ -586,9 +591,164 @@ conversationRouter.openapi(
 			lastSeenAt,
 		};
 
-		return c.json(
-			validateResponse(response, markConversationSeenResponseSchema),
-			200
-		);
-	}
+                return c.json(
+                        validateResponse(response, markConversationSeenResponseSchema),
+                        200
+                );
+        }
+);
+
+conversationRouter.openapi(
+        {
+                method: "post",
+                path: "/{conversationId}/typing",
+                summary: "Report a visitor typing state",
+                description:
+                        "Emit a typing indicator event for the visitor. Either visitorId or externalVisitorId must be provided via body or headers.",
+                tags: ["Conversations"],
+                request: {
+                        body: {
+                                required: true,
+                                content: {
+                                        "application/json": {
+                                                schema: setConversationTypingRequestSchema,
+                                        },
+                                },
+                        },
+                },
+                responses: {
+                        200: {
+                                description: "Typing state recorded",
+                                content: {
+                                        "application/json": {
+                                                schema: setConversationTypingResponseSchema,
+                                        },
+                                },
+                        },
+                        400: {
+                                description: "Invalid request",
+                                content: {
+                                        "application/json": {
+                                                schema: z.object({ error: z.string() }),
+                                        },
+                                },
+                        },
+                        404: {
+                                description: "Conversation not found",
+                                content: {
+                                        "application/json": {
+                                                schema: z.object({ error: z.string() }),
+                                        },
+                                },
+                        },
+                },
+                security: [
+                        {
+                                "Public API Key": [],
+                        },
+                ],
+                parameters: [
+                        {
+                                name: "conversationId",
+                                in: "path",
+                                description: "The ID of the conversation receiving the typing update",
+                                required: true,
+                                schema: {
+                                        type: "string",
+                                },
+                        },
+                        {
+                                name: "X-Public-Key",
+                                in: "header",
+                                description:
+                                        "Public API key for browser-based authentication. Can only be used from whitelisted domains. Format: `pk_[live|test]_...`",
+                                required: false,
+                                schema: {
+                                        type: "string",
+                                        pattern: "^pk_(live|test)_[a-f0-9]{64}$",
+                                },
+                        },
+                        {
+                                name: "X-Visitor-Id",
+                                in: "header",
+                                description: "Visitor ID from localStorage.",
+                                required: false,
+                                schema: {
+                                        type: "string",
+                                        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$",
+                                },
+                        },
+                ],
+        },
+        async (c) => {
+                const {
+                        db,
+                        website,
+                        organization,
+                        body,
+                        visitorIdHeader,
+                } = await safelyExtractRequestData(c, setConversationTypingRequestSchema);
+
+                const params = getConversationRequestSchema.parse({
+                        conversationId: c.req.param("conversationId"),
+                });
+
+                const [visitor, conversationRecord] = await Promise.all([
+                        getVisitor(db, {
+                                visitorId: body.visitorId || visitorIdHeader,
+                                externalVisitorId: body.externalVisitorId,
+                        }),
+                        getConversationByIdWithLastMessage(db, {
+                                organizationId: organization.id,
+                                websiteId: website.id,
+                                conversationId: params.conversationId,
+                        }),
+                ]);
+
+                if (!visitor || visitor.websiteId !== website.id) {
+                        return c.json(
+                                {
+                                        error:
+                                                "Visitor not found, please pass a valid visitorId or externalVisitorId",
+                                },
+                                400
+                        );
+                }
+
+                if (!conversationRecord || conversationRecord.visitorId !== visitor.id) {
+                        return c.json(
+                                {
+                                        error: "Conversation not found",
+                                },
+                                404
+                        );
+                }
+
+                const trimmedPreview = body.visitorPreview?.trim() ?? "";
+                const effectivePreview =
+                        body.isTyping && trimmedPreview.length > 0
+                                ? trimmedPreview.slice(0, 2000)
+                                : null;
+
+                await emitConversationTypingEvent({
+                        conversation: conversationRecord,
+                        actor: { type: "visitor", visitorId: visitor.id },
+                        isTyping: body.isTyping,
+                        visitorPreview: effectivePreview ?? undefined,
+                });
+
+                const sentAt = new Date();
+
+                const response = {
+                        conversationId: conversationRecord.id,
+                        isTyping: body.isTyping,
+                        visitorPreview: effectivePreview,
+                        sentAt,
+                };
+
+                return c.json(
+                        validateResponse(response, setConversationTypingResponseSchema),
+                        200
+                );
+        }
 );

@@ -5,6 +5,8 @@ export * from "./private/use-multimodal-input";
 export * from "./private/use-rest-client";
 export * from "./use-conversation";
 export * from "./use-conversation-messages";
+export * from "./use-conversation-seen";
+export * from "./use-conversation-typing";
 export * from "./use-conversations";
 export * from "./use-create-conversation";
 export * from "./use-realtime-support";

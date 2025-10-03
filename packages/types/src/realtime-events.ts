@@ -47,6 +47,11 @@ export const RealtimeEvents = {
     userId: z.string().nullable(),
     aiAgentId: z.string().nullable(),
     isTyping: z.boolean(),
+    visitorPreview: z
+      .string()
+      .max(2000)
+      .nullable()
+      .optional(),
   }),
   CONVERSATION_EVENT_CREATED: z.object({
     conversationId: z.string(),

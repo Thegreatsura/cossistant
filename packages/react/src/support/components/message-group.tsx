@@ -1,16 +1,17 @@
 import type {
-	AvailableAIAgent,
-	AvailableHumanAgent,
-	Message as MessageType,
+AvailableAIAgent,
+AvailableHumanAgent,
+Message as MessageType,
 } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
 import { motion } from "motion/react";
-import type React from "react";
+import React, { useMemo } from "react";
 import {
-	MessageGroupAvatar,
-	MessageGroupContent,
-	MessageGroupHeader,
-	MessageGroup as PrimitiveMessageGroup,
+MessageGroupAvatar,
+MessageGroupContent,
+MessageGroupHeader,
+MessageGroupSeenIndicator,
+MessageGroup as PrimitiveMessageGroup,
 } from "../../primitives/message-group";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
@@ -18,41 +19,61 @@ import { CossistantLogo } from "./cossistant-branding";
 import { Message } from "./message";
 
 export type MessageGroupProps = {
-	messages: MessageType[];
-	availableAIAgents: AvailableAIAgent[];
-	availableHumanAgents: AvailableHumanAgent[];
-	currentVisitorId?: string;
+messages: MessageType[];
+availableAIAgents: AvailableAIAgent[];
+availableHumanAgents: AvailableHumanAgent[];
+currentVisitorId?: string;
+seenByIds?: string[];
 };
 
 export const MessageGroup: React.FC<MessageGroupProps> = ({
-	messages,
-	availableAIAgents,
-	availableHumanAgents,
-	currentVisitorId,
+        messages,
+        availableAIAgents,
+        availableHumanAgents,
+        currentVisitorId,
+        seenByIds = [],
 }) => {
-	if (messages.length === 0) {
-		return null;
-	}
+        if (messages.length === 0) {
+                return null;
+        }
 
-	// Get agent info for the sender
-	const firstMessage = messages[0];
-	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === firstMessage?.userId
-	);
-	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === firstMessage?.aiAgentId
-	);
+        // Get agent info for the sender
+        const firstMessage = messages[0];
+        const humanAgent = availableHumanAgents.find(
+                (agent) => agent.id === firstMessage?.userId
+        );
+        const aiAgent = availableAIAgents.find(
+                (agent) => agent.id === firstMessage?.aiAgentId
+        );
 
-	return (
-		<PrimitiveMessageGroup
-			messages={messages}
-			viewerId={currentVisitorId}
-			viewerType={SenderType.VISITOR}
-		>
-			{({
-				isSentByViewer,
-				isReceivedByViewer,
-				isVisitor,
+        const seenByNames = useMemo(() => {
+                const deduped = new Set<string>();
+                for (const id of seenByIds) {
+                        const human = availableHumanAgents.find((agent) => agent.id === id);
+                        if (human && human.name) {
+                                deduped.add(human.name);
+                                continue;
+                        }
+                        const ai = availableAIAgents.find((agent) => agent.id === id);
+                        if (ai && ai.name) {
+                                deduped.add(ai.name);
+                                continue;
+                        }
+                }
+                return Array.from(deduped);
+        }, [seenByIds, availableHumanAgents, availableAIAgents]);
+
+        return (
+                <PrimitiveMessageGroup
+                        messages={messages}
+                        viewerId={currentVisitorId}
+                        viewerType={SenderType.VISITOR}
+                        seenByIds={seenByIds}
+                >
+                        {({
+                                isSentByViewer,
+                                isReceivedByViewer,
+                                isVisitor,
 				isAI,
 				isTeamMember,
 			}) => (
@@ -104,10 +125,23 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 								key={message.id}
 								message={message}
 							/>
-						))}
-					</MessageGroupContent>
-				</motion.div>
-			)}
-		</PrimitiveMessageGroup>
-	);
+                                                ))}
+
+                                                {isSentByViewer && seenByIds.length > 0 ? (
+                                                        <MessageGroupSeenIndicator
+                                                                className="px-1 text-muted-foreground text-xs"
+                                                                seenByIds={seenByIds}
+                                                        >
+                                                                {() =>
+                                                                        seenByNames.length > 0
+                                                                                ? `Seen by ${seenByNames.join(", ")}`
+                                                                                : "Seen"
+                                                                }
+                                                        </MessageGroupSeenIndicator>
+                                                ) : null}
+                                        </MessageGroupContent>
+                                </motion.div>
+                        )}
+                </PrimitiveMessageGroup>
+        );
 };
