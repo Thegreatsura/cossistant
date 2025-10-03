@@ -1,7 +1,7 @@
 import { useConversationMessages } from "@cossistant/react/hooks/use-conversation-messages";
 import type {
-	ConversationEvent,
-	Message as MessageType,
+  ConversationEvent,
+  Message as MessageType,
 } from "@cossistant/types";
 import React from "react";
 import { useDefaultMessages } from "../../hooks/private/use-default-messages";
@@ -17,264 +17,293 @@ import { MultimodalInput } from "../components/multimodal-input";
 import { useSupportNavigation } from "../store";
 
 type ConversationPageProps = {
-	conversationId: string;
-	message: string;
-	files: File[];
-	isSubmitting: boolean;
-	error: Error | null;
-	setMessage: (message: string) => void;
-	addFiles: (files: File[]) => void;
-	removeFile: (index: number) => void;
-	messages?: MessageType[];
-	events: ConversationEvent[];
+  conversationId: string;
+  message: string;
+  files: File[];
+  isSubmitting: boolean;
+  error: Error | null;
+  setMessage: (message: string) => void;
+  addFiles: (files: File[]) => void;
+  removeFile: (index: number) => void;
+  messages?: MessageType[];
+  events: ConversationEvent[];
 };
 
 export const ConversationPage = ({
-	conversationId,
-	message,
-	files,
-	isSubmitting,
-	error,
-	setMessage,
-	addFiles,
-	removeFile,
-	messages = [],
-	events = [],
+  conversationId,
+  message,
+  files,
+  isSubmitting,
+  error,
+  setMessage,
+  addFiles,
+  removeFile,
+  messages = [],
+  events = [],
 }: ConversationPageProps) => {
-	const { website, availableAIAgents, availableHumanAgents, client, visitor } =
-		useSupport();
-	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
-	const lastSeenMessageIdRef = React.useRef<string | null>(null);
-	const markSeenInFlightRef = React.useRef(false);
+  const { website, availableAIAgents, availableHumanAgents, client, visitor } =
+    useSupport();
+  const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+  const lastSeenMessageIdRef = React.useRef<string | null>(null);
+  const markSeenInFlightRef = React.useRef(false);
+  const [isPageVisible, setIsPageVisible] = React.useState(
+    typeof document !== "undefined" ? !document.hidden : true
+  );
 
-	// Determine if we have a real conversation or pending one
-	const hasRealConversation = conversationId !== PENDING_CONVERSATION_ID;
-	const realConversationId = hasRealConversation ? conversationId : null;
-	const defaultMessages = useDefaultMessages({
-		conversationId,
-	});
-	const { mutateAsync: initiateConversation } = useCreateConversation({
-		client,
-	});
-	const bootstrapAttemptedRef = React.useRef(false);
+  // Determine if we have a real conversation or pending one
+  const hasRealConversation = conversationId !== PENDING_CONVERSATION_ID;
+  const realConversationId = hasRealConversation ? conversationId : null;
+  const defaultMessages = useDefaultMessages({
+    conversationId,
+  });
+  const { mutateAsync: initiateConversation } = useCreateConversation({
+    client,
+  });
+  const bootstrapAttemptedRef = React.useRef(false);
 
-	const messagesQuery = useConversationMessages(conversationId);
+  const messagesQuery = useConversationMessages(conversationId);
 
-	// Messages are already flattened in the hook
-	const fetchedMessages = messagesQuery.messages;
+  // Messages are already flattened in the hook
+  const fetchedMessages = messagesQuery.messages;
 
-	const sendMessage = useSendMessage({ client });
-	const {
-		handleInputChange: handleTypingChange,
-		handleSubmit: handleTypingSubmit,
-		stop: stopTyping,
-	} = useVisitorTypingReporter({
-		client: client ?? null,
-		conversationId: realConversationId,
-	});
+  const sendMessage = useSendMessage({ client });
+  const {
+    handleInputChange: handleTypingChange,
+    handleSubmit: handleTypingSubmit,
+    stop: stopTyping,
+  } = useVisitorTypingReporter({
+    client: client ?? null,
+    conversationId: realConversationId,
+  });
 
-	React.useEffect(() => {
-		return () => {
-			stopTyping();
-		};
-	}, [stopTyping]);
+  React.useEffect(() => {
+    return () => {
+      stopTyping();
+    };
+  }, [stopTyping]);
 
-	React.useEffect(() => {
-		if (hasRealConversation || bootstrapAttemptedRef.current) {
-			return;
-		}
+  // Track page visibility
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
 
-		bootstrapAttemptedRef.current = true;
-		let cancelled = false;
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
-		void initiateConversation({
-			defaultMessages,
-			visitorId: visitor?.id,
-			websiteId: website?.id ?? null,
-		})
-			.then((response) => {
-				if (!response || cancelled) {
-					return;
-				}
+  React.useEffect(() => {
+    if (hasRealConversation || bootstrapAttemptedRef.current) {
+      return;
+    }
 
-				replace({
-					page: "CONVERSATION",
-					params: { conversationId: response.conversation.id },
-				});
-			})
-			.catch(() => {
-				bootstrapAttemptedRef.current = false;
-			});
+    bootstrapAttemptedRef.current = true;
+    let cancelled = false;
 
-		return () => {
-			cancelled = true;
-		};
-	}, [
-		hasRealConversation,
-		initiateConversation,
-		defaultMessages,
-		replace,
-		visitor?.id,
-		website?.id,
-	]);
+    void initiateConversation({
+      defaultMessages,
+      visitorId: visitor?.id,
+      websiteId: website?.id ?? null,
+    })
+      .then((response) => {
+        if (!response || cancelled) {
+          return;
+        }
 
-	const handleSubmit = React.useCallback(() => {
-		if (!message.trim() && files.length === 0) {
-			return;
-		}
+        replace({
+          page: "CONVERSATION",
+          params: { conversationId: response.conversation.id },
+        });
+      })
+      .catch(() => {
+        bootstrapAttemptedRef.current = false;
+      });
 
-		handleTypingSubmit();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hasRealConversation,
+    initiateConversation,
+    defaultMessages,
+    replace,
+    visitor?.id,
+    website?.id,
+  ]);
 
-		sendMessage.mutate({
-			conversationId: realConversationId,
-			message: message.trim(),
-			files,
-			defaultMessages,
-			visitorId: visitor?.id,
-			onSuccess: (newConversationId, messageId) => {
-				if (
-					!hasRealConversation &&
-					newConversationId !== PENDING_CONVERSATION_ID
-				) {
-					replace({
-						page: "CONVERSATION",
-						params: { conversationId: newConversationId },
-					});
-				}
+  const handleSubmit = React.useCallback(() => {
+    if (!message.trim() && files.length === 0) {
+      return;
+    }
 
-				setMessage("");
-				handleTypingChange("");
-			},
-			onError: (_error) => {
-				console.error("Failed to send message:", _error);
-			},
-		});
-	}, [
-		message,
-		files,
-		realConversationId,
-		hasRealConversation,
-		defaultMessages,
-		visitor?.id,
-		sendMessage,
-		replace,
-		setMessage,
-		handleTypingSubmit,
-		handleTypingChange,
-	]);
+    handleTypingSubmit();
 
-	const handleMessageChange = React.useCallback(
-		(value: string) => {
-			setMessage(value);
-			handleTypingChange(value);
-		},
-		[setMessage, handleTypingChange]
-	);
+    sendMessage.mutate({
+      conversationId: realConversationId,
+      message: message.trim(),
+      files,
+      defaultMessages,
+      visitorId: visitor?.id,
+      onSuccess: (newConversationId, messageId) => {
+        if (
+          !hasRealConversation &&
+          newConversationId !== PENDING_CONVERSATION_ID
+        ) {
+          replace({
+            page: "CONVERSATION",
+            params: { conversationId: newConversationId },
+          });
+        }
 
-	const actualMessages =
-		fetchedMessages.length > 0
-			? fetchedMessages
-			: hasRealConversation
-				? messages
-				: defaultMessages;
-	const actualIsSubmitting = isSubmitting || sendMessage.isPending;
-	const actualError = error || messagesQuery.error;
-	const lastMessage = React.useMemo(
-		() => actualMessages.at(-1) ?? null,
-		[actualMessages]
-	);
+        setMessage("");
+        handleTypingChange("");
 
-	React.useEffect(() => {
-		lastSeenMessageIdRef.current = null;
-		markSeenInFlightRef.current = false;
-	}, []);
+        // Mark the message we just sent as seen immediately
+        // The backend will handle updating the seen timestamp
+        if (messageId) {
+          lastSeenMessageIdRef.current = messageId;
+        }
+      },
+      onError: (_error) => {
+        console.error("Failed to send message:", _error);
+      },
+    });
+  }, [
+    message,
+    files,
+    realConversationId,
+    hasRealConversation,
+    defaultMessages,
+    visitor?.id,
+    sendMessage,
+    replace,
+    setMessage,
+    handleTypingSubmit,
+    handleTypingChange,
+  ]);
 
-	React.useEffect(() => {
-		if (
-			!(client && realConversationId && visitor?.id && lastMessage) ||
-			lastMessage.visitorId === visitor.id
-		) {
-			if (lastMessage && lastMessage.visitorId === visitor?.id) {
-				lastSeenMessageIdRef.current = lastMessage.id;
-			}
-			return;
-		}
+  const handleMessageChange = React.useCallback(
+    (value: string) => {
+      setMessage(value);
+      handleTypingChange(value);
+    },
+    [setMessage, handleTypingChange]
+  );
 
-		if (lastSeenMessageIdRef.current === lastMessage.id) {
-			return;
-		}
+  const actualMessages =
+    fetchedMessages.length > 0
+      ? fetchedMessages
+      : hasRealConversation
+        ? messages
+        : defaultMessages;
+  const actualIsSubmitting = isSubmitting || sendMessage.isPending;
+  const actualError = error || messagesQuery.error;
+  const lastMessage = React.useMemo(
+    () => actualMessages.at(-1) ?? null,
+    [actualMessages]
+  );
 
-		if (markSeenInFlightRef.current) {
-			return;
-		}
+  // Reset seen tracking when conversation changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally reset refs when conversationId changes
+  React.useEffect(() => {
+    lastSeenMessageIdRef.current = null;
+    markSeenInFlightRef.current = false;
+  }, [conversationId]);
 
-		markSeenInFlightRef.current = true;
+  React.useEffect(() => {
+    // Only mark as seen if:
+    // 1. We have a real conversation with a client and visitor
+    // 2. There's a last message
+    // 3. The last message is NOT from the current visitor
+    // 4. The page is currently visible (focused)
+    if (
+      !(client && realConversationId && visitor?.id && lastMessage) ||
+      lastMessage.visitorId === visitor.id ||
+      !isPageVisible
+    ) {
+      if (lastMessage && lastMessage.visitorId === visitor?.id) {
+        lastSeenMessageIdRef.current = lastMessage.id;
+      }
+      return;
+    }
 
-		client
-			.markConversationSeen({ conversationId: realConversationId })
-			.then(() => {
-				lastSeenMessageIdRef.current = lastMessage.id;
-			})
-			.catch((markSeenError) => {
-				console.error("Failed to mark conversation as seen:", markSeenError);
-			})
-			.finally(() => {
-				markSeenInFlightRef.current = false;
-			});
-	}, [client, realConversationId, visitor?.id, lastMessage]);
+    if (lastSeenMessageIdRef.current === lastMessage.id) {
+      return;
+    }
 
-	const handleGoBack = () => {
-		if (canGoBack) {
-			goBack();
-		} else {
-			navigate({
-				page: "HOME",
-			});
-		}
-	};
+    if (markSeenInFlightRef.current) {
+      return;
+    }
 
-	return (
-		<div className="flex h-full flex-col gap-0 overflow-hidden">
-			<Header onGoBack={handleGoBack}>
-				<div className="flex w-full items-center justify-between gap-2 py-3">
-					<div className="flex flex-col">
-						<p className="font-medium text-sm">{website?.name}</p>
-						<p className="text-muted-foreground text-sm">Support online</p>
-					</div>
-					<AvatarStack
-						aiAgents={availableAIAgents}
-						gapWidth={2}
-						humanAgents={availableHumanAgents}
-						size={32}
-						spacing={28}
-					/>
-				</div>
-			</Header>
+    markSeenInFlightRef.current = true;
 
-			<MessageList
-				availableAIAgents={availableAIAgents}
-				availableHumanAgents={availableHumanAgents}
-				className="min-h-0 flex-1"
-				conversationId={conversationId}
-				currentVisitorId={visitor?.id}
-				events={events}
-				messages={actualMessages}
-			/>
+    client
+      .markConversationSeen({ conversationId: realConversationId })
+      .then(() => {
+        lastSeenMessageIdRef.current = lastMessage.id;
+      })
+      .catch((markSeenError) => {
+        console.error("Failed to mark conversation as seen:", markSeenError);
+      })
+      .finally(() => {
+        markSeenInFlightRef.current = false;
+      });
+  }, [client, realConversationId, visitor?.id, lastMessage, isPageVisible]);
 
-			<div className="flex-shrink-0 p-1">
-				<MultimodalInput
-					disabled={actualIsSubmitting}
-					error={actualError}
-					files={files}
-					isSubmitting={actualIsSubmitting}
-					onChange={handleMessageChange}
-					onFileSelect={addFiles}
-					onRemoveFile={removeFile}
-					onSubmit={handleSubmit}
-					placeholder="Type your message..."
-					value={message}
-				/>
-			</div>
-		</div>
-	);
+  const handleGoBack = () => {
+    if (canGoBack) {
+      goBack();
+    } else {
+      navigate({
+        page: "HOME",
+      });
+    }
+  };
+
+  return (
+    <div className="flex h-full flex-col gap-0 overflow-hidden">
+      <Header onGoBack={handleGoBack}>
+        <div className="flex w-full items-center justify-between gap-2 py-3">
+          <div className="flex flex-col">
+            <p className="font-medium text-sm">{website?.name}</p>
+            <p className="text-muted-foreground text-sm">Support online</p>
+          </div>
+          <AvatarStack
+            aiAgents={availableAIAgents}
+            gapWidth={2}
+            humanAgents={availableHumanAgents}
+            size={32}
+            spacing={28}
+          />
+        </div>
+      </Header>
+
+      <MessageList
+        availableAIAgents={availableAIAgents}
+        availableHumanAgents={availableHumanAgents}
+        className="min-h-0 flex-1"
+        conversationId={conversationId}
+        currentVisitorId={visitor?.id}
+        events={events}
+        messages={actualMessages}
+      />
+
+      <div className="flex-shrink-0 p-1">
+        <MultimodalInput
+          disabled={actualIsSubmitting}
+          error={actualError}
+          files={files}
+          isSubmitting={actualIsSubmitting}
+          onChange={handleMessageChange}
+          onFileSelect={addFiles}
+          onRemoveFile={removeFile}
+          onSubmit={handleSubmit}
+          placeholder="Type your message..."
+          value={message}
+        />
+      </div>
+    </div>
+  );
 };
