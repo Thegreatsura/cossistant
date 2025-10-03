@@ -17,14 +17,14 @@ export {
 	MessageListLoading,
 } from "./message-list";
 export {
-        FileInput,
-        MultimodalInput,
-        SupportInput as Input,
+	FileInput,
+	MultimodalInput,
+	SupportInput as Input,
 } from "./multimodal-input";
 export {
-TypingIndicator,
-type TypingIndicatorProps,
-type TypingParticipant,
-type TypingParticipantType,
+	TypingIndicator,
+	type TypingIndicatorProps,
+	type TypingParticipant,
+	type TypingParticipantType,
 } from "./typing-indicator";
 export { SupportWindow as Window } from "./window";

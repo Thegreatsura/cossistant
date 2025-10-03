@@ -29,7 +29,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 		error,
 		setMessage,
 		addFiles,
-removeFile,
+		removeFile,
 	} = useMultimodalInput({
 		onSubmit: async (data) => {},
 		onError: () => {},

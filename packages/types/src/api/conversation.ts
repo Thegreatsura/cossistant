@@ -171,63 +171,56 @@ export const markConversationSeenResponseSchema = z
 	});
 
 export type MarkConversationSeenResponseBody = z.infer<
-        typeof markConversationSeenResponseSchema
+	typeof markConversationSeenResponseSchema
 >;
 
 export const setConversationTypingRequestSchema = z
-        .object({
-                isTyping: z.boolean().openapi({
-                        description: "Whether the visitor is currently typing",
-                }),
-                visitorPreview: z
-                        .string()
-                        .max(2000)
-                        .optional()
-                        .openapi({
-                                description:
-                                        "Optional preview of the visitor's message while typing. Only processed when the visitor is typing.",
-                        }),
-                visitorId: z.string().optional().openapi({
-                        description:
-                                "Visitor ID associated with the conversation. Optional if provided via the X-Visitor-Id header.",
-                }),
-                externalVisitorId: z.string().optional().openapi({
-                        description:
-                                "External visitor identifier used when the visitor has not been assigned an internal visitorId.",
-                }),
-        })
-        .openapi({
-                description:
-                        "Body for reporting a visitor typing state. Either visitorId or externalVisitorId must be provided via body or headers.",
-        });
+	.object({
+		isTyping: z.boolean().openapi({
+			description: "Whether the visitor is currently typing",
+		}),
+		visitorPreview: z.string().max(2000).optional().openapi({
+			description:
+				"Optional preview of the visitor's message while typing. Only processed when the visitor is typing.",
+		}),
+		visitorId: z.string().optional().openapi({
+			description:
+				"Visitor ID associated with the conversation. Optional if provided via the X-Visitor-Id header.",
+		}),
+		externalVisitorId: z.string().optional().openapi({
+			description:
+				"External visitor identifier used when the visitor has not been assigned an internal visitorId.",
+		}),
+	})
+	.openapi({
+		description:
+			"Body for reporting a visitor typing state. Either visitorId or externalVisitorId must be provided via body or headers.",
+	});
 
 export type SetConversationTypingRequestBody = z.infer<
-        typeof setConversationTypingRequestSchema
+	typeof setConversationTypingRequestSchema
 >;
 
 export const setConversationTypingResponseSchema = z
-        .object({
-                conversationId: z.string().openapi({
-                        description: "The ID of the conversation receiving the typing update",
-                }),
-                isTyping: z.boolean().openapi({
-                        description: "Echo of the reported typing state",
-                }),
-                visitorPreview: z
-                        .string()
-                        .nullable()
-                        .openapi({
-                                description:
-                                        "Preview text that was forwarded with the typing event, or null when none was sent.",
-                        }),
-                sentAt: z.date().openapi({
-                        description: "Timestamp when the typing event was recorded",
-                }),
-        })
-        .openapi({
-                description: "Response confirming the visitor typing state was recorded",
-        });
+	.object({
+		conversationId: z.string().openapi({
+			description: "The ID of the conversation receiving the typing update",
+		}),
+		isTyping: z.boolean().openapi({
+			description: "Echo of the reported typing state",
+		}),
+		visitorPreview: z.string().nullable().openapi({
+			description:
+				"Preview text that was forwarded with the typing event, or null when none was sent.",
+		}),
+		sentAt: z.date().openapi({
+			description: "Timestamp when the typing event was recorded",
+		}),
+	})
+	.openapi({
+		description: "Response confirming the visitor typing state was recorded",
+	});
 
 export type SetConversationTypingResponseBody = z.infer<
-        typeof setConversationTypingResponseSchema
+	typeof setConversationTypingResponseSchema
 >;

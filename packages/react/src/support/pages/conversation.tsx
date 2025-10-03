@@ -5,8 +5,8 @@ import type {
 } from "@cossistant/types";
 import React from "react";
 import { useDefaultMessages } from "../../hooks/private/use-default-messages";
-import { useCreateConversation } from "../../hooks/use-create-conversation";
 import { useVisitorTypingReporter } from "../../hooks/private/use-visitor-typing-reporter";
+import { useCreateConversation } from "../../hooks/use-create-conversation";
 import { useSendMessage } from "../../hooks/use-send-message";
 import { useSupport } from "../../provider";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
@@ -118,50 +118,50 @@ export const ConversationPage = ({
 		website?.id,
 	]);
 
-        const handleSubmit = React.useCallback(() => {
-                if (!message.trim() && files.length === 0) {
-                        return;
-                }
+	const handleSubmit = React.useCallback(() => {
+		if (!message.trim() && files.length === 0) {
+			return;
+		}
 
-                handleTypingSubmit();
+		handleTypingSubmit();
 
-                sendMessage.mutate({
-                        conversationId: realConversationId,
-                        message: message.trim(),
-                        files,
-                        defaultMessages,
-                        visitorId: visitor?.id,
-                        onSuccess: (newConversationId, messageId) => {
-                                if (
-                                        !hasRealConversation &&
-                                        newConversationId !== PENDING_CONVERSATION_ID
-                                ) {
-                                        replace({
-                                                page: "CONVERSATION",
-                                                params: { conversationId: newConversationId },
-                                        });
-                                }
+		sendMessage.mutate({
+			conversationId: realConversationId,
+			message: message.trim(),
+			files,
+			defaultMessages,
+			visitorId: visitor?.id,
+			onSuccess: (newConversationId, messageId) => {
+				if (
+					!hasRealConversation &&
+					newConversationId !== PENDING_CONVERSATION_ID
+				) {
+					replace({
+						page: "CONVERSATION",
+						params: { conversationId: newConversationId },
+					});
+				}
 
-                                setMessage("");
-                                handleTypingChange("");
-                        },
-                        onError: (_error) => {
-                                console.error("Failed to send message:", _error);
-                        },
-                });
-        }, [
-                message,
-                files,
-                realConversationId,
-                hasRealConversation,
-                defaultMessages,
-                visitor?.id,
-                sendMessage,
-                replace,
-                setMessage,
-                handleTypingSubmit,
-                handleTypingChange,
-        ]);
+				setMessage("");
+				handleTypingChange("");
+			},
+			onError: (_error) => {
+				console.error("Failed to send message:", _error);
+			},
+		});
+	}, [
+		message,
+		files,
+		realConversationId,
+		hasRealConversation,
+		defaultMessages,
+		visitor?.id,
+		sendMessage,
+		replace,
+		setMessage,
+		handleTypingSubmit,
+		handleTypingChange,
+	]);
 
 	const handleMessageChange = React.useCallback(
 		(value: string) => {

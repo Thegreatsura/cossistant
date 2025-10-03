@@ -7,145 +7,145 @@ import { WEBSOCKET_ERRORS } from "./websocket-errors";
 export type AuthResult = WebSocketAuthSuccess;
 
 type WSContext = {
-  send: (data: string | ArrayBuffer) => void;
-  close: (code?: number, reason?: string) => void;
-  raw?: RawSocket;
+	send: (data: string | ArrayBuffer) => void;
+	close: (code?: number, reason?: string) => void;
+	raw?: RawSocket;
 };
 
 type ConnectionError = {
-  error: string;
-  message: string;
+	error: string;
+	message: string;
 };
 
 export async function handleAuthenticationFailure(
-  ws: WSContext,
-  connectionId: string
+	ws: WSContext,
+	connectionId: string
 ): Promise<void> {
-  console.error(
-    `[WebSocket] Authentication failed for connection: ${connectionId}`
-  );
-  const error = WEBSOCKET_ERRORS.authenticationFailed();
-  ws.send(JSON.stringify(error));
-  ws.close(error.code, error.error);
+	console.error(
+		`[WebSocket] Authentication failed for connection: ${connectionId}`
+	);
+	const error = WEBSOCKET_ERRORS.authenticationFailed();
+	ws.send(JSON.stringify(error));
+	ws.close(error.code, error.error);
 }
 
 export async function handleIdentificationFailure(
-  ws: WSContext,
-  connectionId: string
+	ws: WSContext,
+	connectionId: string
 ): Promise<void> {
-  console.error(
-    `[WebSocket] No user ID or visitor ID provided for connection: ${connectionId}`
-  );
-  const error = WEBSOCKET_ERRORS.identificationRequired();
-  ws.send(JSON.stringify(error));
-  ws.close(error.code, error.error);
+	console.error(
+		`[WebSocket] No user ID or visitor ID provided for connection: ${connectionId}`
+	);
+	const error = WEBSOCKET_ERRORS.identificationRequired();
+	ws.send(JSON.stringify(error));
+	ws.close(error.code, error.error);
 }
 
 export async function createConnectionInfo(
-  connectionId: string,
-  authResult: AuthResult
+	connectionId: string,
+	authResult: AuthResult
 ): Promise<ConnectionInfo> {
-  return {
-    connectionId,
-    serverId: pubsub.getServerId(),
-    userId: authResult.userId,
-    visitorId: authResult.visitorId,
-    websiteId: authResult.websiteId,
-    organizationId: authResult.organizationId,
-    connectedAt: Date.now(),
-    lastHeartbeat: Date.now(),
-  };
+	return {
+		connectionId,
+		serverId: pubsub.getServerId(),
+		userId: authResult.userId,
+		visitorId: authResult.visitorId,
+		websiteId: authResult.websiteId,
+		organizationId: authResult.organizationId,
+		connectedAt: Date.now(),
+		lastHeartbeat: Date.now(),
+	};
 }
 
 export function storeConnectionId(ws: WSContext, connectionId: string): void {
-  if (ws.raw) {
-    (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId =
-      connectionId;
-  }
+	if (ws.raw) {
+		(ws.raw as ServerWebSocket & { connectionId?: string }).connectionId =
+			connectionId;
+	}
 }
 
 export function sendConnectionEstablishedMessage(
-  ws: WSContext,
-  connectionId: string,
-  authResult: AuthResult
+	ws: WSContext,
+	connectionId: string,
+	authResult: AuthResult
 ): void {
-  ws.send(
-    JSON.stringify({
-      type: "CONNECTION_ESTABLISHED",
-      payload: {
-        connectionId,
-        userId: authResult.userId,
-        visitorId: authResult.visitorId,
-        organizationId: authResult.organizationId,
-        websiteId: authResult.websiteId,
-        timestamp: Date.now(),
-      },
-    })
-  );
+	ws.send(
+		JSON.stringify({
+			type: "CONNECTION_ESTABLISHED",
+			payload: {
+				connectionId,
+				userId: authResult.userId,
+				visitorId: authResult.visitorId,
+				organizationId: authResult.organizationId,
+				websiteId: authResult.websiteId,
+				timestamp: Date.now(),
+			},
+		})
+	);
 }
 
 export function createConnectionEvent(
-  authResult: AuthResult,
-  connectionId: string
+	authResult: AuthResult,
+	connectionId: string
 ): RealtimeEvent {
-  const timestamp = Date.now();
+	const timestamp = Date.now();
 
-  if (!(authResult.websiteId && authResult.organizationId)) {
-    throw new Error(
-      "Missing website or organization metadata for connection event"
-    );
-  }
+	if (!(authResult.websiteId && authResult.organizationId)) {
+		throw new Error(
+			"Missing website or organization metadata for connection event"
+		);
+	}
 
-  if (authResult.userId) {
-    return {
-      type: "USER_CONNECTED",
-      payload: {
-        userId: authResult.userId,
-        connectionId,
-        timestamp,
-      },
-      timestamp,
-      websiteId: authResult.websiteId,
-      organizationId: authResult.organizationId,
-      visitorId: null,
-    };
-  }
+	if (authResult.userId) {
+		return {
+			type: "USER_CONNECTED",
+			payload: {
+				userId: authResult.userId,
+				connectionId,
+				timestamp,
+			},
+			timestamp,
+			websiteId: authResult.websiteId,
+			organizationId: authResult.organizationId,
+			visitorId: null,
+		};
+	}
 
-  if (!authResult.visitorId) {
-    throw new Error("No visitorId available for visitor connection");
-  }
+	if (!authResult.visitorId) {
+		throw new Error("No visitorId available for visitor connection");
+	}
 
-  return {
-    type: "VISITOR_CONNECTED",
-    payload: {
-      visitorId: authResult.visitorId,
-      connectionId,
-      timestamp,
-    },
-    timestamp,
-    websiteId: authResult.websiteId,
-    organizationId: authResult.organizationId,
-    visitorId: authResult.visitorId,
-  };
+	return {
+		type: "VISITOR_CONNECTED",
+		payload: {
+			visitorId: authResult.visitorId,
+			connectionId,
+			timestamp,
+		},
+		timestamp,
+		websiteId: authResult.websiteId,
+		organizationId: authResult.organizationId,
+		visitorId: authResult.visitorId,
+	};
 }
 
 export async function updatePresenceIfNeeded(
-  authResult: AuthResult
+	authResult: AuthResult
 ): Promise<void> {
-  if (authResult.websiteId) {
-    const presenceId = authResult.userId || authResult.visitorId;
-    if (presenceId) {
-      await pubsub.updatePresence(presenceId, "online", authResult.websiteId);
-    }
-  }
+	if (authResult.websiteId) {
+		const presenceId = authResult.userId || authResult.visitorId;
+		if (presenceId) {
+			await pubsub.updatePresence(presenceId, "online", authResult.websiteId);
+		}
+	}
 }
 
 export function getConnectionIdFromSocket(ws: WSContext): string | undefined {
-  return ws.raw
-    ? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
-    : undefined;
+	return ws.raw
+		? (ws.raw as ServerWebSocket & { connectionId?: string }).connectionId
+		: undefined;
 }
 
 export function sendError(ws: WSContext, error: ConnectionError): void {
-  ws.send(JSON.stringify(error));
+	ws.send(JSON.stringify(error));
 }

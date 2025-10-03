@@ -1,14 +1,14 @@
 import type { DefaultMessage, RealtimeEvent } from "@cossistant/types";
 import type {
 	CreateConversationRequestBody,
-        CreateConversationResponseBody,
-        GetConversationRequest,
-        GetConversationResponse,
-        ListConversationsRequest,
-        ListConversationsResponse,
-        MarkConversationSeenRequestBody,
-        MarkConversationSeenResponseBody,
-        SetConversationTypingResponseBody,
+	CreateConversationResponseBody,
+	GetConversationRequest,
+	GetConversationResponse,
+	ListConversationsRequest,
+	ListConversationsResponse,
+	MarkConversationSeenRequestBody,
+	MarkConversationSeenResponseBody,
+	SetConversationTypingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
 	GetMessagesRequest,
@@ -228,23 +228,23 @@ export class CossistantClient {
 		return response;
 	}
 
-        async markConversationSeen(
-                params: {
-                        conversationId: string;
-                } & Partial<MarkConversationSeenRequestBody>
-        ): Promise<MarkConversationSeenResponseBody> {
-                return this.restClient.markConversationSeen(params);
-        }
+	async markConversationSeen(
+		params: {
+			conversationId: string;
+		} & Partial<MarkConversationSeenRequestBody>
+	): Promise<MarkConversationSeenResponseBody> {
+		return this.restClient.markConversationSeen(params);
+	}
 
-        async setVisitorTyping(params: {
-                conversationId: string;
-                isTyping: boolean;
-                visitorPreview?: string | null;
-                visitorId?: string;
-                externalVisitorId?: string;
-        }): Promise<SetConversationTypingResponseBody> {
-                return this.restClient.setConversationTyping(params);
-        }
+	async setVisitorTyping(params: {
+		conversationId: string;
+		isTyping: boolean;
+		visitorPreview?: string | null;
+		visitorId?: string;
+		externalVisitorId?: string;
+	}): Promise<SetConversationTypingResponseBody> {
+		return this.restClient.setConversationTyping(params);
+	}
 
 	// Message management
 	async getConversationMessages(

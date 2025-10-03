@@ -18,8 +18,8 @@ import { getConversationMessages } from "@api/db/queries/message";
 import { getVisitorComplete } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import {
-        emitConversationSeenEvent,
-        emitConversationTypingEvent,
+	emitConversationSeenEvent,
+	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
 import { createMessage } from "@api/utils/message";
 import {
@@ -462,11 +462,11 @@ export const conversationRouter = createTRPCRouter({
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
-        markUnread: protectedProcedure
-                .input(
-                        z.object({
-                                conversationId: z.string(),
-                                websiteSlug: z.string(),
+	markUnread: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
 			})
 		)
 		.output(conversationMutationResponseSchema)
@@ -481,45 +481,41 @@ export const conversationRouter = createTRPCRouter({
 				actorUserId: user.id,
 			});
 
-                        return { conversation: toConversationOutput(updatedConversation) };
-                }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-        setTyping: protectedProcedure
-                .input(
-                        z.object({
-                                conversationId: z.string(),
-                                websiteSlug: z.string(),
-                                isTyping: z.boolean(),
-                        })
-                )
-                .output(
-                        z.object({
-                                success: z.literal(true),
-                        })
-                )
-                .mutation(async ({ ctx: { db, user }, input }) => {
-                        const { conversation } = await loadConversationContext(
-                                db,
-                                user.id,
-                                {
-                                        websiteSlug: input.websiteSlug,
-                                        conversationId: input.conversationId,
-                                }
-                        );
+	setTyping: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+				isTyping: z.boolean(),
+			})
+		)
+		.output(
+			z.object({
+				success: z.literal(true),
+			})
+		)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(db, user.id, {
+				websiteSlug: input.websiteSlug,
+				conversationId: input.conversationId,
+			});
 
-                        await emitConversationTypingEvent({
-                                conversation,
-                                actor: { type: "user", userId: user.id },
-                                isTyping: input.isTyping,
-                        });
+			await emitConversationTypingEvent({
+				conversation,
+				actor: { type: "user", userId: user.id },
+				isTyping: input.isTyping,
+			});
 
-                        return { success: true } as const;
-                }),
+			return { success: true } as const;
+		}),
 
-        getVisitorById: protectedProcedure
-                .input(
-                        z.object({
-                                visitorId: z.string(),
+	getVisitorById: protectedProcedure
+		.input(
+			z.object({
+				visitorId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)

@@ -5,7 +5,8 @@ import type {
 	Message as MessageType,
 	SenderType,
 } from "@cossistant/types";
-import React, { useMemo } from "react";
+import type React from "react";
+import { useMemo } from "react";
 import { useConversationSeen, useConversationTyping } from "../../hooks";
 import { useGroupedMessages } from "../../hooks/private/use-grouped-messages";
 import {
@@ -56,44 +57,50 @@ export const MessageList: React.FC<MessageListProps> = ({
 		return typingEntries
 			.map((entry) => {
 				if (entry.actorType === "user") {
-					const human = availableHumanAgents.find((agent) => agent.id === entry.actorId);
+					const human = availableHumanAgents.find(
+						(agent) => agent.id === entry.actorId
+					);
 
 					return human
 						? {
-							id: entry.actorId,
-							name: human.name || "Support",
-							type: "team_member" as TypingParticipant["type"],
-							avatarUrl: human.image || null,
-						}
+								id: entry.actorId,
+								name: human.name || "Support",
+								type: "team_member" as TypingParticipant["type"],
+								avatarUrl: human.image || null,
+							}
 						: {
-							id: entry.actorId,
-							name: "Support",
-							type: "team_member" as TypingParticipant["type"],
-							avatarUrl: null,
-						};
+								id: entry.actorId,
+								name: "Support",
+								type: "team_member" as TypingParticipant["type"],
+								avatarUrl: null,
+							};
 				}
 
 				if (entry.actorType === "ai_agent") {
-					const ai = availableAIAgents.find((agent) => agent.id === entry.actorId);
+					const ai = availableAIAgents.find(
+						(agent) => agent.id === entry.actorId
+					);
 
 					return ai
 						? {
-							id: entry.actorId,
-							name: ai.name || "AI assistant",
-							type: "ai" as TypingParticipant["type"],
-							avatarUrl: ai.image || null,
-						}
+								id: entry.actorId,
+								name: ai.name || "AI assistant",
+								type: "ai" as TypingParticipant["type"],
+								avatarUrl: ai.image || null,
+							}
 						: {
-							id: entry.actorId,
-							name: "AI assistant",
-							type: "ai" as TypingParticipant["type"],
-							avatarUrl: null,
-						};
+								id: entry.actorId,
+								name: "AI assistant",
+								type: "ai" as TypingParticipant["type"],
+								avatarUrl: null,
+							};
 				}
 
 				return null;
 			})
-			.filter((participant): participant is TypingParticipant => participant !== null);
+			.filter(
+				(participant): participant is TypingParticipant => participant !== null
+			);
 	}, [typingEntries, availableHumanAgents, availableAIAgents]);
 
 	return (
@@ -103,7 +110,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 				"overflow-y-auto scroll-smooth px-3 py-6",
 				"scrollbar-thin scrollbar-thumb-co-background-300 scrollbar-track-transparent",
 				"h-full w-full",
-				className,
+				className
 			)}
 			events={events}
 			id="message-list"

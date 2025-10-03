@@ -1,3 +1,9 @@
+export type {
+	TypingIndicatorProps,
+	TypingParticipant,
+	TypingParticipantType,
+} from "../../primitives/typing-indicator";
+export { TypingIndicator } from "../../primitives/typing-indicator";
 export { Bubble } from "./bubble";
 export { Container } from "./container";
 export type { ConversationEventProps } from "./conversation-event";
@@ -12,9 +18,3 @@ export type { MessageListProps } from "./message-list";
 export { MessageList } from "./message-list";
 export { SendButton } from "./multimodal-input";
 export { SupportContent } from "./support-content";
-export type {
-TypingIndicatorProps,
-TypingParticipant,
-TypingParticipantType,
-} from "../../primitives/typing-indicator";
-export { TypingIndicator } from "../../primitives/typing-indicator";
