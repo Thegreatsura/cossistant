@@ -1,3 +1,4 @@
+import { applyConversationSeenEvent } from "@cossistant/react/realtime/seen-store";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationHeader } from "@/data/conversation-header-cache";
 import { updateConversationHeaderInCache } from "@/data/conversation-header-cache";
@@ -148,13 +149,42 @@ function maybeUpdateSeenEntries(
 ): UpdateResult {
   const predicates = buildActorPredicates(event);
 
-  if (predicates.length === 0 || header.seenData.length === 0) {
+  if (predicates.length === 0) {
     return { header, changed: false };
   }
 
-  let didChange = false;
-
   const nextDate = new Date(lastSeenAtTime);
+
+  // Check if an entry exists for this actor
+  const existingEntryIndex = header.seenData.findIndex((seen) =>
+    predicates.some((predicate) => predicate(seen))
+  );
+
+  // If no entry exists, create a new one
+  if (existingEntryIndex === -1) {
+    const newEntry: ConversationHeader["seenData"][number] = {
+      id: `${header.id}-${event.payload.userId || event.payload.visitorId || event.payload.aiAgentId}`,
+      conversationId: header.id,
+      userId: event.payload.userId || null,
+      visitorId: event.payload.visitorId || null,
+      aiAgentId: event.payload.aiAgentId || null,
+      lastSeenAt: nextDate,
+      createdAt: nextDate,
+      updatedAt: nextDate,
+      deletedAt: null,
+    };
+
+    return {
+      header: {
+        ...header,
+        seenData: [...header.seenData, newEntry],
+      },
+      changed: true,
+    };
+  }
+
+  // Update existing entry
+  let didChange = false;
 
   const nextSeenData = header.seenData.map((seen) => {
     const matchesActor = predicates.some((predicate) => predicate(seen));
@@ -261,13 +291,16 @@ export function handleConversationSeen({
 
   const conversationId = event.payload.conversationId;
 
+  // Apply to seen store immediately for reactive updates
+  applyConversationSeenEvent(event);
+
   // Clear any existing pending update for this conversation
   const existing = pendingSeenUpdates.get(conversationId);
   if (existing) {
     clearTimeout(existing.timeoutId);
   }
 
-  // Schedule the update after a delay to prevent animation conflicts
+  // Schedule the conversation header cache update after a delay to prevent animation conflicts
   const timeoutId = setTimeout(() => {
     applySeenUpdate(event, context);
     pendingSeenUpdates.delete(conversationId);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
+import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
 import { useEffect, useMemo, useRef } from "react";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
@@ -84,6 +85,11 @@ export function Conversation({
 
   const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
 
+  // Hydrate and subscribe to seen data from the store
+  const seenData = useConversationSeen(conversationId, {
+    initialData: selectedConversation?.seenData ?? [],
+  });
+
   const lastMessage = useMemo(() => messages.at(-1) ?? null, [messages]);
 
   useEffect(() => {
@@ -148,10 +154,6 @@ export function Conversation({
     return null;
   }
 
-  const seenData = selectedConversation?.seenData ?? [];
-
-  console.log("seenData", seenData);
-
   return (
     <>
       <Page className="relative py-0 pr-0.5 pl-0">
@@ -163,7 +165,7 @@ export function Conversation({
           events={events}
           messages={messages}
           onFetchMoreIfNeeded={onFetchMoreIfNeeded}
-          seenData={selectedConversation?.seenData ?? []}
+          seenData={seenData}
           teamMembers={members}
           visitor={visitor}
         />
