@@ -144,20 +144,18 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
               </motion.div>
             ))}
 
-            {isSentByViewer && seenByIds.length > 0 && (
-              <motion.div key="seen-indicator" {...SEEN_ANIMATION}>
-                <MessageGroupSeenIndicator
-                  className="px-1 text-muted-foreground text-xs"
-                  seenByIds={seenByIds}
-                >
-                  {() =>
-                    seenByNames.length > 0
-                      ? `Seen by ${seenByNames.join(", ")}`
-                      : "Seen"
-                  }
-                </MessageGroupSeenIndicator>
-              </motion.div>
-            )}
+            {isSentByViewer &&
+              seenByIds.length > 0 &&
+              seenByNames.length > 0 && (
+                <motion.div key="seen-indicator" {...SEEN_ANIMATION}>
+                  <MessageGroupSeenIndicator
+                    className="my-4 px-1 text-muted-foreground text-xs"
+                    seenByIds={seenByIds}
+                  >
+                    {() => `Seen by ${seenByNames.join(", ")}`}
+                  </MessageGroupSeenIndicator>
+                </motion.div>
+              )}
           </MessageGroupContent>
         </div>
       )}

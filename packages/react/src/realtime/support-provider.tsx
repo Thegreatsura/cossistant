@@ -3,15 +3,16 @@ import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type React from "react";
 import { useMemo } from "react";
 import { useSupport } from "../provider";
+import { applyConversationSeenEvent } from "./seen-store";
 import { useRealtime } from "./use-realtime";
 
 type SupportRealtimeContext = {
-	websiteId: string | null;
-	client: CossistantClient;
+  websiteId: string | null;
+  client: CossistantClient;
 };
 
 type SupportRealtimeProviderProps = {
-	children: React.ReactNode;
+  children: React.ReactNode;
 };
 
 /**
@@ -19,43 +20,60 @@ type SupportRealtimeProviderProps = {
  * in sync without forcing refetches.
  */
 export function SupportRealtimeProvider({
-	children,
+  children,
 }: SupportRealtimeProviderProps) {
-	const { website, client } = useSupport();
+  const { website, client } = useSupport();
 
-	const realtimeContext = useMemo<SupportRealtimeContext>(
-		() => ({
-			websiteId: website?.id ?? null,
-			client,
-		}),
-		[website?.id, client]
-	);
+  const realtimeContext = useMemo<SupportRealtimeContext>(
+    () => ({
+      websiteId: website?.id ?? null,
+      client,
+    }),
+    [website?.id, client]
+  );
 
-	const events = useMemo(
-		() => ({
-			MESSAGE_CREATED: (
-				_data: RealtimeEvent["payload"],
-				{
-					event,
-					context,
-				}: { event: RealtimeEvent; context: SupportRealtimeContext }
-			) => {
-				if (context.websiteId && event.websiteId !== context.websiteId) {
-					return;
-				}
+  const events = useMemo(
+    () => ({
+      MESSAGE_CREATED: (
+        _data: RealtimeEvent["payload"],
+        {
+          event,
+          context,
+        }: { event: RealtimeEvent; context: SupportRealtimeContext }
+      ) => {
+        if (context.websiteId && event.websiteId !== context.websiteId) {
+          return;
+        }
 
-				context.client.handleRealtimeEvent(event);
-			},
-		}),
-		[]
-	);
+        context.client.handleRealtimeEvent(event);
+      },
+      CONVERSATION_SEEN: (
+        _data: RealtimeEvent["payload"],
+        {
+          event,
+          context,
+        }: {
+          event: RealtimeEvent<"CONVERSATION_SEEN">;
+          context: SupportRealtimeContext;
+        }
+      ) => {
+        if (context.websiteId && event.websiteId !== context.websiteId) {
+          return;
+        }
 
-	useRealtime<SupportRealtimeContext>({
-		context: realtimeContext,
-		events,
-		websiteId: realtimeContext.websiteId,
-		visitorId: website?.visitor?.id ?? null,
-	});
+        // Update the seen store so the UI reflects who has seen messages
+        applyConversationSeenEvent(event);
+      },
+    }),
+    []
+  );
 
-	return <>{children}</>;
+  useRealtime<SupportRealtimeContext>({
+    context: realtimeContext,
+    events,
+    websiteId: realtimeContext.websiteId,
+    visitorId: website?.visitor?.id ?? null,
+  });
+
+  return <>{children}</>;
 }

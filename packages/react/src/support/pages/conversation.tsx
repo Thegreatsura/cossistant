@@ -9,6 +9,10 @@ import { useVisitorTypingReporter } from "../../hooks/private/use-visitor-typing
 import { useCreateConversation } from "../../hooks/use-create-conversation";
 import { useSendMessage } from "../../hooks/use-send-message";
 import { useSupport } from "../../provider";
+import {
+  hydrateConversationSeen,
+  upsertConversationSeen,
+} from "../../realtime/seen-store";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { AvatarStack } from "../components/avatar-stack";
 import { Header } from "../components/header";
@@ -212,6 +216,28 @@ export const ConversationPage = ({
     markSeenInFlightRef.current = false;
   }, [conversationId]);
 
+  // Fetch and hydrate initial seen data when conversation loads
+  React.useEffect(() => {
+    if (!hasRealConversation) {
+      return;
+    }
+
+    if (!client) {
+      return;
+    }
+
+    void client
+      .getConversationSeenData({ conversationId: realConversationId })
+      .then((response) => {
+        if (response.seenData.length > 0) {
+          hydrateConversationSeen(realConversationId, response.seenData);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch conversation seen data:", err);
+      });
+  }, [hasRealConversation, realConversationId, client]);
+
   React.useEffect(() => {
     // Only mark as seen if:
     // 1. We have a real conversation with a client and visitor
@@ -241,8 +267,18 @@ export const ConversationPage = ({
 
     client
       .markConversationSeen({ conversationId: realConversationId })
-      .then(() => {
+      .then((response) => {
         lastSeenMessageIdRef.current = lastMessage.id;
+
+        // Optimistically update the local seen store so UI reflects the change immediately
+        if (visitor?.id) {
+          upsertConversationSeen({
+            conversationId: realConversationId,
+            actorType: "visitor",
+            actorId: visitor.id,
+            lastSeenAt: response.lastSeenAt,
+          });
+        }
       })
       .catch((markSeenError) => {
         console.error("Failed to mark conversation as seen:", markSeenError);

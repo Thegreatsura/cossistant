@@ -57,6 +57,23 @@ export const MessageList: React.FC<MessageListProps> = ({
     viewerType: SenderType.VISITOR,
   });
 
+  // Find the last message group sent by the current visitor
+  const lastVisitorMessageGroupIndex = useMemo(() => {
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i];
+      if (!item) {
+        continue;
+      }
+      if (item.type === "message_group") {
+        const firstMessage = item.messages[0];
+        if (firstMessage?.visitorId === currentVisitorId) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }, [items, currentVisitorId]);
+
   const typingParticipants = useMemo(() => {
     return typingEntries
       .map((entry): TypingParticipant | null => {
@@ -134,9 +151,12 @@ export const MessageList: React.FC<MessageListProps> = ({
               );
             }
 
-            const seenByIds = item.lastMessageId
-              ? getMessageSeenBy(item.lastMessageId)
-              : [];
+            // Only show seen indicator on the LAST message group sent by the visitor
+            const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
+            const seenByIds =
+              isLastVisitorGroup && item.lastMessageId
+                ? getMessageSeenBy(item.lastMessageId)
+                : [];
 
             // Use first message ID as stable key
             const groupKey = item.messages[0]?.id || `group-${index}`;
