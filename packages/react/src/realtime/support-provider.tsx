@@ -91,11 +91,14 @@ export function SupportRealtimeProvider({
         }
 
         // Update typing store, but ignore events from the current visitor (their own typing)
+        // Note: We use context.visitorId which is fresh from the context object
         applyConversationTypingEvent(event, {
           ignoreVisitorId: context.visitorId,
         });
       },
     }),
+    // Empty dependencies is fine here since we use the context parameter
+    // which always has fresh data from the memoized realtimeContext
     []
   );
 

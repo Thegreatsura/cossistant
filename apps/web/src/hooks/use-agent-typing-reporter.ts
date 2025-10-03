@@ -4,6 +4,7 @@ import { useTRPC } from "@/lib/trpc/client";
 
 const SEND_INTERVAL_MS = 800;
 const KEEP_ALIVE_MS = 4000;
+const STOP_TYPING_DELAY_MS = 2000; // Send isTyping: false after 2 seconds of inactivity
 
 type UseAgentTypingReporterOptions = {
   conversationId: string | null;
@@ -28,6 +29,9 @@ export function useAgentTypingReporter({
   const keepAliveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const stopTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const { mutateAsync: sendTypingMutation } = useMutation(
     trpc.conversation.setTyping.mutationOptions()
@@ -37,6 +41,13 @@ export function useAgentTypingReporter({
     if (keepAliveTimeoutRef.current) {
       clearTimeout(keepAliveTimeoutRef.current);
       keepAliveTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearStopTypingTimeout = useCallback(() => {
+    if (stopTypingTimeoutRef.current) {
+      clearTimeout(stopTypingTimeoutRef.current);
+      stopTypingTimeoutRef.current = null;
     }
   }, []);
 
@@ -69,6 +80,17 @@ export function useAgentTypingReporter({
     }, KEEP_ALIVE_MS);
   }, [clearKeepAlive, sendTyping]);
 
+  const scheduleStopTyping = useCallback(() => {
+    clearStopTypingTimeout();
+    stopTypingTimeoutRef.current = setTimeout(() => {
+      if (typingActiveRef.current) {
+        typingActiveRef.current = false;
+        clearKeepAlive();
+        void sendTyping(false);
+      }
+    }, STOP_TYPING_DELAY_MS);
+  }, [clearStopTypingTimeout, clearKeepAlive, sendTyping]);
+
   const handleInputChange = useCallback(
     (value: string) => {
       if (!(enabled && conversationId && websiteSlug)) {
@@ -83,10 +105,14 @@ export function useAgentTypingReporter({
           typingActiveRef.current = false;
           lastSentAtRef.current = now;
           clearKeepAlive();
+          clearStopTypingTimeout();
           void sendTyping(false);
         }
         return;
       }
+
+      // Schedule auto-stop after inactivity
+      scheduleStopTyping();
 
       if (!typingActiveRef.current) {
         typingActiveRef.current = true;
@@ -108,7 +134,9 @@ export function useAgentTypingReporter({
       websiteSlug,
       sendTyping,
       scheduleKeepAlive,
+      scheduleStopTyping,
       clearKeepAlive,
+      clearStopTypingTimeout,
     ]
   );
 
@@ -120,8 +148,9 @@ export function useAgentTypingReporter({
     typingActiveRef.current = false;
     lastSentAtRef.current = Date.now();
     clearKeepAlive();
+    clearStopTypingTimeout();
     void sendTyping(false);
-  }, [clearKeepAlive, sendTyping]);
+  }, [clearKeepAlive, clearStopTypingTimeout, sendTyping]);
 
   const stop = useCallback(() => {
     if (!typingActiveRef.current) {
@@ -131,8 +160,9 @@ export function useAgentTypingReporter({
     typingActiveRef.current = false;
     lastSentAtRef.current = Date.now();
     clearKeepAlive();
+    clearStopTypingTimeout();
     void sendTyping(false);
-  }, [clearKeepAlive, sendTyping]);
+  }, [clearKeepAlive, clearStopTypingTimeout, sendTyping]);
 
   useEffect(() => {
     return () => {
@@ -140,8 +170,9 @@ export function useAgentTypingReporter({
         void sendTyping(false);
       }
       clearKeepAlive();
+      clearStopTypingTimeout();
     };
-  }, [clearKeepAlive, sendTyping]);
+  }, [clearKeepAlive, clearStopTypingTimeout, sendTyping]);
 
   return {
     handleInputChange,
