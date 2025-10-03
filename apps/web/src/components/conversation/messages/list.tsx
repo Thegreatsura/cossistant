@@ -4,6 +4,11 @@ import {
   MessageListContainer,
   MessageList as PrimitiveMessageList,
 } from "@cossistant/next/primitives";
+import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import {
+  TypingIndicator,
+  type TypingParticipant,
+} from "@cossistant/react/primitives/typing-indicator";
 import type {
   AvailableAIAgent,
   ConversationEvent as ConversationEventType,
@@ -27,6 +32,7 @@ type Props = {
   seenData?: ConversationSeen[];
   visitor: ConversationHeader["visitor"];
   currentUserId: string;
+  conversationId: string;
   className?: string;
   onFetchMoreIfNeeded?: () => void;
 };
@@ -39,6 +45,7 @@ export function MessagesList({
   availableAIAgents = [],
   seenData = [],
   currentUserId,
+  conversationId,
   className,
   onFetchMoreIfNeeded,
   visitor,
@@ -56,6 +63,10 @@ export function MessagesList({
     viewerType: SenderType.TEAM_MEMBER,
   });
 
+  const typingEntries = useConversationTyping(conversationId, {
+    excludeUserId: currentUserId,
+  });
+
   const availableHumanAgents = useMemo(
     () =>
       teamMembers.map((member) => ({
@@ -66,6 +77,48 @@ export function MessagesList({
       })),
     [teamMembers]
   );
+
+  const typingParticipants = useMemo(() => {
+    return typingEntries
+      .map((entry): TypingParticipant | null => {
+        if (entry.actorType === "visitor") {
+          return {
+            id: entry.actorId,
+            name: visitor.name || visitor.email || "Visitor",
+            type: "visitor" as const,
+            avatarUrl: visitor.avatar || null,
+            preview: entry.preview,
+          };
+        }
+
+        if (entry.actorType === "ai_agent") {
+          const ai = availableAIAgents.find(
+            (agent) => agent.id === entry.actorId
+          );
+
+          return ai
+            ? {
+                id: entry.actorId,
+                name: ai.name || "AI assistant",
+                type: "ai" as const,
+                avatarUrl: ai.image || null,
+                preview: null,
+              }
+            : {
+                id: entry.actorId,
+                name: "AI assistant",
+                type: "ai" as const,
+                avatarUrl: null,
+                preview: null,
+              };
+        }
+
+        return null;
+      })
+      .filter(
+        (participant): participant is TypingParticipant => participant !== null
+      );
+  }, [typingEntries, visitor, availableAIAgents]);
 
   return (
     <PrimitiveMessageList
@@ -113,13 +166,12 @@ export function MessagesList({
               );
             })}
           </AnimatePresence>
-          {/* {isTyping && (
-          <TypingIndicator
-            isAI={isTyping.type === SenderType.AI}
-            senderImage={availableAgents[0]?.image || undefined}
-            senderName={availableAgents[0]?.name || "Support"}
-          />
-          )} */}
+          {typingParticipants.length > 0 && (
+            <TypingIndicator
+              className="mt-2"
+              participants={typingParticipants}
+            />
+          )}
         </MessageListContainer>
       </div>
     </PrimitiveMessageList>

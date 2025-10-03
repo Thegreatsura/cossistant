@@ -9,6 +9,7 @@ import { useConversationActions } from "@/data/use-conversation-actions";
 import { useConversationEvents } from "@/data/use-conversation-events";
 import { useConversationMessages } from "@/data/use-conversation-messages";
 import { useVisitor } from "@/data/use-visitor";
+import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { Page } from "../ui/layout";
 import { VisitorSidebar } from "../ui/layout/sidebars/visitor/visitor-sidebar";
@@ -39,6 +40,15 @@ export function Conversation({
   });
 
   const {
+    handleInputChange: handleTypingChange,
+    handleSubmit: handleTypingSubmit,
+    stop: stopTyping,
+  } = useAgentTypingReporter({
+    conversationId,
+    websiteSlug,
+  });
+
+  const {
     message,
     files,
     isSubmitting,
@@ -52,11 +62,25 @@ export function Conversation({
     isValid,
     canSubmit,
   } = useMultimodalInput({
-    onSubmit: submitConversationMessage,
+    onSubmit: async (payload) => {
+      handleTypingSubmit();
+      await submitConversationMessage(payload);
+    },
     onError: (submitError) => {
       console.error("Failed to send message", submitError);
     },
   });
+
+  const handleMessageChange = (value: string) => {
+    setMessage(value);
+    handleTypingChange(value);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopTyping();
+    };
+  }, [stopTyping]);
 
   const members = useWebsiteMembers();
   const { selectedConversation } = useInboxes();
@@ -161,6 +185,7 @@ export function Conversation({
         <ConversationHeader />
         <MessagesList
           availableAIAgents={[]}
+          conversationId={conversationId}
           currentUserId={currentUserId}
           events={events}
           messages={messages}
@@ -176,7 +201,7 @@ export function Conversation({
           isSubmitting={isSubmitting}
           maxFileSize={10 * 1024 * 1024}
           maxFiles={2}
-          onChange={setMessage}
+          onChange={handleMessageChange}
           onFileSelect={addFiles}
           onRemoveFile={removeFile}
           onSubmit={submit}

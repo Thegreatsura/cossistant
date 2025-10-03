@@ -4,10 +4,15 @@ import type React from "react";
 import { useMemo } from "react";
 import { useSupport } from "../provider";
 import { applyConversationSeenEvent } from "./seen-store";
+import {
+  applyConversationTypingEvent,
+  clearTypingFromMessage,
+} from "./typing-store";
 import { useRealtime } from "./use-realtime";
 
 type SupportRealtimeContext = {
   websiteId: string | null;
+  visitorId: string | null;
   client: CossistantClient;
 };
 
@@ -22,14 +27,15 @@ type SupportRealtimeProviderProps = {
 export function SupportRealtimeProvider({
   children,
 }: SupportRealtimeProviderProps) {
-  const { website, client } = useSupport();
+  const { website, client, visitor } = useSupport();
 
   const realtimeContext = useMemo<SupportRealtimeContext>(
     () => ({
       websiteId: website?.id ?? null,
+      visitorId: visitor?.id ?? null,
       client,
     }),
-    [website?.id, client]
+    [website?.id, visitor?.id, client]
   );
 
   const events = useMemo(
@@ -39,11 +45,17 @@ export function SupportRealtimeProvider({
         {
           event,
           context,
-        }: { event: RealtimeEvent; context: SupportRealtimeContext }
+        }: {
+          event: RealtimeEvent<"MESSAGE_CREATED">;
+          context: SupportRealtimeContext;
+        }
       ) => {
         if (context.websiteId && event.websiteId !== context.websiteId) {
           return;
         }
+
+        // Clear typing state when a message is sent
+        clearTypingFromMessage(event);
 
         context.client.handleRealtimeEvent(event);
       },
@@ -63,6 +75,25 @@ export function SupportRealtimeProvider({
 
         // Update the seen store so the UI reflects who has seen messages
         applyConversationSeenEvent(event);
+      },
+      CONVERSATION_TYPING: (
+        _data: RealtimeEvent["payload"],
+        {
+          event,
+          context,
+        }: {
+          event: RealtimeEvent<"CONVERSATION_TYPING">;
+          context: SupportRealtimeContext;
+        }
+      ) => {
+        if (context.websiteId && event.websiteId !== context.websiteId) {
+          return;
+        }
+
+        // Update typing store, but ignore events from the current visitor (their own typing)
+        applyConversationTypingEvent(event, {
+          ignoreVisitorId: context.visitorId,
+        });
       },
     }),
     []
