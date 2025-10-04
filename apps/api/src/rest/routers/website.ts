@@ -154,7 +154,8 @@ websiteRouter.openapi(
 				name: humanAgent.user.name,
 				email: humanAgent.user.email,
 				image: humanAgent.user.image,
-				lastSeenAt: humanAgent.user.lastSeenAt ?? new Date(),
+				lastSeenAt:
+					humanAgent.user.lastSeenAt?.toISOString() ?? new Date().toISOString(),
 			})
 		);
 
@@ -176,9 +177,6 @@ websiteRouter.openapi(
 					availableAIAgents: [],
 					visitor: {
 						id: visitor.id,
-						externalId: visitor.externalId,
-						name: visitor.name,
-						email: visitor.email,
 						isBlocked: Boolean(visitor.blockedAt),
 					},
 				},

@@ -217,7 +217,9 @@ messagesRouter.openapi(
 				aiAgentId: body.message.aiAgentId ?? null,
 				visitorId,
 				visibility: body.message.visibility ?? undefined,
-				createdAt: body.message.createdAt,
+				createdAt: body.message.createdAt
+					? new Date(body.message.createdAt)
+					: undefined,
 			},
 		});
 

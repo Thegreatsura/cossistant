@@ -135,7 +135,7 @@ export type UpdateContactMetadataRequest = z.infer<
  * This is used to create or update a contact and link it to a visitor
  */
 export const identifyContactRequestSchema = z.object({
-	visitorId: z.string().ulid().openapi({
+	visitorId: z.ulid().openapi({
 		description: "The visitor ID to link to the contact.",
 		example: "01JG000000000000000000000",
 	}),
@@ -195,7 +195,7 @@ export type IdentifyContactRequest = z.infer<
  * Contact response schema
  */
 export const contactResponseSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The contact's unique identifier (ULID).",
 		example: "01JG000000000000000000000",
 	}),
@@ -207,11 +207,11 @@ export const contactResponseSchema = z.object({
 		description: "The contact's name.",
 		example: "John Doe",
 	}),
-	email: z.string().email().nullable().openapi({
+	email: z.email().nullable().openapi({
 		description: "The contact's email address.",
 		example: "john.doe@example.com",
 	}),
-	image: z.string().url().nullable().openapi({
+	image: z.url().nullable().openapi({
 		description: "The contact's avatar/image URL.",
 		example: "https://example.com/avatar.png",
 	}),
@@ -219,28 +219,28 @@ export const contactResponseSchema = z.object({
 		description: "Additional custom metadata for the contact.",
 		example: { plan: "premium", role: "admin" },
 	}),
-	contactOrganizationId: z.string().ulid().nullable().openapi({
+	contactOrganizationId: z.ulid().nullable().openapi({
 		description: "The contact organization ID this contact belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	websiteId: z.string().ulid().openapi({
+	websiteId: z.ulid().openapi({
 		description: "The website's unique identifier that the contact belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description:
 			"The organization's unique identifier that the contact belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	userId: z.string().ulid().nullable().openapi({
+	userId: z.ulid().nullable().openapi({
 		description: "The user ID if the contact is linked to a registered user.",
 		example: "01JG000000000000000000000",
 	}),
-	createdAt: z.date().openapi({
+	createdAt: z.iso.datetime().openapi({
 		description: "When the contact was first created.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	updatedAt: z.date().openapi({
+	updatedAt: z.iso.datetime().openapi({
 		description: "When the contact record was last updated.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
@@ -254,7 +254,7 @@ export type ContactResponse = Contact;
  */
 export const identifyContactResponseSchema = z.object({
 	contact: contactResponseSchema,
-	visitorId: z.string().ulid().openapi({
+	visitorId: z.ulid().openapi({
 		description: "The visitor ID that was linked to the contact.",
 		example: "01JG000000000000000000000",
 	}),
@@ -356,7 +356,7 @@ export type UpdateContactOrganizationRequest = z.infer<
  * Contact organization response schema
  */
 export const contactOrganizationResponseSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The organization's unique identifier (ULID).",
 		example: "01JG000000000000000000000",
 	}),
@@ -380,21 +380,21 @@ export const contactOrganizationResponseSchema = z.object({
 		description: "Additional custom metadata for the organization.",
 		example: { industry: "technology", employees: 500 },
 	}),
-	websiteId: z.string().ulid().openapi({
+	websiteId: z.ulid().openapi({
 		description:
 			"The website's unique identifier that the organization belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description:
 			"The organization's unique identifier that the organization belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	createdAt: z.date().openapi({
+	createdAt: z.iso.datetime().openapi({
 		description: "When the organization was first created.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	updatedAt: z.date().openapi({
+	updatedAt: z.iso.datetime().openapi({
 		description: "When the organization record was last updated.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),

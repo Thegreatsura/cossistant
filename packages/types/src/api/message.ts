@@ -30,7 +30,7 @@ export const sendMessageRequestSchema = z.object({
 		visitorId: z.string().nullable().optional(),
 		aiAgentId: z.string().nullable().optional(),
 		visibility: z.enum(["public", "private"]).default("public"),
-		createdAt: z.date().optional(),
+		createdAt: z.iso.datetime().optional(),
 	}),
 });
 

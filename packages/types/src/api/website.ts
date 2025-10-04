@@ -25,7 +25,7 @@ export const createWebsiteRequestSchema = z.object({
 			description: "The website's domain.",
 			example: "dub.co",
 		}),
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description: "The organization's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
@@ -41,7 +41,7 @@ export type CreateWebsiteRequest = z.infer<typeof createWebsiteRequestSchema>;
  * Website creation response schema
  */
 export const createWebsiteResponseSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The website's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
@@ -49,18 +49,18 @@ export const createWebsiteResponseSchema = z.object({
 		description: "The website's name.",
 		example: "Dub",
 	}),
-	whitelistedDomains: z.array(z.string().url()).openapi({
+	whitelistedDomains: z.array(z.url()).openapi({
 		description: "The website's whitelisted domains.",
 		example: ["http://localhost:3000", "https://dub.co"],
 	}),
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description: "The organization's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
 	apiKeys: z
 		.array(
 			z.object({
-				id: z.string().ulid().openapi({
+				id: z.ulid().openapi({
 					description: "The API key's unique identifier.",
 					example: "01JG000000000000000000000",
 				}),
@@ -68,7 +68,7 @@ export const createWebsiteResponseSchema = z.object({
 					description: "The API key's value.",
 					example: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				}),
-				createdAt: z.date().openapi({
+				createdAt: z.iso.datetime().openapi({
 					description: "The API key's creation date.",
 					example: "2021-01-01T00:00:00.000Z",
 				}),
@@ -80,7 +80,7 @@ export const createWebsiteResponseSchema = z.object({
 					description: "Whether the API key is active.",
 					example: true,
 				}),
-				keyType: z.nativeEnum(APIKeyType).openapi({
+				keyType: z.enum(APIKeyType).openapi({
 					description: "The API key's type (public or private).",
 					example: APIKeyType.PUBLIC,
 				}),
@@ -92,7 +92,7 @@ export const createWebsiteResponseSchema = z.object({
 				{
 					id: "01JG000000000000000000000",
 					key: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					createdAt: new Date("2021-01-01T00:00:00.000Z"),
+					createdAt: "2021-01-01T00:00:00.000Z",
 					isTest: true,
 					isActive: true,
 					keyType: APIKeyType.PUBLIC,
@@ -121,7 +121,7 @@ export type CheckWebsiteDomainRequest = z.infer<
 >;
 
 export const availableHumanAgentSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The human agent's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
@@ -133,7 +133,7 @@ export const availableHumanAgentSchema = z.object({
 		description: "The agent's avatar URL.",
 		example: "https://cossistant.com/avatar.png",
 	}),
-	lastSeenAt: z.date().nullable().openapi({
+	lastSeenAt: z.iso.datetime().nullable().openapi({
 		description:
 			"The agent's last online timestamp, used to determine if the agent is online. If the agent is offline, this will be null or more than 5 minutes ago.",
 		example: "2021-01-01T00:00:00.000Z",
@@ -141,7 +141,7 @@ export const availableHumanAgentSchema = z.object({
 });
 
 export const AvailableAIAgentSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The AI agent's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
@@ -159,7 +159,7 @@ export const AvailableAIAgentSchema = z.object({
  * Website information response schema
  */
 export const publicWebsiteResponseSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The website's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
@@ -179,7 +179,7 @@ export const publicWebsiteResponseSchema = z.object({
 		description: "The website's logo URL.",
 		example: "https://dub.co/logo.png",
 	}),
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description: "The organization's unique identifier.",
 		example: "01JG000000000000000000000",
 	}),
@@ -187,7 +187,7 @@ export const publicWebsiteResponseSchema = z.object({
 		description: "The website's status.",
 		example: "active",
 	}),
-	lastOnlineAt: z.string().datetime().nullable().openapi({
+	lastOnlineAt: z.iso.datetime().nullable().openapi({
 		description: "The website's support last online date.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),

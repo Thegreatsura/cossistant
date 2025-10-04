@@ -168,7 +168,7 @@ conversationRouter.openapi(
 							aiAgentId: msg.aiAgentId ?? null,
 							visitorId: msg.visitorId ?? null,
 							visibility: msg.visibility ?? undefined,
-							createdAt: msg.createdAt,
+							createdAt: new Date(msg.createdAt),
 						},
 					})
 				)
@@ -590,7 +590,7 @@ conversationRouter.openapi(
 
 		const response = {
 			conversationId: conversationRecord.id,
-			lastSeenAt,
+			lastSeenAt: lastSeenAt.toISOString(),
 		};
 
 		return c.json(
@@ -740,7 +740,7 @@ conversationRouter.openapi(
 			conversationId: conversationRecord.id,
 			isTyping: body.isTyping,
 			visitorPreview: effectivePreview,
-			sentAt,
+			sentAt: sentAt.toISOString(),
 		};
 
 		return c.json(

@@ -53,8 +53,8 @@ function formatContactResponse(record: ContactRecord): ContactResponse {
 		websiteId: record.websiteId,
 		organizationId: record.organizationId,
 		userId: record.userId,
-		createdAt: record.createdAt,
-		updatedAt: record.updatedAt,
+		createdAt: record.createdAt.toISOString(),
+		updatedAt: record.updatedAt.toISOString(),
 	};
 }
 
@@ -71,8 +71,8 @@ function formatContactOrganizationResponse(
 			null) as ContactOrganizationResponse["metadata"],
 		websiteId: record.websiteId,
 		organizationId: record.organizationId,
-		createdAt: record.createdAt,
-		updatedAt: record.updatedAt,
+		createdAt: record.createdAt.toISOString(),
+		updatedAt: record.updatedAt.toISOString(),
 	};
 }
 

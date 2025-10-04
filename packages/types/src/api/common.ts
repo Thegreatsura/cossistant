@@ -7,7 +7,7 @@ import { z } from "@hono/zod-openapi";
 /**
  * Email validation schema
  */
-export const emailSchema = z.string().email().openapi({
+export const emailSchema = z.email().openapi({
 	description: "A valid email address.",
 	example: "user@example.com",
 });
@@ -15,7 +15,7 @@ export const emailSchema = z.string().email().openapi({
 /**
  * User ID validation schema
  */
-export const userIdSchema = z.string().ulid().openapi({
+export const userIdSchema = z.ulid().openapi({
 	description: "A valid user identifier.",
 	example: "01JG000000000000000000000",
 });
@@ -23,7 +23,7 @@ export const userIdSchema = z.string().ulid().openapi({
 /**
  * Optional user ID validation schema
  */
-export const optionalUserIdSchema = z.string().ulid().optional().openapi({
+export const optionalUserIdSchema = z.ulid().optional().openapi({
 	description: "An optional user identifier.",
 	example: "01JG000000000000000000000",
 });

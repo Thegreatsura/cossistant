@@ -180,7 +180,7 @@ export type UpdateVisitorMetadataRequest = z.infer<
 >;
 
 export const visitorProfileSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The visitor's unique identifier (ULID).",
 		example: "01JG000000000000000000000",
 	}),
@@ -188,7 +188,7 @@ export const visitorProfileSchema = z.object({
 		description: "External identifier for the visitor.",
 		example: "user_12345",
 	}),
-	avatar: z.string().url().nullable().openapi({
+	avatar: z.url().nullable().openapi({
 		description: "The visitor's avatar URL.",
 		example: "https://example.com/avatar.png",
 	}),
@@ -196,15 +196,15 @@ export const visitorProfileSchema = z.object({
 		description: "The visitor's name, if provided or identified.",
 		example: "John Doe",
 	}),
-	email: z.string().email().nullable().openapi({
+	email: z.email().nullable().openapi({
 		description: "The visitor's email address, if provided or identified.",
 		example: "john.doe@example.com",
 	}),
-	lastSeenAt: z.date().nullable().openapi({
+	lastSeenAt: z.iso.datetime().nullable().openapi({
 		description: "When the visitor was last seen.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	blockedAt: z.date().nullable().openapi({
+	blockedAt: z.iso.datetime().nullable().openapi({
 		description: "When the visitor was blocked, if applicable.",
 		example: "2024-01-01T12:00:00.000Z",
 	}),
@@ -222,7 +222,7 @@ export const visitorProfileSchema = z.object({
  * Visitor response schema
  */
 export const visitorResponseSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The visitor's unique identifier (ULID).",
 		example: "01JG000000000000000000000",
 	}),
@@ -294,28 +294,28 @@ export const visitorResponseSchema = z.object({
 		description: "The visitor's viewport size.",
 		example: "1920x900",
 	}),
-	createdAt: z.date().openapi({
+	createdAt: z.iso.datetime().openapi({
 		description: "When the visitor was first seen.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	updatedAt: z.date().openapi({
+	updatedAt: z.iso.datetime().openapi({
 		description: "When the visitor record was last updated.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	lastSeenAt: z.date().nullable().openapi({
+	lastSeenAt: z.iso.datetime().nullable().openapi({
 		description: "When the visitor was last connected or active.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	websiteId: z.string().ulid().openapi({
+	websiteId: z.ulid().openapi({
 		description: "The website's unique identifier that the visitor belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description:
 			"The organization's unique identifier that the visitor belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	blockedAt: z.date().nullable().openapi({
+	blockedAt: z.iso.datetime().nullable().openapi({
 		description: "When the visitor was blocked, if applicable.",
 		example: "2024-01-01T12:00:00.000Z",
 	}),
@@ -336,21 +336,9 @@ export type VisitorResponse = Visitor;
  * Visitor response schema
  */
 export const publicVisitorResponseSchema = z.object({
-	id: z.string().ulid().openapi({
+	id: z.ulid().openapi({
 		description: "The visitor's unique identifier (ULID).",
 		example: "01JG000000000000000000000",
-	}),
-	externalId: z.string().nullable().openapi({
-		description: "External identifier for the visitor.",
-		example: "user_12345",
-	}),
-	name: z.string().nullable().openapi({
-		description: "The visitor's name, if provided or identified.",
-		example: "John Doe",
-	}),
-	email: z.string().email().nullable().openapi({
-		description: "The visitor's email address, if provided or identified.",
-		example: "john.doe@example.com",
 	}),
 	isBlocked: z.boolean().openapi({
 		description: "Whether the visitor is currently blocked.",
