@@ -42,7 +42,6 @@
     "hono": "^4.9.7",
     "hono-rate-limiter": "^0.4.2",
     "ioredis": "^5.7.0",
-    "lru-cache": "^11.2.1",
     "pg": "^8.16.3",
     "rate-limit-redis": "^4.2.2",
     "resend": "^6.1.0",
