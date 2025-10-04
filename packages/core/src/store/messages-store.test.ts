@@ -18,8 +18,8 @@ function createMockMessage(overrides: Partial<Message> = {}): Message {
 		modelUsed: null,
 		visitorId: "visitor-1",
 		conversationId: "conv-1",
-		createdAt: new Date("2024-01-01T00:00:00.000Z"),
-		updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+		createdAt: "2024-01-01T00:00:00.000Z",
+		updatedAt: "2024-01-01T00:00:00.000Z",
 		deletedAt: null,
 		visibility: "public",
 	};
@@ -30,7 +30,7 @@ function createMockMessage(overrides: Partial<Message> = {}): Message {
 function createMockConversation(
 	overrides: Partial<Conversation> = {}
 ): Conversation {
-	const now = new Date("2024-01-01T00:00:00.000Z");
+	const now = "2024-01-01T00:00:00.000Z";
 	const base: Conversation = {
 		id: "conv-1",
 		title: undefined,
@@ -63,11 +63,10 @@ describe("messages store", () => {
 
 		const updatedMessage = createMockMessage({
 			bodyMd: "Updated",
-			updatedAt: new Date("2024-01-01T00:01:00.000Z"),
+			updatedAt: "2024-01-01T00:01:00.000Z",
 		});
 
 		store.ingestPage(firstPage.conversationId, {
-			conversationId: firstPage.conversationId,
 			messages: [updatedMessage],
 			hasNextPage: false,
 			nextCursor: undefined,
@@ -76,7 +75,7 @@ describe("messages store", () => {
 		const conversation =
 			store.getState().conversations[firstPage.conversationId];
 		expect(conversation?.messages).toHaveLength(1);
-		expect(conversation?.messages[0].bodyMd).toBe("Updated");
+		expect(conversation?.messages[0]?.bodyMd).toBe("Updated");
 	});
 
 	it("ingests single messages", () => {
@@ -120,7 +119,10 @@ describe("messages store", () => {
 		const event: MessageCreatedData = {
 			type: "MESSAGE_CREATED",
 			timestamp: Date.now(),
-			data: {
+			organizationId: "org-1",
+			websiteId: "site-1",
+			visitorId: "visitor-1",
+			payload: {
 				message: {
 					id: "msg-event",
 					bodyMd: "Realtime",
@@ -134,8 +136,8 @@ describe("messages store", () => {
 					parentMessageId: null,
 					modelUsed: null,
 					visibility: "public",
-					createdAt: new Date("2024-01-02T00:00:00.000Z").toISOString(),
-					updatedAt: new Date("2024-01-02T00:00:00.000Z").toISOString(),
+					createdAt: "2024-01-02T00:00:00.000Z",
+					updatedAt: "2024-01-02T00:00:00.000Z",
 					deletedAt: null,
 				},
 				conversationId: "conv-1",
@@ -148,8 +150,10 @@ describe("messages store", () => {
 
 		const conversation = store.getState().conversations["conv-1"];
 		expect(conversation?.messages).toHaveLength(1);
-		expect(conversation?.messages[0].id).toBe("msg-event");
-		expect(conversation?.messages[0].createdAt).toBeInstanceOf(Date);
+		expect(conversation?.messages[0]?.id).toBe("msg-event");
+		expect(conversation?.messages[0]?.createdAt).toBe(
+			"2024-01-02T00:00:00.000Z"
+		);
 	});
 });
 
@@ -214,12 +218,13 @@ describe("CossistantClient message integration", () => {
 				id: optimisticId,
 				bodyMd: "Draft",
 				type: serverMessage.type,
+				visibility: "public",
 			},
 		});
 
 		expect(receivedPayload?.message.id).toBe(optimisticId);
 		expect(stateDuringCall).toBeDefined();
-		expect(stateDuringCall?.[0].id).toBe(optimisticId);
+		expect(stateDuringCall?.[0]?.id).toBe(optimisticId);
 
 		const stored =
 			client.messagesStore.getState().conversations[
@@ -252,12 +257,13 @@ describe("CossistantClient message integration", () => {
 					id: optimisticId,
 					bodyMd: "Rollback",
 					type: "text",
+					visibility: "public",
 				},
 			})
 		).rejects.toThrow(error);
 
 		expect(stateDuringCall).toBeDefined();
-		expect(stateDuringCall?.[0].id).toBe(optimisticId);
+		expect(stateDuringCall?.[0]?.id).toBe(optimisticId);
 
 		const stored =
 			client.messagesStore.getState().conversations[conversationId];
@@ -286,8 +292,8 @@ describe("CossistantClient message integration", () => {
 					parentMessageId: null,
 					modelUsed: null,
 					visibility: "public",
-					createdAt: new Date("2024-01-03T00:00:00.000Z").toISOString(),
-					updatedAt: new Date("2024-01-03T00:00:00.000Z").toISOString(),
+					createdAt: "2024-01-03T00:00:00.000Z",
+					updatedAt: "2024-01-03T00:00:00.000Z",
 					deletedAt: null,
 				},
 				conversationId: "conv-1",
@@ -303,13 +309,11 @@ describe("CossistantClient message integration", () => {
 
 		const stored = client.messagesStore.getState().conversations["conv-1"];
 		expect(stored?.messages).toHaveLength(1);
-		expect(stored?.messages[0].id).toBe("msg-realtime");
+		expect(stored?.messages[0]?.id).toBe("msg-realtime");
 
 		const conversation = client.conversationsStore.getState().byId["conv-1"];
 		expect(conversation?.lastMessage?.id).toBe("msg-realtime");
-		expect(conversation?.updatedAt.getTime()).toBe(
-			new Date("2024-01-03T00:00:00.000Z").getTime()
-		);
+		expect(conversation?.updatedAt).toBe("2024-01-03T00:00:00.000Z");
 	});
 
 	it("initiates a local conversation with default messages", () => {
@@ -332,7 +336,7 @@ describe("CossistantClient message integration", () => {
 		const messages =
 			client.messagesStore.getState().conversations["conv-local"];
 		expect(messages?.messages).toHaveLength(1);
-		expect(messages?.messages[0].id).toBe("msg-default");
+		expect(messages?.messages[0]?.id).toBe("msg-default");
 	});
 
 	it("creates the conversation on the server when sending the first message", async () => {
@@ -341,8 +345,8 @@ describe("CossistantClient message integration", () => {
 			id: "msg-default",
 			conversationId,
 			bodyMd: "Welcome",
-			createdAt: new Date("2024-02-01T00:00:00.000Z"),
-			updatedAt: new Date("2024-02-01T00:00:00.000Z"),
+			createdAt: "2024-02-01T00:00:00.000Z",
+			updatedAt: "2024-02-01T00:00:00.000Z",
 		});
 
 		client.initiateConversation({
@@ -364,8 +368,8 @@ describe("CossistantClient message integration", () => {
 				id: "msg-server",
 				conversationId,
 				bodyMd: "Hi there",
-				createdAt: new Date("2024-02-01T00:01:00.000Z"),
-				updatedAt: new Date("2024-02-01T00:01:00.000Z"),
+				createdAt: "2024-02-01T00:01:00.000Z",
+				updatedAt: "2024-02-01T00:01:00.000Z",
 			}),
 		];
 
@@ -391,6 +395,7 @@ describe("CossistantClient message integration", () => {
 				bodyMd: "Hi there",
 				type: "text",
 				visitorId: "visitor-new",
+				visibility: "public",
 			},
 		});
 
@@ -439,6 +444,7 @@ describe("CossistantClient message integration", () => {
 					bodyMd: "Retry",
 					type: "text",
 					visitorId: "visitor-fail",
+					visibility: "public",
 				},
 			})
 		).rejects.toThrow(error);
@@ -446,6 +452,6 @@ describe("CossistantClient message integration", () => {
 		const storedMessages =
 			client.messagesStore.getState().conversations[conversationId];
 		expect(storedMessages?.messages).toHaveLength(1);
-		expect(storedMessages?.messages[0].id).toBe(defaultMessage.id);
+		expect(storedMessages?.messages[0]?.id).toBe(defaultMessage.id);
 	});
 });
