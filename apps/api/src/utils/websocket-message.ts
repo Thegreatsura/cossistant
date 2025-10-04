@@ -65,8 +65,11 @@ export function validateMessage(
 	// Create event
 	const event: RealtimeEvent = {
 		type: message.type,
-		data: validatedData,
+		payload: validatedData,
 		timestamp: Date.now(),
+		organizationId: authContext?.organizationId ?? "",
+		websiteId: authContext?.websiteId ?? "",
+		visitorId: authContext?.visitorId ?? null,
 	};
 
 	// Create context

@@ -108,7 +108,7 @@ export async function updateApiKey(
 		data: Partial<{
 			name: string;
 			isActive: boolean;
-			expiresAt: Date | null;
+			expiresAt: string | null;
 		}>;
 	}
 ) {
@@ -116,7 +116,7 @@ export async function updateApiKey(
 		.update(apiKey)
 		.set({
 			...params.data,
-			updatedAt: new Date(),
+			updatedAt: new Date().toISOString(),
 		})
 		.where(
 			and(
@@ -142,9 +142,9 @@ export async function revokeApiKey(
 		.update(apiKey)
 		.set({
 			isActive: false,
-			revokedAt: new Date(),
+			revokedAt: new Date().toISOString(),
 			revokedBy: params.revokedBy,
-			updatedAt: new Date(),
+			updatedAt: new Date().toISOString(),
 		})
 		.where(
 			and(
@@ -168,7 +168,7 @@ export async function updateApiKeyLastUsed(
 	const [updatedKey] = await db
 		.update(apiKey)
 		.set({
-			lastUsedAt: new Date(),
+			lastUsedAt: new Date().toISOString(),
 		})
 		.where(
 			and(

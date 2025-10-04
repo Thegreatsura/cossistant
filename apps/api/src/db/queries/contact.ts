@@ -131,7 +131,7 @@ export async function createContact(
 		data: Partial<ContactInsert>;
 	}
 ): Promise<ContactRecord> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	const [newContact] = await db
 		.insert(contact)
@@ -158,7 +158,7 @@ export async function updateContact(
 		data: Partial<ContactInsert>;
 	}
 ): Promise<ContactRecord | null> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	const [updated] = await db
 		.update(contact)
@@ -227,7 +227,7 @@ export async function deleteContact(
 		websiteId: string;
 	}
 ): Promise<ContactRecord | null> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	const [deleted] = await db
 		.update(contact)
@@ -258,7 +258,7 @@ export async function linkVisitorToContact(
 		websiteId: string;
 	}
 ): Promise<void> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	await db
 		.update(visitor)
@@ -309,7 +309,7 @@ export async function identifyContact(
 		});
 	}
 
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	if (existingContact) {
 		// Update existing contact
@@ -438,7 +438,7 @@ export async function createContactOrganization(
 		data: Partial<ContactOrganizationInsert> & { name: string };
 	}
 ): Promise<ContactOrganizationRecord> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	const [newContactOrganization] = await db
 		.insert(contactOrganization)
@@ -465,7 +465,7 @@ export async function updateContactOrganization(
 		data: Partial<ContactOrganizationInsert>;
 	}
 ): Promise<ContactOrganizationRecord | null> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	const [updated] = await db
 		.update(contactOrganization)
@@ -495,13 +495,12 @@ export async function deleteContactOrganization(
 		websiteId: string;
 	}
 ): Promise<ContactOrganizationRecord | null> {
-	const now = new Date();
+	const now = new Date().toISOString();
 
 	const [deleted] = await db
 		.update(contactOrganization)
 		.set({
 			deletedAt: now,
-			updatedAt: now,
 		})
 		.where(
 			and(

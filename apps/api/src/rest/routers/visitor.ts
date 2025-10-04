@@ -46,12 +46,12 @@ function formatVisitorResponse(record: VisitorRecord): VisitorResponse {
 		timezone: record.timezone,
 		screenResolution: record.screenResolution,
 		viewport: record.viewport,
-		createdAt: record.createdAt.toISOString(),
-		updatedAt: record.updatedAt.toISOString(),
-		lastSeenAt: record.lastSeenAt?.toISOString() ?? null,
+		createdAt: record.createdAt,
+		updatedAt: record.updatedAt,
+		lastSeenAt: record.lastSeenAt ?? null,
 		websiteId: record.websiteId,
 		organizationId: record.organizationId,
-		blockedAt: record.blockedAt?.toISOString() ?? null,
+		blockedAt: record.blockedAt ?? null,
 		blockedByUserId: record.blockedByUserId,
 		isBlocked: Boolean(record.blockedAt),
 	};
@@ -369,8 +369,8 @@ visitorRouter.openapi(
 				data: {
 					...body,
 					...networkContext,
-					lastSeenAt: now,
-					updatedAt: now,
+					lastSeenAt: now.toISOString(),
+					updatedAt: now.toISOString(),
 				},
 			});
 

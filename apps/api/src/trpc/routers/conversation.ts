@@ -132,7 +132,7 @@ export const conversationRouter = createTRPCRouter({
 
 			return {
 				items: result.messages,
-				nextCursor: result.nextCursor,
+				nextCursor: result.nextCursor ? new Date(result.nextCursor) : null,
 				hasNextPage: result.hasNextPage,
 			};
 		}),
@@ -195,7 +195,7 @@ export const conversationRouter = createTRPCRouter({
 					deletedAt: null,
 					message: event.message ?? undefined,
 				})),
-				nextCursor: result.nextCursor,
+				nextCursor: result.nextCursor ? new Date(result.nextCursor) : null,
 				hasNextPage: result.hasNextPage,
 			};
 		}),
@@ -558,15 +558,8 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
-			// Transform dates to strings for the response schema
-			const { image, ...visitorWithoutImage } = visitor;
 			return {
-				...visitorWithoutImage,
-				avatar: visitor.image,
-				metadata: visitor.metadata as Record<
-					string,
-					string | number | boolean | null
-				> | null,
+				...visitor,
 				createdAt: visitor.createdAt,
 				updatedAt: visitor.updatedAt,
 				lastSeenAt: visitor.lastSeenAt ?? null,

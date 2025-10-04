@@ -103,7 +103,7 @@ export async function updateWebsite(
 		.update(website)
 		.set({
 			...params.data,
-			updatedAt: new Date(),
+			updatedAt: new Date().toISOString(),
 		})
 		.where(
 			and(
@@ -127,8 +127,8 @@ export async function deleteWebsite(
 	const [deletedWebsite] = await db
 		.update(website)
 		.set({
-			deletedAt: new Date(),
-			updatedAt: new Date(),
+			deletedAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
 		})
 		.where(
 			and(
@@ -153,7 +153,7 @@ export async function restoreWebsite(
 		.update(website)
 		.set({
 			deletedAt: null,
-			updatedAt: new Date(),
+			updatedAt: new Date().toISOString(),
 		})
 		.where(
 			and(

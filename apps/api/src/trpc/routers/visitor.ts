@@ -13,7 +13,6 @@ import { loadConversationContext } from "../utils/conversation";
 function normaliseVisitor(record: VisitorRecord) {
 	return {
 		...record,
-		metadata: record.metadata as Record<string, unknown> | null,
 		isBlocked: Boolean(record.blockedAt),
 	};
 }

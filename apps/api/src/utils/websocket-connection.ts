@@ -1,12 +1,5 @@
-import {
-	WEBSOCKET_ERRORS,
-	WebSocketErrorCode,
-} from "@api/utils/websocket-errors";
-import {
-	generateConnectionId,
-	type RawSocket,
-	type WebSocketAuthSuccess,
-} from "@api/ws/socket";
+import { WEBSOCKET_ERRORS } from "@api/utils/websocket-errors";
+import type { RawSocket, WebSocketAuthSuccess } from "@api/ws/socket";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ServerWebSocket } from "bun";
 

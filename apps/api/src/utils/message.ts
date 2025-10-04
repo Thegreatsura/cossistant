@@ -57,9 +57,9 @@ function serializeMessageForRealtime(
 			conversationId: message.conversationId,
 			parentMessageId: message.parentMessageId,
 			modelUsed: message.modelUsed,
-			createdAt: message.createdAt.toISOString(),
-			updatedAt: message.updatedAt.toISOString(),
-			deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null,
+			createdAt: message.createdAt,
+			updatedAt: message.updatedAt,
+			deletedAt: message.deletedAt ? message.deletedAt : null,
 			visibility: message.visibility,
 		},
 		conversationId: context.conversationId,
@@ -87,7 +87,9 @@ export async function createMessage(
 				aiAgentId: message.aiAgentId ?? null,
 				visitorId: message.visitorId ?? null,
 				conversationId,
-				createdAt: message.createdAt ?? new Date(),
+				createdAt: message.createdAt
+					? message.createdAt.toISOString()
+					: new Date().toISOString(),
 				visibility: message.visibility ?? MessageVisibilityValues.PUBLIC,
 			},
 		],
