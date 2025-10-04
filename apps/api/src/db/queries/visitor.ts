@@ -107,27 +107,15 @@ export async function getVisitor(
   db: Database,
   params: {
     visitorId?: string | null;
-    externalVisitorId?: string | null;
   }
 ) {
-  if (!(params.visitorId || params.externalVisitorId)) {
-    return;
-  }
-
-  const query = params.visitorId
-    ? eq(visitor.id, params.visitorId)
-    : params.externalVisitorId
-      ? eq(visitor.externalId, params.externalVisitorId)
-      : null;
-
-  // Safety net, means we didn't
-  if (!query) {
+  if (!params.visitorId) {
     return;
   }
 
   const _visitor = await db.query.visitor
     .findFirst({
-      where: query,
+      where: eq(visitor.id, params.visitorId),
     })
     .execute();
 

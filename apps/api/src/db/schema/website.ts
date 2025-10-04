@@ -12,7 +12,6 @@ import {
   pgTable,
   real,
   text,
-  timestamp,
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -22,6 +21,7 @@ import {
   ulidPrimaryKey,
   ulidReference,
 } from "../../utils/db/ids";
+import { isoTimestamp as timestamp } from "../../utils/db/timestamp";
 import { aiAgent } from "./ai-agent";
 import { apiKey } from "./api-keys";
 import { organization, team, user } from "./auth";
