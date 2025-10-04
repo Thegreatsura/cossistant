@@ -11,6 +11,13 @@ export type UseVisitorReturn = {
 	setVisitorMetadata: (
 		metadata: VisitorMetadata
 	) => Promise<VisitorResponse | null>;
+	identify: (params: {
+		externalId?: string;
+		email?: string;
+		name?: string;
+		image?: string;
+		metadata?: Record<string, unknown>;
+	}) => Promise<{ contactId: string; visitorId: string } | null>;
 };
 
 function safeWarn(message: string): void {
@@ -26,8 +33,11 @@ function safeError(message: string, error: unknown): void {
 }
 
 /**
- * Exposes the current visitor plus a safe helper to update metadata while
- * guarding against missing client or visitor context.
+ * Exposes the current visitor plus helpers to identify and update metadata.
+ *
+ * Note: Metadata is stored on contacts, not visitors. When you call
+ * setVisitorMetadata, it will update the contact metadata if the visitor
+ * has been identified. If not, you must call identify() first.
  */
 export function useVisitor(): UseVisitorReturn {
 	const { website, client } = useSupport();
@@ -55,8 +65,36 @@ export function useVisitor(): UseVisitorReturn {
 		[client, visitorId]
 	);
 
+	const identify = useCallback<
+		(params: {
+			externalId?: string;
+			email?: string;
+			name?: string;
+			image?: string;
+			metadata?: Record<string, unknown>;
+		}) => Promise<{ contactId: string; visitorId: string } | null>
+	>(
+		async (params) => {
+			if (!visitorId) {
+				safeWarn(
+					"No visitor is associated with this session; identify skipped"
+				);
+				return null;
+			}
+
+			try {
+				return await client.identify(params);
+			} catch (error) {
+				safeError("Failed to identify visitor", error);
+				return null;
+			}
+		},
+		[client, visitorId]
+	);
+
 	return {
 		visitor,
 		setVisitorMetadata,
+		identify,
 	};
 }

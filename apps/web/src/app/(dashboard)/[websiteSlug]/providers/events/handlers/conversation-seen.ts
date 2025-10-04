@@ -9,307 +9,307 @@ type ConversationSeenEvent = RealtimeEvent<"CONVERSATION_SEEN">;
 // Debouncing mechanism to prevent animation conflicts
 // Store pending updates by conversationId
 const pendingSeenUpdates = new Map<
-  string,
-  {
-    event: ConversationSeenEvent;
-    context: DashboardRealtimeContext;
-    timeoutId: NodeJS.Timeout;
-  }
+	string,
+	{
+		event: ConversationSeenEvent;
+		context: DashboardRealtimeContext;
+		timeoutId: NodeJS.Timeout;
+	}
 >();
 
 const SEEN_UPDATE_DELAY = 2000; // 500ms delay to let message animations settle
 
 type ConversationHeadersQueryInput = {
-  websiteSlug?: string;
+	websiteSlug?: string;
 };
 
 type QueryKeyInput = {
-  input?: ConversationHeadersQueryInput;
+	input?: ConversationHeadersQueryInput;
 };
 
 function extractHeadersQueryInput(
-  queryKey: readonly unknown[]
+	queryKey: readonly unknown[]
 ): ConversationHeadersQueryInput | null {
-  if (queryKey.length < 2) {
-    return null;
-  }
+	if (queryKey.length < 2) {
+		return null;
+	}
 
-  const maybeInput = queryKey[1];
-  if (!maybeInput || typeof maybeInput !== "object") {
-    return null;
-  }
+	const maybeInput = queryKey[1];
+	if (!maybeInput || typeof maybeInput !== "object") {
+		return null;
+	}
 
-  const input = (maybeInput as QueryKeyInput).input;
-  if (!input || typeof input !== "object") {
-    return null;
-  }
+	const input = (maybeInput as QueryKeyInput).input;
+	if (!input || typeof input !== "object") {
+		return null;
+	}
 
-  return input;
+	return input;
 }
 
 function shouldUpdateVisitorTimestamp(
-  event: ConversationSeenEvent,
-  headersVisitorId: string
+	event: ConversationSeenEvent,
+	headersVisitorId: string
 ) {
-  return (
-    Boolean(event.payload.visitorId) &&
-    event.payload.visitorId === headersVisitorId
-  );
+	return (
+		Boolean(event.payload.visitorId) &&
+		event.payload.visitorId === headersVisitorId
+	);
 }
 
 type UpdateResult = {
-  header: ConversationHeader;
-  changed: boolean;
+	header: ConversationHeader;
+	changed: boolean;
 };
 
 function maybeUpdateVisitorLastSeen(
-  header: ConversationHeader,
-  event: ConversationSeenEvent,
-  lastSeenAtTime: number
+	header: ConversationHeader,
+	event: ConversationSeenEvent,
+	lastSeenAtTime: number
 ): UpdateResult {
-  if (!shouldUpdateVisitorTimestamp(event, header.visitorId)) {
-    return { header, changed: false };
-  }
+	if (!shouldUpdateVisitorTimestamp(event, header.visitorId)) {
+		return { header, changed: false };
+	}
 
-  const currentLastSeen = header.visitor.lastSeenAt?.getTime?.();
+	const currentLastSeen = header.visitor.lastSeenAt?.getTime?.();
 
-  if (currentLastSeen === lastSeenAtTime) {
-    return { header, changed: false };
-  }
+	if (currentLastSeen === lastSeenAtTime) {
+		return { header, changed: false };
+	}
 
-  const nextDate = new Date(lastSeenAtTime);
+	const nextDate = new Date(lastSeenAtTime);
 
-  return {
-    header: {
-      ...header,
-      visitor: {
-        ...header.visitor,
-        lastSeenAt: nextDate,
-      },
-    },
-    changed: true,
-  };
+	return {
+		header: {
+			...header,
+			visitor: {
+				...header.visitor,
+				lastSeenAt: nextDate,
+			},
+		},
+		changed: true,
+	};
 }
 
 function maybeUpdateCurrentUserLastSeen(
-  header: ConversationHeader,
-  event: ConversationSeenEvent,
-  currentUserId: string | null | undefined,
-  lastSeenAtTime: number
+	header: ConversationHeader,
+	event: ConversationSeenEvent,
+	currentUserId: string | null | undefined,
+	lastSeenAtTime: number
 ): UpdateResult {
-  if (!(event.payload.userId && currentUserId)) {
-    return { header, changed: false };
-  }
+	if (!(event.payload.userId && currentUserId)) {
+		return { header, changed: false };
+	}
 
-  if (event.payload.userId !== currentUserId) {
-    return { header, changed: false };
-  }
+	if (event.payload.userId !== currentUserId) {
+		return { header, changed: false };
+	}
 
-  const currentLastSeen = header.lastSeenAt?.getTime?.();
+	const currentLastSeen = header.lastSeenAt?.getTime?.();
 
-  if (currentLastSeen === lastSeenAtTime) {
-    return { header, changed: false };
-  }
+	if (currentLastSeen === lastSeenAtTime) {
+		return { header, changed: false };
+	}
 
-  const nextDate = new Date(lastSeenAtTime);
+	const nextDate = new Date(lastSeenAtTime);
 
-  return {
-    header: {
-      ...header,
-      lastSeenAt: nextDate,
-    },
-    changed: true,
-  };
+	return {
+		header: {
+			...header,
+			lastSeenAt: nextDate,
+		},
+		changed: true,
+	};
 }
 
 type SeenEntry = ConversationHeader["seenData"][number];
 
 function buildActorPredicates(event: ConversationSeenEvent) {
-  const predicates: ((seen: SeenEntry) => boolean)[] = [];
+	const predicates: ((seen: SeenEntry) => boolean)[] = [];
 
-  if (event.payload.userId) {
-    predicates.push((seen) => seen.userId === event.payload.userId);
-  }
+	if (event.payload.userId) {
+		predicates.push((seen) => seen.userId === event.payload.userId);
+	}
 
-  if (event.payload.visitorId) {
-    predicates.push((seen) => seen.visitorId === event.payload.visitorId);
-  }
+	if (event.payload.visitorId) {
+		predicates.push((seen) => seen.visitorId === event.payload.visitorId);
+	}
 
-  if (event.payload.aiAgentId) {
-    predicates.push((seen) => seen.aiAgentId === event.payload.aiAgentId);
-  }
+	if (event.payload.aiAgentId) {
+		predicates.push((seen) => seen.aiAgentId === event.payload.aiAgentId);
+	}
 
-  return predicates;
+	return predicates;
 }
 
 function maybeUpdateSeenEntries(
-  header: ConversationHeader,
-  event: ConversationSeenEvent,
-  lastSeenAtTime: number
+	header: ConversationHeader,
+	event: ConversationSeenEvent,
+	lastSeenAtTime: number
 ): UpdateResult {
-  const predicates = buildActorPredicates(event);
+	const predicates = buildActorPredicates(event);
 
-  if (predicates.length === 0) {
-    return { header, changed: false };
-  }
+	if (predicates.length === 0) {
+		return { header, changed: false };
+	}
 
-  const nextDate = new Date(lastSeenAtTime);
+	const nextDate = new Date(lastSeenAtTime);
 
-  // Check if an entry exists for this actor
-  const existingEntryIndex = header.seenData.findIndex((seen) =>
-    predicates.some((predicate) => predicate(seen))
-  );
+	// Check if an entry exists for this actor
+	const existingEntryIndex = header.seenData.findIndex((seen) =>
+		predicates.some((predicate) => predicate(seen))
+	);
 
-  // If no entry exists, create a new one
-  if (existingEntryIndex === -1) {
-    const newEntry: ConversationHeader["seenData"][number] = {
-      id: `${header.id}-${event.payload.userId || event.payload.visitorId || event.payload.aiAgentId}`,
-      conversationId: header.id,
-      userId: event.payload.userId || null,
-      visitorId: event.payload.visitorId || null,
-      aiAgentId: event.payload.aiAgentId || null,
-      lastSeenAt: nextDate,
-      createdAt: nextDate,
-      updatedAt: nextDate,
-      deletedAt: null,
-    };
+	// If no entry exists, create a new one
+	if (existingEntryIndex === -1) {
+		const newEntry: ConversationHeader["seenData"][number] = {
+			id: `${header.id}-${event.payload.userId || event.payload.visitorId || event.payload.aiAgentId}`,
+			conversationId: header.id,
+			userId: event.payload.userId || null,
+			visitorId: event.payload.visitorId || null,
+			aiAgentId: event.payload.aiAgentId || null,
+			lastSeenAt: nextDate,
+			createdAt: nextDate,
+			updatedAt: nextDate,
+			deletedAt: null,
+		};
 
-    return {
-      header: {
-        ...header,
-        seenData: [...header.seenData, newEntry],
-      },
-      changed: true,
-    };
-  }
+		return {
+			header: {
+				...header,
+				seenData: [...header.seenData, newEntry],
+			},
+			changed: true,
+		};
+	}
 
-  // Update existing entry
-  let didChange = false;
+	// Update existing entry
+	let didChange = false;
 
-  const nextSeenData = header.seenData.map((seen) => {
-    const matchesActor = predicates.some((predicate) => predicate(seen));
+	const nextSeenData = header.seenData.map((seen) => {
+		const matchesActor = predicates.some((predicate) => predicate(seen));
 
-    if (!matchesActor) {
-      return seen;
-    }
+		if (!matchesActor) {
+			return seen;
+		}
 
-    if (seen.lastSeenAt.getTime() === lastSeenAtTime) {
-      return seen;
-    }
+		if (seen.lastSeenAt.getTime() === lastSeenAtTime) {
+			return seen;
+		}
 
-    didChange = true;
+		didChange = true;
 
-    return {
-      ...seen,
-      lastSeenAt: nextDate,
-      updatedAt: nextDate,
-    };
-  });
+		return {
+			...seen,
+			lastSeenAt: nextDate,
+			updatedAt: nextDate,
+		};
+	});
 
-  if (!didChange) {
-    return { header, changed: false };
-  }
+	if (!didChange) {
+		return { header, changed: false };
+	}
 
-  return {
-    header: {
-      ...header,
-      seenData: nextSeenData,
-    },
-    changed: true,
-  };
+	return {
+		header: {
+			...header,
+			seenData: nextSeenData,
+		},
+		changed: true,
+	};
 }
 
 function applySeenUpdate(
-  event: ConversationSeenEvent,
-  context: DashboardRealtimeContext
+	event: ConversationSeenEvent,
+	context: DashboardRealtimeContext
 ) {
-  const lastSeenAt = new Date(event.payload.lastSeenAt);
-  const lastSeenAtTime = lastSeenAt.getTime();
+	const lastSeenAt = new Date(event.payload.lastSeenAt);
+	const lastSeenAtTime = lastSeenAt.getTime();
 
-  const queries = context.queryClient
-    .getQueryCache()
-    .findAll({ queryKey: [["conversation", "listConversationsHeaders"]] });
+	const queries = context.queryClient
+		.getQueryCache()
+		.findAll({ queryKey: [["conversation", "listConversationsHeaders"]] });
 
-  for (const query of queries) {
-    const queryKey = query.queryKey as readonly unknown[];
-    const input = extractHeadersQueryInput(queryKey);
+	for (const query of queries) {
+		const queryKey = query.queryKey as readonly unknown[];
+		const input = extractHeadersQueryInput(queryKey);
 
-    if (!input) {
-      continue;
-    }
+		if (!input) {
+			continue;
+		}
 
-    if (input.websiteSlug && input.websiteSlug !== context.website.slug) {
-      continue;
-    }
+		if (input.websiteSlug && input.websiteSlug !== context.website.slug) {
+			continue;
+		}
 
-    updateConversationHeaderInCache(
-      context.queryClient,
-      queryKey,
-      event.payload.conversationId,
-      (header) => {
-        const visitorUpdate = maybeUpdateVisitorLastSeen(
-          header,
-          event,
-          lastSeenAtTime
-        );
-        const userUpdate = maybeUpdateCurrentUserLastSeen(
-          visitorUpdate.header,
-          event,
-          context.userId,
-          lastSeenAtTime
-        );
-        const seenEntriesUpdate = maybeUpdateSeenEntries(
-          userUpdate.header,
-          event,
-          lastSeenAtTime
-        );
+		updateConversationHeaderInCache(
+			context.queryClient,
+			queryKey,
+			event.payload.conversationId,
+			(header) => {
+				const visitorUpdate = maybeUpdateVisitorLastSeen(
+					header,
+					event,
+					lastSeenAtTime
+				);
+				const userUpdate = maybeUpdateCurrentUserLastSeen(
+					visitorUpdate.header,
+					event,
+					context.userId,
+					lastSeenAtTime
+				);
+				const seenEntriesUpdate = maybeUpdateSeenEntries(
+					userUpdate.header,
+					event,
+					lastSeenAtTime
+				);
 
-        if (
-          visitorUpdate.changed ||
-          userUpdate.changed ||
-          seenEntriesUpdate.changed
-        ) {
-          return seenEntriesUpdate.header;
-        }
+				if (
+					visitorUpdate.changed ||
+					userUpdate.changed ||
+					seenEntriesUpdate.changed
+				) {
+					return seenEntriesUpdate.header;
+				}
 
-        return header;
-      }
-    );
-  }
+				return header;
+			}
+		);
+	}
 }
 
 export function handleConversationSeen({
-  event,
-  context,
+	event,
+	context,
 }: {
-  event: ConversationSeenEvent;
-  context: DashboardRealtimeContext;
+	event: ConversationSeenEvent;
+	context: DashboardRealtimeContext;
 }) {
-  if (event.websiteId !== context.website.id) {
-    return;
-  }
+	if (event.websiteId !== context.website.id) {
+		return;
+	}
 
-  const conversationId = event.payload.conversationId;
+	const conversationId = event.payload.conversationId;
 
-  // Apply to seen store immediately for reactive updates
-  applyConversationSeenEvent(event);
+	// Apply to seen store immediately for reactive updates
+	applyConversationSeenEvent(event);
 
-  // Clear any existing pending update for this conversation
-  const existing = pendingSeenUpdates.get(conversationId);
-  if (existing) {
-    clearTimeout(existing.timeoutId);
-  }
+	// Clear any existing pending update for this conversation
+	const existing = pendingSeenUpdates.get(conversationId);
+	if (existing) {
+		clearTimeout(existing.timeoutId);
+	}
 
-  // Schedule the conversation header cache update after a delay to prevent animation conflicts
-  const timeoutId = setTimeout(() => {
-    applySeenUpdate(event, context);
-    pendingSeenUpdates.delete(conversationId);
-  }, SEEN_UPDATE_DELAY);
+	// Schedule the conversation header cache update after a delay to prevent animation conflicts
+	const timeoutId = setTimeout(() => {
+		applySeenUpdate(event, context);
+		pendingSeenUpdates.delete(conversationId);
+	}, SEEN_UPDATE_DELAY);
 
-  // Store the pending update
-  pendingSeenUpdates.set(conversationId, {
-    event,
-    context,
-    timeoutId,
-  });
+	// Store the pending update
+	pendingSeenUpdates.set(conversationId, {
+		event,
+		context,
+		timeoutId,
+	});
 }

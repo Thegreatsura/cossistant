@@ -3,46 +3,46 @@ import { useCallback, useMemo, useState } from "react";
 import { useConversations } from "./use-conversations";
 
 export type UseConversationHistoryPageOptions = {
-  /**
-   * Initial number of conversations to display.
-   * Default: 4
-   */
-  initialVisibleCount?: number;
+	/**
+	 * Initial number of conversations to display.
+	 * Default: 4
+	 */
+	initialVisibleCount?: number;
 
-  /**
-   * Whether to enable conversations fetching.
-   * Default: true
-   */
-  enabled?: boolean;
+	/**
+	 * Whether to enable conversations fetching.
+	 * Default: true
+	 */
+	enabled?: boolean;
 
-  /**
-   * Callback when user wants to open a conversation.
-   */
-  onOpenConversation?: (conversationId: string) => void;
+	/**
+	 * Callback when user wants to open a conversation.
+	 */
+	onOpenConversation?: (conversationId: string) => void;
 
-  /**
-   * Callback when user wants to start a new conversation.
-   */
-  onStartConversation?: (initialMessage?: string) => void;
+	/**
+	 * Callback when user wants to start a new conversation.
+	 */
+	onStartConversation?: (initialMessage?: string) => void;
 };
 
 export type UseConversationHistoryPageReturn = {
-  // Conversations data
-  conversations: Conversation[];
-  isLoading: boolean;
-  error: Error | null;
+	// Conversations data
+	conversations: Conversation[];
+	isLoading: boolean;
+	error: Error | null;
 
-  // Pagination state
-  visibleConversations: Conversation[];
-  visibleCount: number;
-  hasMore: boolean;
-  remainingCount: number;
+	// Pagination state
+	visibleConversations: Conversation[];
+	visibleCount: number;
+	hasMore: boolean;
+	remainingCount: number;
 
-  // Actions
-  showMore: () => void;
-  showAll: () => void;
-  openConversation: (conversationId: string) => void;
-  startConversation: (initialMessage?: string) => void;
+	// Actions
+	showMore: () => void;
+	showAll: () => void;
+	openConversation: (conversationId: string) => void;
+	startConversation: (initialMessage?: string) => void;
 };
 
 /**
@@ -92,72 +92,72 @@ export type UseConversationHistoryPageReturn = {
  * ```
  */
 export function useConversationHistoryPage(
-  options: UseConversationHistoryPageOptions = {}
+	options: UseConversationHistoryPageOptions = {}
 ): UseConversationHistoryPageReturn {
-  const {
-    initialVisibleCount = 4,
-    enabled = true,
-    onOpenConversation,
-    onStartConversation,
-  } = options;
+	const {
+		initialVisibleCount = 4,
+		enabled = true,
+		onOpenConversation,
+		onStartConversation,
+	} = options;
 
-  // Fetch conversations
-  const { conversations, isLoading, error } = useConversations({
-    enabled,
-    // Most recent first
-    orderBy: "updatedAt",
-    order: "desc",
-  });
+	// Fetch conversations
+	const { conversations, isLoading, error } = useConversations({
+		enabled,
+		// Most recent first
+		orderBy: "updatedAt",
+		order: "desc",
+	});
 
-  // Manage visible count for pagination
-  const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
+	// Manage visible count for pagination
+	const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
 
-  // Compute visible conversations and pagination state
-  const { visibleConversations, hasMore, remainingCount } = useMemo(() => {
-    const visible = conversations.slice(0, visibleCount);
-    const remaining = Math.max(conversations.length - visibleCount, 0);
+	// Compute visible conversations and pagination state
+	const { visibleConversations, hasMore, remainingCount } = useMemo(() => {
+		const visible = conversations.slice(0, visibleCount);
+		const remaining = Math.max(conversations.length - visibleCount, 0);
 
-    return {
-      visibleConversations: visible,
-      hasMore: remaining > 0,
-      remainingCount: remaining,
-    };
-  }, [conversations, visibleCount]);
+		return {
+			visibleConversations: visible,
+			hasMore: remaining > 0,
+			remainingCount: remaining,
+		};
+	}, [conversations, visibleCount]);
 
-  // Actions
-  const showMore = useCallback(() => {
-    setVisibleCount((current) => current + initialVisibleCount);
-  }, [initialVisibleCount]);
+	// Actions
+	const showMore = useCallback(() => {
+		setVisibleCount((current) => current + initialVisibleCount);
+	}, [initialVisibleCount]);
 
-  const showAll = useCallback(() => {
-    setVisibleCount(conversations.length);
-  }, [conversations.length]);
+	const showAll = useCallback(() => {
+		setVisibleCount(conversations.length);
+	}, [conversations.length]);
 
-  const openConversation = useCallback(
-    (conversationId: string) => {
-      onOpenConversation?.(conversationId);
-    },
-    [onOpenConversation]
-  );
+	const openConversation = useCallback(
+		(conversationId: string) => {
+			onOpenConversation?.(conversationId);
+		},
+		[onOpenConversation]
+	);
 
-  const startConversation = useCallback(
-    (initialMessage?: string) => {
-      onStartConversation?.(initialMessage);
-    },
-    [onStartConversation]
-  );
+	const startConversation = useCallback(
+		(initialMessage?: string) => {
+			onStartConversation?.(initialMessage);
+		},
+		[onStartConversation]
+	);
 
-  return {
-    conversations,
-    isLoading,
-    error,
-    visibleConversations,
-    visibleCount,
-    hasMore,
-    remainingCount,
-    showMore,
-    showAll,
-    openConversation,
-    startConversation,
-  };
+	return {
+		conversations,
+		isLoading,
+		error,
+		visibleConversations,
+		visibleCount,
+		hasMore,
+		remainingCount,
+		showMore,
+		showAll,
+		openConversation,
+		startConversation,
+	};
 }

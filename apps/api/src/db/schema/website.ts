@@ -85,15 +85,103 @@ export const website = pgTable(
 	]
 );
 
-export const visitor = pgTable(
-	"visitor",
+export const contactOrganization = pgTable(
+	"contact_organization",
 	{
 		id: ulidPrimaryKey("id"),
-		externalId: varchar("externalId", { length: 255 }).unique(),
+		name: text("name").notNull(),
+		externalId: varchar("external_id", { length: 255 }),
+		domain: text("domain"),
+		description: text("description"),
+		metadata: jsonb("metadata"),
+		websiteId: ulidReference("website_id")
+			.notNull()
+			.references(() => website.id, { onDelete: "cascade" }),
+		organizationId: ulidReference("organization_id").references(
+			() => organization.id,
+			{ onDelete: "cascade" }
+		),
+		createdAt: timestamp("created_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+		updatedAt: timestamp("updated_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+		deletedAt: timestamp("deleted_at"),
+	},
+	(table) => [
+		// Index for website lookup
+		index("contact_org_website_idx").on(table.websiteId),
+		// Index for organization lookup
+		index("contact_org_org_idx").on(table.organizationId),
+		// Unique index for external ID per website
+		uniqueIndex("contact_org_external_id_website_idx").on(
+			table.externalId,
+			table.websiteId
+		),
+		// Index for soft delete queries
+		index("contact_org_deleted_at_idx").on(table.deletedAt),
+	]
+);
+
+export const contact = pgTable(
+	"contact",
+	{
+		id: ulidPrimaryKey("id"),
+		externalId: varchar("external_id", { length: 255 }),
 		name: text("name"),
 		email: text("email"),
 		image: text("image"),
 		metadata: jsonb("metadata"),
+		// Reference Fields
+		websiteId: ulidReference("website_id")
+			.notNull()
+			.references(() => website.id, { onDelete: "cascade" }),
+		organizationId: ulidReference("organization_id").references(
+			() => organization.id,
+			{ onDelete: "cascade" }
+		),
+		contactOrganizationId: ulidNullableReference(
+			"contact_organization_id"
+		).references(() => contactOrganization.id, { onDelete: "set null" }),
+		userId: ulidNullableReference("user_id").references(() => user.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+		updatedAt: timestamp("updated_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+		deletedAt: timestamp("deleted_at"),
+	},
+	(table) => [
+		// Index for website lookup
+		index("contact_website_idx").on(table.websiteId),
+		// Index for organization lookup
+		index("contact_org_idx").on(table.organizationId),
+		// Composite index for organization + website queries
+		index("contact_org_website_idx").on(table.organizationId, table.websiteId),
+		// Index for contact organization lookup
+		index("contact_contact_org_idx").on(table.contactOrganizationId),
+		// Index for user lookup
+		index("contact_user_idx").on(table.userId),
+		// Index for email lookup within website
+		index("contact_email_website_idx").on(table.email, table.websiteId),
+		// Unique index for external ID per website
+		uniqueIndex("contact_external_id_website_idx").on(
+			table.externalId,
+			table.websiteId
+		),
+		// Index for soft delete queries
+		index("contact_deleted_at_idx").on(table.deletedAt),
+	]
+);
+
+export const visitor = pgTable(
+	"visitor",
+	{
+		id: ulidPrimaryKey("id"),
 		// Browser and Device Information
 		browser: varchar("browser", { length: 100 }),
 		browserVersion: varchar("browser_version", { length: 50 }),
@@ -116,6 +204,10 @@ export const visitor = pgTable(
 		screenResolution: varchar("screen_resolution", { length: 20 }),
 		viewport: varchar("viewport", { length: 20 }),
 		// Reference Fields
+		contactId: ulidNullableReference("contact_id").references(
+			() => contact.id,
+			{ onDelete: "set null" }
+		),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }
@@ -149,6 +241,10 @@ export const visitor = pgTable(
 		index("visitor_id_org_idx").on(table.id, table.organizationId),
 		// Index for looking up visitors by website
 		index("visitor_website_idx").on(table.websiteId),
+		// Index for looking up visitors by contact (CRITICAL for new contact system)
+		index("visitor_contact_idx").on(table.contactId),
+		// Composite index for contact + website queries
+		index("visitor_contact_website_idx").on(table.contactId, table.websiteId),
 		// Index for looking up visitors by user
 		index("visitor_user_idx").on(table.userId),
 		// Index for active visitors query within organization
@@ -158,11 +254,6 @@ export const visitor = pgTable(
 		),
 		// Index for soft delete queries
 		index("visitor_deleted_at_idx").on(table.deletedAt),
-		// Unique index for identifier per website
-		uniqueIndex("visitor_external_id_website_idx").on(
-			table.externalId,
-			table.websiteId
-		),
 	]
 );
 
@@ -207,10 +298,47 @@ export const websiteRelations = relations(website, ({ many, one }) => ({
 		references: [team.id],
 	}),
 	visitors: many(visitor),
+	contacts: many(contact),
+	contactOrganizations: many(contactOrganization),
 	aiAgents: many(aiAgent),
 	conversations: many(conversation),
 	apiKeys: many(apiKey),
 	views: many(view),
+}));
+
+export const contactOrganizationRelations = relations(
+	contactOrganization,
+	({ one, many }) => ({
+		website: one(website, {
+			fields: [contactOrganization.websiteId],
+			references: [website.id],
+		}),
+		organization: one(organization, {
+			fields: [contactOrganization.organizationId],
+			references: [organization.id],
+		}),
+		contacts: many(contact),
+	})
+);
+
+export const contactRelations = relations(contact, ({ one, many }) => ({
+	website: one(website, {
+		fields: [contact.websiteId],
+		references: [website.id],
+	}),
+	organization: one(organization, {
+		fields: [contact.organizationId],
+		references: [organization.id],
+	}),
+	contactOrganization: one(contactOrganization, {
+		fields: [contact.contactOrganizationId],
+		references: [contactOrganization.id],
+	}),
+	user: one(user, {
+		fields: [contact.userId],
+		references: [user.id],
+	}),
+	visitors: many(visitor),
 }));
 
 export const visitorRelations = relations(visitor, ({ one, many }) => ({
@@ -221,6 +349,10 @@ export const visitorRelations = relations(visitor, ({ one, many }) => ({
 	website: one(website, {
 		fields: [visitor.websiteId],
 		references: [website.id],
+	}),
+	contact: one(contact, {
+		fields: [visitor.contactId],
+		references: [contact.id],
 	}),
 	user: one(user, {
 		fields: [visitor.userId],
@@ -242,6 +374,16 @@ export const viewRelations = relations(view, ({ one }) => ({
 
 export type WebsiteSelect = InferSelectModel<typeof website>;
 export type WebsiteInsert = InferInsertModel<typeof website>;
+
+export type ContactOrganizationSelect = InferSelectModel<
+	typeof contactOrganization
+>;
+export type ContactOrganizationInsert = InferInsertModel<
+	typeof contactOrganization
+>;
+
+export type ContactSelect = InferSelectModel<typeof contact>;
+export type ContactInsert = InferInsertModel<typeof contact>;
 
 export type VisitorSelect = InferSelectModel<typeof visitor>;
 export type VisitorInsert = InferInsertModel<typeof visitor>;

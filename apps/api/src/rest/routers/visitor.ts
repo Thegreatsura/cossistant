@@ -1,7 +1,10 @@
+import {
+	getContactForVisitor,
+	mergeContactMetadata,
+} from "@api/db/queries/contact";
 import type { VisitorRecord } from "@api/db/queries/visitor";
 import {
 	findVisitorForWebsite,
-	mergeVisitorMetadataForWebsite,
 	updateVisitorForWebsite,
 } from "@api/db/queries/visitor";
 import {
@@ -17,7 +20,6 @@ import {
 } from "@cossistant/types";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { getConnInfo } from "hono/bun";
 import { z } from "zod";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
 import type { RestContext } from "../types";
@@ -27,10 +29,6 @@ export const visitorRouter = new OpenAPIHono<RestContext>();
 function formatVisitorResponse(record: VisitorRecord): VisitorResponse {
 	return {
 		id: record.id,
-		externalId: record.externalId,
-		name: record.name,
-		email: record.email,
-		avatar: record.image ?? null,
 		browser: record.browser,
 		browserVersion: record.browserVersion,
 		os: record.os,
@@ -48,7 +46,6 @@ function formatVisitorResponse(record: VisitorRecord): VisitorResponse {
 		timezone: record.timezone,
 		screenResolution: record.screenResolution,
 		viewport: record.viewport,
-		metadata: (record.metadata ?? null) as VisitorResponse["metadata"],
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		lastSeenAt: record.lastSeenAt ?? null,
@@ -400,19 +397,20 @@ visitorRouter.openapi(
 	}
 );
 
-// PATCH /visitors/:id/metadata - Update visitor metadata only
+// PATCH /visitors/:id/metadata - Update contact metadata for a visitor
 visitorRouter.openapi(
 	{
 		method: "patch",
 		path: "/:id/metadata",
-		summary: "Update visitor metadata",
-		description: "Merges the provided metadata into the visitor profile.",
+		summary: "Update contact metadata for a visitor",
+		description:
+			"Merges the provided metadata into the contact profile associated with the visitor. The visitor must be identified first (linked to a contact) via the /contacts/identify endpoint.",
 		parameters: [
 			{
 				name: "id",
 				in: "path",
 				required: true,
-				description: "The visitor ID to update",
+				description: "The visitor ID",
 				schema: {
 					type: "string",
 				},
@@ -429,7 +427,7 @@ visitorRouter.openapi(
 		},
 		responses: {
 			200: {
-				description: "Visitor metadata updated successfully",
+				description: "Contact metadata updated successfully",
 				content: {
 					"application/json": {
 						schema: visitorResponseSchema,
@@ -437,7 +435,7 @@ visitorRouter.openapi(
 				},
 			},
 			400: {
-				description: "Invalid request data",
+				description: "Invalid request data or visitor not identified",
 				content: {
 					"application/json": {
 						schema: z.object({
@@ -509,28 +507,52 @@ visitorRouter.openapi(
 				);
 			}
 
-			const updatedVisitor = await mergeVisitorMetadataForWebsite(db, {
+			// Get the contact associated with this visitor
+			const contact = await getContactForVisitor(db, {
 				visitorId,
+				websiteId: website.id,
+			});
+
+			if (!contact) {
+				return c.json(
+					{
+						error: "BAD_REQUEST",
+						message:
+							"Visitor is not identified. Please use the /contacts/identify endpoint first to create a contact for this visitor.",
+					},
+					400
+				);
+			}
+
+			// Update the contact metadata
+			await mergeContactMetadata(db, {
+				contactId: contact.id,
 				websiteId: website.id,
 				metadata: body.metadata,
 			});
 
-			if (!updatedVisitor) {
+			// Return the visitor response for backward compatibility
+			const visitor = await findVisitorForWebsite(db, {
+				visitorId,
+				websiteId: website.id,
+			});
+
+			if (!visitor) {
 				return c.json(
 					{ error: "NOT_FOUND", message: "Visitor not found" },
 					404
 				);
 			}
 
-			const response = formatVisitorResponse(updatedVisitor);
+			const response = formatVisitorResponse(visitor);
 
 			return c.json(validateResponse(response, visitorResponseSchema), 200);
 		} catch (error) {
-			console.error("Error updating visitor metadata:", error);
+			console.error("Error updating contact metadata:", error);
 			return c.json(
 				{
 					error: "INTERNAL_SERVER_ERROR",
-					message: "Failed to update visitor metadata",
+					message: "Failed to update contact metadata",
 				},
 				500
 			);

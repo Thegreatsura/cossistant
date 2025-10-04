@@ -226,22 +226,6 @@ export const visitorResponseSchema = z.object({
 		description: "The visitor's unique identifier (ULID).",
 		example: "01JG000000000000000000000",
 	}),
-	avatar: z.string().url().nullable().openapi({
-		description: "The visitor's avatar URL.",
-		example: "https://example.com/avatar.png",
-	}),
-	externalId: z.string().nullable().openapi({
-		description: "External identifier for the visitor.",
-		example: "user_12345",
-	}),
-	name: z.string().nullable().openapi({
-		description: "The visitor's name, if provided or identified.",
-		example: "John Doe",
-	}),
-	email: z.string().email().nullable().openapi({
-		description: "The visitor's email address, if provided or identified.",
-		example: "john.doe@example.com",
-	}),
 	browser: z.string().nullable().openapi({
 		description: "The visitor's browser.",
 		example: "Chrome",
@@ -309,10 +293,6 @@ export const visitorResponseSchema = z.object({
 	viewport: z.string().nullable().openapi({
 		description: "The visitor's viewport size.",
 		example: "1920x900",
-	}),
-	metadata: visitorMetadataSchema.nullable().openapi({
-		description: "Additional custom metadata for the visitor.",
-		example: { plan: "premium", role: "admin", isAdmin: true, tokenLeft: 10 },
 	}),
 	createdAt: z.date().openapi({
 		description: "When the visitor was first seen.",
