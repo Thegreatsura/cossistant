@@ -319,7 +319,7 @@ export const ConversationPage = ({
       <MessageList
         availableAIAgents={availableAIAgents}
         availableHumanAgents={availableHumanAgents}
-        className="min-h-0 flex-1"
+        className="min-h-0 flex-1 px-4"
         conversationId={conversationId}
         currentVisitorId={visitor?.id}
         events={events}
