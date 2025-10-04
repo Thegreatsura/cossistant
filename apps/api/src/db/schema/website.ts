@@ -111,7 +111,7 @@ export const contactOrganization = pgTable(
   },
   (table) => [
     // Index for website lookup
-    index("contact_org_website_idx").on(table.websiteId),
+    index("contact_org_site_idx").on(table.websiteId),
     // Index for organization lookup
     index("contact_org_org_idx").on(table.organizationId),
     // Unique index for external ID per website
@@ -218,9 +218,7 @@ export const visitor = pgTable(
     userId: ulidNullableReference("user_id").references(() => user.id, {
       onDelete: "set null",
     }),
-    isTest: boolean("is_test")
-      .$defaultFn(() => false)
-      .notNull(),
+    isTest: boolean("is_test").$defaultFn(() => false),
     blockedAt: timestamp("blocked_at"),
     blockedByUserId: ulidNullableReference("blocked_by_user_id").references(
       () => user.id,
