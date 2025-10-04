@@ -5,52 +5,35 @@ import { ConversationHistoryPage } from "./pages/conversation-history";
 import { HomePage } from "./pages/home";
 import { useSupportNavigation } from "./store/support-store";
 
-export const SupportRouter: React.FC<{
-	message: string;
-	files: File[];
-	isSubmitting: boolean;
-	error: Error | null;
-	setMessage: (message: string) => void;
-	addFiles: (files: File[]) => void;
-	removeFile: (index: number) => void;
-}> = ({
-	message,
-	files,
-	isSubmitting,
-	error,
-	setMessage,
-	addFiles,
-	removeFile,
-}) => {
-	const { current } = useSupportNavigation();
+/**
+ * Routes between different support widget pages based on navigation state.
+ *
+ * Each page manages its own state internally via dedicated hooks,
+ * so the router simply maps navigation state to the appropriate page component.
+ */
+export const SupportRouter: React.FC = () => {
+  const { current } = useSupportNavigation();
 
-	switch (current.page) {
-		case "HOME":
-			return <HomePage />;
+  switch (current.page) {
+    case "HOME":
+      return <HomePage />;
 
-		case "ARTICLES":
-			return <ArticlesPage />;
+    case "ARTICLES":
+      return <ArticlesPage />;
 
-		case "CONVERSATION":
-			return (
-				<ConversationPage
-					addFiles={addFiles}
-					conversationId={current.params.conversationId}
-					error={error}
-					events={[]}
-					files={files}
-					isSubmitting={isSubmitting}
-					message={message}
-					removeFile={removeFile}
-					setMessage={setMessage}
-				/>
-			);
+    case "CONVERSATION":
+      return (
+        <ConversationPage
+          conversationId={current.params.conversationId}
+          events={[]}
+        />
+      );
 
-		case "CONVERSATION_HISTORY":
-			return <ConversationHistoryPage />;
+    case "CONVERSATION_HISTORY":
+      return <ConversationHistoryPage />;
 
-		default: {
-			return <HomePage />;
-		}
-	}
+    default: {
+      return <HomePage />;
+    }
+  }
 };
