@@ -236,11 +236,11 @@ export const contactResponseSchema = z.object({
 		description: "The user ID if the contact is linked to a registered user.",
 		example: "01JG000000000000000000000",
 	}),
-	createdAt: z.iso.datetime().openapi({
+	createdAt: z.string().openapi({
 		description: "When the contact was first created.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	updatedAt: z.iso.datetime().openapi({
+	updatedAt: z.string().openapi({
 		description: "When the contact record was last updated.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
@@ -390,11 +390,11 @@ export const contactOrganizationResponseSchema = z.object({
 			"The organization's unique identifier that the organization belongs to.",
 		example: "01JG000000000000000000000",
 	}),
-	createdAt: z.iso.datetime().openapi({
+	createdAt: z.string().openapi({
 		description: "When the organization was first created.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	updatedAt: z.iso.datetime().openapi({
+	updatedAt: z.string().openapi({
 		description: "When the organization record was last updated.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),

@@ -74,6 +74,8 @@ export const conversationRouter = createTRPCRouter({
 				cursor: input.cursor,
 			});
 
+			console.log("result", result.items[0]);
+
 			return {
 				items: result.items,
 				nextCursor: result.nextCursor,

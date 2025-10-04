@@ -68,7 +68,7 @@ export const createWebsiteResponseSchema = z.object({
 					description: "The API key's value.",
 					example: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				}),
-				createdAt: z.iso.datetime().openapi({
+				createdAt: z.string().openapi({
 					description: "The API key's creation date.",
 					example: "2021-01-01T00:00:00.000Z",
 				}),
@@ -133,7 +133,7 @@ export const availableHumanAgentSchema = z.object({
 		description: "The agent's avatar URL.",
 		example: "https://cossistant.com/avatar.png",
 	}),
-	lastSeenAt: z.iso.datetime().nullable().openapi({
+	lastSeenAt: z.string().nullable().openapi({
 		description:
 			"The agent's last online timestamp, used to determine if the agent is online. If the agent is offline, this will be null or more than 5 minutes ago.",
 		example: "2021-01-01T00:00:00.000Z",
@@ -187,7 +187,7 @@ export const publicWebsiteResponseSchema = z.object({
 		description: "The website's status.",
 		example: "active",
 	}),
-	lastOnlineAt: z.iso.datetime().nullable().openapi({
+	lastOnlineAt: z.string().nullable().openapi({
 		description: "The website's support last online date.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),

@@ -11,9 +11,9 @@ export const createMessageSchema = z.object({
 	aiAgentId: z.string().nullable(),
 	visitorId: z.string().nullable(),
 	conversationId: z.string(),
-	createdAt: z.iso.datetime(),
-	updatedAt: z.iso.datetime().optional(),
-	deletedAt: z.iso.datetime().nullable().optional(),
+	createdAt: z.string(),
+	updatedAt: z.string().optional(),
+	deletedAt: z.string().nullable().optional(),
 	visibility: z
 		.enum([MessageVisibility.PUBLIC, MessageVisibility.PRIVATE])
 		.optional()

@@ -27,15 +27,15 @@ export const userResponseSchema = z.object({
 		description: "The user's image URL.",
 		example: "https://example.com/image.png",
 	}),
-	createdAt: z.iso.datetime().openapi({
+	createdAt: z.string().openapi({
 		description: "The user's creation date.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	updatedAt: z.iso.datetime().openapi({
+	updatedAt: z.string().openapi({
 		description: "The user's last update date.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
-	lastSeenAt: z.iso.datetime().nullable().openapi({
+	lastSeenAt: z.string().nullable().openapi({
 		description: "The user's last seen date.",
 		example: "2021-01-01T00:00:00.000Z",
 	}),
