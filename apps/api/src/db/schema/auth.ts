@@ -3,13 +3,13 @@ import {
   type InferSelectModel,
   relations,
 } from "drizzle-orm";
-import { boolean, index, pgTable, text } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import {
   ulidNullableReference,
   ulidPrimaryKey,
   ulidReference,
 } from "../../utils/db/ids";
-import { isoTimestamp as timestamp } from "../../utils/db/timestamp";
+
 import { waitingListEntry } from "./waiting-list";
 import { website } from "./website";
 
@@ -26,17 +26,17 @@ export const user = pgTable(
     isAnonymous: boolean("is_anonymous")
       .$defaultFn(() => false)
       .notNull(),
-    createdAt: timestamp("created_at", { mode: "string" })
-      .$defaultFn(() => new Date().toISOString())
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
       .notNull(),
-    updatedAt: timestamp("updated_at", { mode: "string" })
-      .$defaultFn(() => new Date().toISOString())
+    updatedAt: timestamp("updated_at")
+      .$defaultFn(() => new Date())
       .notNull(),
-    lastSeenAt: timestamp("last_seen_at", { mode: "string" }),
+    lastSeenAt: timestamp("last_seen_at"),
     role: text("role"),
     banned: boolean("banned"),
     banReason: text("ban_reason"),
-    banExpires: timestamp("ban_expires", { mode: "string" }),
+    banExpires: timestamp("ban_expires"),
   },
   (table) => [
     // Index for email lookups
@@ -54,10 +54,10 @@ export const session = pgTable(
   "session",
   {
     id: ulidPrimaryKey("id"),
-    expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
-    updatedAt: timestamp("updated_at", { mode: "string" }).notNull(),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: ulidReference("user_id").references(() => user.id, {

@@ -183,7 +183,6 @@ export async function mergeVisitorMetadataForWebsite(
   params: {
     visitorId: string;
     websiteId: string;
-    metadata: NonNullable<VisitorInsert["metadata"]>;
     updatedAt?: Date;
   }
 ): Promise<VisitorRecord | null> {
@@ -196,21 +195,10 @@ export async function mergeVisitorMetadataForWebsite(
     return null;
   }
 
-  const existingMetadata =
-    typeof existing.metadata === "object" && existing.metadata !== null
-      ? (existing.metadata as Record<string, unknown>)
-      : {};
-
-  const mergedMetadata = {
-    ...existingMetadata,
-    ...params.metadata,
-  };
-
   return updateVisitorForWebsite(db, {
     visitorId: params.visitorId,
     websiteId: params.websiteId,
     data: {
-      metadata: mergedMetadata,
       updatedAt: params.updatedAt ?? new Date(),
     },
   });

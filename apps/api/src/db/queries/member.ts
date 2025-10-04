@@ -39,8 +39,8 @@ export async function getWebsiteMembers(
       image: data.user.image,
       role: data.member.role,
       createdAt: data.member.createdAt.toISOString(),
-      updatedAt: data.user.updatedAt,
-      lastSeenAt: data.user.lastSeenAt ?? null,
+      updatedAt: data.user.updatedAt.toISOString(),
+      lastSeenAt: data.user.lastSeenAt?.toISOString() ?? null,
     }))
   );
 

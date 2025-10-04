@@ -2,10 +2,13 @@ import type { Database } from "@api/db";
 import type {
   ApiKeySelect,
   OrganizationSelect,
+  SessionSelect,
+  UserSelect,
   WebsiteSelect,
 } from "@api/db/schema";
 import { session, user } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
+import type { Session, User } from "better-auth";
 
 import { and, eq, gt } from "drizzle-orm";
 
@@ -42,11 +45,18 @@ export async function resolveSession(
     sessionToken?: string | null;
   }
 ) {
-  let userSession = await auth.api.getSession({ headers: params.headers });
+  let userSession: {
+    session: Session & {
+      activeOrganizationId?: string | null | undefined;
+      activeTeamId?: string | null | undefined;
+    };
+    user: User;
+  } | null = await auth.api.getSession({ headers: params.headers });
 
   const tokensToCheck = new Set<string>();
 
   const normalizedOverride = normalizeSessionToken(params.sessionToken);
+
   if (normalizedOverride) {
     tokensToCheck.add(normalizedOverride);
   }
@@ -54,6 +64,7 @@ export async function resolveSession(
   const headerToken = normalizeSessionToken(
     params.headers.get("x-user-session-token")
   );
+
   if (headerToken) {
     tokensToCheck.add(headerToken);
   }
@@ -61,26 +72,28 @@ export async function resolveSession(
   // Avoid querying again if the Better Auth session already resolves to the
   // same token.
   const currentToken = normalizeSessionToken(userSession?.session?.token);
+
   if (currentToken) {
     tokensToCheck.delete(currentToken);
   }
 
   const now = new Date();
+
   for (const token of tokensToCheck) {
     const [res] = await db
       .select()
       .from(session)
-      .where(
-        and(eq(session.token, token), gt(session.expiresAt, now.toISOString()))
-      )
+      .where(and(eq(session.token, token), gt(session.expiresAt, now)))
       .innerJoin(user, eq(session.userId, user.id))
       .limit(1)
       .$withCache({ tag: `session:${token}` });
+
     if (res) {
       userSession = {
         session: res.session,
         user: res.user,
       };
+
       break;
     }
   }
