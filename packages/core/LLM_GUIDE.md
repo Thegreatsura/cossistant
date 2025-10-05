@@ -17,6 +17,12 @@ packages/core/
     │   ├── conversations-store.test.ts  # reducer + selector coverage
     │   ├── messages-store.ts          # message reducer + ingestion helpers
     │   ├── messages-store.test.ts     # tests covering reducer + realtime ingestion
+    │   ├── seen-store.ts              # conversation "seen" presence tracking
+    │   ├── seen-store.test.ts         # seen reducer + realtime guards
+    │   ├── typing-store.ts            # realtime typing indicators + TTL timers
+    │   ├── typing-store.test.ts       # typing reducer, TTL + ignore filters
+    │   ├── support-store.ts           # support widget navigation + persisted config
+    │   └── support-store.test.ts      # persistence + navigation stack coverage
     │   ├── website-store.ts           # website bootstrap status + caching
     │   └── website-store.test.ts      # website reducer + client integration tests
     ├── types.ts          # internal types shared inside core only
@@ -34,6 +40,8 @@ packages/core/
 - Batch multiple synchronous writes using `store.batch(() => { ... })` so React listeners receive a single notification per logical event burst.
 - Guard against unnecessary renders by short-circuiting when reducers return the same references (`if (existing && existing.messages === merged) return state;`).
 - Normalize all inbound timestamps to `Date` instances inside the store boundary. External callers never deal with raw strings.
+- Presence stores (`seen-store`, `typing-store`) must expose helper functions (`applyConversationSeenEvent`, `applyConversationTypingEvent`, etc.) that accept a store instance. React bindings create a singleton store per widget and call these helpers so the logic stays framework-agnostic.
+- Persistence-aware stores (e.g. `support-store`) must accept a `storage` adapter so tests can provide an in-memory shim while production passes `window.localStorage`.
 
 ## Naming & File Conventions
 

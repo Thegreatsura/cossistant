@@ -14,130 +14,130 @@ import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 
 type Props = {
-	href: string;
-	header: ConversationHeader;
-	websiteSlug: string;
-	focused?: boolean;
-	setFocused?: () => void;
+  href: string;
+  header: ConversationHeader;
+  websiteSlug: string;
+  focused?: boolean;
+  setFocused?: () => void;
 };
 
 export function ConversationItem({
-	href,
-	header,
-	websiteSlug,
-	focused = false,
-	setFocused,
+  href,
+  header,
+  websiteSlug,
+  focused = false,
+  setFocused,
 }: Props) {
-	const { visitor, lastMessagePreview: headerLastMessagePreview } = header;
-	const { prefetchConversation } = usePrefetchConversationData();
-	const { user } = useUserSession();
+  const { visitor, lastMessagePreview: headerLastMessagePreview } = header;
+  const { prefetchConversation } = usePrefetchConversationData();
+  const { user } = useUserSession();
 
-	const typingEntries = useConversationTyping(header.id, {
-		excludeUserId: user.id,
-	});
+  const typingEntries = useConversationTyping(header.id, {
+    excludeUserId: user.id,
+  });
 
-	const typingInfo = useMemo(() => {
-		if (typingEntries.length === 0) {
-			return null;
-		}
+  const typingInfo = useMemo(() => {
+    if (typingEntries.length === 0) {
+      return null;
+    }
 
-		const entry = typingEntries[0];
-		if (entry.actorType === "visitor") {
-			return {
-				name: visitor.name || visitor.email || "Visitor",
-				hasPreview: !!entry.preview,
-			};
-		}
+    const entry = typingEntries[0];
+    if (entry.actorType === "visitor") {
+      return {
+        name: visitor.name || visitor.email || "Visitor",
+        hasPreview: !!entry.preview,
+      };
+    }
 
-		return null;
-	}, [typingEntries, visitor]);
+    return null;
+  }, [typingEntries, visitor]);
 
-	const cachedLastMessagePreview = useLatestConversationMessage({
-		conversationId: header.id,
-		websiteSlug,
-	});
+  const cachedLastMessagePreview = useLatestConversationMessage({
+    conversationId: header.id,
+    websiteSlug,
+  });
 
-	const lastMessagePreview =
-		cachedLastMessagePreview ?? headerLastMessagePreview ?? null;
+  const lastMessagePreview =
+    cachedLastMessagePreview ?? headerLastMessagePreview ?? null;
 
-	const lastMessageCreatedAt = lastMessagePreview?.createdAt
-		? new Date(lastMessagePreview.createdAt)
-		: null;
+  const lastMessageCreatedAt = lastMessagePreview?.createdAt
+    ? new Date(lastMessagePreview.createdAt)
+    : null;
 
-	const headerLastSeenAt = header.lastSeenAt
-		? new Date(header.lastSeenAt)
-		: null;
+  const headerLastSeenAt = header.lastSeenAt
+    ? new Date(header.lastSeenAt)
+    : null;
 
-	const isLastMessageFromCurrentUser = lastMessagePreview?.userId === user.id;
+  const isLastMessageFromCurrentUser = lastMessagePreview?.userId === user.id;
 
-	const hasUnreadMessage = Boolean(
-		lastMessagePreview &&
-			!isLastMessageFromCurrentUser &&
-			lastMessageCreatedAt &&
-			(!headerLastSeenAt || lastMessageCreatedAt > headerLastSeenAt)
-	);
+  const hasUnreadMessage = Boolean(
+    lastMessagePreview &&
+      !isLastMessageFromCurrentUser &&
+      lastMessageCreatedAt &&
+      (!headerLastSeenAt || lastMessageCreatedAt > headerLastSeenAt)
+  );
 
-	const fullName = getVisitorNameWithFallback(visitor);
+  const fullName = getVisitorNameWithFallback(visitor);
 
-	return (
-		<Link
-			className={cn(
-				"group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm",
-				"focus-visible:outline-none focus-visible:ring-0",
-				focused && "bg-background-200 text-primary dark:bg-background-300"
-			)}
-			href={href}
-			onMouseEnter={() => {
-				setFocused?.();
-				prefetchConversation({
-					websiteSlug,
-					conversationId: header.id,
-					visitorId: header.visitorId,
-				});
-			}}
-			prefetch="auto"
-		>
-			<Avatar
-				className="size-9"
-				fallbackName={fullName}
-				lastOnlineAt={visitor.lastSeenAt}
-				url={visitor.avatar}
-			/>
+  return (
+    <Link
+      className={cn(
+        "group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm",
+        "focus-visible:outline-none focus-visible:ring-0",
+        focused && "bg-background-200 text-primary dark:bg-background-300"
+      )}
+      href={href}
+      onMouseEnter={() => {
+        setFocused?.();
+        prefetchConversation({
+          websiteSlug,
+          conversationId: header.id,
+          visitorId: header.visitorId,
+        });
+      }}
+      prefetch="auto"
+    >
+      <Avatar
+        className="size-9"
+        fallbackName={fullName}
+        lastOnlineAt={visitor.lastSeenAt}
+        url={visitor.avatar}
+      />
 
-			<div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
-				<p className="min-w-[120px] max-w-[120px] truncate">{fullName}</p>
+      <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
+        <p className="min-w-[120px] max-w-[120px] truncate">{fullName}</p>
 
-				{typingInfo ? (
-					<p className={cn("truncate pr-6 text-muted-foreground italic")}>
-						{typingInfo.name} is typing...
-					</p>
-				) : (
-					<p className={cn("truncate pr-6 text-muted-foreground")}>
-						{lastMessagePreview?.bodyMd ?? ""}
-					</p>
-				)}
-			</div>
-			<div className="flex items-center gap-1">
-				{focused ? (
-					<ConversationBasicActions
-						conversationId={header.id}
-						deletedAt={header.deletedAt}
-						status={header.status}
-						visitorId={header.visitorId}
-					/>
-				) : lastMessageCreatedAt ? (
-					<span className="shrink-0 pr-2 text-primary/40 text-xs">
-						{formatTimeAgo(lastMessageCreatedAt)}
-					</span>
-				) : null}
-				<span
-					aria-hidden="true"
-					className={cn(
-						"inline-block size-1.5 rounded-full bg-cossistant-yellow opacity-0",
-						hasUnreadMessage && "opacity-100"
-					)}
-				/>
-			</div>
-		</Link>
-	);
+        {typingInfo ? (
+          <p className={cn("truncate pr-6 text-muted-foreground italic")}>
+            {typingInfo.name} is typing...
+          </p>
+        ) : (
+          <p className={cn("truncate pr-6 text-muted-foreground")}>
+            {lastMessagePreview?.bodyMd ?? ""}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        {focused ? (
+          <ConversationBasicActions
+            conversationId={header.id}
+            deletedAt={header.deletedAt}
+            status={header.status}
+            visitorId={header.visitorId}
+          />
+        ) : lastMessageCreatedAt ? (
+          <span className="shrink-0 pr-2 text-primary/40 text-xs">
+            {formatTimeAgo(lastMessageCreatedAt)}
+          </span>
+        ) : null}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "inline-block size-1.5 rounded-full bg-cossistant-orange opacity-0",
+            hasUnreadMessage && "opacity-100"
+          )}
+        />
+      </div>
+    </Link>
+  );
 }

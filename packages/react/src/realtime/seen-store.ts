@@ -1,129 +1,63 @@
+import {
+	applyConversationSeenEvent as applyEvent,
+	createSeenStore,
+	hydrateConversationSeen as hydrateStore,
+	type SeenActorType,
+	type SeenEntry,
+	type SeenState,
+	upsertConversationSeen as upsertStore,
+} from "@cossistant/core";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationSeen } from "@cossistant/types/schemas";
-import { create } from "zustand";
+import { useRef, useSyncExternalStore } from "react";
 
-export type SeenActorType = "visitor" | "user" | "ai_agent";
+const store = createSeenStore();
 
-type SeenEntry = {
-	actorType: SeenActorType;
-	actorId: string;
-	lastSeenAt: Date;
-};
+type Selector<T> = (state: SeenState) => T;
 
-type ConversationSeenState = Record<string, SeenEntry>;
+type EqualityChecker<T> = (previous: T, next: T) => boolean;
 
-type SeenState = {
-	conversations: Record<string, ConversationSeenState>;
-};
+function useSelector<TSelected>(
+	selector: Selector<TSelected>,
+	isEqual: EqualityChecker<TSelected> = Object.is
+): TSelected {
+	const selectionRef = useRef<TSelected>(undefined);
 
-type SeenActions = {
-	upsert: (options: {
-		conversationId: string;
-		actorType: SeenActorType;
-		actorId: string;
-		lastSeenAt: Date;
-	}) => void;
-	hydrate: (conversationId: string, entries: ConversationSeen[]) => void;
-	clear: (conversationId: string) => void;
-};
+	const subscribe = (onStoreChange: () => void) =>
+		store.subscribe(() => {
+			onStoreChange();
+		});
 
-function makeKey(
-	conversationId: string,
-	actorType: SeenActorType,
-	actorId: string
-) {
-	return `${conversationId}:${actorType}:${actorId}`;
+	const snapshot = useSyncExternalStore(
+		subscribe,
+		store.getState,
+		store.getState
+	);
+
+	const selected = selector(snapshot);
+
+	if (
+		selectionRef.current === undefined ||
+		!isEqual(selectionRef.current, selected)
+	) {
+		selectionRef.current = selected;
+	}
+
+	return selectionRef.current as TSelected;
 }
 
-export const useSeenStore = create<SeenState & SeenActions>((set) => ({
-	conversations: {},
-	upsert: ({ conversationId, actorType, actorId, lastSeenAt }) => {
-		set((state) => {
-			const existingConversation = state.conversations[conversationId] ?? {};
-			const key = makeKey(conversationId, actorType, actorId);
-			const previous = existingConversation[key];
-
-			if (previous && previous.lastSeenAt.getTime() >= lastSeenAt.getTime()) {
-				return state;
-			}
-
-			return {
-				conversations: {
-					...state.conversations,
-					[conversationId]: {
-						...existingConversation,
-						[key]: {
-							actorType,
-							actorId,
-							lastSeenAt,
-						},
-					},
-				},
-			} satisfies SeenState;
-		});
-	},
-	hydrate: (conversationId, entries) => {
-		set((state) => {
-			if (entries.length === 0) {
-				return state;
-			}
-
-			const nextEntries: ConversationSeenState = {};
-
-			for (const entry of entries) {
-				const actorId = entry.userId || entry.visitorId || entry.aiAgentId;
-				let actorType: SeenActorType | null = null;
-
-				if (entry.userId) {
-					actorType = "user";
-				} else if (entry.visitorId) {
-					actorType = "visitor";
-				} else if (entry.aiAgentId) {
-					actorType = "ai_agent";
-				}
-
-				if (!(actorId && actorType)) {
-					continue;
-				}
-
-				const key = makeKey(conversationId, actorType, actorId);
-				nextEntries[key] = {
-					actorType,
-					actorId,
-					lastSeenAt: new Date(entry.lastSeenAt),
-				};
-			}
-
-			if (Object.keys(nextEntries).length === 0) {
-				return state;
-			}
-
-			return {
-				conversations: {
-					...state.conversations,
-					[conversationId]: nextEntries,
-				},
-			} satisfies SeenState;
-		});
-	},
-	clear: (conversationId) => {
-		set((state) => {
-			if (!(conversationId in state.conversations)) {
-				return state;
-			}
-
-			const nextConversations = { ...state.conversations };
-			delete nextConversations[conversationId];
-			return { conversations: nextConversations } satisfies SeenState;
-		});
-	},
-}));
+export function useSeenStore<TSelected>(
+	selector: Selector<TSelected>,
+	isEqual?: EqualityChecker<TSelected>
+): TSelected {
+	return useSelector(selector, isEqual);
+}
 
 export function hydrateConversationSeen(
 	conversationId: string,
 	entries: ConversationSeen[]
 ) {
-	useSeenStore.getState().hydrate(conversationId, entries);
+	hydrateStore(store, conversationId, entries);
 }
 
 export function upsertConversationSeen(options: {
@@ -132,59 +66,16 @@ export function upsertConversationSeen(options: {
 	actorId: string;
 	lastSeenAt: Date;
 }) {
-	useSeenStore.getState().upsert(options);
+	upsertStore(store, options);
 }
 
 export function applyConversationSeenEvent(
 	event: RealtimeEvent<"CONVERSATION_SEEN">,
-	options: {
+	options?: {
 		ignoreVisitorId?: string | null;
 		ignoreUserId?: string | null;
 		ignoreAiAgentId?: string | null;
-	} = {}
+	}
 ) {
-	const { payload } = event;
-	let actorType: SeenActorType | null = null;
-	let actorId: string | null = null;
-
-	if (payload.userId) {
-		actorType = "user";
-		actorId = payload.userId;
-	} else if (payload.visitorId) {
-		actorType = "visitor";
-		actorId = payload.visitorId;
-	} else if (payload.aiAgentId) {
-		actorType = "ai_agent";
-		actorId = payload.aiAgentId;
-	}
-
-	if (!(actorType && actorId)) {
-		return;
-	}
-
-	if (
-		(actorType === "visitor" &&
-			payload.visitorId &&
-			options.ignoreVisitorId &&
-			payload.visitorId === options.ignoreVisitorId) ||
-		(actorType === "user" &&
-			payload.userId &&
-			options.ignoreUserId &&
-			payload.userId === options.ignoreUserId) ||
-		(actorType === "ai_agent" &&
-			payload.aiAgentId &&
-			options.ignoreAiAgentId &&
-			payload.aiAgentId === options.ignoreAiAgentId)
-	) {
-		return;
-	}
-
-	const lastSeenAt = new Date(payload.lastSeenAt);
-
-	upsertConversationSeen({
-		conversationId: payload.conversationId,
-		actorType,
-		actorId,
-		lastSeenAt,
-	});
+	applyEvent(store, event, options);
 }
