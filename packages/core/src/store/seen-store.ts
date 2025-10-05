@@ -117,39 +117,15 @@ export function createSeenStore(initialState: SeenState = INITIAL_STATE): SeenSt
                 hydrate(conversationId, entries) {
                         store.setState((state) => {
                                 if (entries.length === 0) {
-                                        return state;
+                                        if (!(conversationId in state.conversations)) {
+                                                return state;
+                                        }
+                                        const nextConversations = { ...state.conversations };
+                                        delete nextConversations[conversationId];
+                                        return { conversations: nextConversations } satisfies SeenState;
                                 }
 
                                 const nextEntries: ConversationSeenState = {};
-
-                                for (const entry of entries) {
-                                        const actorId =
-                                                entry.userId || entry.visitorId || entry.aiAgentId;
-                                        let actorType: SeenActorType | null = null;
-
-                                        if (entry.userId) {
-                                                actorType = "user";
-                                        } else if (entry.visitorId) {
-                                                actorType = "visitor";
-                                        } else if (entry.aiAgentId) {
-                                                actorType = "ai_agent";
-                                        }
-
-                                        if (!(actorId && actorType)) {
-                                                continue;
-                                        }
-
-                                        const key = makeKey(conversationId, actorType, actorId);
-                                        nextEntries[key] = {
-                                                actorType,
-                                                actorId,
-                                                lastSeenAt: new Date(entry.lastSeenAt),
-                                        };
-                                }
-
-                                if (Object.keys(nextEntries).length === 0) {
-                                        return state;
-                                }
 
                                 const existing = state.conversations[conversationId];
                                 if (hasSameEntries(existing, nextEntries)) {
