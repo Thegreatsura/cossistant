@@ -25,13 +25,50 @@ export {
 	type MessagesStore,
 } from "./store/messages-store";
 export {
-	createWebsiteStore,
-	getWebsiteState,
-	type WebsiteError,
-	type WebsiteState,
-	type WebsiteStatus,
-	type WebsiteStore,
+        createWebsiteStore,
+        getWebsiteState,
+        type WebsiteError,
+        type WebsiteState,
+        type WebsiteStatus,
+        type WebsiteStore,
 } from "./store/website-store";
+export {
+        type SeenActorType,
+        type SeenEntry,
+        type SeenState,
+        type SeenStore,
+        type ConversationSeenState,
+        applyConversationSeenEvent,
+        createSeenStore,
+        hydrateConversationSeen,
+        upsertConversationSeen,
+} from "./store/seen-store";
+export {
+        type TypingActorType,
+        type TypingEntry,
+        type TypingState,
+        type TypingStore,
+        type ConversationTypingState,
+        type TypingStoreDependencies,
+        applyConversationTypingEvent,
+        clearTypingFromMessage,
+        clearTypingState,
+        createTypingStore,
+        getConversationTyping,
+        setTypingState,
+} from "./store/typing-store";
+export {
+        type NavigationState,
+        type SUPPORT_PAGES,
+        type SupportConfig,
+        type SupportNavigation,
+        type SupportStore,
+        type SupportStoreActions,
+        type SupportStoreOptions,
+        type SupportStoreState,
+        type SupportStoreStorage,
+        createSupportStore,
+} from "./store/support-store";
 // Core-specific exports
 export { CossistantAPIError } from "./types";
 // Utility exports

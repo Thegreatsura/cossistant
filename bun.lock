@@ -200,7 +200,6 @@
         "react-use-websocket": "^4.13.0",
         "tailwind-merge": "^3.3.1",
         "ulid": "^3.0.1",
-        "zustand": "^5.0.8",
       },
       "devDependencies": {
         "@cossistant/typescript-config": "workspace:*",

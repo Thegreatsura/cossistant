@@ -1,212 +1,115 @@
 "use client";
 
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { useMemo, useRef, useSyncExternalStore } from "react";
+import {
+        createSupportStore,
+        type NavigationState,
+        type SupportConfig,
+        type SupportNavigation,
+        type SupportStore,
+        type SupportStoreState,
+} from "@cossistant/core";
 
-// Navigation types
-export type NavigationState =
-	| { page: "HOME"; params?: undefined }
-	| { page: "ARTICLES"; params?: undefined }
-	| {
-			page: "CONVERSATION";
-			params: { conversationId: string; initialMessage?: string };
-	  }
-	| { page: "CONVERSATION_HISTORY"; params?: undefined };
+const storage = typeof window !== "undefined" ? window.localStorage : undefined;
+const store = createSupportStore({ storage });
 
-export type SUPPORT_PAGES = NavigationState["page"];
+type Selector<T> = (state: SupportStoreState) => T;
 
-export type SupportNavigation = {
-	previousPages: NavigationState[];
-	current: NavigationState;
-};
+type EqualityChecker<T> = (previous: T, next: T) => boolean;
 
-// Config types
-export type SupportConfig = {
-	mode: "floating" | "responsive";
-	size: "normal" | "larger";
-	isOpen: boolean;
-	content: {
-		home?: {
-			header?: string;
-			subheader?: string;
-			ctaLabel?: string;
-		};
-	};
-};
+function useSelector<TSelected>(
+        selector: Selector<TSelected>,
+        isEqual: EqualityChecker<TSelected> = Object.is
+): TSelected {
+        const selectionRef = useRef<TSelected>();
 
-// Combined store state
-type SupportStoreState = {
-	// Navigation state
-	navigation: SupportNavigation;
+        const subscribe = (onStoreChange: () => void) =>
+                store.subscribe(() => {
+                        onStoreChange();
+                });
 
-	// Config state
-	config: SupportConfig;
-};
+        const snapshot = useSyncExternalStore(
+                subscribe,
+                store.getState,
+                store.getState
+        );
 
-// Store actions
-type SupportStoreActions = {
-	// Navigation actions
-	navigate: (state: NavigationState) => void;
-	replace: (state: NavigationState) => void;
-	goBack: () => void;
+        const selected = selector(snapshot);
 
-	// Config actions
-	open: () => void;
-	close: () => void;
-	toggle: () => void;
-	updateConfig: (config: Partial<SupportConfig>) => void;
+        if (
+                selectionRef.current === undefined ||
+                !isEqual(selectionRef.current, selected)
+        ) {
+                selectionRef.current = selected;
+        }
 
-	// Reset action
-	reset: () => void;
-};
+        return selectionRef.current as TSelected;
+}
 
-// Combined store type
-export type SupportStore = SupportStoreState & SupportStoreActions;
+export type UseSupportStoreResult = SupportStoreState & Pick<
+        SupportStore,
+        "navigate" | "replace" | "goBack" | "open" | "close" | "toggle" | "updateConfig" | "reset"
+>;
 
-// Default values
-const defaultNavigation: SupportNavigation = {
-	current: { page: "HOME" },
-	previousPages: [],
-};
+export function useSupportStore(): UseSupportStoreResult {
+        const state = useSelector((current) => current);
 
-const defaultConfig: SupportConfig = {
-	size: "normal",
-	mode: "floating",
-	content: {},
-	isOpen: false,
-};
-
-// Create the store
-export const useSupportStore = create<SupportStore>()(
-	persist(
-		(set) => ({
-			// Initial state
-			navigation: defaultNavigation,
-			config: defaultConfig,
-
-			// Navigation actions
-			navigate: (newState) =>
-				set((state) => ({
-					navigation: {
-						previousPages: [
-							...state.navigation.previousPages,
-							state.navigation.current,
-						],
-						current: newState,
-					},
-				})),
-
-			replace: (newState) =>
-				set((state) => ({
-					navigation: {
-						...state.navigation,
-						current: newState,
-					},
-				})),
-
-			goBack: () =>
-				set((state) => {
-					const { previousPages } = state.navigation;
-					if (previousPages.length === 0) {
-						return state;
-					}
-
-					const newPreviousPages = [...previousPages];
-					const previousPage = newPreviousPages.pop();
-
-					if (!previousPage) {
-						return state;
-					}
-
-					return {
-						navigation: {
-							previousPages: newPreviousPages,
-							current: previousPage,
-						},
-					};
-				}),
-
-			// Config actions
-			open: () =>
-				set((state) => ({
-					config: { ...state.config, isOpen: true },
-				})),
-
-			close: () =>
-				set((state) => ({
-					config: { ...state.config, isOpen: false },
-				})),
-
-			toggle: () =>
-				set((state) => ({
-					config: { ...state.config, isOpen: !state.config.isOpen },
-				})),
-
-			updateConfig: (newConfig) =>
-				set((state) => ({
-					config: { ...state.config, ...newConfig },
-				})),
-
-			// Reset action
-			reset: () =>
-				set({
-					navigation: defaultNavigation,
-					config: defaultConfig,
-				}),
-		}),
-		{
-			name: "cossistant-support-store", // localStorage key
-			storage: createJSONStorage(() => localStorage),
-			partialize: (state) => ({
-				// Only persist necessary parts
-				navigation: state.navigation,
-				config: {
-					mode: state.config.mode,
-					size: state.config.size,
-					isOpen: state.config.isOpen,
-				},
-			}),
-		}
-	)
-);
+        return useMemo(() => ({
+                ...state,
+                navigate: store.navigate,
+                replace: store.replace,
+                goBack: store.goBack,
+                open: store.open,
+                close: store.close,
+                toggle: store.toggle,
+                updateConfig: store.updateConfig,
+                reset: store.reset,
+        }), [state]);
+}
 
 export const useSupportConfig = () => {
-	const { config, open, close, toggle } = useSupportStore();
+        const config = useSelector((state) => state.config);
 
-	return {
-		...config,
-		open,
-		close,
-		toggle,
-	};
+        return useMemo(
+                () => ({
+                        ...config,
+                        open: store.open,
+                        close: store.close,
+                        toggle: store.toggle,
+                }),
+                [config]
+        );
 };
 
 export const useSupportNavigation = () => {
-	const { navigation, navigate, replace, goBack } = useSupportStore();
-	const { current, previousPages } = navigation;
+        const navigation = useSelector((state) => state.navigation);
+        const { current, previousPages } = navigation;
 
-	return {
-		current,
-		page: current.page,
-		params: current.params,
-		previousPages,
-		navigate,
-		replace,
-		goBack,
-		canGoBack: previousPages.length > 0,
-	};
+        return useMemo(
+                () => ({
+                        current,
+                        page: current.page,
+                        params: current.params,
+                        previousPages,
+                        navigate: store.navigate,
+                        replace: store.replace,
+                        goBack: store.goBack,
+                        canGoBack: previousPages.length > 0,
+                }),
+                [current, previousPages]
+        );
 };
 
 export const initializeSupportStore = (props: {
-	mode?: "floating" | "responsive";
-	size?: "normal" | "larger";
-	defaultOpen?: boolean;
+        mode?: SupportConfig["mode"];
+        size?: SupportConfig["size"];
+        defaultOpen?: boolean;
 }) => {
-	const { updateConfig } = useSupportStore.getState();
-
-	updateConfig({
-		mode: props.mode ?? "floating",
-		size: props.size ?? "normal",
-		isOpen: props.defaultOpen ?? false,
-	});
+        store.updateConfig({
+                mode: props.mode ?? "floating",
+                size: props.size ?? "normal",
+                isOpen: props.defaultOpen ?? false,
+        });
 };
+
+export type { NavigationState, SupportConfig, SupportNavigation };
