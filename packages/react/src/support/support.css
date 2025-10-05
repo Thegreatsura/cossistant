@@ -73,37 +73,37 @@
 		/* Neutral shades derived from the background */
 		--co-background-50-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 93%,
+			var(--co-background-base) 98%,
 			var(--co-foreground-base)
 		);
 		--co-background-100-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 94%,
+			var(--co-background-base) 97%,
 			var(--co-foreground-base)
 		);
 		--co-background-200-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 95%,
+			var(--co-background-base) 96%,
 			var(--co-foreground-base)
 		);
 		--co-background-300-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 96%,
+			var(--co-background-base) 95%,
 			var(--co-foreground-base)
 		);
 		--co-background-400-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 97%,
+			var(--co-background-base) 94%,
 			var(--co-foreground-base)
 		);
 		--co-background-500-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 98%,
+			var(--co-background-base) 93%,
 			var(--co-foreground-base)
 		);
 		--co-background-600-mix: color-mix(
 			in oklch,
-			var(--co-background-base) 99%,
+			var(--co-background-base) 92%,
 			var(--co-foreground-base)
 		);
 
