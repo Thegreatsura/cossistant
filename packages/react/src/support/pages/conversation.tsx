@@ -9,6 +9,7 @@ import { Header } from "../components/header";
 import { MessageList } from "../components/message-list";
 import { MultimodalInput } from "../components/multimodal-input";
 import { useSupportNavigation } from "../store";
+import { Text, useSupportText } from "../text";
 
 type ConversationPageProps = {
 	/**
@@ -38,9 +39,10 @@ export const ConversationPage = ({
 	messages: passedMessages = [],
 	events = [],
 }: ConversationPageProps) => {
-	const { website, availableAIAgents, availableHumanAgents, visitor } =
-		useSupport();
-	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+        const { website, availableAIAgents, availableHumanAgents, visitor } =
+                useSupport();
+        const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+        const text = useSupportText();
 
 	// Main conversation hook - handles all logic
 	const conversation = useConversationPage({
@@ -69,9 +71,13 @@ export const ConversationPage = ({
 			<Header onGoBack={handleGoBack}>
 				<div className="flex w-full items-center justify-between gap-2 py-3">
 					<div className="flex flex-col">
-						<p className="font-medium text-sm">{website?.name}</p>
-						<p className="text-muted-foreground text-sm">Support online</p>
-					</div>
+                                                <p className="font-medium text-sm">{website?.name}</p>
+                                                <Text
+                                                        as="p"
+                                                        className="text-muted-foreground text-sm"
+                                                        textKey="common.labels.supportOnline"
+                                                />
+                                        </div>
 					<AvatarStack
 						aiAgents={availableAIAgents}
 						gapWidth={2}
@@ -93,18 +99,18 @@ export const ConversationPage = ({
 			/>
 
 			<div className="flex-shrink-0 p-1">
-				<MultimodalInput
-					disabled={conversation.composer.isSubmitting}
-					error={conversation.error}
-					files={conversation.composer.files}
-					isSubmitting={conversation.composer.isSubmitting}
-					onChange={conversation.composer.setMessage}
-					onFileSelect={conversation.composer.addFiles}
-					onRemoveFile={conversation.composer.removeFile}
-					onSubmit={conversation.composer.submit}
-					placeholder="Type your message..."
-					value={conversation.composer.message}
-				/>
+                                <MultimodalInput
+                                        disabled={conversation.composer.isSubmitting}
+                                        error={conversation.error}
+                                        files={conversation.composer.files}
+                                        isSubmitting={conversation.composer.isSubmitting}
+                                        onChange={conversation.composer.setMessage}
+                                        onFileSelect={conversation.composer.addFiles}
+                                        onRemoveFile={conversation.composer.removeFile}
+                                        onSubmit={conversation.composer.submit}
+                                        placeholder={text("component.multimodalInput.placeholder")}
+                                        value={conversation.composer.message}
+                                />
 			</div>
 		</div>
 	);

@@ -24,6 +24,7 @@ import {
 import { cn } from "../utils";
 import { ConversationEvent as ConversationEventComponent } from "./conversation-event";
 import { MessageGroup } from "./message-group";
+import { useSupportText } from "../text";
 
 export type MessageListProps = {
 	conversationId: string;
@@ -36,18 +37,19 @@ export type MessageListProps = {
 };
 
 export const MessageList: React.FC<MessageListProps> = ({
-	conversationId,
-	messages,
-	events = [],
-	className,
-	availableAIAgents = [],
-	availableHumanAgents = [],
-	currentVisitorId,
+        conversationId,
+        messages,
+        events = [],
+        className,
+        availableAIAgents = [],
+        availableHumanAgents = [],
+        currentVisitorId,
 }) => {
-	const seenData = useDebouncedConversationSeen(conversationId);
-	const typingEntries = useConversationTyping(conversationId, {
-		excludeVisitorId: currentVisitorId ?? null,
-	});
+        const text = useSupportText();
+        const seenData = useDebouncedConversationSeen(conversationId);
+        const typingEntries = useConversationTyping(conversationId, {
+                excludeVisitorId: currentVisitorId ?? null,
+        });
 
 	const { items, getMessageSeenBy } = useGroupedMessages({
 		messages,
@@ -77,45 +79,47 @@ export const MessageList: React.FC<MessageListProps> = ({
 	const typingParticipants = useMemo(() => {
 		return typingEntries
 			.map((entry): TypingParticipant | null => {
-				if (entry.actorType === "user") {
-					const human = availableHumanAgents.find(
-						(agent) => agent.id === entry.actorId
-					);
+                                if (entry.actorType === "user") {
+                                        const human = availableHumanAgents.find(
+                                                (agent) => agent.id === entry.actorId
+                                        );
 
-					return human
-						? {
-								id: entry.actorId,
-								name: human.name || "Support",
-								type: "team_member" as const,
-								avatarUrl: human.image || null,
-							}
-						: {
-								id: entry.actorId,
-								name: "Support",
-								type: "team_member" as const,
-								avatarUrl: null,
-							};
-				}
+                                        return human
+                                                ? {
+                                                                id: entry.actorId,
+                                                                name:
+                                                                        human.name || text("common.fallbacks.supportTeam"),
+                                                                type: "team_member" as const,
+                                                                avatarUrl: human.image || null,
+                                                        }
+                                                : {
+                                                                id: entry.actorId,
+                                                                name: text("common.fallbacks.supportTeam"),
+                                                                type: "team_member" as const,
+                                                                avatarUrl: null,
+                                                        };
+                                }
 
-				if (entry.actorType === "ai_agent") {
-					const ai = availableAIAgents.find(
-						(agent) => agent.id === entry.actorId
-					);
+                                if (entry.actorType === "ai_agent") {
+                                        const ai = availableAIAgents.find(
+                                                (agent) => agent.id === entry.actorId
+                                        );
 
-					return ai
-						? {
-								id: entry.actorId,
-								name: ai.name || "AI assistant",
-								type: "ai" as const,
-								avatarUrl: ai.image || null,
-							}
-						: {
-								id: entry.actorId,
-								name: "AI assistant",
-								type: "ai" as const,
-								avatarUrl: null,
-							};
-				}
+                                        return ai
+                                                ? {
+                                                                id: entry.actorId,
+                                                                name:
+                                                                        ai.name || text("common.fallbacks.aiAssistant"),
+                                                                type: "ai" as const,
+                                                                avatarUrl: ai.image || null,
+                                                        }
+                                                : {
+                                                                id: entry.actorId,
+                                                                name: text("common.fallbacks.aiAssistant"),
+                                                                type: "ai" as const,
+                                                                avatarUrl: null,
+                                                        };
+                                }
 
 				return null;
 			})

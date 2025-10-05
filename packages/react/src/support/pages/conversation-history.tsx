@@ -10,6 +10,7 @@ import Icon from "../components/icons";
 import { TextEffect } from "../components/text-effect";
 import { Watermark } from "../components/watermark";
 import { useSupportNavigation } from "../store/support-store";
+import { Text, useSupportText } from "../text";
 
 /**
  * Conversation history page component.
@@ -24,6 +25,7 @@ import { useSupportNavigation } from "../store/support-store";
 export const ConversationHistoryPage: React.FC = () => {
   const { goBack, canGoBack, navigate } = useSupportNavigation();
   const { availableAIAgents, availableHumanAgents } = useSupport();
+  const text = useSupportText();
 
   const history = useConversationHistoryPage({
     initialVisibleCount: 4,
@@ -78,7 +80,7 @@ export const ConversationHistoryPage: React.FC = () => {
             delay={0.5}
             preset="fade-in-blur"
           >
-            Conversations history
+            {text("page.conversationHistory.title")}
           </TextEffect>
         </div>
       </div>
@@ -91,7 +93,11 @@ export const ConversationHistoryPage: React.FC = () => {
                 onClick={history.showAll}
                 variant="ghost"
               >
-                +{history.remainingCount} more
+                <Text
+                  as="span"
+                  textKey="page.conversationHistory.showMore"
+                  variables={{ count: history.remainingCount }}
+                />
               </Button>
             )}
             <div className="mt-6 flex w-full flex-col overflow-clip rounded-md border border-co-border/80">
@@ -119,7 +125,7 @@ export const ConversationHistoryPage: React.FC = () => {
               name="arrow-right"
               variant="default"
             />
-            Ask us a question
+            <Text as="span" textKey="common.actions.askQuestion" />
           </Button>
           <Watermark className="mt-4 mb-2" />
         </div>

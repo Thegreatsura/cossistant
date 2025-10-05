@@ -13,6 +13,7 @@ import { formatTimeAgo } from "../utils/time";
 import { Avatar } from "./avatar";
 import { coButtonVariants } from "./button";
 import Icon from "./icons";
+import { useSupportText } from "../text";
 
 export type ConversationButtonLinkProps = {
   conversation: Conversation;
@@ -38,32 +39,36 @@ export type ConversationButtonLinkState = {
 function getLastMessageInfo(
   message: NonNullable<Conversation["lastMessage"]>,
   availableHumanAgents: ReturnType<typeof useSupport>["availableHumanAgents"],
-  website: ReturnType<typeof useSupport>["website"]
+  website: ReturnType<typeof useSupport>["website"],
+  text: ReturnType<typeof useSupportText>
 ) {
   const isFromVisitor = message.visitorId !== null;
 
-  // Find the sender information
-  let senderName = "Unknown";
+  let senderName = text("common.fallbacks.unknown");
   let senderImage: string | null = null;
 
   if (isFromVisitor) {
-    senderName = "You";
+    senderName = text("common.fallbacks.you");
   } else if (message.userId) {
-    // Find the human agent
     const agent = availableHumanAgents.find((a) => a.id === message.userId);
     if (agent) {
       senderName = agent.name;
       senderImage = agent.image;
+    } else {
+      senderName = text("common.fallbacks.supportTeam");
     }
   } else if (message.aiAgentId && website?.availableAIAgents) {
-    // Find the AI agent
     const aiAgent = website.availableAIAgents.find(
       (a) => a.id === message.aiAgentId
     );
     if (aiAgent) {
       senderName = aiAgent.name;
       senderImage = aiAgent.image;
+    } else {
+      senderName = text("common.fallbacks.aiAssistant");
     }
+  } else {
+    senderName = text("common.fallbacks.supportTeam");
   }
 
   return {
@@ -83,6 +88,7 @@ export function ConversationButtonLink({
   const { availableHumanAgents, availableAIAgents, website, visitor } =
     useSupport();
   const { messages } = useConversationMessages(conversation.id);
+  const text = useSupportText();
   const typingEntries = useConversationTyping(conversation.id, {
     excludeVisitorId: visitor?.id ?? null,
   });
@@ -94,20 +100,25 @@ export function ConversationButtonLink({
     }
 
     const entry = typingEntries[0];
-    let name = "Someone";
+    let name = text("common.fallbacks.someone");
 
     if (entry.actorType === "user") {
       const human = availableHumanAgents.find(
         (agent) => agent.id === entry.actorId
       );
-      name = human?.name || "Support";
+      name = human?.name || text("common.fallbacks.supportTeam");
     } else if (entry.actorType === "ai_agent") {
       const ai = availableAIAgents.find((agent) => agent.id === entry.actorId);
-      name = ai?.name || "AI assistant";
+      name = ai?.name || text("common.fallbacks.aiAssistant");
     }
 
     return { name, preview: entry.preview };
-  }, [typingEntries, availableHumanAgents, availableAIAgents]);
+  }, [
+    typingEntries,
+    availableHumanAgents,
+    availableAIAgents,
+    text,
+  ]);
 
   // Process the last message (memoized to avoid expensive recomputation)
   const lastMessage = useMemo(() => {
@@ -115,13 +126,35 @@ export function ConversationButtonLink({
       // biome-ignore lint/style/useAtIndex: ok here
       messages.length > 0 ? messages[messages.length - 1] : null;
 
-    // Use cached message if available, otherwise use conversation's lastMessage
     const messageToDisplay = cachedLastMessage || conversation.lastMessage;
 
     return messageToDisplay
-      ? getLastMessageInfo(messageToDisplay, availableHumanAgents, website)
+      ? getLastMessageInfo(
+          messageToDisplay,
+          availableHumanAgents,
+          website,
+          text
+        )
       : null;
-  }, [messages, conversation.lastMessage, availableHumanAgents, website]);
+  }, [
+    messages,
+    conversation.lastMessage,
+    availableHumanAgents,
+    website,
+    text,
+  ]);
+
+  const conversationTitle = useMemo(() => {
+    if (conversation.title) {
+      return conversation.title;
+    }
+
+    if (lastMessage?.content) {
+      return lastMessage.content;
+    }
+
+    return text("component.conversationButtonLink.fallbackTitle");
+  }, [conversation.title, lastMessage?.content, text]);
 
   const state: ConversationButtonLinkState = {
     conversation,
@@ -146,30 +179,49 @@ export function ConversationButtonLink({
             <Avatar
               className="size-8 flex-shrink-0"
               image={lastMessage.senderImage}
-              name={lastMessage.senderName || "Agent"}
+              name={
+                lastMessage.senderName || text("common.fallbacks.supportTeam")
+              }
             />
           )}
 
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex max-w-[90%] items-center justify-between gap-2">
               <h3 className="truncate font-medium text-co-primary text-sm">
-                {conversation.title ||
-                  lastMessage?.content ||
-                  "Untitled conversation"}
+                {conversationTitle}
               </h3>
             </div>
 
             {typingInfo ? (
               <p className="text-co-primary/60 text-xs">
-                <span className="italic">{typingInfo.name} is typing...</span>
+                <span className="italic">
+                  {text("component.conversationButtonLink.typing", {
+                    name: typingInfo.name,
+                  })}
+                </span>
               </p>
             ) : lastMessage ? (
               <p className="text-co-primary/60 text-xs">
                 {lastMessage.isFromVisitor ? (
-                  <span>You - {lastMessage.time}</span>
+                  <span>
+                    {text(
+                      "component.conversationButtonLink.lastMessage.visitor",
+                      {
+                        time: lastMessage.time,
+                      }
+                    )}
+                  </span>
                 ) : (
                   <span>
-                    {lastMessage.senderName} - {lastMessage.time}
+                    {text(
+                      "component.conversationButtonLink.lastMessage.agent",
+                      {
+                        name:
+                          lastMessage.senderName ||
+                          text("common.fallbacks.supportTeam"),
+                        time: lastMessage.time,
+                      }
+                    )}
                   </span>
                 )}
               </p>

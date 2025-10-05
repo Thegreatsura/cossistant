@@ -2,6 +2,7 @@ import { useSupport } from "@cossistant/react";
 import { useMemo } from "react";
 import { cn } from "../utils";
 import { CossistantLogo } from "./cossistant-branding";
+import { Text } from "../text";
 
 export type WatermarkProps = {
 	className?: string;
@@ -24,18 +25,22 @@ export const Watermark: React.FC<WatermarkProps> = ({ className }) => {
 		return url.toString();
 	}, [website]);
 
-	return (
-		<a
-			className={cn(
-				"flex items-center gap-1.5 font-medium font-mono text-co-primary hover:text-co-blue",
-				className
+        return (
+                <a
+                        className={cn(
+                                "flex items-center gap-1.5 font-medium font-mono text-co-primary hover:text-co-blue",
+                                className
 			)}
 			href={cossistantUrl}
-			rel="noopener noreferrer"
-			target="_blank"
-		>
-			<span className="text-co-muted-foreground text-xs">We run on</span>
-			<CossistantLogo className="h-3" />
-		</a>
-	);
+                        rel="noopener noreferrer"
+                        target="_blank"
+                >
+                        <Text
+                                as="span"
+                                className="text-co-muted-foreground text-xs"
+                                textKey="common.brand.watermark"
+                        />
+                        <CossistantLogo className="h-3" />
+                </a>
+        );
 };

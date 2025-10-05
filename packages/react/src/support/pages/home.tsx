@@ -1,4 +1,3 @@
-import { capitalizeFirstLetter } from "@cossistant/react/utils/text";
 import { motion } from "motion/react";
 import { useHomePage } from "../../hooks/use-home-page";
 import { useSupport } from "../../provider";
@@ -11,6 +10,7 @@ import Icon from "../components/icons";
 import { TextEffect } from "../components/text-effect";
 import { Watermark } from "../components/watermark";
 import { useSupportNavigation } from "../store/support-store";
+import { Text, useSupportText } from "../text";
 
 /**
  * Home page component for the support widget.
@@ -27,6 +27,7 @@ import { useSupportNavigation } from "../store/support-store";
 export const HomePage = () => {
   const { website, availableHumanAgents, visitor, quickOptions } = useSupport();
   const { navigate } = useSupportNavigation();
+  const text = useSupportText();
 
   // Main home page hook - handles all logic
   const home = useHomePage({
@@ -79,9 +80,12 @@ export const HomePage = () => {
               size={44}
               spacing={32}
             />
-            <p className="mb-4 text-co-primary/80 text-sm">
-              {capitalizeFirstLetter(website?.name)} support
-            </p>
+            <Text
+              as="p"
+              className="mb-4 text-co-primary/80 text-sm"
+              textKey="page.home.tagline"
+              variables={{ websiteName: website?.name ?? null }}
+            />
           </motion.div>
 
           <TextEffect
@@ -90,9 +94,9 @@ export const HomePage = () => {
             delay={0.5}
             preset="fade-in-blur"
           >
-            Good morning
-            {visitor?.contact?.name ? ` ${visitor.contact.name}` : ""}, How can
-            we help?
+            {text("page.home.greeting", {
+              visitorName: visitor?.contact?.name ?? undefined,
+            })}
           </TextEffect>
 
           {quickOptions.length > 0 && (
@@ -132,8 +136,11 @@ export const HomePage = () => {
             onClick={home.openConversationHistory}
             variant="ghost"
           >
-            + {home.availableConversationsCount} more conversation
-            {home.availableConversationsCount > 1 ? "s" : ""}
+            <Text
+              as="span"
+              textKey="page.home.history.more"
+              variables={{ count: home.availableConversationsCount }}
+            />
           </Button>
         )}
 
@@ -164,7 +171,7 @@ export const HomePage = () => {
               name="arrow-right"
               variant="default"
             />
-            Ask us a question
+            <Text as="span" textKey="common.actions.askQuestion" />
           </Button>
           <Watermark className="mt-4 mb-2" />
         </div>
