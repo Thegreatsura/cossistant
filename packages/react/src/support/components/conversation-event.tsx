@@ -5,6 +5,7 @@ import type {
 } from "@cossistant/types";
 import { motion } from "motion/react";
 import type React from "react";
+import { useSupportText } from "../text";
 import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
 
@@ -19,6 +20,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	availableAIAgents,
 	availableHumanAgents,
 }) => {
+	const text = useSupportText();
 	const isAI = event.actorAiAgentId !== null;
 	const humanAgent = availableHumanAgents.find(
 		(agent) => agent.id === event.actorUserId
@@ -29,36 +31,60 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 
 	// Get the actor name
 	const actorName = isAI
-		? aiAgent?.name || "Cossistant"
-		: humanAgent?.name || "Someone";
+		? aiAgent?.name || text("common.fallbacks.cossistant")
+		: humanAgent?.name || text("common.fallbacks.someone");
 
 	// Convert event type to plain English
 	const getEventText = () => {
 		switch (event.type) {
 			case "assigned":
-				return `${actorName} assigned the conversation`;
+				return text("component.conversationEvent.assigned", {
+					actorName,
+				});
 			case "unassigned":
-				return `${actorName} unassigned the conversation`;
+				return text("component.conversationEvent.unassigned", {
+					actorName,
+				});
 			case "participant_requested":
-				return `${actorName} requested to join`;
+				return text("component.conversationEvent.participantRequested", {
+					actorName,
+				});
 			case "participant_joined":
-				return `${actorName} joined the conversation`;
+				return text("component.conversationEvent.participantJoined", {
+					actorName,
+				});
 			case "participant_left":
-				return `${actorName} left the conversation`;
+				return text("component.conversationEvent.participantLeft", {
+					actorName,
+				});
 			case "status_changed":
-				return `${actorName} changed the status`;
+				return text("component.conversationEvent.statusChanged", {
+					actorName,
+				});
 			case "priority_changed":
-				return `${actorName} changed the priority`;
+				return text("component.conversationEvent.priorityChanged", {
+					actorName,
+				});
 			case "tag_added":
-				return `${actorName} added a tag`;
+				return text("component.conversationEvent.tagAdded", {
+					actorName,
+				});
 			case "tag_removed":
-				return `${actorName} removed a tag`;
+				return text("component.conversationEvent.tagRemoved", {
+					actorName,
+				});
 			case "resolved":
-				return `${actorName} resolved the conversation`;
+				return text("component.conversationEvent.resolved", {
+					actorName,
+				});
 			case "reopened":
-				return `${actorName} reopened the conversation`;
+				return text("component.conversationEvent.reopened", {
+					actorName,
+				});
 			default:
-				return `${actorName} performed an action`;
+				return text("component.conversationEvent.default", {
+					actorName,
+				});
 		}
 	};
 
@@ -79,7 +105,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 						<Avatar
 							className="size-5 flex-shrink-0 overflow-clip rounded-full"
 							image={humanAgent?.image}
-							name={humanAgent?.name ?? "Someone"}
+							name={humanAgent?.name || text("common.fallbacks.someone")}
 						/>
 					)}
 				</div>

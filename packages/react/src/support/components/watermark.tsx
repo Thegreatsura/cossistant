@@ -1,5 +1,6 @@
 import { useSupport } from "@cossistant/react";
 import { useMemo } from "react";
+import { Text } from "../text";
 import { cn } from "../utils";
 import { CossistantLogo } from "./cossistant-branding";
 
@@ -34,7 +35,11 @@ export const Watermark: React.FC<WatermarkProps> = ({ className }) => {
 			rel="noopener noreferrer"
 			target="_blank"
 		>
-			<span className="text-co-muted-foreground text-xs">We run on</span>
+			<Text
+				as="span"
+				className="text-co-muted-foreground text-xs"
+				textKey="common.brand.watermark"
+			/>
 			<CossistantLogo className="h-3" />
 		</a>
 	);

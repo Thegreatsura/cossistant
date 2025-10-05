@@ -2,198 +2,238 @@ import { type Conversation, ConversationStatus } from "@cossistant/types";
 import type React from "react";
 import { useMemo } from "react";
 import {
-  useConversationMessages,
-  useConversationTyping,
-  useSupport,
+	useConversationMessages,
+	useConversationTyping,
+	useSupport,
 } from "../..";
 import { useRenderElement } from "../../utils/use-render-element";
+import { useSupportText } from "../text";
 import { cn } from "../utils";
-
 import { formatTimeAgo } from "../utils/time";
 import { Avatar } from "./avatar";
 import { coButtonVariants } from "./button";
 import Icon from "./icons";
 
 export type ConversationButtonLinkProps = {
-  conversation: Conversation;
-  onClick?: () => void;
-  className?: string | ((state: ConversationButtonLinkState) => string);
-  render?: (
-    props: React.HTMLProps<HTMLButtonElement>,
-    state: ConversationButtonLinkState
-  ) => React.ReactElement;
+	conversation: Conversation;
+	onClick?: () => void;
+	className?: string | ((state: ConversationButtonLinkState) => string);
+	render?: (
+		props: React.HTMLProps<HTMLButtonElement>,
+		state: ConversationButtonLinkState
+	) => React.ReactElement;
 };
 
 export type ConversationButtonLinkState = {
-  conversation: Conversation;
-  lastMessage: {
-    content: string;
-    time: string;
-    isFromVisitor: boolean;
-    senderName?: string;
-    senderImage?: string | null;
-  } | null;
+	conversation: Conversation;
+	lastMessage: {
+		content: string;
+		time: string;
+		isFromVisitor: boolean;
+		senderName?: string;
+		senderImage?: string | null;
+	} | null;
 };
 
 function getLastMessageInfo(
-  message: NonNullable<Conversation["lastMessage"]>,
-  availableHumanAgents: ReturnType<typeof useSupport>["availableHumanAgents"],
-  website: ReturnType<typeof useSupport>["website"]
+	message: NonNullable<Conversation["lastMessage"]>,
+	availableHumanAgents: ReturnType<typeof useSupport>["availableHumanAgents"],
+	website: ReturnType<typeof useSupport>["website"],
+	text: ReturnType<typeof useSupportText>
 ) {
-  const isFromVisitor = message.visitorId !== null;
+	const isFromVisitor = message.visitorId !== null;
 
-  // Find the sender information
-  let senderName = "Unknown";
-  let senderImage: string | null = null;
+	let senderName = text("common.fallbacks.unknown");
+	let senderImage: string | null = null;
 
-  if (isFromVisitor) {
-    senderName = "You";
-  } else if (message.userId) {
-    // Find the human agent
-    const agent = availableHumanAgents.find((a) => a.id === message.userId);
-    if (agent) {
-      senderName = agent.name;
-      senderImage = agent.image;
-    }
-  } else if (message.aiAgentId && website?.availableAIAgents) {
-    // Find the AI agent
-    const aiAgent = website.availableAIAgents.find(
-      (a) => a.id === message.aiAgentId
-    );
-    if (aiAgent) {
-      senderName = aiAgent.name;
-      senderImage = aiAgent.image;
-    }
-  }
+	if (isFromVisitor) {
+		senderName = text("common.fallbacks.you");
+	} else if (message.userId) {
+		const agent = availableHumanAgents.find((a) => a.id === message.userId);
+		if (agent) {
+			senderName = agent.name;
+			senderImage = agent.image;
+		} else {
+			senderName = text("common.fallbacks.supportTeam");
+		}
+	} else if (message.aiAgentId && website?.availableAIAgents) {
+		const aiAgent = website.availableAIAgents.find(
+			(a) => a.id === message.aiAgentId
+		);
+		if (aiAgent) {
+			senderName = aiAgent.name;
+			senderImage = aiAgent.image;
+		} else {
+			senderName = text("common.fallbacks.aiAssistant");
+		}
+	} else {
+		senderName = text("common.fallbacks.supportTeam");
+	}
 
-  return {
-    content: message.bodyMd,
-    time: formatTimeAgo(message.createdAt),
-    isFromVisitor,
-    senderName,
-    senderImage,
-  };
+	return {
+		content: message.bodyMd,
+		time: formatTimeAgo(message.createdAt),
+		isFromVisitor,
+		senderName,
+		senderImage,
+	};
 }
 
 export function ConversationButtonLink({
-  conversation,
-  onClick,
-  ...props
+	conversation,
+	onClick,
+	...props
 }: ConversationButtonLinkProps) {
-  const { availableHumanAgents, availableAIAgents, website, visitor } =
-    useSupport();
-  const { messages } = useConversationMessages(conversation.id);
-  const typingEntries = useConversationTyping(conversation.id, {
-    excludeVisitorId: visitor?.id ?? null,
-  });
+	const { availableHumanAgents, availableAIAgents, website, visitor } =
+		useSupport();
+	const { messages } = useConversationMessages(conversation.id);
+	const text = useSupportText();
+	const typingEntries = useConversationTyping(conversation.id, {
+		excludeVisitorId: visitor?.id ?? null,
+	});
 
-  // Check if anyone is typing in this conversation
-  const typingInfo = useMemo(() => {
-    if (typingEntries.length === 0) {
-      return null;
-    }
+	// Check if anyone is typing in this conversation
+	const typingInfo = useMemo(() => {
+		if (typingEntries.length === 0) {
+			return null;
+		}
 
-    const entry = typingEntries[0];
-    let name = "Someone";
+		const entry = typingEntries[0];
+		let name = text("common.fallbacks.someone");
 
-    if (entry.actorType === "user") {
-      const human = availableHumanAgents.find(
-        (agent) => agent.id === entry.actorId
-      );
-      name = human?.name || "Support";
-    } else if (entry.actorType === "ai_agent") {
-      const ai = availableAIAgents.find((agent) => agent.id === entry.actorId);
-      name = ai?.name || "AI assistant";
-    }
+		if (entry.actorType === "user") {
+			const human = availableHumanAgents.find(
+				(agent) => agent.id === entry.actorId
+			);
+			name = human?.name || text("common.fallbacks.supportTeam");
+		} else if (entry.actorType === "ai_agent") {
+			const ai = availableAIAgents.find((agent) => agent.id === entry.actorId);
+			name = ai?.name || text("common.fallbacks.aiAssistant");
+		}
 
-    return { name, preview: entry.preview };
-  }, [typingEntries, availableHumanAgents, availableAIAgents]);
+		return { name, preview: entry.preview };
+	}, [typingEntries, availableHumanAgents, availableAIAgents, text]);
 
-  // Process the last message (memoized to avoid expensive recomputation)
-  const lastMessage = useMemo(() => {
-    const cachedLastMessage =
-      // biome-ignore lint/style/useAtIndex: ok here
-      messages.length > 0 ? messages[messages.length - 1] : null;
+	// Process the last message (memoized to avoid expensive recomputation)
+	const lastMessage = useMemo(() => {
+		const cachedLastMessage =
+			// biome-ignore lint/style/useAtIndex: ok here
+			messages.length > 0 ? messages[messages.length - 1] : null;
 
-    // Use cached message if available, otherwise use conversation's lastMessage
-    const messageToDisplay = cachedLastMessage || conversation.lastMessage;
+		const messageToDisplay = cachedLastMessage || conversation.lastMessage;
 
-    return messageToDisplay
-      ? getLastMessageInfo(messageToDisplay, availableHumanAgents, website)
-      : null;
-  }, [messages, conversation.lastMessage, availableHumanAgents, website]);
+		return messageToDisplay
+			? getLastMessageInfo(
+					messageToDisplay,
+					availableHumanAgents,
+					website,
+					text
+				)
+			: null;
+	}, [messages, conversation.lastMessage, availableHumanAgents, website, text]);
 
-  const state: ConversationButtonLinkState = {
-    conversation,
-    lastMessage,
-  };
+	const conversationTitle = useMemo(() => {
+		if (conversation.title) {
+			return conversation.title;
+		}
 
-  return useRenderElement("button", props, {
-    state,
-    props: {
-      onClick,
-      type: "button",
-      className: cn(
-        coButtonVariants({ variant: "secondary", size: "large" }),
-        "relative border-0 border-co-border/50 border-b text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0",
-        typeof props.className === "function"
-          ? props.className(state)
-          : props.className
-      ),
-      children: (
-        <>
-          {lastMessage && !lastMessage.isFromVisitor && (
-            <Avatar
-              className="size-8 flex-shrink-0"
-              image={lastMessage.senderImage}
-              name={lastMessage.senderName || "Agent"}
-            />
-          )}
+		if (lastMessage?.content) {
+			return lastMessage.content;
+		}
 
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div className="flex max-w-[90%] items-center justify-between gap-2">
-              <h3 className="truncate font-medium text-co-primary text-sm">
-                {conversation.title ||
-                  lastMessage?.content ||
-                  "Untitled conversation"}
-              </h3>
-            </div>
+		return text("component.conversationButtonLink.fallbackTitle");
+	}, [conversation.title, lastMessage?.content, text]);
 
-            {typingInfo ? (
-              <p className="text-co-primary/60 text-xs">
-                <span className="italic">{typingInfo.name} is typing...</span>
-              </p>
-            ) : lastMessage ? (
-              <p className="text-co-primary/60 text-xs">
-                {lastMessage.isFromVisitor ? (
-                  <span>You - {lastMessage.time}</span>
-                ) : (
-                  <span>
-                    {lastMessage.senderName} - {lastMessage.time}
-                  </span>
-                )}
-              </p>
-            ) : null}
-          </div>
-          <div
-            className={cn(
-              "mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
-              conversation.status === ConversationStatus.OPEN
-                ? "bg-co-success/20 text-co-success-foreground"
-                : conversation.status === ConversationStatus.RESOLVED
-                  ? "bg-co-neutral/20 text-co-neutral-foreground"
-                  : "bg-co-warning/20 text-co-warning-foreground"
-            )}
-          >
-            {conversation.status}
-          </div>
-          <Icon
-            className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
-            name="arrow-right"
-            variant="default"
-          />
-        </>
-      ),
-    },
-  });
+	const state: ConversationButtonLinkState = {
+		conversation,
+		lastMessage,
+	};
+
+	return useRenderElement("button", props, {
+		state,
+		props: {
+			onClick,
+			type: "button",
+			className: cn(
+				coButtonVariants({ variant: "secondary", size: "large" }),
+				"relative border-0 border-co-border/50 border-b text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0",
+				typeof props.className === "function"
+					? props.className(state)
+					: props.className
+			),
+			children: (
+				<>
+					{lastMessage && !lastMessage.isFromVisitor && (
+						<Avatar
+							className="size-8 flex-shrink-0"
+							image={lastMessage.senderImage}
+							name={
+								lastMessage.senderName || text("common.fallbacks.supportTeam")
+							}
+						/>
+					)}
+
+					<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+						<div className="flex max-w-[90%] items-center justify-between gap-2">
+							<h3 className="truncate font-medium text-co-primary text-sm">
+								{conversationTitle}
+							</h3>
+						</div>
+
+						{typingInfo ? (
+							<p className="text-co-primary/60 text-xs">
+								<span className="italic">
+									{text("component.conversationButtonLink.typing", {
+										name: typingInfo.name,
+									})}
+								</span>
+							</p>
+						) : lastMessage ? (
+							<p className="text-co-primary/60 text-xs">
+								{lastMessage.isFromVisitor ? (
+									<span>
+										{text(
+											"component.conversationButtonLink.lastMessage.visitor",
+											{
+												time: lastMessage.time,
+											}
+										)}
+									</span>
+								) : (
+									<span>
+										{text(
+											"component.conversationButtonLink.lastMessage.agent",
+											{
+												name:
+													lastMessage.senderName ||
+													text("common.fallbacks.supportTeam"),
+												time: lastMessage.time,
+											}
+										)}
+									</span>
+								)}
+							</p>
+						) : null}
+					</div>
+					<div
+						className={cn(
+							"mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
+							conversation.status === ConversationStatus.OPEN
+								? "bg-co-success/20 text-co-success-foreground"
+								: conversation.status === ConversationStatus.RESOLVED
+									? "bg-co-neutral/20 text-co-neutral-foreground"
+									: "bg-co-warning/20 text-co-warning-foreground"
+						)}
+					>
+						{conversation.status}
+					</div>
+					<Icon
+						className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
+						name="arrow-right"
+						variant="default"
+					/>
+				</>
+			),
+		},
+	});
 }

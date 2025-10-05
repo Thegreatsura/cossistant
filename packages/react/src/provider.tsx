@@ -1,4 +1,5 @@
 import type { CossistantClient } from "@cossistant/core";
+import { normalizeLocale } from "@cossistant/core";
 import type { DefaultMessage, PublicWebsiteResponse } from "@cossistant/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
@@ -221,11 +222,20 @@ export function useSupport() {
 
 	const availableHumanAgents = context.website?.availableHumanAgents || [];
 	const availableAIAgents = context.website?.availableAIAgents || [];
+	const visitorLanguage = context.website?.visitor?.language || null;
+
+	// Create visitor object with normalized locale
+	const visitor = context.website?.visitor
+		? {
+				...context.website.visitor,
+				locale: normalizeLocale(visitorLanguage),
+			}
+		: undefined;
 
 	return {
 		...context,
 		availableHumanAgents,
 		availableAIAgents,
-		visitor: context.website?.visitor,
+		visitor,
 	};
 }

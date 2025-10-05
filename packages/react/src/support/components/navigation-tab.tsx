@@ -1,4 +1,5 @@
 import { useSupportNavigation } from "../store";
+import { Text } from "../text";
 import { Button } from "./button";
 import Icon from "./icons";
 
@@ -16,7 +17,7 @@ export function NavigationTab() {
 					name="home"
 					variant={current.page === "HOME" ? "filled" : "default"}
 				/>
-				Home
+				<Text as="span" textKey="component.navigation.home" />
 			</Button>
 			<Button
 				onClick={() => navigate({ page: "ARTICLES" })}
@@ -27,7 +28,7 @@ export function NavigationTab() {
 					name="articles"
 					variant={current.page === "ARTICLES" ? "filled" : "default"}
 				/>
-				Articles
+				<Text as="span" textKey="component.navigation.articles" />
 			</Button>
 		</div>
 	);

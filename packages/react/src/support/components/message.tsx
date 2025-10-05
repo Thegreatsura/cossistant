@@ -5,6 +5,7 @@ import {
 	MessageTimestamp,
 	Message as PrimitiveMessage,
 } from "../../primitives/message";
+import { useSupportText } from "../text";
 import { cn } from "../utils";
 
 export type MessageProps = {
@@ -18,6 +19,7 @@ export function Message({
 	isLast = false,
 	isSentByViewer,
 }: MessageProps) {
+	const text = useSupportText();
 	return (
 		<PrimitiveMessage message={message}>
 			{({ isVisitor, isAI, timestamp }) => {
@@ -63,7 +65,8 @@ export function Message({
 												hour: "2-digit",
 												minute: "2-digit",
 											})}
-											{isAI && " • AI agent"}
+											{isAI &&
+												` ${text("component.message.timestamp.aiIndicator")}`}
 										</>
 									)}
 								</MessageTimestamp>

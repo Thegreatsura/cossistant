@@ -312,7 +312,7 @@ export async function markConversationAsRead(
 		conversation: ConversationRecord;
 		actorUserId: string;
 	}
-): Promise<{ conversation: ConversationRecord; lastSeenAt: Date }> {
+): Promise<{ conversation: ConversationRecord; lastSeenAt: string }> {
 	const lastSeenAt = new Date().toISOString();
 
 	await db
@@ -338,7 +338,7 @@ export async function markConversationAsRead(
 
 	return {
 		conversation: params.conversation,
-		lastSeenAt: new Date(lastSeenAt),
+		lastSeenAt,
 	};
 }
 

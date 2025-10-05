@@ -3,6 +3,7 @@
 import type React from "react";
 import { useRef } from "react";
 import * as Primitive from "../../primitives";
+import { useSupportText } from "../text";
 import { cn } from "../utils";
 import Icon from "./icons";
 import { Watermark } from "./watermark";
@@ -30,7 +31,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	onChange,
 	onSubmit,
 	onFileSelect,
-	placeholder = "Type your message...",
+	placeholder,
 	disabled = false,
 	isSubmitting = false,
 	error,
@@ -41,6 +42,9 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const text = useSupportText();
+	const resolvedPlaceholder =
+		placeholder ?? text("component.multimodalInput.placeholder");
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -96,7 +100,9 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 							</span>
 							{onRemoveFile && (
 								<button
-									aria-label={`Remove ${file.name}`}
+									aria-label={text("common.actions.removeFile", {
+										fileName: file.name,
+									})}
 									className="ml-1 hover:text-co-destructive"
 									onClick={() => onRemoveFile(index)}
 									type="button"
@@ -121,7 +127,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 					onChange={onChange}
 					onFileSelect={onFileSelect}
 					onSubmit={onSubmit}
-					placeholder={placeholder}
+					placeholder={resolvedPlaceholder}
 					value={value}
 				/>
 
@@ -133,7 +139,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 						{onFileSelect && (
 							<>
 								<button
-									aria-label="Attach files"
+									aria-label={text("common.actions.attachFiles")}
 									className={cn(
 										"group flex h-8 w-8 items-center justify-center rounded-md text-co-muted-foreground hover:bg-co-muted hover:text-co-foreground disabled:cursor-not-allowed disabled:opacity-50",
 										files.length >= maxFiles && "opacity-50"

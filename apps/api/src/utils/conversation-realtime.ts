@@ -16,7 +16,7 @@ type BaseRealtimeContext = {
 
 type SeenEventParams = BaseRealtimeContext & {
 	actor: ConversationRealtimeActor;
-	lastSeenAt: Date;
+	lastSeenAt: string;
 };
 
 type TypingEventParams = BaseRealtimeContext & {
@@ -77,7 +77,7 @@ export async function emitConversationSeenEvent({
 			conversationId: conversation.id,
 			websiteId: conversation.websiteId,
 			organizationId: conversation.organizationId,
-			lastSeenAt: lastSeenAt.toISOString(),
+			lastSeenAt,
 			...actorPayload,
 		},
 		{

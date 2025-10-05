@@ -6,8 +6,10 @@ import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportContent } from "./components/support-content";
 import { SupportConfigProvider } from "./context/config";
+import type { SupportLocale, SupportTextContentOverrides } from "./text";
+import { SupportTextProvider } from "./text";
 
-export type SupportProps = {
+export type SupportProps<Locale extends string = SupportLocale> = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
@@ -16,6 +18,8 @@ export type SupportProps = {
 	quickOptions?: string[];
 	defaultMessages?: DefaultMessage[];
 	defaultOpen?: boolean;
+	locale?: Locale;
+	content?: SupportTextContentOverrides<Locale>;
 };
 
 // Internal component that needs the conversation context
@@ -24,7 +28,7 @@ export type SupportProps = {
  * content providers. Renders nothing until website data is available to avoid
  * flashing incomplete UI.
  */
-export function Support({
+export function Support<Locale extends string = SupportLocale>({
 	className,
 	position = "bottom",
 	align = "right",
@@ -32,7 +36,9 @@ export function Support({
 	quickOptions,
 	defaultMessages,
 	defaultOpen,
-}: SupportProps) {
+	locale,
+	content,
+}: SupportProps<Locale>) {
 	const { website } = useSupport();
 
 	if (!website) {
@@ -43,12 +49,14 @@ export function Support({
 		<>
 			<SupportRealtimeProvider>
 				<SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
-					<SupportContent
-						align={align}
-						className={className}
-						mode={mode}
-						position={position}
-					/>
+					<SupportTextProvider content={content} locale={locale}>
+						<SupportContent
+							align={align}
+							className={className}
+							mode={mode}
+							position={position}
+						/>
+					</SupportTextProvider>
 				</SupportConfigProvider>
 			</SupportRealtimeProvider>
 			<SupportConfig
@@ -64,6 +72,7 @@ export default Support;
 export { useSupportConfig } from "./context/config";
 export type { WebSocketContextValue } from "./context/websocket";
 export { useWebSocket, WebSocketProvider } from "./context/websocket";
-
 // Export the store for direct access if needed
 export { useSupportStore } from "./store";
+export type { SupportLocale, SupportTextContentOverrides } from "./text";
+export { Text, useSupportText } from "./text";
