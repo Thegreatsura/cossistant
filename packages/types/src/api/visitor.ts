@@ -367,6 +367,10 @@ export const publicVisitorResponseSchema = z.object({
     description: "Whether the visitor is currently blocked.",
     example: false,
   }),
+  language: z.string().nullable().openapi({
+    description: "The visitor's preferred language.",
+    example: "en-US",
+  }),
   contact: publicContactResponseSchema.nullable().openapi({
     description:
       "Contact information if the visitor has been identified via .identify().",

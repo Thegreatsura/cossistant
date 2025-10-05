@@ -189,6 +189,7 @@ websiteRouter.openapi(
           visitor: {
             id: visitor.id,
             isBlocked: Boolean(visitor.blockedAt),
+            language: visitor.language,
             contact: contact
               ? {
                   id: contact.id,
