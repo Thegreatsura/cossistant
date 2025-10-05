@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
 	actions,
 	onGoBack,
 }) => {
-	const { close } = useSupportConfig();
+	const { close, mode } = useSupportConfig();
 
 	return (
 		<div className={cn("absolute inset-x-0 top-0 z-10 h-18", className)}>
@@ -35,9 +35,11 @@ export const Header: React.FC<HeaderProps> = ({
 					{children}
 				</div>
 				{actions && <div className="flex items-center gap-2">{actions}</div>}
-				<Button onClick={close} size="icon" type="button" variant="ghost">
-					<Icon name="close" />
-				</Button>
+				{mode !== "responsive" && (
+					<Button onClick={close} size="icon" type="button" variant="ghost">
+						<Icon name="close" />
+					</Button>
+				)}
 			</div>
 		</div>
 	);
