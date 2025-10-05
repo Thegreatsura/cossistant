@@ -3,10 +3,10 @@
 import type React from "react";
 import { useRef } from "react";
 import * as Primitive from "../../primitives";
+import { useSupportText } from "../text";
 import { cn } from "../utils";
 import Icon from "./icons";
 import { Watermark } from "./watermark";
-import { useSupportText } from "../text";
 
 export type MultimodalInputProps = {
 	className?: string;
@@ -26,25 +26,25 @@ export type MultimodalInputProps = {
 };
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
-        className,
-        value,
-        onChange,
-        onSubmit,
-        onFileSelect,
-        placeholder,
-        disabled = false,
-        isSubmitting = false,
-        error,
-        files = [],
-        onRemoveFile,
+	className,
+	value,
+	onChange,
+	onSubmit,
+	onFileSelect,
+	placeholder,
+	disabled = false,
+	isSubmitting = false,
+	error,
+	files = [],
+	onRemoveFile,
 	maxFiles = 5,
 	maxFileSize = 10 * 1024 * 1024, // 10MB
-        allowedFileTypes = ["image/*", "application/pdf", "text/*"],
+	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
-        const fileInputRef = useRef<HTMLInputElement>(null);
-        const text = useSupportText();
-        const resolvedPlaceholder =
-                placeholder ?? text("component.multimodalInput.placeholder");
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const text = useSupportText();
+	const resolvedPlaceholder =
+		placeholder ?? text("component.multimodalInput.placeholder");
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -88,29 +88,26 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 			{/* File attachments */}
 			{files.length > 0 && (
 				<div className="flex flex-wrap gap-2 p-2">
-                                        {files.map((file, index) => (
-                                                <div
-                                                        className="flex items-center gap-2 rounded-md bg-co-muted px-2 py-1 text-xs"
-                                                        key={`${file.name}-${index}`}
-                                                >
-                                                        <Icon className="h-3 w-3" name="attachment" />
-                                                        <span className="max-w-[150px] truncate">{file.name}</span>
-                                                        <span className="text-co-muted-foreground">
-                                                                {formatFileSize(file.size)}
-                                                        </span>
-                                                        {onRemoveFile && (
-                                                                <button
-                                                                        aria-label={text(
-                                                                                "common.actions.removeFile",
-                                                                                {
-                                                                                        fileName: file.name,
-                                                                                },
-                                                                        )}
-                                                                        className="ml-1 hover:text-co-destructive"
-                                                                        onClick={() => onRemoveFile(index)}
-                                                                        type="button"
-                                                                >
-                                                                        <Icon className="h-3 w-3" name="close" />
+					{files.map((file, index) => (
+						<div
+							className="flex items-center gap-2 rounded-md bg-co-muted px-2 py-1 text-xs"
+							key={`${file.name}-${index}`}
+						>
+							<Icon className="h-3 w-3" name="attachment" />
+							<span className="max-w-[150px] truncate">{file.name}</span>
+							<span className="text-co-muted-foreground">
+								{formatFileSize(file.size)}
+							</span>
+							{onRemoveFile && (
+								<button
+									aria-label={text("common.actions.removeFile", {
+										fileName: file.name,
+									})}
+									className="ml-1 hover:text-co-destructive"
+									onClick={() => onRemoveFile(index)}
+									type="button"
+								>
+									<Icon className="h-3 w-3" name="close" />
 								</button>
 							)}
 						</div>
@@ -120,19 +117,19 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 			{/* Input area */}
 			<div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
-                                <Primitive.MultimodalInput
-                                        className={cn(
-                                                "flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
-                                                className
-                                        )}
-                                        disabled={disabled || isSubmitting}
-                                        error={error}
-                                        onChange={onChange}
-                                        onFileSelect={onFileSelect}
-                                        onSubmit={onSubmit}
-                                        placeholder={resolvedPlaceholder}
-                                        value={value}
-                                />
+				<Primitive.MultimodalInput
+					className={cn(
+						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
+						className
+					)}
+					disabled={disabled || isSubmitting}
+					error={error}
+					onChange={onChange}
+					onFileSelect={onFileSelect}
+					onSubmit={onSubmit}
+					placeholder={resolvedPlaceholder}
+					value={value}
+				/>
 
 				<div className="flex items-center justify-between py-1 pr-1 pl-3">
 					<Watermark />
@@ -141,15 +138,13 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 						{/* File attachment button */}
 						{onFileSelect && (
 							<>
-                                                                <button
-                                                                        aria-label={text(
-                                                                                "common.actions.attachFiles",
-                                                                        )}
-                                                                        className={cn(
-                                                                                "group flex h-8 w-8 items-center justify-center rounded-md text-co-muted-foreground hover:bg-co-muted hover:text-co-foreground disabled:cursor-not-allowed disabled:opacity-50",
-                                                                                files.length >= maxFiles && "opacity-50"
-                                                                        )}
-                                                                        disabled={
+								<button
+									aria-label={text("common.actions.attachFiles")}
+									className={cn(
+										"group flex h-8 w-8 items-center justify-center rounded-md text-co-muted-foreground hover:bg-co-muted hover:text-co-foreground disabled:cursor-not-allowed disabled:opacity-50",
+										files.length >= maxFiles && "opacity-50"
+									)}
+									disabled={
 										disabled || isSubmitting || files.length >= maxFiles
 									}
 									onClick={handleAttachClick}

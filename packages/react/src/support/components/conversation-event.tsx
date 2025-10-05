@@ -5,9 +5,9 @@ import type {
 } from "@cossistant/types";
 import { motion } from "motion/react";
 import type React from "react";
+import { useSupportText } from "../text";
 import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
-import { useSupportText } from "../text";
 
 export type ConversationEventProps = {
 	event: ConversationEventType;
@@ -16,80 +16,77 @@ export type ConversationEventProps = {
 };
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
-        event,
-        availableAIAgents,
-        availableHumanAgents,
+	event,
+	availableAIAgents,
+	availableHumanAgents,
 }) => {
-        const text = useSupportText();
-        const isAI = event.actorAiAgentId !== null;
-        const humanAgent = availableHumanAgents.find(
-                (agent) => agent.id === event.actorUserId
-        );
-        const aiAgent = availableAIAgents.find(
-                (agent) => agent.id === event.actorAiAgentId
-        );
+	const text = useSupportText();
+	const isAI = event.actorAiAgentId !== null;
+	const humanAgent = availableHumanAgents.find(
+		(agent) => agent.id === event.actorUserId
+	);
+	const aiAgent = availableAIAgents.find(
+		(agent) => agent.id === event.actorAiAgentId
+	);
 
-        // Get the actor name
-        const actorName = isAI
-                ? aiAgent?.name || text("common.fallbacks.cossistant")
-                : humanAgent?.name || text("common.fallbacks.someone");
+	// Get the actor name
+	const actorName = isAI
+		? aiAgent?.name || text("common.fallbacks.cossistant")
+		: humanAgent?.name || text("common.fallbacks.someone");
 
-        // Convert event type to plain English
-        const getEventText = () => {
-                switch (event.type) {
-                        case "assigned":
-                                return text("component.conversationEvent.assigned", {
-                                        actorName,
-                                });
-                        case "unassigned":
-                                return text("component.conversationEvent.unassigned", {
-                                        actorName,
-                                });
-                        case "participant_requested":
-                                return text(
-                                        "component.conversationEvent.participantRequested",
-                                        { actorName },
-                                );
-                        case "participant_joined":
-                                return text(
-                                        "component.conversationEvent.participantJoined",
-                                        { actorName },
-                                );
-                        case "participant_left":
-                                return text(
-                                        "component.conversationEvent.participantLeft",
-                                        { actorName },
-                                );
-                        case "status_changed":
-                                return text("component.conversationEvent.statusChanged", {
-                                        actorName,
-                                });
-                        case "priority_changed":
-                                return text("component.conversationEvent.priorityChanged", {
-                                        actorName,
-                                });
-                        case "tag_added":
-                                return text("component.conversationEvent.tagAdded", {
-                                        actorName,
-                                });
-                        case "tag_removed":
-                                return text("component.conversationEvent.tagRemoved", {
-                                        actorName,
-                                });
-                        case "resolved":
-                                return text("component.conversationEvent.resolved", {
-                                        actorName,
-                                });
-                        case "reopened":
-                                return text("component.conversationEvent.reopened", {
-                                        actorName,
-                                });
-                        default:
-                                return text("component.conversationEvent.default", {
-                                        actorName,
-                                });
-                }
-        };
+	// Convert event type to plain English
+	const getEventText = () => {
+		switch (event.type) {
+			case "assigned":
+				return text("component.conversationEvent.assigned", {
+					actorName,
+				});
+			case "unassigned":
+				return text("component.conversationEvent.unassigned", {
+					actorName,
+				});
+			case "participant_requested":
+				return text("component.conversationEvent.participantRequested", {
+					actorName,
+				});
+			case "participant_joined":
+				return text("component.conversationEvent.participantJoined", {
+					actorName,
+				});
+			case "participant_left":
+				return text("component.conversationEvent.participantLeft", {
+					actorName,
+				});
+			case "status_changed":
+				return text("component.conversationEvent.statusChanged", {
+					actorName,
+				});
+			case "priority_changed":
+				return text("component.conversationEvent.priorityChanged", {
+					actorName,
+				});
+			case "tag_added":
+				return text("component.conversationEvent.tagAdded", {
+					actorName,
+				});
+			case "tag_removed":
+				return text("component.conversationEvent.tagRemoved", {
+					actorName,
+				});
+			case "resolved":
+				return text("component.conversationEvent.resolved", {
+					actorName,
+				});
+			case "reopened":
+				return text("component.conversationEvent.reopened", {
+					actorName,
+				});
+			default:
+				return text("component.conversationEvent.default", {
+					actorName,
+				});
+		}
+	};
 
 	return (
 		<motion.div
@@ -104,16 +101,13 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 						<div className="flex size-5 items-center justify-center rounded-full bg-primary/10">
 							<CossistantLogo className="h-3 w-3 text-primary" />
 						</div>
-                                        ) : (
-                                                <Avatar
-                                                        className="size-5 flex-shrink-0 overflow-clip rounded-full"
-                                                        image={humanAgent?.image}
-                                                        name={
-                                                                humanAgent?.name ||
-                                                                text("common.fallbacks.someone")
-                                                        }
-                                                />
-                                        )}
+					) : (
+						<Avatar
+							className="size-5 flex-shrink-0 overflow-clip rounded-full"
+							image={humanAgent?.image}
+							name={humanAgent?.name || text("common.fallbacks.someone")}
+						/>
+					)}
 				</div>
 				<span className="px-2">{getEventText()}</span>
 				{event.createdAt && (

@@ -5,8 +5,8 @@ import {
 	MessageTimestamp,
 	Message as PrimitiveMessage,
 } from "../../primitives/message";
-import { cn } from "../utils";
 import { useSupportText } from "../text";
+import { cn } from "../utils";
 
 export type MessageProps = {
 	message: MessageType;
@@ -15,13 +15,13 @@ export type MessageProps = {
 };
 
 export function Message({
-        message,
-        isLast = false,
-        isSentByViewer,
+	message,
+	isLast = false,
+	isSentByViewer,
 }: MessageProps) {
-        const text = useSupportText();
-        return (
-                <PrimitiveMessage message={message}>
+	const text = useSupportText();
+	return (
+		<PrimitiveMessage message={message}>
 			{({ isVisitor, isAI, timestamp }) => {
 				// Use passed isSentByViewer if provided, otherwise fall back to isVisitor
 				const isSentByViewerFinal = isSentByViewer ?? isVisitor;
@@ -54,22 +54,23 @@ export function Message({
 								)}
 								renderMarkdown
 							/>
-                                                        {isLast && (
-                                                                <MessageTimestamp
-                                                                        className="px-1 text-muted-foreground text-xs"
-                                                                        timestamp={timestamp}
-                                                                >
-                                                                        {() => (
-                                                                                <>
-                                                                                        {timestamp.toLocaleTimeString([], {
-                                                                                                hour: "2-digit",
-                                                                                                minute: "2-digit",
-                                                                                        })}
-                                                                                        {isAI && ` ${text("component.message.timestamp.aiIndicator")}`}
-                                                                                </>
-                                                                        )}
-                                                                </MessageTimestamp>
-                                                        )}
+							{isLast && (
+								<MessageTimestamp
+									className="px-1 text-muted-foreground text-xs"
+									timestamp={timestamp}
+								>
+									{() => (
+										<>
+											{timestamp.toLocaleTimeString([], {
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+											{isAI &&
+												` ${text("component.message.timestamp.aiIndicator")}`}
+										</>
+									)}
+								</MessageTimestamp>
+							)}
 						</div>
 					</div>
 				);
