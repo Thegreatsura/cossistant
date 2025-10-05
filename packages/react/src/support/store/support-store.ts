@@ -106,10 +106,29 @@ export const initializeSupportStore = (props: {
         defaultOpen?: boolean;
 }) => {
         store.updateConfig({
-                mode: props.mode ?? "floating",
-                size: props.size ?? "normal",
-                isOpen: props.defaultOpen ?? false,
-        });
+export const initializeSupportStore = (props: {
+        mode?: SupportConfig["mode"];
+        size?: SupportConfig["size"];
+        defaultOpen?: boolean;
+}) => {
+        const patch: Partial<SupportConfig> = {};
+
+        if (props.mode !== undefined) {
+                patch.mode = props.mode;
+        }
+
+        if (props.size !== undefined) {
+                patch.size = props.size;
+        }
+
+        if (props.defaultOpen !== undefined) {
+                patch.isOpen = props.defaultOpen;
+        }
+
+        if (Object.keys(patch).length > 0) {
+                store.updateConfig(patch);
+        }
+};
 };
 
 export type { NavigationState, SupportConfig, SupportNavigation };
