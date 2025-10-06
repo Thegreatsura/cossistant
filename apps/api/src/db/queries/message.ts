@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: ok here */
 import { DEFAULT_PAGE_LIMIT } from "@api/constants";
 import type { Database } from "@api/db";
 import { message } from "@api/db/schema";
@@ -96,87 +97,82 @@ export async function getMessages(
 }
 
 export async function getConversationMessages(
-        db: Database,
-        params: {
-                conversationId: string;
-                websiteId: string;
-                limit?: number;
-                cursor?: string | Date | null;
-        }
+	db: Database,
+	params: {
+		conversationId: string;
+		websiteId: string;
+		limit?: number;
+		cursor?: string | Date | null;
+	}
 ) {
-        const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
+	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
-        // Build where clause (scoped to website for safety)
-        const whereConditions = [
-                eq(message.conversationId, params.conversationId),
-                eq(message.websiteId, params.websiteId),
-        ];
+	// Build where clause (scoped to website for safety)
+	const whereConditions = [
+		eq(message.conversationId, params.conversationId),
+		eq(message.websiteId, params.websiteId),
+	];
 
-        // When paginating we want to fetch messages older than the current window,
-        // hence the cursor acts as an upper bound (exclusive) on createdAt.
-        if (params.cursor) {
-                const cursorValue = params.cursor;
-                const cursorParts =
-                        typeof cursorValue === "string" ? cursorValue.split("_") : [];
+	// When paginating we want to fetch messages older than the current window,
+	// hence the cursor acts as an upper bound (exclusive) on createdAt.
+	if (params.cursor) {
+		const cursorValue = params.cursor;
+		const cursorParts =
+			typeof cursorValue === "string" ? cursorValue.split("_") : [];
 
-                if (cursorParts.length === 2) {
-                        const [cursorTimestamp, cursorId] = cursorParts;
-                        const cursorDate = new Date(cursorTimestamp);
+		if (cursorParts.length === 2) {
+			const [cursorTimestamp, cursorId] = cursorParts;
+			const cursorDate = new Date(cursorTimestamp);
 
-                        if (!Number.isNaN(cursorDate.getTime())) {
-                                const cursorIso = cursorDate.toISOString();
-                                whereConditions.push(
-                                        or(
-                                                lt(message.createdAt, cursorIso),
-                                                and(
-                                                        eq(message.createdAt, cursorIso),
-                                                        lt(message.id, cursorId)
-                                                )
-                                        )
-                                );
-                        }
-                } else {
-                        const cursorDate =
-                                cursorValue instanceof Date
-                                        ? cursorValue
-                                        : new Date(cursorValue as string);
+			if (!Number.isNaN(cursorDate.getTime())) {
+				const cursorIso = cursorDate.toISOString();
+				whereConditions.push(
+					or(
+						lt(message.createdAt, cursorIso),
+						and(eq(message.createdAt, cursorIso), lt(message.id, cursorId))
+					)!
+				);
+			}
+		} else {
+			const cursorDate =
+				cursorValue instanceof Date
+					? cursorValue
+					: new Date(cursorValue as string);
 
-                        if (!Number.isNaN(cursorDate.getTime())) {
-                                whereConditions.push(
-                                        lt(message.createdAt, cursorDate.toISOString())
-                                );
-                        }
-                }
-        }
+			if (!Number.isNaN(cursorDate.getTime())) {
+				whereConditions.push(lt(message.createdAt, cursorDate.toISOString()));
+			}
+		}
+	}
 
-        // Fetch newest messages first so we can efficiently page backwards.
-        const rows = await db
-                .select()
-                .from(message)
-                .where(and(...whereConditions))
-                .orderBy(desc(message.createdAt), desc(message.id))
-                .limit(limit + 1);
+	// Fetch newest messages first so we can efficiently page backwards.
+	const rows = await db
+		.select()
+		.from(message)
+		.where(and(...whereConditions))
+		.orderBy(desc(message.createdAt), desc(message.id))
+		.limit(limit + 1);
 
-        const hasNextPage = rows.length > limit;
-        const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
-        const nextCursor = hasNextPage
-                ? (() => {
-                                const lastRow = limitedRows[limitedRows.length - 1];
-                                if (!lastRow) {
-                                        return null;
-                                }
+	const hasNextPage = rows.length > limit;
+	const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
+	const nextCursor = hasNextPage
+		? (() => {
+				const lastRow = limitedRows.at(-1);
+				if (!lastRow) {
+					return null;
+				}
 
-                                const timestamp = new Date(lastRow.createdAt).toISOString();
-                                return `${timestamp}_${lastRow.id}`;
-                        })()
-                : null;
+				const timestamp = new Date(lastRow.createdAt).toISOString();
+				return `${timestamp}_${lastRow.id}`;
+			})()
+		: null;
 
-        // Return messages in chronological order for consumers.
-        const messages = [...limitedRows].reverse();
+	// Return messages in chronological order for consumers.
+	const messages = [...limitedRows].reverse();
 
-        return {
-                messages,
-                nextCursor,
-                hasNextPage,
-        };
+	return {
+		messages,
+		nextCursor,
+		hasNextPage,
+	};
 }

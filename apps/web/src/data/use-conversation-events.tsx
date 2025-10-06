@@ -45,20 +45,19 @@ export function useConversationEvents({
 
 			return response;
 		},
-                getNextPageParam: (lastPage) => lastPage.nextCursor,
-                initialPageParam: null as string | null,
+		getNextPageParam: (lastPage) => lastPage.nextCursor,
+		initialPageParam: null as string | null,
 		enabled: options?.enabled ?? true,
 		staleTime: STALE_TIME,
 	});
 
-        const events =
-                query.data?.pages
-                        .flatMap((page) => page.items)
-                        .sort(
-                                (a, b) =>
-                                        new Date(a.createdAt).getTime() -
-                                        new Date(b.createdAt).getTime()
-                        ) ?? [];
+	const events =
+		query.data?.pages
+			.flatMap((page) => page.items)
+			.sort(
+				(a, b) =>
+					new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+			) ?? [];
 
 	return {
 		events,

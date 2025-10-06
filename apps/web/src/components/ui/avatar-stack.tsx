@@ -1,8 +1,9 @@
+import { AvatarStackItem } from "@cossistant/react/support/components/avatar-stack";
+import { useRenderElement } from "@cossistant/react/utils/use-render-element";
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
-import { useRenderElement } from "../../utils/use-render-element";
-import { cn } from "../utils";
+import { cn } from "@/lib/utils";
 import { Avatar } from "./avatar";
-import { CossistantLogo } from "./cossistant-branding";
+import { Logo } from "./logo";
 
 type AvatarStackProps = {
   humanAgents: AvailableHumanAgent[];
@@ -16,54 +17,6 @@ type AvatarStackProps = {
   spacing?: number;
   /** Gap width between avatars (default: 2px) */
   gapWidth?: number;
-};
-
-export const AvatarStackItem = ({
-  children,
-  index,
-  size = 44,
-  spacing = 28,
-  gapWidth = 2,
-  className,
-}: {
-  children: React.ReactNode;
-  index: number;
-  size?: number;
-  spacing?: number;
-  gapWidth?: number;
-  className?: string;
-}) => {
-  const isFirst = index === 0;
-
-  // Calculate the circle radius for the mask cutout
-  const circleRadius = size * 0.5;
-  const cutoutRadius = circleRadius + gapWidth; // Add gap width to create visible border
-  const cutoutPosition = `${circleRadius - spacing}px`;
-
-  return useRenderElement(
-    "div",
-    { className },
-    {
-      props: {
-        className: cn(
-          "relative grid place-items-center",
-          !isFirst && "[mask-repeat:no-repeat] [mask-size:100%_100%]"
-        ),
-        style: {
-          width: `${size}px`,
-          height: `${size}px`,
-          // Apply mask only to non-first items
-          ...(isFirst
-            ? {}
-            : {
-                mask: `radial-gradient(${cutoutRadius}px ${cutoutRadius}px at ${cutoutPosition} 50%, transparent ${cutoutRadius}px, white ${cutoutRadius}px)`,
-                WebkitMask: `radial-gradient(${cutoutRadius}px ${cutoutRadius}px at ${cutoutPosition} 50%, transparent ${cutoutRadius}px, white ${cutoutRadius}px)`,
-              }),
-        },
-        children,
-      },
-    }
-  );
 };
 
 export function AvatarStack({
@@ -123,8 +76,9 @@ export function AvatarStack({
             {item.type === "human" && (
               <Avatar
                 className={cn("size-full")}
-                image={item.agent.image}
-                name={item.agent.name}
+                fallbackName={item.agent.name}
+                lastOnlineAt={item.agent.lastSeenAt}
+                url={item.agent.image}
               />
             )}
             {item.type === "count" && (
@@ -134,7 +88,7 @@ export function AvatarStack({
             )}
             {item.type === "ai" && (
               <div className="flex size-full items-center justify-center rounded-full bg-co-background-200 dark:bg-co-background-600">
-                <CossistantLogo className="h-[50%] min-h-4 w-[50%] min-w-4" />
+                <Logo className="h-[50%] min-h-4 w-[50%] min-w-4" />
               </div>
             )}
           </AvatarStackItem>

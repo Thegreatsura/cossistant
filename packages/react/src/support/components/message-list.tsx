@@ -144,14 +144,16 @@ export const MessageList: React.FC<MessageListProps> = ({
             );
           })}
         </AnimatePresence>
-        {typingParticipants.length > 0 ? (
-          <TypingIndicator
-            availableAIAgents={availableAIAgents}
-            availableHumanAgents={availableHumanAgents}
-            className="mt-2"
-            participants={typingParticipants}
-          />
-        ) : null}
+        <div className="h-6 w-full">
+          {typingParticipants.length > 0 ? (
+            <TypingIndicator
+              availableAIAgents={availableAIAgents}
+              availableHumanAgents={availableHumanAgents}
+              className="mt-2"
+              participants={typingParticipants}
+            />
+          ) : null}
+        </div>
       </MessageListContainer>
     </PrimitiveMessageList>
   );
