@@ -89,16 +89,30 @@ describe("messages store", () => {
 		expect(conversation?.messages[0]).toEqual(message);
 	});
 
-	it("removes messages by id", () => {
-		const store = createMessagesStore();
-		const message = createMockMessage();
+        it("removes messages by id", () => {
+                const store = createMessagesStore();
+                const message = createMockMessage();
 
-		store.ingestMessage(message);
-		store.removeMessage(message.conversationId, message.id);
+                store.ingestMessage(message);
+                store.removeMessage(message.conversationId, message.id);
 
-		const conversation = store.getState().conversations[message.conversationId];
-		expect(conversation?.messages).toHaveLength(0);
-	});
+                const conversation = store.getState().conversations[message.conversationId];
+                expect(conversation?.messages).toHaveLength(0);
+        });
+
+        it("clears a conversation thread", () => {
+                const store = createMessagesStore();
+                const message = createMockMessage();
+
+                store.ingestMessage(message);
+                expect(store.getState().conversations[message.conversationId]).toBeDefined();
+
+                store.clearConversation(message.conversationId);
+
+                expect(
+                        store.getState().conversations[message.conversationId]
+                ).toBeUndefined();
+        });
 
 	it("finalizes optimistic messages by replacing them", () => {
 		const store = createMessagesStore();

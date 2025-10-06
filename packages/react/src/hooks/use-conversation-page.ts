@@ -1,5 +1,5 @@
 import type { ConversationEvent, Message } from "@cossistant/types";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useSupport } from "../provider";
 import { useDefaultMessages } from "./private/use-default-messages";
 import { useConversationAutoSeen } from "./use-conversation-auto-seen";
@@ -8,17 +8,22 @@ import { useConversationMessages } from "./use-conversation-messages";
 import { useMessageComposer } from "./use-message-composer";
 
 export type UseConversationPageOptions = {
-	/**
-	 * Initial conversation ID (from URL params, navigation state, etc.)
-	 * Can be PENDING_CONVERSATION_ID or a real ID.
-	 */
-	conversationId: string;
+        /**
+         * Initial conversation ID (from URL params, navigation state, etc.)
+         * Can be PENDING_CONVERSATION_ID or a real ID.
+         */
+        conversationId: string;
 
-	/**
-	 * Callback when conversation ID changes (e.g., after creation).
-	 * Use this to update navigation state or URL.
-	 */
-	onConversationIdChange?: (conversationId: string) => void;
+        /**
+         * Optional initial message to send when the conversation opens.
+         */
+        initialMessage?: string;
+
+        /**
+         * Callback when conversation ID changes (e.g., after creation).
+         * Use this to update navigation state or URL.
+         */
+        onConversationIdChange?: (conversationId: string) => void;
 
 	/**
 	 * Optional messages to pass through (e.g., optimistic updates).
@@ -96,14 +101,18 @@ export type UseConversationPageReturn = {
 export function useConversationPage(
 	options: UseConversationPageOptions
 ): UseConversationPageReturn {
-	const {
-		conversationId: initialConversationId,
-		onConversationIdChange,
-		messages: passedMessages = [],
-		events: passedEvents = [],
-	} = options;
+        const {
+                conversationId: initialConversationId,
+                initialMessage,
+                onConversationIdChange,
+                messages: passedMessages = [],
+                events: passedEvents = [],
+        } = options;
 
-	const { client, visitor } = useSupport();
+        const { client, visitor } = useSupport();
+
+        const trimmedInitialMessage = initialMessage?.trim() ?? "";
+        const hasInitialMessage = trimmedInitialMessage.length > 0;
 
 	// 1. Manage conversation lifecycle (pending vs real)
 	const lifecycle = useConversationLifecycle({
@@ -112,9 +121,13 @@ export function useConversationPage(
 	});
 
 	// 2. Get default messages for pending state
-	const defaultMessages = useDefaultMessages({
-		conversationId: lifecycle.conversationId,
-	});
+        const defaultMessages = useDefaultMessages({
+                conversationId: lifecycle.conversationId,
+        });
+
+        const effectiveDefaultMessages = hasInitialMessage
+                ? []
+                : defaultMessages;
 
 	// 3. Fetch messages from backend if real conversation exists
 	const messagesQuery = useConversationMessages(lifecycle.conversationId, {
@@ -134,18 +147,18 @@ export function useConversationPage(
 		}
 
 		// If pending, show default/welcome messages
-		if (lifecycle.isPending) {
-			return defaultMessages;
-		}
+                if (lifecycle.isPending) {
+                        return effectiveDefaultMessages;
+                }
 
-		// Fallback to empty
-		return [];
-	}, [
-		messagesQuery.messages,
-		lifecycle.isPending,
-		passedMessages,
-		defaultMessages,
-	]);
+                // Fallback to empty
+                return [];
+        }, [
+                messagesQuery.messages,
+                lifecycle.isPending,
+                passedMessages,
+                effectiveDefaultMessages,
+        ]);
 
 	const lastMessage = useMemo(
 		() => displayMessages.at(-1) ?? null,
@@ -153,18 +166,56 @@ export function useConversationPage(
 	);
 
 	// 5. Set up message composer
-	const composer = useMessageComposer({
-		client,
-		conversationId: lifecycle.realConversationId,
-		defaultMessages,
-		visitorId: visitor?.id,
-		onMessageSent: (newConversationId) => {
-			// Transition from pending to real conversation
-			if (lifecycle.isPending) {
-				lifecycle.setConversationId(newConversationId);
+        const composer = useMessageComposer({
+                client,
+                conversationId: lifecycle.realConversationId,
+                defaultMessages: effectiveDefaultMessages,
+                visitorId: visitor?.id,
+                onMessageSent: (newConversationId) => {
+                        // Transition from pending to real conversation
+                        if (lifecycle.isPending) {
+                                lifecycle.setConversationId(newConversationId);
 			}
 		},
-	});
+        });
+
+        const initialMessageSubmittedRef = useRef(false);
+
+        useEffect(() => {
+                if (!hasInitialMessage) {
+                        initialMessageSubmittedRef.current = false;
+                        return;
+                }
+
+                if (!lifecycle.isPending) {
+                        return;
+                }
+
+                if (composer.message !== trimmedInitialMessage) {
+                        composer.setMessage(trimmedInitialMessage);
+                        return;
+                }
+
+                if (
+                        initialMessageSubmittedRef.current ||
+                        composer.isSubmitting ||
+                        !composer.canSubmit
+                ) {
+                        return;
+                }
+
+                initialMessageSubmittedRef.current = true;
+                composer.submit();
+        }, [
+                hasInitialMessage,
+                lifecycle.isPending,
+                composer.message,
+                composer.setMessage,
+                composer.isSubmitting,
+                composer.canSubmit,
+                composer.submit,
+                trimmedInitialMessage,
+        ]);
 
 	// 6. Auto-mark messages as seen
 	useConversationAutoSeen({

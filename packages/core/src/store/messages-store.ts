@@ -186,19 +186,20 @@ function normalizeRealtimeMessage(event: MessageCreatedEvent): Message {
 }
 
 export type MessagesStore = Store<MessagesState> & {
-	ingestPage(conversationId: string, page: ConversationMessagesState): void;
-	ingestMessage(message: Message): void;
-	ingestRealtime(event: MessageCreatedEvent): Message;
-	removeMessage(conversationId: string, messageId: string): void;
-	finalizeMessage(
-		conversationId: string,
-		optimisticId: string,
-		message: Message
-	): void;
+        ingestPage(conversationId: string, page: ConversationMessagesState): void;
+        ingestMessage(message: Message): void;
+        ingestRealtime(event: MessageCreatedEvent): Message;
+        removeMessage(conversationId: string, messageId: string): void;
+        finalizeMessage(
+                conversationId: string,
+                optimisticId: string,
+                message: Message
+        ): void;
+        clearConversation(conversationId: string): void;
 };
 
 export function createMessagesStore(
-	initialState: MessagesState = INITIAL_STATE
+        initialState: MessagesState = INITIAL_STATE
 ): MessagesStore {
 	const store = createStore<MessagesState>(initialState);
 
@@ -215,17 +216,32 @@ export function createMessagesStore(
 			store.setState((state) => applyMessage(state, message));
 			return message;
 		},
-		removeMessage(conversationId, messageId) {
-			store.setState((state) =>
-				removeMessage(state, conversationId, messageId)
-			);
-		},
-		finalizeMessage(conversationId, optimisticId, message) {
-			store.setState((state) =>
-				finalizeMessage(state, conversationId, optimisticId, message)
-			);
-		},
-	};
+                removeMessage(conversationId, messageId) {
+                        store.setState((state) =>
+                                removeMessage(state, conversationId, messageId)
+                        );
+                },
+                finalizeMessage(conversationId, optimisticId, message) {
+                        store.setState((state) =>
+                                finalizeMessage(state, conversationId, optimisticId, message)
+                        );
+                },
+                clearConversation(conversationId) {
+                        store.setState((state) => {
+                                if (!state.conversations[conversationId]) {
+                                        return state;
+                                }
+
+                                const { [conversationId]: _removed, ...rest } =
+                                        state.conversations;
+
+                                return {
+                                        ...state,
+                                        conversations: rest,
+                                } satisfies MessagesState;
+                        });
+                },
+        };
 }
 
 export function getConversationMessages(
