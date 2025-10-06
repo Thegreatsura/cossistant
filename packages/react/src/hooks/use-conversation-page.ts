@@ -179,44 +179,50 @@ export function useConversationPage(
 		},
         });
 
-        const initialMessageSubmittedRef = useRef(false);
+const initialMessageSubmittedRef = useRef(false);
+const lastInitialMessageRef = useRef<string | null>(null);
 
-        useEffect(() => {
-                if (!hasInitialMessage) {
-                        initialMessageSubmittedRef.current = false;
-                        return;
-                }
+useEffect(() => {
+    if (!hasInitialMessage) {
+        initialMessageSubmittedRef.current = false;
+        lastInitialMessageRef.current = null;
+        return;
+    }
 
-                if (!lifecycle.isPending) {
-                        return;
-                }
+    if (lastInitialMessageRef.current !== trimmedInitialMessage) {
+        initialMessageSubmittedRef.current = false;
+        lastInitialMessageRef.current = trimmedInitialMessage;
+    }
 
-                if (composer.message !== trimmedInitialMessage) {
-                        composer.setMessage(trimmedInitialMessage);
-                        return;
-                }
+    if (!lifecycle.isPending) {
+        return;
+    }
 
-                if (
-                        initialMessageSubmittedRef.current ||
-                        composer.isSubmitting ||
-                        !composer.canSubmit
-                ) {
-                        return;
-                }
+    if (composer.message !== trimmedInitialMessage) {
+        composer.setMessage(trimmedInitialMessage);
+        return;
+    }
 
-                initialMessageSubmittedRef.current = true;
-                composer.submit();
-        }, [
-                hasInitialMessage,
-                lifecycle.isPending,
-                composer.message,
-                composer.setMessage,
-                composer.isSubmitting,
-                composer.canSubmit,
-                composer.submit,
-                trimmedInitialMessage,
-        ]);
+    if (
+        initialMessageSubmittedRef.current ||
+        composer.isSubmitting ||
+        !composer.canSubmit
+    ) {
+        return;
+    }
 
+    initialMessageSubmittedRef.current = true;
+    composer.submit();
+}, [
+    hasInitialMessage,
+    lifecycle.isPending,
+    composer.message,
+    composer.setMessage,
+    composer.isSubmitting,
+    composer.canSubmit,
+    composer.submit,
+    trimmedInitialMessage,
+]);
 	// 6. Auto-mark messages as seen
 	useConversationAutoSeen({
 		client,
