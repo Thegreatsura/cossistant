@@ -510,14 +510,14 @@ export async function getConversationById(
 
 export async function getConversationEvents(
 	db: Database,
-	params: {
-		conversationId: string;
-		websiteId: string;
-		limit?: number;
-		cursor?: Date | null;
-	}
+        params: {
+                conversationId: string;
+                websiteId: string;
+                limit?: number;
+                cursor?: string | Date | null;
+        }
 ) {
-	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
+        const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
         // Build where clause scoped to the conversation
         const whereConditions = [
@@ -526,9 +526,44 @@ export async function getConversationEvents(
 
         // When paginating fetch events older than the current batch.
         if (params.cursor) {
-                whereConditions.push(
-                        lt(conversationEvent.createdAt, new Date(params.cursor).toISOString())
-                );
+                const cursorValue = params.cursor;
+                const cursorParts =
+                        typeof cursorValue === "string" ? cursorValue.split("_") : [];
+
+                if (cursorParts.length === 2) {
+                        const [cursorTimestamp, cursorId] = cursorParts;
+                        const cursorDate = new Date(cursorTimestamp);
+
+                        if (!Number.isNaN(cursorDate.getTime())) {
+                                const cursorIso = cursorDate.toISOString();
+                                whereConditions.push(
+                                        or(
+                                                lt(conversationEvent.createdAt, cursorIso),
+                                                and(
+                                                        eq(
+                                                                conversationEvent.createdAt,
+                                                                cursorIso
+                                                        ),
+                                                        lt(conversationEvent.id, cursorId)
+                                                )
+                                        )
+                                );
+                        }
+                } else {
+                        const cursorDate =
+                                cursorValue instanceof Date
+                                        ? cursorValue
+                                        : new Date(cursorValue as string);
+
+                        if (!Number.isNaN(cursorDate.getTime())) {
+                                whereConditions.push(
+                                        lt(
+                                                conversationEvent.createdAt,
+                                                cursorDate.toISOString()
+                                        )
+                                );
+                        }
+                }
         }
 
         // Fetch newest events first for efficient backwards pagination.
@@ -536,13 +571,21 @@ export async function getConversationEvents(
                 .select()
                 .from(conversationEvent)
                 .where(and(...whereConditions))
-                .orderBy(desc(conversationEvent.createdAt))
+                .orderBy(desc(conversationEvent.createdAt), desc(conversationEvent.id))
                 .limit(limit + 1);
 
         const hasNextPage = rows.length > limit;
         const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
         const nextCursor = hasNextPage
-                ? limitedRows[limitedRows.length - 1]?.createdAt ?? null
+                ? (() => {
+                                const lastRow = limitedRows[limitedRows.length - 1];
+                                if (!lastRow) {
+                                        return null;
+                                }
+
+                                const timestamp = new Date(lastRow.createdAt).toISOString();
+                                return `${timestamp}_${lastRow.id}`;
+                        })()
                 : null;
 
         return {

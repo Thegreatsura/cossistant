@@ -82,22 +82,22 @@ export const conversationRouter = createTRPCRouter({
 			};
 		}),
 
-	getConversationMessages: protectedProcedure
-		.input(
-			z.object({
-				conversationId: z.string(),
-				websiteSlug: z.string(),
-				limit: z.number().int().min(1).max(100).optional().default(50),
-				cursor: z.date().nullable().optional(),
-			})
-		)
-		.output(
-			z.object({
-				items: z.array(messageSchema),
-				nextCursor: z.date().nullable(),
-				hasNextPage: z.boolean(),
-			})
-		)
+        getConversationMessages: protectedProcedure
+                .input(
+                        z.object({
+                                conversationId: z.string(),
+                                websiteSlug: z.string(),
+                                limit: z.number().int().min(1).max(100).optional().default(50),
+                                cursor: z.union([z.string(), z.date()]).nullable().optional(),
+                        })
+                )
+                .output(
+                        z.object({
+                                items: z.array(messageSchema),
+                                nextCursor: z.string().nullable(),
+                                hasNextPage: z.boolean(),
+                        })
+                )
 		.query(async ({ ctx: { db, user }, input }) => {
 			// Query website access and conversation in parallel
 			const [websiteData, conversation] = await Promise.all([
@@ -132,29 +132,29 @@ export const conversationRouter = createTRPCRouter({
 				cursor: input.cursor,
 			});
 
-			return {
-				items: result.messages,
-				nextCursor: result.nextCursor ? new Date(result.nextCursor) : null,
-				hasNextPage: result.hasNextPage,
-			};
-		}),
+                        return {
+                                items: result.messages,
+                                nextCursor: result.nextCursor,
+                                hasNextPage: result.hasNextPage,
+                        };
+                }),
 
-	getConversationEvents: protectedProcedure
-		.input(
-			z.object({
-				conversationId: z.string(),
-				websiteSlug: z.string(),
-				limit: z.number().int().min(1).max(100).optional().default(50),
-				cursor: z.date().nullable().optional(),
-			})
-		)
-		.output(
-			z.object({
-				items: z.array(conversationEventSchema),
-				nextCursor: z.date().nullable(),
-				hasNextPage: z.boolean(),
-			})
-		)
+        getConversationEvents: protectedProcedure
+                .input(
+                        z.object({
+                                conversationId: z.string(),
+                                websiteSlug: z.string(),
+                                limit: z.number().int().min(1).max(100).optional().default(50),
+                                cursor: z.union([z.string(), z.date()]).nullable().optional(),
+                        })
+                )
+                .output(
+                        z.object({
+                                items: z.array(conversationEventSchema),
+                                nextCursor: z.string().nullable(),
+                                hasNextPage: z.boolean(),
+                        })
+                )
 		.query(async ({ ctx: { db, user }, input }) => {
 			// Query website access and conversation in parallel
 			const [websiteData, conversation] = await Promise.all([
@@ -189,18 +189,18 @@ export const conversationRouter = createTRPCRouter({
 				cursor: input.cursor,
 			});
 
-			return {
-				items: result.events.map((event) => ({
-					...event,
-					metadata: event.metadata as Record<string, unknown>,
-					updatedAt: event.createdAt,
-					deletedAt: null,
-					message: event.message ?? undefined,
-				})),
-				nextCursor: result.nextCursor ? new Date(result.nextCursor) : null,
-				hasNextPage: result.hasNextPage,
-			};
-		}),
+                        return {
+                                items: result.events.map((event) => ({
+                                        ...event,
+                                        metadata: event.metadata as Record<string, unknown>,
+                                        updatedAt: event.createdAt,
+                                        deletedAt: null,
+                                        message: event.message ?? undefined,
+                                })),
+                                nextCursor: result.nextCursor,
+                                hasNextPage: result.hasNextPage,
+                        };
+                }),
 
 	sendMessage: protectedProcedure
 		.input(

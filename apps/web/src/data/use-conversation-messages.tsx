@@ -47,8 +47,8 @@ export function useConversationMessages({
 
 			return response;
 		},
-		getNextPageParam: (lastPage) => lastPage.nextCursor,
-		initialPageParam: null as Date | null,
+                getNextPageParam: (lastPage) => lastPage.nextCursor,
+                initialPageParam: null as string | null,
 		enabled: options?.enabled ?? true,
 		staleTime: STALE_TIME,
 	});

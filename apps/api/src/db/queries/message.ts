@@ -3,7 +3,7 @@ import type { Database } from "@api/db";
 import { message } from "@api/db/schema";
 import { generateULID } from "@api/utils/db/ids";
 import type { CreateMessageSchema } from "@cossistant/types";
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 
 export async function sendMessages(
 	db: Database,
@@ -101,7 +101,7 @@ export async function getConversationMessages(
                 conversationId: string;
                 websiteId: string;
                 limit?: number;
-                cursor?: Date | null;
+                cursor?: string | Date | null;
         }
 ) {
         const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
@@ -115,9 +115,38 @@ export async function getConversationMessages(
         // When paginating we want to fetch messages older than the current window,
         // hence the cursor acts as an upper bound (exclusive) on createdAt.
         if (params.cursor) {
-                whereConditions.push(
-                        lt(message.createdAt, params.cursor.toISOString())
-                );
+                const cursorValue = params.cursor;
+                const cursorParts =
+                        typeof cursorValue === "string" ? cursorValue.split("_") : [];
+
+                if (cursorParts.length === 2) {
+                        const [cursorTimestamp, cursorId] = cursorParts;
+                        const cursorDate = new Date(cursorTimestamp);
+
+                        if (!Number.isNaN(cursorDate.getTime())) {
+                                const cursorIso = cursorDate.toISOString();
+                                whereConditions.push(
+                                        or(
+                                                lt(message.createdAt, cursorIso),
+                                                and(
+                                                        eq(message.createdAt, cursorIso),
+                                                        lt(message.id, cursorId)
+                                                )
+                                        )
+                                );
+                        }
+                } else {
+                        const cursorDate =
+                                cursorValue instanceof Date
+                                        ? cursorValue
+                                        : new Date(cursorValue as string);
+
+                        if (!Number.isNaN(cursorDate.getTime())) {
+                                whereConditions.push(
+                                        lt(message.createdAt, cursorDate.toISOString())
+                                );
+                        }
+                }
         }
 
         // Fetch newest messages first so we can efficiently page backwards.
@@ -125,13 +154,21 @@ export async function getConversationMessages(
                 .select()
                 .from(message)
                 .where(and(...whereConditions))
-                .orderBy(desc(message.createdAt))
+                .orderBy(desc(message.createdAt), desc(message.id))
                 .limit(limit + 1);
 
         const hasNextPage = rows.length > limit;
         const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
         const nextCursor = hasNextPage
-                ? limitedRows[limitedRows.length - 1]?.createdAt ?? null
+                ? (() => {
+                                const lastRow = limitedRows[limitedRows.length - 1];
+                                if (!lastRow) {
+                                        return null;
+                                }
+
+                                const timestamp = new Date(lastRow.createdAt).toISOString();
+                                return `${timestamp}_${lastRow.id}`;
+                        })()
                 : null;
 
         // Return messages in chronological order for consumers.
