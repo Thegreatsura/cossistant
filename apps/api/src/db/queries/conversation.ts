@@ -21,17 +21,15 @@ import {
 import type { ConversationSeen } from "@cossistant/types/schemas";
 
 import {
-	and,
-	asc,
-	count,
-	desc,
-	eq,
-	gt,
-	inArray,
-	isNull,
-	lt,
-	or,
-	sql,
+        and,
+        count,
+        desc,
+        eq,
+        inArray,
+        isNull,
+        lt,
+        or,
+        sql,
 } from "drizzle-orm";
 
 export async function upsertConversation(
@@ -512,49 +510,89 @@ export async function getConversationById(
 
 export async function getConversationEvents(
 	db: Database,
-	params: {
-		conversationId: string;
-		websiteId: string;
-		limit?: number;
-		cursor?: Date | null;
-	}
+        params: {
+                conversationId: string;
+                websiteId: string;
+                limit?: number;
+                cursor?: string | Date | null;
+        }
 ) {
-	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
+        const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
-	// Build where clause
-	const whereConditions = [
-		eq(conversationEvent.conversationId, params.conversationId),
-	];
+        // Build where clause scoped to the conversation
+        const whereConditions = [
+                eq(conversationEvent.conversationId, params.conversationId),
+        ];
 
-	// Add cursor condition if provided (gt for ascending order)
-	if (params.cursor) {
-		whereConditions.push(
-			gt(conversationEvent.createdAt, new Date(params.cursor).toISOString())
-		);
-	}
+        // When paginating fetch events older than the current batch.
+        if (params.cursor) {
+                const cursorValue = params.cursor;
+                const cursorParts =
+                        typeof cursorValue === "string" ? cursorValue.split("_") : [];
 
-	// Fetch events with pagination - ascending order (oldest first)
-	const events = await db
-		.select()
-		.from(conversationEvent)
-		.where(and(...whereConditions))
-		.orderBy(asc(conversationEvent.createdAt))
-		.limit(limit + 1); // Fetch one extra to determine if there's a next page
+                if (cursorParts.length === 2) {
+                        const [cursorTimestamp, cursorId] = cursorParts;
+                        const cursorDate = new Date(cursorTimestamp);
 
-	// Determine if there's a next page
-	const hasNextPage = events.length > limit;
-	const nextCursor = hasNextPage ? events[limit - 1].createdAt : null;
+                        if (!Number.isNaN(cursorDate.getTime())) {
+                                const cursorIso = cursorDate.toISOString();
+                                whereConditions.push(
+                                        or(
+                                                lt(conversationEvent.createdAt, cursorIso),
+                                                and(
+                                                        eq(
+                                                                conversationEvent.createdAt,
+                                                                cursorIso
+                                                        ),
+                                                        lt(conversationEvent.id, cursorId)
+                                                )
+                                        )
+                                );
+                        }
+                } else {
+                        const cursorDate =
+                                cursorValue instanceof Date
+                                        ? cursorValue
+                                        : new Date(cursorValue as string);
 
-	// Remove the extra item if present
-	if (hasNextPage) {
-		events.pop();
-	}
+                        if (!Number.isNaN(cursorDate.getTime())) {
+                                whereConditions.push(
+                                        lt(
+                                                conversationEvent.createdAt,
+                                                cursorDate.toISOString()
+                                        )
+                                );
+                        }
+                }
+        }
 
-	return {
-		events,
-		nextCursor,
-		hasNextPage,
-	};
+        // Fetch newest events first for efficient backwards pagination.
+        const rows = await db
+                .select()
+                .from(conversationEvent)
+                .where(and(...whereConditions))
+                .orderBy(desc(conversationEvent.createdAt), desc(conversationEvent.id))
+                .limit(limit + 1);
+
+        const hasNextPage = rows.length > limit;
+        const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
+        const nextCursor = hasNextPage
+                ? (() => {
+                                const lastRow = limitedRows[limitedRows.length - 1];
+                                if (!lastRow) {
+                                        return null;
+                                }
+
+                                const timestamp = new Date(lastRow.createdAt).toISOString();
+                                return `${timestamp}_${lastRow.id}`;
+                        })()
+                : null;
+
+        return {
+                events: [...limitedRows].reverse(),
+                nextCursor,
+                hasNextPage,
+        };
 }
 
 export async function getConversationSeenData(
