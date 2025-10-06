@@ -51,17 +51,17 @@ export function UserDropdown({ websiteSlug }: UserDropdownProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="group flex items-center gap-2 rounded p-2.5 text-left text-sm hover:cursor-pointer hover:bg-background-200 disabled:opacity-50 dark:hover:bg-background-300"
+          className="group flex items-center gap-2.5 rounded p-3 text-left text-primary/80 text-sm hover:cursor-pointer hover:bg-background-200 hover:text-primary disabled:opacity-50 dark:hover:bg-background-300"
           disabled={!user}
           type="button"
         >
           <Avatar
-            className="size-6"
+            className="size-5"
             fallbackName={userDisplayName}
             url={userAvatarUrl}
           />
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate text-primary/70">{userDisplayName}</span>
+            <span className="truncate">{userDisplayName}</span>
           </div>
           <Icon
             className="opacity-20 group-hover:opacity-90"

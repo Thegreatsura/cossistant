@@ -36,8 +36,14 @@ export function InboxNavigationSidebar() {
   return (
     <ResizableSidebar position="left">
       <SidebarContainer
-        basePath={basePath}
-        footer={<UserDropdown websiteSlug={website.slug} />}
+        footer={
+          <>
+            <SidebarItem href={`${basePath}/settings`} iconName="settings">
+              Settings
+            </SidebarItem>
+            <UserDropdown websiteSlug={website.slug} />
+          </>
+        }
       >
         <SidebarItem
           active={isInboxActive()}
