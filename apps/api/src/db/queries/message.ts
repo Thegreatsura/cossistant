@@ -3,7 +3,7 @@ import type { Database } from "@api/db";
 import { message } from "@api/db/schema";
 import { generateULID } from "@api/utils/db/ids";
 import type { CreateMessageSchema } from "@cossistant/types";
-import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 
 export async function sendMessages(
 	db: Database,
@@ -96,44 +96,50 @@ export async function getMessages(
 }
 
 export async function getConversationMessages(
-	db: Database,
-	params: {
-		conversationId: string;
-		websiteId: string;
-		limit?: number;
-		cursor?: Date | null;
-	}
+        db: Database,
+        params: {
+                conversationId: string;
+                websiteId: string;
+                limit?: number;
+                cursor?: Date | null;
+        }
 ) {
-	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
+        const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
-	// Build where clause
-	const whereConditions = [eq(message.conversationId, params.conversationId)];
+        // Build where clause (scoped to website for safety)
+        const whereConditions = [
+                eq(message.conversationId, params.conversationId),
+                eq(message.websiteId, params.websiteId),
+        ];
 
-	// Add cursor condition if provided (gt for ascending order)
-	if (params.cursor) {
-		whereConditions.push(gt(message.createdAt, params.cursor.toISOString()));
-	}
+        // When paginating we want to fetch messages older than the current window,
+        // hence the cursor acts as an upper bound (exclusive) on createdAt.
+        if (params.cursor) {
+                whereConditions.push(
+                        lt(message.createdAt, params.cursor.toISOString())
+                );
+        }
 
-	// Fetch messages with pagination - ascending order (oldest first)
-	const messages = await db
-		.select()
-		.from(message)
-		.where(and(...whereConditions))
-		.orderBy(asc(message.createdAt))
-		.limit(limit + 1); // Fetch one extra to determine if there's a next page
+        // Fetch newest messages first so we can efficiently page backwards.
+        const rows = await db
+                .select()
+                .from(message)
+                .where(and(...whereConditions))
+                .orderBy(desc(message.createdAt))
+                .limit(limit + 1);
 
-	// Determine if there's a next page
-	const hasNextPage = messages.length > limit;
-	const nextCursor = hasNextPage ? messages[limit - 1].createdAt : null;
+        const hasNextPage = rows.length > limit;
+        const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
+        const nextCursor = hasNextPage
+                ? limitedRows[limitedRows.length - 1]?.createdAt ?? null
+                : null;
 
-	// Remove the extra item if present
-	if (hasNextPage) {
-		messages.pop();
-	}
+        // Return messages in chronological order for consumers.
+        const messages = [...limitedRows].reverse();
 
-	return {
-		messages,
-		nextCursor,
-		hasNextPage,
-	};
+        return {
+                messages,
+                nextCursor,
+                hasNextPage,
+        };
 }

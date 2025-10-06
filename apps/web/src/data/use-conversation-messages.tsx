@@ -53,7 +53,14 @@ export function useConversationMessages({
 		staleTime: STALE_TIME,
 	});
 
-	const messages = query.data?.pages.flatMap((page) => page.items) ?? [];
+        const messages =
+                query.data?.pages
+                        .flatMap((page) => page.items)
+                        .sort(
+                                (a, b) =>
+                                        new Date(a.createdAt).getTime() -
+                                        new Date(b.createdAt).getTime()
+                        ) ?? [];
 
 	return {
 		messages,

@@ -51,7 +51,14 @@ export function useConversationEvents({
 		staleTime: STALE_TIME,
 	});
 
-	const events = query.data?.pages.flatMap((page) => page.items) ?? [];
+        const events =
+                query.data?.pages
+                        .flatMap((page) => page.items)
+                        .sort(
+                                (a, b) =>
+                                        new Date(a.createdAt).getTime() -
+                                        new Date(b.createdAt).getTime()
+                        ) ?? [];
 
 	return {
 		events,

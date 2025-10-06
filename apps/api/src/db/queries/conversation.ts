@@ -21,17 +21,15 @@ import {
 import type { ConversationSeen } from "@cossistant/types/schemas";
 
 import {
-	and,
-	asc,
-	count,
-	desc,
-	eq,
-	gt,
-	inArray,
-	isNull,
-	lt,
-	or,
-	sql,
+        and,
+        count,
+        desc,
+        eq,
+        inArray,
+        isNull,
+        lt,
+        or,
+        sql,
 } from "drizzle-orm";
 
 export async function upsertConversation(
@@ -521,40 +519,37 @@ export async function getConversationEvents(
 ) {
 	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
-	// Build where clause
-	const whereConditions = [
-		eq(conversationEvent.conversationId, params.conversationId),
-	];
+        // Build where clause scoped to the conversation
+        const whereConditions = [
+                eq(conversationEvent.conversationId, params.conversationId),
+        ];
 
-	// Add cursor condition if provided (gt for ascending order)
-	if (params.cursor) {
-		whereConditions.push(
-			gt(conversationEvent.createdAt, new Date(params.cursor).toISOString())
-		);
-	}
+        // When paginating fetch events older than the current batch.
+        if (params.cursor) {
+                whereConditions.push(
+                        lt(conversationEvent.createdAt, new Date(params.cursor).toISOString())
+                );
+        }
 
-	// Fetch events with pagination - ascending order (oldest first)
-	const events = await db
-		.select()
-		.from(conversationEvent)
-		.where(and(...whereConditions))
-		.orderBy(asc(conversationEvent.createdAt))
-		.limit(limit + 1); // Fetch one extra to determine if there's a next page
+        // Fetch newest events first for efficient backwards pagination.
+        const rows = await db
+                .select()
+                .from(conversationEvent)
+                .where(and(...whereConditions))
+                .orderBy(desc(conversationEvent.createdAt))
+                .limit(limit + 1);
 
-	// Determine if there's a next page
-	const hasNextPage = events.length > limit;
-	const nextCursor = hasNextPage ? events[limit - 1].createdAt : null;
+        const hasNextPage = rows.length > limit;
+        const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
+        const nextCursor = hasNextPage
+                ? limitedRows[limitedRows.length - 1]?.createdAt ?? null
+                : null;
 
-	// Remove the extra item if present
-	if (hasNextPage) {
-		events.pop();
-	}
-
-	return {
-		events,
-		nextCursor,
-		hasNextPage,
-	};
+        return {
+                events: [...limitedRows].reverse(),
+                nextCursor,
+                hasNextPage,
+        };
 }
 
 export async function getConversationSeenData(
