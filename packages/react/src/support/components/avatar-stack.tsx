@@ -8,6 +8,7 @@ type AvatarStackProps = {
   humanAgents: AvailableHumanAgent[];
   aiAgents: AvailableAIAgent[];
   hideBranding?: boolean;
+  hideDefaultAIAgent?: boolean;
   className?: string;
   /** Size of avatars (default: 44px) */
   size?: number;
@@ -69,6 +70,7 @@ export function AvatarStack({
   humanAgents,
   aiAgents,
   hideBranding = false,
+  hideDefaultAIAgent = true,
   className,
   size = 44,
   spacing = 28,
@@ -91,9 +93,14 @@ export function AvatarStack({
           },
         ]
       : []),
-    {
-      type: "ai" as const,
-    },
+    ...(hideDefaultAIAgent
+      ? []
+      : [
+          {
+            type: "ai" as const,
+            agent: aiAgents[0],
+          },
+        ]),
   ];
 
   return useRenderElement(

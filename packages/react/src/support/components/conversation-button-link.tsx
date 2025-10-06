@@ -13,6 +13,7 @@ import { formatTimeAgo } from "../utils/time";
 import { Avatar } from "./avatar";
 import { coButtonVariants } from "./button";
 import Icon from "./icons";
+import { BouncingDots } from "./typing-indicator";
 
 export type ConversationButtonLinkProps = {
   conversation: Conversation;
@@ -107,18 +108,21 @@ export function ConversationButtonLink({
 
     const entry = typingEntries[0];
     let name = text("common.fallbacks.someone");
+    let image: string | null = null;
 
-    if (entry.actorType === "user") {
+    if (entry?.actorType === "user") {
       const human = availableHumanAgents.find(
         (agent) => agent.id === entry.actorId
       );
       name = human?.name || text("common.fallbacks.supportTeam");
-    } else if (entry.actorType === "ai_agent") {
+      image = human?.image || null;
+    } else if (entry?.actorType === "ai_agent") {
       const ai = availableAIAgents.find((agent) => agent.id === entry.actorId);
       name = ai?.name || text("common.fallbacks.aiAssistant");
+      image = ai?.image || null;
     }
 
-    return { name, preview: entry.preview };
+    return { name };
   }, [typingEntries, availableHumanAgents, availableAIAgents, text]);
 
   // Process the last message (memoized to avoid expensive recomputation)
@@ -267,46 +271,44 @@ export function ConversationButtonLink({
           />
 
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div className="flex max-w-[90%] items-center justify-between gap-2">
-              <h3 className="truncate font-medium text-co-primary text-sm">
-                {conversationTitle}
-              </h3>
-            </div>
-
             {typingInfo ? (
-              <p className="text-co-primary/60 text-xs">
-                <span className="italic">
-                  {text("component.conversationButtonLink.typing", {
-                    name: typingInfo.name,
-                  })}
-                </span>
-              </p>
-            ) : lastMessage ? (
-              <p className="text-co-primary/60 text-xs">
-                {lastMessage.isFromVisitor ? (
-                  <span>
-                    {text(
-                      "component.conversationButtonLink.lastMessage.visitor",
-                      {
-                        time: lastMessage.time,
-                      }
+              <BouncingDots />
+            ) : (
+              <>
+                <div className="flex max-w-[90%] items-center justify-between gap-2">
+                  <h3 className="truncate font-medium text-co-primary text-sm">
+                    {conversationTitle}
+                  </h3>
+                </div>
+
+                {lastMessage ? (
+                  <p className="text-co-primary/60 text-xs">
+                    {lastMessage.isFromVisitor ? (
+                      <span>
+                        {text(
+                          "component.conversationButtonLink.lastMessage.visitor",
+                          {
+                            time: lastMessage.time,
+                          }
+                        )}
+                      </span>
+                    ) : (
+                      <span>
+                        {text(
+                          "component.conversationButtonLink.lastMessage.agent",
+                          {
+                            name:
+                              lastMessage.senderName ||
+                              text("common.fallbacks.supportTeam"),
+                            time: lastMessage.time,
+                          }
+                        )}
+                      </span>
                     )}
-                  </span>
-                ) : (
-                  <span>
-                    {text(
-                      "component.conversationButtonLink.lastMessage.agent",
-                      {
-                        name:
-                          lastMessage.senderName ||
-                          text("common.fallbacks.supportTeam"),
-                        time: lastMessage.time,
-                      }
-                    )}
-                  </span>
-                )}
-              </p>
-            ) : null}
+                  </p>
+                ) : null}
+              </>
+            )}
           </div>
           <div
             className={cn(

@@ -17,14 +17,10 @@ import {
   MessageListContainer,
   MessageList as PrimitiveMessageList,
 } from "../../primitives/message-list";
-import {
-  TypingIndicator,
-  type TypingParticipant,
-} from "../../primitives/typing-indicator";
-import { useSupportText } from "../text";
 import { cn } from "../utils";
 import { ConversationEvent as ConversationEventComponent } from "./conversation-event";
 import { MessageGroup } from "./message-group";
+import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
 export type MessageListProps = {
   conversationId: string;
@@ -45,7 +41,6 @@ export const MessageList: React.FC<MessageListProps> = ({
   availableHumanAgents = [],
   currentVisitorId,
 }) => {
-  const text = useSupportText();
   const seenData = useDebouncedConversationSeen(conversationId);
   const typingEntries = useConversationTyping(conversationId, {
     excludeVisitorId: currentVisitorId ?? null,
@@ -80,43 +75,17 @@ export const MessageList: React.FC<MessageListProps> = ({
     return typingEntries
       .map((entry): TypingParticipant | null => {
         if (entry.actorType === "user") {
-          const human = availableHumanAgents.find(
-            (agent) => agent.id === entry.actorId
-          );
-
-          return human
-            ? {
-                id: entry.actorId,
-                name: human.name || text("common.fallbacks.supportTeam"),
-                type: "team_member" as const,
-                avatarUrl: human.image || null,
-              }
-            : {
-                id: entry.actorId,
-                name: text("common.fallbacks.supportTeam"),
-                type: "team_member" as const,
-                avatarUrl: null,
-              };
+          return {
+            id: entry.actorId,
+            type: "team_member" as const,
+          };
         }
 
         if (entry.actorType === "ai_agent") {
-          const ai = availableAIAgents.find(
-            (agent) => agent.id === entry.actorId
-          );
-
-          return ai
-            ? {
-                id: entry.actorId,
-                name: ai.name || text("common.fallbacks.aiAssistant"),
-                type: "ai" as const,
-                avatarUrl: ai.image || null,
-              }
-            : {
-                id: entry.actorId,
-                name: text("common.fallbacks.aiAssistant"),
-                type: "ai" as const,
-                avatarUrl: null,
-              };
+          return {
+            id: entry.actorId,
+            type: "ai" as const,
+          };
         }
 
         return null;
@@ -124,7 +93,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       .filter(
         (participant): participant is TypingParticipant => participant !== null
       );
-  }, [typingEntries, availableHumanAgents, availableAIAgents, text]);
+  }, [typingEntries]);
 
   return (
     <PrimitiveMessageList
@@ -176,7 +145,12 @@ export const MessageList: React.FC<MessageListProps> = ({
           })}
         </AnimatePresence>
         {typingParticipants.length > 0 ? (
-          <TypingIndicator className="mt-2" participants={typingParticipants} />
+          <TypingIndicator
+            availableAIAgents={availableAIAgents}
+            availableHumanAgents={availableHumanAgents}
+            className="mt-2"
+            participants={typingParticipants}
+          />
         ) : null}
       </MessageListContainer>
     </PrimitiveMessageList>
