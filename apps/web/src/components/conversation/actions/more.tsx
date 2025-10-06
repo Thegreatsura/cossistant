@@ -27,7 +27,7 @@ export function MoreConversationActions({
   visitorId?: string | null;
   status?: ConversationStatus;
   visitorIsBlocked?: boolean | null;
-  deletedAt?: Date | null;
+  deletedAt?: string | null;
 }) {
   const {
     markResolved,

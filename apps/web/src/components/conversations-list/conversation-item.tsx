@@ -46,7 +46,7 @@ export function ConversationItem({
 
     if (entry?.actorType === "visitor") {
       return {
-        name: visitor.name || visitor.email || "Visitor",
+        name: visitor.contact?.name || visitor.contact?.email || "Visitor",
         hasPreview: !!entry.preview,
       };
     }
@@ -100,10 +100,10 @@ export function ConversationItem({
       prefetch="auto"
     >
       <Avatar
-        className="size-9"
+        className="size-8"
         fallbackName={fullName}
         lastOnlineAt={visitor.lastSeenAt}
-        url={visitor.avatar}
+        url={visitor.contact?.image}
       />
 
       <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
