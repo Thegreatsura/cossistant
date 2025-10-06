@@ -12,15 +12,20 @@ import { useSupportNavigation } from "../store";
 import { Text, useSupportText } from "../text";
 
 type ConversationPageProps = {
-	/**
-	 * The conversation ID to display (can be PENDING_CONVERSATION_ID or a real ID).
-	 */
-	conversationId: string;
+        /**
+         * The conversation ID to display (can be PENDING_CONVERSATION_ID or a real ID).
+         */
+        conversationId: string;
 
-	/**
-	 * Optional messages to display (for optimistic updates or initial state).
-	 */
-	messages?: MessageType[];
+        /**
+         * Optional initial message to send when opening the conversation.
+         */
+        initialMessage?: string;
+
+        /**
+         * Optional messages to display (for optimistic updates or initial state).
+         */
+        messages?: MessageType[];
 
 	/**
 	 * Optional events to display.
@@ -35,25 +40,27 @@ type ConversationPageProps = {
  * making this component focused purely on rendering and user interaction.
  */
 export const ConversationPage = ({
-	conversationId: initialConversationId,
-	messages: passedMessages = [],
-	events = [],
+        conversationId: initialConversationId,
+        initialMessage,
+        messages: passedMessages = [],
+        events = [],
 }: ConversationPageProps) => {
-	const { website, availableAIAgents, availableHumanAgents, visitor } =
-		useSupport();
+        const { website, availableAIAgents, availableHumanAgents, visitor } =
+                useSupport();
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
 	const text = useSupportText();
 
 	// Main conversation hook - handles all logic
-	const conversation = useConversationPage({
-		conversationId: initialConversationId,
-		messages: passedMessages,
-		events,
-		onConversationIdChange: (newConversationId) => {
-			// Update navigation when conversation is created
-			replace({
-				page: "CONVERSATION",
-				params: { conversationId: newConversationId },
+        const conversation = useConversationPage({
+                conversationId: initialConversationId,
+                messages: passedMessages,
+                events,
+                initialMessage,
+                onConversationIdChange: (newConversationId) => {
+                        // Update navigation when conversation is created
+                        replace({
+                                page: "CONVERSATION",
+                                params: { conversationId: newConversationId },
 			});
 		},
 	});

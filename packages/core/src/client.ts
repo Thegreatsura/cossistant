@@ -321,18 +321,19 @@ export class CossistantClient {
 
 		if (pending && createIfPending !== false) {
 			try {
-				const response = await this.restClient.createConversation({
-					conversationId: rest.conversationId,
-					defaultMessages: [...pending.initialMessages, optimisticMessage],
-				});
+                                const response = await this.restClient.createConversation({
+                                        conversationId: rest.conversationId,
+                                        defaultMessages: [...pending.initialMessages, optimisticMessage],
+                                });
 
-				this.conversationsStore.ingestConversation(response.conversation);
-				this.messagesStore.removeMessage(rest.conversationId, optimisticId);
-				this.messagesStore.ingestPage(rest.conversationId, {
-					messages: response.initialMessages,
-					hasNextPage: false,
-					nextCursor: undefined,
-				});
+                                this.conversationsStore.ingestConversation(response.conversation);
+                                this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+                                this.messagesStore.clearConversation(rest.conversationId);
+                                this.messagesStore.ingestPage(rest.conversationId, {
+                                        messages: response.initialMessages,
+                                        hasNextPage: false,
+                                        nextCursor: undefined,
+                                });
 
 				this.pendingConversations.delete(rest.conversationId);
 
