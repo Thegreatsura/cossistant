@@ -24,15 +24,22 @@ export type ConversationButtonLinkProps = {
 	) => React.ReactElement;
 };
 
+export type ConversationButtonLinkAgent = {
+        name: string;
+        image: string | null;
+        type: "human" | "ai" | "fallback";
+};
+
 export type ConversationButtonLinkState = {
-	conversation: Conversation;
-	lastMessage: {
-		content: string;
-		time: string;
-		isFromVisitor: boolean;
-		senderName?: string;
-		senderImage?: string | null;
-	} | null;
+        conversation: Conversation;
+        lastMessage: {
+                content: string;
+                time: string;
+                isFromVisitor: boolean;
+                senderName?: string;
+                senderImage?: string | null;
+        } | null;
+        assignedAgent: ConversationButtonLinkAgent;
 };
 
 function getLastMessageInfo(
@@ -115,27 +122,114 @@ export function ConversationButtonLink({
 	}, [typingEntries, availableHumanAgents, availableAIAgents, text]);
 
 	// Process the last message (memoized to avoid expensive recomputation)
-	const lastMessage = useMemo(() => {
-		const cachedLastMessage =
-			// biome-ignore lint/style/useAtIndex: ok here
-			messages.length > 0 ? messages[messages.length - 1] : null;
+        const lastMessage = useMemo(() => {
+                const cachedLastMessage =
+                        // biome-ignore lint/style/useAtIndex: ok here
+                        messages.length > 0 ? messages[messages.length - 1] : null;
 
-		const messageToDisplay = cachedLastMessage || conversation.lastMessage;
+                const messageToDisplay = cachedLastMessage || conversation.lastMessage;
 
-		return messageToDisplay
-			? getLastMessageInfo(
-					messageToDisplay,
-					availableHumanAgents,
-					website,
-					text
-				)
-			: null;
-	}, [messages, conversation.lastMessage, availableHumanAgents, website, text]);
+                return messageToDisplay
+                        ? getLastMessageInfo(
+                                        messageToDisplay,
+                                        availableHumanAgents,
+                                        website,
+                                        text
+                                )
+                        : null;
+        }, [messages, conversation.lastMessage, availableHumanAgents, website, text]);
 
-	const conversationTitle = useMemo(() => {
-		if (conversation.title) {
-			return conversation.title;
-		}
+        const assignedAgent = useMemo<ConversationButtonLinkAgent>(() => {
+                const supportFallbackName = text("common.fallbacks.supportTeam");
+                const aiFallbackName = text("common.fallbacks.aiAssistant");
+
+                const knownMessages = messages.slice();
+                if (
+                        conversation.lastMessage &&
+                        !knownMessages.some((message) => message.id === conversation.lastMessage?.id)
+                ) {
+                        knownMessages.push(conversation.lastMessage);
+                }
+
+                const lastAgentMessage = [...knownMessages]
+                        .reverse()
+                        .find((message) => message.userId !== null || message.aiAgentId !== null);
+
+                if (lastAgentMessage?.userId) {
+                        const human = availableHumanAgents.find(
+                                (agent) => agent.id === lastAgentMessage.userId
+                        );
+
+                        if (human) {
+                                return {
+                                        type: "human",
+                                        name: human.name,
+                                        image: human.image ?? null,
+                                } satisfies ConversationButtonLinkAgent;
+                        }
+
+                        return {
+                                type: "human",
+                                name: supportFallbackName,
+                                image: null,
+                        } satisfies ConversationButtonLinkAgent;
+                }
+
+                if (lastAgentMessage?.aiAgentId) {
+                        const ai = availableAIAgents.find(
+                                (agent) => agent.id === lastAgentMessage.aiAgentId
+                        );
+
+                        if (ai) {
+                                return {
+                                        type: "ai",
+                                        name: ai.name,
+                                        image: ai.image ?? null,
+                                } satisfies ConversationButtonLinkAgent;
+                        }
+
+                        return {
+                                type: "ai",
+                                name: aiFallbackName,
+                                image: null,
+                        } satisfies ConversationButtonLinkAgent;
+                }
+
+                const fallbackHuman = availableHumanAgents[0];
+                if (fallbackHuman) {
+                        return {
+                                type: "human",
+                                name: fallbackHuman.name,
+                                image: fallbackHuman.image ?? null,
+                        } satisfies ConversationButtonLinkAgent;
+                }
+
+                const fallbackAi = availableAIAgents[0];
+                if (fallbackAi) {
+                        return {
+                                type: "ai",
+                                name: fallbackAi.name,
+                                image: fallbackAi.image ?? null,
+                        } satisfies ConversationButtonLinkAgent;
+                }
+
+                return {
+                        type: "fallback",
+                        name: supportFallbackName,
+                        image: null,
+                } satisfies ConversationButtonLinkAgent;
+        }, [
+                messages,
+                conversation.lastMessage,
+                availableHumanAgents,
+                availableAIAgents,
+                text,
+        ]);
+
+        const conversationTitle = useMemo(() => {
+                if (conversation.title) {
+                        return conversation.title;
+                }
 
 		if (lastMessage?.content) {
 			return lastMessage.content;
@@ -144,10 +238,11 @@ export function ConversationButtonLink({
 		return text("component.conversationButtonLink.fallbackTitle");
 	}, [conversation.title, lastMessage?.content, text]);
 
-	const state: ConversationButtonLinkState = {
-		conversation,
-		lastMessage,
-	};
+        const state: ConversationButtonLinkState = {
+                conversation,
+                lastMessage,
+                assignedAgent,
+        };
 
 	return useRenderElement("button", props, {
 		state,
@@ -163,15 +258,11 @@ export function ConversationButtonLink({
 			),
 			children: (
 				<>
-					{lastMessage && !lastMessage.isFromVisitor && (
-						<Avatar
-							className="size-8 flex-shrink-0"
-							image={lastMessage.senderImage}
-							name={
-								lastMessage.senderName || text("common.fallbacks.supportTeam")
-							}
-						/>
-					)}
+                                        <Avatar
+                                                className="size-8 flex-shrink-0"
+                                                image={assignedAgent.image}
+                                                name={assignedAgent.name}
+                                        />
 
 					<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 						<div className="flex max-w-[90%] items-center justify-between gap-2">
