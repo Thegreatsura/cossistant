@@ -14,7 +14,8 @@ import type {
 import { SenderType } from "@cossistant/types";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { AnimatePresence } from "motion/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import type { RefObject } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
@@ -48,6 +49,10 @@ export function MessagesList({
   onFetchMoreIfNeeded,
   visitor,
 }: Props) {
+  const fallbackRef = useRef<HTMLDivElement | null>(null);
+  const messageListRef =
+    (ref as RefObject<HTMLDivElement | null> | undefined) ?? fallbackRef;
+
   const {
     items,
     lastReadMessageMap,
@@ -102,11 +107,19 @@ export function MessagesList({
       );
   }, [typingEntries]);
 
+  useEffect(() => {
+    if (!messageListRef.current || activeTypingEntities.length === 0) {
+      return;
+    }
+
+    messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+  }, [activeTypingEntities, messageListRef]);
+
   return (
     <PrimitiveMessageList
       autoScroll={true}
       className={cn(
-        "overflow-y-auto scroll-smooth pt-20 pr-4 pb-48 pl-4",
+        "overflow-y-auto pt-20 pr-4 pb-48 pl-4",
         "scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-transparent",
         "h-full w-full",
         className
@@ -115,7 +128,7 @@ export function MessagesList({
       id="message-list"
       messages={messages}
       onScrollStart={onFetchMoreIfNeeded}
-      ref={ref}
+      ref={ref ?? messageListRef}
     >
       <div className="mx-auto xl:max-w-xl 2xl:max-w-2xl">
         <MessageListContainer className="flex min-h-full w-full flex-col gap-3">
