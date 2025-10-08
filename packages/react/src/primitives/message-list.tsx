@@ -84,16 +84,10 @@ export const MessageList = (() => {
 						events.length > previousEventCount.current;
 
 					// Only scroll if there are new messages or it's the first render
-					if (hasNewMessages || isInitialRender.current) {
-						// On first render, scroll instantly to avoid animation
-						// For new messages, scroll smoothly
-						const behavior = isInitialRender.current ? "instant" : "smooth";
-
-						scrollRef.current.scrollTo({
-							top: scrollRef.current.scrollHeight,
-							behavior,
-						});
-					}
+                                        if (hasNewMessages || isInitialRender.current) {
+                                                scrollRef.current.scrollTop =
+                                                        scrollRef.current.scrollHeight;
+                                        }
 
 					// Update refs for next render
 					previousMessageCount.current = messages.length;
