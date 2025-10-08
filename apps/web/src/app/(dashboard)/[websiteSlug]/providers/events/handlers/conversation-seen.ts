@@ -1,7 +1,6 @@
 import { applyConversationSeenEvent } from "@cossistant/react/realtime/seen-store";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationHeader } from "@/data/conversation-header-cache";
-import { updateConversationHeaderInCache } from "@/data/conversation-header-cache";
 import type { DashboardRealtimeContext } from "../types";
 
 type ConversationSeenEvent = RealtimeEvent<"CONVERSATION_SEEN">;
@@ -19,37 +18,9 @@ const pendingSeenUpdates = new Map<
 
 const SEEN_UPDATE_DELAY = 2000; // 500ms delay to let message animations settle
 
-type ConversationHeadersQueryInput = {
-	websiteSlug?: string;
-};
-
-type QueryKeyInput = {
-	input?: ConversationHeadersQueryInput;
-};
-
-function extractHeadersQueryInput(
-	queryKey: readonly unknown[]
-): ConversationHeadersQueryInput | null {
-	if (queryKey.length < 2) {
-		return null;
-	}
-
-	const maybeInput = queryKey[1];
-	if (!maybeInput || typeof maybeInput !== "object") {
-		return null;
-	}
-
-	const input = (maybeInput as QueryKeyInput).input;
-	if (!input || typeof input !== "object") {
-		return null;
-	}
-
-	return input;
-}
-
 function shouldUpdateVisitorTimestamp(
-	event: ConversationSeenEvent,
-	headersVisitorId: string
+        event: ConversationSeenEvent,
+        headersVisitorId: string
 ) {
 	return (
 		Boolean(event.payload.visitorId) &&
@@ -224,62 +195,44 @@ function maybeUpdateSeenEntries(
 }
 
 function applySeenUpdate(
-	event: ConversationSeenEvent,
-	context: DashboardRealtimeContext
+        event: ConversationSeenEvent,
+        context: DashboardRealtimeContext
 ) {
-	const lastSeenAt = new Date(event.payload.lastSeenAt);
-	const lastSeenAtTime = lastSeenAt.getTime();
+        const lastSeenAt = new Date(event.payload.lastSeenAt);
+        const lastSeenAtTime = lastSeenAt.getTime();
 
-	const queries = context.queryClient
-		.getQueryCache()
-		.findAll({ queryKey: [["conversation", "listConversationsHeaders"]] });
+        const existingHeader = context.queryNormalizer.getObjectById<ConversationHeader>(
+                event.payload.conversationId
+        );
 
-	for (const query of queries) {
-		const queryKey = query.queryKey as readonly unknown[];
-		const input = extractHeadersQueryInput(queryKey);
+        if (!existingHeader) {
+                return;
+        }
 
-		if (!input) {
-			continue;
-		}
+        const visitorUpdate = maybeUpdateVisitorLastSeen(
+                existingHeader,
+                event,
+                lastSeenAtTime
+        );
+        const userUpdate = maybeUpdateCurrentUserLastSeen(
+                visitorUpdate.header,
+                event,
+                context.userId,
+                lastSeenAtTime
+        );
+        const seenEntriesUpdate = maybeUpdateSeenEntries(
+                userUpdate.header,
+                event,
+                lastSeenAtTime
+        );
 
-		if (input.websiteSlug && input.websiteSlug !== context.website.slug) {
-			continue;
-		}
-
-		updateConversationHeaderInCache(
-			context.queryClient,
-			queryKey,
-			event.payload.conversationId,
-			(header) => {
-				const visitorUpdate = maybeUpdateVisitorLastSeen(
-					header,
-					event,
-					lastSeenAtTime
-				);
-				const userUpdate = maybeUpdateCurrentUserLastSeen(
-					visitorUpdate.header,
-					event,
-					context.userId,
-					lastSeenAtTime
-				);
-				const seenEntriesUpdate = maybeUpdateSeenEntries(
-					userUpdate.header,
-					event,
-					lastSeenAtTime
-				);
-
-				if (
-					visitorUpdate.changed ||
-					userUpdate.changed ||
-					seenEntriesUpdate.changed
-				) {
-					return seenEntriesUpdate.header;
-				}
-
-				return header;
-			}
-		);
-	}
+        if (
+                visitorUpdate.changed ||
+                userUpdate.changed ||
+                seenEntriesUpdate.changed
+        ) {
+                context.queryNormalizer.setNormalizedData(seenEntriesUpdate.header);
+        }
 }
 
 export function handleConversationSeen({

@@ -1,14 +1,16 @@
 import { markConversationAsSeenByVisitor } from "@api/db/mutations/conversation";
 import { getVisitor } from "@api/db/queries";
 import {
-	getConversationByIdWithLastMessage,
-	getConversationSeenData,
-	listConversations,
-	upsertConversation,
+        getConversationByIdWithLastMessage,
+        getConversationHeader,
+        getConversationSeenData,
+        listConversations,
+        upsertConversation,
 } from "@api/db/queries/conversation";
 import {
-	emitConversationSeenEvent,
-	emitConversationTypingEvent,
+        emitConversationCreatedEvent,
+        emitConversationSeenEvent,
+        emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
 import { createMessage } from "@api/utils/message";
 import {
@@ -174,12 +176,26 @@ conversationRouter.openapi(
 		}
 
 		// Get the last message if any were sent
-		const lastMessage =
-			initialMessages.length > 0 ? initialMessages.at(-1) : undefined;
+                const lastMessage =
+                        initialMessages.length > 0 ? initialMessages.at(-1) : undefined;
 
-		return c.json(
-			validateResponse(
-				{
+                const header = await getConversationHeader(db, {
+                        organizationId: organization.id,
+                        websiteId: website.id,
+                        conversationId: conversation.id,
+                        userId: null,
+                });
+
+                if (header) {
+                        await emitConversationCreatedEvent({
+                                conversation,
+                                header,
+                        });
+                }
+
+                return c.json(
+                        validateResponse(
+                                {
 					initialMessages,
 					conversation: {
 						id: conversation.id,

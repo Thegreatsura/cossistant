@@ -3,10 +3,11 @@ import { clearTypingFromMessage } from "@cossistant/react/realtime/typing-store"
 import type { MessageType, MessageVisibility } from "@cossistant/types";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import {
-	type ConversationMessage,
-	upsertConversationMessageInCache,
+        type ConversationMessage,
+        upsertConversationMessageInCache,
 } from "@/data/conversation-message-cache";
 import type { DashboardRealtimeContext } from "../types";
+import type { ConversationHeader } from "@/data/conversation-header-cache";
 
 type MessageCreatedEvent = RealtimeEvent<"MESSAGE_CREATED">;
 
@@ -21,16 +22,22 @@ type QueryKeyInput = {
 };
 
 function toConversationMessage(
-	eventMessage: MessageCreatedEvent["payload"]["message"]
+        eventMessage: MessageCreatedEvent["payload"]["message"]
 ): ConversationMessage {
-	return {
-		...eventMessage,
+        return {
+                ...eventMessage,
 		type: eventMessage.type as MessageType,
 		visibility: eventMessage.visibility as MessageVisibility,
 		createdAt: new Date(eventMessage.createdAt),
 		updatedAt: new Date(eventMessage.updatedAt),
 		deletedAt: eventMessage.deletedAt ? new Date(eventMessage.deletedAt) : null,
 	};
+}
+
+function toHeaderLastMessage(
+        eventMessage: MessageCreatedEvent["payload"]["message"]
+): NonNullable<ConversationHeader["lastMessagePreview"]> {
+        return { ...eventMessage };
 }
 
 function extractQueryInput(
@@ -72,38 +79,53 @@ export const handleMessageCreated = createMessageCreatedHandler<
 	},
 	mapEventToMessage: ({ event }) =>
 		toConversationMessage(event.payload.message),
-	onMessage: ({ event, context, message }) => {
-		const { queryClient, website } = context;
-		const { payload } = event;
+        onMessage: ({ event, context, message }) => {
+                const { queryClient, website } = context;
+                const { payload } = event;
 
-		// Clear typing state when a message is sent
-		clearTypingFromMessage(event);
+                // Clear typing state when a message is sent
+                clearTypingFromMessage(event);
 
-		const queries = queryClient
-			.getQueryCache()
-			.findAll({ queryKey: [["conversation", "getConversationMessages"]] });
+                const headerMessage = toHeaderLastMessage(payload.message);
 
-		for (const query of queries) {
-			const queryKey = query.queryKey as readonly unknown[];
+                const queries = queryClient
+                        .getQueryCache()
+                        .findAll({ queryKey: [["conversation", "getConversationMessages"]] });
 
-			if (!isInfiniteQueryKey(queryKey)) {
-				continue;
-			}
+                for (const query of queries) {
+                        const queryKey = query.queryKey as readonly unknown[];
 
-			const input = extractQueryInput(queryKey);
-			if (!input) {
-				continue;
-			}
+                        if (!isInfiniteQueryKey(queryKey)) {
+                                continue;
+                        }
 
-			if (input.conversationId !== payload.conversationId) {
-				continue;
-			}
+                        const input = extractQueryInput(queryKey);
+                        if (!input) {
+                                continue;
+                        }
 
-			if (input.websiteSlug !== website.slug) {
-				continue;
-			}
+                        if (input.conversationId !== payload.conversationId) {
+                                continue;
+                        }
 
-			upsertConversationMessageInCache(queryClient, queryKey, message);
-		}
-	},
+                        if (input.websiteSlug !== website.slug) {
+                                continue;
+                        }
+
+                        upsertConversationMessageInCache(queryClient, queryKey, message);
+                }
+
+                const existingHeader = context.queryNormalizer.getObjectById<ConversationHeader>(
+                        payload.conversationId
+                );
+
+                if (existingHeader) {
+                        context.queryNormalizer.setNormalizedData({
+                                ...existingHeader,
+                                lastMessagePreview: headerMessage,
+                                lastMessageAt: headerMessage.createdAt,
+                                updatedAt: headerMessage.updatedAt,
+                        });
+                }
+        },
 });

@@ -20,6 +20,7 @@ import {
   MessageVisibility,
 } from "@cossistant/types";
 import type { ConversationSeen } from "@cossistant/types/schemas";
+import type { ConversationHeader } from "@cossistant/types/trpc/conversation";
 
 import {
   and,
@@ -498,6 +499,201 @@ export async function listConversationsHeaders(
     items: conversationsWithDetails,
     nextCursor,
   };
+}
+
+export async function getConversationHeader(
+  db: Database,
+  params: {
+    organizationId: string;
+    websiteId: string;
+    conversationId: string;
+    userId?: string | null;
+  }
+): Promise<ConversationHeader | null> {
+  const lastMessageSubquery = db
+    .select({
+      conversationId: message.conversationId,
+      id: message.id,
+      bodyMd: message.bodyMd,
+      type: message.type,
+      userId: message.userId,
+      visitorId: message.visitorId,
+      websiteId: message.websiteId,
+      organizationId: message.organizationId,
+      aiAgentId: message.aiAgentId,
+      modelUsed: message.modelUsed,
+      visibility: message.visibility,
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      deletedAt: message.deletedAt,
+      parentMessageId: message.parentMessageId,
+    })
+    .from(message)
+    .where(
+      and(
+        eq(message.organizationId, params.organizationId),
+        eq(message.conversationId, params.conversationId),
+        eq(message.visibility, MessageVisibility.PUBLIC),
+        isNull(message.deletedAt)
+      )
+    )
+    .orderBy(desc(message.createdAt))
+    .limit(1)
+    .as("last_msg_single");
+
+  const viewsSubquery = db
+    .select({
+      conversationId: conversationView.conversationId,
+      viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
+        "view_ids"
+      ),
+    })
+    .from(conversationView)
+    .where(
+      and(
+        eq(conversationView.organizationId, params.organizationId),
+        eq(conversationView.conversationId, params.conversationId),
+        isNull(conversationView.deletedAt)
+      )
+    )
+    .groupBy(conversationView.conversationId)
+    .as("conv_views_single");
+
+  const userJoinCondition = params.userId
+    ? eq(conversationSeen.userId, params.userId)
+    : sql`1=0`;
+
+  const [row] = await db
+    .select({
+      conversation,
+      visitorId: visitor.id,
+      visitorLastSeenAt: visitor.lastSeenAt,
+      visitorBlockedAt: visitor.blockedAt,
+      visitorBlockedByUserId: visitor.blockedByUserId,
+      contactId: contact.id,
+      contactName: contact.name,
+      contactEmail: contact.email,
+      contactImage: contact.image,
+      lastMessageId: lastMessageSubquery.id,
+      lastMessageBodyMd: lastMessageSubquery.bodyMd,
+      lastMessageType: lastMessageSubquery.type,
+      lastMessageUserId: lastMessageSubquery.userId,
+      lastMessageVisitorId: lastMessageSubquery.visitorId,
+      lastMessageWebsiteId: lastMessageSubquery.websiteId,
+      lastMessageOrganizationId: lastMessageSubquery.organizationId,
+      lastMessageAiAgentId: lastMessageSubquery.aiAgentId,
+      lastMessageModelUsed: lastMessageSubquery.modelUsed,
+      lastMessageVisibility: lastMessageSubquery.visibility,
+      lastMessageCreatedAt: lastMessageSubquery.createdAt,
+      lastMessageUpdatedAt: lastMessageSubquery.updatedAt,
+      lastMessageDeletedAt: lastMessageSubquery.deletedAt,
+      lastMessageParentMessageId: lastMessageSubquery.parentMessageId,
+      viewIds: viewsSubquery.viewIds,
+      userLastSeenAt: params.userId
+        ? conversationSeen.lastSeenAt
+        : sql<string | null>`NULL`,
+    })
+    .from(conversation)
+    .innerJoin(visitor, eq(conversation.visitorId, visitor.id))
+    .leftJoin(contact, eq(visitor.contactId, contact.id))
+    .leftJoin(
+      lastMessageSubquery,
+      eq(lastMessageSubquery.conversationId, conversation.id)
+    )
+    .leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
+    .leftJoin(
+      conversationSeen,
+      and(eq(conversationSeen.conversationId, conversation.id), userJoinCondition)
+    )
+    .where(
+      and(
+        eq(conversation.organizationId, params.organizationId),
+        eq(conversation.websiteId, params.websiteId),
+        eq(conversation.id, params.conversationId)
+      )
+    )
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  const seenRows = await db
+    .select({
+      id: conversationSeen.id,
+      conversationId: conversationSeen.conversationId,
+      userId: conversationSeen.userId,
+      visitorId: conversationSeen.visitorId,
+      aiAgentId: conversationSeen.aiAgentId,
+      lastSeenAt: conversationSeen.lastSeenAt,
+      createdAt: conversationSeen.createdAt,
+      updatedAt: conversationSeen.updatedAt,
+    })
+    .from(conversationSeen)
+    .where(
+      and(
+        eq(conversationSeen.organizationId, params.organizationId),
+        eq(conversationSeen.conversationId, params.conversationId)
+      )
+    )
+    .orderBy(desc(conversationSeen.lastSeenAt));
+
+  const seenData: ConversationSeen[] = seenRows.map((seen) => ({
+    ...seen,
+    deletedAt: null,
+  }));
+
+  const lastMessage =
+    row.lastMessageId &&
+    row.lastMessageBodyMd !== null &&
+    row.lastMessageType &&
+    row.lastMessageWebsiteId &&
+    row.lastMessageOrganizationId &&
+    row.lastMessageVisibility &&
+    row.lastMessageCreatedAt &&
+    row.lastMessageUpdatedAt
+      ? {
+          id: row.lastMessageId,
+          bodyMd: row.lastMessageBodyMd,
+          type: row.lastMessageType,
+          userId: row.lastMessageUserId,
+          visitorId: row.lastMessageVisitorId,
+          websiteId: row.lastMessageWebsiteId,
+          organizationId: row.lastMessageOrganizationId,
+          aiAgentId: row.lastMessageAiAgentId,
+          modelUsed: row.lastMessageModelUsed,
+          visibility: row.lastMessageVisibility,
+          createdAt: row.lastMessageCreatedAt,
+          updatedAt: row.lastMessageUpdatedAt,
+          deletedAt: row.lastMessageDeletedAt,
+          parentMessageId: row.lastMessageParentMessageId,
+          conversationId: row.conversation.id,
+        }
+      : null;
+
+  return {
+    ...row.conversation,
+    visitor: {
+      id: row.visitorId,
+      lastSeenAt: row.visitorLastSeenAt ?? null,
+      blockedAt: row.visitorBlockedAt ?? null,
+      blockedByUserId: row.visitorBlockedByUserId,
+      isBlocked: Boolean(row.visitorBlockedAt),
+      contact: row.contactId
+        ? {
+            id: row.contactId,
+            name: row.contactName,
+            email: row.contactEmail,
+            image: row.contactImage,
+          }
+        : null,
+    },
+    viewIds: row.viewIds ?? [],
+    lastMessageAt: row.conversation.lastMessageAt ?? null,
+    lastSeenAt: row.userLastSeenAt ?? null,
+    lastMessagePreview: lastMessage,
+    seenData,
+  } satisfies ConversationHeader;
 }
 
 export async function getConversationById(

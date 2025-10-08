@@ -358,29 +358,61 @@ describe("CONVERSATION_CREATED handler", () => {
 		sendToConnection.mockReset();
 	});
 
-	it("broadcasts new conversations to dashboards and visitor", async () => {
-		const event: RealtimeEvent<"CONVERSATION_CREATED"> = {
-			type: "CONVERSATION_CREATED",
-			payload: {
-				conversation: {
-					id: "conv-created",
-					organizationId: "org-created",
-					websiteId: "site-created",
-					visitorId: "visitor-created",
-					status: "open",
-					priority: null,
-					title: null,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-				},
-				websiteId: "site-created",
-				organizationId: "org-created",
-				visitorId: "visitor-created",
-			},
-			timestamp: Date.now(),
-			websiteId: "site-created",
-			organizationId: "org-created",
-			visitorId: "visitor-created",
+        it("broadcasts new conversations to dashboards and visitor", async () => {
+                const event: RealtimeEvent<"CONVERSATION_CREATED"> = {
+                        type: "CONVERSATION_CREATED",
+                        payload: {
+                                conversationId: "conv-created",
+                                websiteId: "site-created",
+                                organizationId: "org-created",
+                                visitorId: "visitor-created",
+                                conversation: {
+                                        id: "conv-created",
+                                        title: null,
+                                        createdAt: new Date().toISOString(),
+                                        updatedAt: new Date().toISOString(),
+                                        visitorId: "visitor-created",
+                                        websiteId: "site-created",
+                                        status: "open",
+                                        lastMessage: undefined,
+                                },
+                                header: {
+                                        id: "conv-created",
+                                        status: "open",
+                                        priority: "normal",
+                                        organizationId: "org-created",
+                                        visitorId: "visitor-created",
+                                        visitor: {
+                                                id: "visitor-created",
+                                                lastSeenAt: null,
+                                                blockedAt: null,
+                                                blockedByUserId: null,
+                                                isBlocked: false,
+                                                contact: null,
+                                        },
+                                        websiteId: "site-created",
+                                        channel: "widget",
+                                        title: null,
+                                        resolutionTime: null,
+                                        startedAt: new Date().toISOString(),
+                                        firstResponseAt: null,
+                                        resolvedAt: null,
+                                        resolvedByUserId: null,
+                                        resolvedByAiAgentId: null,
+                                        createdAt: new Date().toISOString(),
+                                        updatedAt: new Date().toISOString(),
+                                        deletedAt: null,
+                                        lastMessageAt: null,
+                                        lastSeenAt: null,
+                                        lastMessagePreview: null,
+                                        viewIds: [],
+                                        seenData: [],
+                                },
+                        },
+                        timestamp: Date.now(),
+                        websiteId: "site-created",
+                        organizationId: "org-created",
+                        visitorId: "visitor-created",
 		};
 
 		await routeEvent(event, {
