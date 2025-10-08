@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsite } from "@/contexts/website";
 import { UserDropdown } from "../../../../user-dropdown";
@@ -38,9 +39,8 @@ export function InboxNavigationSidebar() {
       <SidebarContainer
         footer={
           <>
-            <SidebarItem href={`${basePath}/settings`} iconName="settings">
-              Settings
-            </SidebarItem>
+            <SidebarItem href={`${basePath}/settings`}>Settings</SidebarItem>
+            <Separator className="opacity-30" />
             <UserDropdown websiteSlug={website.slug} />
           </>
         }
@@ -48,7 +48,7 @@ export function InboxNavigationSidebar() {
         <SidebarItem
           active={isInboxActive()}
           href={`${basePath}`}
-          iconName="conversation"
+          // iconName="conversation"
           rightItem={
             <span className="pr-1 text-primary/40 text-xs">
               {statusCounts.open}
@@ -60,21 +60,21 @@ export function InboxNavigationSidebar() {
         <SidebarItem
           active={isInboxActive("resolved")}
           href={`${basePath}/resolved`}
-          iconName="conversation-resolved"
+          // iconName="conversation-resolved"
         >
           Resolved
         </SidebarItem>
         <SidebarItem
           active={isInboxActive("spam")}
           href={`${basePath}/spam`}
-          iconName="conversation-spam"
+          // iconName="conversation-spam"
         >
           Spam
         </SidebarItem>
         <SidebarItem
           active={isInboxActive("archived")}
           href={`${basePath}/archived`}
-          iconName="archive"
+          // iconName="archive"
         >
           Archived
         </SidebarItem>

@@ -51,22 +51,17 @@ export function UserDropdown({ websiteSlug }: UserDropdownProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="group flex items-center gap-2.5 rounded p-3 text-left text-primary/80 text-sm hover:cursor-pointer hover:bg-background-200 hover:text-primary disabled:opacity-50 dark:hover:bg-background-300"
+          className="group flex items-center gap-2.5 rounded px-3 py-2.5 text-left text-primary/80 text-sm hover:cursor-pointer hover:bg-background-200 hover:text-primary disabled:opacity-50 dark:hover:bg-background-300"
           disabled={!user}
           type="button"
         >
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate">{userDisplayName}</span>
+          </div>
           <Avatar
             className="size-5"
             fallbackName={userDisplayName}
             url={userAvatarUrl}
-          />
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate">{userDisplayName}</span>
-          </div>
-          <Icon
-            className="opacity-20 group-hover:opacity-90"
-            name="more"
-            variant="filled"
           />
         </button>
       </DropdownMenuTrigger>

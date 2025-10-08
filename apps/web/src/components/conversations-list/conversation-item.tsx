@@ -84,7 +84,7 @@ export function ConversationItem({
   return (
     <Link
       className={cn(
-        "group/conversation-item relative flex items-center gap-3 rounded-md px-2 py-2 text-sm",
+        "group/conversation-item relative flex items-center gap-3 rounded-sm px-2 py-2 text-sm",
         "focus-visible:outline-none focus-visible:ring-0",
         focused && "bg-background-200 text-primary dark:bg-background-300"
       )}
