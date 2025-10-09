@@ -89,14 +89,14 @@ export const RealtimeEvents = {
 		websiteId: z.string(),
 		organizationId: z.string(),
 	}),
-        CONVERSATION_CREATED: z.object({
-                conversationId: z.string(),
-                websiteId: z.string(),
-                organizationId: z.string(),
-                visitorId: z.string().nullable(),
-                conversation: conversationSchema,
-                header: conversationHeaderSchema,
-        }),
+	CONVERSATION_CREATED: z.object({
+		conversationId: z.string(),
+		websiteId: z.string(),
+		organizationId: z.string(),
+		visitorId: z.string().nullable(),
+		conversation: conversationSchema,
+		header: conversationHeaderSchema,
+	}),
 } as const;
 
 export type RealtimeEventType = keyof typeof RealtimeEvents;

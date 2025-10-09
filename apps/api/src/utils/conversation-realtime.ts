@@ -31,8 +31,8 @@ type TimelineEventParams = BaseRealtimeContext & {
 };
 
 type ConversationCreatedEventParams = {
-        conversation: ConversationRecord;
-        header: ConversationHeader;
+	conversation: ConversationRecord;
+	header: ConversationHeader;
 };
 
 function mapActor(actor: ConversationRealtimeActor) {
@@ -92,10 +92,10 @@ export async function emitConversationSeenEvent({
 }
 
 export async function emitConversationTypingEvent({
-        conversation,
-        actor,
-        isTyping,
-        visitorPreview,
+	conversation,
+	actor,
+	isTyping,
+	visitorPreview,
 }: TypingEventParams) {
 	const actorPayload = mapActor(actor);
 	const previewForEvent =
@@ -123,32 +123,32 @@ export async function emitConversationTypingEvent({
 }
 
 export async function emitConversationCreatedEvent({
-        conversation,
-        header,
+	conversation,
+	header,
 }: ConversationCreatedEventParams) {
-        await realtimeEmitter.emit(
-                "CONVERSATION_CREATED",
-                {
-                        conversationId: conversation.id,
-                        websiteId: conversation.websiteId,
-                        organizationId: conversation.organizationId,
-                        visitorId: conversation.visitorId ?? null,
-                        conversation: {
-                                id: conversation.id,
-                                title: conversation.title ?? undefined,
-                                createdAt: conversation.createdAt,
-                                updatedAt: conversation.updatedAt,
-                                visitorId: conversation.visitorId,
-                                websiteId: conversation.websiteId,
-                                status: conversation.status,
-                                lastMessage: header.lastMessagePreview ?? undefined,
-                        },
-                        header,
-                },
-                {
-                        organizationId: conversation.organizationId,
-                        websiteId: conversation.websiteId,
-                        visitorId: conversation.visitorId ?? null,
-                }
-        );
+	await realtimeEmitter.emit(
+		"CONVERSATION_CREATED",
+		{
+			conversationId: conversation.id,
+			websiteId: conversation.websiteId,
+			organizationId: conversation.organizationId,
+			visitorId: conversation.visitorId ?? null,
+			conversation: {
+				id: conversation.id,
+				title: conversation.title ?? undefined,
+				createdAt: conversation.createdAt,
+				updatedAt: conversation.updatedAt,
+				visitorId: conversation.visitorId,
+				websiteId: conversation.websiteId,
+				status: conversation.status,
+				lastMessage: header.lastMessagePreview ?? undefined,
+			},
+			header,
+		},
+		{
+			organizationId: conversation.organizationId,
+			websiteId: conversation.websiteId,
+			visitorId: conversation.visitorId ?? null,
+		}
+	);
 }

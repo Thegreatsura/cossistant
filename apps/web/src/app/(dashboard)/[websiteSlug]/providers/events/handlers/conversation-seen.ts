@@ -19,8 +19,8 @@ const pendingSeenUpdates = new Map<
 const SEEN_UPDATE_DELAY = 2000; // 500ms delay to let message animations settle
 
 function shouldUpdateVisitorTimestamp(
-        event: ConversationSeenEvent,
-        headersVisitorId: string
+	event: ConversationSeenEvent,
+	headersVisitorId: string
 ) {
 	return (
 		Boolean(event.payload.visitorId) &&
@@ -195,44 +195,45 @@ function maybeUpdateSeenEntries(
 }
 
 function applySeenUpdate(
-        event: ConversationSeenEvent,
-        context: DashboardRealtimeContext
+	event: ConversationSeenEvent,
+	context: DashboardRealtimeContext
 ) {
-        const lastSeenAt = new Date(event.payload.lastSeenAt);
-        const lastSeenAtTime = lastSeenAt.getTime();
+	const lastSeenAt = new Date(event.payload.lastSeenAt);
+	const lastSeenAtTime = lastSeenAt.getTime();
 
-        const existingHeader = context.queryNormalizer.getObjectById<ConversationHeader>(
-                event.payload.conversationId
-        );
+	const existingHeader =
+		context.queryNormalizer.getObjectById<ConversationHeader>(
+			event.payload.conversationId
+		);
 
-        if (!existingHeader) {
-                return;
-        }
+	if (!existingHeader) {
+		return;
+	}
 
-        const visitorUpdate = maybeUpdateVisitorLastSeen(
-                existingHeader,
-                event,
-                lastSeenAtTime
-        );
-        const userUpdate = maybeUpdateCurrentUserLastSeen(
-                visitorUpdate.header,
-                event,
-                context.userId,
-                lastSeenAtTime
-        );
-        const seenEntriesUpdate = maybeUpdateSeenEntries(
-                userUpdate.header,
-                event,
-                lastSeenAtTime
-        );
+	const visitorUpdate = maybeUpdateVisitorLastSeen(
+		existingHeader,
+		event,
+		lastSeenAtTime
+	);
+	const userUpdate = maybeUpdateCurrentUserLastSeen(
+		visitorUpdate.header,
+		event,
+		context.userId,
+		lastSeenAtTime
+	);
+	const seenEntriesUpdate = maybeUpdateSeenEntries(
+		userUpdate.header,
+		event,
+		lastSeenAtTime
+	);
 
-        if (
-                visitorUpdate.changed ||
-                userUpdate.changed ||
-                seenEntriesUpdate.changed
-        ) {
-                context.queryNormalizer.setNormalizedData(seenEntriesUpdate.header);
-        }
+	if (
+		visitorUpdate.changed ||
+		userUpdate.changed ||
+		seenEntriesUpdate.changed
+	) {
+		context.queryNormalizer.setNormalizedData(seenEntriesUpdate.header);
+	}
 }
 
 export function handleConversationSeen({
