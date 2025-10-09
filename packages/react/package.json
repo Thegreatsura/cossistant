@@ -62,6 +62,7 @@
   "dependencies": {
     "@cossistant/core": "workspace:*",
     "@cossistant/types": "workspace:*",
+    "@cossistant/realtime": "workspace:*",
     "nanoid": "^5.1.5",
     "react-markdown": "^10.1.0",
     "react-use-websocket": "^4.13.0",
