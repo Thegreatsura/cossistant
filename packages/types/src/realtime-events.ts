@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { conversationSchema } from "./schemas";
+import { conversationHeaderSchema } from "./trpc/conversation";
 
 /**
  * Central event system for real-time communication
@@ -92,6 +94,8 @@ export const RealtimeEvents = {
 		websiteId: z.string(),
 		organizationId: z.string(),
 		visitorId: z.string().nullable(),
+		conversation: conversationSchema,
+		header: conversationHeaderSchema,
 	}),
 } as const;
 

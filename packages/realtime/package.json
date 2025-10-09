@@ -1,0 +1,65 @@
+{
+  "name": "@cossistant/realtime",
+  "description": "An HTTP-based realtime client powered by Redis Streams. Idea by Upstash/realtime, thanks for your work!",
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist/server/index.js",
+  "module": "dist/server/index.js",
+  "types": "dist/server/index.d.ts",
+  "author": "Joscha Neske & Cossistant Team",
+  "access": "public",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cossistantcom/cossistant/realtime"
+  },
+  "homepage": "https://github.com/cossistantcom/cossistant/realtime",
+  "keywords": [
+    "realtime",
+    "serverless",
+    "upstash"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "lint": "tsc"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/server/index.d.ts",
+        "default": "./dist/server/index.js"
+      },
+      "require": {
+        "types": "./dist/server/index.d.ts",
+        "default": "./dist/server/index.js"
+      }
+    },
+    "./client": {
+      "import": {
+        "types": "./dist/client/index.d.ts",
+        "default": "./dist/client/index.js"
+      },
+      "require": {
+        "types": "./dist/client/index.d.ts",
+        "default": "./dist/client/index.js"
+      }
+    }
+  },
+  "devDependencies": {
+    "zod": "^4.1.11",
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@upstash/redis": "^1.35.4",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "zod": "^3.25.0 || ^4.0.0",
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  }
+}

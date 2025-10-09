@@ -2,11 +2,13 @@ import { markConversationAsSeenByVisitor } from "@api/db/mutations/conversation"
 import { getVisitor } from "@api/db/queries";
 import {
 	getConversationByIdWithLastMessage,
+	getConversationHeader,
 	getConversationSeenData,
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
 import {
+	emitConversationCreatedEvent,
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
@@ -176,6 +178,20 @@ conversationRouter.openapi(
 		// Get the last message if any were sent
 		const lastMessage =
 			initialMessages.length > 0 ? initialMessages.at(-1) : undefined;
+
+		const header = await getConversationHeader(db, {
+			organizationId: organization.id,
+			websiteId: website.id,
+			conversationId: conversation.id,
+			userId: null,
+		});
+
+		if (header) {
+			await emitConversationCreatedEvent({
+				conversation,
+				header,
+			});
+		}
 
 		return c.json(
 			validateResponse(

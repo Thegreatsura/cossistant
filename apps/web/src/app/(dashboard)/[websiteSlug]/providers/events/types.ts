@@ -1,3 +1,4 @@
+import type { useQueryNormalizer } from "@normy/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 type WebsiteContext = {
@@ -5,8 +6,11 @@ type WebsiteContext = {
 	slug: string;
 };
 
+type QueryNormalizer = ReturnType<typeof useQueryNormalizer>;
+
 export type DashboardRealtimeContext = {
 	queryClient: QueryClient;
+	queryNormalizer: QueryNormalizer;
 	website: WebsiteContext;
 	userId: string | null;
 };

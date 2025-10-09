@@ -380,6 +380,14 @@ export class CossistantClient {
 
 	handleRealtimeEvent(event: RealtimeEvent): void {
 		switch (event.type) {
+			case "CONVERSATION_CREATED": {
+				const conversation = event.payload.conversation;
+				this.conversationsStore.ingestConversation({
+					...conversation,
+					lastMessage: conversation.lastMessage ?? undefined,
+				});
+				break;
+			}
 			case "MESSAGE_CREATED": {
 				const message = this.messagesStore.ingestRealtime(event);
 				const existingConversation =

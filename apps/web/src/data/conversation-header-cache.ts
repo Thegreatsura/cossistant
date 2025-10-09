@@ -1,7 +1,7 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 
-type ConversationHeadersPage =
+export type ConversationHeadersPage =
 	RouterOutputs["conversation"]["listConversationsHeaders"];
 export type ConversationHeader = ConversationHeadersPage["items"][number];
 
@@ -11,52 +11,61 @@ export function createConversationHeadersInfiniteQueryKey(
 	return [...baseQueryKey, { type: "infinite" }] as const;
 }
 
-export function updateConversationHeaderInCache(
+function hasConversation(
+	page: ConversationHeadersPage,
+	conversationId: string
+): boolean {
+	return page.items.some((item) => item.id === conversationId);
+}
+
+export function prependConversationHeaderInCache(
 	queryClient: QueryClient,
 	queryKey: readonly unknown[],
-	conversationId: string,
-	updater: (conversation: ConversationHeader) => ConversationHeader
-) {
+	header: ConversationHeader
+): void {
 	queryClient.setQueryData<InfiniteData<ConversationHeadersPage>>(
 		queryKey,
 		(existing) => {
-			if (!existing?.pages) {
-				return existing;
-			}
-
-			let updated = false;
-
-			const pages = existing.pages.map((page) => {
-				let pageUpdated = false;
-
-				const items = page.items.map((item) => {
-					if (item.id !== conversationId) {
-						return item;
-					}
-
-					pageUpdated = true;
-					updated = true;
-					return updater(item);
-				});
-
-				if (!pageUpdated) {
-					return page;
-				}
-
+			if (!existing) {
 				return {
-					...page,
-					items,
-				};
-			});
+					pages: [
+						{
+							items: [header],
+							nextCursor: null,
+						},
+					],
+					pageParams: [null],
+				} satisfies InfiniteData<ConversationHeadersPage>;
+			}
 
-			if (!updated) {
+			if (existing.pages.some((page) => hasConversation(page, header.id))) {
 				return existing;
 			}
+
+			if (existing.pages.length === 0) {
+				return {
+					pages: [
+						{
+							items: [header],
+							nextCursor: null,
+						},
+					],
+					pageParams: [...existing.pageParams],
+				} satisfies InfiniteData<ConversationHeadersPage>;
+			}
+
+			const [firstPage, ...rest] = existing.pages;
 
 			return {
-				pages,
+				pages: [
+					{
+						...firstPage,
+						items: [header, ...firstPage.items],
+					},
+					...rest,
+				],
 				pageParams: [...existing.pageParams],
-			};
+			} satisfies InfiniteData<ConversationHeadersPage>;
 		}
 	);
 }

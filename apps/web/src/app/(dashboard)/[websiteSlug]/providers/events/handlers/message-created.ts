@@ -2,6 +2,7 @@ import { createMessageCreatedHandler } from "@cossistant/next/realtime";
 import { clearTypingFromMessage } from "@cossistant/react/realtime/typing-store";
 import type { MessageType, MessageVisibility } from "@cossistant/types";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { ConversationHeader } from "@/data/conversation-header-cache";
 import {
 	type ConversationMessage,
 	upsertConversationMessageInCache,
@@ -31,6 +32,12 @@ function toConversationMessage(
 		updatedAt: new Date(eventMessage.updatedAt),
 		deletedAt: eventMessage.deletedAt ? new Date(eventMessage.deletedAt) : null,
 	};
+}
+
+function toHeaderLastMessage(
+	eventMessage: MessageCreatedEvent["payload"]["message"]
+): NonNullable<ConversationHeader["lastMessagePreview"]> {
+	return { ...eventMessage };
 }
 
 function extractQueryInput(
@@ -79,6 +86,8 @@ export const handleMessageCreated = createMessageCreatedHandler<
 		// Clear typing state when a message is sent
 		clearTypingFromMessage(event);
 
+		const headerMessage = toHeaderLastMessage(payload.message);
+
 		const queries = queryClient
 			.getQueryCache()
 			.findAll({ queryKey: [["conversation", "getConversationMessages"]] });
@@ -104,6 +113,20 @@ export const handleMessageCreated = createMessageCreatedHandler<
 			}
 
 			upsertConversationMessageInCache(queryClient, queryKey, message);
+		}
+
+		const existingHeader =
+			context.queryNormalizer.getObjectById<ConversationHeader>(
+				payload.conversationId
+			);
+
+		if (existingHeader) {
+			context.queryNormalizer.setNormalizedData({
+				...existingHeader,
+				lastMessagePreview: headerMessage,
+				lastMessageAt: headerMessage.createdAt,
+				updatedAt: headerMessage.updatedAt,
+			});
 		}
 	},
 });

@@ -6,11 +6,8 @@ import type {
 	RouterOutputs,
 } from "@api/trpc/types";
 import { ConversationStatus } from "@cossistant/types";
-import {
-	type InfiniteData,
-	useMutation,
-	useQueryClient,
-} from "@tanstack/react-query";
+import { useQueryNormalizer } from "@normy/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TRPCClientErrorLike } from "@trpc/client";
 import { useCallback, useMemo } from "react";
 import { useUserSession, useWebsite } from "@/contexts/website";
@@ -18,11 +15,8 @@ import { useTRPC } from "@/lib/trpc/client";
 import {
 	type ConversationHeader,
 	createConversationHeadersInfiniteQueryKey,
-	updateConversationHeaderInCache,
 } from "./conversation-header-cache";
 
-type ConversationHeadersPage =
-	RouterOutputs["conversation"]["listConversationsHeaders"];
 type ConversationMutationResponse =
 	RouterOutputs["conversation"]["markResolved"];
 type BlockVisitorResponse = RouterOutputs["visitor"]["block"];
@@ -37,10 +31,16 @@ type UnblockVisitorVariables = RouterInputs["visitor"]["unblock"];
 type TRPCError = TRPCClientErrorLike<OrigamiTRPCRouter>;
 
 type MutationContext = {
-	previousHeaders?: InfiniteData<ConversationHeadersPage>;
+	previousHeader?: ConversationHeader | null;
 	visitorQueryKey?: readonly unknown[] | null;
 	previousVisitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
 };
+
+function cloneConversationHeader(
+	header: ConversationHeader
+): ConversationHeader {
+	return JSON.parse(JSON.stringify(header)) as ConversationHeader;
+}
 
 type UseConversationActionsParams = {
 	conversationId: string;
@@ -109,6 +109,7 @@ export function useConversationActions({
 	const website = useWebsite();
 	const { user } = useUserSession();
 	const queryClient = useQueryClient();
+	const queryNormalizer = useQueryNormalizer();
 
 	const effectiveVisitorId = visitorId ?? null;
 
@@ -125,18 +126,20 @@ export function useConversationActions({
 	const prepareContext = useCallback(async (): Promise<MutationContext> => {
 		await queryClient.cancelQueries({ queryKey: headersQueryKey });
 
+		const existingHeader =
+			queryNormalizer.getObjectById<ConversationHeader>(conversationId);
+
 		return {
-			previousHeaders:
-				queryClient.getQueryData<InfiniteData<ConversationHeadersPage>>(
-					headersQueryKey
-				),
+			previousHeader: existingHeader
+				? cloneConversationHeader(existingHeader)
+				: null,
 		};
-	}, [headersQueryKey, queryClient]);
+	}, [conversationId, headersQueryKey, queryClient, queryNormalizer]);
 
 	const restoreContext = useCallback(
 		(context?: MutationContext) => {
-			if (context?.previousHeaders) {
-				queryClient.setQueryData(headersQueryKey, context.previousHeaders);
+			if (context?.previousHeader) {
+				queryNormalizer.setNormalizedData(context.previousHeader);
 			}
 
 			if (context?.visitorQueryKey) {
@@ -146,19 +149,22 @@ export function useConversationActions({
 				);
 			}
 		},
-		[headersQueryKey, queryClient]
+		[queryClient, queryNormalizer]
 	);
 
 	const applyOptimisticUpdate = useCallback(
 		(updater: (conversation: ConversationHeader) => ConversationHeader) => {
-			updateConversationHeaderInCache(
-				queryClient,
-				headersQueryKey,
-				conversationId,
-				updater
-			);
+			const existing =
+				queryNormalizer.getObjectById<ConversationHeader>(conversationId);
+
+			if (!existing) {
+				return;
+			}
+
+			const updated = updater(existing);
+			queryNormalizer.setNormalizedData(updated);
 		},
-		[conversationId, headersQueryKey, queryClient]
+		[conversationId, queryNormalizer]
 	);
 
 	const markResolvedMutation = useMutation<

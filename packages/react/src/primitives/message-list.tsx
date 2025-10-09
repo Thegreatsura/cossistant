@@ -84,10 +84,9 @@ export const MessageList = (() => {
 						events.length > previousEventCount.current;
 
 					// Only scroll if there are new messages or it's the first render
-                                        if (hasNewMessages || isInitialRender.current) {
-                                                scrollRef.current.scrollTop =
-                                                        scrollRef.current.scrollHeight;
-                                        }
+					if (hasNewMessages || isInitialRender.current) {
+						scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+					}
 
 					// Update refs for next render
 					previousMessageCount.current = messages.length;
