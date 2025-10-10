@@ -5,7 +5,7 @@ import type { SendMessageRequest } from "@cossistant/types/api/message";
 import { CossistantClient } from "../client";
 import { createMessagesStore } from "./messages-store";
 
-type MessageCreatedData = RealtimeEvent<"MESSAGE_CREATED">;
+type MessageCreatedData = RealtimeEvent<"messageCreated">;
 
 function createMockMessage(overrides: Partial<Message> = {}): Message {
 	const base: Message = {
@@ -133,12 +133,12 @@ describe("messages store", () => {
 	it("normalizes realtime events", () => {
 		const store = createMessagesStore();
 		const event: MessageCreatedData = {
-			type: "MESSAGE_CREATED",
-			timestamp: Date.now(),
-			organizationId: "org-1",
-			websiteId: "site-1",
-			visitorId: "visitor-1",
+			type: "messageCreated",
 			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
+				userId: null,
+				visitorId: "visitor-1",
 				message: {
 					id: "msg-event",
 					bodyMd: "Realtime",
@@ -157,8 +157,6 @@ describe("messages store", () => {
 					deletedAt: null,
 				},
 				conversationId: "conv-1",
-				websiteId: "site-1",
-				organizationId: "org-1",
 			},
 		};
 
@@ -292,9 +290,13 @@ describe("CossistantClient message integration", () => {
 		);
 
 		const event = {
-			type: "MESSAGE_CREATED",
-			timestamp: Date.now(),
+			type: "messageCreated",
 			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
+				userId: null,
+				visitorId: "visitor-1",
+				conversationId: "conv-1",
 				message: {
 					id: "msg-realtime",
 					bodyMd: "stream",
@@ -312,14 +314,8 @@ describe("CossistantClient message integration", () => {
 					updatedAt: "2024-01-03T00:00:00.000Z",
 					deletedAt: null,
 				},
-				conversationId: "conv-1",
-				websiteId: "site-1",
-				organizationId: "org-1",
 			},
-			websiteId: "site-1",
-			organizationId: "org-1",
-			visitorId: "visitor-1",
-		} satisfies RealtimeEvent<"MESSAGE_CREATED">;
+		} satisfies RealtimeEvent<"messageCreated">;
 
 		client.handleRealtimeEvent(event);
 

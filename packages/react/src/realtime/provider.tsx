@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	type AnyRealtimeEvent,
 	isValidEventType,
 	type RealtimeEvent,
 	validateRealtimeEvent,
@@ -20,7 +21,7 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000;
 const DEFAULT_HEARTBEAT_TIMEOUT_MS = 45_000;
 
-type SubscribeHandler = (event: RealtimeEvent) => void;
+type SubscribeHandler = (event: AnyRealtimeEvent) => void;
 
 type MessageDecodeResult =
 	| {
@@ -45,7 +46,7 @@ type ParsedMessage =
 	  }
 	| {
 			type: "event";
-			event: RealtimeEvent;
+			event: AnyRealtimeEvent;
 	  }
 	| {
 			type: "invalid";
@@ -90,9 +91,9 @@ type RealtimeConnectionState = {
 	isConnected: boolean;
 	isConnecting: boolean;
 	error: Error | null;
-	send: (event: RealtimeEvent) => void;
+	send: (event: AnyRealtimeEvent) => void;
 	subscribe: (handler: SubscribeHandler) => () => void;
-	lastEvent: RealtimeEvent | null;
+	lastEvent: AnyRealtimeEvent | null;
 	connectionId: string | null;
 	reconnect: () => void;
 };
@@ -227,7 +228,7 @@ function parseWebSocketMessage(rawText: string): ParsedMessage {
  * Constructs a RealtimeEvent from parsed JSON data.
  * Returns null if required fields are missing or validation fails.
  */
-function constructRealtimeEvent(parsed: unknown): RealtimeEvent | null {
+function constructRealtimeEvent(parsed: unknown): AnyRealtimeEvent | null {
 	if (!parsed || typeof parsed !== "object" || !("type" in parsed)) {
 		return null;
 	}
@@ -237,12 +238,12 @@ function constructRealtimeEvent(parsed: unknown): RealtimeEvent | null {
 		return null;
 	}
 
-	const eventType = type as RealtimeEvent["type"];
+	const eventType = type;
 
 	// Extract payload directly
 	const payloadSource = (parsed as { payload?: unknown }).payload;
 
-	let payload: RealtimeEvent["payload"];
+	let payload: unknown;
 	try {
 		payload = validateRealtimeEvent(eventType, payloadSource);
 	} catch (error) {
@@ -273,7 +274,7 @@ function constructRealtimeEvent(parsed: unknown): RealtimeEvent | null {
 		organizationId,
 		websiteId,
 		visitorId,
-	};
+	} as AnyRealtimeEvent;
 }
 
 /**
@@ -388,7 +389,7 @@ export function RealtimeProvider({
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
 	const lastHeartbeatRef = useRef<number>(Date.now());
 	const [connectionError, setConnectionError] = useState<Error | null>(null);
-	const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
+	const [lastEvent, setLastEvent] = useState<AnyRealtimeEvent | null>(null);
 	const [connectionId, setConnectionId] = useState<string | null>(null);
 
 	const heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS;
@@ -537,7 +538,7 @@ export function RealtimeProvider({
 	]);
 
 	const send = useCallback(
-		(event: RealtimeEvent) => {
+		(event: AnyRealtimeEvent) => {
 			if (!connectionUrl) {
 				throw new Error("Realtime connection is disabled");
 			}

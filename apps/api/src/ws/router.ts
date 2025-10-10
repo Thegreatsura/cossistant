@@ -1,4 +1,5 @@
 import type {
+	AnyRealtimeEvent,
 	RealtimeEvent,
 	RealtimeEventType,
 } from "@cossistant/types/realtime-events";
@@ -9,18 +10,18 @@ type DispatchOptions = {
 
 type ConnectionDispatcher = (
 	connectionId: string,
-	event: RealtimeEvent
+	event: AnyRealtimeEvent
 ) => void;
 
 type VisitorDispatcher = (
 	visitorId: string,
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ) => void;
 
 type WebsiteDispatcher = (
 	websiteId: string,
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ) => void;
 
@@ -61,19 +62,19 @@ const DEFAULT_DISPATCH_RULE: DispatchRule = {
 
 const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 	{
-		USER_CONNECTED: { website: { excludeConnection: true }, visitor: false },
-		USER_DISCONNECTED: { website: { excludeConnection: true }, visitor: false },
-		USER_PRESENCE_UPDATE: {
+		userConnected: { website: { excludeConnection: true }, visitor: false },
+		userDisconnected: { website: { excludeConnection: true }, visitor: false },
+		userPresenceUpdate: {
 			website: { excludeConnection: true },
 			visitor: false,
 		},
-		VISITOR_CONNECTED: { website: true, visitor: false },
-		VISITOR_DISCONNECTED: { website: true, visitor: false },
-		CONVERSATION_EVENT_CREATED: { website: true, visitor: true },
-		CONVERSATION_CREATED: { website: true, visitor: true },
-		CONVERSATION_SEEN: { website: true, visitor: true },
-		CONVERSATION_TYPING: { website: true, visitor: true },
-		MESSAGE_CREATED: { website: true, visitor: true },
+		visitorConnected: { website: true, visitor: false },
+		visitorDisconnected: { website: true, visitor: false },
+		conversationEventCreated: { website: true, visitor: true },
+		conversationCreated: { website: true, visitor: true },
+		conversationSeen: { website: true, visitor: true },
+		conversationTyping: { website: true, visitor: true },
+		messageCreated: { website: true, visitor: true },
 	};
 
 function resolveWebsiteDispatchOptions(
@@ -95,19 +96,19 @@ function resolveWebsiteDispatchOptions(
 	return;
 }
 
-function dispatchEvent(
+function dispatchEvent<T extends RealtimeEventType>(
 	ctx: EventContext,
-	event: RealtimeEvent,
+	event: RealtimeEvent<T>,
 	rules: DispatchRule
 ): void {
-	const websiteTarget = event.websiteId ?? ctx.websiteId;
+	const websiteTarget = event.payload.websiteId ?? ctx.websiteId;
 	if (websiteTarget && ctx.sendToWebsite && rules.website) {
 		const options = resolveWebsiteDispatchOptions(rules.website, ctx);
-		ctx.sendToWebsite(websiteTarget, event, options);
+		ctx.sendToWebsite(websiteTarget, event as AnyRealtimeEvent, options);
 	}
 
-	if (rules.visitor && event.visitorId && ctx.sendToVisitor) {
-		ctx.sendToVisitor(event.visitorId, event);
+	if (rules.visitor && event.payload.visitorId && ctx.sendToVisitor) {
+		ctx.sendToVisitor(event.payload.visitorId, event as AnyRealtimeEvent);
 	}
 }
 
@@ -117,73 +118,31 @@ function dispatchEvent(
  * relevant local connections using the provided dispatch helpers.
  */
 const eventHandlers: EventHandlers = {
-	USER_CONNECTED: (ctx, event) => {
+	userConnected: (ctx, event) => {
 		const data = event.payload;
-		console.log(`[USER_CONNECTED] User ${data.userId} connected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: event.websiteId,
-		});
 	},
 
-	USER_DISCONNECTED: (ctx, event) => {
+	userDisconnected: (ctx, event) => {
 		const data = event.payload;
-		console.log(`[USER_DISCONNECTED] User ${data.userId} disconnected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: event.websiteId,
-		});
 	},
 
-	VISITOR_CONNECTED: (ctx, event) => {
+	visitorConnected: (ctx, event) => {
 		const data = event.payload;
-		console.log(`[VISITOR_CONNECTED] Visitor ${data.visitorId} connected`, {
-			connectionId: data.connectionId,
-			timestamp: new Date(data.timestamp).toISOString(),
-			contextConnectionId: ctx.connectionId,
-			websiteId: event.websiteId,
-		});
 	},
 
-	VISITOR_DISCONNECTED: (ctx, event) => {
+	visitorDisconnected: (ctx, event) => {
 		const data = event.payload;
-		console.log(
-			`[VISITOR_DISCONNECTED] Visitor ${data.visitorId} disconnected`,
-			{
-				connectionId: data.connectionId,
-				timestamp: new Date(data.timestamp).toISOString(),
-				contextConnectionId: ctx.connectionId,
-				websiteId: event.websiteId,
-			}
-		);
 	},
 
-	USER_PRESENCE_UPDATE: (ctx, event) => {
+	userPresenceUpdate: (ctx, event) => {
 		const data = event.payload;
-		console.log(
-			`[USER_PRESENCE_UPDATE] User ${data.userId} status: ${data.status}`,
-			{
-				lastSeen: new Date(data.lastSeen).toISOString(),
-				contextConnectionId: ctx.connectionId,
-				websiteId: event.websiteId,
-			}
-		);
 	},
 
-	MESSAGE_CREATED: (_ctx, event) => {
+	messageCreated: (_ctx, event) => {
 		const data = event.payload;
-		console.log(
-			`[MESSAGE_CREATED] Message ${data.message.id} created for conversation ${data.conversationId}`,
-			{
-				websiteId: event.websiteId,
-				organizationId: event.organizationId,
-			}
-		);
 	},
 
-	CONVERSATION_SEEN: (_ctx, event) => {
+	conversationSeen: (_ctx, event) => {
 		const data = event.payload;
 		const actorType = data.userId
 			? "user"
@@ -193,17 +152,9 @@ const eventHandlers: EventHandlers = {
 					? "aiAgent"
 					: "unknown";
 		const actorId = data.userId ?? data.visitorId ?? data.aiAgentId ?? null;
-
-		console.log(
-			`[CONVERSATION_SEEN] Conversation ${data.conversationId} seen by ${actorType}`,
-			{
-				actorId,
-				websiteId: event.websiteId,
-			}
-		);
 	},
 
-	CONVERSATION_TYPING: (_ctx, event) => {
+	conversationTyping: (_ctx, event) => {
 		const data = event.payload;
 		const actorType = data.userId
 			? "user"
@@ -213,38 +164,14 @@ const eventHandlers: EventHandlers = {
 					? "aiAgent"
 					: "unknown";
 		const actorId = data.userId ?? data.visitorId ?? data.aiAgentId ?? null;
-
-		console.log(
-			`[CONVERSATION_TYPING] Conversation ${data.conversationId} actor ${actorType} typing=${data.isTyping}`,
-			{
-				actorId,
-				websiteId: event.websiteId,
-			}
-		);
 	},
 
-	CONVERSATION_EVENT_CREATED: (_ctx, event) => {
+	conversationEventCreated: (_ctx, event) => {
 		const data = event.payload;
-		console.log(
-			`[CONVERSATION_EVENT_CREATED] Event ${data.event.id} for conversation ${data.conversationId}`,
-			{
-				websiteId: event.websiteId,
-				organizationId: event.organizationId,
-				type: data.event.type,
-			}
-		);
 	},
 
-	CONVERSATION_CREATED: (_ctx, event) => {
+	conversationCreated: (_ctx, event) => {
 		const data = event.payload;
-		console.log(
-			`[CONVERSATION_CREATED] Conversation ${data.conversationId} created`,
-			{
-				websiteId: event.websiteId,
-				organizationId: event.organizationId,
-				visitorId: data.visitorId,
-			}
-		);
 	},
 };
 

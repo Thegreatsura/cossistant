@@ -1,7 +1,7 @@
 import type { Message, RealtimeEvent } from "@cossistant/types";
 import { createStore, type Store } from "./create-store";
 
-type MessageCreatedEvent = RealtimeEvent<"MESSAGE_CREATED">;
+type MessageCreatedEvent = RealtimeEvent<"messageCreated">;
 
 export type ConversationMessagesState = {
 	messages: Message[];

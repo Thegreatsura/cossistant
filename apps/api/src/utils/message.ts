@@ -1,6 +1,6 @@
 import type { Database } from "@api/db";
 import { sendMessages } from "@api/db/queries/message";
-import { realtimeEmitter } from "@api/realtime/emitter";
+import { realtime } from "@api/realtime/emitter";
 import type {
 	Message,
 	MessageType,
@@ -42,8 +42,10 @@ function serializeMessageForRealtime(
 		conversationId: string;
 		websiteId: string;
 		organizationId: string;
+		userId: string | null;
+		visitorId: string | null;
 	}
-): RealtimeEventData<"MESSAGE_CREATED"> {
+): RealtimeEventData<"messageCreated"> {
 	return {
 		message: {
 			id: message.id,
@@ -65,6 +67,8 @@ function serializeMessageForRealtime(
 		conversationId: context.conversationId,
 		websiteId: context.websiteId,
 		organizationId: context.organizationId,
+		userId: context.userId,
+		visitorId: context.visitorId,
 	};
 }
 
@@ -101,6 +105,8 @@ export async function createMessage(
 		conversationId,
 		websiteId,
 		organizationId,
+		userId: null,
+		visitorId: null,
 	});
 
 	let targetVisitorId =
@@ -115,11 +121,7 @@ export async function createMessage(
 		);
 	}
 
-	await realtimeEmitter.emit("MESSAGE_CREATED", realtimePayload, {
-		websiteId,
-		visitorId: targetVisitorId ?? null,
-		organizationId,
-	});
+	await realtime.emit("messageCreated", realtimePayload);
 
 	return parsedMessage;
 }

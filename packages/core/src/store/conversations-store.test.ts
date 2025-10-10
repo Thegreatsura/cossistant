@@ -14,8 +14,8 @@ function createMockConversation(
 	const base: Conversation = {
 		id: "conv-1",
 		title: "Support conversation",
-		createdAt: new Date("2024-01-01T00:00:00.000Z"),
-		updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+		createdAt: "2024-01-01T00:00:00.000Z",
+		updatedAt: "2024-01-01T00:00:00.000Z",
 		visitorId: "visitor-1",
 		websiteId: "site-1",
 		status: "open",
@@ -33,8 +33,8 @@ function createMockConversation(
 		modelUsed: null,
 		visitorId: conversation.visitorId,
 		conversationId: conversation.id,
-		createdAt: new Date("2024-01-01T00:00:00.000Z"),
-		updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+		createdAt: "2024-01-01T00:00:00.000Z",
+		updatedAt: "2024-01-01T00:00:00.000Z",
 		deletedAt: null,
 		visibility: "public",
 	};
@@ -86,7 +86,7 @@ describe("conversations store", () => {
 		const updatedSecond = createMockConversation({
 			id: "conv-b",
 			title: "Billing follow-up",
-			updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+			updatedAt: "2024-01-02T00:00:00.000Z",
 		});
 
 		store.ingestList(createListResponse([updatedSecond], { page: 1 }));

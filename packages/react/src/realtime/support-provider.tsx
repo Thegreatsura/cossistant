@@ -40,17 +40,20 @@ export function SupportRealtimeProvider({
 
 	const events = useMemo(
 		() => ({
-			MESSAGE_CREATED: (
-				_data: RealtimeEvent["payload"],
+			messageCreated: (
+				_data: unknown,
 				{
 					event,
 					context,
 				}: {
-					event: RealtimeEvent<"MESSAGE_CREATED">;
+					event: RealtimeEvent<"messageCreated">;
 					context: SupportRealtimeContext;
 				}
 			) => {
-				if (context.websiteId && event.websiteId !== context.websiteId) {
+				if (
+					context.websiteId &&
+					event.payload.websiteId !== context.websiteId
+				) {
 					return;
 				}
 
@@ -59,34 +62,40 @@ export function SupportRealtimeProvider({
 
 				context.client.handleRealtimeEvent(event);
 			},
-			CONVERSATION_SEEN: (
-				_data: RealtimeEvent["payload"],
+			conversationSeen: (
+				_data: unknown,
 				{
 					event,
 					context,
 				}: {
-					event: RealtimeEvent<"CONVERSATION_SEEN">;
+					event: RealtimeEvent<"conversationSeen">;
 					context: SupportRealtimeContext;
 				}
 			) => {
-				if (context.websiteId && event.websiteId !== context.websiteId) {
+				if (
+					context.websiteId &&
+					event.payload.websiteId !== context.websiteId
+				) {
 					return;
 				}
 
 				// Update the seen store so the UI reflects who has seen messages
 				applyConversationSeenEvent(event);
 			},
-			CONVERSATION_TYPING: (
-				_data: RealtimeEvent["payload"],
+			conversationTyping: (
+				_data: unknown,
 				{
 					event,
 					context,
 				}: {
-					event: RealtimeEvent<"CONVERSATION_TYPING">;
+					event: RealtimeEvent<"conversationTyping">;
 					context: SupportRealtimeContext;
 				}
 			) => {
-				if (context.websiteId && event.websiteId !== context.websiteId) {
+				if (
+					context.websiteId &&
+					event.payload.websiteId !== context.websiteId
+				) {
 					return;
 				}
 

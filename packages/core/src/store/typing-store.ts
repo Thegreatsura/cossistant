@@ -206,7 +206,7 @@ export function clearTypingState(
 
 export function applyConversationTypingEvent(
 	store: TypingStore,
-	event: RealtimeEvent<"CONVERSATION_TYPING">,
+	event: RealtimeEvent<"conversationTyping">,
 	options: {
 		ignoreVisitorId?: string | null;
 		ignoreUserId?: string | null;
@@ -265,7 +265,7 @@ export function applyConversationTypingEvent(
 
 export function clearTypingFromMessage(
 	store: TypingStore,
-	event: RealtimeEvent<"MESSAGE_CREATED">
+	event: RealtimeEvent<"messageCreated">
 ): void {
 	const { message } = event.payload;
 	let actorType: TypingActorType | null = null;

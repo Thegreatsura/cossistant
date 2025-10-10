@@ -21,6 +21,7 @@ import {
 } from "@api/utils/websocket-connection";
 import { updateLastSeenTimestamps } from "@api/utils/websocket-updates";
 import {
+	type AnyRealtimeEvent,
 	isValidEventType,
 	type RealtimeEvent,
 	type RealtimeEventData,
@@ -299,7 +300,6 @@ export async function handleConnectionClose(
 			return;
 		}
 
-		const timestamp = Date.now();
 		const context: EventContext = {
 			connectionId,
 			userId,
@@ -313,32 +313,28 @@ export async function handleConnectionClose(
 		};
 
 		if (userId && organizationId && websiteId) {
-			const disconnectEvent: RealtimeEvent<"USER_DISCONNECTED"> = {
-				type: "USER_DISCONNECTED",
+			const disconnectEvent: RealtimeEvent<"userDisconnected"> = {
+				type: "userDisconnected",
 				payload: {
 					userId,
 					connectionId,
-					timestamp,
+					organizationId,
+					websiteId,
+					visitorId: null,
 				},
-				timestamp,
-				organizationId,
-				websiteId,
-				visitorId: null,
 			};
 
 			await routeEvent(disconnectEvent, context);
 		} else if (visitorId && organizationId && websiteId) {
-			const disconnectEvent: RealtimeEvent<"VISITOR_DISCONNECTED"> = {
-				type: "VISITOR_DISCONNECTED",
+			const disconnectEvent: RealtimeEvent<"visitorDisconnected"> = {
+				type: "visitorDisconnected",
 				payload: {
-					visitorId,
 					connectionId,
-					timestamp,
+					organizationId,
+					websiteId,
+					visitorId,
+					userId: null,
 				},
-				timestamp,
-				organizationId,
-				websiteId,
-				visitorId,
 			};
 
 			await routeEvent(disconnectEvent, context);
@@ -902,17 +898,10 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 
 			try {
 				if (metadata.organizationId && metadata.websiteId) {
-					const event: RealtimeEvent = {
+					const event = {
 						type: parsed.type,
 						payload: parsed.payload,
-						timestamp: Date.now(),
-						organizationId: metadata.organizationId,
-						websiteId: metadata.websiteId,
-						visitorId:
-							extractVisitorIdFromPayload(parsed.payload) ??
-							metadata.visitorId ??
-							null,
-					};
+					} as AnyRealtimeEvent;
 
 					await routeEvent(event, context);
 				} else {

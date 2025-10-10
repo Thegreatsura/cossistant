@@ -3,7 +3,7 @@ import { prependConversationHeaderInCache } from "@/data/conversation-header-cac
 import type { DashboardRealtimeContext } from "../types";
 import { forEachConversationHeadersQuery } from "./utils/conversation-headers";
 
-type ConversationCreatedEvent = RealtimeEvent<"CONVERSATION_CREATED">;
+type ConversationCreatedEvent = RealtimeEvent<"conversationCreated">;
 
 export function handleConversationCreated({
 	event,
@@ -12,7 +12,7 @@ export function handleConversationCreated({
 	event: ConversationCreatedEvent;
 	context: DashboardRealtimeContext;
 }) {
-	if (event.websiteId !== context.website.id) {
+	if (event.payload.websiteId !== context.website.id) {
 		return;
 	}
 

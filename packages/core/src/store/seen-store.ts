@@ -175,7 +175,7 @@ export function upsertConversationSeen(
 
 export function applyConversationSeenEvent(
 	store: SeenStore,
-	event: RealtimeEvent<"CONVERSATION_SEEN">,
+	event: RealtimeEvent<"conversationSeen">,
 	options: {
 		ignoreVisitorId?: string | null;
 		ignoreUserId?: string | null;

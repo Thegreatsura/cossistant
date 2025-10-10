@@ -1,7 +1,9 @@
-import type {
-	DefaultMessage,
-	IdentifyContactResponse,
-	RealtimeEvent,
+import {
+	type AnyRealtimeEvent,
+	type DefaultMessage,
+	getEventPayload,
+	type IdentifyContactResponse,
+	type RealtimeEvent,
 } from "@cossistant/types";
 import type {
 	CreateConversationRequestBody,
@@ -337,9 +339,11 @@ export class CossistantClient {
 
 				this.pendingConversations.delete(rest.conversationId);
 
+				const message =
+					response.initialMessages.at(-1) ?? response.initialMessages[0];
+
 				return {
-					message:
-						response.initialMessages.at(-1) ?? response.initialMessages[0],
+					message: message as Message,
 					conversation: response.conversation,
 					initialMessages: response.initialMessages,
 					wasConversationCreated: true,
@@ -378,34 +382,29 @@ export class CossistantClient {
 		}
 	}
 
-	handleRealtimeEvent(event: RealtimeEvent): void {
-		switch (event.type) {
-			case "CONVERSATION_CREATED": {
-				const conversation = event.payload.conversation;
-				this.conversationsStore.ingestConversation({
-					...conversation,
-					lastMessage: conversation.lastMessage ?? undefined,
-				});
-				break;
-			}
-			case "MESSAGE_CREATED": {
-				const message = this.messagesStore.ingestRealtime(event);
-				const existingConversation =
-					this.conversationsStore.getState().byId[message.conversationId];
+	handleRealtimeEvent(event: AnyRealtimeEvent): void {
+		if (event.type === "conversationCreated") {
+			const { conversation, header } = event.payload;
 
-				if (existingConversation) {
-					const nextConversation = {
-						...existingConversation,
-						updatedAt: message.updatedAt,
-						lastMessage: message,
-					};
+			this.conversationsStore.ingestConversation({
+				...conversation,
+				lastMessage: conversation.lastMessage ?? undefined,
+			});
+		} else if (event.type === "messageCreated") {
+			const message = this.messagesStore.ingestRealtime(event);
 
-					this.conversationsStore.ingestConversation(nextConversation);
-				}
-				break;
+			const existingConversation =
+				this.conversationsStore.getState().byId[message.conversationId];
+
+			if (existingConversation) {
+				const nextConversation = {
+					...existingConversation,
+					updatedAt: message.updatedAt,
+					lastMessage: message,
+				};
+
+				this.conversationsStore.ingestConversation(nextConversation);
 			}
-			default:
-				break;
 		}
 	}
 

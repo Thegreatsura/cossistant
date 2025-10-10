@@ -1,7 +1,7 @@
 import { env } from "@api/env";
 import {
+	type AnyRealtimeEvent,
 	isValidEventType,
-	type RealtimeEvent,
 	validateRealtimeEvent,
 } from "@cossistant/types/realtime-events";
 import Redis, { type RedisOptions } from "ioredis";
@@ -49,19 +49,19 @@ type DispatchTarget =
 type DispatchEnvelope = {
 	sourceId: string;
 	target: DispatchTarget;
-	event: RealtimeEvent;
+	event: AnyRealtimeEvent;
 };
 
 type LocalDispatchers = {
-	connection: (connectionId: string, event: RealtimeEvent) => void;
+	connection: (connectionId: string, event: AnyRealtimeEvent) => void;
 	visitor: (
 		visitorId: string,
-		event: RealtimeEvent,
+		event: AnyRealtimeEvent,
 		options?: DispatchOptions
 	) => void;
 	website: (
 		websiteId: string,
-		event: RealtimeEvent,
+		event: AnyRealtimeEvent,
 		options?: DispatchOptions
 	) => void;
 };
@@ -365,7 +365,7 @@ export function publishToConnection(
 
 export function publishToVisitor(
 	visitorId: string,
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ): Promise<void> {
 	const exclude = normalizeExclude(options);
@@ -384,7 +384,7 @@ export function publishToVisitor(
 
 export function publishToWebsite(
 	websiteId: string,
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ): Promise<void> {
 	const exclude = normalizeExclude(options);

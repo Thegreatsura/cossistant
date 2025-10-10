@@ -74,7 +74,7 @@ export function clearTypingState(options: {
 }
 
 export function applyConversationTypingEvent(
-	event: RealtimeEvent<"CONVERSATION_TYPING">,
+	event: RealtimeEvent<"conversationTyping">,
 	options?: {
 		ignoreVisitorId?: string | null;
 		ignoreUserId?: string | null;
@@ -85,8 +85,6 @@ export function applyConversationTypingEvent(
 	applyEvent(store, event, options);
 }
 
-export function clearTypingFromMessage(
-	event: RealtimeEvent<"MESSAGE_CREATED">
-) {
+export function clearTypingFromMessage(event: RealtimeEvent<"messageCreated">) {
 	clearFromMessage(store, event);
 }

@@ -17,9 +17,13 @@ function createWebsite(
 		lastOnlineAt: "2021-01-01T00:00:00.000Z",
 		visitor: {
 			id: "visitor-1",
-			externalId: "visitor-1",
-			name: "Visitor",
-			email: "visitor@example.com",
+			contact: {
+				id: "contact-1",
+				name: "Visitor",
+				email: "visitor@example.com",
+				image: "https://example.com/logo.png",
+			},
+			language: "en",
 			isBlocked: false,
 		},
 		availableHumanAgents: [],

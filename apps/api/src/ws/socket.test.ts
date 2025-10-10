@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import type { EventContext } from "./router";
 import type { RawSocket } from "./socket";
 
-const routeEventCalls: [RealtimeEvent, EventContext][] = [];
+const routeEventCalls: [AnyRealtimeEvent, EventContext][] = [];
 
 mock.module("@api/db", () => ({ db: {} }));
 mock.module("@api/db/queries/api-keys", () => ({}));
@@ -64,7 +64,7 @@ mock.module("./realtime-pubsub", () => ({
 	publishToWebsite: () => Promise.resolve(),
 }));
 mock.module("./router", () => ({
-	routeEvent: async (event: RealtimeEvent, context: EventContext) => {
+	routeEvent: async (event: AnyRealtimeEvent, context: EventContext) => {
 		routeEventCalls.push([event, context]);
 	},
 }));

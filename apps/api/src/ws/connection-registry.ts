@@ -1,4 +1,4 @@
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ServerWebSocket } from "bun";
 import type { DispatchOptions } from "./router";
 
@@ -41,7 +41,7 @@ function sendEventToSocket(
 
 export function dispatchEventToLocalConnection(
 	connectionId: string,
-	event: RealtimeEvent
+	event: AnyRealtimeEvent
 ): void {
 	const connection = localConnections.get(connectionId);
 	if (!connection) {
@@ -54,7 +54,7 @@ export function dispatchEventToLocalConnection(
 
 export function dispatchEventToLocalVisitor(
 	visitorId: string,
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ): void {
 	const shouldExclude = createExcludePredicate(options);
@@ -80,7 +80,7 @@ export function dispatchEventToLocalVisitor(
 
 export function dispatchEventToLocalWebsite(
 	websiteId: string,
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ): void {
 	const shouldExclude = createExcludePredicate(options);

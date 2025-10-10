@@ -3,7 +3,7 @@ import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationHeader } from "@/data/conversation-header-cache";
 import type { DashboardRealtimeContext } from "../types";
 
-type ConversationSeenEvent = RealtimeEvent<"CONVERSATION_SEEN">;
+type ConversationSeenEvent = RealtimeEvent<"conversationSeen">;
 
 // Debouncing mechanism to prevent animation conflicts
 // Store pending updates by conversationId
@@ -243,7 +243,7 @@ export function handleConversationSeen({
 	event: ConversationSeenEvent;
 	context: DashboardRealtimeContext;
 }) {
-	if (event.websiteId !== context.website.id) {
+	if (event.payload.websiteId !== context.website.id) {
 		return;
 	}
 

@@ -1,20 +1,20 @@
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import { useEffect } from "react";
 import { useWebSocket } from "../support/context/websocket";
 
 export type UseRealtimeSupportOptions = {
-	onEvent?: (event: RealtimeEvent) => void;
+	onEvent?: (event: AnyRealtimeEvent) => void;
 };
 
 export type UseRealtimeSupportResult = {
 	isConnected: boolean;
 	isConnecting: boolean;
 	error: Error | null;
-	send: (event: RealtimeEvent) => void;
-	lastEvent: RealtimeEvent | null;
+	send: (event: AnyRealtimeEvent) => void;
+	lastEvent: AnyRealtimeEvent | null;
 	/** @deprecated Use `lastEvent` instead. */
-	lastMessage: RealtimeEvent | null;
-	subscribe: (handler: (event: RealtimeEvent) => void) => () => void;
+	lastMessage: AnyRealtimeEvent | null;
+	subscribe: (handler: (event: AnyRealtimeEvent) => void) => () => void;
 };
 
 /**

@@ -34,17 +34,6 @@ import {
 	setVisitorId,
 } from "./visitor-tracker";
 
-/**
- * Internal type for API responses with string dates (to be normalized to Date objects)
- */
-type APIDateString<T> = T extends Date
-	? string
-	: T extends Date | null
-		? string | null
-		: T extends object
-			? { [K in keyof T]: APIDateString<T[K]> }
-			: T;
-
 export class CossistantRestClient {
 	private config: CossistantConfig;
 	private baseHeaders: Record<string, string>;
@@ -86,9 +75,8 @@ export class CossistantRestClient {
 		}
 	}
 
-	private normalizeVisitorResponse(
-		payload: APIDateString<VisitorResponse>
-	): VisitorResponse {
+	private normalizeVisitorResponse(payload: VisitorResponse): VisitorResponse {
+		const contact = payload.contact ? payload.contact : null;
 		return {
 			...payload,
 			// Ensure latitude and longitude are numbers or null
@@ -104,6 +92,7 @@ export class CossistantRestClient {
 			updatedAt: payload.updatedAt,
 			lastSeenAt: payload.lastSeenAt ? payload.lastSeenAt : null,
 			blockedAt: payload.blockedAt ? payload.blockedAt : null,
+			contact: payload.contact ? payload.contact : null,
 		};
 	}
 
@@ -144,16 +133,13 @@ export class CossistantRestClient {
 				return;
 			}
 
-			await this.request<APIDateString<VisitorResponse>>(
-				`/visitors/${visitorId}`,
-				{
-					method: "PATCH",
-					body: JSON.stringify(payload),
-					headers: {
-						"X-Visitor-Id": visitorId,
-					},
-				}
-			);
+			await this.request<VisitorResponse>(`/visitors/${visitorId}`, {
+				method: "PATCH",
+				body: JSON.stringify(payload),
+				headers: {
+					"X-Visitor-Id": visitorId,
+				},
+			});
 		} catch (error) {
 			if (
 				typeof console !== "undefined" &&
@@ -258,7 +244,7 @@ export class CossistantRestClient {
 		metadata: VisitorMetadata
 	): Promise<VisitorResponse> {
 		const visitorId = this.resolveVisitorId();
-		const response = await this.request<APIDateString<VisitorResponse>>(
+		const response = await this.request<VisitorResponse>(
 			`/visitors/${visitorId}/metadata`,
 			{
 				method: "PATCH",
@@ -286,7 +272,7 @@ export class CossistantRestClient {
 	}): Promise<IdentifyContactResponse> {
 		const visitorId = this.resolveVisitorId();
 
-		const response = await this.request<APIDateString<IdentifyContactResponse>>(
+		const response = await this.request<IdentifyContactResponse>(
 			"/contacts/identify",
 			{
 				method: "POST",
@@ -355,13 +341,14 @@ export class CossistantRestClient {
 			headers["X-Visitor-Id"] = visitorId;
 		}
 
-		const response = await this.request<
-			APIDateString<CreateConversationResponseBody>
-		>("/conversations", {
-			method: "POST",
-			body: JSON.stringify(body),
-			headers,
-		});
+		const response = await this.request<CreateConversationResponseBody>(
+			"/conversations",
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers,
+			}
+		);
 
 		// Convert date strings to Date objects
 		return {
@@ -444,11 +431,12 @@ export class CossistantRestClient {
 			headers["X-Visitor-Id"] = visitorId;
 		}
 
-		const response = await this.request<
-			APIDateString<ListConversationsResponse>
-		>(`/conversations?${queryParams.toString()}`, {
-			headers,
-		});
+		const response = await this.request<ListConversationsResponse>(
+			`/conversations?${queryParams.toString()}`,
+			{
+				headers,
+			}
+		);
 
 		// Convert date strings to Date objects
 		return {
@@ -474,7 +462,7 @@ export class CossistantRestClient {
 			headers["X-Visitor-Id"] = visitorId;
 		}
 
-		const response = await this.request<APIDateString<GetConversationResponse>>(
+		const response = await this.request<GetConversationResponse>(
 			`/conversations/${params.conversationId}`,
 			{
 				headers,
@@ -516,13 +504,14 @@ export class CossistantRestClient {
 			body.visitorId = params.visitorId;
 		}
 
-		const response = await this.request<
-			APIDateString<MarkConversationSeenResponseBody>
-		>(`/conversations/${params.conversationId}/seen`, {
-			method: "POST",
-			body: JSON.stringify(body),
-			headers,
-		});
+		const response = await this.request<MarkConversationSeenResponseBody>(
+			`/conversations/${params.conversationId}/seen`,
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers,
+			}
+		);
 
 		return {
 			conversationId: response.conversationId,
@@ -533,11 +522,12 @@ export class CossistantRestClient {
 	async getConversationSeenData(params: {
 		conversationId: string;
 	}): Promise<GetConversationSeenDataResponse> {
-		const response = await this.request<
-			APIDateString<GetConversationSeenDataResponse>
-		>(`/conversations/${params.conversationId}/seen`, {
-			method: "GET",
-		});
+		const response = await this.request<GetConversationSeenDataResponse>(
+			`/conversations/${params.conversationId}/seen`,
+			{
+				method: "GET",
+			}
+		);
 
 		return {
 			seenData: response.seenData.map((item) => ({
@@ -582,13 +572,14 @@ export class CossistantRestClient {
 			body.visitorPreview = params.visitorPreview.slice(0, 2000);
 		}
 
-		const response = await this.request<
-			APIDateString<SetConversationTypingResponseBody>
-		>(`/conversations/${params.conversationId}/typing`, {
-			method: "POST",
-			body: JSON.stringify(body),
-			headers,
-		});
+		const response = await this.request<SetConversationTypingResponseBody>(
+			`/conversations/${params.conversationId}/typing`,
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers,
+			}
+		);
 
 		return {
 			conversationId: response.conversationId,
@@ -622,7 +613,7 @@ export class CossistantRestClient {
 			headers["X-Visitor-Id"] = visitorId;
 		}
 
-		const response = await this.request<APIDateString<GetMessagesResponse>>(
+		const response = await this.request<GetMessagesResponse>(
 			`/messages?${queryParams.toString()}`,
 			{
 				headers,
@@ -646,14 +637,11 @@ export class CossistantRestClient {
 			headers["X-Visitor-Id"] = visitorId;
 		}
 
-		const response = await this.request<APIDateString<SendMessageResponse>>(
-			"/messages",
-			{
-				method: "POST",
-				body: JSON.stringify(params),
-				headers,
-			}
-		);
+		const response = await this.request<SendMessageResponse>("/messages", {
+			method: "POST",
+			body: JSON.stringify(params),
+			headers,
+		});
 
 		return {
 			message: response.message,

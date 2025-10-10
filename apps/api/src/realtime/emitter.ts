@@ -12,15 +12,6 @@ import {
 } from "@cossistant/types/realtime-events";
 import type { Context } from "hono";
 
-type EmitOptions = {
-	websiteId?: string | null;
-	visitorId?: string | null;
-	userId?: string | null;
-	organizationId?: string | null;
-	connectionId?: string | null;
-	timestamp?: number;
-};
-
 function extractWebsiteId(data: unknown): string | null {
 	if (!data || typeof data !== "object") {
 		return null;
@@ -51,68 +42,15 @@ function extractOrganizationId(data: unknown): string | null {
 	return null;
 }
 
-function extractVisitorId(data: unknown): string | null {
-	if (!data || typeof data !== "object") {
-		return null;
-	}
-
-	if ("visitorId" in data) {
-		const direct = (data as { visitorId?: unknown }).visitorId;
-		if (typeof direct === "string" && direct.length > 0) {
-			return direct;
-		}
-	}
-
-	if ("message" in data) {
-		const nested = (data as { message?: { visitorId?: unknown } | null })
-			.message?.visitorId;
-		if (typeof nested === "string" && nested.length > 0) {
-			return nested;
-		}
-	}
-
-	if ("conversation" in data) {
-		const conversation = (
-			data as {
-				conversation?: { visitorId?: unknown } | null;
-			}
-		).conversation;
-
-		const visitorId = (conversation as { visitorId?: unknown } | null)
-			?.visitorId;
-		if (typeof visitorId === "string" && visitorId.length > 0) {
-			return visitorId;
-		}
-	}
-
-	return null;
-}
-
-function extractUserId(data: unknown): string | null {
-	if (!data || typeof data !== "object") {
-		return null;
-	}
-
-	if ("userId" in data) {
-		const direct = (data as { userId?: unknown }).userId;
-		if (typeof direct === "string" && direct.length > 0) {
-			return direct;
-		}
-	}
-
-	return null;
-}
-
 export class RealtimeEmitter {
 	async emit<TType extends RealtimeEventType>(
 		type: TType,
-		payload: RealtimeEventData<TType>,
-		options: EmitOptions = {}
+		payload: RealtimeEventData<TType>
 	): Promise<void> {
 		const data = validateRealtimeEvent(type, payload);
-		const websiteId = options.websiteId ?? extractWebsiteId(data);
+		const websiteId = payload.websiteId ?? extractWebsiteId(data);
 		const organizationId =
-			options.organizationId ?? extractOrganizationId(data) ?? null;
+			payload.organizationId ?? extractOrganizationId(data) ?? null;
 
 		if (!websiteId) {
 			throw new Error(
@@ -129,17 +67,13 @@ export class RealtimeEmitter {
 		const event: RealtimeEvent<TType> = {
 			type,
 			payload: data,
-			timestamp: options.timestamp ?? Date.now(),
-			websiteId,
-			organizationId,
-			visitorId: options.visitorId ?? extractVisitorId(data) ?? null,
 		};
 
 		const context: EventContext = {
-			connectionId: options.connectionId ?? "server",
+			connectionId: "server",
 			websiteId,
-			visitorId: event.visitorId ?? undefined,
-			userId: options.userId ?? extractUserId(data) ?? undefined,
+			visitorId: event.payload.visitorId ?? undefined,
+			userId: payload.userId ?? undefined,
 			organizationId,
 			sendToConnection: sendEventToConnection,
 			sendToVisitor: sendEventToVisitor,
@@ -150,7 +84,7 @@ export class RealtimeEmitter {
 	}
 }
 
-const realtimeEmitter = new RealtimeEmitter();
+const realtime = new RealtimeEmitter();
 
 export function getRealtimeEmitter(c: Context): RealtimeEmitter {
 	const emitter = c.get("realtime") as RealtimeEmitter | undefined;
@@ -160,4 +94,4 @@ export function getRealtimeEmitter(c: Context): RealtimeEmitter {
 	return emitter;
 }
 
-export { realtimeEmitter };
+export { realtime };

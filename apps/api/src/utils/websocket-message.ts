@@ -3,7 +3,7 @@
  */
 
 import type { EventContext } from "@api/ws/router";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import {
 	isValidEventType,
 	validateRealtimeEvent,
@@ -16,7 +16,7 @@ export type ParsedMessage = {
 };
 
 export type ValidatedMessage = {
-	event: RealtimeEvent;
+	event: AnyRealtimeEvent;
 	context: EventContext;
 };
 
@@ -63,14 +63,10 @@ export function validateMessage(
 	const validatedData = validateRealtimeEvent(message.type, message.data);
 
 	// Create event
-	const event: RealtimeEvent = {
+	const event = {
 		type: message.type,
 		payload: validatedData,
-		timestamp: Date.now(),
-		organizationId: authContext?.organizationId ?? "",
-		websiteId: authContext?.websiteId ?? "",
-		visitorId: authContext?.visitorId ?? null,
-	};
+	} as AnyRealtimeEvent;
 
 	// Create context
 	const context: EventContext = {

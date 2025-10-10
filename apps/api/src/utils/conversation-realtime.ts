@@ -1,6 +1,6 @@
 import type { ConversationRecord } from "@api/db/mutations/conversation";
 import type { conversationEvent } from "@api/db/schema";
-import { realtimeEmitter } from "@api/realtime/emitter";
+import { realtime } from "@api/realtime/emitter";
 import type { ConversationHeader } from "@cossistant/types/trpc/conversation";
 import type { InferSelectModel } from "drizzle-orm";
 
@@ -73,22 +73,14 @@ export async function emitConversationSeenEvent({
 }: SeenEventParams) {
 	const actorPayload = mapActor(actor);
 
-	await realtimeEmitter.emit(
-		"CONVERSATION_SEEN",
-		{
-			conversationId: conversation.id,
-			websiteId: conversation.websiteId,
-			organizationId: conversation.organizationId,
-			lastSeenAt,
-			...actorPayload,
-		},
-		{
-			organizationId: conversation.organizationId,
-			websiteId: conversation.websiteId,
-			userId: actorPayload.userId,
-			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
-		}
-	);
+	await realtime.emit("conversationSeen", {
+		conversationId: conversation.id,
+		organizationId: conversation.organizationId,
+		websiteId: conversation.websiteId,
+		lastSeenAt,
+		...actorPayload,
+		visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
+	});
 }
 
 export async function emitConversationTypingEvent({
@@ -103,52 +95,37 @@ export async function emitConversationTypingEvent({
 			? visitorPreview.slice(0, 2000)
 			: null;
 
-	await realtimeEmitter.emit(
-		"CONVERSATION_TYPING",
-		{
-			conversationId: conversation.id,
-			websiteId: conversation.websiteId,
-			organizationId: conversation.organizationId,
-			isTyping,
-			visitorPreview: previewForEvent,
-			...actorPayload,
-		},
-		{
-			organizationId: conversation.organizationId,
-			websiteId: conversation.websiteId,
-			userId: actorPayload.userId,
-			visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
-		}
-	);
+	await realtime.emit("conversationTyping", {
+		conversationId: conversation.id,
+		websiteId: conversation.websiteId,
+		organizationId: conversation.organizationId,
+		isTyping,
+		visitorPreview: previewForEvent,
+		...actorPayload,
+		visitorId: actorPayload.visitorId ?? conversation.visitorId ?? null,
+	});
 }
 
 export async function emitConversationCreatedEvent({
 	conversation,
 	header,
 }: ConversationCreatedEventParams) {
-	await realtimeEmitter.emit(
-		"CONVERSATION_CREATED",
-		{
-			conversationId: conversation.id,
+	await realtime.emit("conversationCreated", {
+		conversationId: conversation.id,
+		websiteId: conversation.websiteId,
+		organizationId: conversation.organizationId,
+		visitorId: conversation.visitorId ?? null,
+		userId: null,
+		conversation: {
+			id: conversation.id,
+			title: conversation.title ?? undefined,
+			createdAt: conversation.createdAt,
+			updatedAt: conversation.updatedAt,
+			visitorId: conversation.visitorId,
 			websiteId: conversation.websiteId,
-			organizationId: conversation.organizationId,
-			visitorId: conversation.visitorId ?? null,
-			conversation: {
-				id: conversation.id,
-				title: conversation.title ?? undefined,
-				createdAt: conversation.createdAt,
-				updatedAt: conversation.updatedAt,
-				visitorId: conversation.visitorId,
-				websiteId: conversation.websiteId,
-				status: conversation.status,
-				lastMessage: header.lastMessagePreview ?? undefined,
-			},
-			header,
+			status: conversation.status,
+			lastMessage: header.lastMessagePreview ?? undefined,
 		},
-		{
-			organizationId: conversation.organizationId,
-			websiteId: conversation.websiteId,
-			visitorId: conversation.visitorId ?? null,
-		}
-	);
+		header,
+	});
 }

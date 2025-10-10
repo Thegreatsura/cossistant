@@ -70,7 +70,7 @@ export function upsertConversationSeen(options: {
 }
 
 export function applyConversationSeenEvent(
-	event: RealtimeEvent<"CONVERSATION_SEEN">,
+	event: RealtimeEvent<"conversationSeen">,
 	options?: {
 		ignoreVisitorId?: string | null;
 		ignoreUserId?: string | null;

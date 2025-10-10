@@ -1,4 +1,5 @@
 import type {
+	AnyRealtimeEvent,
 	RealtimeEvent,
 	RealtimeEventData,
 	RealtimeEventType,
@@ -44,20 +45,20 @@ type UseRealtimeOptions<
 };
 
 function shouldDeliverEvent(
-	event: RealtimeEvent,
+	event: AnyRealtimeEvent,
 	websiteId: string | null,
 	visitorId: string | null
 ): boolean {
-	if (websiteId && event.websiteId !== websiteId) {
+	if (websiteId && event.payload.websiteId !== websiteId) {
 		return false;
 	}
 
 	if (visitorId) {
-		if (!event.visitorId) {
+		if (!event.payload.visitorId) {
 			return false;
 		}
 
-		if (event.visitorId !== visitorId) {
+		if (event.payload.visitorId !== visitorId) {
 			return false;
 		}
 	}

@@ -1,6 +1,6 @@
 import { WEBSOCKET_ERRORS } from "@api/utils/websocket-errors";
 import type { RawSocket, WebSocketAuthSuccess } from "@api/ws/socket";
-import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ServerWebSocket } from "bun";
 
 export type AuthResult = WebSocketAuthSuccess;
@@ -71,7 +71,7 @@ export function sendConnectionEstablishedMessage(
 export function createConnectionEvent(
 	authResult: AuthResult,
 	connectionId: string
-): RealtimeEvent {
+): AnyRealtimeEvent {
 	const isUserConnection = !!authResult.userId;
 
 	if (isUserConnection) {
@@ -84,17 +84,15 @@ export function createConnectionEvent(
 			);
 		}
 		return {
-			type: "USER_CONNECTED",
+			type: "userConnected",
 			payload: {
+				websiteId: authResult.websiteId,
+				organizationId: authResult.organizationId,
+				visitorId: null,
 				userId: authResult.userId,
 				connectionId,
-				timestamp: Date.now(),
 			},
-			timestamp: Date.now(),
-			websiteId: authResult.websiteId,
-			organizationId: authResult.organizationId,
-			visitorId: null,
-		};
+		} as AnyRealtimeEvent;
 	}
 
 	// Only create visitor event if we have a valid visitorId
@@ -109,17 +107,15 @@ export function createConnectionEvent(
 	}
 
 	return {
-		type: "VISITOR_CONNECTED",
+		type: "visitorConnected",
 		payload: {
+			websiteId: authResult.websiteId,
+			organizationId: authResult.organizationId,
 			visitorId: authResult.visitorId,
+			userId: null,
 			connectionId,
-			timestamp: Date.now(),
 		},
-		timestamp: Date.now(),
-		websiteId: authResult.websiteId,
-		organizationId: authResult.organizationId,
-		visitorId: authResult.visitorId,
-	};
+	} as AnyRealtimeEvent;
 }
 
 export async function updatePresenceIfNeeded(

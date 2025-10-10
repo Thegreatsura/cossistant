@@ -39,7 +39,7 @@ describe("seen store", () => {
 	});
 
 	it("upserts new entries and ignores stale timestamps", () => {
-		const lastSeen = new Date("2024-01-01T00:00:00.000Z");
+		const lastSeen = "2024-01-01T00:00:00.000Z";
 		upsertConversationSeen(store, {
 			conversationId: "conv-1",
 			actorType: "user",
@@ -53,13 +53,17 @@ describe("seen store", () => {
 			conversationId: "conv-1",
 			actorType: "user",
 			actorId: "user-1",
-			lastSeenAt: new Date("2023-12-31T23:59:59.000Z"),
+			lastSeenAt: "2023-12-31T23:59:59.000Z",
 		});
 
 		const entries = getEntries("conv-1");
 		expect(Object.keys(entries)).toHaveLength(1);
 		const entry = entries["conv-1:user:user-1"];
-		expect(entry?.lastSeenAt.getTime()).toBe(lastSeen.getTime());
+		const lastSeenDate = new Date(lastSeen);
+
+		expect(new Date(entry?.lastSeenAt || new Date()).getTime()).toBe(
+			lastSeenDate.getTime()
+		);
 	});
 
 	it("hydrates conversations from API payloads", () => {
@@ -94,12 +98,11 @@ describe("seen store", () => {
 	});
 
 	it("applies realtime events with ignore filters", () => {
-		const event: RealtimeEvent<"CONVERSATION_SEEN"> = {
-			type: "CONVERSATION_SEEN",
-			timestamp: Date.now(),
-			organizationId: "org-1",
-			websiteId: "site-1",
+		const event: RealtimeEvent<"conversationSeen"> = {
+			type: "conversationSeen",
 			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
 				conversationId: "conv-1",
 				visitorId: "visitor-1",
 				userId: null,
@@ -126,7 +129,7 @@ describe("seen store", () => {
 			conversationId: "conv-1",
 			actorType: "user",
 			actorId: "user-1",
-			lastSeenAt: new Date("2024-01-01T00:00:00.000Z"),
+			lastSeenAt: "2024-01-01T00:00:00.000Z",
 		});
 
 		store.clear("conv-1");

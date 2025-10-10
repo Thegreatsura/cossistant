@@ -130,12 +130,8 @@ describe("typing store", () => {
 	});
 
 	it("applies realtime events and respects ignore filters", () => {
-		const event: RealtimeEvent<"CONVERSATION_TYPING"> = {
-			type: "CONVERSATION_TYPING",
-			timestamp: Date.now(),
-			organizationId: "org-1",
-			websiteId: "site-1",
-			visitorId: "visitor-1",
+		const event: RealtimeEvent<"conversationTyping"> = {
+			type: "conversationTyping",
 			payload: {
 				websiteId: "site-1",
 				organizationId: "org-1",
@@ -168,16 +164,14 @@ describe("typing store", () => {
 			isTyping: true,
 		});
 
-		const messageEvent: RealtimeEvent<"MESSAGE_CREATED"> = {
-			type: "MESSAGE_CREATED",
-			timestamp: Date.now(),
-			organizationId: "org-1",
-			websiteId: "site-1",
-			visitorId: "visitor-1",
+		const messageEvent: RealtimeEvent<"messageCreated"> = {
+			type: "messageCreated",
 			payload: {
 				conversationId: "conv-1",
 				websiteId: "site-1",
 				organizationId: "org-1",
+				userId: null,
+				visitorId: "visitor-1",
 				message: {
 					id: "msg-1",
 					bodyMd: "hello",
