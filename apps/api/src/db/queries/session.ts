@@ -1,10 +1,10 @@
 import type { Database } from "@api/db";
 import type {
-	ApiKeySelect,
-	OrganizationSelect,
-	SessionSelect,
-	UserSelect,
-	WebsiteSelect,
+  ApiKeySelect,
+  OrganizationSelect,
+  SessionSelect,
+  UserSelect,
+  WebsiteSelect,
 } from "@api/db/schema";
 import { session, user } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
@@ -13,99 +13,103 @@ import type { Session, User } from "better-auth";
 import { and, eq, gt } from "drizzle-orm";
 
 export type ApiKeyWithWebsiteAndOrganization = ApiKeySelect & {
-	website: WebsiteSelect;
-	organization: OrganizationSelect;
+  website: WebsiteSelect;
+  organization: OrganizationSelect;
 };
 
 const MAX_SESSION_TOKEN_LENGTH = 512;
 
 export function normalizeSessionToken(
-	token: string | null | undefined
+  token: string | null | undefined
 ): string | undefined {
-	if (!token) {
-		return;
-	}
+  if (!token) {
+    return;
+  }
 
-	const trimmed = token.trim();
-	if (!trimmed) {
-		return;
-	}
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return;
+  }
 
-	if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
-		return;
-	}
+  if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
+    return;
+  }
 
-	return trimmed;
+  return trimmed;
 }
 
 export async function resolveSession(
-	db: Database,
-	params: {
-		headers: Headers;
-		sessionToken?: string | null;
-	}
+  db: Database,
+  params: {
+    headers: Headers;
+    sessionToken?: string | null;
+  }
 ) {
-	let userSession: {
-		session: Session & {
-			activeOrganizationId?: string | null | undefined;
-			activeTeamId?: string | null | undefined;
-		};
-		user: User;
-	} | null = await auth.api.getSession({ headers: params.headers });
+  let foundSession: {
+    session: Session & {
+      activeOrganizationId?: string | null | undefined;
+      activeTeamId?: string | null | undefined;
+    };
+    user: UserSelect;
+  } | null = null;
 
-	const tokensToCheck = new Set<string>();
+  const betterAuthSession = await auth.api.getSession({
+    headers: params.headers,
+  });
 
-	const normalizedOverride = normalizeSessionToken(params.sessionToken);
+  const tokensToCheck = new Set<string>();
 
-	if (normalizedOverride) {
-		tokensToCheck.add(normalizedOverride);
-	}
+  const normalizedOverride = normalizeSessionToken(params.sessionToken);
 
-	const headerToken = normalizeSessionToken(
-		params.headers.get("x-user-session-token")
-	);
+  if (normalizedOverride) {
+    tokensToCheck.add(normalizedOverride);
+  }
 
-	if (headerToken) {
-		tokensToCheck.add(headerToken);
-	}
+  const headerToken = normalizeSessionToken(
+    params.headers.get("x-user-session-token")
+  );
 
-	// Avoid querying again if the Better Auth session already resolves to the
-	// same token.
-	const currentToken = normalizeSessionToken(userSession?.session?.token);
+  if (headerToken) {
+    tokensToCheck.add(headerToken);
+  }
 
-	if (currentToken) {
-		tokensToCheck.delete(currentToken);
-	}
+  // Avoid querying again if the Better Auth session already resolves to the
+  // same token.
+  const currentToken = normalizeSessionToken(betterAuthSession?.session?.token);
 
-	const now = new Date();
+  if (currentToken) {
+    tokensToCheck.delete(currentToken);
+  }
 
-	for (const token of tokensToCheck) {
-		const [res] = await db
-			.select()
-			.from(session)
-			.where(and(eq(session.token, token), gt(session.expiresAt, now)))
-			.innerJoin(user, eq(session.userId, user.id))
-			.limit(1)
-			.$withCache({ tag: `session:${token}` });
+  const now = new Date();
 
-		if (res) {
-			userSession = {
-				session: res.session,
-				user: res.user,
-			};
+  for (const token of tokensToCheck) {
+    const [res] = await db
+      .select()
+      .from(session)
+      .where(and(eq(session.token, token), gt(session.expiresAt, now)))
+      .innerJoin(user, eq(session.userId, user.id))
+      .limit(1)
+      .$withCache({ tag: `session:${token}` });
 
-			break;
-		}
-	}
+    if (res) {
+      foundSession = {
+        session: res.session,
+        user: res.user,
+      };
 
-	return userSession;
+      break;
+    }
+  }
+
+  return foundSession;
 }
 
 export async function getTRPCSession(
-	db: Database,
-	params: {
-		headers: Headers;
-	}
+  db: Database,
+  params: {
+    headers: Headers;
+  }
 ) {
-	return await resolveSession(db, { headers: params.headers });
+  return await resolveSession(db, { headers: params.headers });
 }
