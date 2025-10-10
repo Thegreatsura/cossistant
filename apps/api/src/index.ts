@@ -103,6 +103,8 @@ app.use("/trpc/*", async (c, next) => {
     headers: c.req.raw.headers,
   });
 
+  console.log("session trpc", session);
+
   if (!session) {
     c.set("user", null);
     c.set("session", null);

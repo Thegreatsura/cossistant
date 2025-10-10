@@ -57,7 +57,13 @@ export async function resolveSession(
     headers: params.headers,
   });
 
+  console.log("betterAuthSession", betterAuthSession);
+
   const tokensToCheck = new Set<string>();
+
+  if (betterAuthSession?.session?.token) {
+    tokensToCheck.add(betterAuthSession.session.token);
+  }
 
   const normalizedOverride = normalizeSessionToken(params.sessionToken);
 
@@ -71,14 +77,6 @@ export async function resolveSession(
 
   if (headerToken) {
     tokensToCheck.add(headerToken);
-  }
-
-  // Avoid querying again if the Better Auth session already resolves to the
-  // same token.
-  const currentToken = normalizeSessionToken(betterAuthSession?.session?.token);
-
-  if (currentToken) {
-    tokensToCheck.delete(currentToken);
   }
 
   const now = new Date();
