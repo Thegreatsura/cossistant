@@ -1,8 +1,8 @@
 import { describe, expect, it, mock } from "bun:test";
 
 const APIKeyType = {
-	PRIVATE: "PRIVATE",
-	PUBLIC: "PUBLIC",
+	PRIVATE: "private",
+	PUBLIC: "public",
 } as const;
 
 mock.module("@cossistant/types", () => ({

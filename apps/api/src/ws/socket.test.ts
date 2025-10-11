@@ -99,13 +99,14 @@ describe("handleConnectionClose", () => {
 
 		expect(routeEventCalls).toHaveLength(1);
 		const [event, context] = routeEventCalls[0];
-		expect(event.type).toBe("USER_DISCONNECTED");
+		expect(event.type).toBe("userDisconnected");
 		expect(event.payload).toMatchObject({
 			userId: "user-1",
 			connectionId: "conn-user",
+			organizationId: "org-1",
+			websiteId: "website-1",
+			visitorId: null,
 		});
-		expect(event.organizationId).toBe("org-1");
-		expect(event.websiteId).toBe("website-1");
 		expect(context).toMatchObject({
 			connectionId: "conn-user",
 			userId: "user-1",
@@ -131,14 +132,14 @@ describe("handleConnectionClose", () => {
 
 		expect(routeEventCalls).toHaveLength(1);
 		const [event, context] = routeEventCalls[0];
-		expect(event.type).toBe("VISITOR_DISCONNECTED");
+		expect(event.type).toBe("visitorDisconnected");
 		expect(event.payload).toMatchObject({
 			visitorId: "visitor-1",
 			connectionId: "conn-visitor",
+			organizationId: "org-9",
+			websiteId: "website-9",
+			userId: null,
 		});
-		expect(event.organizationId).toBe("org-9");
-		expect(event.websiteId).toBe("website-9");
-		expect(event.visitorId).toBe("visitor-1");
 		expect(context).toMatchObject({
 			connectionId: "conn-visitor",
 			visitorId: "visitor-1",

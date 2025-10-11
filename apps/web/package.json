@@ -3,16 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "biome check .",
-    "format": "biome format --write .",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "postinstall": "fumadocs-mdx"
-  },
   "dependencies": {
     "@cossistant/api": "workspace:*",
     "@cossistant/core": "workspace:*",
@@ -104,5 +94,16 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "@types/bun": "^1.2.22"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "postinstall": "fumadocs-mdx",
+    "check-types": "tsc --noEmit --project tsconfig.json"
   }
 }

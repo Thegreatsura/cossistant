@@ -2,21 +2,6 @@
   "name": "@cossistant/api",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "concurrently 'bun run --hot src/index.ts' 'node $(which npx) @upstash/qstash-cli dev'",
-    "build": "bun build src/index.ts --compile --outfile server",
-    "start": "bun run src/index.ts",
-    "build:types": "tsc --build",
-    "dev:types": "tsc --build --watch",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "test:coverage": "bun test --coverage",
-    "db:seed": "bun run scripts/seed.ts",
-    "db:migrate": "bun run scripts/migrate.ts",
-    "db:studio": "drizzle-kit studio",
-    "better-auth:generate-schema": "npx @better-auth/cli@latest generate --output ./src/db/schema/auth-generated.ts",
-    "generate": "drizzle-kit generate"
-  },
   "exports": {
     ".": "./src/client/index.ts",
     "./queries": "./src/db/queries/index.ts",
@@ -56,5 +41,22 @@
     "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.4",
     "react-email": "4.2.11"
+  },
+  "scripts": {
+    "dev": "concurrently 'bun run --hot src/index.ts' 'node $(which npx) @upstash/qstash-cli dev'",
+    "build": "bun build src/index.ts --compile --outfile server",
+    "start": "bun run src/index.ts",
+    "build:types": "tsc --build",
+    "dev:types": "tsc --build --watch",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "db:seed": "bun run scripts/seed.ts",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "better-auth:generate-schema": "npx @better-auth/cli@latest generate --output ./src/db/schema/auth-generated.ts",
+    "generate": "drizzle-kit generate",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
   }
 }

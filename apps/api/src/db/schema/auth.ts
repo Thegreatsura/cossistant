@@ -27,10 +27,10 @@ export const user = pgTable(
 			.$defaultFn(() => false)
 			.notNull(),
 		createdAt: timestamp("created_at")
-			.$defaultFn(() => new Date().toISOString())
+			.$defaultFn(() => new Date())
 			.notNull(),
 		updatedAt: timestamp("updated_at")
-			.$defaultFn(() => new Date().toISOString())
+			.$defaultFn(() => new Date())
 			.notNull(),
 		lastSeenAt: timestamp("last_seen_at"),
 		role: text("role"),
@@ -184,10 +184,10 @@ export const team = pgTable(
 			{ onDelete: "cascade" }
 		),
 		createdAt: timestamp("created_at")
-			.$defaultFn(() => new Date().toISOString())
+			.$defaultFn(() => new Date())
 			.notNull(),
 		updatedAt: timestamp("updated_at")
-			.$defaultFn(() => new Date().toISOString())
+			.$defaultFn(() => new Date())
 			.notNull(),
 	},
 	(table) => [
@@ -209,10 +209,10 @@ export const teamMember = pgTable(
 			onDelete: "cascade",
 		}),
 		createdAt: timestamp("created_at")
-			.$defaultFn(() => new Date().toISOString())
+			.$defaultFn(() => new Date())
 			.notNull(),
 		updatedAt: timestamp("updated_at")
-			.$defaultFn(() => new Date().toISOString())
+			.$defaultFn(() => new Date())
 			.notNull(),
 	},
 	(table) => [

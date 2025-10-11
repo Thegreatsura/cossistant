@@ -7,4 +7,4 @@ export type {
 } from "@api/trpc/routers/_app";
 export { origamiTRPCRouter } from "@api/trpc/routers/_app";
 
-export * from "@api/ws/schema";
+export * from "@cossistant/types/realtime-events";

@@ -28,14 +28,15 @@ export function useDefaultMessages({
 		() =>
 			defaultMessages.map((message, index) => {
 				const messageId = generateMessageId();
+				const timestamp = new Date().toISOString();
 
 				return {
 					bodyMd: message.content,
 					type: MessageType.TEXT,
 					id: messageId,
-					createdAt: new Date(),
+					createdAt: timestamp,
 					conversationId,
-					updatedAt: new Date(),
+					updatedAt: timestamp,
 					deletedAt: null,
 					userId:
 						message.senderType === SenderType.TEAM_MEMBER

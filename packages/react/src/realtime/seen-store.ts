@@ -66,7 +66,10 @@ export function upsertConversationSeen(options: {
 	actorId: string;
 	lastSeenAt: Date;
 }) {
-	upsertStore(store, options);
+	upsertStore(store, {
+		...options,
+		lastSeenAt: options.lastSeenAt.toISOString(),
+	});
 }
 
 export function applyConversationSeenEvent(

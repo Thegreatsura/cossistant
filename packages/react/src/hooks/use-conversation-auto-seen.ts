@@ -154,7 +154,7 @@ export function useConversationAutoSeen(
 					conversationId,
 					actorType: "visitor",
 					actorId: visitorId,
-					lastSeenAt: response.lastSeenAt,
+					lastSeenAt: new Date(response.lastSeenAt),
 				});
 			})
 			.catch((err) => {

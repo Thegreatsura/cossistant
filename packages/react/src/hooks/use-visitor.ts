@@ -83,7 +83,12 @@ export function useVisitor(): UseVisitorReturn {
 			}
 
 			try {
-				return await client.identify(params);
+				const result = await client.identify(params);
+
+				return {
+					contactId: result.contact.id,
+					visitorId: result.visitorId,
+				};
 			} catch (error) {
 				safeError("Failed to identify visitor", error);
 				return null;

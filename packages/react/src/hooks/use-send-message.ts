@@ -55,7 +55,7 @@ function buildMessagePayload(
 	conversationId: string,
 	visitorId?: string | null
 ): Message {
-	const now = new Date();
+	const nowIso = new Date().toISOString();
 
 	return {
 		id: generateMessageId(),
@@ -65,8 +65,8 @@ function buildMessagePayload(
 		aiAgentId: null,
 		visitorId: visitorId ?? null,
 		conversationId,
-		createdAt: now,
-		updatedAt: now,
+		createdAt: nowIso,
+		updatedAt: nowIso,
 		deletedAt: null,
 		parentMessageId: null,
 		modelUsed: null,

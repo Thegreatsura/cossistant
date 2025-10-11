@@ -58,9 +58,6 @@
   "sideEffects": [
     "*.css"
   ],
-  "scripts": {
-    "build": "tsdown"
-  },
   "files": [
     "dist"
   ],
@@ -89,5 +86,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
   }
 }
