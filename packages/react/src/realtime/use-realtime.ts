@@ -54,11 +54,10 @@ function shouldDeliverEvent(
 	}
 
 	if (visitorId) {
-		if (!event.payload.visitorId) {
-			return false;
-		}
-
-		if (event.payload.visitorId !== visitorId) {
+		if (
+			event.payload.visitorId &&
+			event.payload.visitorId !== visitorId
+		) {
 			return false;
 		}
 	}
