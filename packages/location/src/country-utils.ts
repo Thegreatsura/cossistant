@@ -89,9 +89,14 @@ export function inferCountryCodeFromLocale(locale?: string | null): string | nul
         }
 
         const segments = locale.split(/[-_]/);
-        for (const segment of segments) {
-                if (segment.length === 2) {
-                        return segment.toUpperCase();
+        for (let i = segments.length - 1; i >= 0; i--) {
+                const seg = segments[i];
+                if (/^[A-Z]{2}$/.test(seg)) {
+                        return seg;
+                }
+                if (/^[a-z]{2}$/.test(seg)) {
+                        // Skip language subtag like "en"
+                        continue;
                 }
         }
 
