@@ -416,12 +416,11 @@ visitorRouter.openapi(
                                 visitorId,
                                 websiteId: website.id,
                                 data: {
-                                        ...body,
                                         ...networkContext,
+                                        ...body,
                                         ...derivedCountryUpdate,
                                         lastSeenAt: now.toISOString(),
                                         updatedAt: now.toISOString(),
-                                },
                         });
 
 			if (!updatedVisitor) {
