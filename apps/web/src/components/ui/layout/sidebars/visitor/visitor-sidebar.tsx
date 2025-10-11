@@ -109,7 +109,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
                                                                 value={`${visitor.device} / ${visitor.deviceType}`}
                                                         />
                                                 )}
-                                                {visitor.screenResolution && (
+                                                {visitor.viewport && (
                                                         <ValueDisplay
                                                                 title="Viewport"
                                                                 tooltip={"The viewport is the visitor's browser window size."}
