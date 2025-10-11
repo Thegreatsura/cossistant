@@ -3,6 +3,15 @@ import flags from "./country-flags";
 import { currencies } from "./currencies";
 import { EU_COUNTRY_CODES } from "./eu-countries";
 import { timezones } from "./timezones";
+export {
+        getCountryDisplayName,
+        getFlagEmoji,
+        inferCountryCodeFromLocale,
+        inferCountryCodeFromTimezone,
+        resolveCountryDetails,
+        type CountryDetails,
+        type CountryDetailsInput,
+} from "./country-utils";
 
 export async function getCountryCode() {
 	const headersList = await headers();

@@ -1,11 +1,11 @@
 import {
-	getContactForVisitor,
-	mergeContactMetadata,
+        getContactForVisitor,
+        mergeContactMetadata,
 } from "@api/db/queries/contact";
 import type { VisitorRecord } from "@api/db/queries/visitor";
 import {
-	findVisitorForWebsite,
-	updateVisitorForWebsite,
+        findVisitorForWebsite,
+        updateVisitorForWebsite,
 } from "@api/db/queries/visitor";
 import {
 	safelyExtractRequestData,
@@ -18,6 +18,7 @@ import {
 	type VisitorResponse,
 	visitorResponseSchema,
 } from "@cossistant/types";
+import { resolveCountryDetails } from "@cossistant/location/country-utils";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { z } from "zod";
@@ -199,24 +200,30 @@ function getEdgeCoordinates(request: Context<RestContext>["req"]): {
 }
 
 function extractNetworkContext(
-	request: Context<RestContext>["req"]
-): Partial<UpdateVisitorRequest> {
-	const header = (name: string) => getHeaderValue(request, name);
+        request: Context<RestContext>["req"]
+): {
+        context: Partial<UpdateVisitorRequest>;
+        preferredLocale: string | null;
+        timezone: string | null;
+} {
+        const header = (name: string) => getHeaderValue(request, name);
 
-	const ip = getEdgeIp(request);
-	const { city, region, countryCode } = getEdgeLocation(request);
-	const { latitude, longitude } = getEdgeCoordinates(request);
-	const preferredLocale = parsePreferredLocale(header("accept-language"));
+        const ip = getEdgeIp(request);
+        const { city, region, countryCode } = getEdgeLocation(request);
+        const { latitude, longitude } = getEdgeCoordinates(request);
+        const preferredLocale = parsePreferredLocale(header("accept-language"));
+        const timezoneHeader = header("x-vercel-ip-timezone");
 
-	const networkContext: Partial<UpdateVisitorRequest> = {};
+        const networkContext: Partial<UpdateVisitorRequest> = {};
 
-	setIfPresent(networkContext, "ip", ip);
-	setIfPresent(networkContext, "city", city);
-	setIfPresent(networkContext, "region", region);
+        setIfPresent(networkContext, "ip", ip);
+        setIfPresent(networkContext, "city", city);
+        setIfPresent(networkContext, "region", region);
+        setIfPresent(networkContext, "timezone", timezoneHeader);
 
-	if (countryCode) {
-		networkContext.countryCode = countryCode.toUpperCase();
-	}
+        if (countryCode) {
+                networkContext.countryCode = countryCode.toUpperCase();
+        }
 	// Country name is only reliable when provided by edge headers.
 	// Attempt a display name when a code exists to enrich analytics, but avoid guesses otherwise.
 	if (countryCode && typeof Intl.DisplayNames !== "undefined") {
@@ -234,19 +241,22 @@ function extractNetworkContext(
 	setIfPresent(networkContext, "latitude", latitude);
 	setIfPresent(networkContext, "longitude", longitude);
 
-	if (!networkContext.language && preferredLocale) {
-		networkContext.language = preferredLocale;
-	}
+        if (!networkContext.language && preferredLocale) {
+                networkContext.language = preferredLocale;
+        }
 
-	if (!networkContext.city) {
-		const timezoneHeader = header("x-vercel-ip-timezone");
-		const inferredCity = inferCityFromTimezoneHeader(timezoneHeader);
-		setIfPresent(networkContext, "city", inferredCity);
-		if (networkContext.region === undefined || networkContext.region === null) {
-			setIfPresent(networkContext, "region", inferredCity);
-		}
-	}
-	return networkContext;
+        if (!networkContext.city) {
+                const inferredCity = inferCityFromTimezoneHeader(timezoneHeader);
+                setIfPresent(networkContext, "city", inferredCity);
+                if (networkContext.region === undefined || networkContext.region === null) {
+                        setIfPresent(networkContext, "region", inferredCity);
+                }
+        }
+        return {
+                context: networkContext,
+                preferredLocale,
+                timezone: timezoneHeader,
+        };
 }
 
 visitorRouter.use("/*", ...protectedPublicApiKeyMiddleware);
@@ -361,19 +371,58 @@ visitorRouter.openapi(
 				);
 			}
 
-			const now = new Date();
+                        const now = new Date();
 
-			const networkContext = extractNetworkContext(c.req);
-			const updatedVisitor = await updateVisitorForWebsite(db, {
-				visitorId,
-				websiteId: website.id,
-				data: {
-					...body,
-					...networkContext,
-					lastSeenAt: now.toISOString(),
-					updatedAt: now.toISOString(),
-				},
-			});
+                        const {
+                                context: networkContext,
+                                preferredLocale,
+                                timezone: timezoneFromHeaders,
+                        } = extractNetworkContext(c.req);
+
+                        const hasCountryInBody =
+                                typeof body.country === "string" && body.country.trim().length > 0;
+                        const hasCountryCodeInBody =
+                                typeof body.countryCode === "string" && body.countryCode.trim().length > 0;
+
+                        const localeCandidate =
+                                body.language ?? networkContext.language ?? preferredLocale;
+                        const timezoneCandidate =
+                                body.timezone ?? networkContext.timezone ?? timezoneFromHeaders;
+                        const cityCandidate = body.city ?? networkContext.city ?? null;
+
+                        const countryDetails = resolveCountryDetails({
+                                country: body.country ?? networkContext.country ?? null,
+                                countryCode: body.countryCode ?? networkContext.countryCode ?? null,
+                                locale: localeCandidate ?? null,
+                                timezone: timezoneCandidate ?? null,
+                                city: cityCandidate,
+                        });
+
+                        const derivedCountryUpdate: Partial<UpdateVisitorRequest> = {};
+
+                        if (
+                                !hasCountryCodeInBody &&
+                                !networkContext.countryCode &&
+                                countryDetails.code
+                        ) {
+                                derivedCountryUpdate.countryCode = countryDetails.code;
+                        }
+
+                        if (!hasCountryInBody && !networkContext.country && countryDetails.name) {
+                                derivedCountryUpdate.country = countryDetails.name;
+                        }
+
+                        const updatedVisitor = await updateVisitorForWebsite(db, {
+                                visitorId,
+                                websiteId: website.id,
+                                data: {
+                                        ...body,
+                                        ...networkContext,
+                                        ...derivedCountryUpdate,
+                                        lastSeenAt: now.toISOString(),
+                                        updatedAt: now.toISOString(),
+                                },
+                        });
 
 			if (!updatedVisitor) {
 				return c.json(
