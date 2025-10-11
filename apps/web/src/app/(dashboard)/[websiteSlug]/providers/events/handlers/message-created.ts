@@ -78,7 +78,8 @@ export const handleMessageCreated = ({
 }) => {
 	const { queryClient, website } = context;
 	const { payload } = event;
-	const { message } = payload;
+        const { message } = payload;
+        const conversationMessage = toConversationMessage(message);
 
 	// Clear typing state when a message is sent
 	clearTypingFromMessage(event);
@@ -109,7 +110,11 @@ export const handleMessageCreated = ({
 			continue;
 		}
 
-		upsertConversationMessageInCache(queryClient, queryKey, message);
+                upsertConversationMessageInCache(
+                        queryClient,
+                        queryKey,
+                        conversationMessage
+                );
 	}
 
 	const existingHeader =
