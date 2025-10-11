@@ -11,31 +11,31 @@ import { withPrimaryDbMiddleware } from "./middleware/db";
 import { withRateLimitMiddleware } from "./middleware/rate-limit";
 
 export type TRPCContext = {
-  user: typeof auth.$Infer.Session.user;
-  session: typeof auth.$Infer.Session.session;
-  db: Database;
-  geo: ReturnType<typeof getGeoContext>;
+	user: typeof auth.$Infer.Session.user;
+	session: typeof auth.$Infer.Session.session;
+	db: Database;
+	geo: ReturnType<typeof getGeoContext>;
 };
 
 export const createTRPCContext = async (
-  _: unknown,
-  c: Context<AuthType>
+	_: unknown,
+	c: Context<AuthType>
 ): Promise<TRPCContext> => {
-  const user = c.get("user") as typeof auth.$Infer.Session.user;
-  const session = c.get("session") as typeof auth.$Infer.Session.session;
+	const user = c.get("user") as typeof auth.$Infer.Session.user;
+	const session = c.get("session") as typeof auth.$Infer.Session.session;
 
-  const geo = getGeoContext(c.req);
+	const geo = getGeoContext(c.req);
 
-  return {
-    user,
-    session,
-    geo,
-    db,
-  };
+	return {
+		user,
+		session,
+		geo,
+		db,
+	};
 };
 
 const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
+	transformer: superjson,
 });
 
 export const createTRPCRouter = t.router;
@@ -44,16 +44,16 @@ export const createCallerFactory = t.createCallerFactory;
 export const publicProcedure = t.procedure.use(withPrimaryDbMiddleware);
 
 const withPermissionMiddleware = t.middleware(async (opts) => {
-  return withPermission({
-    ctx: opts.ctx,
-    next: opts.next,
-  });
+	return withPermission({
+		ctx: opts.ctx,
+		next: opts.next,
+	});
 });
 
 export const protectedProcedure = t.procedure
-  .use(withPermissionMiddleware)
-  .use(withPrimaryDbMiddleware);
+	.use(withPermissionMiddleware)
+	.use(withPrimaryDbMiddleware);
 
 export const rateLimitedPublicProcedure = t.procedure
-  .use(withRateLimitMiddleware)
-  .use(withPrimaryDbMiddleware);
+	.use(withRateLimitMiddleware)
+	.use(withPrimaryDbMiddleware);

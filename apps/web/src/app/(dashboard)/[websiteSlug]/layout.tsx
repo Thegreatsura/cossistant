@@ -9,7 +9,7 @@ import {
 	prefetch,
 	trpc,
 } from "@/lib/trpc/server";
-import { DashboardRealtimeProvider } from "./providers/realtime";
+import { Realtime } from "./providers/realtime";
 import { DashboardWebSocketProvider } from "./providers/websocket";
 
 type LayoutProps = {
@@ -69,14 +69,14 @@ export default async function Layout({ children, params }: LayoutProps) {
 		<HydrateClient>
 			<WebsiteProvider websiteSlug={websiteSlug}>
 				<DashboardWebSocketProvider>
-					<DashboardRealtimeProvider>
+					<Realtime>
 						<InboxesProvider websiteSlug={websiteSlug}>
 							<div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
 								<NavigationTopbar />
 								<CentralContainer>{children}</CentralContainer>
 							</div>
 						</InboxesProvider>
-					</DashboardRealtimeProvider>
+					</Realtime>
 				</DashboardWebSocketProvider>
 			</WebsiteProvider>
 		</HydrateClient>
