@@ -63,7 +63,13 @@ function BoringAvatar({
   className?: string;
   name: string;
 }) {
-  const colors = ["#93B9FA", "#FBF799", "#FC5101", "#FFB5EE"];
+  const colorClasses = [
+    "dark:bg-cossistant-pink bg-cossistant-pink/20",
+    "dark:bg-cossistant-yellow bg-cossistant-yellow/20",
+    "dark:bg-cossistant-blue bg-cossistant-blue/20",
+    "dark:bg-cossistant-orange bg-cossistant-orange/20",
+    "dark:bg-cossistant-green bg-cossistant-green/20",
+  ];
 
   const faces = [
     <svg
@@ -157,7 +163,7 @@ function BoringAvatar({
     const hash = stringHash(name);
 
     const _face = faces[hash % faces.length];
-    const _color = colors[hash % colors.length];
+    const _color = colorClasses[hash % colorClasses.length];
 
     // Define different sphere positions (angles in degrees)
     const spherePositions = [
@@ -183,15 +189,13 @@ function BoringAvatar({
 
   return (
     <div
-      className="flex size-full items-center justify-center"
+      className={cn("flex size-full items-center justify-center", color)}
       style={{
         perspective: "1000px",
         transformStyle: "preserve-3d",
-        // 10% of color
-        backgroundColor: `${color}`,
       }}
     >
-      <div className="absolute inset-0 bg-radial from-background/80 via-from-background/80 to-transparent opacity-100 dark:from-background dark:to-background/50" />
+      <div className="absolute inset-0 bg-radial from-primary/5 via-from-primary/10 to-transparent opacity-100 dark:from-background dark:to-background/50" />
       <div
         className="absolute z-5 text-primary/90 transition-all delay-500 duration-200 group-hover/conversation-item:rotate-x-0! group-hover/conversation-item:rotate-y-0! group-focus/conversation-item:rotate-x-0! group-focus/conversation-item:rotate-y-0!"
         style={{
@@ -284,7 +288,7 @@ function Avatar({
       <div className="relative">
         <AvatarContainer
           className={cn(
-            "size-8 shrink-0 ring-2 ring-primary/5 ring-offset-2 ring-offset-background dark:ring-primary/20",
+            "size-8 shrink-0 ring-1 ring-primary/5 ring-offset-2 ring-offset-background dark:ring-primary/20",
             {
               "ring-cossistant-green dark:ring-cossistant-green": isOnline,
             },

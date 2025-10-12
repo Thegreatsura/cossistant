@@ -21,6 +21,8 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
   const fullName = getVisitorNameWithFallback(visitor);
   const countryFlag = flags[visitor.countryCode as keyof typeof flags];
 
+  console.log({ visitor });
+
   return (
     <ResizableSidebar className="hidden lg:flex" position="right">
       <SidebarContainer>
@@ -39,7 +41,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
                   {visitor.contact?.email}
                 </p>
               ) : (
-                <p className="text-primary/50 text-sm decoration-dashed underline-offset-2">
+                <p className="text-primary/50 text-xs decoration-dashed underline-offset-2">
                   Not identified yet
                 </p>
               )}
