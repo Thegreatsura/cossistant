@@ -338,21 +338,29 @@ function ContactsTable({ data, isLoading, sorting, onSortingChange, onRowClick }
                                                   ))
                                                 : table.getRowModel().rows.length > 0
                                                 ? table.getRowModel().rows.map((row) => (
-                                                          <TableRow
-                                                                  key={row.id}
-                                                                  className="cursor-pointer"
-                                                                  onClick={() => onRowClick(row.original.id)}
-                                                          >
-                                                                  {row.getVisibleCells().map((cell) => (
-                                                                          <TableCell key={cell.id} className="px-4 py-3">
-                                                                                  {flexRender(
-                                                                                          cell.column.columnDef.cell,
-                                                                                          cell.getContext()
-                                                                                  )}
-                                                                          </TableCell>
-                                                                  ))}
-                                                          </TableRow>
-                                                  ))
+                                                      <TableRow
+                                                          key={row.id}
+                                                          className="cursor-pointer"
+                                                         tabIndex={0}
+                                                          onClick={() => onRowClick(row.original.id)}
+                                                         onKeyDown={(e) => {
+                                                             if (e.key === "Enter" || e.key === " ") {
+                                                                 e.preventDefault();
+                                                                 onRowClick(row.original.id);
+                                                             }
+                                                         }}
+                                                         aria-label={`View contact ${row.original.name ?? row.original.email ?? row.original.id}`}
+                                                      >
+                                                          {row.getVisibleCells().map((cell) => (
+                                                              <TableCell key={cell.id} className="px-4 py-3">
+                                                                  {flexRender(
+                                                                      cell.column.columnDef.cell,
+                                                                      cell.getContext()
+                                                                  )}
+                                                              </TableCell>
+                                                          ))}
+                                                      </TableRow>
+                                              ))
                                                 : (
                                                           <TableRow>
                                                                   <TableCell colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">
