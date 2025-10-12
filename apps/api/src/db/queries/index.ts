@@ -1,4 +1,5 @@
 export * from "./api-keys";
+export * from "./contact";
 export * from "./conversation";
 export * from "./organization";
 export * from "./user";
