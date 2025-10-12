@@ -53,13 +53,12 @@ function shouldDeliverEvent(
 		return false;
 	}
 
-	if (visitorId) {
-		if (
-			event.payload.visitorId &&
-			event.payload.visitorId !== visitorId
-		) {
-			return false;
-		}
+	if (
+		visitorId &&
+		event.payload.visitorId &&
+		event.payload.visitorId !== visitorId
+	) {
+		return false;
 	}
 
 	return true;

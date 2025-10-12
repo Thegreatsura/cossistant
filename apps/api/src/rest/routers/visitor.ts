@@ -11,6 +11,7 @@ import {
 	safelyExtractRequestData,
 	validateResponse,
 } from "@api/utils/validate";
+import { resolveCountryDetails } from "@cossistant/location/country-utils";
 import {
 	type UpdateVisitorRequest,
 	updateVisitorMetadataRequestSchema,
@@ -198,21 +199,25 @@ function getEdgeCoordinates(request: Context<RestContext>["req"]): {
 	};
 }
 
-function extractNetworkContext(
-	request: Context<RestContext>["req"]
-): Partial<UpdateVisitorRequest> {
+function extractNetworkContext(request: Context<RestContext>["req"]): {
+	context: Partial<UpdateVisitorRequest>;
+	preferredLocale: string | null;
+	timezone: string | null;
+} {
 	const header = (name: string) => getHeaderValue(request, name);
 
 	const ip = getEdgeIp(request);
 	const { city, region, countryCode } = getEdgeLocation(request);
 	const { latitude, longitude } = getEdgeCoordinates(request);
 	const preferredLocale = parsePreferredLocale(header("accept-language"));
+	const timezoneHeader = header("x-vercel-ip-timezone");
 
 	const networkContext: Partial<UpdateVisitorRequest> = {};
 
 	setIfPresent(networkContext, "ip", ip);
 	setIfPresent(networkContext, "city", city);
 	setIfPresent(networkContext, "region", region);
+	setIfPresent(networkContext, "timezone", timezoneHeader);
 
 	if (countryCode) {
 		networkContext.countryCode = countryCode.toUpperCase();
@@ -239,14 +244,17 @@ function extractNetworkContext(
 	}
 
 	if (!networkContext.city) {
-		const timezoneHeader = header("x-vercel-ip-timezone");
 		const inferredCity = inferCityFromTimezoneHeader(timezoneHeader);
 		setIfPresent(networkContext, "city", inferredCity);
 		if (networkContext.region === undefined || networkContext.region === null) {
 			setIfPresent(networkContext, "region", inferredCity);
 		}
 	}
-	return networkContext;
+	return {
+		context: networkContext,
+		preferredLocale,
+		timezone: timezoneHeader,
+	};
 }
 
 visitorRouter.use("/*", ...protectedPublicApiKeyMiddleware);
@@ -363,13 +371,59 @@ visitorRouter.openapi(
 
 			const now = new Date();
 
-			const networkContext = extractNetworkContext(c.req);
+			const {
+				context: networkContext,
+				preferredLocale,
+				timezone: timezoneFromHeaders,
+			} = extractNetworkContext(c.req);
+
+			const isCountryStringInBody = typeof body.country === "string";
+			const hasCountryInBody =
+				isCountryStringInBody && body.country.trim().length > 0;
+
+			const isCountryCodeStringInBody = typeof body.countryCode === "string";
+			const hasCountryCodeInBody =
+				isCountryCodeStringInBody && body.countryCode.trim().length > 0;
+
+			const localeCandidate =
+				body.language ?? networkContext.language ?? preferredLocale;
+			const timezoneCandidate =
+				body.timezone ?? networkContext.timezone ?? timezoneFromHeaders;
+			const cityCandidate = body.city ?? networkContext.city ?? null;
+
+			const countryDetails = resolveCountryDetails({
+				country: body.country ?? networkContext.country ?? null,
+				countryCode: body.countryCode ?? networkContext.countryCode ?? null,
+				locale: localeCandidate ?? null,
+				timezone: timezoneCandidate ?? null,
+				city: cityCandidate,
+			});
+
+			const derivedCountryUpdate: Partial<UpdateVisitorRequest> = {};
+
+			if (hasCountryCodeInBody) {
+				// Country code already provided in request body
+			} else if (networkContext.countryCode) {
+				// Country code already available from network context
+			} else if (countryDetails.code) {
+				derivedCountryUpdate.countryCode = countryDetails.code;
+			}
+
+			if (hasCountryInBody) {
+				// Country name already provided in request body
+			} else if (networkContext.country) {
+				// Country name already available from network context
+			} else if (countryDetails.name) {
+				derivedCountryUpdate.country = countryDetails.name;
+			}
+
 			const updatedVisitor = await updateVisitorForWebsite(db, {
 				visitorId,
 				websiteId: website.id,
 				data: {
-					...body,
 					...networkContext,
+					...body,
+					...derivedCountryUpdate,
 					lastSeenAt: now.toISOString(),
 					updatedAt: now.toISOString(),
 				},

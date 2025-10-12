@@ -1,5 +1,7 @@
+/** biome-ignore-all lint/nursery/noUnnecessaryConditions: ok here */
 import type { RouterOutputs } from "@api/trpc/types";
-import flags from "@cossistant/location/country-flags";
+import { resolveCountryDetails } from "@cossistant/location/country-utils";
+import { formatInTimeZone } from "date-fns-tz";
 import { Avatar } from "@/components/ui/avatar";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { SidebarContainer } from "../container";
@@ -19,9 +21,18 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
   }
 
   const fullName = getVisitorNameWithFallback(visitor);
-  const countryFlag = flags[visitor.countryCode as keyof typeof flags];
-
-  console.log({ visitor });
+  const countryDetails = resolveCountryDetails({
+    country: visitor.country,
+    countryCode: visitor.countryCode,
+    locale: visitor.language,
+    timezone: visitor.timezone,
+    city: visitor.city,
+  });
+  const countryLabel = countryDetails.name ?? countryDetails.code;
+  const localTime = formatLocalTime(visitor.timezone, visitor.language);
+  const timezoneTooltip = visitor.timezone
+    ? `Timezone: ${visitor.timezone}`
+    : undefined;
 
   return (
     <ResizableSidebar className="hidden lg:flex" position="right">
@@ -41,7 +52,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
                   {visitor.contact?.email}
                 </p>
               ) : (
-                <p className="text-primary/50 text-xs decoration-dashed underline-offset-2">
+                <p className="text-primary/50 text-sm decoration-dashed underline-offset-2">
                   Not identified yet
                 </p>
               )}
@@ -50,32 +61,36 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
         </div>
         <div className="mt-4 flex flex-col gap-4">
           <ValueGroup>
-            {visitor.country && (
-              <ValueDisplay
-                title="Country"
-                value={
+            <ValueDisplay
+              placeholder="Unknown"
+              title="Country"
+              value={
+                countryLabel ? (
                   <span className="ml-auto inline-flex items-center gap-2">
-                    {visitor.country}
-                    <span className="flex h-3.5 w-4.5 items-center justify-center overflow-clip rounded-sm text-2xl">
-                      {countryFlag.emoji}
-                    </span>
+                    {countryLabel}
+                    {countryDetails.flagEmoji ? (
+                      <span className="flex h-3.5 w-4.5 items-center justify-center overflow-clip rounded-sm text-2xl">
+                        {countryDetails.flagEmoji}
+                      </span>
+                    ) : null}
                   </span>
-                }
-              />
-            )}
-            {visitor.language && (
-              <ValueDisplay title="Language" value={visitor.language} />
-            )}
-            {visitor.timezone && (
-              <ValueDisplay title="Timezone" value={visitor.timezone} />
-            )}
-            {
-              <ValueDisplay
-                placeholder="Unknown"
-                title="IP"
-                value={visitor.ip}
-              />
-            }
+                ) : null
+              }
+            />
+            <ValueDisplay
+              placeholder="Unknown"
+              title="Local time"
+              tooltip={timezoneTooltip}
+              value={
+                <>
+                  {localTime.time}
+                  <span className="ml-2 text-primary/90">
+                    ({localTime.offset})
+                  </span>
+                </>
+              }
+            />
+            <ValueDisplay placeholder="Unknown" title="IP" value={visitor.ip} />
           </ValueGroup>
           <ValueGroup>
             {visitor.browser && (
@@ -96,8 +111,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
                 value={`${visitor.device} / ${visitor.deviceType}`}
               />
             )}
-
-            {visitor.screenResolution && (
+            {visitor.viewport && (
               <ValueDisplay
                 title="Viewport"
                 tooltip={"The viewport is the visitor's browser window size."}
@@ -109,4 +123,49 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
       </SidebarContainer>
     </ResizableSidebar>
   );
+}
+
+function formatLocalTime(
+  timezone: string | null | undefined,
+  locale: string | null | undefined
+): { time: string | null; offset: string | null } {
+  if (!timezone) {
+    return { time: null, offset: null };
+  }
+
+  const now = new Date();
+
+  // Determine if locale uses 12-hour or 24-hour format
+  let hour12 = false;
+
+  if (locale) {
+    try {
+      const { hourCycle } = new Intl.DateTimeFormat(locale).resolvedOptions();
+      hour12 = hourCycle === "h11" || hourCycle === "h12";
+    } catch (_error) {
+      // Ignore locale resolution failures and use 24-hour format
+    }
+  }
+
+  try {
+    // Format the time in the visitor's timezone
+    const timeFormat = hour12 ? "h:mma" : "HH:mm";
+    const formattedTime = formatInTimeZone(now, timezone, timeFormat);
+
+    // Calculate GMT offset
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      timeZoneName: "shortOffset",
+    });
+
+    const parts = formatter.formatToParts(now);
+    const offsetPart = parts.find((part) => part.type === "timeZoneName");
+
+    const gmtOffset = offsetPart?.value ?? "GMT";
+
+    return { time: `${formattedTime}`, offset: gmtOffset };
+  } catch (_error) {
+    // Fallback if timezone is invalid
+    return { time: null, offset: null };
+  }
 }

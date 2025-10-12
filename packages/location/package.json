@@ -10,6 +10,7 @@
     "./countries-intl": "./src/countries-intl.ts",
     "./currencies": "./src/currencies.ts",
     "./country-flags": "./src/country-flags.ts",
+    "./country-utils": "./src/country-utils.ts",
     "./timezones": "./src/timezones.ts"
   },
   "dependencies": {
