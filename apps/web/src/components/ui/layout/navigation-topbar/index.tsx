@@ -26,14 +26,14 @@ export function NavigationTopbar() {
 				>
 					Inbox
 				</TopbarItem>
-				<TopbarItem
-					active={pathname === `/${website?.slug}/agents`}
-					hideLabelOnMobile
-					href={`/${website?.slug}/contacts`}
-					iconName="contacts"
-				>
-					Contacts
-				</TopbarItem>
+                                <TopbarItem
+                                        active={pathname.startsWith(`/${website?.slug}/contacts`)}
+                                        hideLabelOnMobile
+                                        href={`/${website?.slug}/contacts`}
+                                        iconName="contacts"
+                                >
+                                        Contacts
+                                </TopbarItem>
 				<TopbarItem
 					active={pathname === `/${website?.slug}/agents`}
 					hideLabelOnMobile

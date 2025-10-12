@@ -9,6 +9,7 @@ export {
 	conversationSchema,
 	messageSchema,
 } from "./schemas";
+export * from "./trpc/contact";
 export * from "./trpc/conversation";
 export * from "./trpc/visitor";
 
