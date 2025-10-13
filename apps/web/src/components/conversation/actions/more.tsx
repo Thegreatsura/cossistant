@@ -1,6 +1,7 @@
 import { ConversationStatus } from "@cossistant/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
         DropdownMenu,
@@ -80,6 +81,19 @@ export function MoreConversationActions({
         const shouldShowMarkRead = hasUnreadMessage;
         const shouldShowMarkUnread = !hasUnreadMessage;
 
+        const resolveSuccessMessage = isResolved
+                ? "Conversation marked unresolved"
+                : "Conversation marked resolved";
+        const archiveSuccessMessage = isArchived
+                ? "Conversation unarchived"
+                : "Conversation archived";
+        const spamSuccessMessage = isSpam
+                ? "Conversation marked as not spam"
+                : "Conversation marked as spam";
+        const blockSuccessMessage = isBlocked
+                ? "Visitor unblocked"
+                : "Visitor blocked";
+
         const suppressTooltipTemporarily = useCallback(() => {
                 setTooltipSuppressed(true);
 
@@ -117,11 +131,18 @@ export function MoreConversationActions({
         }, [handleOpenChange]);
 
         const runAction = useCallback(
-                async (action: () => Promise<unknown>) => {
+                async (
+                        action: () => Promise<unknown | boolean>,
+                        successMessage?: string
+                ) => {
                         closeMenu();
 
                         try {
-                                await action();
+                                const result = await action();
+
+                                if (successMessage && result !== false) {
+                                        toast.success(successMessage);
+                                }
                         } catch (error) {
                                 console.error("Failed to run conversation action", error);
                         }
@@ -144,19 +165,29 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(async () => {
-                                if (isResolved) {
-                                        await markOpen();
-                                        return;
-                                }
-                                await markResolved();
-                        });
+                        void runAction(
+                                async () => {
+                                        if (isResolved) {
+                                                await markOpen();
+                                                return;
+                                        }
+                                        await markResolved();
+                                },
+                                resolveSuccessMessage
+                        );
                 },
                 {
                         ...preventHotkeysOptions,
                         enabled: !resolvePending,
                 },
-                [isResolved, markOpen, markResolved, resolvePending, runAction]
+                [
+                        isResolved,
+                        markOpen,
+                        markResolved,
+                        resolvePending,
+                        resolveSuccessMessage,
+                        runAction,
+                ]
         );
 
         useHotkeys(
@@ -168,19 +199,29 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(async () => {
-                                if (isArchived) {
-                                        await markUnarchived();
-                                        return;
-                                }
-                                await markArchived();
-                        });
+                        void runAction(
+                                async () => {
+                                        if (isArchived) {
+                                                await markUnarchived();
+                                                return;
+                                        }
+                                        await markArchived();
+                                },
+                                archiveSuccessMessage
+                        );
                 },
                 {
                         ...preventHotkeysOptions,
                         enabled: !archivePending,
                 },
-                [archivePending, isArchived, markArchived, markUnarchived, runAction]
+                [
+                        archivePending,
+                        archiveSuccessMessage,
+                        isArchived,
+                        markArchived,
+                        markUnarchived,
+                        runAction,
+                ]
         );
 
         useHotkeys(
@@ -193,9 +234,12 @@ export function MoreConversationActions({
                                         return;
                                 }
 
-                                void runAction(async () => {
-                                        await markRead();
-                                });
+                                void runAction(
+                                        async () => {
+                                                await markRead();
+                                        },
+                                        "Conversation marked as read"
+                                );
                                 return;
                         }
 
@@ -203,9 +247,12 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(async () => {
-                                await markUnread();
-                        });
+                        void runAction(
+                                async () => {
+                                        await markUnread();
+                                },
+                                "Conversation marked as unread"
+                        );
                 },
                 {
                         ...preventHotkeysOptions,
@@ -233,19 +280,29 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(async () => {
-                                if (isSpam) {
-                                        await markNotSpam();
-                                        return;
-                                }
-                                await markSpam();
-                        });
+                        void runAction(
+                                async () => {
+                                        if (isSpam) {
+                                                await markNotSpam();
+                                                return;
+                                        }
+                                        await markSpam();
+                                },
+                                spamSuccessMessage
+                        );
                 },
                 {
                         ...preventHotkeysOptions,
                         enabled: !spamPending,
                 },
-                [isSpam, markNotSpam, markSpam, runAction, spamPending]
+                [
+                        isSpam,
+                        markNotSpam,
+                        markSpam,
+                        runAction,
+                        spamPending,
+                        spamSuccessMessage,
+                ]
         );
 
         useEffect(() => {
@@ -259,22 +316,26 @@ export function MoreConversationActions({
         const handleCopyId = useCallback(async () => {
                 try {
                         if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
-                                return;
+                                return false;
                         }
                         await navigator.clipboard.writeText(conversationId);
+                        return true;
                 } catch (error) {
                         console.error("Failed to copy conversation id", error);
+                        return false;
                 }
         }, [conversationId]);
 
         const handleCopyUrl = useCallback(async () => {
                 try {
                         if (typeof window === "undefined" || !navigator.clipboard?.writeText) {
-                                return;
+                                return false;
                         }
                         await navigator.clipboard.writeText(window.location.href);
+                        return true;
                 } catch (error) {
                         console.error("Failed to copy conversation URL", error);
+                        return false;
                 }
         }, []);
 
@@ -306,13 +367,16 @@ export function MoreConversationActions({
                                                         disabled={resolvePending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(async () => {
-                                                                        if (isResolved) {
-                                                                                await markOpen();
-                                                                                return;
-                                                                        }
-                                                                        await markResolved();
-                                                                });
+                                                                void runAction(
+                                                                        async () => {
+                                                                                if (isResolved) {
+                                                                                        await markOpen();
+                                                                                        return;
+                                                                                }
+                                                                                await markResolved();
+                                                                        },
+                                                                        resolveSuccessMessage
+                                                                );
                                                         }}
                                                         shortcuts={["R"]}
                                                 >
@@ -322,13 +386,16 @@ export function MoreConversationActions({
                                                         disabled={archivePending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(async () => {
-                                                                        if (isArchived) {
-                                                                                await markUnarchived();
-                                                                                return;
-                                                                        }
-                                                                        await markArchived();
-                                                                });
+                                                                void runAction(
+                                                                        async () => {
+                                                                                if (isArchived) {
+                                                                                        await markUnarchived();
+                                                                                        return;
+                                                                                }
+                                                                                await markArchived();
+                                                                        },
+                                                                        archiveSuccessMessage
+                                                                );
                                                         }}
                                                         shortcuts={["Delete"]}
                                                 >
@@ -339,9 +406,12 @@ export function MoreConversationActions({
                                                                 disabled={pendingAction.markRead}
                                                                 onSelect={(event) => {
                                                                         event.preventDefault();
-                                                                        void runAction(async () => {
-                                                                                await markRead();
-                                                                        });
+                                                                        void runAction(
+                                                                                async () => {
+                                                                                        await markRead();
+                                                                                },
+                                                                                "Conversation marked as read"
+                                                                        );
                                                                 }}
                                                                 shortcuts={["U"]}
                                                         >
@@ -353,9 +423,12 @@ export function MoreConversationActions({
                                                                 disabled={pendingAction.markUnread}
                                                                 onSelect={(event) => {
                                                                         event.preventDefault();
-                                                                        void runAction(async () => {
-                                                                                await markUnread();
-                                                                        });
+                                                                        void runAction(
+                                                                                async () => {
+                                                                                        await markUnread();
+                                                                                },
+                                                                                "Conversation marked as unread"
+                                                                        );
                                                                 }}
                                                                 shortcuts={["U"]}
                                                         >
@@ -366,13 +439,16 @@ export function MoreConversationActions({
                                                         disabled={spamPending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(async () => {
-                                                                        if (isSpam) {
-                                                                                await markNotSpam();
-                                                                                return;
-                                                                        }
-                                                                        await markSpam();
-                                                                });
+                                                                void runAction(
+                                                                        async () => {
+                                                                                if (isSpam) {
+                                                                                        await markNotSpam();
+                                                                                        return;
+                                                                                }
+                                                                                await markSpam();
+                                                                        },
+                                                                        spamSuccessMessage
+                                                                );
                                                         }}
                                                         shortcuts={["P"]}
                                                 >
@@ -382,16 +458,20 @@ export function MoreConversationActions({
                                                         disabled={!canToggleBlock || blockPending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(async () => {
-                                                                        if (!visitorId) {
-                                                                                return;
-                                                                        }
-                                                                        if (isBlocked) {
-                                                                                await unblockVisitor();
-                                                                                return;
-                                                                        }
-                                                                        await blockVisitor();
-                                                                });
+                                                                void runAction(
+                                                                        async () => {
+                                                                                if (!visitorId) {
+                                                                                        return false;
+                                                                                }
+                                                                                if (isBlocked) {
+                                                                                        await unblockVisitor();
+                                                                                        return true;
+                                                                                }
+                                                                                await blockVisitor();
+                                                                                return true;
+                                                                        },
+                                                                        blockSuccessMessage
+                                                                );
                                                         }}
                                                 >
                                                         {blockLabel}
@@ -401,9 +481,12 @@ export function MoreConversationActions({
                                         <DropdownMenuItem
                                                 onSelect={(event) => {
                                                         event.preventDefault();
-                                                        void runAction(async () => {
-                                                                await handleCopyId();
-                                                        });
+                                                        void runAction(
+                                                                async () => {
+                                                                        return handleCopyId();
+                                                                },
+                                                                "Conversation ID copied"
+                                                        );
                                                 }}
                                         >
                                                 Copy conversation ID
@@ -411,9 +494,12 @@ export function MoreConversationActions({
                                         <DropdownMenuItem
                                                 onSelect={(event) => {
                                                         event.preventDefault();
-                                                        void runAction(async () => {
-                                                                await handleCopyUrl();
-                                                        });
+                                                        void runAction(
+                                                                async () => {
+                                                                        return handleCopyUrl();
+                                                                },
+                                                                "Conversation link copied"
+                                                        );
                                                 }}
                                         >
                                                 Copy conversation URL
