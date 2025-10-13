@@ -237,6 +237,7 @@ export function MoreConversationActions({
                                                                                 await markUnread();
                                                                         });
                                                                 }}
+                                                                shortcuts={["U"]}
                                                         >
                                                                 Mark as unread
                                                         </DropdownMenuItem>
