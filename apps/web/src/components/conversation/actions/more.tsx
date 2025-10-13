@@ -1,5 +1,6 @@
 import { ConversationStatus } from "@cossistant/types";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import { Button } from "@/components/ui/button";
 import {
         DropdownMenu,
@@ -126,6 +127,125 @@ export function MoreConversationActions({
                         }
                 },
                 [closeMenu]
+        );
+
+        const preventHotkeysOptions = {
+                enableOnContentEditable: false,
+                enableOnFormTags: false,
+                preventDefault: true,
+        } as const;
+
+        useHotkeys(
+                "r",
+                (event) => {
+                        event.preventDefault();
+
+                        if (resolvePending) {
+                                return;
+                        }
+
+                        void runAction(async () => {
+                                if (isResolved) {
+                                        await markOpen();
+                                        return;
+                                }
+                                await markResolved();
+                        });
+                },
+                {
+                        ...preventHotkeysOptions,
+                        enabled: !resolvePending,
+                },
+                [isResolved, markOpen, markResolved, resolvePending, runAction]
+        );
+
+        useHotkeys(
+                "delete",
+                (event) => {
+                        event.preventDefault();
+
+                        if (archivePending) {
+                                return;
+                        }
+
+                        void runAction(async () => {
+                                if (isArchived) {
+                                        await markUnarchived();
+                                        return;
+                                }
+                                await markArchived();
+                        });
+                },
+                {
+                        ...preventHotkeysOptions,
+                        enabled: !archivePending,
+                },
+                [archivePending, isArchived, markArchived, markUnarchived, runAction]
+        );
+
+        useHotkeys(
+                "u",
+                (event) => {
+                        event.preventDefault();
+
+                        if (shouldShowMarkRead) {
+                                if (pendingAction.markRead) {
+                                        return;
+                                }
+
+                                void runAction(async () => {
+                                        await markRead();
+                                });
+                                return;
+                        }
+
+                        if (!shouldShowMarkUnread || pendingAction.markUnread) {
+                                return;
+                        }
+
+                        void runAction(async () => {
+                                await markUnread();
+                        });
+                },
+                {
+                        ...preventHotkeysOptions,
+                        enabled:
+                                (shouldShowMarkRead && !pendingAction.markRead) ||
+                                (shouldShowMarkUnread && !pendingAction.markUnread),
+                },
+                [
+                        markRead,
+                        markUnread,
+                        pendingAction.markRead,
+                        pendingAction.markUnread,
+                        runAction,
+                        shouldShowMarkRead,
+                        shouldShowMarkUnread,
+                ]
+        );
+
+        useHotkeys(
+                "p",
+                (event) => {
+                        event.preventDefault();
+
+                        if (spamPending) {
+                                return;
+                        }
+
+                        void runAction(async () => {
+                                if (isSpam) {
+                                        await markNotSpam();
+                                        return;
+                                }
+                                await markSpam();
+                        });
+                },
+                {
+                        ...preventHotkeysOptions,
+                        enabled: !spamPending,
+                },
+                [isSpam, markNotSpam, markSpam, runAction, spamPending]
         );
 
         useEffect(() => {
