@@ -1,6 +1,8 @@
 "use client";
 
+import { useQueryNormalizer } from "@normy/react-query";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useTRPC } from "@/lib/trpc/client";
 
 type UseConversationHeadersOptions = {
@@ -19,6 +21,7 @@ export function useConversationHeaders(
 ) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const queryNormalizer = useQueryNormalizer();
 
   const query = useInfiniteQuery({
     queryKey: [
@@ -45,6 +48,18 @@ export function useConversationHeaders(
   });
 
   const conversations = query.data?.pages.flatMap((page) => page.items) ?? [];
+
+  useEffect(() => {
+    if (!query.data) {
+      return;
+    }
+
+    for (const page of query.data.pages) {
+      for (const header of page.items) {
+        queryNormalizer.setNormalizedData(header);
+      }
+    }
+  }, [query.data, queryNormalizer]);
 
   return {
     conversations,

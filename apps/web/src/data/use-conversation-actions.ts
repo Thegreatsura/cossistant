@@ -356,46 +356,60 @@ export function useConversationActions({
 		},
 	});
 
-	const markReadMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		MarkReadVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markRead.mutationOptions(),
-		onMutate: async () => prepareContext(),
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: async () => {
-			const now = new Date().toISOString();
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				lastSeenAt: now,
-			}));
-			await queryClient.invalidateQueries({ queryKey: headersQueryKey });
-		},
-	});
+        const markReadMutation = useMutation<
+                ConversationMutationResponse,
+                TRPCError,
+                MarkReadVariables,
+                MutationContext
+        >({
+                ...trpc.conversation.markRead.mutationOptions(),
+                onMutate: async () => {
+                        const context = await prepareContext();
+                        const now = new Date().toISOString();
 
-	const markUnreadMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		MarkUnreadVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markUnread.mutationOptions(),
-		onMutate: async () => prepareContext(),
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: async () => {
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				lastSeenAt: null,
-			}));
-			await queryClient.invalidateQueries({ queryKey: headersQueryKey });
-		},
-	});
+                        applyOptimisticUpdate((existing) => ({
+                                ...existing,
+                                lastSeenAt: now,
+                        }));
+
+                        return context;
+                },
+                onError: (_error, _variables, context) => {
+                        restoreContext(context);
+                },
+                onSuccess: (data) => {
+                        applyOptimisticUpdate((existing) =>
+                                mergeWithServerConversation(existing, data.conversation)
+                        );
+                },
+        });
+
+        const markUnreadMutation = useMutation<
+                ConversationMutationResponse,
+                TRPCError,
+                MarkUnreadVariables,
+                MutationContext
+        >({
+                ...trpc.conversation.markUnread.mutationOptions(),
+                onMutate: async () => {
+                        const context = await prepareContext();
+
+                        applyOptimisticUpdate((existing) => ({
+                                ...existing,
+                                lastSeenAt: null,
+                        }));
+
+                        return context;
+                },
+                onError: (_error, _variables, context) => {
+                        restoreContext(context);
+                },
+                onSuccess: (data) => {
+                        applyOptimisticUpdate((existing) =>
+                                mergeWithServerConversation(existing, data.conversation)
+                        );
+                },
+        });
 
 	const blockVisitorMutation = useMutation<
 		BlockVisitorResponse,
