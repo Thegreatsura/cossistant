@@ -7,6 +7,7 @@ import {
 	upsertConversationMessageInCache,
 } from "@/data/conversation-message-cache";
 import type { DashboardRealtimeContext } from "../types";
+import { forEachConversationHeadersQuery } from "./utils/conversation-headers";
 
 type MessageCreatedEvent = RealtimeEvent<"messageCreated">;
 
@@ -117,17 +118,36 @@ export const handleMessageCreated = ({
 		);
 	}
 
-	const existingHeader =
-		context.queryNormalizer.getObjectById<ConversationHeader>(
-			payload.conversationId
-		);
+        const existingHeader =
+                context.queryNormalizer.getObjectById<ConversationHeader>(
+                        payload.conversationId
+                );
 
-	if (existingHeader) {
-		context.queryNormalizer.setNormalizedData({
-			...existingHeader,
-			lastMessagePreview: headerMessage,
-			lastMessageAt: headerMessage.createdAt,
-			updatedAt: headerMessage.updatedAt,
-		});
-	}
+        if (!existingHeader) {
+                forEachConversationHeadersQuery(
+                        queryClient,
+                        context.website.slug,
+                        (queryKey) => {
+                                queryClient
+                                        .invalidateQueries({
+                                                queryKey,
+                                                exact: true,
+                                        })
+                                        .catch((error) => {
+                                                console.error(
+                                                        "Failed to invalidate conversation header queries:",
+                                                        error
+                                                );
+                                        });
+                        }
+                );
+                return;
+        }
+
+        context.queryNormalizer.setNormalizedData({
+                ...existingHeader,
+                lastMessagePreview: headerMessage,
+                lastMessageAt: headerMessage.createdAt,
+                updatedAt: headerMessage.updatedAt,
+        });
 };
