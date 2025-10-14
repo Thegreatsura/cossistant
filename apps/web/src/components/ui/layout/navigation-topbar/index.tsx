@@ -17,7 +17,7 @@ export function NavigationTopbar() {
     <header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-3 pl-6.5">
       <div className="flex flex-1 items-center gap-3">
         <Link className="mr-2" href={baseInboxPath}>
-          <Logo className="size-6 text-primary" />
+          <Logo className="size-5.5 text-primary" />
         </Link>
         <TopbarItem
           active={pathname.includes(baseInboxPath)}
