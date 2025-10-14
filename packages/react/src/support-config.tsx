@@ -1,0 +1,37 @@
+"use client";
+
+import type { DefaultMessage } from "@cossistant/types";
+import * as React from "react";
+import { useSupport } from "./provider";
+
+export type SupportConfigProps = {
+  defaultMessages?: DefaultMessage[];
+  quickOptions?: string[];
+};
+
+/**
+ * Component exposed by Cossistant allowing you to change the support widget default messages and quick response whenever rendered.
+ */
+export const SupportConfig = ({
+  defaultMessages,
+  quickOptions,
+}: SupportConfigProps) => {
+  const { setDefaultMessages, setQuickOptions } = useSupport();
+
+  // Only update when the arrays actually change content
+  React.useEffect(() => {
+    if (defaultMessages) {
+      setDefaultMessages(defaultMessages);
+    }
+  }, [defaultMessages, setDefaultMessages]);
+
+  React.useEffect(() => {
+    if (quickOptions) {
+      setQuickOptions(quickOptions);
+    }
+  }, [quickOptions, setQuickOptions]);
+
+  return null;
+};
+
+SupportConfig.displayName = "SupportConfig";
