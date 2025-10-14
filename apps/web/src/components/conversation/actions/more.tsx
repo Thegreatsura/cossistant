@@ -84,15 +84,27 @@ export function MoreConversationActions({
         const resolveSuccessMessage = isResolved
                 ? "Conversation marked unresolved"
                 : "Conversation marked resolved";
+        const resolveErrorMessage = "Failed to update resolution status";
         const archiveSuccessMessage = isArchived
                 ? "Conversation unarchived"
                 : "Conversation archived";
+        const archiveErrorMessage = "Failed to update archive status";
         const spamSuccessMessage = isSpam
                 ? "Conversation marked as not spam"
                 : "Conversation marked as spam";
+        const spamErrorMessage = "Failed to update spam status";
         const blockSuccessMessage = isBlocked
                 ? "Visitor unblocked"
                 : "Visitor blocked";
+        const blockErrorMessage = "Failed to update visitor block status";
+        const markReadSuccessMessage = "Conversation marked as read";
+        const markReadErrorMessage = "Failed to mark conversation as read";
+        const markUnreadSuccessMessage = "Conversation marked as unread";
+        const markUnreadErrorMessage = "Failed to mark conversation as unread";
+        const copyIdSuccessMessage = "Conversation ID copied";
+        const copyIdErrorMessage = "Unable to copy conversation ID";
+        const copyUrlSuccessMessage = "Conversation link copied";
+        const copyUrlErrorMessage = "Unable to copy conversation link";
 
         const suppressTooltipTemporarily = useCallback(() => {
                 setTooltipSuppressed(true);
@@ -133,18 +145,33 @@ export function MoreConversationActions({
         const runAction = useCallback(
                 async (
                         action: () => Promise<unknown | boolean>,
-                        successMessage?: string
+                        messages?: {
+                                successMessage?: string;
+                                errorMessage?: string;
+                        }
                 ) => {
                         closeMenu();
+
+                        const { successMessage, errorMessage } = messages ?? {};
 
                         try {
                                 const result = await action();
 
-                                if (successMessage && result !== false) {
+                                if (result === false) {
+                                        if (errorMessage) {
+                                                toast.error(errorMessage);
+                                        }
+                                        return;
+                                }
+
+                                if (successMessage) {
                                         toast.success(successMessage);
                                 }
                         } catch (error) {
                                 console.error("Failed to run conversation action", error);
+                                toast.error(
+                                        errorMessage ?? "Failed to perform conversation action"
+                                );
                         }
                 },
                 [closeMenu]
@@ -169,11 +196,15 @@ export function MoreConversationActions({
                                 async () => {
                                         if (isResolved) {
                                                 await markOpen();
-                                                return;
+                                                return true;
                                         }
                                         await markResolved();
+                                        return true;
                                 },
-                                resolveSuccessMessage
+                                {
+                                        successMessage: resolveSuccessMessage,
+                                        errorMessage: resolveErrorMessage,
+                                }
                         );
                 },
                 {
@@ -185,6 +216,7 @@ export function MoreConversationActions({
                         markOpen,
                         markResolved,
                         resolvePending,
+                        resolveErrorMessage,
                         resolveSuccessMessage,
                         runAction,
                 ]
@@ -203,11 +235,15 @@ export function MoreConversationActions({
                                 async () => {
                                         if (isArchived) {
                                                 await markUnarchived();
-                                                return;
+                                                return true;
                                         }
                                         await markArchived();
+                                        return true;
                                 },
-                                archiveSuccessMessage
+                                {
+                                        successMessage: archiveSuccessMessage,
+                                        errorMessage: archiveErrorMessage,
+                                }
                         );
                 },
                 {
@@ -216,6 +252,7 @@ export function MoreConversationActions({
                 },
                 [
                         archivePending,
+                        archiveErrorMessage,
                         archiveSuccessMessage,
                         isArchived,
                         markArchived,
@@ -237,8 +274,12 @@ export function MoreConversationActions({
                                 void runAction(
                                         async () => {
                                                 await markRead();
+                                                return true;
                                         },
-                                        "Conversation marked as read"
+                                        {
+                                                successMessage: markReadSuccessMessage,
+                                                errorMessage: markReadErrorMessage,
+                                        }
                                 );
                                 return;
                         }
@@ -250,8 +291,12 @@ export function MoreConversationActions({
                         void runAction(
                                 async () => {
                                         await markUnread();
+                                        return true;
                                 },
-                                "Conversation marked as unread"
+                                {
+                                        successMessage: markUnreadSuccessMessage,
+                                        errorMessage: markUnreadErrorMessage,
+                                }
                         );
                 },
                 {
@@ -261,7 +306,11 @@ export function MoreConversationActions({
                                 (shouldShowMarkUnread && !pendingAction.markUnread),
                 },
                 [
+                        markReadErrorMessage,
+                        markReadSuccessMessage,
                         markRead,
+                        markUnreadErrorMessage,
+                        markUnreadSuccessMessage,
                         markUnread,
                         pendingAction.markRead,
                         pendingAction.markUnread,
@@ -284,11 +333,15 @@ export function MoreConversationActions({
                                 async () => {
                                         if (isSpam) {
                                                 await markNotSpam();
-                                                return;
+                                                return true;
                                         }
                                         await markSpam();
+                                        return true;
                                 },
-                                spamSuccessMessage
+                                {
+                                        successMessage: spamSuccessMessage,
+                                        errorMessage: spamErrorMessage,
+                                }
                         );
                 },
                 {
@@ -300,6 +353,7 @@ export function MoreConversationActions({
                         markNotSpam,
                         markSpam,
                         runAction,
+                        spamErrorMessage,
                         spamPending,
                         spamSuccessMessage,
                 ]
@@ -371,11 +425,15 @@ export function MoreConversationActions({
                                                                         async () => {
                                                                                 if (isResolved) {
                                                                                         await markOpen();
-                                                                                        return;
+                                                                                        return true;
                                                                                 }
                                                                                 await markResolved();
+                                                                                return true;
                                                                         },
-                                                                        resolveSuccessMessage
+                                                                        {
+                                                                                successMessage: resolveSuccessMessage,
+                                                                                errorMessage: resolveErrorMessage,
+                                                                        }
                                                                 );
                                                         }}
                                                         shortcuts={["R"]}
@@ -390,11 +448,15 @@ export function MoreConversationActions({
                                                                         async () => {
                                                                                 if (isArchived) {
                                                                                         await markUnarchived();
-                                                                                        return;
+                                                                                        return true;
                                                                                 }
                                                                                 await markArchived();
+                                                                                return true;
                                                                         },
-                                                                        archiveSuccessMessage
+                                                                        {
+                                                                                successMessage: archiveSuccessMessage,
+                                                                                errorMessage: archiveErrorMessage,
+                                                                        }
                                                                 );
                                                         }}
                                                         shortcuts={["Delete"]}
@@ -409,8 +471,12 @@ export function MoreConversationActions({
                                                                         void runAction(
                                                                                 async () => {
                                                                                         await markRead();
+                                                                                        return true;
                                                                                 },
-                                                                                "Conversation marked as read"
+                                                                                {
+                                                                                        successMessage: markReadSuccessMessage,
+                                                                                        errorMessage: markReadErrorMessage,
+                                                                                }
                                                                         );
                                                                 }}
                                                                 shortcuts={["U"]}
@@ -426,8 +492,12 @@ export function MoreConversationActions({
                                                                         void runAction(
                                                                                 async () => {
                                                                                         await markUnread();
+                                                                                        return true;
                                                                                 },
-                                                                                "Conversation marked as unread"
+                                                                                {
+                                                                                        successMessage: markUnreadSuccessMessage,
+                                                                                        errorMessage: markUnreadErrorMessage,
+                                                                                }
                                                                         );
                                                                 }}
                                                                 shortcuts={["U"]}
@@ -443,11 +513,15 @@ export function MoreConversationActions({
                                                                         async () => {
                                                                                 if (isSpam) {
                                                                                         await markNotSpam();
-                                                                                        return;
+                                                                                        return true;
                                                                                 }
                                                                                 await markSpam();
+                                                                                return true;
                                                                         },
-                                                                        spamSuccessMessage
+                                                                        {
+                                                                                successMessage: spamSuccessMessage,
+                                                                                errorMessage: spamErrorMessage,
+                                                                        }
                                                                 );
                                                         }}
                                                         shortcuts={["P"]}
@@ -470,7 +544,10 @@ export function MoreConversationActions({
                                                                                 await blockVisitor();
                                                                                 return true;
                                                                         },
-                                                                        blockSuccessMessage
+                                                                        {
+                                                                                successMessage: blockSuccessMessage,
+                                                                                errorMessage: blockErrorMessage,
+                                                                        }
                                                                 );
                                                         }}
                                                 >
@@ -485,7 +562,10 @@ export function MoreConversationActions({
                                                                 async () => {
                                                                         return handleCopyId();
                                                                 },
-                                                                "Conversation ID copied"
+                                                                {
+                                                                        successMessage: copyIdSuccessMessage,
+                                                                        errorMessage: copyIdErrorMessage,
+                                                                }
                                                         );
                                                 }}
                                         >
@@ -498,7 +578,10 @@ export function MoreConversationActions({
                                                                 async () => {
                                                                         return handleCopyUrl();
                                                                 },
-                                                                "Conversation link copied"
+                                                                {
+                                                                        successMessage: copyUrlSuccessMessage,
+                                                                        errorMessage: copyUrlErrorMessage,
+                                                                }
                                                         );
                                                 }}
                                         >
