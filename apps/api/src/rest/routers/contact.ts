@@ -99,11 +99,7 @@ function formatVisitorWithContactResponse(
                 blockedByUserId: record.blockedByUserId,
                 isBlocked: Boolean(record.blockedAt),
                 contact: record.contact
-                        ? {
-                                  ...record.contact,
-                                  metadata: (record.contact.metadata ??
-                                          null) as ContactMetadata,
-                          }
+                        ? formatContactResponse(record.contact)
                         : null,
         } satisfies VisitorResponse;
 }
