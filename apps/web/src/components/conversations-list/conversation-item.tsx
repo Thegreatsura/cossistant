@@ -1,6 +1,7 @@
 "use client";
 
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,6 +12,7 @@ import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-da
 import { formatTimeAgo } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
+import { useTRPC } from "@/lib/trpc/client";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
 
@@ -29,16 +31,57 @@ export function ConversationItem({
   focused = false,
   setFocused,
 }: Props) {
-  const { visitor, lastMessagePreview: headerLastMessagePreview } = header;
+  const { visitor: headerVisitor, lastMessagePreview: headerLastMessagePreview } =
+    header;
   const { prefetchConversation } = usePrefetchConversationData();
   const { user } = useUserSession();
+  const trpc = useTRPC();
+
+  const visitorQueryOptions = useMemo(
+    () =>
+      trpc.conversation.getVisitorById.queryOptions({
+        websiteSlug,
+        visitorId: header.visitorId,
+      }),
+    [header.visitorId, trpc, websiteSlug]
+  );
+
+  const visitorQuery = useQuery({
+    ...visitorQueryOptions,
+    enabled: Boolean(header.visitorId) && !headerVisitor,
+    initialData: headerVisitor ?? undefined,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const visitor = useMemo(() => {
+    const normalizedVisitor = visitorQuery.data ?? null;
+
+    if (headerVisitor && normalizedVisitor) {
+      const normalizedUpdatedAt = normalizedVisitor.updatedAt
+        ? new Date(normalizedVisitor.updatedAt).getTime()
+        : 0;
+      const headerUpdatedAt = headerVisitor.updatedAt
+        ? new Date(headerVisitor.updatedAt).getTime()
+        : 0;
+
+      if (normalizedUpdatedAt >= headerUpdatedAt) {
+        return normalizedVisitor;
+      }
+
+      return headerVisitor;
+    }
+
+    return normalizedVisitor ?? headerVisitor;
+  }, [headerVisitor, visitorQuery.data]);
 
   const typingEntries = useConversationTyping(header.id, {
     excludeUserId: user.id,
   });
 
   const typingInfo = useMemo(() => {
-    if (typingEntries.length === 0) {
+    if (typingEntries.length === 0 || !visitor) {
       return null;
     }
 
@@ -79,7 +122,7 @@ export function ConversationItem({
       (!headerLastSeenAt || lastMessageCreatedAt > headerLastSeenAt)
   );
 
-  const fullName = getVisitorNameWithFallback(visitor);
+  const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
 
   return (
     <Link
@@ -102,8 +145,8 @@ export function ConversationItem({
       <Avatar
         className="size-8"
         fallbackName={fullName}
-        lastOnlineAt={visitor.lastSeenAt}
-        url={visitor.contact?.image}
+        lastOnlineAt={visitor?.lastSeenAt ?? headerVisitor.lastSeenAt}
+        url={visitor?.contact?.image ?? headerVisitor.contact?.image}
         withBoringAvatar
       />
 
