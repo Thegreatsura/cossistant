@@ -1,5 +1,5 @@
 ---
-title: Locale & text customization
+title: Locale & Text
 description: Configure widget copy with type-safe locales and overrides.
 ---
 
@@ -13,7 +13,7 @@ errors if a required placeholder is missing.
 - Built-in locales: **English (`en`)**, **French (`fr`)** and **Spanish (`es`)**
 - Fallback order: provided `locale` prop → browser locale → English defaults
 - Keys always render with a `data-key-name="…"` attribute so you can discover
-them quickly in dev tools
+  them quickly in dev tools
 
 ## Rendering copy
 
@@ -29,7 +29,9 @@ export const AskButton = () => {
   return (
     <button className="cta">
       <Text as="span" textKey="common.actions.askQuestion" />
-      <span className="hint">{text("page.home.history.more", { count: 2 })}</span>
+      <span className="hint">
+        {text("page.home.history.more", { count: 2 })}
+      </span>
     </button>
   );
 };
@@ -51,7 +53,8 @@ utility helpers.
   content={{
     "page.home.greeting": ({ variables, context, utils }) => {
       const period = utils.timeOfDay();
-      const visitorName = variables?.visitorName ?? context.visitor?.contact?.name ?? "";
+      const visitorName =
+        variables?.visitorName ?? context.visitor?.contact?.name ?? "";
       const prefix = period.token === "evening" ? "Bonsoir" : "Salut";
       return `${prefix} ${visitorName}!`;
     },
