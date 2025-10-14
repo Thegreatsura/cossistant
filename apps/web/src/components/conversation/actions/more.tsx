@@ -1,7 +1,6 @@
 import { ConversationStatus } from "@cossistant/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
         DropdownMenu,
@@ -13,7 +12,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
-import { useConversationActions } from "@/data/use-conversation-actions";
+import {
+        type RunConversationActionOptions,
+        useConversationActionRunner,
+} from "./use-conversation-action-runner";
 import { cn } from "@/lib/utils";
 
 export function MoreConversationActions({
@@ -52,7 +54,8 @@ export function MoreConversationActions({
                 blockVisitor,
                 unblockVisitor,
                 pendingAction,
-        } = useConversationActions({ conversationId, visitorId });
+                runAction,
+        } = useConversationActionRunner({ conversationId, visitorId });
 
         const isResolved = status === ConversationStatus.RESOLVED;
         const isSpam = status === ConversationStatus.SPAM;
@@ -142,39 +145,19 @@ export function MoreConversationActions({
                 handleOpenChange(false);
         }, [handleOpenChange]);
 
-        const runAction = useCallback(
-                async (
+        const runMenuAction = useCallback(
+                (
                         action: () => Promise<unknown | boolean>,
-                        messages?: {
-                                successMessage?: string;
-                                errorMessage?: string;
-                        }
-                ) => {
-                        closeMenu();
-
-                        const { successMessage, errorMessage } = messages ?? {};
-
-                        try {
-                                const result = await action();
-
-                                if (result === false) {
-                                        if (errorMessage) {
-                                                toast.error(errorMessage);
-                                        }
-                                        return;
-                                }
-
-                                if (successMessage) {
-                                        toast.success(successMessage);
-                                }
-                        } catch (error) {
-                                console.error("Failed to run conversation action", error);
-                                toast.error(
-                                        errorMessage ?? "Failed to perform conversation action"
-                                );
-                        }
-                },
-                [closeMenu]
+                        options?: RunConversationActionOptions
+                ) =>
+                        runAction(action, {
+                                ...options,
+                                beforeAction: () => {
+                                        closeMenu();
+                                        options?.beforeAction?.();
+                                },
+                        }),
+                [closeMenu, runAction]
         );
 
         const preventHotkeysOptions = {
@@ -192,7 +175,7 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(
+                        void runMenuAction(
                                 async () => {
                                         if (isResolved) {
                                                 await markOpen();
@@ -218,7 +201,7 @@ export function MoreConversationActions({
                         resolvePending,
                         resolveErrorMessage,
                         resolveSuccessMessage,
-                        runAction,
+                        runMenuAction,
                 ]
         );
 
@@ -231,7 +214,7 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(
+                        void runMenuAction(
                                 async () => {
                                         if (isArchived) {
                                                 await markUnarchived();
@@ -257,7 +240,7 @@ export function MoreConversationActions({
                         isArchived,
                         markArchived,
                         markUnarchived,
-                        runAction,
+                        runMenuAction,
                 ]
         );
 
@@ -271,7 +254,7 @@ export function MoreConversationActions({
                                         return;
                                 }
 
-                                void runAction(
+                                void runMenuAction(
                                         async () => {
                                                 await markRead();
                                                 return true;
@@ -288,7 +271,7 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(
+                                void runMenuAction(
                                 async () => {
                                         await markUnread();
                                         return true;
@@ -314,7 +297,7 @@ export function MoreConversationActions({
                         markUnread,
                         pendingAction.markRead,
                         pendingAction.markUnread,
-                        runAction,
+                        runMenuAction,
                         shouldShowMarkRead,
                         shouldShowMarkUnread,
                 ]
@@ -329,7 +312,7 @@ export function MoreConversationActions({
                                 return;
                         }
 
-                        void runAction(
+                        void runMenuAction(
                                 async () => {
                                         if (isSpam) {
                                                 await markNotSpam();
@@ -352,7 +335,7 @@ export function MoreConversationActions({
                         isSpam,
                         markNotSpam,
                         markSpam,
-                        runAction,
+                        runMenuAction,
                         spamErrorMessage,
                         spamPending,
                         spamSuccessMessage,
@@ -421,7 +404,7 @@ export function MoreConversationActions({
                                                         disabled={resolvePending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(
+                                                                void runMenuAction(
                                                                         async () => {
                                                                                 if (isResolved) {
                                                                                         await markOpen();
@@ -444,7 +427,7 @@ export function MoreConversationActions({
                                                         disabled={archivePending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(
+                                                                void runMenuAction(
                                                                         async () => {
                                                                                 if (isArchived) {
                                                                                         await markUnarchived();
@@ -468,7 +451,7 @@ export function MoreConversationActions({
                                                                 disabled={pendingAction.markRead}
                                                                 onSelect={(event) => {
                                                                         event.preventDefault();
-                                                                        void runAction(
+                                                                        void runMenuAction(
                                                                                 async () => {
                                                                                         await markRead();
                                                                                         return true;
@@ -489,7 +472,7 @@ export function MoreConversationActions({
                                                                 disabled={pendingAction.markUnread}
                                                                 onSelect={(event) => {
                                                                         event.preventDefault();
-                                                                        void runAction(
+                                                                        void runMenuAction(
                                                                                 async () => {
                                                                                         await markUnread();
                                                                                         return true;
@@ -509,7 +492,7 @@ export function MoreConversationActions({
                                                         disabled={spamPending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(
+                                                                void runMenuAction(
                                                                         async () => {
                                                                                 if (isSpam) {
                                                                                         await markNotSpam();
@@ -532,7 +515,7 @@ export function MoreConversationActions({
                                                         disabled={!canToggleBlock || blockPending}
                                                         onSelect={(event) => {
                                                                 event.preventDefault();
-                                                                void runAction(
+                                                                void runMenuAction(
                                                                         async () => {
                                                                                 if (!visitorId) {
                                                                                         return false;
@@ -558,7 +541,7 @@ export function MoreConversationActions({
                                         <DropdownMenuItem
                                                 onSelect={(event) => {
                                                         event.preventDefault();
-                                                        void runAction(
+                                                        void runMenuAction(
                                                                 async () => {
                                                                         return handleCopyId();
                                                                 },
@@ -574,7 +557,7 @@ export function MoreConversationActions({
                                         <DropdownMenuItem
                                                 onSelect={(event) => {
                                                         event.preventDefault();
-                                                        void runAction(
+                                                        void runMenuAction(
                                                                 async () => {
                                                                         return handleCopyUrl();
                                                                 },
