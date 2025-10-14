@@ -145,8 +145,10 @@ export function ConversationItem({
       <Avatar
         className="size-8"
         fallbackName={fullName}
-        lastOnlineAt={visitor?.lastSeenAt ?? headerVisitor.lastSeenAt}
-        url={visitor?.contact?.image ?? headerVisitor.contact?.image}
+        lastOnlineAt={
+            visitor?.lastSeenAt ?? headerVisitor?.lastSeenAt ?? null
+        }
+        url={visitor?.contact?.image ?? headerVisitor?.contact?.image}
         withBoringAvatar
       />
 
