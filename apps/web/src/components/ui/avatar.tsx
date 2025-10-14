@@ -291,10 +291,8 @@ function Avatar({
       <div className="relative">
         <AvatarContainer
           className={cn(
-            "size-8 shrink-0 ring-1 ring-primary/5 ring-offset-2 ring-offset-background dark:ring-primary/20",
-            {
-              "ring-cossistant-green dark:ring-cossistant-green": isOnline,
-            },
+            "size-8 shrink-0 ring-1 ring-border ring-offset-1 ring-offset-background",
+
             className
           )}
         >
@@ -306,17 +304,17 @@ function Avatar({
             {fallbackName}
           </AvatarFallback>
         </AvatarContainer>
-        {/* {isOnline && (
+        {isOnline && (
           <div
             className={cn(
-              "-right-0.5 -bottom-0.5 absolute hidden size-1.5 rounded-full",
+              "-right-1 absolute bottom-0.5 hidden size-[5px] rounded-full ring-2 ring-background",
               {
                 "block bg-cossistant-green": isOnline,
                 "block bg-cossistant-orange": isAway,
               }
             )}
           />
-        )} */}
+        )}
       </div>
     </TooltipOnHover>
   );
