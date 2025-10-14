@@ -128,10 +128,17 @@ export const handleMessageCreated = ({
                         queryClient,
                         context.website.slug,
                         (queryKey) => {
-                                void queryClient.invalidateQueries({
-                                        queryKey,
-                                        exact: true,
-                                });
+                                queryClient
+                                        .invalidateQueries({
+                                                queryKey,
+                                                exact: true,
+                                        })
+                                        .catch((error) => {
+                                                console.error(
+                                                        "Failed to invalidate conversation header queries:",
+                                                        error
+                                                );
+                                        });
                         }
                 );
                 return;
