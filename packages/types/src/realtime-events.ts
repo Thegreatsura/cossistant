@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { visitorResponseSchema } from "./api/visitor";
 import { MessageType, MessageVisibility } from "./enums";
 import { conversationSchema } from "./schemas";
 import { conversationHeaderSchema } from "./trpc/conversation";
@@ -77,11 +78,15 @@ export const realtimeSchema = {
 		}),
 		conversationId: z.string(),
 	}),
-	conversationCreated: baseRealtimeEvent.extend({
-		conversationId: z.string(),
-		conversation: conversationSchema,
-		header: conversationHeaderSchema,
-	}),
+        conversationCreated: baseRealtimeEvent.extend({
+                conversationId: z.string(),
+                conversation: conversationSchema,
+                header: conversationHeaderSchema,
+        }),
+        visitorIdentified: baseRealtimeEvent.extend({
+                visitorId: z.string(),
+                visitor: visitorResponseSchema,
+        }),
 } as const;
 
 export type RealtimeEventType = keyof typeof realtimeSchema;

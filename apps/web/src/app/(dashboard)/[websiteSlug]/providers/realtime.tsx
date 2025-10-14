@@ -12,6 +12,7 @@ import { handleConversationCreated } from "./events/handlers/conversation-create
 import { handleConversationSeen } from "./events/handlers/conversation-seen";
 import { handleConversationTyping } from "./events/handlers/conversation-typing";
 import { handleMessageCreated } from "./events/handlers/message-created";
+import { handleVisitorIdentified } from "./events/handlers/visitor-identified";
 import type { DashboardRealtimeContext } from "./events/types";
 
 export function Realtime({ children }: { children: ReactNode }) {
@@ -59,17 +60,25 @@ export function Realtime({ children }: { children: ReactNode }) {
 					});
 				},
 			],
-			conversationTyping: [
-				(_data, meta) => {
-					handleConversationTyping({
-						event: meta.event,
-						context: meta.context,
-					});
-				},
-			],
-		}),
-		[]
-	);
+                        conversationTyping: [
+                                (_data, meta) => {
+                                        handleConversationTyping({
+                                                event: meta.event,
+                                                context: meta.context,
+                                        });
+                                },
+                        ],
+                        visitorIdentified: [
+                                (_data, meta) => {
+                                        handleVisitorIdentified({
+                                                event: meta.event,
+                                                context: meta.context,
+                                        });
+                                },
+                        ],
+                }),
+                []
+        );
 
 	useRealtime<DashboardRealtimeContext>({
 		context: realtimeContext,
