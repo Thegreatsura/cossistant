@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useComposerRefocus } from "../../hooks/use-composer-refocus";
 import * as Primitive from "../../primitives";
 import { useSupportText } from "../text";
 import { cn } from "../utils";
@@ -42,39 +43,21 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
         const fileInputRef = useRef<HTMLInputElement>(null);
-        const inputRef = useRef<HTMLTextAreaElement | null>(null);
-        const previousStateRef = useRef({
+        const hasContent = value.trim().length > 0 || files.length > 0;
+        const { focusComposer, inputRef } = useComposerRefocus({
+                disabled,
+                hasContent,
                 isSubmitting,
-                hadContent: value.trim().length > 0 || files.length > 0,
         });
-
-        useEffect(() => {
-                const previous = previousStateRef.current;
-                const hasContent = value.trim().length > 0 || files.length > 0;
-
-                if (
-                        !disabled &&
-                        !isSubmitting &&
-                        !hasContent &&
-                        (previous.isSubmitting || previous.hadContent)
-                ) {
-                        inputRef.current?.focus();
-                }
-
-                previousStateRef.current = {
-                        isSubmitting,
-                        hadContent: hasContent,
-                };
-        }, [disabled, files.length, isSubmitting, value]);
 	const text = useSupportText();
 	const resolvedPlaceholder =
 		placeholder ?? text("component.multimodalInput.placeholder");
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-                if (!(disabled || isSubmitting) && (value.trim() || files.length > 0)) {
+                if (!(disabled || isSubmitting) && hasContent) {
                         onSubmit();
-                        inputRef.current?.focus();
+                        focusComposer();
                 }
         };
 
@@ -94,9 +77,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	};
 
-	const canSubmit =
-		!(disabled || isSubmitting) &&
-		(value.trim().length > 0 || files.length > 0);
+        const canSubmit = !(disabled || isSubmitting) && hasContent;
 
 	return (
 		<form className="flex flex-col gap-2" onSubmit={handleFormSubmit}>

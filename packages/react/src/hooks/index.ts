@@ -4,6 +4,7 @@ export * from "./private/use-grouped-messages";
 export * from "./private/use-multimodal-input";
 export * from "./private/use-rest-client";
 export * from "./use-conversation";
+export * from "./use-composer-refocus";
 export * from "./use-conversation-auto-seen";
 export * from "./use-conversation-history-page";
 export * from "./use-conversation-lifecycle";
