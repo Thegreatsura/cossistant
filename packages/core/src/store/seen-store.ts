@@ -72,13 +72,45 @@ function hasSameEntries(
 }
 
 export type SeenStore = Store<SeenState> & {
-	upsert(options: UpsertSeenOptions): void;
-	hydrate(conversationId: string, entries: ConversationSeen[]): void;
-	clear(conversationId: string): void;
+        upsert(options: UpsertSeenOptions): void;
+        hydrate(conversationId: string, entries: ConversationSeen[]): void;
+        clear(conversationId: string): void;
 };
 
+type ActorIdentity = {
+        actorType: SeenActorType;
+        actorId: string;
+};
+
+function resolveActorIdentity(
+        entry: Pick<
+                ConversationSeen | RealtimeEvent<"conversationSeen">["payload"],
+                "userId" | "visitorId" | "aiAgentId"
+        >
+): ActorIdentity | null {
+        if (entry.userId) {
+                return { actorType: "user", actorId: entry.userId } satisfies ActorIdentity;
+        }
+
+        if (entry.visitorId) {
+                return {
+                        actorType: "visitor",
+                        actorId: entry.visitorId,
+                } satisfies ActorIdentity;
+        }
+
+        if (entry.aiAgentId) {
+                return {
+                        actorType: "ai_agent",
+                        actorId: entry.aiAgentId,
+                } satisfies ActorIdentity;
+        }
+
+        return null;
+}
+
 export function createSeenStore(
-	initialState: SeenState = INITIAL_STATE
+        initialState: SeenState = INITIAL_STATE
 ): SeenStore {
 	const store = createStore<SeenState>({
 		conversations: { ...initialState.conversations },
@@ -134,25 +166,17 @@ export function createSeenStore(
                                 };
 
                                 for (const entry of entries) {
-                                        let actorType: SeenActorType | null = null;
-                                        let actorId: string | null = null;
+                                        const identity = resolveActorIdentity(entry);
 
-                                        if (entry.userId) {
-                                                actorType = "user";
-                                                actorId = entry.userId;
-                                        } else if (entry.visitorId) {
-                                                actorType = "visitor";
-                                                actorId = entry.visitorId;
-                                        } else if (entry.aiAgentId) {
-                                                actorType = "ai_agent";
-                                                actorId = entry.aiAgentId;
-                                        }
-
-                                        if (!(actorType && actorId)) {
+                                        if (!identity) {
                                                 continue;
                                         }
 
-                                        const key = makeKey(conversationId, actorType, actorId);
+                                        const key = makeKey(
+                                                conversationId,
+                                                identity.actorType,
+                                                identity.actorId
+                                        );
                                         const previous = existing[key];
                                         const incomingTimestamp = new Date(entry.lastSeenAt).getTime();
                                         const previousTimestamp = previous
@@ -171,8 +195,8 @@ export function createSeenStore(
                                         }
 
                                         nextEntries[key] = {
-                                                actorType,
-                                                actorId,
+                                                actorType: identity.actorType,
+                                                actorId: identity.actorId,
                                                 lastSeenAt: entry.lastSeenAt,
                                         } satisfies SeenEntry;
                                 }
@@ -235,47 +259,35 @@ export function applyConversationSeenEvent(
 	} = {}
 ): void {
 	const { payload } = event;
-	let actorType: SeenActorType | null = null;
-	let actorId: string | null = null;
+        const identity = resolveActorIdentity(payload);
 
-	if (payload.userId) {
-		actorType = "user";
-		actorId = payload.userId;
-	} else if (payload.visitorId) {
-		actorType = "visitor";
-		actorId = payload.visitorId;
-	} else if (payload.aiAgentId) {
-		actorType = "ai_agent";
-		actorId = payload.aiAgentId;
-	}
+        if (!identity) {
+                return;
+        }
 
-	if (!(actorType && actorId)) {
-		return;
-	}
+        if (
+                (identity.actorType === "visitor" &&
+                        payload.visitorId &&
+                        options.ignoreVisitorId &&
+                        payload.visitorId === options.ignoreVisitorId) ||
+                (identity.actorType === "user" &&
+                        payload.userId &&
+                        options.ignoreUserId &&
+                        payload.userId === options.ignoreUserId) ||
+                (identity.actorType === "ai_agent" &&
+                        payload.aiAgentId &&
+                        options.ignoreAiAgentId &&
+                        payload.aiAgentId === options.ignoreAiAgentId)
+        ) {
+                return;
+        }
 
-	if (
-		(actorType === "visitor" &&
-			payload.visitorId &&
-			options.ignoreVisitorId &&
-			payload.visitorId === options.ignoreVisitorId) ||
-		(actorType === "user" &&
-			payload.userId &&
-			options.ignoreUserId &&
-			payload.userId === options.ignoreUserId) ||
-		(actorType === "ai_agent" &&
-			payload.aiAgentId &&
-			options.ignoreAiAgentId &&
-			payload.aiAgentId === options.ignoreAiAgentId)
-	) {
-		return;
-	}
+        const lastSeenAt = payload.lastSeenAt;
 
-	const lastSeenAt = payload.lastSeenAt;
-
-	upsertConversationSeen(store, {
-		conversationId: payload.conversationId,
-		actorType,
-		actorId,
-		lastSeenAt,
-	});
+        upsertConversationSeen(store, {
+                conversationId: payload.conversationId,
+                actorType: identity.actorType,
+                actorId: identity.actorId,
+                lastSeenAt,
+        });
 }
