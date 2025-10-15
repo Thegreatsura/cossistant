@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useUserSession } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
@@ -17,173 +18,164 @@ import { ConversationBasicActions } from "../conversation/actions/basic";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
 
 type Props = {
-	href: string;
-	header: ConversationHeader;
-	websiteSlug: string;
-	focused?: boolean;
-	setFocused?: () => void;
+  href: string;
+  header: ConversationHeader;
+  websiteSlug: string;
+  focused?: boolean;
+  setFocused?: () => void;
 };
 
 export function ConversationItem({
-	href,
-	header,
-	websiteSlug,
-	focused = false,
-	setFocused,
+  href,
+  header,
+  websiteSlug,
+  focused = false,
+  setFocused,
 }: Props) {
-	const {
-		visitor: headerVisitor,
-		lastMessagePreview: headerLastMessagePreview,
-	} = header;
-	const { prefetchConversation } = usePrefetchConversationData();
-	const { user } = useUserSession();
-	const trpc = useTRPC();
+  const {
+    visitor: headerVisitor,
+    lastMessagePreview: headerLastMessagePreview,
+  } = header;
+  const { prefetchConversation } = usePrefetchConversationData();
+  const { user } = useUserSession();
+  const trpc = useTRPC();
+  const presence = useVisitorPresenceById(header.visitorId);
 
-	const visitorQueryOptions = useMemo(
-		() =>
-			trpc.conversation.getVisitorById.queryOptions({
-				websiteSlug,
-				visitorId: header.visitorId,
-			}),
-		[header.visitorId, trpc, websiteSlug]
-	);
+  const visitorQueryOptions = useMemo(
+    () =>
+      trpc.conversation.getVisitorById.queryOptions({
+        websiteSlug,
+        visitorId: header.visitorId,
+      }),
+    [header.visitorId, trpc, websiteSlug]
+  );
 
-	const visitorQuery = useQuery({
-		...visitorQueryOptions,
-		enabled: Boolean(header.visitorId) && !headerVisitor,
-		initialData: headerVisitor ?? undefined,
-		staleTime: Number.POSITIVE_INFINITY,
-		refetchOnWindowFocus: false,
-		refetchOnReconnect: false,
-	});
+  const visitorQuery = useQuery({
+    ...visitorQueryOptions,
+    enabled: Boolean(header.visitorId) && !headerVisitor,
+    staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
-	const visitor = useMemo(() => {
-		const normalizedVisitor = visitorQuery.data ?? null;
+  const visitor = useMemo(() => {
+    const normalizedVisitor = visitorQuery.data ?? null;
 
-		if (headerVisitor && normalizedVisitor) {
-			const normalizedUpdatedAt = normalizedVisitor.updatedAt
-				? new Date(normalizedVisitor.updatedAt).getTime()
-				: 0;
-			const headerUpdatedAt = headerVisitor.updatedAt
-				? new Date(headerVisitor.updatedAt).getTime()
-				: 0;
+    // Prefer normalized visitor data when available as it's more complete
+    return normalizedVisitor ?? headerVisitor;
+  }, [headerVisitor, visitorQuery.data]);
 
-			if (normalizedUpdatedAt >= headerUpdatedAt) {
-				return normalizedVisitor;
-			}
+  const typingEntries = useConversationTyping(header.id, {
+    excludeUserId: user.id,
+  });
 
-			return headerVisitor;
-		}
+  const typingInfo = useMemo(() => {
+    if (typingEntries.length === 0 || !visitor) {
+      return null;
+    }
 
-		return normalizedVisitor ?? headerVisitor;
-	}, [headerVisitor, visitorQuery.data]);
+    const entry = typingEntries[0];
 
-	const typingEntries = useConversationTyping(header.id, {
-		excludeUserId: user.id,
-	});
+    if (entry?.actorType === "visitor") {
+      return {
+        name: visitor.contact?.name || visitor.contact?.email || "Visitor",
+        hasPreview: !!entry.preview,
+      };
+    }
 
-	const typingInfo = useMemo(() => {
-		if (typingEntries.length === 0 || !visitor) {
-			return null;
-		}
+    return null;
+  }, [typingEntries, visitor]);
 
-		const entry = typingEntries[0];
+  const cachedLastMessagePreview = useLatestConversationMessage({
+    conversationId: header.id,
+    websiteSlug,
+  });
 
-		if (entry?.actorType === "visitor") {
-			return {
-				name: visitor.contact?.name || visitor.contact?.email || "Visitor",
-				hasPreview: !!entry.preview,
-			};
-		}
+  const lastMessagePreview =
+    cachedLastMessagePreview ?? headerLastMessagePreview ?? null;
 
-		return null;
-	}, [typingEntries, visitor]);
+  const lastMessageCreatedAt = lastMessagePreview?.createdAt
+    ? new Date(lastMessagePreview.createdAt)
+    : null;
 
-	const cachedLastMessagePreview = useLatestConversationMessage({
-		conversationId: header.id,
-		websiteSlug,
-	});
+  const headerLastSeenAt = header.lastSeenAt
+    ? new Date(header.lastSeenAt)
+    : null;
 
-	const lastMessagePreview =
-		cachedLastMessagePreview ?? headerLastMessagePreview ?? null;
+  const isLastMessageFromCurrentUser = lastMessagePreview?.userId === user.id;
 
-	const lastMessageCreatedAt = lastMessagePreview?.createdAt
-		? new Date(lastMessagePreview.createdAt)
-		: null;
+  const hasUnreadMessage = Boolean(
+    lastMessagePreview &&
+      !isLastMessageFromCurrentUser &&
+      lastMessageCreatedAt &&
+      (!headerLastSeenAt || lastMessageCreatedAt > headerLastSeenAt)
+  );
 
-	const headerLastSeenAt = header.lastSeenAt
-		? new Date(header.lastSeenAt)
-		: null;
+  const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
 
-	const isLastMessageFromCurrentUser = lastMessagePreview?.userId === user.id;
+  return (
+    <Link
+      className={cn(
+        "group/conversation-item relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm",
+        "focus-visible:outline-none focus-visible:ring-0",
+        focused && "bg-background-200 text-primary dark:bg-background-300"
+      )}
+      href={href}
+      onMouseEnter={() => {
+        setFocused?.();
+        prefetchConversation({
+          websiteSlug,
+          conversationId: header.id,
+          visitorId: header.visitorId,
+        });
+      }}
+      prefetch="auto"
+    >
+      <Avatar
+        className="size-8"
+        fallbackName={fullName}
+        lastOnlineAt={
+          presence?.lastSeenAt ??
+          visitor?.lastSeenAt ??
+          headerVisitor?.lastSeenAt ??
+          null
+        }
+        url={visitor?.contact?.image ?? headerVisitor?.contact?.image}
+        withBoringAvatar
+      />
 
-	const hasUnreadMessage = Boolean(
-		lastMessagePreview &&
-			!isLastMessageFromCurrentUser &&
-			lastMessageCreatedAt &&
-			(!headerLastSeenAt || lastMessageCreatedAt > headerLastSeenAt)
-	);
+      <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
+        <p className="min-w-[120px] max-w-[120px] truncate">{fullName}</p>
 
-	const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
-
-	return (
-		<Link
-			className={cn(
-				"group/conversation-item relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm",
-				"focus-visible:outline-none focus-visible:ring-0",
-				focused && "bg-background-200 text-primary dark:bg-background-300"
-			)}
-			href={href}
-			onMouseEnter={() => {
-				setFocused?.();
-				prefetchConversation({
-					websiteSlug,
-					conversationId: header.id,
-					visitorId: header.visitorId,
-				});
-			}}
-			prefetch="auto"
-		>
-			<Avatar
-				className="size-8"
-				fallbackName={fullName}
-				lastOnlineAt={visitor?.lastSeenAt ?? headerVisitor?.lastSeenAt ?? null}
-				url={visitor?.contact?.image ?? headerVisitor?.contact?.image}
-				withBoringAvatar
-			/>
-
-			<div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
-				<p className="min-w-[120px] max-w-[120px] truncate">{fullName}</p>
-
-				{typingInfo ? (
-					<BouncingDots />
-				) : (
-					<p className={cn("truncate pr-6 text-muted-foreground")}>
-						{lastMessagePreview?.bodyMd ?? ""}
-					</p>
-				)}
-			</div>
-			<div className="flex items-center gap-1">
-				{focused ? (
-					<ConversationBasicActions
-						conversationId={header.id}
-						deletedAt={header.deletedAt}
-						status={header.status}
-						visitorId={header.visitorId}
-					/>
-				) : lastMessageCreatedAt ? (
-					<span className="shrink-0 pr-2 text-primary/40 text-xs">
-						{formatTimeAgo(lastMessageCreatedAt)}
-					</span>
-				) : null}
-				<span
-					aria-hidden="true"
-					className={cn(
-						"inline-block size-1.5 rounded-full bg-cossistant-orange opacity-0",
-						hasUnreadMessage && "opacity-100"
-					)}
-				/>
-			</div>
-		</Link>
-	);
+        {typingInfo ? (
+          <BouncingDots />
+        ) : (
+          <p className={cn("truncate pr-6 text-muted-foreground")}>
+            {lastMessagePreview?.bodyMd ?? ""}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        {focused ? (
+          <ConversationBasicActions
+            conversationId={header.id}
+            deletedAt={header.deletedAt}
+            status={header.status}
+            visitorId={header.visitorId}
+          />
+        ) : lastMessageCreatedAt ? (
+          <span className="shrink-0 pr-2 text-primary/40 text-xs">
+            {formatTimeAgo(lastMessageCreatedAt)}
+          </span>
+        ) : null}
+        <span
+          aria-hidden="true"
+          className={cn(
+            "inline-block size-1.5 rounded-full bg-cossistant-orange opacity-0",
+            hasUnreadMessage && "opacity-100"
+          )}
+        />
+      </div>
+    </Link>
+  );
 }

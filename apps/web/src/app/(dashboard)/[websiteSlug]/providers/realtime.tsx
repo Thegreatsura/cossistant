@@ -1,13 +1,14 @@
 "use client";
 
 import {
-	type RealtimeEventHandlersMap,
-	useRealtime,
+  type RealtimeEventHandlersMap,
+  useRealtime,
 } from "@cossistant/next/realtime";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useMemo } from "react";
 import { useUserSession, useWebsite } from "@/contexts/website";
+import { useTRPC } from "@/lib/trpc/client";
 import { handleConversationCreated } from "./events/handlers/conversation-created";
 import { handleConversationSeen } from "./events/handlers/conversation-seen";
 import { handleConversationTyping } from "./events/handlers/conversation-typing";
@@ -16,81 +17,104 @@ import { handleVisitorIdentified } from "./events/handlers/visitor-identified";
 import type { DashboardRealtimeContext } from "./events/types";
 
 export function Realtime({ children }: { children: ReactNode }) {
-	const queryClient = useQueryClient();
-	const queryNormalizer = useQueryNormalizer();
-	const website = useWebsite();
-	const { user } = useUserSession();
+  const queryClient = useQueryClient();
+  const queryNormalizer = useQueryNormalizer();
+  const website = useWebsite();
+  const { user } = useUserSession();
+  const trpc = useTRPC();
 
-	const realtimeContext = useMemo<DashboardRealtimeContext>(
-		() => ({
-			queryClient,
-			queryNormalizer,
-			website: {
-				id: website.id,
-				slug: website.slug,
-			},
-			userId: user?.id ?? null,
-		}),
-		[queryClient, queryNormalizer, website.id, website.slug, user?.id]
-	);
+  const presenceQueryOptions = useMemo(
+    () =>
+      trpc.visitor.listOnline.queryOptions({
+        websiteSlug: website.slug,
+      }),
+    [trpc, website.slug]
+  );
 
-	const events = useMemo<RealtimeEventHandlersMap<DashboardRealtimeContext>>(
-		() => ({
-			conversationCreated: [
-				(_data, meta) => {
-					handleConversationCreated({
-						event: meta.event,
-						context: meta.context,
-					});
-				},
-			],
-			messageCreated: [
-				(_data, meta) => {
-					handleMessageCreated({
-						event: meta.event,
-						context: meta.context,
-					});
-				},
-			],
-			conversationSeen: [
-				(_data, meta) => {
-					void handleConversationSeen({
-						event: meta.event,
-						context: meta.context,
-					});
-				},
-			],
-			conversationTyping: [
-				(_data, meta) => {
-					handleConversationTyping({
-						event: meta.event,
-						context: meta.context,
-					});
-				},
-			],
-			visitorIdentified: [
-				(_data, meta) => {
-					handleVisitorIdentified({
-						event: meta.event,
-						context: meta.context,
-					});
-				},
-			],
-		}),
-		[]
-	);
+  const realtimeContext = useMemo<DashboardRealtimeContext>(
+    () => ({
+      queryClient,
+      queryNormalizer,
+      website: {
+        id: website.id,
+        slug: website.slug,
+      },
+      userId: user?.id ?? null,
+    }),
+    [queryClient, queryNormalizer, website.id, website.slug, user?.id]
+  );
 
-	useRealtime<DashboardRealtimeContext>({
-		context: realtimeContext,
-		websiteId: website.id,
-		events,
-		onEventError: (error, event) => {
-			console.error("[DashboardRealtime] handler failed", {
-				error,
-				eventType: event.type,
-			});
-		},
-	});
+  const events = useMemo<RealtimeEventHandlersMap<DashboardRealtimeContext>>(
+    () => ({
+      conversationCreated: [
+        (_data, meta) => {
+          handleConversationCreated({
+            event: meta.event,
+            context: meta.context,
+          });
+        },
+      ],
+      messageCreated: [
+        (_data, meta) => {
+          handleMessageCreated({
+            event: meta.event,
+            context: meta.context,
+          });
+        },
+      ],
+      conversationSeen: [
+        (_data, meta) => {
+          void handleConversationSeen({
+            event: meta.event,
+            context: meta.context,
+          });
+        },
+      ],
+      conversationTyping: [
+        (_data, meta) => {
+          handleConversationTyping({
+            event: meta.event,
+            context: meta.context,
+          });
+        },
+      ],
+      visitorIdentified: [
+        (_data, meta) => {
+          handleVisitorIdentified({
+            event: meta.event,
+            context: meta.context,
+          });
+        },
+      ],
+      visitorConnected: [
+        (_data, meta) => {
+          void meta.context.queryClient.invalidateQueries({
+            queryKey: presenceQueryOptions.queryKey,
+          });
+        },
+      ],
+      visitorDisconnected: [
+        (_data, meta) => {
+          void meta.context.queryClient.invalidateQueries({
+            queryKey: presenceQueryOptions.queryKey,
+          });
+        },
+      ],
+    }),
+    [presenceQueryOptions.queryKey]
+  );
 
-	return children;
+  useRealtime<DashboardRealtimeContext>({
+    context: realtimeContext,
+    websiteId: website.id,
+    events,
+    onEventError: (error, event) => {
+      console.error("[DashboardRealtime] handler failed", {
+        error,
+        eventType: event.type,
+      });
+    },
+  });
+
+  return children;
 }

@@ -1,3 +1,4 @@
+import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import type {
 	AnyRealtimeEvent,
 	RealtimeEvent,
@@ -119,20 +120,56 @@ function dispatchEvent<T extends RealtimeEventType>(
  * relevant local connections using the provided dispatch helpers.
  */
 const eventHandlers: EventHandlers = {
-	userConnected: (ctx, event) => {
+	userConnected: async (_ctx, event) => {
 		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		if (!data.userId) {
+			return;
+		}
+
+		void markUserPresence({
+			websiteId: data.websiteId,
+			userId: data.userId,
+			lastSeenAt,
+		});
 	},
 
-	userDisconnected: (ctx, event) => {
+	userDisconnected: async (_ctx, event) => {
 		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		if (!data.userId) {
+			return;
+		}
+
+		void markUserPresence({
+			websiteId: data.websiteId,
+			userId: data.userId,
+			lastSeenAt,
+		});
 	},
 
-	visitorConnected: (ctx, event) => {
+	visitorConnected: async (_ctx, event) => {
 		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		void markVisitorPresence({
+			websiteId: data.websiteId,
+			visitorId: data.visitorId,
+			lastSeenAt,
+		});
 	},
 
-	visitorDisconnected: (ctx, event) => {
+	visitorDisconnected: async (_ctx, event) => {
 		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		void markVisitorPresence({
+			websiteId: data.websiteId,
+			visitorId: data.visitorId,
+			lastSeenAt,
+		});
 	},
 
 	userPresenceUpdate: (ctx, event) => {

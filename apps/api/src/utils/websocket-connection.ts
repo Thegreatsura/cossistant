@@ -1,3 +1,4 @@
+import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import { WEBSOCKET_ERRORS } from "@api/utils/websocket-errors";
 import type { RawSocket, WebSocketAuthSuccess } from "@api/ws/socket";
 import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
@@ -125,16 +126,24 @@ export async function updatePresenceIfNeeded(
 		return;
 	}
 
-	const presenceId = authResult.userId || authResult.visitorId;
-	if (!presenceId) {
+	const now = new Date().toISOString();
+
+	if (authResult.userId) {
+		await markUserPresence({
+			websiteId: authResult.websiteId,
+			userId: authResult.userId,
+			lastSeenAt: now,
+		});
 		return;
 	}
 
-	console.log("[WebSocket] Presence update (local-only)", {
-		status: "online",
-		presenceId,
-		websiteId: authResult.websiteId,
-	});
+	if (authResult.visitorId) {
+		await markVisitorPresence({
+			websiteId: authResult.websiteId,
+			visitorId: authResult.visitorId,
+			lastSeenAt: now,
+		});
+	}
 }
 
 export function getConnectionIdFromSocket(ws: WSContext): string | undefined {

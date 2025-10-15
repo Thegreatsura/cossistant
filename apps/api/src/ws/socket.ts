@@ -738,38 +738,39 @@ async function authenticateWithSession(
 		return null;
 	}
 
-        const organizationIdFromSession = session.session.activeOrganizationId ?? null;
-        const activeTeamId = session.session.activeTeamId ?? null;
-        let websiteId: string | undefined;
-        let organizationIdFromWebsite: string | undefined;
+	const organizationIdFromSession =
+		session.session.activeOrganizationId ?? null;
+	const activeTeamId = session.session.activeTeamId ?? null;
+	let websiteId: string | undefined;
+	let organizationIdFromWebsite: string | undefined;
 
-        if (activeTeamId) {
-                const [site] = await db
-                        .select({
-                                id: websiteTable.id,
-                                organizationId: websiteTable.organizationId,
-                        })
-                        .from(websiteTable)
-                        .where(eq(websiteTable.teamId, activeTeamId))
-                        .limit(1);
-                websiteId = site?.id;
-                organizationIdFromWebsite = site?.organizationId;
-        }
+	if (activeTeamId) {
+		const [site] = await db
+			.select({
+				id: websiteTable.id,
+				organizationId: websiteTable.organizationId,
+			})
+			.from(websiteTable)
+			.where(eq(websiteTable.teamId, activeTeamId))
+			.limit(1);
+		websiteId = site?.id;
+		organizationIdFromWebsite = site?.organizationId;
+	}
 
-        const resolvedOrganizationId =
-                organizationIdFromSession ?? organizationIdFromWebsite ?? undefined;
+	const resolvedOrganizationId =
+		organizationIdFromSession ?? organizationIdFromWebsite ?? undefined;
 
-        if (!resolvedOrganizationId && AUTH_LOGS_ENABLED) {
-                console.log(
-                        "[WebSocket Auth] Session found but no active organization; proceeding without website context"
-                );
-        }
+	if (!resolvedOrganizationId && AUTH_LOGS_ENABLED) {
+		console.log(
+			"[WebSocket Auth] Session found but no active organization; proceeding without website context"
+		);
+	}
 
-        return {
-                organizationId: resolvedOrganizationId,
-                websiteId,
-                userId: session.user.id,
-        };
+	return {
+		organizationId: resolvedOrganizationId,
+		websiteId,
+		userId: session.user.id,
+	};
 }
 
 export const upgradedWebsocket = upgradeWebSocket(async (c) => {

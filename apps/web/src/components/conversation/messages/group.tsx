@@ -15,6 +15,7 @@ import type React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { Message } from "./message";
@@ -47,10 +48,6 @@ export function MessageGroup({
 	currentUserId,
 	visitor,
 }: Props) {
-	if (messages.length === 0) {
-		return null;
-	}
-
 	// Get agent info for the sender
 	const firstMessage = messages[0];
 	const humanAgent = teamMembers.find(
@@ -60,6 +57,11 @@ export function MessageGroup({
 		(agent) => agent.id === firstMessage?.aiAgentId
 	);
 	const visitorName = getVisitorNameWithFallback(visitor);
+	const visitorPresence = useVisitorPresenceById(visitor?.id);
+
+	if (messages.length === 0) {
+		return null;
+	}
 
 	// Extract who has read up to the last message
 	const readByIds: string[] = [];
@@ -106,7 +108,9 @@ export function MessageGroup({
 								<Avatar
 									className="size-7"
 									fallbackName={visitorName}
-									lastOnlineAt={visitor?.lastSeenAt}
+									lastOnlineAt={
+										visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt
+									}
 									url={visitor?.contact?.image}
 									withBoringAvatar
 								/>

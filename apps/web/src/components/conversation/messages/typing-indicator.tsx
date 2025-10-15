@@ -12,6 +12,7 @@ import { motion } from "motion/react";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { TextEffect } from "@/components/ui/text-effect";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 
@@ -51,6 +52,7 @@ export const VisitorTypingPreview = ({
 	preview: string | null;
 }) => {
 	const visitorName = getVisitorNameWithFallback(visitor);
+	const presence = useVisitorPresenceById(visitor?.id);
 
 	return (
 		<div className={cn("flex w-full gap-2", "flex-row")}>
@@ -58,7 +60,7 @@ export const VisitorTypingPreview = ({
 				<Avatar
 					className="size-7"
 					fallbackName={visitorName}
-					lastOnlineAt={visitor?.lastSeenAt}
+					lastOnlineAt={presence?.lastSeenAt ?? visitor?.lastSeenAt}
 					url={visitor?.contact?.image}
 					withBoringAvatar
 				/>

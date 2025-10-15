@@ -3,6 +3,7 @@ import type { RouterOutputs } from "@api/trpc/types";
 import { resolveCountryDetails } from "@cossistant/location/country-utils";
 import { formatInTimeZone } from "date-fns-tz";
 import { Avatar } from "@/components/ui/avatar";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
@@ -16,11 +17,12 @@ type VisitorSidebarProps = {
 };
 
 export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
+	const fullName = visitor ? getVisitorNameWithFallback(visitor) : "";
+	const presence = useVisitorPresenceById(visitor?.id);
+
 	if (isLoading || !visitor) {
 		return <VisitorSidebarPlaceholder />;
 	}
-
-	const fullName = getVisitorNameWithFallback(visitor);
 	const countryDetails = resolveCountryDetails({
 		country: visitor.country,
 		countryCode: visitor.countryCode,
@@ -41,7 +43,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
 					<div className="flex items-center gap-3">
 						<Avatar
 							fallbackName={fullName}
-							lastOnlineAt={visitor.lastSeenAt}
+							lastOnlineAt={presence?.lastSeenAt ?? visitor.lastSeenAt}
 							url={visitor.contact?.image}
 							withBoringAvatar
 						/>

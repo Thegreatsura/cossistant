@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { CentralContainer } from "@/components/ui/layout";
 import { NavigationTopbar } from "@/components/ui/layout/navigation-topbar";
 import { InboxesProvider } from "@/contexts/inboxes";
+import { VisitorPresenceProvider } from "@/contexts/visitor-presence";
 import { WebsiteProvider } from "@/contexts/website";
 import {
 	getQueryClient,
@@ -68,16 +69,18 @@ export default async function Layout({ children, params }: LayoutProps) {
 	return (
 		<HydrateClient>
 			<WebsiteProvider websiteSlug={websiteSlug}>
-				<DashboardWebSocketProvider>
-					<Realtime>
-						<InboxesProvider websiteSlug={websiteSlug}>
-							<div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
-								<NavigationTopbar />
-								<CentralContainer>{children}</CentralContainer>
-							</div>
-						</InboxesProvider>
-					</Realtime>
-				</DashboardWebSocketProvider>
+				<VisitorPresenceProvider>
+					<DashboardWebSocketProvider>
+						<Realtime>
+							<InboxesProvider websiteSlug={websiteSlug}>
+								<div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
+									<NavigationTopbar />
+									<CentralContainer>{children}</CentralContainer>
+								</div>
+							</InboxesProvider>
+						</Realtime>
+					</DashboardWebSocketProvider>
+				</VisitorPresenceProvider>
 			</WebsiteProvider>
 		</HydrateClient>
 	);
