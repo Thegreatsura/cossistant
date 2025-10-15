@@ -42,14 +42,14 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	maxFileSize = 10 * 1024 * 1024, // 10MB
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
-        const fileInputRef = useRef<HTMLInputElement>(null);
-        const hasContent = value.trim().length > 0 || files.length > 0;
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const hasContent = value.trim().length > 0 || files.length > 0;
 	const { focusComposer, inputRef } = useComposerRefocus({
 		disabled,
 		hasContent,
 		isSubmitting,
 	});
-	const canSubmit = !disabled && !isSubmitting && hasContent;
+	const canSubmit = !(disabled || isSubmitting) && hasContent;
 	const text = useSupportText();
 	const resolvedPlaceholder =
 		placeholder ?? text("component.multimodalInput.placeholder");
@@ -128,20 +128,20 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 			{/* Input area */}
 			<div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
-                                <Primitive.MultimodalInput
-                                        className={cn(
-                                                "flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
-                                                className
-                                        )}
-                                        disabled={disabled || isSubmitting}
-                                        error={error}
-                                        onChange={onChange}
-                                        onFileSelect={onFileSelect}
-                                        onSubmit={handleSubmit}
-                                        placeholder={resolvedPlaceholder}
-                                        ref={inputRef}
-                                        value={value}
-                                />
+				<Primitive.MultimodalInput
+					className={cn(
+						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
+						className
+					)}
+					disabled={disabled || isSubmitting}
+					error={error}
+					onChange={onChange}
+					onFileSelect={onFileSelect}
+					onSubmit={handleSubmit}
+					placeholder={resolvedPlaceholder}
+					ref={inputRef}
+					value={value}
+				/>
 
 				<div className="flex items-center justify-between py-1 pr-1 pl-3">
 					<Watermark />

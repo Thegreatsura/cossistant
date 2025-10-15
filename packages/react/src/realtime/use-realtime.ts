@@ -45,7 +45,6 @@ type UseRealtimeOptions<
 	) => void;
 };
 
-
 export function useRealtime<
 	TContext = void,
 	THandlers extends

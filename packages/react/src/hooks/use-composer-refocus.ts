@@ -13,40 +13,38 @@ export type UseComposerRefocusReturn = {
 };
 
 export const useComposerRefocus = ({
-        disabled,
-        hasContent,
-        isSubmitting,
+	disabled,
+	hasContent,
+	isSubmitting,
 }: UseComposerRefocusOptions): UseComposerRefocusReturn => {
-        const inputRef = useRef<HTMLTextAreaElement | null>(null);
-        const previousStateRef = useRef({
-                isSubmitting,
-                hadContent: hasContent,
-        });
+	const inputRef = useRef<HTMLTextAreaElement | null>(null);
+	const previousStateRef = useRef({
+		isSubmitting,
+		hadContent: hasContent,
+	});
 
-        useEffect(() => {
-                const previous = previousStateRef.current;
+	useEffect(() => {
+		const previous = previousStateRef.current;
 
-                if (
-                        !disabled &&
-                        !isSubmitting &&
-                        !hasContent &&
-                        (previous.isSubmitting || previous.hadContent)
-                ) {
-                        inputRef.current?.focus();
-                }
+		if (
+			!(disabled || isSubmitting || hasContent) &&
+			(previous.isSubmitting || previous.hadContent)
+		) {
+			inputRef.current?.focus();
+		}
 
-                previousStateRef.current = {
-                        isSubmitting,
-                        hadContent: hasContent,
-                };
-        }, [disabled, hasContent, isSubmitting]);
+		previousStateRef.current = {
+			isSubmitting,
+			hadContent: hasContent,
+		};
+	}, [disabled, hasContent, isSubmitting]);
 
-        const focusComposer = useCallback(() => {
-                inputRef.current?.focus();
-        }, []);
+	const focusComposer = useCallback(() => {
+		inputRef.current?.focus();
+	}, []);
 
-        return {
-                focusComposer,
-                inputRef,
-        };
+	return {
+		focusComposer,
+		inputRef,
+	};
 };

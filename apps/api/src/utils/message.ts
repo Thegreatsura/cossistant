@@ -99,29 +99,27 @@ export async function createMessage(
 		],
 	});
 
-        const parsedMessage = messageSchema.parse(createdMessage);
+	const parsedMessage = messageSchema.parse(createdMessage);
 
-        let visitorIdForEvent =
-                options.conversationOwnerVisitorId ??
-                parsedMessage.visitorId ??
-                null;
+	let visitorIdForEvent =
+		options.conversationOwnerVisitorId ?? parsedMessage.visitorId ?? null;
 
-        if (!visitorIdForEvent) {
-                visitorIdForEvent =
-                        (await resolveConversationVisitorId(options.db, conversationId)) ?? null;
-        }
+	if (!visitorIdForEvent) {
+		visitorIdForEvent =
+			(await resolveConversationVisitorId(options.db, conversationId)) ?? null;
+	}
 
-        const realtimePayload = serializeMessageForRealtime(parsedMessage, {
-                conversationId,
-                websiteId,
-                organizationId,
-                userId: parsedMessage.userId,
-                visitorId: visitorIdForEvent,
-        });
+	const realtimePayload = serializeMessageForRealtime(parsedMessage, {
+		conversationId,
+		websiteId,
+		organizationId,
+		userId: parsedMessage.userId,
+		visitorId: visitorIdForEvent,
+	});
 
-        await realtime.emit("messageCreated", realtimePayload);
+	await realtime.emit("messageCreated", realtimePayload);
 
-        return parsedMessage;
+	return parsedMessage;
 }
 
 type GetConversationByIdFn =

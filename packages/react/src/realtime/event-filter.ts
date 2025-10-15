@@ -10,10 +10,7 @@ function getTargetVisitorId(event: AnyRealtimeEvent): string | null {
 	if (event.type === "messageCreated") {
 		const messageVisitorId = event.payload.message.visitorId;
 
-		if (
-			typeof messageVisitorId === "string" &&
-			messageVisitorId.length > 0
-		) {
+		if (typeof messageVisitorId === "string" && messageVisitorId.length > 0) {
 			return messageVisitorId;
 		}
 	}

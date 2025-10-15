@@ -72,45 +72,45 @@ function hasSameEntries(
 }
 
 export type SeenStore = Store<SeenState> & {
-        upsert(options: UpsertSeenOptions): void;
-        hydrate(conversationId: string, entries: ConversationSeen[]): void;
-        clear(conversationId: string): void;
+	upsert(options: UpsertSeenOptions): void;
+	hydrate(conversationId: string, entries: ConversationSeen[]): void;
+	clear(conversationId: string): void;
 };
 
 type ActorIdentity = {
-        actorType: SeenActorType;
-        actorId: string;
+	actorType: SeenActorType;
+	actorId: string;
 };
 
 function resolveActorIdentity(
-        entry: Pick<
-                ConversationSeen | RealtimeEvent<"conversationSeen">["payload"],
-                "userId" | "visitorId" | "aiAgentId"
-        >
+	entry: Pick<
+		ConversationSeen | RealtimeEvent<"conversationSeen">["payload"],
+		"userId" | "visitorId" | "aiAgentId"
+	>
 ): ActorIdentity | null {
-        if (entry.userId) {
-                return { actorType: "user", actorId: entry.userId } satisfies ActorIdentity;
-        }
+	if (entry.userId) {
+		return { actorType: "user", actorId: entry.userId } satisfies ActorIdentity;
+	}
 
-        if (entry.visitorId) {
-                return {
-                        actorType: "visitor",
-                        actorId: entry.visitorId,
-                } satisfies ActorIdentity;
-        }
+	if (entry.visitorId) {
+		return {
+			actorType: "visitor",
+			actorId: entry.visitorId,
+		} satisfies ActorIdentity;
+	}
 
-        if (entry.aiAgentId) {
-                return {
-                        actorType: "ai_agent",
-                        actorId: entry.aiAgentId,
-                } satisfies ActorIdentity;
-        }
+	if (entry.aiAgentId) {
+		return {
+			actorType: "ai_agent",
+			actorId: entry.aiAgentId,
+		} satisfies ActorIdentity;
+	}
 
-        return null;
+	return null;
 }
 
 export function createSeenStore(
-        initialState: SeenState = INITIAL_STATE
+	initialState: SeenState = INITIAL_STATE
 ): SeenStore {
 	const store = createStore<SeenState>({
 		conversations: { ...initialState.conversations },
@@ -149,76 +149,76 @@ export function createSeenStore(
 				} satisfies SeenState;
 			});
 		},
-                hydrate(conversationId, entries) {
-                        store.setState((state) => {
-                                if (entries.length === 0) {
-                                        if (!(conversationId in state.conversations)) {
-                                                return state;
-                                        }
-                                        const nextConversations = { ...state.conversations };
-                                        delete nextConversations[conversationId];
-                                        return { conversations: nextConversations } satisfies SeenState;
-                                }
+		hydrate(conversationId, entries) {
+			store.setState((state) => {
+				if (entries.length === 0) {
+					if (!(conversationId in state.conversations)) {
+						return state;
+					}
+					const nextConversations = { ...state.conversations };
+					delete nextConversations[conversationId];
+					return { conversations: nextConversations } satisfies SeenState;
+				}
 
-                                const existing = state.conversations[conversationId] ?? {};
-                                const nextEntries: ConversationSeenState = {
-                                        ...existing,
-                                };
+				const existing = state.conversations[conversationId] ?? {};
+				const nextEntries: ConversationSeenState = {
+					...existing,
+				};
 
-                                for (const entry of entries) {
-                                        const identity = resolveActorIdentity(entry);
+				for (const entry of entries) {
+					const identity = resolveActorIdentity(entry);
 
-                                        if (!identity) {
-                                                continue;
-                                        }
+					if (!identity) {
+						continue;
+					}
 
-                                        const key = makeKey(
-                                                conversationId,
-                                                identity.actorType,
-                                                identity.actorId
-                                        );
-                                        const previous = existing[key];
-                                        const incomingTimestamp = new Date(entry.lastSeenAt).getTime();
-                                        const previousTimestamp = previous
-                                                ? new Date(previous.lastSeenAt).getTime()
-                                                : null;
+					const key = makeKey(
+						conversationId,
+						identity.actorType,
+						identity.actorId
+					);
+					const previous = existing[key];
+					const incomingTimestamp = new Date(entry.lastSeenAt).getTime();
+					const previousTimestamp = previous
+						? new Date(previous.lastSeenAt).getTime()
+						: null;
 
-                                        if (
-                                                previous &&
-                                                previousTimestamp !== null &&
-                                                !Number.isNaN(previousTimestamp) &&
-                                                !Number.isNaN(incomingTimestamp) &&
-                                                previousTimestamp > incomingTimestamp
-                                        ) {
-                                                nextEntries[key] = previous;
-                                                continue;
-                                        }
+					if (
+						previous &&
+						previousTimestamp !== null &&
+						!Number.isNaN(previousTimestamp) &&
+						!Number.isNaN(incomingTimestamp) &&
+						previousTimestamp > incomingTimestamp
+					) {
+						nextEntries[key] = previous;
+						continue;
+					}
 
-                                        nextEntries[key] = {
-                                                actorType: identity.actorType,
-                                                actorId: identity.actorId,
-                                                lastSeenAt: entry.lastSeenAt,
-                                        } satisfies SeenEntry;
-                                }
+					nextEntries[key] = {
+						actorType: identity.actorType,
+						actorId: identity.actorId,
+						lastSeenAt: entry.lastSeenAt,
+					} satisfies SeenEntry;
+				}
 
-                                if (hasSameEntries(existing, nextEntries)) {
-                                        return state;
-                                }
+				if (hasSameEntries(existing, nextEntries)) {
+					return state;
+				}
 
-                                if (Object.keys(nextEntries).length === 0) {
-                                        const nextConversations = { ...state.conversations };
-                                        delete nextConversations[conversationId];
-                                        return { conversations: nextConversations } satisfies SeenState;
-                                }
+				if (Object.keys(nextEntries).length === 0) {
+					const nextConversations = { ...state.conversations };
+					delete nextConversations[conversationId];
+					return { conversations: nextConversations } satisfies SeenState;
+				}
 
-                                return {
-                                        conversations: {
-                                                ...state.conversations,
-                                                [conversationId]: nextEntries,
-                                        },
-                                } satisfies SeenState;
-                        });
-                },
+				return {
+					conversations: {
+						...state.conversations,
+						[conversationId]: nextEntries,
+					},
+				} satisfies SeenState;
+			});
+		},
 		clear(conversationId) {
 			store.setState((state) => {
 				if (!(conversationId in state.conversations)) {
@@ -259,35 +259,35 @@ export function applyConversationSeenEvent(
 	} = {}
 ): void {
 	const { payload } = event;
-        const identity = resolveActorIdentity(payload);
+	const identity = resolveActorIdentity(payload);
 
-        if (!identity) {
-                return;
-        }
+	if (!identity) {
+		return;
+	}
 
-        if (
-                (identity.actorType === "visitor" &&
-                        payload.visitorId &&
-                        options.ignoreVisitorId &&
-                        payload.visitorId === options.ignoreVisitorId) ||
-                (identity.actorType === "user" &&
-                        payload.userId &&
-                        options.ignoreUserId &&
-                        payload.userId === options.ignoreUserId) ||
-                (identity.actorType === "ai_agent" &&
-                        payload.aiAgentId &&
-                        options.ignoreAiAgentId &&
-                        payload.aiAgentId === options.ignoreAiAgentId)
-        ) {
-                return;
-        }
+	if (
+		(identity.actorType === "visitor" &&
+			payload.visitorId &&
+			options.ignoreVisitorId &&
+			payload.visitorId === options.ignoreVisitorId) ||
+		(identity.actorType === "user" &&
+			payload.userId &&
+			options.ignoreUserId &&
+			payload.userId === options.ignoreUserId) ||
+		(identity.actorType === "ai_agent" &&
+			payload.aiAgentId &&
+			options.ignoreAiAgentId &&
+			payload.aiAgentId === options.ignoreAiAgentId)
+	) {
+		return;
+	}
 
-        const lastSeenAt = payload.lastSeenAt;
+	const lastSeenAt = payload.lastSeenAt;
 
-        upsertConversationSeen(store, {
-                conversationId: payload.conversationId,
-                actorType: identity.actorType,
-                actorId: identity.actorId,
-                lastSeenAt,
-        });
+	upsertConversationSeen(store, {
+		conversationId: payload.conversationId,
+		actorType: identity.actorType,
+		actorId: identity.actorId,
+		lastSeenAt,
+	});
 }

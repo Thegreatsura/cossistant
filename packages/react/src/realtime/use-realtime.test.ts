@@ -54,12 +54,12 @@ describe("shouldDeliverEvent", () => {
 			},
 		};
 
-		expect(
-			shouldDeliverEvent(eventWithoutVisitor, "site-1", "visitor-1")
-		).toBe(true);
-		expect(
-			shouldDeliverEvent(eventWithoutVisitor, "site-1", "visitor-2")
-		).toBe(false);
+		expect(shouldDeliverEvent(eventWithoutVisitor, "site-1", "visitor-1")).toBe(
+			true
+		);
+		expect(shouldDeliverEvent(eventWithoutVisitor, "site-1", "visitor-2")).toBe(
+			false
+		);
 	});
 
 	it("delivers events when the client visitor id is not yet known", () => {

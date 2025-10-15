@@ -1,9 +1,9 @@
 "use client";
 
 import * as Primitive from "@cossistant/next/primitives";
+import { useComposerRefocus } from "@cossistant/react/hooks/use-composer-refocus";
 import type React from "react";
 import { useRef } from "react";
-import { useComposerRefocus } from "@cossistant/react/hooks/use-composer-refocus";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
@@ -42,14 +42,14 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	maxFileSize = 10 * 1024 * 1024, // 10MB
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
-        const fileInputRef = useRef<HTMLInputElement>(null);
-        const hasContent = value.trim().length > 0 || files.length > 0;
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const hasContent = value.trim().length > 0 || files.length > 0;
 	const { focusComposer, inputRef } = useComposerRefocus({
 		disabled,
 		hasContent,
 		isSubmitting,
 	});
-	const canSubmit = !disabled && !isSubmitting && hasContent;
+	const canSubmit = !(disabled || isSubmitting) && hasContent;
 
 	const handleSubmit = () => {
 		if (!canSubmit) {
@@ -124,20 +124,20 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 				{/* Input area */}
 				<div className="flex flex-col rounded border border-border/50 bg-background-100 drop-shadow-xs dark:border-border/50 dark:bg-background-300">
-                                        <Primitive.MultimodalInput
-                                                className={cn(
-                                                        "flex-1 resize-none overflow-hidden p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
-                                                        className
-                                                )}
-                                                disabled={disabled || isSubmitting}
-                                                error={error}
-                                                onChange={onChange}
-                                                onFileSelect={onFileSelect}
-                                                onSubmit={handleSubmit}
-                                                placeholder={placeholder}
-                                                ref={inputRef}
-                                                value={value}
-                                        />
+					<Primitive.MultimodalInput
+						className={cn(
+							"flex-1 resize-none overflow-hidden p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
+							className
+						)}
+						disabled={disabled || isSubmitting}
+						error={error}
+						onChange={onChange}
+						onFileSelect={onFileSelect}
+						onSubmit={handleSubmit}
+						placeholder={placeholder}
+						ref={inputRef}
+						value={value}
+					/>
 
 					<div className="flex items-center justify-end py-2 pr-1 pl-3">
 						<div className="flex items-center gap-0.5">
