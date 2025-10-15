@@ -131,19 +131,39 @@ function maybeUpdateSeenEntries(
 	const nextDate = new Date(lastSeenAtTime).toISOString();
 
 	// Check if an entry exists for this actor
-	const existingEntryIndex = header.seenData.findIndex((seen) =>
-		predicates.some((predicate) => predicate(seen))
-	);
+        const existingEntryIndex = header.seenData.findIndex((seen) =>
+                predicates.some((predicate) => predicate(seen))
+        );
 
-	// If no entry exists, create a new one
-	if (existingEntryIndex === -1) {
-		const newEntry: ConversationHeader["seenData"][number] = {
-			id: `${header.id}-${event.payload.userId || event.payload.visitorId || event.payload.aiAgentId}`,
-			conversationId: header.id,
-			userId: event.payload.userId || null,
-			visitorId: event.payload.visitorId || null,
-			aiAgentId: event.payload.aiAgentId || null,
-			lastSeenAt: nextDate,
+        // If no entry exists, create a new one
+                if (existingEntryIndex === -1) {
+                        const actorType =
+                                event.payload.userId
+                                        ? "user"
+                                        : event.payload.visitorId
+                                        ? "visitor"
+                                        : "ai_agent";
+                        const actorId =
+                                event.payload.userId ??
+                                event.payload.visitorId ??
+                                event.payload.aiAgentId;
+                        if (!actorId) {
+                                return { header, changed: false };
+                        }
+                        const newEntry: ConversationHeader["seenData"][number] = {
+                                id: `${header.id}:${actorType}:${actorId}`,
+                                conversationId: header.id,
+                                userId: event.payload.userId || null,
+                                visitorId: event.payload.visitorId || null,
+                                aiAgentId: event.payload.aiAgentId || null,
+                                lastSeenAt: nextDate,
+                                createdAt: nextDate,
+                                updatedAt: nextDate,
+                                deletedAt: null,
+                        };
+                        header.seenData.push(newEntry);
+                        changed = true;
+                }
 			createdAt: nextDate,
 			updatedAt: nextDate,
 			deletedAt: null,
@@ -158,40 +178,38 @@ function maybeUpdateSeenEntries(
 		};
 	}
 
-	// Update existing entry
-	let didChange = false;
+        const existingEntry = header.seenData[existingEntryIndex];
+        const existingTimestamp = existingEntry
+                ? new Date(existingEntry.lastSeenAt).getTime()
+                : null;
 
-	const nextSeenData = header.seenData.map((seen) => {
-		const matchesActor = predicates.some((predicate) => predicate(seen));
+        if (
+                existingTimestamp !== null &&
+                !Number.isNaN(existingTimestamp) &&
+                existingTimestamp >= lastSeenAtTime
+        ) {
+                return { header, changed: false };
+        }
 
-		if (!matchesActor) {
-			return seen;
-		}
+        const nextSeenData = header.seenData.map((seen, index) => {
+                if (index !== existingEntryIndex) {
+                        return seen;
+                }
 
-		if (new Date(seen.lastSeenAt).getTime() === lastSeenAtTime) {
-			return seen;
-		}
+                return {
+                        ...seen,
+                        lastSeenAt: nextDate,
+                        updatedAt: nextDate,
+                };
+        });
 
-		didChange = true;
-
-		return {
-			...seen,
-			lastSeenAt: nextDate,
-			updatedAt: nextDate,
-		};
-	});
-
-	if (!didChange) {
-		return { header, changed: false };
-	}
-
-	return {
-		header: {
-			...header,
-			seenData: nextSeenData,
-		},
-		changed: true,
-	};
+        return {
+                header: {
+                        ...header,
+                        seenData: nextSeenData,
+                },
+                changed: true,
+        };
 }
 
 function applySeenUpdate(
