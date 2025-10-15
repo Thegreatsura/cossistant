@@ -73,10 +73,10 @@ const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 		conversationEventCreated: { website: true, visitor: true },
 		conversationCreated: { website: true, visitor: true },
 		conversationSeen: { website: true, visitor: true },
-                conversationTyping: { website: true, visitor: true },
-                messageCreated: { website: true, visitor: true },
-                visitorIdentified: { website: true, visitor: true },
-        };
+		conversationTyping: { website: true, visitor: true },
+		messageCreated: { website: true, visitor: true },
+		visitorIdentified: { website: true, visitor: true },
+	};
 
 function resolveWebsiteDispatchOptions(
 	rule: WebsiteDispatchRule | undefined,
@@ -171,12 +171,12 @@ const eventHandlers: EventHandlers = {
 		const data = event.payload;
 	},
 
-        conversationCreated: (_ctx, event) => {
-                const data = event.payload;
-        },
-        visitorIdentified: (_ctx, event) => {
-                const data = event.payload;
-        },
+	conversationCreated: (_ctx, event) => {
+		const data = event.payload;
+	},
+	visitorIdentified: (_ctx, event) => {
+		const data = event.payload;
+	},
 };
 
 /**

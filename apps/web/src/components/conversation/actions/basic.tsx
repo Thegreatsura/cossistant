@@ -1,11 +1,12 @@
+/** biome-ignore-all lint/correctness/useExhaustiveDependencies: ok */
 import { ConversationStatus } from "@cossistant/types";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
-import { useConversationActionRunner } from "./use-conversation-action-runner";
 import { cn } from "@/lib/utils";
+import { useConversationActionRunner } from "./use-conversation-action-runner";
 
 export function ConversationBasicActions({
 	className,
@@ -20,101 +21,86 @@ export function ConversationBasicActions({
 	status?: ConversationStatus;
 	deletedAt?: string | null;
 }) {
-        const {
-                markResolved,
-                markOpen,
-                markArchived,
-                markUnarchived,
-                pendingAction,
-                runAction,
-        } = useConversationActionRunner({
-                conversationId,
-                visitorId,
-        });
+	const {
+		markResolved,
+		markOpen,
+		markArchived,
+		markUnarchived,
+		pendingAction,
+		runAction,
+	} = useConversationActionRunner({
+		conversationId,
+		visitorId,
+	});
 
-        const isResolved = status === ConversationStatus.RESOLVED;
-        const resolveLabel = useMemo(
-                () => (isResolved ? "Mark unresolved" : "Mark resolved"),
-                [isResolved]
-        );
-        const resolveSuccessMessage = useMemo(
-                () =>
-                        isResolved
-                                ? "Conversation marked unresolved"
-                                : "Conversation marked resolved",
-                [isResolved]
-        );
-        const resolveErrorMessage = "Failed to update resolution status";
-        const resolveIcon = isResolved ? "cancel" : "check";
+	const isResolved = status === ConversationStatus.RESOLVED;
+	const resolveLabel = useMemo(
+		() => (isResolved ? "Mark unresolved" : "Mark resolved"),
+		[isResolved]
+	);
+	const resolveSuccessMessage = useMemo(
+		() =>
+			isResolved
+				? "Conversation marked unresolved"
+				: "Conversation marked resolved",
+		[isResolved]
+	);
+	const resolveErrorMessage = "Failed to update resolution status";
+	const resolveIcon = isResolved ? "cancel" : "check";
 
-        const isArchived = deletedAt !== null;
-        const archiveLabel = useMemo(
-                () => (isArchived ? "Unarchive" : "Archive"),
-                [isArchived]
-        );
-        const archiveSuccessMessage = useMemo(
-                () =>
-                        isArchived
-                                ? "Conversation unarchived"
-                                : "Conversation archived",
-                [isArchived]
-        );
-        const archiveErrorMessage = "Failed to update archive status";
-        const archiveIcon = isArchived ? "cancel" : "archive";
+	const isArchived = deletedAt !== null;
+	const archiveLabel = useMemo(
+		() => (isArchived ? "Unarchive" : "Archive"),
+		[isArchived]
+	);
+	const archiveSuccessMessage = useMemo(
+		() => (isArchived ? "Conversation unarchived" : "Conversation archived"),
+		[isArchived]
+	);
+	const archiveErrorMessage = "Failed to update archive status";
+	const archiveIcon = isArchived ? "cancel" : "archive";
 
-        const resolvePending = isResolved
-                ? pendingAction.markOpen
-                : pendingAction.markResolved;
+	const resolvePending = isResolved
+		? pendingAction.markOpen
+		: pendingAction.markResolved;
 
-        const handleResolve = useCallback(
-                (event: React.MouseEvent<HTMLButtonElement>) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        void runAction(
-                                () =>
-                                        isResolved
-                                                ? markOpen()
-                                                : markResolved(),
-                                {
-                                        successMessage: resolveSuccessMessage,
-                                        errorMessage: resolveErrorMessage,
-                                }
-                        );
-                },
-                [
-                        isResolved,
-                        markOpen,
-                        markResolved,
-                        resolveErrorMessage,
-                        resolveSuccessMessage,
-                        runAction,
-                ]
-        );
+	const handleResolve = useCallback(
+		(event: React.MouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			void runAction(() => (isResolved ? markOpen() : markResolved()), {
+				successMessage: resolveSuccessMessage,
+				errorMessage: resolveErrorMessage,
+			});
+		},
+		[
+			isResolved,
+			markOpen,
+			markResolved,
+			resolveErrorMessage,
+			resolveSuccessMessage,
+			runAction,
+		]
+	);
 
-        const handleArchive = useCallback(
-                (event: React.MouseEvent<HTMLButtonElement>) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        void runAction(
-                                () =>
-                                        isArchived
-                                                ? markUnarchived()
-                                                : markArchived(),
-                                {
-                                        successMessage: archiveSuccessMessage,
-                                        errorMessage: archiveErrorMessage,
-                                }
-                        );
-                },
-                [
-                        archiveErrorMessage,
-                        archiveSuccessMessage,
-                        isArchived,
-                        markArchived,
-                        markUnarchived,
-                        runAction,
-                ]
-        );
+	const handleArchive = useCallback(
+		(event: React.MouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			void runAction(() => (isArchived ? markUnarchived() : markArchived()), {
+				successMessage: archiveSuccessMessage,
+				errorMessage: archiveErrorMessage,
+			});
+		},
+		[
+			archiveErrorMessage,
+			archiveSuccessMessage,
+			isArchived,
+			markArchived,
+			markUnarchived,
+			runAction,
+		]
+	);
 
 	return (
 		<div className={cn("flex items-center gap-2 pr-1", className)}>

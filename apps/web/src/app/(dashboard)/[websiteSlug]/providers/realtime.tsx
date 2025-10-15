@@ -60,25 +60,25 @@ export function Realtime({ children }: { children: ReactNode }) {
 					});
 				},
 			],
-                        conversationTyping: [
-                                (_data, meta) => {
-                                        handleConversationTyping({
-                                                event: meta.event,
-                                                context: meta.context,
-                                        });
-                                },
-                        ],
-                        visitorIdentified: [
-                                (_data, meta) => {
-                                        handleVisitorIdentified({
-                                                event: meta.event,
-                                                context: meta.context,
-                                        });
-                                },
-                        ],
-                }),
-                []
-        );
+			conversationTyping: [
+				(_data, meta) => {
+					handleConversationTyping({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			visitorIdentified: [
+				(_data, meta) => {
+					handleVisitorIdentified({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+		}),
+		[]
+	);
 
 	useRealtime<DashboardRealtimeContext>({
 		context: realtimeContext,

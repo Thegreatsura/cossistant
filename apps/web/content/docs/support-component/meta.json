@@ -1,10 +1,4 @@
 {
-  "pages": [
-    "index",
-    "about",
-    "theme",
-    "text",
-    "hooks"
-  ],
+  "pages": ["index", "about", "theme", "text", "hooks"],
   "title": "<Support />"
 }
