@@ -101,25 +101,21 @@ export async function createMessage(
 
 	const parsedMessage = messageSchema.parse(createdMessage);
 
+	let visitorIdForEvent =
+		options.conversationOwnerVisitorId ?? parsedMessage.visitorId ?? null;
+
+	if (!visitorIdForEvent) {
+		visitorIdForEvent =
+			(await resolveConversationVisitorId(options.db, conversationId)) ?? null;
+	}
+
 	const realtimePayload = serializeMessageForRealtime(parsedMessage, {
 		conversationId,
 		websiteId,
 		organizationId,
-		userId: null,
-		visitorId: null,
+		userId: parsedMessage.userId,
+		visitorId: visitorIdForEvent,
 	});
-
-	let targetVisitorId =
-		options.conversationOwnerVisitorId ??
-		realtimePayload.message.visitorId ??
-		undefined;
-
-	if (!targetVisitorId) {
-		targetVisitorId = await resolveConversationVisitorId(
-			options.db,
-			conversationId
-		);
-	}
 
 	await realtime.emit("messageCreated", realtimePayload);
 

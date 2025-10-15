@@ -247,10 +247,6 @@ function constructRealtimeEvent(parsed: unknown): AnyRealtimeEvent | null {
 	);
 	const websiteId = extractStringField(payloadSource, "websiteId", true);
 
-	console.log("organizationId", organizationId);
-	console.log("websiteId", websiteId);
-	console.log("payload", payload);
-
 	if (!organizationId) {
 		console.error("[Realtime] Received event without organizationId", parsed);
 		return null;

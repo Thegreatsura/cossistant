@@ -1,11 +1,11 @@
 import { blockVisitor, unblockVisitor } from "@api/db/mutations/visitor";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
-import { listOnlineVisitors } from "@api/services/presence";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { listOnlineVisitors } from "@api/services/presence";
 import {
-        blockVisitorResponseSchema,
-        listVisitorPresenceResponseSchema,
-        type ContactMetadata,
+	blockVisitorResponseSchema,
+	type ContactMetadata,
+	listVisitorPresenceResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -13,41 +13,37 @@ import { createTRPCRouter, protectedProcedure } from "../init";
 import { loadConversationContext } from "../utils/conversation";
 
 export const visitorRouter = createTRPCRouter({
-        listOnline: protectedProcedure
-                .input(
-                        z.object({
-                                websiteSlug: z.string(),
-                                limit: z
-                                        .number()
-                                        .min(1)
-                                        .max(500)
-                                        .optional(),
-                        })
-                )
-                .output(listVisitorPresenceResponseSchema)
-                .query(async ({ ctx: { db, user }, input }) => {
-                        const websiteData = await getWebsiteBySlugWithAccess(db, {
-                                userId: user.id,
-                                websiteSlug: input.websiteSlug,
-                        });
+	listOnline: protectedProcedure
+		.input(
+			z.object({
+				websiteSlug: z.string(),
+				limit: z.number().min(1).max(500).optional(),
+			})
+		)
+		.output(listVisitorPresenceResponseSchema)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
 
-                        if (!websiteData) {
-                                throw new TRPCError({
-                                        code: "NOT_FOUND",
-                                        message: "Website not found or access denied",
-                                });
-                        }
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
 
-                        return await listOnlineVisitors(db, {
-                                websiteId: websiteData.id,
-                                limit: input.limit,
-                        });
-                }),
+			return await listOnlineVisitors(db, {
+				websiteId: websiteData.id,
+				limit: input.limit,
+			});
+		}),
 
-        block: protectedProcedure
-                .input(
-                        z.object({
-                                conversationId: z.string(),
+	block: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)

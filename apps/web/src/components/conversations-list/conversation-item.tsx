@@ -6,14 +6,14 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
-import { useUserSession } from "@/contexts/website";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
+import { useUserSession } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { formatTimeAgo } from "@/lib/date";
+import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
-import { useTRPC } from "@/lib/trpc/client";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
 
@@ -32,8 +32,10 @@ export function ConversationItem({
   focused = false,
   setFocused,
 }: Props) {
-  const { visitor: headerVisitor, lastMessagePreview: headerLastMessagePreview } =
-    header;
+  const {
+    visitor: headerVisitor,
+    lastMessagePreview: headerLastMessagePreview,
+  } = header;
   const { prefetchConversation } = usePrefetchConversationData();
   const { user } = useUserSession();
   const trpc = useTRPC();
@@ -51,8 +53,7 @@ export function ConversationItem({
   const visitorQuery = useQuery({
     ...visitorQueryOptions,
     enabled: Boolean(header.visitorId) && !headerVisitor,
-    initialData: headerVisitor ?? undefined,
-    staleTime: Infinity,
+    staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
@@ -60,21 +61,7 @@ export function ConversationItem({
   const visitor = useMemo(() => {
     const normalizedVisitor = visitorQuery.data ?? null;
 
-    if (headerVisitor && normalizedVisitor) {
-      const normalizedUpdatedAt = normalizedVisitor.updatedAt
-        ? new Date(normalizedVisitor.updatedAt).getTime()
-        : 0;
-      const headerUpdatedAt = headerVisitor.updatedAt
-        ? new Date(headerVisitor.updatedAt).getTime()
-        : 0;
-
-      if (normalizedUpdatedAt >= headerUpdatedAt) {
-        return normalizedVisitor;
-      }
-
-      return headerVisitor;
-    }
-
+    // Prefer normalized visitor data when available as it's more complete
     return normalizedVisitor ?? headerVisitor;
   }, [headerVisitor, visitorQuery.data]);
 
@@ -149,9 +136,9 @@ export function ConversationItem({
         fallbackName={fullName}
         lastOnlineAt={
           presence?.lastSeenAt ??
-            visitor?.lastSeenAt ??
-            headerVisitor?.lastSeenAt ??
-            null
+          visitor?.lastSeenAt ??
+          headerVisitor?.lastSeenAt ??
+          null
         }
         url={visitor?.contact?.image ?? headerVisitor?.contact?.image}
         withBoringAvatar

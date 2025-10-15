@@ -1,8 +1,8 @@
 import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import type {
-        AnyRealtimeEvent,
-        RealtimeEvent,
-        RealtimeEventType,
+	AnyRealtimeEvent,
+	RealtimeEvent,
+	RealtimeEventType,
 } from "@cossistant/types/realtime-events";
 
 type DispatchOptions = {
@@ -74,10 +74,10 @@ const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 		conversationEventCreated: { website: true, visitor: true },
 		conversationCreated: { website: true, visitor: true },
 		conversationSeen: { website: true, visitor: true },
-                conversationTyping: { website: true, visitor: true },
-                messageCreated: { website: true, visitor: true },
-                visitorIdentified: { website: true, visitor: true },
-        };
+		conversationTyping: { website: true, visitor: true },
+		messageCreated: { website: true, visitor: true },
+		visitorIdentified: { website: true, visitor: true },
+	};
 
 function resolveWebsiteDispatchOptions(
 	rule: WebsiteDispatchRule | undefined,
@@ -120,49 +120,57 @@ function dispatchEvent<T extends RealtimeEventType>(
  * relevant local connections using the provided dispatch helpers.
  */
 const eventHandlers: EventHandlers = {
-        userConnected: async (_ctx, event) => {
-                const data = event.payload;
-                const lastSeenAt = new Date().toISOString();
-                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
-                void markUserPresence({
-                        websiteId: data.websiteId,
-                        userId: data.userId,
-                        lastSeenAt,
-                });
-        },
+	userConnected: async (_ctx, event) => {
+		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
 
-        userDisconnected: async (_ctx, event) => {
-                const data = event.payload;
-                const lastSeenAt = new Date().toISOString();
-                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
-                void markUserPresence({
-                        websiteId: data.websiteId,
-                        userId: data.userId,
-                        lastSeenAt,
-                });
-        },
+		if (!data.userId) {
+			return;
+		}
 
-        visitorConnected: async (_ctx, event) => {
-                const data = event.payload;
-                const lastSeenAt = new Date().toISOString();
-                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
-                void markVisitorPresence({
-                        websiteId: data.websiteId,
-                        visitorId: data.visitorId,
-                        lastSeenAt,
-                });
-        },
+		void markUserPresence({
+			websiteId: data.websiteId,
+			userId: data.userId,
+			lastSeenAt,
+		});
+	},
 
-        visitorDisconnected: async (_ctx, event) => {
-                const data = event.payload;
-                const lastSeenAt = new Date().toISOString();
-                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
-                void markVisitorPresence({
-                        websiteId: data.websiteId,
-                        visitorId: data.visitorId,
-                        lastSeenAt,
-                });
-        },
+	userDisconnected: async (_ctx, event) => {
+		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		if (!data.userId) {
+			return;
+		}
+
+		void markUserPresence({
+			websiteId: data.websiteId,
+			userId: data.userId,
+			lastSeenAt,
+		});
+	},
+
+	visitorConnected: async (_ctx, event) => {
+		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		void markVisitorPresence({
+			websiteId: data.websiteId,
+			visitorId: data.visitorId,
+			lastSeenAt,
+		});
+	},
+
+	visitorDisconnected: async (_ctx, event) => {
+		const data = event.payload;
+		const lastSeenAt = new Date().toISOString();
+
+		void markVisitorPresence({
+			websiteId: data.websiteId,
+			visitorId: data.visitorId,
+			lastSeenAt,
+		});
+	},
 
 	userPresenceUpdate: (ctx, event) => {
 		const data = event.payload;
@@ -200,12 +208,12 @@ const eventHandlers: EventHandlers = {
 		const data = event.payload;
 	},
 
-        conversationCreated: (_ctx, event) => {
-                const data = event.payload;
-        },
-        visitorIdentified: (_ctx, event) => {
-                const data = event.payload;
-        },
+	conversationCreated: (_ctx, event) => {
+		const data = event.payload;
+	},
+	visitorIdentified: (_ctx, event) => {
+		const data = event.payload;
+	},
 };
 
 /**

@@ -1,106 +1,105 @@
 "use client";
 
 import type { VisitorPresenceEntry } from "@cossistant/types";
-import { useMemo, createContext, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { createContext, useContext, useMemo } from "react";
 import { useTRPC } from "@/lib/trpc/client";
 import { useWebsite } from "./website";
 
 type VisitorPresenceContextValue = {
-        visitors: VisitorPresenceEntry[];
-        presenceByVisitorId: Map<string, VisitorPresenceEntry>;
-        onlineCount: number;
-        awayCount: number;
-        isLoading: boolean;
-        isFetching: boolean;
-        refetch: () => Promise<VisitorPresenceEntry[] | undefined>;
+	visitors: VisitorPresenceEntry[];
+	presenceByVisitorId: Map<string, VisitorPresenceEntry>;
+	onlineCount: number;
+	awayCount: number;
+	isLoading: boolean;
+	isFetching: boolean;
+	refetch: () => Promise<VisitorPresenceEntry[] | undefined>;
 };
 
-const VisitorPresenceContext = createContext<VisitorPresenceContextValue | null>(
-        null
-);
+const VisitorPresenceContext =
+	createContext<VisitorPresenceContextValue | null>(null);
 
 export function VisitorPresenceProvider({
-        children,
+	children,
 }: {
-        children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-        const website = useWebsite();
-        const trpc = useTRPC();
+	const website = useWebsite();
+	const trpc = useTRPC();
 
-        const query = useQuery({
-                ...trpc.visitor.listOnline.queryOptions({
-                        websiteSlug: website.slug,
-                }),
-                staleTime: 5_000,
-                refetchInterval: 15_000,
-                refetchOnReconnect: true,
-                refetchOnWindowFocus: true,
-        });
+	const query = useQuery({
+		...trpc.visitor.listOnline.queryOptions({
+			websiteSlug: website.slug,
+		}),
+		staleTime: 5000,
+		refetchInterval: 15_000,
+		refetchOnReconnect: true,
+		refetchOnWindowFocus: true,
+	});
 
-        const visitors = query.data?.visitors ?? [];
+	const visitors = query.data?.visitors ?? [];
 
-        const presenceByVisitorId = useMemo(() => {
-                const map = new Map<string, VisitorPresenceEntry>();
+	const presenceByVisitorId = useMemo(() => {
+		const map = new Map<string, VisitorPresenceEntry>();
 
-                for (const visitor of visitors) {
-                        map.set(visitor.id, visitor);
-                }
+		for (const visitor of visitors) {
+			map.set(visitor.id, visitor);
+		}
 
-                return map;
-        }, [visitors]);
+		return map;
+	}, [visitors]);
 
-        const value = useMemo<VisitorPresenceContextValue>(
-                () => ({
-                        visitors,
-                        presenceByVisitorId,
-                        onlineCount: query.data?.totals.online ?? 0,
-                        awayCount: query.data?.totals.away ?? 0,
-                        isLoading: query.isLoading,
-                        isFetching: query.isFetching,
-                        refetch: async () => {
-                                const result = await query.refetch();
-                                return result.data?.visitors;
-                        },
-                }),
-                [
-                        visitors,
-                        presenceByVisitorId,
-                        query.data?.totals.away,
-                        query.data?.totals.online,
-                        query.isFetching,
-                        query.isLoading,
-                        query.refetch,
-                ]
-        );
+	const value = useMemo<VisitorPresenceContextValue>(
+		() => ({
+			visitors,
+			presenceByVisitorId,
+			onlineCount: query.data?.totals.online ?? 0,
+			awayCount: query.data?.totals.away ?? 0,
+			isLoading: query.isLoading,
+			isFetching: query.isFetching,
+			refetch: async () => {
+				const result = await query.refetch();
+				return result.data?.visitors;
+			},
+		}),
+		[
+			visitors,
+			presenceByVisitorId,
+			query.data?.totals.away,
+			query.data?.totals.online,
+			query.isFetching,
+			query.isLoading,
+			query.refetch,
+		]
+	);
 
-        return (
-                <VisitorPresenceContext.Provider value={value}>
-                        {children}
-                </VisitorPresenceContext.Provider>
-        );
+	return (
+		<VisitorPresenceContext.Provider value={value}>
+			{children}
+		</VisitorPresenceContext.Provider>
+	);
 }
 
 export function useVisitorPresence(): VisitorPresenceContextValue {
-        const context = useContext(VisitorPresenceContext);
+	const context = useContext(VisitorPresenceContext);
 
-        if (!context) {
-                throw new Error(
-                        "useVisitorPresence must be used within a VisitorPresenceProvider"
-                );
-        }
+	if (!context) {
+		throw new Error(
+			"useVisitorPresence must be used within a VisitorPresenceProvider"
+		);
+	}
 
-        return context;
+	return context;
 }
 
 export function useVisitorPresenceById(
-        visitorId: string | null | undefined
+	visitorId: string | null | undefined
 ): VisitorPresenceEntry | null {
-        const { presenceByVisitorId } = useVisitorPresence();
+	const { presenceByVisitorId } = useVisitorPresence();
 
-        if (!visitorId) {
-                return null;
-        }
+	if (!visitorId) {
+		return null;
+	}
 
-        return presenceByVisitorId.get(visitorId) ?? null;
+	return presenceByVisitorId.get(visitorId) ?? null;
 }

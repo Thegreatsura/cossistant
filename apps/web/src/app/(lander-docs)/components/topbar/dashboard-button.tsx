@@ -37,8 +37,12 @@ export async function DashboardButton() {
 
 	return (
 		<Link href="/select">
-			<Button className="h-auto p-1 pr-3">
-				<Avatar className="size-7" fallbackName={user.name} url={user.image} />
+			<Button className="h-auto rounded-md p-1 pr-3">
+				<Avatar
+					className="size-7 ring-0 ring-offset-0"
+					fallbackName={user.name}
+					url={user.image}
+				/>
 				Dashboard
 			</Button>
 		</Link>

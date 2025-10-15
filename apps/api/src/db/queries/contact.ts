@@ -1,5 +1,17 @@
+/** biome-ignore-all lint/nursery/noUnnecessaryConditions: false positive */
 import { DEFAULT_PAGE_LIMIT } from "@api/constants";
-import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	ilike,
+	isNotNull,
+	isNull,
+	or,
+	sql,
+} from "drizzle-orm";
 import type { Database } from "..";
 import {
 	type ContactInsert,
@@ -292,10 +304,10 @@ export async function linkVisitorToContact(
  * This is the main function for the "identify" endpoint
  */
 export async function identifyContact(
-        db: Database,
-        params: {
-                websiteId: string;
-                organizationId: string;
+	db: Database,
+	params: {
+		websiteId: string;
+		organizationId: string;
 		externalId?: string;
 		email?: string;
 		name?: string;
@@ -388,164 +400,164 @@ export async function identifyContact(
 }
 
 export async function listContacts(
-        db: Database,
-        params: {
-                websiteId: string;
-                organizationId: string;
-                page?: number;
-                limit?: number;
-                search?: string | null;
-                sortBy?: "name" | "email" | "createdAt" | "updatedAt" | "visitorCount";
-                sortOrder?: "asc" | "desc";
-        }
+	db: Database,
+	params: {
+		websiteId: string;
+		organizationId: string;
+		page?: number;
+		limit?: number;
+		search?: string | null;
+		sortBy?: "name" | "email" | "createdAt" | "updatedAt" | "visitorCount";
+		sortOrder?: "asc" | "desc";
+	}
 ) {
-        const page = Math.max(params.page ?? 1, 1);
-        const limit = Math.min(params.limit ?? DEFAULT_PAGE_LIMIT, 100);
-        const offset = (page - 1) * limit;
+	const page = Math.max(params.page ?? 1, 1);
+	const limit = Math.min(params.limit ?? DEFAULT_PAGE_LIMIT, 100);
+	const offset = (page - 1) * limit;
 
-        const whereConditions = [
-                eq(contact.websiteId, params.websiteId),
-                eq(contact.organizationId, params.organizationId),
-                isNull(contact.deletedAt),
-        ];
+	const whereConditions = [
+		eq(contact.websiteId, params.websiteId),
+		eq(contact.organizationId, params.organizationId),
+		isNull(contact.deletedAt),
+	];
 
-        const searchTerm = params.search?.trim();
-        if (searchTerm) {
-                const likeTerm = `%${searchTerm}%`;
-                whereConditions.push(
-                        or(
-                                ilike(contact.email, likeTerm),
-                                ilike(contact.name, likeTerm)
-                        )
-                );
-        }
+	const searchTerm = params.search?.trim();
+	if (searchTerm) {
+		const likeTerm = `%${searchTerm}%`;
+		const searchCondition = or(
+			ilike(contact.email, likeTerm),
+			ilike(contact.name, likeTerm)
+		);
+		if (searchCondition) {
+			whereConditions.push(searchCondition);
+		}
+	}
 
-        const whereClause = and(...whereConditions);
+	const whereClause = and(...whereConditions);
 
-        const [{ totalCount }] = await db
-                .select({ totalCount: count() })
-                .from(contact)
-                .where(whereClause);
+	const [{ totalCount }] = await db
+		.select({ totalCount: count() })
+		.from(contact)
+		.where(whereClause);
 
-        const visitorCounts = db
-                .select({
-                        contactId: visitor.contactId,
-                        total: count().as("total"),
-                })
-                .from(visitor)
-                .where(
-                        and(
-                                eq(visitor.websiteId, params.websiteId),
-                                eq(visitor.organizationId, params.organizationId),
-                                isNull(visitor.deletedAt),
-                                isNotNull(visitor.contactId)
-                        )
-                )
-                .groupBy(visitor.contactId)
-                .as("visitor_counts");
+	const visitorCounts = db
+		.select({
+			contactId: visitor.contactId,
+			total: count().as("total"),
+		})
+		.from(visitor)
+		.where(
+			and(
+				eq(visitor.websiteId, params.websiteId),
+				eq(visitor.organizationId, params.organizationId),
+				isNull(visitor.deletedAt),
+				isNotNull(visitor.contactId)
+			)
+		)
+		.groupBy(visitor.contactId)
+		.as("visitor_counts");
 
-        const sortBy = params.sortBy ?? "updatedAt";
-        const sortOrder = params.sortOrder ?? "desc";
-        const orderFn = sortOrder === "asc" ? asc : desc;
+	const sortBy = params.sortBy ?? "updatedAt";
+	const sortOrder = params.sortOrder ?? "desc";
+	const orderFn = sortOrder === "asc" ? asc : desc;
 
-        const visitorCountColumn = sql<number>`COALESCE(${visitorCounts.total}, 0)::int`;
+	const visitorCountColumn = sql<number>`COALESCE(${visitorCounts.total}, 0)::int`;
 
-        const orderColumn = (() => {
-                switch (sortBy) {
-                        case "name":
-                                return contact.name;
-                        case "email":
-                                return contact.email;
-                        case "createdAt":
-                                return contact.createdAt;
-                        case "visitorCount":
-                                return visitorCountColumn;
-                        case "updatedAt":
-                        default:
-                                return contact.updatedAt;
-                }
-        })();
+	const orderColumn = (() => {
+		switch (sortBy) {
+			case "name":
+				return contact.name;
+			case "email":
+				return contact.email;
+			case "createdAt":
+				return contact.createdAt;
+			case "visitorCount":
+				return visitorCountColumn;
+			default:
+				return contact.updatedAt;
+		}
+	})();
 
-        const rows = await db
-                .select({
-                        id: contact.id,
-                        name: contact.name,
-                        email: contact.email,
-                        createdAt: contact.createdAt,
-                        updatedAt: contact.updatedAt,
-                        visitorCount: visitorCountColumn,
-                })
-                .from(contact)
-                .leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
-                .where(whereClause)
-                .orderBy(orderFn(orderColumn), desc(contact.id))
-                .limit(limit)
-                .offset(offset);
+	const rows = await db
+		.select({
+			id: contact.id,
+			name: contact.name,
+			email: contact.email,
+			createdAt: contact.createdAt,
+			updatedAt: contact.updatedAt,
+			visitorCount: visitorCountColumn,
+		})
+		.from(contact)
+		.leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
+		.where(whereClause)
+		.orderBy(orderFn(orderColumn), desc(contact.id))
+		.limit(limit)
+		.offset(offset);
 
-        const numericTotalCount = Number(totalCount ?? 0);
+	const numericTotalCount = Number(totalCount ?? 0);
 
-        return {
-                items: rows.map((row) => ({
-                        ...row,
-                        visitorCount: Number(row.visitorCount ?? 0),
-                })),
-                totalCount: numericTotalCount,
-                page,
-                pageSize: limit,
-        };
+	return {
+		items: rows.map((row) => ({
+			...row,
+			visitorCount: Number(row.visitorCount ?? 0),
+		})),
+		totalCount: numericTotalCount,
+		page,
+		pageSize: limit,
+	};
 }
 
 export async function getContactWithVisitors(
-        db: Database,
-        params: {
-                contactId: string;
-                websiteId: string;
-                organizationId: string;
-        }
+	db: Database,
+	params: {
+		contactId: string;
+		websiteId: string;
+		organizationId: string;
+	}
 ) {
-        const [contactRecord] = await db
-                .select()
-                .from(contact)
-                .where(
-                        and(
-                                eq(contact.id, params.contactId),
-                                eq(contact.websiteId, params.websiteId),
-                                eq(contact.organizationId, params.organizationId),
-                                isNull(contact.deletedAt)
-                        )
-                )
-                .limit(1);
+	const [contactRecord] = await db
+		.select()
+		.from(contact)
+		.where(
+			and(
+				eq(contact.id, params.contactId),
+				eq(contact.websiteId, params.websiteId),
+				eq(contact.organizationId, params.organizationId),
+				isNull(contact.deletedAt)
+			)
+		)
+		.limit(1);
 
-        if (!contactRecord) {
-                return null;
-        }
+	if (!contactRecord) {
+		return null;
+	}
 
-        const visitorsList = await db
-                .select({
-                        id: visitor.id,
-                        lastSeenAt: visitor.lastSeenAt,
-                        createdAt: visitor.createdAt,
-                        browser: visitor.browser,
-                        device: visitor.device,
-                        country: visitor.country,
-                        city: visitor.city,
-                        language: visitor.language,
-                })
-                .from(visitor)
-                .where(
-                        and(
-                                eq(visitor.contactId, contactRecord.id),
-                                eq(visitor.websiteId, params.websiteId),
-                                eq(visitor.organizationId, params.organizationId),
-                                isNull(visitor.deletedAt)
-                        )
-                )
-                .orderBy(desc(visitor.lastSeenAt), desc(visitor.createdAt));
+	const visitorsList = await db
+		.select({
+			id: visitor.id,
+			lastSeenAt: visitor.lastSeenAt,
+			createdAt: visitor.createdAt,
+			browser: visitor.browser,
+			device: visitor.device,
+			country: visitor.country,
+			city: visitor.city,
+			language: visitor.language,
+		})
+		.from(visitor)
+		.where(
+			and(
+				eq(visitor.contactId, contactRecord.id),
+				eq(visitor.websiteId, params.websiteId),
+				eq(visitor.organizationId, params.organizationId),
+				isNull(visitor.deletedAt)
+			)
+		)
+		.orderBy(desc(visitor.lastSeenAt), desc(visitor.createdAt));
 
-        return {
-                contact: contactRecord,
-                visitors: visitorsList,
-        };
+	return {
+		contact: contactRecord,
+		visitors: visitorsList,
+	};
 }
 
 // Contact Organisation queries

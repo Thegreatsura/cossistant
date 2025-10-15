@@ -1,6 +1,7 @@
 "use client";
 
 import * as Primitive from "@cossistant/next/primitives";
+import { useComposerRefocus } from "@cossistant/react/hooks/use-composer-refocus";
 import type React from "react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -42,12 +43,26 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const hasContent = value.trim().length > 0 || files.length > 0;
+	const { focusComposer, inputRef } = useComposerRefocus({
+		disabled,
+		hasContent,
+		isSubmitting,
+	});
+	const canSubmit = !(disabled || isSubmitting) && hasContent;
+
+	const handleSubmit = () => {
+		if (!canSubmit) {
+			return;
+		}
+
+		onSubmit();
+		focusComposer();
+	};
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!(disabled || isSubmitting) && (value.trim() || files.length > 0)) {
-			onSubmit();
-		}
+		handleSubmit();
 	};
 
 	const handleAttachClick = () => {
@@ -65,10 +80,6 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		}
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	};
-
-	const canSubmit =
-		!(disabled || isSubmitting) &&
-		(value.trim().length > 0 || files.length > 0);
 
 	return (
 		<div className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl">
@@ -122,8 +133,9 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 						error={error}
 						onChange={onChange}
 						onFileSelect={onFileSelect}
-						onSubmit={onSubmit}
+						onSubmit={handleSubmit}
 						placeholder={placeholder}
+						ref={inputRef}
 						value={value}
 					/>
 
@@ -164,8 +176,9 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 								shortcuts={["mod", "enter"]}
 							>
 								<Button
-									disabled={!canSubmit || isSubmitting}
+									disabled={!canSubmit}
 									size="icon"
+									type="submit"
 									variant="ghost"
 								>
 									<Icon className="h-4 w-4" name="send" />

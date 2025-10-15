@@ -160,80 +160,80 @@ export async function findVisitorForWebsite(
 }
 
 export async function updateVisitorForWebsite(
-        db: Database,
-        params: {
-                visitorId: string;
-                websiteId: string;
-                data: Partial<VisitorInsert>;
-        }
+	db: Database,
+	params: {
+		visitorId: string;
+		websiteId: string;
+		data: Partial<VisitorInsert>;
+	}
 ): Promise<VisitorRecord | null> {
-        const [updated] = await db
-                .update(visitor)
-                .set(params.data)
-                .where(
-                        and(
-                                eq(visitor.id, params.visitorId),
-                                eq(visitor.websiteId, params.websiteId)
-                        )
-                )
-                .returning();
+	const [updated] = await db
+		.update(visitor)
+		.set(params.data)
+		.where(
+			and(
+				eq(visitor.id, params.visitorId),
+				eq(visitor.websiteId, params.websiteId)
+			)
+		)
+		.returning();
 
-        return updated ?? null;
+	return updated ?? null;
 }
 
 export type VisitorPresenceProfile = {
-        id: string;
-        lastSeenAt: string | null;
-        city: string | null;
-        region: string | null;
-        country: string | null;
-        latitude: number | null;
-        longitude: number | null;
-        contactName: string | null;
-        contactEmail: string | null;
-        contactImage: string | null;
+	id: string;
+	lastSeenAt: string | null;
+	city: string | null;
+	region: string | null;
+	country: string | null;
+	latitude: number | null;
+	longitude: number | null;
+	contactName: string | null;
+	contactEmail: string | null;
+	contactImage: string | null;
 };
 
 const MAX_VISITOR_PRESENCE_IDS = 500;
 
 export async function getVisitorPresenceProfiles(
-        db: Database,
-        params: {
-                websiteId: string;
-                visitorIds: string[];
-        }
+	db: Database,
+	params: {
+		websiteId: string;
+		visitorIds: string[];
+	}
 ): Promise<VisitorPresenceProfile[]> {
-        const dedupedVisitorIds = Array.from(new Set(params.visitorIds)).slice(
-                0,
-                MAX_VISITOR_PRESENCE_IDS
-        );
+	const dedupedVisitorIds = Array.from(new Set(params.visitorIds)).slice(
+		0,
+		MAX_VISITOR_PRESENCE_IDS
+	);
 
-        if (dedupedVisitorIds.length === 0) {
-                return [];
-        }
+	if (dedupedVisitorIds.length === 0) {
+		return [];
+	}
 
-        const rows = await db
-                .select({
-                        id: visitor.id,
-                        lastSeenAt: visitor.lastSeenAt,
-                        city: visitor.city,
-                        region: visitor.region,
-                        country: visitor.country,
-                        latitude: visitor.latitude,
-                        longitude: visitor.longitude,
-                        contactName: contact.name,
-                        contactEmail: contact.email,
-                        contactImage: contact.image,
-                })
-                .from(visitor)
-                .leftJoin(contact, eq(visitor.contactId, contact.id))
-                .where(
-                        and(
-                                eq(visitor.websiteId, params.websiteId),
-                                inArray(visitor.id, dedupedVisitorIds),
-                                isNull(visitor.deletedAt)
-                        )
-                );
+	const rows = await db
+		.select({
+			id: visitor.id,
+			lastSeenAt: visitor.lastSeenAt,
+			city: visitor.city,
+			region: visitor.region,
+			country: visitor.country,
+			latitude: visitor.latitude,
+			longitude: visitor.longitude,
+			contactName: contact.name,
+			contactEmail: contact.email,
+			contactImage: contact.image,
+		})
+		.from(visitor)
+		.leftJoin(contact, eq(visitor.contactId, contact.id))
+		.where(
+			and(
+				eq(visitor.websiteId, params.websiteId),
+				inArray(visitor.id, dedupedVisitorIds),
+				isNull(visitor.deletedAt)
+			)
+		);
 
-        return rows;
+	return rows;
 }

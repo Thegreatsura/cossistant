@@ -137,8 +137,20 @@ function maybeUpdateSeenEntries(
 
 	// If no entry exists, create a new one
 	if (existingEntryIndex === -1) {
+		const actorType = event.payload.userId
+			? "user"
+			: event.payload.visitorId
+				? "visitor"
+				: "ai_agent";
+		const actorId =
+			event.payload.userId ??
+			event.payload.visitorId ??
+			event.payload.aiAgentId;
+		if (!actorId) {
+			return { header, changed: false };
+		}
 		const newEntry: ConversationHeader["seenData"][number] = {
-			id: `${header.id}-${event.payload.userId || event.payload.visitorId || event.payload.aiAgentId}`,
+			id: `${header.id}:${actorType}:${actorId}`,
 			conversationId: header.id,
 			userId: event.payload.userId || null,
 			visitorId: event.payload.visitorId || null,
@@ -148,7 +160,6 @@ function maybeUpdateSeenEntries(
 			updatedAt: nextDate,
 			deletedAt: null,
 		};
-
 		return {
 			header: {
 				...header,
@@ -158,21 +169,23 @@ function maybeUpdateSeenEntries(
 		};
 	}
 
-	// Update existing entry
-	let didChange = false;
+	const existingEntry = header.seenData[existingEntryIndex];
+	const existingTimestamp = existingEntry
+		? new Date(existingEntry.lastSeenAt).getTime()
+		: null;
 
-	const nextSeenData = header.seenData.map((seen) => {
-		const matchesActor = predicates.some((predicate) => predicate(seen));
+	if (
+		existingTimestamp !== null &&
+		!Number.isNaN(existingTimestamp) &&
+		existingTimestamp >= lastSeenAtTime
+	) {
+		return { header, changed: false };
+	}
 
-		if (!matchesActor) {
+	const nextSeenData = header.seenData.map((seen, index) => {
+		if (index !== existingEntryIndex) {
 			return seen;
 		}
-
-		if (new Date(seen.lastSeenAt).getTime() === lastSeenAtTime) {
-			return seen;
-		}
-
-		didChange = true;
 
 		return {
 			...seen,
@@ -180,10 +193,6 @@ function maybeUpdateSeenEntries(
 			updatedAt: nextDate,
 		};
 	});
-
-	if (!didChange) {
-		return { header, changed: false };
-	}
 
 	return {
 		header: {

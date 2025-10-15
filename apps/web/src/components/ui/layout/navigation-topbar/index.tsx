@@ -2,43 +2,42 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useWebsite } from "@/contexts/website";
 import { useVisitorPresence } from "@/contexts/visitor-presence";
-import UserDropdown from "../../../user-dropdown";
+import { useWebsite } from "@/contexts/website";
 import { Logo } from "../../logo";
 import { TopbarItem } from "./topbar-item";
 
 export function NavigationTopbar() {
-  const pathname = usePathname();
-  const website = useWebsite();
-  const { onlineCount, awayCount, isLoading } = useVisitorPresence();
+	const pathname = usePathname();
+	const website = useWebsite();
+	const { onlineCount, awayCount, isLoading } = useVisitorPresence();
 
-  const baseInboxPath = `/${website?.slug}/inbox`;
+	const baseInboxPath = `/${website?.slug}/inbox`;
 
-  return (
-    <header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-3 pl-6.5">
-      <div className="flex flex-1 items-center gap-3">
-        <Link className="mr-2" href={baseInboxPath}>
-          <Logo className="size-5.5 text-primary" />
-        </Link>
-        <TopbarItem
-          active={pathname.includes(baseInboxPath)}
-          href={baseInboxPath}
-          iconName="inbox-zero"
-        >
-          Inbox
-        </TopbarItem>
-        {process.env.NODE_ENV === "development" && (
-          <TopbarItem
-            active={pathname.startsWith(`/${website?.slug}/contacts`)}
-            hideLabelOnMobile
-            href={`/${website?.slug}/contacts`}
-            iconName="contacts"
-          >
-            Contacts
-          </TopbarItem>
-        )}
-        {/* {process.env.NODE_ENV === "development" && (
+	return (
+		<header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-3 pl-6.5">
+			<div className="flex flex-1 items-center gap-3">
+				<Link className="mr-2" href={baseInboxPath}>
+					<Logo className="size-5.5 text-primary" />
+				</Link>
+				<TopbarItem
+					active={pathname.includes(baseInboxPath)}
+					href={baseInboxPath}
+					iconName="inbox-zero"
+				>
+					Inbox
+				</TopbarItem>
+				{process.env.NODE_ENV === "development" && (
+					<TopbarItem
+						active={pathname.startsWith(`/${website?.slug}/contacts`)}
+						hideLabelOnMobile
+						href={`/${website?.slug}/contacts`}
+						iconName="contacts"
+					>
+						Contacts
+					</TopbarItem>
+				)}
+				{/* {process.env.NODE_ENV === "development" && (
           <TopbarItem
             active={pathname === `/${website?.slug}/agents`}
             hideLabelOnMobile
@@ -48,26 +47,32 @@ export function NavigationTopbar() {
             Agents
           </TopbarItem>
         )} */}
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-3 rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-primary/80 md:flex">
-          <span className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-cossistant-green" aria-hidden />
-            <span>{isLoading ? "—" : onlineCount}</span>
-            <span>online</span>
-          </span>
-          {(!isLoading && awayCount > 0) && (
-            <span className="flex items-center gap-1 text-cossistant-orange">
-              <span className="size-2 rounded-full bg-cossistant-orange" aria-hidden />
-              <span>{awayCount}</span>
-              <span>away</span>
-            </span>
-          )}
-        </div>
-        <TopbarItem external hideLabelOnMobile href={"/docs"}>
-          Docs
-        </TopbarItem>
-      </div>
-    </header>
-  );
+			</div>
+			<div className="flex items-center gap-3">
+				<div className="hidden items-center gap-3 rounded-full border border-border/60 px-3 py-1 font-medium text-primary/80 text-xs md:flex">
+					<span className="flex items-center gap-1">
+						<span
+							aria-hidden
+							className="size-2 rounded-full bg-cossistant-green"
+						/>
+						<span>{isLoading ? "—" : onlineCount}</span>
+						<span>online</span>
+					</span>
+					{!isLoading && awayCount > 0 && (
+						<span className="flex items-center gap-1 text-cossistant-orange">
+							<span
+								aria-hidden
+								className="size-2 rounded-full bg-cossistant-orange"
+							/>
+							<span>{awayCount}</span>
+							<span>away</span>
+						</span>
+					)}
+				</div>
+				<TopbarItem external hideLabelOnMobile href={"/docs"}>
+					Docs
+				</TopbarItem>
+			</div>
+		</header>
+	);
 }

@@ -14,8 +14,8 @@ import {
 	updateContactOrganization,
 } from "@api/db/queries/contact";
 import {
-        findVisitorForWebsite,
-        getCompleteVisitorWithContact,
+	findVisitorForWebsite,
+	getCompleteVisitorWithContact,
 } from "@api/db/queries/visitor";
 import { realtime } from "@api/realtime/emitter";
 import {
@@ -23,20 +23,20 @@ import {
 	validateResponse,
 } from "@api/utils/validate";
 import {
+	type ContactMetadata,
 	type ContactOrganizationResponse,
 	type ContactResponse,
-        contactOrganizationResponseSchema,
-        contactResponseSchema,
-        createContactOrganizationRequestSchema,
-        createContactRequestSchema,
-        type IdentifyContactResponse,
-        identifyContactRequestSchema,
-        identifyContactResponseSchema,
-        type ContactMetadata,
-        type VisitorResponse,
-        updateContactMetadataRequestSchema,
-        updateContactOrganizationRequestSchema,
-        updateContactRequestSchema,
+	contactOrganizationResponseSchema,
+	contactResponseSchema,
+	createContactOrganizationRequestSchema,
+	createContactRequestSchema,
+	type IdentifyContactResponse,
+	identifyContactRequestSchema,
+	identifyContactResponseSchema,
+	updateContactMetadataRequestSchema,
+	updateContactOrganizationRequestSchema,
+	updateContactRequestSchema,
+	type VisitorResponse,
 } from "@cossistant/types";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
@@ -48,8 +48,8 @@ export const contactRouter = new OpenAPIHono<RestContext>();
 contactRouter.use("/*", ...protectedPublicApiKeyMiddleware);
 
 function formatContactResponse(record: ContactRecord): ContactResponse {
-        return {
-                id: record.id,
+	return {
+		id: record.id,
 		externalId: record.externalId,
 		name: record.name,
 		email: record.email,
@@ -65,43 +65,41 @@ function formatContactResponse(record: ContactRecord): ContactResponse {
 }
 
 type CompleteVisitorRecord = NonNullable<
-        Awaited<ReturnType<typeof getCompleteVisitorWithContact>>
+	Awaited<ReturnType<typeof getCompleteVisitorWithContact>>
 >;
 
 function formatVisitorWithContactResponse(
-        record: CompleteVisitorRecord
+	record: CompleteVisitorRecord
 ): VisitorResponse {
-        return {
-                id: record.id,
-                browser: record.browser,
-                browserVersion: record.browserVersion,
-                os: record.os,
-                osVersion: record.osVersion,
-                device: record.device,
-                deviceType: record.deviceType,
-                ip: record.ip,
-                city: record.city,
-                region: record.region,
-                country: record.country,
-                countryCode: record.countryCode,
-                latitude: record.latitude,
-                longitude: record.longitude,
-                language: record.language,
-                timezone: record.timezone,
-                screenResolution: record.screenResolution,
-                viewport: record.viewport,
-                createdAt: record.createdAt,
-                updatedAt: record.updatedAt,
-                lastSeenAt: record.lastSeenAt ?? null,
-                websiteId: record.websiteId,
-                organizationId: record.organizationId,
-                blockedAt: record.blockedAt ?? null,
-                blockedByUserId: record.blockedByUserId,
-                isBlocked: Boolean(record.blockedAt),
-                contact: record.contact
-                        ? formatContactResponse(record.contact)
-                        : null,
-        } satisfies VisitorResponse;
+	return {
+		id: record.id,
+		browser: record.browser,
+		browserVersion: record.browserVersion,
+		os: record.os,
+		osVersion: record.osVersion,
+		device: record.device,
+		deviceType: record.deviceType,
+		ip: record.ip,
+		city: record.city,
+		region: record.region,
+		country: record.country,
+		countryCode: record.countryCode,
+		latitude: record.latitude,
+		longitude: record.longitude,
+		language: record.language,
+		timezone: record.timezone,
+		screenResolution: record.screenResolution,
+		viewport: record.viewport,
+		createdAt: record.createdAt,
+		updatedAt: record.updatedAt,
+		lastSeenAt: record.lastSeenAt ?? null,
+		websiteId: record.websiteId,
+		organizationId: record.organizationId,
+		blockedAt: record.blockedAt ?? null,
+		blockedByUserId: record.blockedByUserId,
+		isBlocked: Boolean(record.blockedAt),
+		contact: record.contact ? formatContactResponse(record.contact) : null,
+	} satisfies VisitorResponse;
 }
 
 function formatContactOrganizationResponse(
@@ -246,39 +244,36 @@ contactRouter.openapi(
 			});
 
 			// Link visitor to contact
-                        await linkVisitorToContact(db, {
-                                visitorId: body.visitorId,
-                                contactId: contact.id,
-                                websiteId: website.id,
-                        });
+			await linkVisitorToContact(db, {
+				visitorId: body.visitorId,
+				contactId: contact.id,
+				websiteId: website.id,
+			});
 
-                        const visitorRecord = await getCompleteVisitorWithContact(db, {
-                                visitorId: body.visitorId,
-                        });
+			const visitorRecord = await getCompleteVisitorWithContact(db, {
+				visitorId: body.visitorId,
+			});
 
-                        if (visitorRecord) {
-                                try {
-                                        await realtime.emit("visitorIdentified", {
-                                                websiteId: website.id,
-                                                organizationId: website.organizationId,
-                                                visitorId: visitorRecord.id,
-                                                userId: null,
-                                                visitor: formatVisitorWithContactResponse(
-                                                        visitorRecord as CompleteVisitorRecord
-                                                ),
-                                        });
-                                } catch (emitError) {
-                                        console.error(
-                                                "Failed to emit visitorIdentified event:",
-                                                emitError
-                                        );
-                                }
-                        }
+			if (visitorRecord) {
+				try {
+					await realtime.emit("visitorIdentified", {
+						websiteId: website.id,
+						organizationId: website.organizationId,
+						visitorId: visitorRecord.id,
+						userId: null,
+						visitor: formatVisitorWithContactResponse(
+							visitorRecord as CompleteVisitorRecord
+						),
+					});
+				} catch (emitError) {
+					console.error("Failed to emit visitorIdentified event:", emitError);
+				}
+			}
 
-                        const response: IdentifyContactResponse = {
-                                contact: formatContactResponse(contact),
-                                visitorId: body.visitorId,
-                        };
+			const response: IdentifyContactResponse = {
+				contact: formatContactResponse(contact),
+				visitorId: body.visitorId,
+			};
 
 			return c.json(
 				validateResponse(response, identifyContactResponseSchema),
