@@ -65,7 +65,7 @@ export function MoreConversationActions({
 
         const resolveLabel = isResolved ? "Mark unresolved" : "Mark resolved";
         const spamLabel = isSpam ? "Mark not spam" : "Mark spam";
-        const archiveLabel = isArchived ? "Unarchive" : "Mark archived";
+        const archiveLabel = isArchived ? "Unarchive" : "Archive";
         const blockLabel = isBlocked ? "Unblock visitor" : "Block visitor";
 
         const resolvePending = isResolved
