@@ -49,60 +49,106 @@ function createVisitorAuthConfig({
 
 type WebSocketBridgeProps = {
 	children: React.ReactNode;
+	onError?: (error: Error) => void;
 };
 
-const WebSocketBridge: React.FC<WebSocketBridgeProps> = ({ children }) => {
-        const connection = useRealtimeConnection();
-        const { visitorId, sendRaw, isConnected } = connection;
+const WebSocketBridge: React.FC<WebSocketBridgeProps> = ({ children, onError }) => {
+	const connection = useRealtimeConnection();
+	const { visitorId, sendRaw, isConnected } = connection;
 
-        useEffect(() => {
-                if (typeof window === "undefined") {
-                        return;
-                }
+	useEffect(() => {
+		if (typeof window === "undefined" || typeof document === "undefined") {
+			return;
+		}
 
-                if (!visitorId || !sendRaw) {
-                        return;
-                }
+		if (!visitorId || !sendRaw) {
+			return;
+		}
 
-                const pingMessage = "presence:ping";
+		const pingMessage = "presence:ping";
 
-                const sendPresencePing = () => {
-                        if (!isConnected) {
-                                return;
-                        }
+		const sendPresencePing = () => {
+			if (!isConnected) {
+				return;
+			}
 
-                        try {
-                                sendRaw(pingMessage);
-                        } catch (error) {
-                                console.error("[Support] Failed to send presence ping", error);
-                        }
-                };
+			try {
+				sendRaw(pingMessage);
+			} catch (error) {
+				if (!onError) {
+					return;
+				}
 
-                const handleFocus = () => {
-                        sendPresencePing();
-                };
+				const normalizedError =
+					error instanceof Error
+						? error
+						: new Error(
+								typeof error === "string"
+									? error
+									: "Unknown presence ping error"
+							);
 
-                window.addEventListener("focus", handleFocus);
+				if (!normalizedError.message.includes("Failed to send presence ping")) {
+					normalizedError.message = `Failed to send presence ping: ${normalizedError.message}`;
+				}
 
-                if (isConnected) {
-                        sendPresencePing();
-                }
+				onError(normalizedError);
+			}
+		};
 
-                const intervalId = window.setInterval(
-                        sendPresencePing,
-                        PRESENCE_PING_INTERVAL_MS
-                );
+		let intervalId: number | null = null;
 
-                return () => {
-                        window.removeEventListener("focus", handleFocus);
-                        window.clearInterval(intervalId);
-                };
-        }, [isConnected, sendRaw, visitorId]);
-        const value = useMemo(() => connection, [connection]);
-        return (
-                <WebSocketContext.Provider value={value}>
-                        {children}
-                </WebSocketContext.Provider>
+		const clearPresenceInterval = () => {
+			if (intervalId !== null) {
+				window.clearInterval(intervalId);
+				intervalId = null;
+			}
+		};
+
+		const startPresenceInterval = () => {
+			clearPresenceInterval();
+
+			if (!isConnected || document.visibilityState === "hidden") {
+				return;
+			}
+
+			intervalId = window.setInterval(sendPresencePing, PRESENCE_PING_INTERVAL_MS);
+		};
+
+		const handleFocus = () => {
+			sendPresencePing();
+			startPresenceInterval();
+		};
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "hidden") {
+				clearPresenceInterval();
+				return;
+			}
+
+			sendPresencePing();
+			startPresenceInterval();
+		};
+
+		window.addEventListener("focus", handleFocus);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+
+		if (isConnected && document.visibilityState !== "hidden") {
+			sendPresencePing();
+			startPresenceInterval();
+		}
+
+		return () => {
+			window.removeEventListener("focus", handleFocus);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			clearPresenceInterval();
+		};
+	}, [isConnected, onError, sendRaw, visitorId]);
+	const value = useMemo(() => connection, [connection]);
+	return (
+		<WebSocketContext.Provider value={value}>
+			{children}
+		</WebSocketContext.Provider>
 	);
 };
 
@@ -128,7 +174,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 			onError={onError}
 			wsUrl={wsUrl}
 		>
-			<WebSocketBridge>{children}</WebSocketBridge>
+			<WebSocketBridge onError={onError}>{children}</WebSocketBridge>
 		</RealtimeProvider>
 	);
 };
