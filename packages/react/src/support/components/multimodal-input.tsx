@@ -44,22 +44,29 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 }) => {
         const fileInputRef = useRef<HTMLInputElement>(null);
         const hasContent = value.trim().length > 0 || files.length > 0;
-        const { focusComposer, inputRef } = useComposerRefocus({
-                disabled,
-                hasContent,
-                isSubmitting,
-        });
+	const { focusComposer, inputRef } = useComposerRefocus({
+		disabled,
+		hasContent,
+		isSubmitting,
+	});
+	const canSubmit = !disabled && !isSubmitting && hasContent;
 	const text = useSupportText();
 	const resolvedPlaceholder =
 		placeholder ?? text("component.multimodalInput.placeholder");
 
+	const handleSubmit = () => {
+		if (!canSubmit) {
+			return;
+		}
+
+		onSubmit();
+		focusComposer();
+	};
+
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-                if (!(disabled || isSubmitting) && hasContent) {
-                        onSubmit();
-                        focusComposer();
-                }
-        };
+		handleSubmit();
+	};
 
 	const handleAttachClick = () => {
 		if (files.length < maxFiles) {
@@ -76,8 +83,6 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		}
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	};
-
-        const canSubmit = !(disabled || isSubmitting) && hasContent;
 
 	return (
 		<form className="flex flex-col gap-2" onSubmit={handleFormSubmit}>
@@ -132,7 +137,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
                                         error={error}
                                         onChange={onChange}
                                         onFileSelect={onFileSelect}
-                                        onSubmit={onSubmit}
+                                        onSubmit={handleSubmit}
                                         placeholder={resolvedPlaceholder}
                                         ref={inputRef}
                                         value={value}
@@ -173,7 +178,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 						)}
 
 						{/* Send button */}
-						<SendButton disabled={!canSubmit || isSubmitting} />
+						<SendButton disabled={!canSubmit} />
 					</div>
 				</div>
 			</div>

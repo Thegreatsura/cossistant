@@ -1,15 +1,15 @@
 import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useRef } from "react";
 
-type UseComposerRefocusOptions = {
-        disabled: boolean;
-        hasContent: boolean;
-        isSubmitting: boolean;
+export type UseComposerRefocusOptions = {
+	disabled: boolean;
+	hasContent: boolean;
+	isSubmitting: boolean;
 };
 
-type UseComposerRefocusReturn = {
-        focusComposer: () => void;
-        inputRef: MutableRefObject<HTMLTextAreaElement | null>;
+export type UseComposerRefocusReturn = {
+	focusComposer: () => void;
+	inputRef: MutableRefObject<HTMLTextAreaElement | null>;
 };
 
 export const useComposerRefocus = ({
