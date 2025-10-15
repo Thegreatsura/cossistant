@@ -117,32 +117,66 @@ export function createSeenStore(
 				} satisfies SeenState;
 			});
 		},
-		hydrate(conversationId, entries) {
-			store.setState((state) => {
-				if (entries.length === 0) {
-					if (!(conversationId in state.conversations)) {
-						return state;
-					}
-					const nextConversations = { ...state.conversations };
-					delete nextConversations[conversationId];
-					return { conversations: nextConversations } satisfies SeenState;
-				}
+                hydrate(conversationId, entries) {
+                        store.setState((state) => {
+                                if (entries.length === 0) {
+                                        if (!(conversationId in state.conversations)) {
+                                                return state;
+                                        }
+                                        const nextConversations = { ...state.conversations };
+                                        delete nextConversations[conversationId];
+                                        return { conversations: nextConversations } satisfies SeenState;
+                                }
 
-				const nextEntries: ConversationSeenState = {};
+                                const nextEntries: ConversationSeenState = {};
 
-				const existing = state.conversations[conversationId];
-				if (hasSameEntries(existing, nextEntries)) {
-					return state;
-				}
+                                for (const entry of entries) {
+                                        let actorType: SeenActorType | null = null;
+                                        let actorId: string | null = null;
 
-				return {
-					conversations: {
-						...state.conversations,
-						[conversationId]: nextEntries,
-					},
-				} satisfies SeenState;
-			});
-		},
+                                        if (entry.userId) {
+                                                actorType = "user";
+                                                actorId = entry.userId;
+                                        } else if (entry.visitorId) {
+                                                actorType = "visitor";
+                                                actorId = entry.visitorId;
+                                        } else if (entry.aiAgentId) {
+                                                actorType = "ai_agent";
+                                                actorId = entry.aiAgentId;
+                                        }
+
+                                        if (!(actorType && actorId)) {
+                                                continue;
+                                        }
+
+                                        const key = makeKey(conversationId, actorType, actorId);
+
+                                        nextEntries[key] = {
+                                                actorType,
+                                                actorId,
+                                                lastSeenAt: entry.lastSeenAt,
+                                        } satisfies SeenEntry;
+                                }
+
+                                const existing = state.conversations[conversationId];
+                                if (hasSameEntries(existing, nextEntries)) {
+                                        return state;
+                                }
+
+                                if (Object.keys(nextEntries).length === 0) {
+                                        const nextConversations = { ...state.conversations };
+                                        delete nextConversations[conversationId];
+                                        return { conversations: nextConversations } satisfies SeenState;
+                                }
+
+                                return {
+                                        conversations: {
+                                                ...state.conversations,
+                                                [conversationId]: nextEntries,
+                                        },
+                                } satisfies SeenState;
+                        });
+                },
 		clear(conversationId) {
 			store.setState((state) => {
 				if (!(conversationId in state.conversations)) {
