@@ -5,6 +5,7 @@ import type {
 	RealtimeEventType,
 } from "@cossistant/types/realtime-events";
 import { useEffect, useRef } from "react";
+import { shouldDeliverEvent } from "./event-filter";
 import { useRealtimeConnection } from "./provider";
 
 export type RealtimeHandlerContext<TContext> = TContext;
@@ -44,25 +45,6 @@ type UseRealtimeOptions<
 	) => void;
 };
 
-function shouldDeliverEvent(
-	event: AnyRealtimeEvent,
-	websiteId: string | null,
-	visitorId: string | null
-): boolean {
-	if (websiteId && event.payload.websiteId !== websiteId) {
-		return false;
-	}
-
-	if (
-		visitorId &&
-		event.payload.visitorId &&
-		event.payload.visitorId !== visitorId
-	) {
-		return false;
-	}
-
-	return true;
-}
 
 export function useRealtime<
 	TContext = void,
