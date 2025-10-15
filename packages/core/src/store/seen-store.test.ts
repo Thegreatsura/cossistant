@@ -89,6 +89,54 @@ describe("seen store", () => {
                 );
         });
 
+        it("ignores stale hydrate payloads when state is newer", () => {
+                const recent = new Date("2024-01-02T00:00:00.000Z").toISOString();
+                const older = new Date("2024-01-01T00:00:00.000Z").toISOString();
+
+                upsertConversationSeen(store, {
+                        conversationId: "conv-1",
+                        actorType: "user",
+                        actorId: "user-1",
+                        lastSeenAt: recent,
+                });
+
+                hydrateConversationSeen(store, "conv-1", [
+                        createEntry({
+                                id: "seen-older",
+                                userId: "user-1",
+                                lastSeenAt: older,
+                                updatedAt: older,
+                        }),
+                ]);
+
+                const entries = getEntries("conv-1");
+                expect(entries["conv-1:user:user-1"]?.lastSeenAt).toBe(recent);
+        });
+
+        it("updates entries when hydrate payload is more recent", () => {
+                const older = new Date("2024-01-01T00:00:00.000Z").toISOString();
+                const newer = new Date("2024-01-03T00:00:00.000Z").toISOString();
+
+                upsertConversationSeen(store, {
+                        conversationId: "conv-1",
+                        actorType: "user",
+                        actorId: "user-1",
+                        lastSeenAt: older,
+                });
+
+                hydrateConversationSeen(store, "conv-1", [
+                        createEntry({
+                                id: "seen-newer",
+                                userId: "user-1",
+                                lastSeenAt: newer,
+                                updatedAt: newer,
+                        }),
+                ]);
+
+                const entries = getEntries("conv-1");
+                expect(entries["conv-1:user:user-1"]?.lastSeenAt).toBe(newer);
+        });
+
         it("ignores hydrate updates when payload has no changes", () => {
                 const payload = [createEntry({ id: "seen-3", userId: "user-4" })];
 

@@ -128,7 +128,10 @@ export function createSeenStore(
                                         return { conversations: nextConversations } satisfies SeenState;
                                 }
 
-                                const nextEntries: ConversationSeenState = {};
+                                const existing = state.conversations[conversationId] ?? {};
+                                const nextEntries: ConversationSeenState = {
+                                        ...existing,
+                                };
 
                                 for (const entry of entries) {
                                         let actorType: SeenActorType | null = null;
@@ -150,6 +153,22 @@ export function createSeenStore(
                                         }
 
                                         const key = makeKey(conversationId, actorType, actorId);
+                                        const previous = existing[key];
+                                        const incomingTimestamp = new Date(entry.lastSeenAt).getTime();
+                                        const previousTimestamp = previous
+                                                ? new Date(previous.lastSeenAt).getTime()
+                                                : null;
+
+                                        if (
+                                                previous &&
+                                                previousTimestamp !== null &&
+                                                !Number.isNaN(previousTimestamp) &&
+                                                !Number.isNaN(incomingTimestamp) &&
+                                                previousTimestamp > incomingTimestamp
+                                        ) {
+                                                nextEntries[key] = previous;
+                                                continue;
+                                        }
 
                                         nextEntries[key] = {
                                                 actorType,
@@ -158,7 +177,6 @@ export function createSeenStore(
                                         } satisfies SeenEntry;
                                 }
 
-                                const existing = state.conversations[conversationId];
                                 if (hasSameEntries(existing, nextEntries)) {
                                         return state;
                                 }
