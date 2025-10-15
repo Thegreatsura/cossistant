@@ -115,7 +115,7 @@ export async function createMessage(
                 conversationId,
                 websiteId,
                 organizationId,
-                userId: parsedMessage.userId ?? null,
+                userId: parsedMessage.userId,
                 visitorId: visitorIdForEvent,
         });
 
