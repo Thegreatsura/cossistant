@@ -136,14 +136,34 @@ function maybeUpdateSeenEntries(
         );
 
         // If no entry exists, create a new one
-        if (existingEntryIndex === -1) {
-                const newEntry: ConversationHeader["seenData"][number] = {
-                        id: `${header.id}-${event.payload.userId || event.payload.visitorId || event.payload.aiAgentId}`,
-                        conversationId: header.id,
-                        userId: event.payload.userId || null,
-                        visitorId: event.payload.visitorId || null,
-			aiAgentId: event.payload.aiAgentId || null,
-			lastSeenAt: nextDate,
+                if (existingEntryIndex === -1) {
+                        const actorType =
+                                event.payload.userId
+                                        ? "user"
+                                        : event.payload.visitorId
+                                        ? "visitor"
+                                        : "ai_agent";
+                        const actorId =
+                                event.payload.userId ??
+                                event.payload.visitorId ??
+                                event.payload.aiAgentId;
+                        if (!actorId) {
+                                return { header, changed: false };
+                        }
+                        const newEntry: ConversationHeader["seenData"][number] = {
+                                id: `${header.id}:${actorType}:${actorId}`,
+                                conversationId: header.id,
+                                userId: event.payload.userId || null,
+                                visitorId: event.payload.visitorId || null,
+                                aiAgentId: event.payload.aiAgentId || null,
+                                lastSeenAt: nextDate,
+                                createdAt: nextDate,
+                                updatedAt: nextDate,
+                                deletedAt: null,
+                        };
+                        header.seenData.push(newEntry);
+                        changed = true;
+                }
 			createdAt: nextDate,
 			updatedAt: nextDate,
 			deletedAt: null,
