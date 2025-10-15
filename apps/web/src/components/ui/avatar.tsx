@@ -304,7 +304,7 @@ function Avatar({
             {fallbackName}
           </AvatarFallback>
         </AvatarContainer>
-        {isOnline && (
+        {(isOnline || isAway) && (
           <div
             className={cn(
               "-right-1 absolute bottom-0.5 hidden size-[5px] rounded-full ring-2 ring-background",

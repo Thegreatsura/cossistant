@@ -9,6 +9,7 @@ import { ResizableSidebar } from "../resizable-sidebar";
 import { VisitorSidebarPlaceholder } from "./placeholder";
 import { ValueDisplay } from "./value-display";
 import { ValueGroup } from "./value-group";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 
 type VisitorSidebarProps = {
   visitor: RouterOutputs["conversation"]["getVisitorById"];
@@ -21,6 +22,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
   }
 
   const fullName = getVisitorNameWithFallback(visitor);
+  const presence = useVisitorPresenceById(visitor.id);
   const countryDetails = resolveCountryDetails({
     country: visitor.country,
     countryCode: visitor.countryCode,
@@ -41,7 +43,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
           <div className="flex items-center gap-3">
             <Avatar
               fallbackName={fullName}
-              lastOnlineAt={visitor.lastSeenAt}
+              lastOnlineAt={presence?.lastSeenAt ?? visitor.lastSeenAt}
               url={visitor.contact?.image}
               withBoringAvatar
             />

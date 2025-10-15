@@ -1,7 +1,8 @@
+import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import type {
-	AnyRealtimeEvent,
-	RealtimeEvent,
-	RealtimeEventType,
+        AnyRealtimeEvent,
+        RealtimeEvent,
+        RealtimeEventType,
 } from "@cossistant/types/realtime-events";
 
 type DispatchOptions = {
@@ -119,21 +120,41 @@ function dispatchEvent<T extends RealtimeEventType>(
  * relevant local connections using the provided dispatch helpers.
  */
 const eventHandlers: EventHandlers = {
-	userConnected: (ctx, event) => {
-		const data = event.payload;
-	},
+        userConnected: async (_ctx, event) => {
+                const data = event.payload;
+                await markUserPresence({
+                        websiteId: data.websiteId,
+                        userId: data.userId,
+                        lastSeenAt: new Date().toISOString(),
+                });
+        },
 
-	userDisconnected: (ctx, event) => {
-		const data = event.payload;
-	},
+        userDisconnected: async (_ctx, event) => {
+                const data = event.payload;
+                await markUserPresence({
+                        websiteId: data.websiteId,
+                        userId: data.userId,
+                        lastSeenAt: new Date().toISOString(),
+                });
+        },
 
-	visitorConnected: (ctx, event) => {
-		const data = event.payload;
-	},
+        visitorConnected: async (_ctx, event) => {
+                const data = event.payload;
+                await markVisitorPresence({
+                        websiteId: data.websiteId,
+                        visitorId: data.visitorId,
+                        lastSeenAt: new Date().toISOString(),
+                });
+        },
 
-	visitorDisconnected: (ctx, event) => {
-		const data = event.payload;
-	},
+        visitorDisconnected: async (_ctx, event) => {
+                const data = event.payload;
+                await markVisitorPresence({
+                        websiteId: data.websiteId,
+                        visitorId: data.visitorId,
+                        lastSeenAt: new Date().toISOString(),
+                });
+        },
 
 	userPresenceUpdate: (ctx, event) => {
 		const data = event.payload;

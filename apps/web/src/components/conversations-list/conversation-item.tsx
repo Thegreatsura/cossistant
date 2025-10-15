@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useUserSession } from "@/contexts/website";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { formatTimeAgo } from "@/lib/date";
@@ -36,6 +37,7 @@ export function ConversationItem({
   const { prefetchConversation } = usePrefetchConversationData();
   const { user } = useUserSession();
   const trpc = useTRPC();
+  const presence = useVisitorPresenceById(header.visitorId);
 
   const visitorQueryOptions = useMemo(
     () =>
@@ -146,7 +148,10 @@ export function ConversationItem({
         className="size-8"
         fallbackName={fullName}
         lastOnlineAt={
-            visitor?.lastSeenAt ?? headerVisitor?.lastSeenAt ?? null
+          presence?.lastSeenAt ??
+            visitor?.lastSeenAt ??
+            headerVisitor?.lastSeenAt ??
+            null
         }
         url={visitor?.contact?.image ?? headerVisitor?.contact?.image}
         withBoringAvatar

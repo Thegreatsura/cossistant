@@ -78,15 +78,15 @@ export const realtimeSchema = {
 		}),
 		conversationId: z.string(),
 	}),
-        conversationCreated: baseRealtimeEvent.extend({
-                conversationId: z.string(),
-                conversation: conversationSchema,
-                header: conversationHeaderSchema,
-        }),
-        visitorIdentified: baseRealtimeEvent.extend({
-                visitorId: z.string(),
-                visitor: visitorResponseSchema,
-        }),
+	conversationCreated: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		conversation: conversationSchema,
+		header: conversationHeaderSchema,
+	}),
+	visitorIdentified: baseRealtimeEvent.extend({
+		visitorId: z.string(),
+		visitor: visitorResponseSchema,
+	}),
 } as const;
 
 export type RealtimeEventType = keyof typeof realtimeSchema;

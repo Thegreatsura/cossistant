@@ -15,6 +15,7 @@ import type React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { Message } from "./message";
@@ -52,14 +53,15 @@ export function MessageGroup({
 	}
 
 	// Get agent info for the sender
-	const firstMessage = messages[0];
-	const humanAgent = teamMembers.find(
-		(agent) => agent.id === firstMessage?.userId
-	);
-	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === firstMessage?.aiAgentId
-	);
-	const visitorName = getVisitorNameWithFallback(visitor);
+        const firstMessage = messages[0];
+        const humanAgent = teamMembers.find(
+                (agent) => agent.id === firstMessage?.userId
+        );
+        const aiAgent = availableAIAgents.find(
+                (agent) => agent.id === firstMessage?.aiAgentId
+        );
+        const visitorName = getVisitorNameWithFallback(visitor);
+        const visitorPresence = useVisitorPresenceById(visitor?.id);
 
 	// Extract who has read up to the last message
 	const readByIds: string[] = [];
@@ -102,15 +104,18 @@ export function MessageGroup({
 					{/* Avatar - only show for received messages */}
 					{isReceivedByViewer && (
 						<MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
-							{isVisitor ? (
-								<Avatar
-									className="size-7"
-									fallbackName={visitorName}
-									lastOnlineAt={visitor?.lastSeenAt}
-									url={visitor?.contact?.image}
-									withBoringAvatar
-								/>
-							) : isAI ? (
+                                                        {isVisitor ? (
+                                                                <Avatar
+                                                                        className="size-7"
+                                                                        fallbackName={visitorName}
+                                                                        lastOnlineAt={
+                                                                                visitorPresence?.lastSeenAt ??
+                                                                                visitor?.lastSeenAt
+                                                                        }
+                                                                        url={visitor?.contact?.image}
+                                                                        withBoringAvatar
+                                                                />
+                                                        ) : isAI ? (
 								<div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
 									<Logo className="h-5 w-5 text-primary" />
 								</div>

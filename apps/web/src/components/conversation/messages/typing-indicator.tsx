@@ -14,6 +14,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { TextEffect } from "@/components/ui/text-effect";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 
 export type TypingParticipantType = "visitor" | "team_member" | "ai";
 
@@ -44,25 +45,28 @@ export const BouncingDots = ({ className }: { className?: string }) => {
 };
 
 export const VisitorTypingPreview = ({
-	visitor,
-	preview,
+        visitor,
+        preview,
 }: {
-	visitor: ConversationHeader["visitor"];
-	preview: string | null;
+        visitor: ConversationHeader["visitor"];
+        preview: string | null;
 }) => {
-	const visitorName = getVisitorNameWithFallback(visitor);
+        const visitorName = getVisitorNameWithFallback(visitor);
+        const presence = useVisitorPresenceById(visitor?.id);
 
-	return (
-		<div className={cn("flex w-full gap-2", "flex-row")}>
-			<MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
-				<Avatar
-					className="size-7"
-					fallbackName={visitorName}
-					lastOnlineAt={visitor?.lastSeenAt}
-					url={visitor?.contact?.image}
-					withBoringAvatar
-				/>
-			</MessageGroupAvatar>
+        return (
+                <div className={cn("flex w-full gap-2", "flex-row")}>
+                        <MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
+                                <Avatar
+                                        className="size-7"
+                                        fallbackName={visitorName}
+                                        lastOnlineAt={
+                                                presence?.lastSeenAt ?? visitor?.lastSeenAt
+                                        }
+                                        url={visitor?.contact?.image}
+                                        withBoringAvatar
+                                />
+                        </MessageGroupAvatar>
 			<MessageGroupContent className={cn("flex flex-col gap-0")}>
 				<MessageGroupHeader className="mb-2 px-1 text-muted-foreground text-xs opacity-50">
 					{visitorName} live typing

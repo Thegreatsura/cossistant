@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWebsite } from "@/contexts/website";
+import { useVisitorPresence } from "@/contexts/visitor-presence";
 import UserDropdown from "../../../user-dropdown";
 import { Logo } from "../../logo";
 import { TopbarItem } from "./topbar-item";
@@ -10,6 +11,7 @@ import { TopbarItem } from "./topbar-item";
 export function NavigationTopbar() {
   const pathname = usePathname();
   const website = useWebsite();
+  const { onlineCount, awayCount, isLoading } = useVisitorPresence();
 
   const baseInboxPath = `/${website?.slug}/inbox`;
 
@@ -48,6 +50,20 @@ export function NavigationTopbar() {
         )} */}
       </div>
       <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-3 rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-primary/80 md:flex">
+          <span className="flex items-center gap-1">
+            <span className="size-2 rounded-full bg-cossistant-green" aria-hidden />
+            <span>{isLoading ? "—" : onlineCount}</span>
+            <span>online</span>
+          </span>
+          {(!isLoading && awayCount > 0) && (
+            <span className="flex items-center gap-1 text-cossistant-orange">
+              <span className="size-2 rounded-full bg-cossistant-orange" aria-hidden />
+              <span>{awayCount}</span>
+              <span>away</span>
+            </span>
+          )}
+        </div>
         <TopbarItem external hideLabelOnMobile href={"/docs"}>
           Docs
         </TopbarItem>

@@ -1,5 +1,6 @@
 import { WEBSOCKET_ERRORS } from "@api/utils/websocket-errors";
 import type { RawSocket, WebSocketAuthSuccess } from "@api/ws/socket";
+import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ServerWebSocket } from "bun";
 
@@ -119,22 +120,30 @@ export function createConnectionEvent(
 }
 
 export async function updatePresenceIfNeeded(
-	authResult: AuthResult
+        authResult: AuthResult
 ): Promise<void> {
-	if (!authResult.websiteId) {
-		return;
-	}
+        if (!authResult.websiteId) {
+                return;
+        }
 
-	const presenceId = authResult.userId || authResult.visitorId;
-	if (!presenceId) {
-		return;
-	}
+        const now = new Date().toISOString();
 
-	console.log("[WebSocket] Presence update (local-only)", {
-		status: "online",
-		presenceId,
-		websiteId: authResult.websiteId,
-	});
+        if (authResult.userId) {
+                await markUserPresence({
+                        websiteId: authResult.websiteId,
+                        userId: authResult.userId,
+                        lastSeenAt: now,
+                });
+                return;
+        }
+
+        if (authResult.visitorId) {
+                await markVisitorPresence({
+                        websiteId: authResult.websiteId,
+                        visitorId: authResult.visitorId,
+                        lastSeenAt: now,
+                });
+        }
 }
 
 export function getConnectionIdFromSocket(ws: WSContext): string | undefined {
