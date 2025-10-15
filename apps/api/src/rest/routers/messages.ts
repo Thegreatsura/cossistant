@@ -1,6 +1,7 @@
 import { markConversationAsSeenByVisitor } from "@api/db/mutations/conversation";
 import { getConversationById } from "@api/db/queries/conversation";
 import { getMessages } from "@api/db/queries/message";
+import { markVisitorPresence } from "@api/services/presence";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
 import { createMessage } from "@api/utils/message";
 import {
@@ -228,18 +229,24 @@ messagesRouter.openapi(
 			conversationId: body.conversationId,
 		});
 
-		if (conversation && conversation.websiteId === website.id) {
-			const lastSeenAt = await markConversationAsSeenByVisitor(db, {
-				conversation,
-				visitorId,
-			});
+                if (conversation && conversation.websiteId === website.id) {
+                        const lastSeenAt = await markConversationAsSeenByVisitor(db, {
+                                conversation,
+                                visitorId,
+                        });
 
-			await emitConversationSeenEvent({
-				conversation,
-				actor: { type: "visitor", visitorId },
-				lastSeenAt,
-			});
-		}
+                        await emitConversationSeenEvent({
+                                conversation,
+                                actor: { type: "visitor", visitorId },
+                                lastSeenAt,
+                        });
+
+                        await markVisitorPresence({
+                                websiteId: website.id,
+                                visitorId,
+                                lastSeenAt: lastSeenAt ?? new Date().toISOString(),
+                        });
+                }
 
 		return c.json(
 			validateResponse({ message: sentMessage }, sendMessageResponseSchema)

@@ -140,6 +140,7 @@ export function ConversationItem({
           headerVisitor?.lastSeenAt ??
           null
         }
+        status={presence?.status}
         url={visitor?.contact?.image ?? headerVisitor?.contact?.image}
         withBoringAvatar
       />

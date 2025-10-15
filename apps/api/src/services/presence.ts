@@ -1,11 +1,15 @@
 import type { Database } from "@api/db";
 import { getVisitorPresenceProfiles } from "@api/db/queries/visitor";
 import { waitForRedis } from "@api/redis";
+import {
+        PRESENCE_AWAY_WINDOW_MS,
+        PRESENCE_ONLINE_WINDOW_MS,
+} from "@cossistant/types";
 import type Redis from "ioredis";
 
 const PRESENCE_TTL_SECONDS = 60 * 60; // 1 hour
-const ONLINE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-const AWAY_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const ONLINE_WINDOW_MS = PRESENCE_ONLINE_WINDOW_MS;
+const AWAY_WINDOW_MS = PRESENCE_AWAY_WINDOW_MS;
 
 const VISITOR_SET_PREFIX = "presence:website";
 const VISITOR_PROFILE_PREFIX = "presence:website";

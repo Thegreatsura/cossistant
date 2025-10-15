@@ -2,6 +2,7 @@ import type { SenderType } from "./enums";
 
 export * from "./api";
 export * from "./enums";
+export * from "./presence";
 export * from "./realtime-events";
 export type { Conversation, ConversationEvent, Message } from "./schemas";
 export {
