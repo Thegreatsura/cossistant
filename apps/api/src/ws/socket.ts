@@ -738,30 +738,38 @@ async function authenticateWithSession(
 		return null;
 	}
 
-	const organizationId = session.session.activeOrganizationId ?? null;
-	const activeTeamId = session.session.activeTeamId ?? null;
-	let websiteId: string | undefined;
+        const organizationIdFromSession = session.session.activeOrganizationId ?? null;
+        const activeTeamId = session.session.activeTeamId ?? null;
+        let websiteId: string | undefined;
+        let organizationIdFromWebsite: string | undefined;
 
-	if (activeTeamId) {
-		const [site] = await db
-			.select({ id: websiteTable.id })
-			.from(websiteTable)
-			.where(eq(websiteTable.teamId, activeTeamId))
-			.limit(1);
-		websiteId = site?.id;
-	}
+        if (activeTeamId) {
+                const [site] = await db
+                        .select({
+                                id: websiteTable.id,
+                                organizationId: websiteTable.organizationId,
+                        })
+                        .from(websiteTable)
+                        .where(eq(websiteTable.teamId, activeTeamId))
+                        .limit(1);
+                websiteId = site?.id;
+                organizationIdFromWebsite = site?.organizationId;
+        }
 
-	if (!organizationId && AUTH_LOGS_ENABLED) {
-		console.log(
-			"[WebSocket Auth] Session found but no active organization; proceeding without website context"
-		);
-	}
+        const resolvedOrganizationId =
+                organizationIdFromSession ?? organizationIdFromWebsite ?? undefined;
 
-	return {
-		organizationId: organizationId ?? undefined,
-		websiteId,
-		userId: session.user.id,
-	};
+        if (!resolvedOrganizationId && AUTH_LOGS_ENABLED) {
+                console.log(
+                        "[WebSocket Auth] Session found but no active organization; proceeding without website context"
+                );
+        }
+
+        return {
+                organizationId: resolvedOrganizationId,
+                websiteId,
+                userId: session.user.id,
+        };
 }
 
 export const upgradedWebsocket = upgradeWebSocket(async (c) => {
