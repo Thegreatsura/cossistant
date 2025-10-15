@@ -1,7 +1,8 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
+import { PRESENCE_PING_INTERVAL_MS } from "@cossistant/types";
 import {
 	type RealtimeAuthConfig,
 	type RealtimeContextValue,
@@ -51,12 +52,57 @@ type WebSocketBridgeProps = {
 };
 
 const WebSocketBridge: React.FC<WebSocketBridgeProps> = ({ children }) => {
-	const connection = useRealtimeConnection();
-	const value = useMemo(() => connection, [connection]);
-	return (
-		<WebSocketContext.Provider value={value}>
-			{children}
-		</WebSocketContext.Provider>
+        const connection = useRealtimeConnection();
+        const { visitorId, sendRaw, isConnected } = connection;
+
+        useEffect(() => {
+                if (typeof window === "undefined") {
+                        return;
+                }
+
+                if (!visitorId || !sendRaw) {
+                        return;
+                }
+
+                const pingMessage = "presence:ping";
+
+                const sendPresencePing = () => {
+                        if (!isConnected) {
+                                return;
+                        }
+
+                        try {
+                                sendRaw(pingMessage);
+                        } catch (error) {
+                                console.error("[Support] Failed to send presence ping", error);
+                        }
+                };
+
+                const handleFocus = () => {
+                        sendPresencePing();
+                };
+
+                window.addEventListener("focus", handleFocus);
+
+                if (isConnected) {
+                        sendPresencePing();
+                }
+
+                const intervalId = window.setInterval(
+                        sendPresencePing,
+                        PRESENCE_PING_INTERVAL_MS
+                );
+
+                return () => {
+                        window.removeEventListener("focus", handleFocus);
+                        window.clearInterval(intervalId);
+                };
+        }, [isConnected, sendRaw, visitorId]);
+        const value = useMemo(() => connection, [connection]);
+        return (
+                <WebSocketContext.Provider value={value}>
+                        {children}
+                </WebSocketContext.Provider>
 	);
 };
 
