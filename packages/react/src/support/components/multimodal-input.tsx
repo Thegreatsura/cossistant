@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useRef } from "react";
+import { useComposerRefocus } from "../../hooks/use-composer-refocus";
 import * as Primitive from "../../primitives";
 import { useSupportText } from "../text";
 import { cn } from "../utils";
@@ -41,16 +42,30 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	maxFileSize = 10 * 1024 * 1024, // 10MB
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
-	const fileInputRef = useRef<HTMLInputElement>(null);
+        const fileInputRef = useRef<HTMLInputElement>(null);
+        const hasContent = value.trim().length > 0 || files.length > 0;
+	const { focusComposer, inputRef } = useComposerRefocus({
+		disabled,
+		hasContent,
+		isSubmitting,
+	});
+	const canSubmit = !disabled && !isSubmitting && hasContent;
 	const text = useSupportText();
 	const resolvedPlaceholder =
 		placeholder ?? text("component.multimodalInput.placeholder");
 
+	const handleSubmit = () => {
+		if (!canSubmit) {
+			return;
+		}
+
+		onSubmit();
+		focusComposer();
+	};
+
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!(disabled || isSubmitting) && (value.trim() || files.length > 0)) {
-			onSubmit();
-		}
+		handleSubmit();
 	};
 
 	const handleAttachClick = () => {
@@ -68,10 +83,6 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		}
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	};
-
-	const canSubmit =
-		!(disabled || isSubmitting) &&
-		(value.trim().length > 0 || files.length > 0);
 
 	return (
 		<form className="flex flex-col gap-2" onSubmit={handleFormSubmit}>
@@ -117,19 +128,20 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 			{/* Input area */}
 			<div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
-				<Primitive.MultimodalInput
-					className={cn(
-						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
-						className
-					)}
-					disabled={disabled || isSubmitting}
-					error={error}
-					onChange={onChange}
-					onFileSelect={onFileSelect}
-					onSubmit={onSubmit}
-					placeholder={resolvedPlaceholder}
-					value={value}
-				/>
+                                <Primitive.MultimodalInput
+                                        className={cn(
+                                                "flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
+                                                className
+                                        )}
+                                        disabled={disabled || isSubmitting}
+                                        error={error}
+                                        onChange={onChange}
+                                        onFileSelect={onFileSelect}
+                                        onSubmit={handleSubmit}
+                                        placeholder={resolvedPlaceholder}
+                                        ref={inputRef}
+                                        value={value}
+                                />
 
 				<div className="flex items-center justify-between py-1 pr-1 pl-3">
 					<Watermark />
@@ -166,7 +178,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 						)}
 
 						{/* Send button */}
-						<SendButton disabled={!canSubmit || isSubmitting} />
+						<SendButton disabled={!canSubmit} />
 					</div>
 				</div>
 			</div>
