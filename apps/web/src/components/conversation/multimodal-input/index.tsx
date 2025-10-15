@@ -2,7 +2,7 @@
 
 import * as Primitive from "@cossistant/next/primitives";
 import type React from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
@@ -41,14 +41,39 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	maxFileSize = 10 * 1024 * 1024, // 10MB
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
-	const fileInputRef = useRef<HTMLInputElement>(null);
+        const fileInputRef = useRef<HTMLInputElement>(null);
+        const inputRef = useRef<HTMLTextAreaElement | null>(null);
+        const previousStateRef = useRef({
+                isSubmitting,
+                hadContent: value.trim().length > 0 || files.length > 0,
+        });
+
+        useEffect(() => {
+                const previous = previousStateRef.current;
+                const hasContent = value.trim().length > 0 || files.length > 0;
+
+                if (
+                        !disabled &&
+                        !isSubmitting &&
+                        !hasContent &&
+                        (previous.isSubmitting || previous.hadContent)
+                ) {
+                        inputRef.current?.focus();
+                }
+
+                previousStateRef.current = {
+                        isSubmitting,
+                        hadContent: hasContent,
+                };
+        }, [disabled, files.length, isSubmitting, value]);
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!(disabled || isSubmitting) && (value.trim() || files.length > 0)) {
-			onSubmit();
-		}
-	};
+                if (!(disabled || isSubmitting) && (value.trim() || files.length > 0)) {
+                        onSubmit();
+                        inputRef.current?.focus();
+                }
+        };
 
 	const handleAttachClick = () => {
 		if (files.length < maxFiles) {
@@ -113,19 +138,20 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 				{/* Input area */}
 				<div className="flex flex-col rounded border border-border/50 bg-background-100 drop-shadow-xs dark:border-border/50 dark:bg-background-300">
-					<Primitive.MultimodalInput
-						className={cn(
-							"flex-1 resize-none overflow-hidden p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
-							className
-						)}
-						disabled={disabled || isSubmitting}
-						error={error}
-						onChange={onChange}
-						onFileSelect={onFileSelect}
-						onSubmit={onSubmit}
-						placeholder={placeholder}
-						value={value}
-					/>
+                                        <Primitive.MultimodalInput
+                                                className={cn(
+                                                        "flex-1 resize-none overflow-hidden p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
+                                                        className
+                                                )}
+                                                disabled={disabled || isSubmitting}
+                                                error={error}
+                                                onChange={onChange}
+                                                onFileSelect={onFileSelect}
+                                                onSubmit={onSubmit}
+                                                placeholder={placeholder}
+                                                ref={inputRef}
+                                                value={value}
+                                        />
 
 					<div className="flex items-center justify-end py-2 pr-1 pl-3">
 						<div className="flex items-center gap-0.5">
