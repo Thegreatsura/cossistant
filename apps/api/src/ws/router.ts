@@ -122,37 +122,45 @@ function dispatchEvent<T extends RealtimeEventType>(
 const eventHandlers: EventHandlers = {
         userConnected: async (_ctx, event) => {
                 const data = event.payload;
-                await markUserPresence({
+                const lastSeenAt = new Date().toISOString();
+                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
+                void markUserPresence({
                         websiteId: data.websiteId,
                         userId: data.userId,
-                        lastSeenAt: new Date().toISOString(),
+                        lastSeenAt,
                 });
         },
 
         userDisconnected: async (_ctx, event) => {
                 const data = event.payload;
-                await markUserPresence({
+                const lastSeenAt = new Date().toISOString();
+                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
+                void markUserPresence({
                         websiteId: data.websiteId,
                         userId: data.userId,
-                        lastSeenAt: new Date().toISOString(),
+                        lastSeenAt,
                 });
         },
 
         visitorConnected: async (_ctx, event) => {
                 const data = event.payload;
-                await markVisitorPresence({
+                const lastSeenAt = new Date().toISOString();
+                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
+                void markVisitorPresence({
                         websiteId: data.websiteId,
                         visitorId: data.visitorId,
-                        lastSeenAt: new Date().toISOString(),
+                        lastSeenAt,
                 });
         },
 
         visitorDisconnected: async (_ctx, event) => {
                 const data = event.payload;
-                await markVisitorPresence({
+                const lastSeenAt = new Date().toISOString();
+                // biome-ignore lint/nursery/noUnusedPromise: fire-and-forget presence write
+                void markVisitorPresence({
                         websiteId: data.websiteId,
                         visitorId: data.visitorId,
-                        lastSeenAt: new Date().toISOString(),
+                        lastSeenAt,
                 });
         },
 

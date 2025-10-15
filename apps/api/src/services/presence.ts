@@ -205,10 +205,12 @@ export async function markVisitorPresence(params: {
                         params.visitorId
                 );
 
-                await redis.zadd(setKey, timestamp, params.visitorId);
-                await redis.expire(setKey, PRESENCE_TTL_SECONDS);
-                await redis.hset(profileKey, { lastSeenAt: iso });
-                await redis.expire(profileKey, PRESENCE_TTL_SECONDS);
+                const pipeline = redis.pipeline();
+                pipeline.zadd(setKey, timestamp, params.visitorId);
+                pipeline.expire(setKey, PRESENCE_TTL_SECONDS);
+                pipeline.hset(profileKey, { lastSeenAt: iso });
+                pipeline.expire(profileKey, PRESENCE_TTL_SECONDS);
+                await pipeline.exec();
         } catch (error) {
                 console.error("[Presence] Failed to mark visitor presence", {
                         websiteId: params.websiteId,
@@ -231,10 +233,12 @@ export async function markUserPresence(params: {
                 const setKey = userSetKey(params.websiteId);
                 const profileKey = userProfileKey(params.websiteId, params.userId);
 
-                await redis.zadd(setKey, timestamp, params.userId);
-                await redis.expire(setKey, PRESENCE_TTL_SECONDS);
-                await redis.hset(profileKey, { lastSeenAt: iso });
-                await redis.expire(profileKey, PRESENCE_TTL_SECONDS);
+                const pipeline = redis.pipeline();
+                pipeline.zadd(setKey, timestamp, params.userId);
+                pipeline.expire(setKey, PRESENCE_TTL_SECONDS);
+                pipeline.hset(profileKey, { lastSeenAt: iso });
+                pipeline.expire(profileKey, PRESENCE_TTL_SECONDS);
+                await pipeline.exec();
         } catch (error) {
                 console.error("[Presence] Failed to mark user presence", {
                         websiteId: params.websiteId,

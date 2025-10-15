@@ -1,7 +1,7 @@
 import type { Database } from "@api/db";
 import { contact, contactRelations, visitor } from "@api/db/schema";
 import { generateULID } from "@api/utils/db/ids";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 export type VisitorRecord = typeof visitor.$inferSelect;
 type VisitorInsert = typeof visitor.$inferInsert;
@@ -194,6 +194,8 @@ export type VisitorPresenceProfile = {
         contactImage: string | null;
 };
 
+const MAX_VISITOR_PRESENCE_IDS = 500;
+
 export async function getVisitorPresenceProfiles(
         db: Database,
         params: {
@@ -201,7 +203,12 @@ export async function getVisitorPresenceProfiles(
                 visitorIds: string[];
         }
 ): Promise<VisitorPresenceProfile[]> {
-        if (params.visitorIds.length === 0) {
+        const dedupedVisitorIds = Array.from(new Set(params.visitorIds)).slice(
+                0,
+                MAX_VISITOR_PRESENCE_IDS
+        );
+
+        if (dedupedVisitorIds.length === 0) {
                 return [];
         }
 
@@ -223,7 +230,8 @@ export async function getVisitorPresenceProfiles(
                 .where(
                         and(
                                 eq(visitor.websiteId, params.websiteId),
-                                inArray(visitor.id, params.visitorIds)
+                                inArray(visitor.id, dedupedVisitorIds),
+                                isNull(visitor.deletedAt)
                         )
                 );
 
