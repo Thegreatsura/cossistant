@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { TRPCClientErrorBase } from "@trpc/client";
 import type { DefaultErrorShape } from "@trpc/server/unstable-core-do-not-import";
 import { useRouter } from "next/navigation";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { authClient, type Session } from "@/lib/auth/client";
 import { useTRPC } from "@/lib/trpc/client";
 
@@ -34,12 +34,12 @@ export function WebsiteProvider({
 	const trpc = useTRPC();
 	const router = useRouter();
 
-	const { data: sessionData } = authClient.useSession();
+        const { data: sessionData } = authClient.useSession();
 
-	const {
-		data: website,
-		isFetching: isLoadingWebsite,
-		error: errorWebsite,
+        const {
+                data: website,
+                isFetching: isLoadingWebsite,
+                error: errorWebsite,
 	} = useQuery({
 		...trpc.website.getBySlug.queryOptions({
 			slug: websiteSlug,
@@ -61,30 +61,58 @@ export function WebsiteProvider({
 		isFetching: isLoadingViews,
 		error: errorViews,
 	} = useQuery({
-		...trpc.view.list.queryOptions({
-			slug: websiteSlug,
-		}),
-	});
+                ...trpc.view.list.queryOptions({
+                        slug: websiteSlug,
+                }),
+        });
 
-	// If no session data, we should redirect to the login page? Should be handle server side, so we should be ok here
-	if (!sessionData) {
-		return null;
-	}
+        useEffect(() => {
+                if (sessionData === null) {
+                        router.replace("/login");
+                }
+        }, [router, sessionData]);
 
-	return (
-		<WebsiteContext.Provider
-			value={{
-				session: sessionData.session,
-				user: sessionData.user,
-				website: website!,
-				members: members!,
-				views: views!,
-				isLoading: isLoadingWebsite || isLoadingViews || isLoadingMembers,
-				error: errorViews || errorWebsite || errorMembers,
-			}}
-		>
-			{children}
-		</WebsiteContext.Provider>
+        useEffect(() => {
+                const authError = errorWebsite ?? errorMembers ?? errorViews;
+
+                if (!authError?.data?.code) {
+                        return;
+                }
+
+                if (authError.data.code === "UNAUTHORIZED") {
+                        router.replace("/login");
+                        return;
+                }
+
+                if (authError.data.code === "FORBIDDEN") {
+                        router.replace("/select");
+                }
+        }, [errorMembers, errorViews, errorWebsite, router]);
+
+        if (!sessionData) {
+                return null;
+        }
+
+        return (
+                <WebsiteContext.Provider
+                        value={{
+                                session: sessionData.session,
+                                user: sessionData.user,
+                                website: website!,
+                                members: members!,
+                                views: views!,
+                                isLoading:
+                                        isLoadingWebsite ||
+                                        isLoadingViews ||
+                                        isLoadingMembers ||
+                                        !website ||
+                                        !members ||
+                                        !views,
+                                error: errorViews || errorWebsite || errorMembers,
+                        }}
+                >
+                        {children}
+                </WebsiteContext.Provider>
 	);
 }
 
