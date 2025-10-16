@@ -1,4 +1,4 @@
-import { getConversationEvents } from "@api/db/queries/conversation";
+import { getConversationById, getConversationEvents } from "@api/db/queries/conversation";
 import {
         safelyExtractRequestQuery,
         validateResponse,
@@ -38,6 +38,14 @@ conversationEventsRouter.openapi(
                         },
                         400: {
                                 description: "Invalid request",
+                                content: {
+                                        "application/json": {
+                                                schema: z.object({ error: z.string() }),
+                                        },
+                                },
+                        },
+                        404: {
+                                description: "Conversation not found",
                                 content: {
                                         "application/json": {
                                                 schema: z.object({ error: z.string() }),
@@ -89,10 +97,22 @@ conversationEventsRouter.openapi(
                 ],
         },
         async (c) => {
-                const { db, website, query } = await safelyExtractRequestQuery(
+                const { db, website, organization, query } = await safelyExtractRequestQuery(
                         c,
                         getConversationEventsRequestSchema
                 );
+
+                const conversationRecord = await getConversationById(db, {
+                        conversationId: query.conversationId,
+                });
+
+                if (
+                        !conversationRecord ||
+                        conversationRecord.websiteId !== website.id ||
+                        conversationRecord.organizationId !== organization.id
+                ) {
+                        return c.json({ error: "Conversation not found" }, 404);
+                }
 
                 const result = await getConversationEvents(db, {
                         conversationId: query.conversationId,

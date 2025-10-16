@@ -44,14 +44,18 @@ function mergeEvents(
                 byId.set(event.id, event);
         }
 
-        let changed = false;
-        for (const event of incoming) {
-                const previous = byId.get(event.id);
-                if (!(previous && isSameEvent(previous, event))) {
-                        changed = true;
-                }
-                byId.set(event.id, event);
-        }
+	let changed = false;
+	for (const event of incoming) {
+		const previous = byId.get(event.id);
+		if (previous && isSameEvent(previous, event)) {
+			byId.set(event.id, previous);
+			continue;
+		}
+		if (!previous || previous !== event) {
+			changed = true;
+		}
+		byId.set(event.id, event);
+	}
 
         if (!changed && byId.size === existing.length) {
                 let orderStable = true;
