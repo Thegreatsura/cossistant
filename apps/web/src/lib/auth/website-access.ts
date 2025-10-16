@@ -7,9 +7,9 @@ import { getAuth } from "./server";
 export const ensureWebsiteAccess = cache(async (websiteSlug: string) => {
 	const { user } = await getAuth();
 
-	if (!user) {
-		redirect("/");
-	}
+        if (!user) {
+                redirect("/login");
+        }
 
 	const accessCheck = await checkUserWebsiteAccess(db, {
 		userId: user.id,
