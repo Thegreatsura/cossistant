@@ -12,6 +12,7 @@ import type {
 import { SenderType } from "@cossistant/types";
 import { motion } from "motion/react";
 import type React from "react";
+import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
@@ -59,22 +60,28 @@ export function MessageGroup({
   const visitorName = getVisitorNameWithFallback(visitor);
   const visitorPresence = useVisitorPresenceById(visitor?.id);
 
+  // Extract who has read the last message in this group (equal check).
+  const readByIds: string[] = useMemo(() => {
+    if (!lastReadMessageIds || messages.length === 0) {
+      return [];
+    }
+
+    const lastId = messages.at(-1)?.id;
+    if (!lastId) {
+      return [];
+    }
+
+    const userIds: string[] = [];
+    for (const [userId, messageId] of lastReadMessageIds.entries()) {
+      if (messageId === lastId) {
+        userIds.push(userId);
+      }
+    }
+    return userIds;
+  }, [lastReadMessageIds, messages]);
+
   if (messages.length === 0) {
     return null;
-  }
-
-  // Extract who has read up to the last message
-  const readByIds: string[] = [];
-
-  if (lastReadMessageIds) {
-    lastReadMessageIds.forEach((messageId, userId) => {
-      // Check if this user has read up to or past the last message in this group
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      const lastIndex = messages.length - 1;
-      if (messageIndex >= lastIndex) {
-        readByIds.push(userId);
-      }
-    });
   }
 
   return (
