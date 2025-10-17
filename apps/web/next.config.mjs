@@ -1,9 +1,9 @@
 import { createMDX } from "fumadocs-mdx/next";
-import type { NextConfig } from "next";
 
 const withMDX = createMDX();
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
 	/* config options here */
 	reactStrictMode: true,
 	transpilePackages: [
@@ -15,14 +15,14 @@ const nextConfig: NextConfig = {
 		"@cossistant/transactional",
 		"@cossistant/types",
 	],
-	eslint: {
-		ignoreDuringBuilds: true,
-	},
 	typescript: {
 		ignoreBuildErrors: true,
 	},
 	images: {
 		remotePatterns: [new URL("https://cdn.cossistant.com/**")],
+	},
+	experimental: {
+		useCache: true,
 	},
 	devIndicators: false,
 	async rewrites() {

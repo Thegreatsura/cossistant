@@ -35,8 +35,9 @@ export const trpc = createTRPCOptionsProxy<OrigamiTRPCRouter>({
 				url: getTRPCUrl(),
 				transformer: superjson,
 				async headers() {
+					const headersList = await headers();
 					const session = await auth.api.getSession({
-						headers: await headers(),
+						headers: headersList,
 					});
 
 					return {

@@ -10,6 +10,7 @@ import { TopbarItem } from "./topbar-item";
 export function NavigationTopbar() {
 	const pathname = usePathname();
 	const website = useWebsite();
+
 	const { onlineCount, isLoading } = useVisitorPresence();
 
 	const baseInboxPath = `/${website?.slug}/inbox`;

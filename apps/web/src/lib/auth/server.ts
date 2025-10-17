@@ -28,6 +28,7 @@ type EnsurePageAuthProps = {
 export const ensurePageAuth = async (
 	props: EnsurePageAuthProps = { redirectTo: "/" }
 ) => {
+	"use cache";
 	const { session, user } = await getAuth();
 
 	if (!(user && session)) {
@@ -38,6 +39,8 @@ export const ensurePageAuth = async (
 };
 
 export const checkWaitlistAccess = async (userId: string) => {
+	"use cache";
+
 	const waitlistData = await getWaitlistEntryByUserId(db, { userId });
 	return waitlistData.entry?.accessGranted ?? false;
 };

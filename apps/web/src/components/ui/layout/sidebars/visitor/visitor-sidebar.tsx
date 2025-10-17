@@ -23,6 +23,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
 	if (isLoading || !visitor) {
 		return <VisitorSidebarPlaceholder />;
 	}
+
 	const countryDetails = resolveCountryDetails({
 		country: visitor.country,
 		countryCode: visitor.countryCode,
@@ -30,6 +31,7 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
 		timezone: visitor.timezone,
 		city: visitor.city,
 	});
+
 	const countryLabel = countryDetails.name ?? countryDetails.code;
 	const localTime = formatLocalTime(visitor.timezone, visitor.language);
 	const timezoneTooltip = visitor.timezone
