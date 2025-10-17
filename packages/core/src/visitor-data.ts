@@ -5,23 +5,23 @@
 /** biome-ignore-all lint/complexity/useOptionalChain: ok */
 
 type VisitorData = {
-	browser: string | null;
-	browserVersion: string | null;
-	os: string | null;
-	osVersion: string | null;
-	device: string | null;
-	deviceType: "desktop" | "mobile" | "tablet" | "unknown";
-	language: string | null;
-	timezone: string | null;
-	screenResolution: string | null;
-	viewport: string | null;
-	ip: string | null;
-	city: string | null;
-	region: string | null;
-	country: string | null;
-	countryCode: string | null;
-	latitude: number | null;
-	longitude: number | null;
+  browser: string | null;
+  browserVersion: string | null;
+  os: string | null;
+  osVersion: string | null;
+  device: string | null;
+  deviceType: "desktop" | "mobile" | "tablet" | "unknown";
+  language: string | null;
+  timezone: string | null;
+  screenResolution: string | null;
+  viewport: string | null;
+  ip: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  countryCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 // Browser detection patterns
@@ -35,25 +35,25 @@ const OPERA_PATTERN = /OPR\/([0-9.]+)/;
  * Parse user agent to extract browser information
  */
 function parseBrowser(userAgent: string): {
-	browser: string | null;
-	version: string | null;
+  browser: string | null;
+  version: string | null;
 } {
-	const browsers = [
-		{ name: "Edge", pattern: EDGE_PATTERN },
-		{ name: "Chrome", pattern: CHROME_PATTERN },
-		{ name: "Safari", pattern: SAFARI_PATTERN },
-		{ name: "Firefox", pattern: FIREFOX_PATTERN },
-		{ name: "Opera", pattern: OPERA_PATTERN },
-	];
+  const browsers = [
+    { name: "Edge", pattern: EDGE_PATTERN },
+    { name: "Chrome", pattern: CHROME_PATTERN },
+    { name: "Safari", pattern: SAFARI_PATTERN },
+    { name: "Firefox", pattern: FIREFOX_PATTERN },
+    { name: "Opera", pattern: OPERA_PATTERN },
+  ];
 
-	for (const { name, pattern } of browsers) {
-		const match = userAgent.match(pattern);
-		if (match) {
-			return { browser: name, version: match[1] || null };
-		}
-	}
+  for (const { name, pattern } of browsers) {
+    const match = userAgent.match(pattern);
+    if (match) {
+      return { browser: name, version: match[1] || null };
+    }
+  }
 
-	return { browser: null, version: null };
+  return { browser: null, version: null };
 }
 
 // OS detection patterns
@@ -64,63 +64,63 @@ const ANDROID_PATTERN = /Android ([0-9.]+)/;
 const LINUX_PATTERN = /Linux/;
 
 const WINDOWS_VERSION_MAP: Record<string, string> = {
-	"10.0": "10",
-	"6.3": "8.1",
-	"6.2": "8",
-	"6.1": "7",
+  "10.0": "10",
+  "6.3": "8.1",
+  "6.2": "8",
+  "6.1": "7",
 };
 
 /**
  * Transform version string by replacing underscores with dots
  */
 function transformVersion(version: string): string {
-	return version.replace(/_/g, ".");
+  return version.replace(/_/g, ".");
 }
 
 /**
  * Parse user agent to extract OS information
  */
 function parseOS(userAgent: string): {
-	os: string | null;
-	version: string | null;
+  os: string | null;
+  version: string | null;
 } {
-	// Check Windows
-	const windowsMatch = userAgent.match(WINDOWS_PATTERN);
-	if (windowsMatch) {
-		const rawVersion = windowsMatch[1];
-		let version: string | null = null;
-		if (rawVersion) {
-			version = WINDOWS_VERSION_MAP[rawVersion] || rawVersion;
-		}
-		return { os: "Windows", version };
-	}
+  // Check Windows
+  const windowsMatch = userAgent.match(WINDOWS_PATTERN);
+  if (windowsMatch) {
+    const rawVersion = windowsMatch[1];
+    let version: string | null = null;
+    if (rawVersion) {
+      version = WINDOWS_VERSION_MAP[rawVersion] || rawVersion;
+    }
+    return { os: "Windows", version };
+  }
 
-	// Check macOS
-	const macMatch = userAgent.match(MACOS_PATTERN);
-	if (macMatch) {
-		const version = macMatch[1] ? transformVersion(macMatch[1]) : null;
-		return { os: "macOS", version };
-	}
+  // Check macOS
+  const macMatch = userAgent.match(MACOS_PATTERN);
+  if (macMatch) {
+    const version = macMatch[1] ? transformVersion(macMatch[1]) : null;
+    return { os: "macOS", version };
+  }
 
-	// Check iOS
-	const iosMatch = userAgent.match(IOS_PATTERN);
-	if (iosMatch) {
-		const version = iosMatch[1] ? transformVersion(iosMatch[1]) : null;
-		return { os: "iOS", version };
-	}
+  // Check iOS
+  const iosMatch = userAgent.match(IOS_PATTERN);
+  if (iosMatch) {
+    const version = iosMatch[1] ? transformVersion(iosMatch[1]) : null;
+    return { os: "iOS", version };
+  }
 
-	// Check Android
-	const androidMatch = userAgent.match(ANDROID_PATTERN);
-	if (androidMatch) {
-		return { os: "Android", version: androidMatch[1] || null };
-	}
+  // Check Android
+  const androidMatch = userAgent.match(ANDROID_PATTERN);
+  if (androidMatch) {
+    return { os: "Android", version: androidMatch[1] || null };
+  }
 
-	// Check Linux
-	if (LINUX_PATTERN.test(userAgent)) {
-		return { os: "Linux", version: null };
-	}
+  // Check Linux
+  if (LINUX_PATTERN.test(userAgent)) {
+    return { os: "Linux", version: null };
+  }
 
-	return { os: null, version: null };
+  return { os: null, version: null };
 }
 
 // Device type detection patterns
@@ -142,66 +142,66 @@ const LINUX_PATTERN_DEVICE = /Linux/;
  * Detect device type from user agent
  */
 function detectDeviceType(
-	userAgent: string
+  userAgent: string,
 ): "desktop" | "mobile" | "tablet" | "unknown" {
-	const isMobile = MOBILE_PATTERN.test(userAgent);
-	const isTablet = TABLET_PATTERN.test(userAgent);
+  const isMobile = MOBILE_PATTERN.test(userAgent);
+  const isTablet = TABLET_PATTERN.test(userAgent);
 
-	if (isTablet) {
-		return "tablet";
-	}
-	if (isMobile) {
-		return "mobile";
-	}
-	if (
-		userAgent.includes("Windows") ||
-		userAgent.includes("Mac") ||
-		userAgent.includes("Linux")
-	) {
-		return "desktop";
-	}
+  if (isTablet) {
+    return "tablet";
+  }
+  if (isMobile) {
+    return "mobile";
+  }
+  if (
+    userAgent.includes("Windows") ||
+    userAgent.includes("Mac") ||
+    userAgent.includes("Linux")
+  ) {
+    return "desktop";
+  }
 
-	return "unknown";
+  return "unknown";
 }
 
 /**
  * Get device name from user agent
  */
 function getDeviceName(userAgent: string): string | null {
-	const devices = [
-		{ pattern: IPHONE_PATTERN, name: "iPhone" },
-		{ pattern: IPAD_PATTERN, name: "iPad" },
-		{ pattern: IPOD_PATTERN, name: "iPod" },
-		{ pattern: ANDROID_MOBILE_PATTERN, name: "Android Phone" },
-		{ pattern: ANDROID_TABLET_PATTERN, name: "Android Tablet" },
-		{ pattern: WINDOWS_PHONE_PATTERN, name: "Windows Phone" },
-		{ pattern: MACINTOSH_PATTERN, name: "Mac" },
-		{ pattern: WINDOWS_PATTERN_DEVICE, name: "Windows PC" },
-		{ pattern: LINUX_PATTERN_DEVICE, name: "Linux PC" },
-	];
+  const devices = [
+    { pattern: IPHONE_PATTERN, name: "iPhone" },
+    { pattern: IPAD_PATTERN, name: "iPad" },
+    { pattern: IPOD_PATTERN, name: "iPod" },
+    { pattern: ANDROID_MOBILE_PATTERN, name: "Android Phone" },
+    { pattern: ANDROID_TABLET_PATTERN, name: "Android Tablet" },
+    { pattern: WINDOWS_PHONE_PATTERN, name: "Windows Phone" },
+    { pattern: MACINTOSH_PATTERN, name: "Mac" },
+    { pattern: WINDOWS_PATTERN_DEVICE, name: "Windows PC" },
+    { pattern: LINUX_PATTERN_DEVICE, name: "Linux PC" },
+  ];
 
-	for (const { pattern, name } of devices) {
-		if (pattern.test(userAgent)) {
-			return name;
-		}
-	}
+  for (const { pattern, name } of devices) {
+    if (pattern.test(userAgent)) {
+      return name;
+    }
+  }
 
-	return null;
+  return null;
 }
 
 /**
  * Check if we're running in a browser environment
  */
 function isBrowser(): boolean {
-	return typeof window !== "undefined" && typeof navigator !== "undefined";
+  return typeof window !== "undefined" && typeof navigator !== "undefined";
 }
 
 function inferCityFromTimezone(timezone: string | null): string | null {
-	if (!timezone?.includes("/")) {
-		return null;
-	}
-	const [, city] = timezone.split("/");
-	return city ? city.replace(/_/g, " ") : null;
+  if (!timezone?.includes("/")) {
+    return null;
+  }
+  const [, city] = timezone.split("/");
+  return city ? city.replace(/_/g, " ") : null;
 }
 
 /**
@@ -209,42 +209,42 @@ function inferCityFromTimezone(timezone: string | null): string | null {
  * Returns null if not in browser environment
  */
 export async function collectVisitorData(): Promise<VisitorData | null> {
-	if (!isBrowser()) {
-		return null;
-	}
+  if (!isBrowser()) {
+    return null;
+  }
 
-	const userAgent = navigator.userAgent || "";
-	const { browser, version: browserVersion } = parseBrowser(userAgent);
-	const { os, version: osVersion } = parseOS(userAgent);
-	const language = navigator.language || null;
-	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-	const inferredCity = inferCityFromTimezone(timezone);
+  const userAgent = navigator.userAgent || "";
+  const { browser, version: browserVersion } = parseBrowser(userAgent);
+  const { os, version: osVersion } = parseOS(userAgent);
+  const language = navigator.language || null;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  const inferredCity = inferCityFromTimezone(timezone);
 
-	return {
-		browser,
-		browserVersion,
-		os,
-		osVersion,
-		device: getDeviceName(userAgent),
-		deviceType: detectDeviceType(userAgent),
-		language,
-		timezone,
-		screenResolution:
-			typeof window !== "undefined" && window.screen
-				? `${window.screen.width}x${window.screen.height}`
-				: null,
-		viewport:
-			typeof window !== "undefined"
-				? `${window.innerWidth}x${window.innerHeight}`
-				: null,
-		ip: null,
-		city: inferredCity,
-		region: null,
-		country: null,
-		countryCode: null,
-		latitude: null,
-		longitude: null,
-	};
+  return {
+    browser,
+    browserVersion,
+    os,
+    osVersion,
+    device: getDeviceName(userAgent),
+    deviceType: detectDeviceType(userAgent),
+    language,
+    timezone,
+    screenResolution:
+      typeof window !== "undefined" && window.screen
+        ? `${window.screen.width}x${window.screen.height}`
+        : null,
+    viewport:
+      typeof window !== "undefined"
+        ? `${window.innerWidth}x${window.innerHeight}`
+        : null,
+    ip: null,
+    city: inferredCity,
+    region: null,
+    country: null,
+    countryCode: null,
+    latitude: null,
+    longitude: null,
+  };
 }
 
 /**

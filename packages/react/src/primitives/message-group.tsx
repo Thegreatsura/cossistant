@@ -70,7 +70,7 @@ export const MessageGroup = (() => {
         lastReadMessageIds,
         ...restProps
       },
-      ref
+      ref,
     ) => {
       const { viewerType, ...elementProps } = restProps;
 
@@ -154,9 +154,9 @@ export const MessageGroup = (() => {
             ...elementProps,
             children: content,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   Component.displayName = "MessageGroup";
@@ -191,9 +191,9 @@ export const MessageGroupAvatar = (() => {
             ...props,
             children,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   Component.displayName = "MessageGroupAvatar";
@@ -235,7 +235,7 @@ export const MessageGroupHeader = (() => {
         senderType,
         ...props
       },
-      ref
+      ref,
     ) => {
       const content =
         typeof children === "function"
@@ -254,9 +254,9 @@ export const MessageGroupHeader = (() => {
             ...props,
             children: content,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   Component.displayName = "MessageGroupHeader";
@@ -292,9 +292,9 @@ export const MessageGroupContent = (() => {
             ...props,
             children,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   Component.displayName = "MessageGroupContent";
@@ -328,7 +328,7 @@ export const MessageGroupSeenIndicator = (() => {
   >(
     (
       { children, className, asChild = false, seenByIds = [], ...props },
-      ref
+      ref,
     ) => {
       const hasBeenSeen = seenByIds.length > 0;
       const content =
@@ -348,9 +348,9 @@ export const MessageGroupSeenIndicator = (() => {
             ...props,
             children: content,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   Component.displayName = "MessageGroupSeenIndicator";
@@ -392,7 +392,7 @@ export const MessageGroupReadIndicator = (() => {
         lastReadMessageIds,
         ...props
       },
-      ref
+      ref,
     ) => {
       // Find all users who stopped reading at this message
       const { lastReaderIds, readers } = React.useMemo(() => {
@@ -428,9 +428,9 @@ export const MessageGroupReadIndicator = (() => {
             ...props,
             children: content,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   Component.displayName = "MessageGroupReadIndicator";

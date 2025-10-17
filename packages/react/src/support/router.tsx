@@ -12,28 +12,28 @@ import { useSupportNavigation } from "./store/support-store";
  * so the router simply maps navigation state to the appropriate page component.
  */
 export const SupportRouter: React.FC = () => {
-	const { current } = useSupportNavigation();
+  const { current } = useSupportNavigation();
 
-	switch (current.page) {
-		case "HOME":
-			return <HomePage />;
+  switch (current.page) {
+    case "HOME":
+      return <HomePage />;
 
-		case "ARTICLES":
-			return <ArticlesPage />;
+    case "ARTICLES":
+      return <ArticlesPage />;
 
-                case "CONVERSATION":
-                        return (
-                                <ConversationPage
-                                        conversationId={current.params.conversationId}
-                                        initialMessage={current.params.initialMessage}
-                                />
-                        );
+    case "CONVERSATION":
+      return (
+        <ConversationPage
+          conversationId={current.params.conversationId}
+          initialMessage={current.params.initialMessage}
+        />
+      );
 
-		case "CONVERSATION_HISTORY":
-			return <ConversationHistoryPage />;
+    case "CONVERSATION_HISTORY":
+      return <ConversationHistoryPage />;
 
-		default: {
-			return <HomePage />;
-		}
-	}
+    default: {
+      return <HomePage />;
+    }
+  }
 };

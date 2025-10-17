@@ -10,6 +10,7 @@ import type {
   Message as MessageType,
 } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
 import type React from "react";
 import { useMemo } from "react";
@@ -33,7 +34,8 @@ const MESSAGE_ANIMATION = {
 } as const;
 
 type Props = {
-  messages: MessageType[];
+  messages?: MessageType[];
+  items?: TimelineItem[]; // New: timeline items
   availableAIAgents: AvailableAIAgent[];
   teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
   lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
@@ -42,20 +44,46 @@ type Props = {
 };
 
 export function MessageGroup({
-  messages,
+  messages: legacyMessages,
+  items,
   availableAIAgents,
   teamMembers,
   lastReadMessageIds,
   currentUserId,
   visitor,
 }: Props) {
+  // Use timeline items if available, otherwise fall back to legacy messages
+  const messages = useMemo(() => {
+    if (items && items.length > 0) {
+      // Convert timeline items to messages for rendering
+      return items.map((item) => ({
+        id: item.id || "",
+        bodyMd: item.text || "",
+        type: "text" as const,
+        userId: item.userId,
+        visitorId: item.visitorId,
+        aiAgentId: item.aiAgentId,
+        conversationId: item.conversationId,
+        organizationId: item.organizationId,
+        websiteId: "", // Not available in timeline item
+        parentMessageId: null,
+        modelUsed: null,
+        visibility: item.visibility,
+        createdAt: item.createdAt,
+        updatedAt: item.createdAt,
+        deletedAt: item.deletedAt,
+      })) as MessageType[];
+    }
+    return legacyMessages || [];
+  }, [items, legacyMessages]);
+
   // Get agent info for the sender
   const firstMessage = messages[0];
   const humanAgent = teamMembers.find(
-    (agent) => agent.id === firstMessage?.userId
+    (agent) => agent.id === firstMessage?.userId,
   );
   const aiAgent = availableAIAgents.find(
-    (agent) => agent.id === firstMessage?.aiAgentId
+    (agent) => agent.id === firstMessage?.aiAgentId,
   );
   const visitorName = getVisitorNameWithFallback(visitor);
   const visitorPresence = useVisitorPresenceById(visitor?.id);
@@ -105,7 +133,7 @@ export function MessageGroup({
             // From dashboard POV: visitor messages are received (left side)
             // Team member/AI messages sent by viewer are on right side
             isSentByViewer && "flex-row-reverse",
-            isReceivedByViewer && "flex-row"
+            isReceivedByViewer && "flex-row",
           )}
         >
           {/* Avatar - only show for received messages */}

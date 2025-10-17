@@ -11,6 +11,7 @@ export * from "./use-conversation-lifecycle";
 export * from "./use-conversation-events";
 export * from "./use-conversation-messages";
 export * from "./use-conversation-page";
+export * from "./use-conversation-timeline-items";
 export * from "./use-conversation-seen";
 export * from "./use-conversation-typing";
 export * from "./use-conversations";

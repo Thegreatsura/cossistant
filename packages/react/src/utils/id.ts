@@ -8,6 +8,6 @@ const NANOID_LENGTH = 16;
 export const PENDING_CONVERSATION_ID = "__pending__" as const;
 
 export const generateShortPrimaryId = (): string => {
-	const nanoid = customAlphabet(NANOID_ALPHABET, NANOID_LENGTH);
-	return `CO${nanoid()}`; // e.g. "CO4GKT9QZ2BJKXMVR"
+  const nanoid = customAlphabet(NANOID_ALPHABET, NANOID_LENGTH);
+  return `CO${nanoid()}`; // e.g. "CO4GKT9QZ2BJKXMVR"
 };

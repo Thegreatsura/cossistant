@@ -6,76 +6,76 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useTRPC } from "@/lib/trpc/client";
 import {
-	type ConversationMessagesPage,
-	createConversationMessagesInfiniteQueryKey,
+  type ConversationMessagesPage,
+  createConversationMessagesInfiniteQueryKey,
 } from "./conversation-message-cache";
 
 type LastMessagePreview = ConversationHeader["lastMessagePreview"];
 
 type UseLatestConversationMessageOptions = {
-	conversationId: string;
-	websiteSlug: string;
-	limit?: number;
+  conversationId: string;
+  websiteSlug: string;
+  limit?: number;
 };
 
 function findLatestMessage(
-	data: InfiniteData<ConversationMessagesPage> | undefined
+  data: InfiniteData<ConversationMessagesPage> | undefined,
 ): LastMessagePreview {
-	if (!data) {
-		return null;
-	}
+  if (!data) {
+    return null;
+  }
 
-	for (let pageIndex = data.pages.length - 1; pageIndex >= 0; pageIndex--) {
-		const page = data.pages[pageIndex];
-		const lastMessage = page.items.at(-1);
+  for (let pageIndex = data.pages.length - 1; pageIndex >= 0; pageIndex--) {
+    const page = data.pages[pageIndex];
+    const lastMessage = page.items.at(-1);
 
-		if (lastMessage) {
-			return lastMessage as LastMessagePreview;
-		}
-	}
+    if (lastMessage) {
+      return lastMessage as LastMessagePreview;
+    }
+  }
 
-	return null;
+  return null;
 }
 
 export function useLatestConversationMessage({
-	conversationId,
-	websiteSlug,
-	limit = 50,
+  conversationId,
+  websiteSlug,
+  limit = 50,
 }: UseLatestConversationMessageOptions): LastMessagePreview {
-	const trpc = useTRPC();
-	const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
-	const baseQueryKey = useMemo(
-		() =>
-			trpc.conversation.getConversationMessages.queryOptions({
-				websiteSlug,
-				conversationId,
-				limit,
-			}).queryKey,
-		[conversationId, limit, trpc, websiteSlug]
-	);
+  const baseQueryKey = useMemo(
+    () =>
+      trpc.conversation.getConversationMessages.queryOptions({
+        websiteSlug,
+        conversationId,
+        limit,
+      }).queryKey,
+    [conversationId, limit, trpc, websiteSlug],
+  );
 
-	const queryKey = useMemo(
-		() => createConversationMessagesInfiniteQueryKey(baseQueryKey),
-		[baseQueryKey]
-	);
+  const queryKey = useMemo(
+    () => createConversationMessagesInfiniteQueryKey(baseQueryKey),
+    [baseQueryKey],
+  );
 
-	const getSnapshot = useCallback(() => {
-		const data =
-			queryClient.getQueryData<InfiniteData<ConversationMessagesPage>>(
-				queryKey
-			);
+  const getSnapshot = useCallback(() => {
+    const data =
+      queryClient.getQueryData<InfiniteData<ConversationMessagesPage>>(
+        queryKey,
+      );
 
-		return findLatestMessage(data);
-	}, [queryClient, queryKey]);
+    return findLatestMessage(data);
+  }, [queryClient, queryKey]);
 
-	const subscribe = useCallback(
-		(onStoreChange: () => void) =>
-			queryClient.getQueryCache().subscribe(() => {
-				onStoreChange();
-			}),
-		[queryClient]
-	);
+  const subscribe = useCallback(
+    (onStoreChange: () => void) =>
+      queryClient.getQueryCache().subscribe(() => {
+        onStoreChange();
+      }),
+    [queryClient],
+  );
 
-	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

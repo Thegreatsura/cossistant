@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 
 export default async function Page({
-	params,
+  params,
 }: {
-	params: Promise<{ websiteSlug: string }>;
+  params: Promise<{ websiteSlug: string }>;
 }) {
-	const { websiteSlug } = await params;
+  const { websiteSlug } = await params;
 
-	redirect(`/${websiteSlug}/inbox`);
+  redirect(`/${websiteSlug}/inbox`);
 }

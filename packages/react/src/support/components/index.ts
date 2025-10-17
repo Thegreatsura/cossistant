@@ -13,8 +13,8 @@ export { MessageList } from "./message-list";
 export { SendButton } from "./multimodal-input";
 export { SupportContent } from "./support-content";
 export type {
-	TypingIndicatorProps,
-	TypingParticipant,
-	TypingParticipantType,
+  TypingIndicatorProps,
+  TypingParticipant,
+  TypingParticipantType,
 } from "./typing-indicator";
 export { TypingIndicator } from "./typing-indicator";

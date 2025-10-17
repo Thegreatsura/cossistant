@@ -20,59 +20,59 @@ export const useTRPC = trpcContext.useTRPC;
 let browserQueryClient: QueryClient;
 
 function getQueryClient() {
-	if (isServer) {
-		// Server: always make a new query client
-		return makeQueryClient();
-	}
+  if (isServer) {
+    // Server: always make a new query client
+    return makeQueryClient();
+  }
 
-	// Browser: make a new query client if we don't already have one
-	// This is very important, so we don't re-make a new client if React
-	// suspends during the initial render. This may not be needed if we
-	// have a suspense boundary BELOW the creation of the query client
-	if (!browserQueryClient) {
-		browserQueryClient = makeQueryClient();
-	}
+  // Browser: make a new query client if we don't already have one
+  // This is very important, so we don't re-make a new client if React
+  // suspends during the initial render. This may not be needed if we
+  // have a suspense boundary BELOW the creation of the query client
+  if (!browserQueryClient) {
+    browserQueryClient = makeQueryClient();
+  }
 
-	return browserQueryClient;
+  return browserQueryClient;
 }
 
 export function TRPCReactProvider(
-	props: Readonly<{
-		children: React.ReactNode;
-	}>
+  props: Readonly<{
+    children: React.ReactNode;
+  }>,
 ) {
-	const queryClient = getQueryClient();
+  const queryClient = getQueryClient();
 
-	const [trpcClient] = useState(() =>
-		createTRPCClient<OrigamiTRPCRouter>({
-			links: [
-				httpBatchLink({
-					url: getTRPCUrl(),
-					transformer: superjson,
-					fetch(url, options) {
-						return fetch(url, {
-							...options,
-							credentials: "include",
-						});
-					},
-				}),
-				loggerLink({
-					enabled: (opts) =>
-						process.env.NODE_ENV === "development" ||
-						(opts.direction === "down" && opts.result instanceof Error),
-				}),
-			],
-		})
-	);
+  const [trpcClient] = useState(() =>
+    createTRPCClient<OrigamiTRPCRouter>({
+      links: [
+        httpBatchLink({
+          url: getTRPCUrl(),
+          transformer: superjson,
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: "include",
+            });
+          },
+        }),
+        loggerLink({
+          enabled: (opts) =>
+            process.env.NODE_ENV === "development" ||
+            (opts.direction === "down" && opts.result instanceof Error),
+        }),
+      ],
+    }),
+  );
 
-	return (
-		<QueryNormalizerProvider queryClient={queryClient}>
-			<QueryClientProvider client={queryClient}>
-				<TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
-					{props.children}
-				</TRPCProvider>
-			</QueryClientProvider>
-			{/* <ReactQueryDevtools initialIsOpen={false} /> */}
-		</QueryNormalizerProvider>
-	);
+  return (
+    <QueryNormalizerProvider queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
+          {props.children}
+        </TRPCProvider>
+      </QueryClientProvider>
+      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+    </QueryNormalizerProvider>
+  );
 }

@@ -20,7 +20,7 @@ export type ApiKeyWithWebsiteAndOrganization = ApiKeySelect & {
 const MAX_SESSION_TOKEN_LENGTH = 512;
 
 export function normalizeSessionToken(
-  token: string | null | undefined
+  token: string | null | undefined,
 ): string | undefined {
   if (!token) {
     return;
@@ -43,7 +43,7 @@ export async function resolveSession(
   params: {
     headers: Headers;
     sessionToken?: string | null;
-  }
+  },
 ) {
   let foundSession: {
     session: Session & {
@@ -70,7 +70,7 @@ export async function resolveSession(
   }
 
   const headerToken = normalizeSessionToken(
-    params.headers.get("x-user-session-token")
+    params.headers.get("x-user-session-token"),
   );
 
   if (headerToken) {
@@ -105,7 +105,7 @@ export async function getTRPCSession(
   db: Database,
   params: {
     headers: Headers;
-  }
+  },
 ) {
   return await resolveSession(db, { headers: params.headers });
 }

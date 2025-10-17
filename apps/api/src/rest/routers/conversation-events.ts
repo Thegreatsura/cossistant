@@ -155,7 +155,7 @@ conversationEventsRouter.openapi(
     };
 
     return c.json(
-      validateResponse(response, getConversationEventsResponseSchema)
+      validateResponse(response, getConversationEventsResponseSchema),
     );
-  }
+  },
 );

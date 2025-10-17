@@ -1,6 +1,6 @@
 import type {
-	ConversationEvent,
-	Message as MessageType,
+  ConversationEvent,
+  Message as MessageType,
 } from "@cossistant/types";
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
@@ -10,29 +10,29 @@ import { useRenderElement } from "../utils/use-render-element";
  * skeletons, empty states or pagination affordances.
  */
 export type MessageListRenderProps = {
-	messageCount: number;
-	eventCount: number;
-	isLoading?: boolean;
-	hasMore?: boolean;
-	isEmpty: boolean;
+  messageCount: number;
+  eventCount: number;
+  isLoading?: boolean;
+  hasMore?: boolean;
+  isEmpty: boolean;
 };
 
 export type MessageListProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?:
-		| React.ReactNode
-		| ((props: MessageListRenderProps) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	messages?: MessageType[];
-	events?: ConversationEvent[];
-	isLoading?: boolean;
-	hasMore?: boolean;
-	autoScroll?: boolean;
-	onScrollEnd?: () => void;
-	onScrollStart?: () => void;
+  children?:
+    | React.ReactNode
+    | ((props: MessageListRenderProps) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  messages?: MessageType[];
+  events?: ConversationEvent[];
+  isLoading?: boolean;
+  hasMore?: boolean;
+  autoScroll?: boolean;
+  onScrollEnd?: () => void;
+  onScrollStart?: () => void;
 };
 
 /**
@@ -40,114 +40,114 @@ export type MessageListProps = Omit<
  * pagination callbacks for support conversations.
  */
 export const MessageList = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageListProps>(
-		(
-			{
-				children,
-				className,
-				asChild = false,
-				messages = [],
-				events = [],
-				isLoading = false,
-				hasMore = false,
-				autoScroll = true,
-				onScrollEnd,
-				onScrollStart,
-				...props
-			},
-			ref
-		) => {
-			const internalRef = React.useRef<HTMLDivElement>(null);
-			const scrollRef =
-				(ref as React.MutableRefObject<HTMLDivElement>) || internalRef;
+  const Component = React.forwardRef<HTMLDivElement, MessageListProps>(
+    (
+      {
+        children,
+        className,
+        asChild = false,
+        messages = [],
+        events = [],
+        isLoading = false,
+        hasMore = false,
+        autoScroll = true,
+        onScrollEnd,
+        onScrollStart,
+        ...props
+      },
+      ref,
+    ) => {
+      const internalRef = React.useRef<HTMLDivElement>(null);
+      const scrollRef =
+        (ref as React.MutableRefObject<HTMLDivElement>) || internalRef;
 
-			const isInitialRender = React.useRef(true);
-			const previousMessageCount = React.useRef(messages.length);
-			const previousEventCount = React.useRef(events.length);
+      const isInitialRender = React.useRef(true);
+      const previousMessageCount = React.useRef(messages.length);
+      const previousEventCount = React.useRef(events.length);
 
-			const renderProps: MessageListRenderProps = {
-				messageCount: messages.length,
-				eventCount: events.length,
-				isLoading,
-				hasMore,
-				isEmpty: messages.length === 0 && events.length === 0,
-			};
+      const renderProps: MessageListRenderProps = {
+        messageCount: messages.length,
+        eventCount: events.length,
+        isLoading,
+        hasMore,
+        isEmpty: messages.length === 0 && events.length === 0,
+      };
 
-			const content =
-				typeof children === "function" ? children(renderProps) : children;
+      const content =
+        typeof children === "function" ? children(renderProps) : children;
 
-			// Auto-scroll to bottom when new messages are added
-			React.useEffect(() => {
-				if (autoScroll && scrollRef.current) {
-					const hasNewMessages =
-						messages.length > previousMessageCount.current ||
-						events.length > previousEventCount.current;
+      // Auto-scroll to bottom when new messages are added
+      React.useEffect(() => {
+        if (autoScroll && scrollRef.current) {
+          const hasNewMessages =
+            messages.length > previousMessageCount.current ||
+            events.length > previousEventCount.current;
 
-					// Only scroll if there are new messages or it's the first render
-					if (hasNewMessages || isInitialRender.current) {
-						scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-					}
+          // Only scroll if there are new messages or it's the first render
+          if (hasNewMessages || isInitialRender.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          }
 
-					// Update refs for next render
-					previousMessageCount.current = messages.length;
-					previousEventCount.current = events.length;
-					isInitialRender.current = false;
-				}
-			}, [messages.length, events.length, autoScroll, scrollRef]);
+          // Update refs for next render
+          previousMessageCount.current = messages.length;
+          previousEventCount.current = events.length;
+          isInitialRender.current = false;
+        }
+      }, [messages.length, events.length, autoScroll, scrollRef]);
 
-			// Handle scroll events for infinite scrolling
-			const handleScroll = React.useCallback(
-				(e: React.UIEvent<HTMLDivElement>) => {
-					const element = e.currentTarget;
-					const { scrollTop, scrollHeight, clientHeight } = element;
+      // Handle scroll events for infinite scrolling
+      const handleScroll = React.useCallback(
+        (e: React.UIEvent<HTMLDivElement>) => {
+          const element = e.currentTarget;
+          const { scrollTop, scrollHeight, clientHeight } = element;
 
-					// Check if scrolled to top
-					if (scrollTop === 0 && onScrollStart) {
-						onScrollStart();
-					}
+          // Check if scrolled to top
+          if (scrollTop === 0 && onScrollStart) {
+            onScrollStart();
+          }
 
-					// Check if scrolled to bottom
-					if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
-						onScrollEnd();
-					}
-				},
-				[onScrollStart, onScrollEnd]
-			);
+          // Check if scrolled to bottom
+          if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
+            onScrollEnd();
+          }
+        },
+        [onScrollStart, onScrollEnd],
+      );
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref: scrollRef,
-					state: renderProps,
-					props: {
-						role: "log",
-						"aria-label": "Message list",
-						"aria-live": "polite",
-						"aria-relevant": "additions",
-						onScroll: handleScroll,
-						...props,
-						children: content,
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref: scrollRef,
+          state: renderProps,
+          props: {
+            role: "log",
+            "aria-label": "Message list",
+            "aria-live": "polite",
+            "aria-relevant": "additions",
+            onScroll: handleScroll,
+            ...props,
+            children: content,
+          },
+        },
+      );
+    },
+  );
 
-	Component.displayName = "MessageList";
-	return Component;
+  Component.displayName = "MessageList";
+  return Component;
 })();
 
 export type MessageListContainerProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode;
-	asChild?: boolean;
-	className?: string;
+  children?: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
 };
 
 /**
@@ -155,36 +155,36 @@ export type MessageListContainerProps = Omit<
  * padding, backgrounds or transitions without touching the core list logic.
  */
 export const MessageListContainer = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageListContainerProps>(
-		({ children, className, asChild = false, ...props }, ref) => {
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children,
-					},
-				}
-			);
-		}
-	);
+  const Component = React.forwardRef<HTMLDivElement, MessageListContainerProps>(
+    ({ children, className, asChild = false, ...props }, ref) => {
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children,
+          },
+        },
+      );
+    },
+  );
 
-	Component.displayName = "MessageListContainer";
-	return Component;
+  Component.displayName = "MessageListContainer";
+  return Component;
 })();
 
 export type MessageListLoadingProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode;
-	asChild?: boolean;
-	className?: string;
+  children?: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
 };
 
 /**
@@ -192,38 +192,38 @@ export type MessageListLoadingProps = Omit<
  * skeletons or shimmer states without reimplementing ARIA wiring.
  */
 export const MessageListLoading = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageListLoadingProps>(
-		({ children, className, asChild = false, ...props }, ref) => {
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						role: "status",
-						"aria-label": "Loading messages",
-						...props,
-						children,
-					},
-				}
-			);
-		}
-	);
+  const Component = React.forwardRef<HTMLDivElement, MessageListLoadingProps>(
+    ({ children, className, asChild = false, ...props }, ref) => {
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            role: "status",
+            "aria-label": "Loading messages",
+            ...props,
+            children,
+          },
+        },
+      );
+    },
+  );
 
-	Component.displayName = "MessageListLoading";
-	return Component;
+  Component.displayName = "MessageListLoading";
+  return Component;
 })();
 
 export type MessageListEmptyProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode;
-	asChild?: boolean;
-	className?: string;
+  children?: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
 };
 
 /**
@@ -231,27 +231,27 @@ export type MessageListEmptyProps = Omit<
  * region so screen readers announce the absence of messages.
  */
 export const MessageListEmpty = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageListEmptyProps>(
-		({ children, className, asChild = false, ...props }, ref) => {
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						role: "status",
-						"aria-label": "No messages",
-						...props,
-						children,
-					},
-				}
-			);
-		}
-	);
+  const Component = React.forwardRef<HTMLDivElement, MessageListEmptyProps>(
+    ({ children, className, asChild = false, ...props }, ref) => {
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            role: "status",
+            "aria-label": "No messages",
+            ...props,
+            children,
+          },
+        },
+      );
+    },
+  );
 
-	Component.displayName = "MessageListEmpty";
-	return Component;
+  Component.displayName = "MessageListEmpty";
+  return Component;
 })();

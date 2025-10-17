@@ -1,6 +1,6 @@
 import {
-	applyConversationTypingEvent,
-	clearTypingFromMessage,
+  applyConversationTypingEvent,
+  clearTypingFromMessage,
 } from "@cossistant/react/realtime/typing-store";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { DashboardRealtimeContext } from "../types";
@@ -9,23 +9,23 @@ type ConversationTypingEvent = RealtimeEvent<"conversationTyping">;
 type MessageCreatedEvent = RealtimeEvent<"messageCreated">;
 
 export function handleConversationTyping({
-	event,
-	context,
+  event,
+  context,
 }: {
-	event: ConversationTypingEvent;
-	context: DashboardRealtimeContext;
+  event: ConversationTypingEvent;
+  context: DashboardRealtimeContext;
 }) {
-	if (event.payload.websiteId !== context.website.id) {
-		return;
-	}
+  if (event.payload.websiteId !== context.website.id) {
+    return;
+  }
 
-	// Update typing store, but ignore events from the current user (their own typing)
-	applyConversationTypingEvent(event, {
-		ignoreUserId: context.userId,
-	});
+  // Update typing store, but ignore events from the current user (their own typing)
+  applyConversationTypingEvent(event, {
+    ignoreUserId: context.userId,
+  });
 }
 
 export function handleMessageCreatedTypingClear(event: MessageCreatedEvent) {
-	// Clear typing state when a message is sent
-	clearTypingFromMessage(event);
+  // Clear typing state when a message is sent
+  clearTypingFromMessage(event);
 }

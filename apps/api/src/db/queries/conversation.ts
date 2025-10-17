@@ -7,6 +7,7 @@ import {
   conversation,
   conversationEvent,
   conversationSeen,
+  conversationTimelineItem,
   conversationView,
   type MessageSelect,
   message,
@@ -42,7 +43,7 @@ export async function upsertConversation(
     websiteId: string;
     visitorId: string;
     conversationId?: string;
-  }
+  },
 ) {
   const newConversationId = params.conversationId ?? generateShortPrimaryId();
   const now = new Date().toISOString();
@@ -77,7 +78,7 @@ export async function listConversations(
     status?: "open" | "closed";
     orderBy?: "createdAt" | "updatedAt";
     order?: "asc" | "desc";
-  }
+  },
 ) {
   const page = params.page ?? 1;
   const limit = params.limit ?? 3;
@@ -141,8 +142,8 @@ export async function listConversations(
           inArray(message.conversationId, conversationIds),
           eq(message.visibility, MessageVisibility.PUBLIC),
           eq(message.type, MessageType.TEXT),
-          isNull(message.deletedAt)
-        )
+          isNull(message.deletedAt),
+        ),
       )
       .orderBy(desc(message.createdAt));
 
@@ -180,7 +181,7 @@ export async function getConversationByIdWithLastMessage(
     organizationId: string;
     websiteId: string;
     conversationId: string;
-  }
+  },
 ) {
   const [_conversation] = await db
     .select()
@@ -189,8 +190,8 @@ export async function getConversationByIdWithLastMessage(
       and(
         eq(conversation.id, params.conversationId),
         eq(conversation.organizationId, params.organizationId),
-        eq(conversation.websiteId, params.websiteId)
-      )
+        eq(conversation.websiteId, params.websiteId),
+      ),
     );
 
   if (!_conversation) {
@@ -207,8 +208,8 @@ export async function getConversationByIdWithLastMessage(
         eq(message.organizationId, params.organizationId),
         eq(message.visibility, MessageVisibility.PUBLIC),
         eq(message.type, MessageType.TEXT),
-        isNull(message.deletedAt)
-      )
+        isNull(message.deletedAt),
+      ),
     )
     .orderBy(desc(message.createdAt))
     .limit(1);
@@ -228,7 +229,7 @@ export async function listConversationsHeaders(
     limit?: number;
     cursor?: string | null;
     orderBy?: "createdAt" | "updatedAt";
-  }
+  },
 ) {
   const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
   const orderBy = params.orderBy ?? "updatedAt";
@@ -263,8 +264,8 @@ export async function listConversationsHeaders(
         eq(message.organizationId, params.organizationId),
         eq(message.visibility, MessageVisibility.PUBLIC),
         eq(message.type, MessageType.TEXT),
-        isNull(message.deletedAt)
-      )
+        isNull(message.deletedAt),
+      ),
     )
     .as("last_msg");
 
@@ -273,15 +274,15 @@ export async function listConversationsHeaders(
     .select({
       conversationId: conversationView.conversationId,
       viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-        "view_ids"
+        "view_ids",
       ),
     })
     .from(conversationView)
     .where(
       and(
         eq(conversationView.organizationId, params.organizationId),
-        isNull(conversationView.deletedAt)
-      )
+        isNull(conversationView.deletedAt),
+      ),
     )
     .groupBy(conversationView.conversationId)
     .as("conv_views");
@@ -305,8 +306,8 @@ export async function listConversationsHeaders(
         lt(conversation[orderBy], cursorDate),
         and(
           eq(conversation[orderBy], cursorDate),
-          lt(conversation.id, cursorId)
-        )
+          lt(conversation.id, cursorId),
+        ),
       );
       if (cursorCondition) {
         whereConditions.push(cursorCondition);
@@ -321,7 +322,7 @@ export async function listConversationsHeaders(
 
       if (cursorConversation) {
         whereConditions.push(
-          lt(conversation[orderBy], cursorConversation[orderBy])
+          lt(conversation[orderBy], cursorConversation[orderBy]),
         );
       }
     }
@@ -368,21 +369,21 @@ export async function listConversationsHeaders(
       lastMessageSubquery,
       and(
         eq(lastMessageSubquery.conversationId, conversation.id),
-        eq(lastMessageSubquery.rn, 1) // Only get the first (latest) message
-      )
+        eq(lastMessageSubquery.rn, 1), // Only get the first (latest) message
+      ),
     )
     .leftJoin(
       conversationSeen,
       and(
         eq(conversationSeen.conversationId, conversation.id),
-        eq(conversationSeen.userId, params.userId)
-      )
+        eq(conversationSeen.userId, params.userId),
+      ),
     )
     .leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
     .where(and(...whereConditions))
     .orderBy(
       desc(conversation[orderBy]),
-      desc(conversation.id) // Secondary sort for stable pagination
+      desc(conversation.id), // Secondary sort for stable pagination
     )
     .limit(limit + 1);
 
@@ -420,8 +421,8 @@ export async function listConversationsHeaders(
       .where(
         and(
           eq(conversationSeen.organizationId, params.organizationId),
-          inArray(conversationSeen.conversationId, conversationIds)
-        )
+          inArray(conversationSeen.conversationId, conversationIds),
+        ),
       )
       .orderBy(desc(conversationSeen.lastSeenAt));
 
@@ -508,7 +509,7 @@ export async function getConversationHeader(
     websiteId: string;
     conversationId: string;
     userId?: string | null;
-  }
+  },
 ): Promise<ConversationHeader | null> {
   const lastMessageSubquery = db
     .select({
@@ -534,8 +535,8 @@ export async function getConversationHeader(
         eq(message.organizationId, params.organizationId),
         eq(message.conversationId, params.conversationId),
         eq(message.visibility, MessageVisibility.PUBLIC),
-        isNull(message.deletedAt)
-      )
+        isNull(message.deletedAt),
+      ),
     )
     .orderBy(desc(message.createdAt))
     .limit(1)
@@ -545,7 +546,7 @@ export async function getConversationHeader(
     .select({
       conversationId: conversationView.conversationId,
       viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-        "view_ids"
+        "view_ids",
       ),
     })
     .from(conversationView)
@@ -553,8 +554,8 @@ export async function getConversationHeader(
       and(
         eq(conversationView.organizationId, params.organizationId),
         eq(conversationView.conversationId, params.conversationId),
-        isNull(conversationView.deletedAt)
-      )
+        isNull(conversationView.deletedAt),
+      ),
     )
     .groupBy(conversationView.conversationId)
     .as("conv_views_single");
@@ -598,22 +599,22 @@ export async function getConversationHeader(
     .leftJoin(contact, eq(visitor.contactId, contact.id))
     .leftJoin(
       lastMessageSubquery,
-      eq(lastMessageSubquery.conversationId, conversation.id)
+      eq(lastMessageSubquery.conversationId, conversation.id),
     )
     .leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
     .leftJoin(
       conversationSeen,
       and(
         eq(conversationSeen.conversationId, conversation.id),
-        userJoinCondition
-      )
+        userJoinCondition,
+      ),
     )
     .where(
       and(
         eq(conversation.organizationId, params.organizationId),
         eq(conversation.websiteId, params.websiteId),
-        eq(conversation.id, params.conversationId)
-      )
+        eq(conversation.id, params.conversationId),
+      ),
     )
     .limit(1);
 
@@ -636,8 +637,8 @@ export async function getConversationHeader(
     .where(
       and(
         eq(conversationSeen.organizationId, params.organizationId),
-        eq(conversationSeen.conversationId, params.conversationId)
-      )
+        eq(conversationSeen.conversationId, params.conversationId),
+      ),
     )
     .orderBy(desc(conversationSeen.lastSeenAt));
 
@@ -703,7 +704,7 @@ export async function getConversationById(
   db: Database,
   params: {
     conversationId: string;
-  }
+  },
 ) {
   const [_conversation] = await db
     .select()
@@ -721,7 +722,7 @@ export async function getConversationEvents(
     websiteId: string;
     limit?: number;
     cursor?: string | Date | null;
-  }
+  },
 ) {
   const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
@@ -747,9 +748,9 @@ export async function getConversationEvents(
             lt(conversationEvent.createdAt, cursorIso),
             and(
               eq(conversationEvent.createdAt, cursorIso),
-              lt(conversationEvent.id, cursorId)
-            )
-          )!
+              lt(conversationEvent.id, cursorId),
+            ),
+          )!,
         );
       }
     } else {
@@ -760,7 +761,7 @@ export async function getConversationEvents(
 
       if (!Number.isNaN(cursorDate.getTime())) {
         whereConditions.push(
-          lt(conversationEvent.createdAt, cursorDate.toISOString())
+          lt(conversationEvent.createdAt, cursorDate.toISOString()),
         );
       }
     }
@@ -800,7 +801,7 @@ export async function getConversationSeenData(
   params: {
     conversationId: string;
     organizationId: string;
-  }
+  },
 ) {
   const seenRows = await db
     .select({
@@ -817,8 +818,8 @@ export async function getConversationSeenData(
     .where(
       and(
         eq(conversationSeen.organizationId, params.organizationId),
-        eq(conversationSeen.conversationId, params.conversationId)
-      )
+        eq(conversationSeen.conversationId, params.conversationId),
+      ),
     )
     .orderBy(desc(conversationSeen.lastSeenAt));
 
@@ -826,4 +827,88 @@ export async function getConversationSeenData(
     ...seen,
     deletedAt: null,
   }));
+}
+
+export async function getConversationTimelineItems(
+  db: Database,
+  params: {
+    conversationId: string;
+    websiteId: string;
+    limit?: number;
+    cursor?: string | Date | null;
+  },
+) {
+  const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
+
+  // Build where clause scoped to the conversation
+  const whereConditions = [
+    eq(conversationTimelineItem.conversationId, params.conversationId),
+  ];
+
+  // When paginating fetch timeline items older than the current batch.
+  if (params.cursor) {
+    const cursorValue = params.cursor;
+    const cursorParts =
+      typeof cursorValue === "string" ? cursorValue.split("_") : [];
+
+    if (cursorParts.length === 2) {
+      const [cursorTimestamp, cursorId] = cursorParts;
+      const cursorDate = new Date(cursorTimestamp);
+
+      if (!Number.isNaN(cursorDate.getTime())) {
+        const cursorIso = cursorDate.toISOString();
+        whereConditions.push(
+          or(
+            lt(conversationTimelineItem.createdAt, cursorIso),
+            and(
+              eq(conversationTimelineItem.createdAt, cursorIso),
+              lt(conversationTimelineItem.id, cursorId),
+            ),
+          )!,
+        );
+      }
+    } else {
+      const cursorDate =
+        cursorValue instanceof Date
+          ? cursorValue
+          : new Date(cursorValue as string);
+
+      if (!Number.isNaN(cursorDate.getTime())) {
+        whereConditions.push(
+          lt(conversationTimelineItem.createdAt, cursorDate.toISOString()),
+        );
+      }
+    }
+  }
+
+  // Fetch newest timeline items first for efficient backwards pagination.
+  const rows = await db
+    .select()
+    .from(conversationTimelineItem)
+    .where(and(...whereConditions))
+    .orderBy(
+      desc(conversationTimelineItem.createdAt),
+      desc(conversationTimelineItem.id),
+    )
+    .limit(limit + 1);
+
+  const hasNextPage = rows.length > limit;
+  const limitedRows = hasNextPage ? rows.slice(0, limit) : rows;
+  const nextCursor = hasNextPage
+    ? (() => {
+        const lastRow = limitedRows.at(-1);
+        if (!lastRow) {
+          return;
+        }
+
+        const timestamp = new Date(lastRow.createdAt).toISOString();
+        return `${timestamp}_${lastRow.id}`;
+      })()
+    : undefined;
+
+  return {
+    items: [...limitedRows].reverse(),
+    nextCursor,
+    hasNextPage,
+  };
 }
