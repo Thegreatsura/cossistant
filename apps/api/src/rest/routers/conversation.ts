@@ -14,7 +14,7 @@ import {
   emitConversationSeenEvent,
   emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
-import { createMessage } from "@api/utils/message";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
   safelyExtractRequestData,
   safelyExtractRequestQuery,
@@ -144,7 +144,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400,
+        400
       );
     }
 
@@ -159,26 +159,46 @@ conversationRouter.openapi(
 
     const defaults = body.defaultMessages ?? [];
     if (defaults.length > 0) {
-      initialMessages = await Promise.all(
+      const createdItems = await Promise.all(
         defaults.map((msg) =>
-          createMessage({
+          createTimelineItem({
             db,
             organizationId: organization.id,
             websiteId: website.id,
             conversationId: conversation.id,
             conversationOwnerVisitorId: conversation.visitorId,
-            message: {
-              bodyMd: msg.bodyMd,
-              type: msg.type ?? undefined,
+            item: {
+              type: "message",
+              text: msg.bodyMd,
+              parts: [{ type: "text", text: msg.bodyMd }],
+              visibility: msg.visibility,
               userId: msg.userId ?? null,
               aiAgentId: msg.aiAgentId ?? null,
               visitorId: msg.visitorId ?? null,
-              visibility: msg.visibility ?? undefined,
               createdAt: new Date(msg.createdAt),
             },
-          }),
-        ),
+          })
+        )
       );
+
+      // Convert timeline items to messages for backward compatibility
+      initialMessages = createdItems.map((item) => ({
+        id: item.id,
+        bodyMd: item.text || "",
+        type: "text",
+        userId: item.userId,
+        visitorId: item.visitorId,
+        aiAgentId: item.aiAgentId,
+        conversationId: item.conversationId,
+        organizationId: item.organizationId,
+        websiteId: website.id,
+        parentMessageId: null,
+        modelUsed: null,
+        visibility: item.visibility,
+        createdAt: item.createdAt,
+        updatedAt: item.createdAt,
+        deletedAt: item.deletedAt,
+      }));
     }
 
     // Get the last message if any were sent
@@ -213,10 +233,10 @@ conversationRouter.openapi(
             lastMessage,
           },
         },
-        createConversationResponseSchema,
-      ),
+        createConversationResponseSchema
+      )
     );
-  },
+  }
 );
 
 conversationRouter.openapi(
@@ -309,7 +329,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400,
+        400
       );
     }
 
@@ -340,9 +360,9 @@ conversationRouter.openapi(
     };
 
     return c.json(
-      validateResponse(apiResponse, listConversationsResponseSchema),
+      validateResponse(apiResponse, listConversationsResponseSchema)
     );
-  },
+  }
 );
 
 conversationRouter.openapi(
@@ -449,7 +469,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404,
+        404
       );
     }
 
@@ -468,7 +488,7 @@ conversationRouter.openapi(
     };
 
     return c.json(validateResponse(apiResponse, getConversationResponseSchema));
-  },
+  }
 );
 
 conversationRouter.openapi(
@@ -580,7 +600,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400,
+        400
       );
     }
 
@@ -589,7 +609,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404,
+        404
       );
     }
 
@@ -611,9 +631,9 @@ conversationRouter.openapi(
 
     return c.json(
       validateResponse(response, markConversationSeenResponseSchema),
-      200,
+      200
     );
-  },
+  }
 );
 
 conversationRouter.openapi(
@@ -722,7 +742,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400,
+        400
       );
     }
 
@@ -731,7 +751,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404,
+        404
       );
     }
 
@@ -765,9 +785,9 @@ conversationRouter.openapi(
 
     return c.json(
       validateResponse(response, setConversationTypingResponseSchema),
-      200,
+      200
     );
-  },
+  }
 );
 
 // GET /conversations/:conversationId/seen - Fetch seen data for a conversation
@@ -829,7 +849,7 @@ conversationRouter.openapi(
   async (c) => {
     const { db, website, organization } = await safelyExtractRequestQuery(
       c,
-      z.object({}),
+      z.object({})
     );
 
     const params = getConversationRequestSchema.parse({
@@ -847,7 +867,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404,
+        404
       );
     }
 
@@ -857,7 +877,7 @@ conversationRouter.openapi(
     });
 
     return c.json({ seenData }, 200);
-  },
+  }
 );
 
 // GET /conversations/:conversationId/timeline - Fetch timeline items for a conversation
@@ -931,7 +951,7 @@ conversationRouter.openapi(
     const { db, website, organization, query } =
       await safelyExtractRequestQuery(
         c,
-        getConversationTimelineItemsRequestSchema,
+        getConversationTimelineItemsRequestSchema
       );
 
     const params = getConversationRequestSchema.parse({
@@ -949,7 +969,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404,
+        404
       );
     }
 
@@ -981,7 +1001,7 @@ conversationRouter.openapi(
 
     return c.json(
       validateResponse(response, getConversationTimelineItemsResponseSchema),
-      200,
+      200
     );
-  },
+  }
 );

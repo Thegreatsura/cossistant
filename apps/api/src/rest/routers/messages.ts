@@ -1,17 +1,13 @@
 import { markConversationAsSeenByVisitor } from "@api/db/mutations/conversation";
 import { getConversationById } from "@api/db/queries/conversation";
-import { getMessages } from "@api/db/queries/message";
 import { markVisitorPresence } from "@api/services/presence";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
-import { createMessage } from "@api/utils/message";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
   safelyExtractRequestData,
-  safelyExtractRequestQuery,
   validateResponse,
 } from "@api/utils/validate";
 import {
-  getMessagesRequestSchema,
-  getMessagesResponseSchema,
   sendMessageRequestSchema,
   sendMessageResponseSchema,
 } from "@cossistant/types/api/message";
@@ -24,88 +20,7 @@ export const messagesRouter = new OpenAPIHono<RestContext>();
 // Apply middleware to all routes in this router
 messagesRouter.use("/*", ...protectedPublicApiKeyMiddleware);
 
-messagesRouter.openapi(
-  {
-    method: "get",
-    path: "/",
-    summary: "Get paginated messages for a conversation",
-    description:
-      "Fetch messages for a specific conversation with cursor-based pagination for infinite scrolling.",
-    tags: ["Messages"],
-    request: {
-      query: getMessagesRequestSchema,
-    },
-    responses: {
-      200: {
-        description: "Messages retrieved successfully",
-        content: {
-          "application/json": {
-            schema: getMessagesResponseSchema,
-          },
-        },
-      },
-      400: {
-        description: "Invalid request",
-        content: {
-          "application/json": {
-            schema: z.object({ error: z.string() }),
-          },
-        },
-      },
-    },
-    security: [
-      {
-        "Public API Key": [],
-      },
-      {
-        "Private API Key": [],
-      },
-    ],
-    parameters: [
-      {
-        name: "Authorization",
-        in: "header",
-        description:
-          "Private API key in Bearer token format. Use this for server-to-server authentication. Format: `Bearer sk_[live|test]_...`",
-        required: false,
-        schema: {
-          type: "string",
-          pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-        },
-      },
-      {
-        name: "X-Public-Key",
-        in: "header",
-        description:
-          "Public API key for browser-based authentication. Can only be used from whitelisted domains. Format: `pk_[live|test]_...`",
-        required: false,
-        schema: {
-          type: "string",
-          pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-        },
-      },
-    ],
-  },
-  async (c) => {
-    const { db, organization, query } = await safelyExtractRequestQuery(
-      c,
-      getMessagesRequestSchema,
-    );
-
-    const result = await getMessages(db, {
-      organizationId: organization.id,
-      conversationId: query.conversationId,
-      limit: query.limit,
-      cursor: query.cursor,
-    });
-
-    return c.json(validateResponse(result, getMessagesResponseSchema));
-  },
-);
+// GET /messages endpoint removed - use /conversations/:id/timeline instead
 
 messagesRouter.openapi(
   {
@@ -200,24 +115,25 @@ messagesRouter.openapi(
       return c.json(
         validateResponse(
           { error: "Visitor ID is required" },
-          z.object({ error: z.string() }),
-        ),
+          z.object({ error: z.string() })
+        )
       );
     }
 
-    const sentMessage = await createMessage({
+    const createdTimelineItem = await createTimelineItem({
       db,
       organizationId: organization.id,
       websiteId: website.id,
       conversationId: body.conversationId,
       conversationOwnerVisitorId: visitorId,
-      message: {
-        bodyMd: body.message.bodyMd,
-        type: body.message.type ?? undefined,
+      item: {
+        type: "message",
+        text: body.message.bodyMd,
+        parts: [{ type: "text", text: body.message.bodyMd }],
+        visibility: body.message.visibility,
         userId: body.message.userId ?? null,
         aiAgentId: body.message.aiAgentId ?? null,
         visitorId,
-        visibility: body.message.visibility ?? undefined,
         createdAt: body.message.createdAt
           ? new Date(body.message.createdAt)
           : undefined,
@@ -248,8 +164,27 @@ messagesRouter.openapi(
       });
     }
 
+    // Convert timeline item to message format for response
+    const sentMessage = {
+      id: createdTimelineItem.id,
+      bodyMd: createdTimelineItem.text || "",
+      type: body.message.type ?? "text",
+      userId: createdTimelineItem.userId,
+      visitorId: createdTimelineItem.visitorId,
+      aiAgentId: createdTimelineItem.aiAgentId,
+      conversationId: createdTimelineItem.conversationId,
+      organizationId: createdTimelineItem.organizationId,
+      websiteId: website.id,
+      parentMessageId: null,
+      modelUsed: null,
+      visibility: createdTimelineItem.visibility,
+      createdAt: createdTimelineItem.createdAt,
+      updatedAt: createdTimelineItem.createdAt,
+      deletedAt: createdTimelineItem.deletedAt,
+    };
+
     return c.json(
-      validateResponse({ message: sentMessage }, sendMessageResponseSchema),
+      validateResponse({ message: sentMessage }, sendMessageResponseSchema)
     );
-  },
+  }
 );

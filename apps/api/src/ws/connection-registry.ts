@@ -5,106 +5,106 @@ import type { DispatchOptions } from "./router";
 export type RawSocket = ServerWebSocket & { connectionId?: string };
 
 export type LocalConnectionRecord = {
-  socket: RawSocket;
-  websiteId?: string;
-  organizationId?: string;
-  userId?: string;
-  visitorId?: string;
+	socket: RawSocket;
+	websiteId?: string;
+	organizationId?: string;
+	userId?: string;
+	visitorId?: string;
 };
 
 export const localConnections = new Map<string, LocalConnectionRecord>();
 
 function createExcludePredicate(
-  options?: DispatchOptions,
+	options?: DispatchOptions
 ): ((connectionId: string) => boolean) | undefined {
-  if (!options?.exclude) {
-    return;
-  }
+	if (!options?.exclude) {
+		return;
+	}
 
-  const excludeIds = Array.isArray(options.exclude)
-    ? new Set(options.exclude)
-    : new Set<string>([options.exclude]);
+	const excludeIds = Array.isArray(options.exclude)
+		? new Set(options.exclude)
+		: new Set<string>([options.exclude]);
 
-  return (connectionId: string) => excludeIds.has(connectionId);
+	return (connectionId: string) => excludeIds.has(connectionId);
 }
 
 function sendEventToSocket(
-  record: LocalConnectionRecord,
-  serializedEvent: string,
+	record: LocalConnectionRecord,
+	serializedEvent: string
 ): void {
-  try {
-    record.socket.send(serializedEvent);
-  } catch (error) {
-    console.error("[WebSocket] Failed to send event:", error);
-  }
+	try {
+		record.socket.send(serializedEvent);
+	} catch (error) {
+		console.error("[WebSocket] Failed to send event:", error);
+	}
 }
 
 export function dispatchEventToLocalConnection(
-  connectionId: string,
-  event: AnyRealtimeEvent,
+	connectionId: string,
+	event: AnyRealtimeEvent
 ): void {
-  const connection = localConnections.get(connectionId);
-  if (!connection) {
-    return;
-  }
+	const connection = localConnections.get(connectionId);
+	if (!connection) {
+		return;
+	}
 
-  const serializedEvent = JSON.stringify(event);
-  sendEventToSocket(connection, serializedEvent);
+	const serializedEvent = JSON.stringify(event);
+	sendEventToSocket(connection, serializedEvent);
 }
 
 export function dispatchEventToLocalVisitor(
-  visitorId: string,
-  event: AnyRealtimeEvent,
-  options?: DispatchOptions,
+	visitorId: string,
+	event: AnyRealtimeEvent,
+	options?: DispatchOptions
 ): void {
-  const shouldExclude = createExcludePredicate(options);
-  const serializedEvent = JSON.stringify(event);
+	const shouldExclude = createExcludePredicate(options);
+	const serializedEvent = JSON.stringify(event);
 
-  for (const [connectionId, connection] of localConnections) {
-    if (connection.visitorId !== visitorId) {
-      continue;
-    }
+	for (const [connectionId, connection] of localConnections) {
+		if (connection.visitorId !== visitorId) {
+			continue;
+		}
 
-    if (shouldExclude?.(connectionId)) {
-      continue;
-    }
+		if (shouldExclude?.(connectionId)) {
+			continue;
+		}
 
-    console.log("[WebSocket] Dispatching visitor event", {
-      visitorId,
-      connectionId,
-      eventType: event.type,
-    });
-    sendEventToSocket(connection, serializedEvent);
-  }
+		console.log("[WebSocket] Dispatching visitor event", {
+			visitorId,
+			connectionId,
+			eventType: event.type,
+		});
+		sendEventToSocket(connection, serializedEvent);
+	}
 }
 
 export function dispatchEventToLocalWebsite(
-  websiteId: string,
-  event: AnyRealtimeEvent,
-  options?: DispatchOptions,
+	websiteId: string,
+	event: AnyRealtimeEvent,
+	options?: DispatchOptions
 ): void {
-  const shouldExclude = createExcludePredicate(options);
-  const serializedEvent = JSON.stringify(event);
+	const shouldExclude = createExcludePredicate(options);
+	const serializedEvent = JSON.stringify(event);
 
-  for (const [connectionId, connection] of localConnections) {
-    if (connection.websiteId !== websiteId) {
-      continue;
-    }
+	for (const [connectionId, connection] of localConnections) {
+		if (connection.websiteId !== websiteId) {
+			continue;
+		}
 
-    // Only dashboard/user connections should receive website events
-    if (!connection.userId) {
-      continue;
-    }
+		// Only dashboard/user connections should receive website events
+		if (!connection.userId) {
+			continue;
+		}
 
-    if (shouldExclude?.(connectionId)) {
-      continue;
-    }
+		if (shouldExclude?.(connectionId)) {
+			continue;
+		}
 
-    console.log("[WebSocket] Dispatching website event", {
-      websiteId,
-      connectionId,
-      eventType: event.type,
-    });
-    sendEventToSocket(connection, serializedEvent);
-  }
+		console.log("[WebSocket] Dispatching website event", {
+			websiteId,
+			connectionId,
+			eventType: event.type,
+		});
+		sendEventToSocket(connection, serializedEvent);
+	}
 }

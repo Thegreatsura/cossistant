@@ -17,12 +17,6 @@ import type {
   SetConversationTypingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
-  GetConversationEventsRequest,
-  GetConversationEventsResponse,
-} from "@cossistant/types/api/conversation-event";
-import type {
-  GetMessagesRequest,
-  GetMessagesResponse,
   SendMessageRequest,
   SendMessageResponse,
 } from "@cossistant/types/api/message";
@@ -42,14 +36,6 @@ import {
   type ConversationsStore,
   createConversationsStore,
 } from "./store/conversations-store";
-import {
-  createMessagesStore,
-  type MessagesStore,
-} from "./store/messages-store";
-import {
-  createConversationEventsStore,
-  type ConversationEventsStore,
-} from "./store/conversation-events-store";
 import {
   createTimelineItemsStore,
   type TimelineItemsStore,
@@ -93,8 +79,6 @@ export class CossistantClient {
   private pendingConversations = new Map<string, PendingConversation>();
   private websiteRequest: Promise<PublicWebsiteResponse> | null = null;
   readonly conversationsStore: ConversationsStore;
-  readonly messagesStore: MessagesStore;
-  readonly eventsStore: ConversationEventsStore;
   readonly timelineItemsStore: TimelineItemsStore;
   readonly websiteStore: WebsiteStore;
 
@@ -102,8 +86,6 @@ export class CossistantClient {
     this.config = config;
     this.restClient = new CossistantRestClient(config);
     this.conversationsStore = createConversationsStore();
-    this.messagesStore = createMessagesStore();
-    this.eventsStore = createConversationEventsStore();
     this.timelineItemsStore = createTimelineItemsStore();
     this.websiteStore = createWebsiteStore();
   }
@@ -121,7 +103,7 @@ export class CossistantClient {
 
   // Website information
   async fetchWebsite(
-    params: { force?: boolean } = {},
+    params: { force?: boolean } = {}
   ): Promise<PublicWebsiteResponse> {
     const { force = false } = params;
     const current: WebsiteState = this.websiteStore.getState();
@@ -167,7 +149,7 @@ export class CossistantClient {
   }
 
   async updateVisitorMetadata(
-    metadata: VisitorMetadata,
+    metadata: VisitorMetadata
   ): Promise<VisitorResponse> {
     return this.restClient.updateVisitorMetadata(metadata);
   }
@@ -184,19 +166,19 @@ export class CossistantClient {
   }
 
   async updateContactMetadata(
-    metadata: Record<string, unknown>,
+    metadata: Record<string, unknown>
   ): Promise<VisitorResponse> {
     return this.restClient.updateContactMetadata(metadata);
   }
 
   // Conversation management
   initiateConversation(
-    params: InitiateConversationParams = {},
+    params: InitiateConversationParams = {}
   ): InitiateConversationResult {
     const conversationId = params.conversationId ?? generateConversationId();
     const now = new Date().toISOString();
     const messages = (params.defaultMessages ?? []).map((message) =>
-      normalizeBootstrapMessage(conversationId, message),
+      normalizeBootstrapMessage(conversationId, message)
     );
     const existing = this.conversationsStore.getState().byId[conversationId];
     const baseVisitorId =
@@ -226,8 +208,24 @@ export class CossistantClient {
     this.conversationsStore.ingestConversation(conversation);
 
     if (messages.length > 0) {
-      this.messagesStore.ingestPage(conversationId, {
-        messages,
+      // Convert messages to timeline items
+      const timelineItems = messages.map((msg) => ({
+        id: msg.id,
+        conversationId: msg.conversationId,
+        organizationId: "", // Not available at this point
+        visibility: msg.visibility,
+        type: "message" as const,
+        text: msg.bodyMd,
+        parts: [{ type: "text" as const, text: msg.bodyMd }],
+        userId: msg.userId,
+        visitorId: msg.visitorId,
+        aiAgentId: msg.aiAgentId,
+        createdAt: msg.createdAt,
+        deletedAt: msg.deletedAt,
+      }));
+
+      this.timelineItemsStore.ingestPage(conversationId, {
+        items: timelineItems,
         hasNextPage: false,
         nextCursor: undefined,
       });
@@ -248,7 +246,7 @@ export class CossistantClient {
   }
 
   async createConversation(
-    params?: Partial<CreateConversationRequestBody>,
+    params?: Partial<CreateConversationRequestBody>
   ): Promise<CreateConversationResponseBody> {
     const response = await this.restClient.createConversation(params);
     this.conversationsStore.ingestConversation(response.conversation);
@@ -256,7 +254,7 @@ export class CossistantClient {
   }
 
   async listConversations(
-    params?: Partial<ListConversationsRequest>,
+    params?: Partial<ListConversationsRequest>
   ): Promise<ListConversationsResponse> {
     const response = await this.restClient.listConversations(params);
     this.conversationsStore.ingestList(response);
@@ -264,7 +262,7 @@ export class CossistantClient {
   }
 
   async getConversation(
-    params: GetConversationRequest,
+    params: GetConversationRequest
   ): Promise<GetConversationResponse> {
     const response = await this.restClient.getConversation(params);
     this.conversationsStore.ingestConversation(response.conversation);
@@ -274,7 +272,7 @@ export class CossistantClient {
   async markConversationSeen(
     params: {
       conversationId: string;
-    } & Partial<MarkConversationSeenRequestBody>,
+    } & Partial<MarkConversationSeenRequestBody>
   ): Promise<MarkConversationSeenResponseBody> {
     return this.restClient.markConversationSeen(params);
   }
@@ -292,33 +290,10 @@ export class CossistantClient {
     return this.restClient.setConversationTyping(params);
   }
 
-  // Message & event management
-  async getConversationEvents(
-    params: GetConversationEventsRequest,
-  ): Promise<GetConversationEventsResponse> {
-    const response = await this.restClient.getConversationEvents(params);
-    this.eventsStore.ingestPage(params.conversationId, {
-      events: response.events,
-      hasNextPage: response.hasNextPage,
-      nextCursor: response.nextCursor ?? undefined,
-    });
-    return response;
-  }
-
-  async getConversationMessages(
-    params: GetMessagesRequest,
-  ): Promise<GetMessagesResponse> {
-    const response = await this.restClient.getConversationMessages(params);
-    this.messagesStore.ingestPage(params.conversationId, {
-      messages: response.messages,
-      hasNextPage: response.hasNextPage,
-      nextCursor: response.nextCursor,
-    });
-    return response;
-  }
+  // Timeline items management
 
   async getConversationTimelineItems(
-    params: GetConversationTimelineItemsRequest & { conversationId: string },
+    params: GetConversationTimelineItemsRequest & { conversationId: string }
   ): Promise<GetConversationTimelineItemsResponse> {
     const response = await this.restClient.getConversationTimelineItems(params);
     this.timelineItemsStore.ingestPage(params.conversationId, {
@@ -330,7 +305,7 @@ export class CossistantClient {
   }
 
   async sendMessage(
-    params: SendMessageRequest & { createIfPending?: boolean },
+    params: SendMessageRequest & { createIfPending?: boolean }
   ): Promise<
     SendMessageResponse & {
       conversation?: Conversation;
@@ -361,7 +336,23 @@ export class CossistantClient {
         MessageVisibility.PUBLIC) as Message["visibility"],
     };
 
-    this.messagesStore.ingestMessage(optimisticMessage);
+    // Add optimistic timeline item
+    const optimisticTimelineItem = {
+      id: optimisticId,
+      conversationId: rest.conversationId,
+      organizationId: "", // Not available yet
+      visibility: optimisticMessage.visibility,
+      type: "message" as const,
+      text: optimisticMessage.bodyMd,
+      parts: [{ type: "text" as const, text: optimisticMessage.bodyMd }],
+      userId: optimisticMessage.userId,
+      visitorId: optimisticMessage.visitorId,
+      aiAgentId: optimisticMessage.aiAgentId,
+      createdAt,
+      deletedAt: null,
+    };
+
+    this.timelineItemsStore.ingestTimelineItem(optimisticTimelineItem);
 
     const pending = this.pendingConversations.get(rest.conversationId);
 
@@ -373,11 +364,30 @@ export class CossistantClient {
         });
 
         this.conversationsStore.ingestConversation(response.conversation);
-        this.messagesStore.removeMessage(rest.conversationId, optimisticId);
-        this.messagesStore.clearConversation(rest.conversationId);
-        this.eventsStore.clearConversation(rest.conversationId);
-        this.messagesStore.ingestPage(rest.conversationId, {
-          messages: response.initialMessages,
+        this.timelineItemsStore.removeTimelineItem(
+          rest.conversationId,
+          optimisticId
+        );
+        this.timelineItemsStore.clearConversation(rest.conversationId);
+
+        // Convert initial messages to timeline items
+        const timelineItems = response.initialMessages.map((msg) => ({
+          id: msg.id,
+          conversationId: msg.conversationId,
+          organizationId: response.conversation.id, // Use conversation data
+          visibility: msg.visibility,
+          type: "message" as const,
+          text: msg.bodyMd,
+          parts: [{ type: "text" as const, text: msg.bodyMd }],
+          userId: msg.userId,
+          visitorId: msg.visitorId,
+          aiAgentId: msg.aiAgentId,
+          createdAt: msg.createdAt,
+          deletedAt: msg.deletedAt,
+        }));
+
+        this.timelineItemsStore.ingestPage(rest.conversationId, {
+          items: timelineItems,
           hasNextPage: false,
           nextCursor: undefined,
         });
@@ -398,7 +408,10 @@ export class CossistantClient {
           wasConversationCreated: true;
         };
       } catch (error) {
-        this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+        this.timelineItemsStore.removeTimelineItem(
+          rest.conversationId,
+          optimisticId
+        );
         throw error;
       }
     }
@@ -415,14 +428,34 @@ export class CossistantClient {
 
     try {
       const response = await this.restClient.sendMessage(payload);
-      this.messagesStore.finalizeMessage(
+
+      // Convert response message to timeline item and finalize
+      const finalTimelineItem = {
+        id: response.message.id,
+        conversationId: response.message.conversationId,
+        organizationId: response.message.organizationId || "",
+        visibility: response.message.visibility,
+        type: "message" as const,
+        text: response.message.bodyMd,
+        parts: [{ type: "text" as const, text: response.message.bodyMd }],
+        userId: response.message.userId,
+        visitorId: response.message.visitorId,
+        aiAgentId: response.message.aiAgentId,
+        createdAt: response.message.createdAt,
+        deletedAt: response.message.deletedAt,
+      };
+
+      this.timelineItemsStore.finalizeTimelineItem(
         rest.conversationId,
         optimisticId,
-        response.message,
+        finalTimelineItem
       );
       return response;
     } catch (error) {
-      this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+      this.timelineItemsStore.removeTimelineItem(
+        rest.conversationId,
+        optimisticId
+      );
       throw error;
     }
   }
@@ -436,24 +469,40 @@ export class CossistantClient {
         lastMessage: conversation.lastMessage ?? undefined,
       });
     } else if (event.type === "messageCreated") {
-      const message = this.messagesStore.ingestRealtime(event);
-      // Also ingest into timeline items store
-      this.timelineItemsStore.ingestRealtimeMessage(event);
+      // Convert message event to timeline item and ingest
+      const timelineItem = this.timelineItemsStore.ingestRealtimeMessage(event);
 
+      // Update conversation with last message
       const existingConversation =
-        this.conversationsStore.getState().byId[message.conversationId];
+        this.conversationsStore.getState().byId[timelineItem.conversationId];
 
       if (existingConversation) {
+        const lastMessage = {
+          id: timelineItem.id || "",
+          bodyMd: timelineItem.text || "",
+          type: "text" as const,
+          userId: timelineItem.userId,
+          visitorId: timelineItem.visitorId,
+          aiAgentId: timelineItem.aiAgentId,
+          conversationId: timelineItem.conversationId,
+          organizationId: timelineItem.organizationId,
+          websiteId: existingConversation.websiteId,
+          parentMessageId: null,
+          modelUsed: null,
+          visibility: timelineItem.visibility,
+          createdAt: timelineItem.createdAt,
+          updatedAt: timelineItem.createdAt,
+          deletedAt: timelineItem.deletedAt,
+        };
+
         const nextConversation = {
           ...existingConversation,
-          updatedAt: message.updatedAt,
-          lastMessage: message,
+          updatedAt: timelineItem.createdAt,
+          lastMessage,
         };
 
         this.conversationsStore.ingestConversation(nextConversation);
       }
-    } else if (event.type === "conversationEventCreated") {
-      this.eventsStore.ingestRealtime(event);
     } else if (event.type === "timelineItemCreated") {
       this.timelineItemsStore.ingestRealtimeTimelineItem(event);
     }
@@ -467,7 +516,7 @@ export class CossistantClient {
 
 function normalizeBootstrapMessage(
   conversationId: string,
-  message: DefaultMessage | Message,
+  message: DefaultMessage | Message
 ): Message {
   if (isDefaultMessage(message)) {
     const createdAt = new Date().toISOString();
@@ -521,7 +570,7 @@ function normalizeBootstrapMessage(
 }
 
 function isDefaultMessage(
-  message: DefaultMessage | Message,
+  message: DefaultMessage | Message
 ): message is DefaultMessage {
   return (message as DefaultMessage).content !== undefined;
 }

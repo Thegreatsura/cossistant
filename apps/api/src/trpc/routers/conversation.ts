@@ -11,21 +11,18 @@ import {
 } from "@api/db/mutations/conversation";
 import {
   getConversationById,
-  getConversationEvents,
   getConversationTimelineItems,
   listConversationsHeaders,
 } from "@api/db/queries/conversation";
-import { getConversationMessages } from "@api/db/queries/message";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import {
   emitConversationSeenEvent,
   emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
-import { createMessage } from "@api/utils/message";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
   type ContactMetadata,
-  conversationEventSchema,
   conversationMutationResponseSchema,
   listConversationHeadersResponseSchema,
   MessageType,
@@ -52,7 +49,7 @@ export const conversationRouter = createTRPCRouter({
         websiteSlug: z.string(),
         limit: z.number().int().min(1).max(500).optional(),
         cursor: z.string().nullable().optional(),
-      }),
+      })
     )
     .output(listConversationHeadersResponseSchema)
     .query(async ({ ctx: { db, user }, input }) => {
@@ -83,132 +80,6 @@ export const conversationRouter = createTRPCRouter({
       };
     }),
 
-  /**
-   * @deprecated Use getConversationTimelineItems instead for unified message and event fetching
-   */
-  getConversationMessages: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-        limit: z.number().int().min(1).max(100).optional().default(50),
-        cursor: z.union([z.string(), z.date()]).nullable().optional(),
-      }),
-    )
-    .output(
-      z.object({
-        items: z.array(messageSchema),
-        nextCursor: z.string().nullable(),
-        hasNextPage: z.boolean(),
-      }),
-    )
-    .query(async ({ ctx: { db, user }, input }) => {
-      // Query website access and conversation in parallel
-      const [websiteData, conversation] = await Promise.all([
-        getWebsiteBySlugWithAccess(db, {
-          userId: user.id,
-          websiteSlug: input.websiteSlug,
-        }),
-        getConversationById(db, {
-          conversationId: input.conversationId,
-        }),
-      ]);
-
-      if (!websiteData) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Website not found or access denied",
-        });
-      }
-
-      if (!conversation || conversation.websiteId !== websiteData.id) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Conversation not found",
-        });
-      }
-
-      // Get messages
-      const result = await getConversationMessages(db, {
-        conversationId: input.conversationId,
-        websiteId: websiteData.id,
-        limit: input.limit,
-        cursor: input.cursor,
-      });
-
-      return {
-        items: result.messages,
-        nextCursor: result.nextCursor,
-        hasNextPage: result.hasNextPage,
-      };
-    }),
-
-  /**
-   * @deprecated Use getConversationTimelineItems instead for unified message and event fetching
-   */
-  getConversationEvents: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-        limit: z.number().int().min(1).max(100).optional().default(50),
-        cursor: z.union([z.string(), z.date()]).nullable().optional(),
-      }),
-    )
-    .output(
-      z.object({
-        items: z.array(conversationEventSchema),
-        nextCursor: z.string().nullable(),
-        hasNextPage: z.boolean(),
-      }),
-    )
-    .query(async ({ ctx: { db, user }, input }) => {
-      // Query website access and conversation in parallel
-      const [websiteData, conversation] = await Promise.all([
-        getWebsiteBySlugWithAccess(db, {
-          userId: user.id,
-          websiteSlug: input.websiteSlug,
-        }),
-        getConversationById(db, {
-          conversationId: input.conversationId,
-        }),
-      ]);
-
-      if (!websiteData) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Website not found or access denied",
-        });
-      }
-
-      if (!conversation || conversation.websiteId !== websiteData.id) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Conversation not found",
-        });
-      }
-
-      // Get events
-      const result = await getConversationEvents(db, {
-        conversationId: input.conversationId,
-        websiteId: websiteData.id,
-        limit: input.limit,
-        cursor: input.cursor,
-      });
-
-      return {
-        items: result.events.map((event) => ({
-          ...event,
-          metadata: event.metadata as Record<string, unknown>,
-          updatedAt: event.createdAt,
-          deletedAt: null,
-          message: event.message ?? undefined,
-        })),
-        nextCursor: result.nextCursor,
-        hasNextPage: result.hasNextPage,
-      };
-    }),
-
   getConversationTimelineItems: protectedProcedure
     .input(
       z.object({
@@ -216,14 +87,14 @@ export const conversationRouter = createTRPCRouter({
         websiteSlug: z.string(),
         limit: z.number().int().min(1).max(100).optional().default(50),
         cursor: z.union([z.string(), z.date()]).nullable().optional(),
-      }),
+      })
     )
     .output(
       z.object({
         items: z.array(createTimelineItemSchema),
         nextCursor: z.string().nullable(),
         hasNextPage: z.boolean(),
-      }),
+      })
     )
     .query(async ({ ctx: { db, user }, input }) => {
       // Query website access and conversation in parallel
@@ -291,7 +162,7 @@ export const conversationRouter = createTRPCRouter({
         visibility: z
           .enum([MessageVisibility.PUBLIC, MessageVisibility.PRIVATE])
           .default(MessageVisibility.PUBLIC),
-      }),
+      })
     )
     .output(z.object({ message: messageSchema }))
     .mutation(async ({ ctx: { db, user }, input }) => {
@@ -319,15 +190,16 @@ export const conversationRouter = createTRPCRouter({
         });
       }
 
-      const createdMessage = await createMessage({
+      const createdTimelineItem = await createTimelineItem({
         db,
         organizationId: websiteData.organizationId,
         websiteId: websiteData.id,
         conversationId: input.conversationId,
         conversationOwnerVisitorId: conversation.visitorId,
-        message: {
-          bodyMd: input.bodyMd,
-          type: input.type,
+        item: {
+          type: "message",
+          text: input.bodyMd,
+          parts: [{ type: "text", text: input.bodyMd }],
           visibility: input.visibility,
           userId: user.id,
           visitorId: null,
@@ -347,6 +219,25 @@ export const conversationRouter = createTRPCRouter({
         lastSeenAt,
       });
 
+      // Convert timeline item to message format for backward compatibility
+      const createdMessage = {
+        id: createdTimelineItem.id,
+        bodyMd: createdTimelineItem.text || "",
+        type: input.type,
+        userId: createdTimelineItem.userId,
+        visitorId: createdTimelineItem.visitorId,
+        aiAgentId: createdTimelineItem.aiAgentId,
+        conversationId: createdTimelineItem.conversationId,
+        organizationId: createdTimelineItem.organizationId,
+        websiteId: websiteData.id,
+        parentMessageId: null,
+        modelUsed: null,
+        visibility: createdTimelineItem.visibility,
+        createdAt: createdTimelineItem.createdAt,
+        updatedAt: createdTimelineItem.createdAt,
+        deletedAt: createdTimelineItem.deletedAt,
+      };
+
       return { message: createdMessage };
     }),
 
@@ -355,14 +246,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await resolveConversation(db, {
         conversation,
@@ -384,14 +275,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await reopenConversation(db, {
         conversation,
@@ -413,14 +304,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await markConversationAsSpam(db, {
         conversation,
@@ -442,14 +333,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await markConversationAsNotSpam(db, {
         conversation,
@@ -471,14 +362,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await archiveConversation(db, {
         conversation,
@@ -500,14 +391,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await unarchiveConversation(db, {
         conversation,
@@ -529,14 +420,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const { conversation: updatedConversation, lastSeenAt } =
         await markConversationAsRead(db, {
@@ -558,14 +449,14 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(conversationMutationResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(
         db,
         user.id,
-        input,
+        input
       );
       const updatedConversation = await markConversationAsUnread(db, {
         conversation,
@@ -581,12 +472,12 @@ export const conversationRouter = createTRPCRouter({
         conversationId: z.string(),
         websiteSlug: z.string(),
         isTyping: z.boolean(),
-      }),
+      })
     )
     .output(
       z.object({
         success: z.literal(true),
-      }),
+      })
     )
     .mutation(async ({ ctx: { db, user }, input }) => {
       const { conversation } = await loadConversationContext(db, user.id, {
@@ -608,7 +499,7 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         visitorId: z.string(),
         websiteSlug: z.string(),
-      }),
+      })
     )
     .output(visitorResponseSchema.nullable())
     .query(async ({ ctx: { db, user }, input }) => {

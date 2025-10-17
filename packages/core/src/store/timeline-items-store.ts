@@ -6,292 +6,292 @@ type MessageCreatedEvent = RealtimeEvent<"messageCreated">;
 type TimelineItemCreatedEvent = RealtimeEvent<"timelineItemCreated">;
 
 export type ConversationTimelineItemsState = {
-  items: TimelineItem[];
-  hasNextPage: boolean;
-  nextCursor?: string;
+	items: TimelineItem[];
+	hasNextPage: boolean;
+	nextCursor?: string;
 };
 
 export type TimelineItemsState = {
-  conversations: Record<string, ConversationTimelineItemsState>;
+	conversations: Record<string, ConversationTimelineItemsState>;
 };
 
 const INITIAL_STATE: TimelineItemsState = {
-  conversations: {},
+	conversations: {},
 };
 
 function sortTimelineItems(items: TimelineItem[]): TimelineItem[] {
-  return [...items].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+	return [...items].sort(
+		(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+	);
 }
 
 function isSameTimelineItem(a: TimelineItem, b: TimelineItem): boolean {
-  return (
-    a.id === b.id &&
-    a.text === b.text &&
-    new Date(a.createdAt).getTime() === new Date(b.createdAt).getTime()
-  );
+	return (
+		a.id === b.id &&
+		a.text === b.text &&
+		new Date(a.createdAt).getTime() === new Date(b.createdAt).getTime()
+	);
 }
 
 function mergeTimelineItems(
-  existing: TimelineItem[],
-  incoming: TimelineItem[],
+	existing: TimelineItem[],
+	incoming: TimelineItem[]
 ): TimelineItem[] {
-  if (incoming.length === 0) {
-    return existing;
-  }
+	if (incoming.length === 0) {
+		return existing;
+	}
 
-  const byId = new Map<string, TimelineItem>();
-  for (const item of existing) {
-    if (item.id) {
-      byId.set(item.id, item);
-    }
-  }
+	const byId = new Map<string, TimelineItem>();
+	for (const item of existing) {
+		if (item.id) {
+			byId.set(item.id, item);
+		}
+	}
 
-  let changed = false;
-  for (const item of incoming) {
-    if (!item.id) {
-      continue;
-    }
-    const previous = byId.get(item.id);
-    if (!(previous && isSameTimelineItem(previous, item))) {
-      changed = true;
-    }
-    byId.set(item.id, item);
-  }
+	let changed = false;
+	for (const item of incoming) {
+		if (!item.id) {
+			continue;
+		}
+		const previous = byId.get(item.id);
+		if (!(previous && isSameTimelineItem(previous, item))) {
+			changed = true;
+		}
+		byId.set(item.id, item);
+	}
 
-  if (!changed && byId.size === existing.length) {
-    let orderStable = true;
-    for (const item of existing) {
-      if (item.id && byId.get(item.id) !== item) {
-        orderStable = false;
-        break;
-      }
-    }
+	if (!changed && byId.size === existing.length) {
+		let orderStable = true;
+		for (const item of existing) {
+			if (item.id && byId.get(item.id) !== item) {
+				orderStable = false;
+				break;
+			}
+		}
 
-    // biome-ignore lint/nursery/noUnnecessaryConditions: false positive
-    if (orderStable) {
-      return existing;
-    }
-  }
+		// biome-ignore lint/nursery/noUnnecessaryConditions: false positive
+		if (orderStable) {
+			return existing;
+		}
+	}
 
-  return sortTimelineItems(Array.from(byId.values()));
+	return sortTimelineItems(Array.from(byId.values()));
 }
 
 function applyPage(
-  state: TimelineItemsState,
-  conversationId: string,
-  page: Pick<
-    ConversationTimelineItemsState,
-    "items" | "hasNextPage" | "nextCursor"
-  >,
+	state: TimelineItemsState,
+	conversationId: string,
+	page: Pick<
+		ConversationTimelineItemsState,
+		"items" | "hasNextPage" | "nextCursor"
+	>
 ): TimelineItemsState {
-  const existing = state.conversations[conversationId];
-  const mergedItems = mergeTimelineItems(existing?.items ?? [], page.items);
+	const existing = state.conversations[conversationId];
+	const mergedItems = mergeTimelineItems(existing?.items ?? [], page.items);
 
-  if (
-    existing &&
-    existing.items === mergedItems &&
-    existing.hasNextPage === page.hasNextPage &&
-    existing.nextCursor === page.nextCursor
-  ) {
-    return state;
-  }
+	if (
+		existing &&
+		existing.items === mergedItems &&
+		existing.hasNextPage === page.hasNextPage &&
+		existing.nextCursor === page.nextCursor
+	) {
+		return state;
+	}
 
-  return {
-    ...state,
-    conversations: {
-      ...state.conversations,
-      [conversationId]: {
-        items: mergedItems,
-        hasNextPage: page.hasNextPage,
-        nextCursor: page.nextCursor,
-      },
-    },
-  };
+	return {
+		...state,
+		conversations: {
+			...state.conversations,
+			[conversationId]: {
+				items: mergedItems,
+				hasNextPage: page.hasNextPage,
+				nextCursor: page.nextCursor,
+			},
+		},
+	};
 }
 
 function applyTimelineItem(
-  state: TimelineItemsState,
-  item: TimelineItem,
+	state: TimelineItemsState,
+	item: TimelineItem
 ): TimelineItemsState {
-  const existing = state.conversations[item.conversationId];
-  const mergedItems = mergeTimelineItems(existing?.items ?? [], [item]);
+	const existing = state.conversations[item.conversationId];
+	const mergedItems = mergeTimelineItems(existing?.items ?? [], [item]);
 
-  if (existing && existing.items === mergedItems) {
-    return state;
-  }
+	if (existing && existing.items === mergedItems) {
+		return state;
+	}
 
-  return {
-    ...state,
-    conversations: {
-      ...state.conversations,
-      [item.conversationId]: {
-        items: mergedItems,
-        hasNextPage: existing?.hasNextPage ?? false,
-        nextCursor: existing?.nextCursor,
-      },
-    },
-  };
+	return {
+		...state,
+		conversations: {
+			...state.conversations,
+			[item.conversationId]: {
+				items: mergedItems,
+				hasNextPage: existing?.hasNextPage ?? false,
+				nextCursor: existing?.nextCursor,
+			},
+		},
+	};
 }
 
 function removeTimelineItem(
-  state: TimelineItemsState,
-  conversationId: string,
-  itemId: string,
+	state: TimelineItemsState,
+	conversationId: string,
+	itemId: string
 ): TimelineItemsState {
-  const existing = state.conversations[conversationId];
-  if (!existing) {
-    return state;
-  }
+	const existing = state.conversations[conversationId];
+	if (!existing) {
+		return state;
+	}
 
-  const index = existing.items.findIndex((item) => item.id === itemId);
-  if (index === -1) {
-    return state;
-  }
+	const index = existing.items.findIndex((item) => item.id === itemId);
+	if (index === -1) {
+		return state;
+	}
 
-  const nextItems = existing.items
-    .slice(0, index)
-    .concat(existing.items.slice(index + 1));
+	const nextItems = existing.items
+		.slice(0, index)
+		.concat(existing.items.slice(index + 1));
 
-  const nextConversation: ConversationTimelineItemsState = {
-    ...existing,
-    items: nextItems,
-  };
+	const nextConversation: ConversationTimelineItemsState = {
+		...existing,
+		items: nextItems,
+	};
 
-  return {
-    ...state,
-    conversations: {
-      ...state.conversations,
-      [conversationId]: nextConversation,
-    },
-  };
+	return {
+		...state,
+		conversations: {
+			...state.conversations,
+			[conversationId]: nextConversation,
+		},
+	};
 }
 
 function finalizeTimelineItem(
-  state: TimelineItemsState,
-  conversationId: string,
-  optimisticId: string,
-  item: TimelineItem,
+	state: TimelineItemsState,
+	conversationId: string,
+	optimisticId: string,
+	item: TimelineItem
 ): TimelineItemsState {
-  const withoutOptimistic = removeTimelineItem(
-    state,
-    conversationId,
-    optimisticId,
-  );
-  return applyTimelineItem(withoutOptimistic, item);
+	const withoutOptimistic = removeTimelineItem(
+		state,
+		conversationId,
+		optimisticId
+	);
+	return applyTimelineItem(withoutOptimistic, item);
 }
 
 // Normalize message created event to timeline item
 function normalizeRealtimeMessage(event: MessageCreatedEvent): TimelineItem {
-  const raw = event.payload.message;
-  return {
-    id: raw.id,
-    conversationId: raw.conversationId,
-    organizationId: raw.organizationId,
-    visibility: raw.visibility,
-    type: "message",
-    text: raw.bodyMd,
-    parts: [{ type: "text", text: raw.bodyMd }],
-    userId: raw.userId,
-    visitorId: raw.visitorId,
-    aiAgentId: raw.aiAgentId,
-    createdAt: raw.createdAt,
-    deletedAt: raw.deletedAt,
-  };
+	const raw = event.payload.message;
+	return {
+		id: raw.id,
+		conversationId: raw.conversationId,
+		organizationId: raw.organizationId,
+		visibility: raw.visibility,
+		type: "message",
+		text: raw.bodyMd,
+		parts: [{ type: "text", text: raw.bodyMd }],
+		userId: raw.userId,
+		visitorId: raw.visitorId,
+		aiAgentId: raw.aiAgentId,
+		createdAt: raw.createdAt,
+		deletedAt: raw.deletedAt,
+	};
 }
 
 // Normalize timeline item created event
 function normalizeRealtimeTimelineItem(
-  event: TimelineItemCreatedEvent,
+	event: TimelineItemCreatedEvent
 ): TimelineItem {
-  const raw = event.payload.item;
-  return {
-    id: raw.id,
-    conversationId: raw.conversationId,
-    organizationId: raw.organizationId,
-    visibility: raw.visibility,
-    type: raw.type,
-    text: raw.text,
-    parts: raw.parts,
-    userId: raw.userId,
-    visitorId: raw.visitorId,
-    aiAgentId: raw.aiAgentId,
-    createdAt: raw.createdAt,
-    deletedAt: raw.deletedAt,
-  };
+	const raw = event.payload.item;
+	return {
+		id: raw.id,
+		conversationId: raw.conversationId,
+		organizationId: raw.organizationId,
+		visibility: raw.visibility,
+		type: raw.type,
+		text: raw.text,
+		parts: raw.parts,
+		userId: raw.userId,
+		visitorId: raw.visitorId,
+		aiAgentId: raw.aiAgentId,
+		createdAt: raw.createdAt,
+		deletedAt: raw.deletedAt,
+	};
 }
 
 export type TimelineItemsStore = Store<TimelineItemsState> & {
-  ingestPage(
-    conversationId: string,
-    page: ConversationTimelineItemsState,
-  ): void;
-  ingestTimelineItem(item: TimelineItem): void;
-  ingestRealtimeMessage(event: MessageCreatedEvent): TimelineItem;
-  ingestRealtimeTimelineItem(event: TimelineItemCreatedEvent): TimelineItem;
-  removeTimelineItem(conversationId: string, itemId: string): void;
-  finalizeTimelineItem(
-    conversationId: string,
-    optimisticId: string,
-    item: TimelineItem,
-  ): void;
-  clearConversation(conversationId: string): void;
+	ingestPage(
+		conversationId: string,
+		page: ConversationTimelineItemsState
+	): void;
+	ingestTimelineItem(item: TimelineItem): void;
+	ingestRealtimeMessage(event: MessageCreatedEvent): TimelineItem;
+	ingestRealtimeTimelineItem(event: TimelineItemCreatedEvent): TimelineItem;
+	removeTimelineItem(conversationId: string, itemId: string): void;
+	finalizeTimelineItem(
+		conversationId: string,
+		optimisticId: string,
+		item: TimelineItem
+	): void;
+	clearConversation(conversationId: string): void;
 };
 
 export function createTimelineItemsStore(
-  initialState: TimelineItemsState = INITIAL_STATE,
+	initialState: TimelineItemsState = INITIAL_STATE
 ): TimelineItemsStore {
-  const store = createStore<TimelineItemsState>(initialState);
+	const store = createStore<TimelineItemsState>(initialState);
 
-  return {
-    ...store,
-    ingestPage(conversationId, page) {
-      store.setState((state) => applyPage(state, conversationId, page));
-    },
-    ingestTimelineItem(item) {
-      store.setState((state) => applyTimelineItem(state, item));
-    },
-    ingestRealtimeMessage(event) {
-      const item = normalizeRealtimeMessage(event);
-      store.setState((state) => applyTimelineItem(state, item));
-      return item;
-    },
-    ingestRealtimeTimelineItem(event) {
-      const item = normalizeRealtimeTimelineItem(event);
-      store.setState((state) => applyTimelineItem(state, item));
-      return item;
-    },
-    removeTimelineItem(conversationId, itemId) {
-      store.setState((state) =>
-        removeTimelineItem(state, conversationId, itemId),
-      );
-    },
-    finalizeTimelineItem(conversationId, optimisticId, item) {
-      store.setState((state) =>
-        finalizeTimelineItem(state, conversationId, optimisticId, item),
-      );
-    },
-    clearConversation(conversationId) {
-      store.setState((state) => {
-        if (!state.conversations[conversationId]) {
-          return state;
-        }
+	return {
+		...store,
+		ingestPage(conversationId, page) {
+			store.setState((state) => applyPage(state, conversationId, page));
+		},
+		ingestTimelineItem(item) {
+			store.setState((state) => applyTimelineItem(state, item));
+		},
+		ingestRealtimeMessage(event) {
+			const item = normalizeRealtimeMessage(event);
+			store.setState((state) => applyTimelineItem(state, item));
+			return item;
+		},
+		ingestRealtimeTimelineItem(event) {
+			const item = normalizeRealtimeTimelineItem(event);
+			store.setState((state) => applyTimelineItem(state, item));
+			return item;
+		},
+		removeTimelineItem(conversationId, itemId) {
+			store.setState((state) =>
+				removeTimelineItem(state, conversationId, itemId)
+			);
+		},
+		finalizeTimelineItem(conversationId, optimisticId, item) {
+			store.setState((state) =>
+				finalizeTimelineItem(state, conversationId, optimisticId, item)
+			);
+		},
+		clearConversation(conversationId) {
+			store.setState((state) => {
+				if (!state.conversations[conversationId]) {
+					return state;
+				}
 
-        const { [conversationId]: _removed, ...rest } = state.conversations;
+				const { [conversationId]: _removed, ...rest } = state.conversations;
 
-        return {
-          ...state,
-          conversations: rest,
-        } satisfies TimelineItemsState;
-      });
-    },
-  };
+				return {
+					...state,
+					conversations: rest,
+				} satisfies TimelineItemsState;
+			});
+		},
+	};
 }
 
 export function getConversationTimelineItems(
-  store: Store<TimelineItemsState>,
-  conversationId: string,
+	store: Store<TimelineItemsState>,
+	conversationId: string
 ): ConversationTimelineItemsState | undefined {
-  return store.getState().conversations[conversationId];
+	return store.getState().conversations[conversationId];
 }
