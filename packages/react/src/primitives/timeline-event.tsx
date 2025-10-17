@@ -7,26 +7,26 @@ import { useRenderElement } from "../utils/use-render-element";
  * by render-prop children.
  */
 export type TimelineEventRenderProps = {
-  eventType?: string;
-  actorUserId?: string | null;
-  actorAiAgentId?: string | null;
-  targetUserId?: string | null;
-  targetAiAgentId?: string | null;
-  message?: string | null;
-  timestamp: Date;
-  text: string | null;
+	eventType?: string;
+	actorUserId?: string | null;
+	actorAiAgentId?: string | null;
+	targetUserId?: string | null;
+	targetAiAgentId?: string | null;
+	message?: string | null;
+	timestamp: Date;
+	text: string | null;
 };
 
 export type TimelineEventProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?:
-    | React.ReactNode
-    | ((props: TimelineEventRenderProps) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  item: TimelineItem;
+	children?:
+		| React.ReactNode
+		| ((props: TimelineEventRenderProps) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	item: TimelineItem;
 };
 
 /**
@@ -34,79 +34,79 @@ export type TimelineEventProps = Omit<
  * metadata into convenient render props for custom event displays.
  */
 export const TimelineEvent = (() => {
-  const Component = React.forwardRef<HTMLDivElement, TimelineEventProps>(
-    ({ children, className, asChild = false, item, ...props }, ref) => {
-      // Parse event parts to extract event metadata
-      const eventPart = item.parts.find(
-        (part: unknown): part is Record<string, unknown> =>
-          typeof part === "object" &&
-          part !== null &&
-          "type" in part &&
-          part.type === "event",
-      );
+	const Component = React.forwardRef<HTMLDivElement, TimelineEventProps>(
+		({ children, className, asChild = false, item, ...props }, ref) => {
+			// Parse event parts to extract event metadata
+			const eventPart = item.parts.find(
+				(part: unknown): part is Record<string, unknown> =>
+					typeof part === "object" &&
+					part !== null &&
+					"type" in part &&
+					part.type === "event"
+			);
 
-      const renderProps: TimelineEventRenderProps = {
-        eventType:
-          typeof eventPart?.eventType === "string"
-            ? eventPart.eventType
-            : undefined,
-        actorUserId:
-          typeof eventPart?.actorUserId === "string"
-            ? eventPart.actorUserId
-            : null,
-        actorAiAgentId:
-          typeof eventPart?.actorAiAgentId === "string"
-            ? eventPart.actorAiAgentId
-            : null,
-        targetUserId:
-          typeof eventPart?.targetUserId === "string"
-            ? eventPart.targetUserId
-            : null,
-        targetAiAgentId:
-          typeof eventPart?.targetAiAgentId === "string"
-            ? eventPart.targetAiAgentId
-            : null,
-        message:
-          typeof eventPart?.message === "string" ? eventPart.message : null,
-        timestamp: new Date(item.createdAt),
-        text: item.text,
-      };
+			const renderProps: TimelineEventRenderProps = {
+				eventType:
+					typeof eventPart?.eventType === "string"
+						? eventPart.eventType
+						: undefined,
+				actorUserId:
+					typeof eventPart?.actorUserId === "string"
+						? eventPart.actorUserId
+						: null,
+				actorAiAgentId:
+					typeof eventPart?.actorAiAgentId === "string"
+						? eventPart.actorAiAgentId
+						: null,
+				targetUserId:
+					typeof eventPart?.targetUserId === "string"
+						? eventPart.targetUserId
+						: null,
+				targetAiAgentId:
+					typeof eventPart?.targetAiAgentId === "string"
+						? eventPart.targetAiAgentId
+						: null,
+				message:
+					typeof eventPart?.message === "string" ? eventPart.message : null,
+				timestamp: new Date(item.createdAt),
+				text: item.text,
+			};
 
-      const eventContent =
-        typeof children === "function" ? children(renderProps) : children;
+			const eventContent =
+				typeof children === "function" ? children(renderProps) : children;
 
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref,
-          state: renderProps,
-          props: {
-            role: "article",
-            "aria-label": `Event: ${renderProps.eventType ?? "unknown"}`,
-            ...props,
-            children: eventContent,
-          },
-        },
-      );
-    },
-  );
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					state: renderProps,
+					props: {
+						role: "article",
+						"aria-label": `Event: ${renderProps.eventType ?? "unknown"}`,
+						...props,
+						children: eventContent,
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "TimelineEvent";
-  return Component;
+	Component.displayName = "TimelineEvent";
+	return Component;
 })();
 
 export type TimelineEventContentProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?: React.ReactNode | ((text: string | null) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  text?: string | null;
+	children?: React.ReactNode | ((text: string | null) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	text?: string | null;
 };
 
 /**
@@ -114,48 +114,48 @@ export type TimelineEventContentProps = Omit<
  * custom formatting.
  */
 export const TimelineEventContent = (() => {
-  const Component = React.forwardRef<HTMLDivElement, TimelineEventContentProps>(
-    ({ children, className, asChild = false, text = null, ...props }, ref) => {
-      const eventContent = React.useMemo(() => {
-        if (typeof children === "function") {
-          return children(text);
-        }
-        if (children) {
-          return children;
-        }
-        return text;
-      }, [children, text]);
+	const Component = React.forwardRef<HTMLDivElement, TimelineEventContentProps>(
+		({ children, className, asChild = false, text = null, ...props }, ref) => {
+			const eventContent = React.useMemo(() => {
+				if (typeof children === "function") {
+					return children(text);
+				}
+				if (children) {
+					return children;
+				}
+				return text;
+			}, [children, text]);
 
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref,
-          props: {
-            ...props,
-            children: eventContent,
-          },
-        },
-      );
-    },
-  );
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children: eventContent,
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "TimelineEventContent";
-  return Component;
+	Component.displayName = "TimelineEventContent";
+	return Component;
 })();
 
 export type TimelineEventTimestampProps = Omit<
-  React.HTMLAttributes<HTMLSpanElement>,
-  "children"
+	React.HTMLAttributes<HTMLSpanElement>,
+	"children"
 > & {
-  children?: React.ReactNode | ((timestamp: Date) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  timestamp: Date;
-  format?: (date: Date) => string;
+	children?: React.ReactNode | ((timestamp: Date) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	timestamp: Date;
+	format?: (date: Date) => string;
 };
 
 /**
@@ -163,47 +163,47 @@ export type TimelineEventTimestampProps = Omit<
  * callers to supply a render prop for custom time displays.
  */
 export const TimelineEventTimestamp = (() => {
-  const Component = React.forwardRef<
-    HTMLSpanElement,
-    TimelineEventTimestampProps
-  >(
-    (
-      {
-        children,
-        className,
-        asChild = false,
-        timestamp,
-        format = (date) =>
-          date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        ...props
-      },
-      ref,
-    ) => {
-      const content =
-        typeof children === "function"
-          ? children(timestamp)
-          : children || format(timestamp);
+	const Component = React.forwardRef<
+		HTMLSpanElement,
+		TimelineEventTimestampProps
+	>(
+		(
+			{
+				children,
+				className,
+				asChild = false,
+				timestamp,
+				format = (date) =>
+					date.toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					}),
+				...props
+			},
+			ref
+		) => {
+			const content =
+				typeof children === "function"
+					? children(timestamp)
+					: children || format(timestamp);
 
-      return useRenderElement(
-        "span",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref,
-          props: {
-            ...props,
-            children: content,
-          },
-        },
-      );
-    },
-  );
+			return useRenderElement(
+				"span",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "TimelineEventTimestamp";
-  return Component;
+	Component.displayName = "TimelineEventTimestamp";
+	return Component;
 })();

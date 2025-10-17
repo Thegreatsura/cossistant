@@ -4,43 +4,43 @@ import { PENDING_CONVERSATION_ID } from "../utils/id";
 import { useConversations } from "./use-conversations";
 
 export type UseHomePageOptions = {
-  /**
-   * Whether to enable conversations fetching.
-   * Default: true
-   */
-  enabled?: boolean;
+	/**
+	 * Whether to enable conversations fetching.
+	 * Default: true
+	 */
+	enabled?: boolean;
 
-  /**
-   * Callback when user wants to start a new conversation.
-   */
-  onStartConversation?: (initialMessage?: string) => void;
+	/**
+	 * Callback when user wants to start a new conversation.
+	 */
+	onStartConversation?: (initialMessage?: string) => void;
 
-  /**
-   * Callback when user wants to open an existing conversation.
-   */
-  onOpenConversation?: (conversationId: string) => void;
+	/**
+	 * Callback when user wants to open an existing conversation.
+	 */
+	onOpenConversation?: (conversationId: string) => void;
 
-  /**
-   * Callback when user wants to view conversation history.
-   */
-  onOpenConversationHistory?: () => void;
+	/**
+	 * Callback when user wants to view conversation history.
+	 */
+	onOpenConversationHistory?: () => void;
 };
 
 export type UseHomePageReturn = {
-  // Conversations data
-  conversations: Conversation[];
-  isLoading: boolean;
-  error: Error | null;
+	// Conversations data
+	conversations: Conversation[];
+	isLoading: boolean;
+	error: Error | null;
 
-  // Derived state
-  lastOpenConversation: Conversation | undefined;
-  availableConversationsCount: number;
-  hasConversations: boolean;
+	// Derived state
+	lastOpenConversation: Conversation | undefined;
+	availableConversationsCount: number;
+	hasConversations: boolean;
 
-  // Actions
-  startConversation: (initialMessage?: string) => void;
-  openConversation: (conversationId: string) => void;
-  openConversationHistory: () => void;
+	// Actions
+	startConversation: (initialMessage?: string) => void;
+	openConversation: (conversationId: string) => void;
+	openConversationHistory: () => void;
 };
 
 /**
@@ -89,67 +89,67 @@ export type UseHomePageReturn = {
  * ```
  */
 export function useHomePage(
-  options: UseHomePageOptions = {},
+	options: UseHomePageOptions = {}
 ): UseHomePageReturn {
-  const {
-    enabled = true,
-    onStartConversation,
-    onOpenConversation,
-    onOpenConversationHistory,
-  } = options;
+	const {
+		enabled = true,
+		onStartConversation,
+		onOpenConversation,
+		onOpenConversationHistory,
+	} = options;
 
-  // Fetch conversations
-  const { conversations, isLoading, error } = useConversations({
-    enabled,
-    // Fetch most recent conversations first
-    orderBy: "updatedAt",
-    order: "desc",
-  });
+	// Fetch conversations
+	const { conversations, isLoading, error } = useConversations({
+		enabled,
+		// Fetch most recent conversations first
+		orderBy: "updatedAt",
+		order: "desc",
+	});
 
-  // Derive useful state from conversations
-  const { lastOpenConversation, availableConversationsCount } = useMemo(() => {
-    // Find the most recent open conversation
-    const openConversation = conversations.find(
-      (conv) => conv.status === "open",
-    );
+	// Derive useful state from conversations
+	const { lastOpenConversation, availableConversationsCount } = useMemo(() => {
+		// Find the most recent open conversation
+		const openConversation = conversations.find(
+			(conv) => conv.status === "open"
+		);
 
-    // Count other conversations (excluding the one we're showing)
-    const otherCount = Math.max((conversations.length || 0) - 1, 0);
+		// Count other conversations (excluding the one we're showing)
+		const otherCount = Math.max((conversations.length || 0) - 1, 0);
 
-    return {
-      lastOpenConversation: openConversation,
-      availableConversationsCount: otherCount,
-    };
-  }, [conversations]);
+		return {
+			lastOpenConversation: openConversation,
+			availableConversationsCount: otherCount,
+		};
+	}, [conversations]);
 
-  // Navigation actions
-  const startConversation = useCallback(
-    (initialMessage?: string) => {
-      onStartConversation?.(initialMessage);
-    },
-    [onStartConversation],
-  );
+	// Navigation actions
+	const startConversation = useCallback(
+		(initialMessage?: string) => {
+			onStartConversation?.(initialMessage);
+		},
+		[onStartConversation]
+	);
 
-  const openConversation = useCallback(
-    (conversationId: string) => {
-      onOpenConversation?.(conversationId);
-    },
-    [onOpenConversation],
-  );
+	const openConversation = useCallback(
+		(conversationId: string) => {
+			onOpenConversation?.(conversationId);
+		},
+		[onOpenConversation]
+	);
 
-  const openConversationHistory = useCallback(() => {
-    onOpenConversationHistory?.();
-  }, [onOpenConversationHistory]);
+	const openConversationHistory = useCallback(() => {
+		onOpenConversationHistory?.();
+	}, [onOpenConversationHistory]);
 
-  return {
-    conversations,
-    isLoading,
-    error,
-    lastOpenConversation,
-    availableConversationsCount,
-    hasConversations: conversations.length > 0,
-    startConversation,
-    openConversation,
-    openConversationHistory,
-  };
+	return {
+		conversations,
+		isLoading,
+		error,
+		lastOpenConversation,
+		availableConversationsCount,
+		hasConversations: conversations.length > 0,
+		startConversation,
+		openConversation,
+		openConversationHistory,
+	};
 }

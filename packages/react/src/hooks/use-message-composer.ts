@@ -2,72 +2,72 @@ import type { CossistantClient } from "@cossistant/core";
 import type { Message } from "@cossistant/types";
 import { useCallback, useEffect } from "react";
 import {
-  type UseMultimodalInputOptions,
-  useMultimodalInput,
+	type UseMultimodalInputOptions,
+	useMultimodalInput,
 } from "./private/use-multimodal-input";
 import { useVisitorTypingReporter } from "./private/use-visitor-typing-reporter";
 import { useSendMessage } from "./use-send-message";
 
 export type UseMessageComposerOptions = {
-  /**
-   * The Cossistant client instance.
-   */
-  client: CossistantClient;
+	/**
+	 * The Cossistant client instance.
+	 */
+	client: CossistantClient;
 
-  /**
-   * Current conversation ID. Can be null if no real conversation exists yet.
-   * Pass null when showing default messages before user sends first message.
-   */
-  conversationId: string | null;
+	/**
+	 * Current conversation ID. Can be null if no real conversation exists yet.
+	 * Pass null when showing default messages before user sends first message.
+	 */
+	conversationId: string | null;
 
-  /**
-   * Default messages to include when creating a new conversation.
-   */
-  defaultMessages?: Message[];
+	/**
+	 * Default messages to include when creating a new conversation.
+	 */
+	defaultMessages?: Message[];
 
-  /**
-   * Visitor ID to associate with messages.
-   */
-  visitorId?: string;
+	/**
+	 * Visitor ID to associate with messages.
+	 */
+	visitorId?: string;
 
-  /**
-   * Callback when a message is successfully sent.
-   * @param conversationId - The conversation ID (may be newly created)
-   * @param messageId - The sent message ID
-   */
-  onMessageSent?: (conversationId: string, messageId: string) => void;
+	/**
+	 * Callback when a message is successfully sent.
+	 * @param conversationId - The conversation ID (may be newly created)
+	 * @param messageId - The sent message ID
+	 */
+	onMessageSent?: (conversationId: string, messageId: string) => void;
 
-  /**
-   * Callback when message sending fails.
-   */
-  onError?: (error: Error) => void;
+	/**
+	 * Callback when message sending fails.
+	 */
+	onError?: (error: Error) => void;
 
-  /**
-   * File upload options (max size, allowed types, etc.)
-   */
-  fileOptions?: Pick<
-    UseMultimodalInputOptions,
-    "maxFileSize" | "maxFiles" | "allowedFileTypes"
-  >;
+	/**
+	 * File upload options (max size, allowed types, etc.)
+	 */
+	fileOptions?: Pick<
+		UseMultimodalInputOptions,
+		"maxFileSize" | "maxFiles" | "allowedFileTypes"
+	>;
 };
 
 export type UseMessageComposerReturn = {
-  // Input state
-  message: string;
-  files: File[];
-  error: Error | null;
+	// Input state
+	message: string;
+	files: File[];
+	error: Error | null;
 
-  // Status
-  isSubmitting: boolean;
-  canSubmit: boolean;
+	// Status
+	isSubmitting: boolean;
+	canSubmit: boolean;
 
-  // Actions
-  setMessage: (message: string) => void;
-  addFiles: (files: File[]) => void;
-  removeFile: (index: number) => void;
-  clearFiles: () => void;
-  submit: () => void;
-  reset: () => void;
+	// Actions
+	setMessage: (message: string) => void;
+	addFiles: (files: File[]) => void;
+	removeFile: (index: number) => void;
+	clearFiles: () => void;
+	submit: () => void;
+	reset: () => void;
 };
 
 /**
@@ -104,85 +104,85 @@ export type UseMessageComposerReturn = {
  * ```
  */
 export function useMessageComposer(
-  options: UseMessageComposerOptions,
+	options: UseMessageComposerOptions
 ): UseMessageComposerReturn {
-  const {
-    client,
-    conversationId,
-    defaultMessages = [],
-    visitorId,
-    onMessageSent,
-    onError,
-    fileOptions,
-  } = options;
+	const {
+		client,
+		conversationId,
+		defaultMessages = [],
+		visitorId,
+		onMessageSent,
+		onError,
+		fileOptions,
+	} = options;
 
-  const sendMessage = useSendMessage({ client });
+	const sendMessage = useSendMessage({ client });
 
-  const {
-    handleInputChange: reportTyping,
-    handleSubmit: stopTyping,
-    stop: forceStopTyping,
-  } = useVisitorTypingReporter({
-    client,
-    conversationId,
-  });
+	const {
+		handleInputChange: reportTyping,
+		handleSubmit: stopTyping,
+		stop: forceStopTyping,
+	} = useVisitorTypingReporter({
+		client,
+		conversationId,
+	});
 
-  const multimodalInput = useMultimodalInput({
-    onSubmit: async ({ message: messageText, files }) => {
-      // Stop typing indicator
-      stopTyping();
+	const multimodalInput = useMultimodalInput({
+		onSubmit: async ({ message: messageText, files }) => {
+			// Stop typing indicator
+			stopTyping();
 
-      // Send the message
-      sendMessage.mutate({
-        conversationId,
-        message: messageText,
-        files,
-        defaultMessages,
-        visitorId,
-        onSuccess: (resultConversationId, messageId) => {
-          onMessageSent?.(resultConversationId, messageId);
-        },
-        onError: (err) => {
-          onError?.(err);
-        },
-      });
-    },
-    onError,
-    ...fileOptions,
-  });
+			// Send the message
+			sendMessage.mutate({
+				conversationId,
+				message: messageText,
+				files,
+				defaultMessages,
+				visitorId,
+				onSuccess: (resultConversationId, messageId) => {
+					onMessageSent?.(resultConversationId, messageId);
+				},
+				onError: (err) => {
+					onError?.(err);
+				},
+			});
+		},
+		onError,
+		...fileOptions,
+	});
 
-  // Clean up typing indicator on unmount
-  useEffect(() => {
-    return () => {
-      forceStopTyping();
-    };
-  }, [forceStopTyping]);
+	// Clean up typing indicator on unmount
+	useEffect(() => {
+		return () => {
+			forceStopTyping();
+		};
+	}, [forceStopTyping]);
 
-  // Wrap setMessage to also report typing
-  const setMessage = useCallback(
-    (value: string) => {
-      multimodalInput.setMessage(value);
-      reportTyping(value);
-    },
-    [multimodalInput, reportTyping],
-  );
+	// Wrap setMessage to also report typing
+	const setMessage = useCallback(
+		(value: string) => {
+			multimodalInput.setMessage(value);
+			reportTyping(value);
+		},
+		[multimodalInput, reportTyping]
+	);
 
-  // Combine submission states
-  const isSubmitting = multimodalInput.isSubmitting || sendMessage.isPending;
-  const error = multimodalInput.error || sendMessage.error;
-  const canSubmit = multimodalInput.canSubmit && !sendMessage.isPending;
+	// Combine submission states
+	const isSubmitting = multimodalInput.isSubmitting || sendMessage.isPending;
+	const error = multimodalInput.error || sendMessage.error;
+	const canSubmit = multimodalInput.canSubmit && !sendMessage.isPending;
 
-  return {
-    message: multimodalInput.message,
-    files: multimodalInput.files,
-    error,
-    isSubmitting,
-    canSubmit,
-    setMessage,
-    addFiles: multimodalInput.addFiles,
-    removeFile: multimodalInput.removeFile,
-    clearFiles: multimodalInput.clearFiles,
-    submit: multimodalInput.submit,
-    reset: multimodalInput.reset,
-  };
+	return {
+		message: multimodalInput.message,
+		files: multimodalInput.files,
+		error,
+		isSubmitting,
+		canSubmit,
+		setMessage,
+		addFiles: multimodalInput.addFiles,
+		removeFile: multimodalInput.removeFile,
+		clearFiles: multimodalInput.clearFiles,
+		submit: multimodalInput.submit,
+		reset: multimodalInput.reset,
+	};
 }
