@@ -39,7 +39,7 @@ export function ConversationHeader() {
     lastTimelineItem &&
       lastTimelineItem.userId !== user.id &&
       lastTimelineItemCreatedAt &&
-      (!lastSeenAt || lastTimelineItemCreatedAt > lastSeenAt)
+      (!lastSeenAt || lastTimelineItemCreatedAt > lastSeenAt),
   );
 
   return (

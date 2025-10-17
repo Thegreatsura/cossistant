@@ -9,414 +9,414 @@ import { and, eq } from "drizzle-orm";
 export type ConversationRecord = InferSelectModel<typeof conversation>;
 
 function computeResolutionTime(
-	conversationRecord: ConversationRecord,
-	resolvedAt: string
+  conversationRecord: ConversationRecord,
+  resolvedAt: string,
 ): number | null {
-	if (!conversationRecord.startedAt) {
-		return conversationRecord.resolutionTime ?? null;
-	}
+  if (!conversationRecord.startedAt) {
+    return conversationRecord.resolutionTime ?? null;
+  }
 
-	const durationMs =
-		new Date(resolvedAt).getTime() -
-		new Date(conversationRecord.startedAt).getTime();
-	return durationMs > 0 ? Math.round(durationMs / 1000) : 0;
+  const durationMs =
+    new Date(resolvedAt).getTime() -
+    new Date(conversationRecord.startedAt).getTime();
+  return durationMs > 0 ? Math.round(durationMs / 1000) : 0;
 }
 
 export async function resolveConversation(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	const resolvedAt = new Date();
-	const resolvedAtIso = resolvedAt.toISOString();
+  const resolvedAt = new Date();
+  const resolvedAtIso = resolvedAt.toISOString();
 
-	const [updated] = await db
-		.update(conversation)
-		.set({
-			status: ConversationStatus.RESOLVED,
-			resolvedAt: resolvedAtIso,
-			resolvedByUserId: params.actorUserId,
-			resolvedByAiAgentId: null,
-			resolutionTime: computeResolutionTime(params.conversation, resolvedAtIso),
-			updatedAt: resolvedAtIso,
-		})
-		.where(
-			and(
-				eq(conversation.id, params.conversation.id),
-				eq(conversation.organizationId, params.conversation.organizationId),
-				eq(conversation.websiteId, params.conversation.websiteId)
-			)
-		)
-		.returning();
+  const [updated] = await db
+    .update(conversation)
+    .set({
+      status: ConversationStatus.RESOLVED,
+      resolvedAt: resolvedAtIso,
+      resolvedByUserId: params.actorUserId,
+      resolvedByAiAgentId: null,
+      resolutionTime: computeResolutionTime(params.conversation, resolvedAtIso),
+      updatedAt: resolvedAtIso,
+    })
+    .where(
+      and(
+        eq(conversation.id, params.conversation.id),
+        eq(conversation.organizationId, params.conversation.organizationId),
+        eq(conversation.websiteId, params.conversation.websiteId),
+      ),
+    )
+    .returning();
 
-	if (!updated) {
-		return null;
-	}
+  if (!updated) {
+    return null;
+  }
 
-	await createConversationEvent({
-		db,
-		context: {
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			websiteId: params.conversation.websiteId,
-			visitorId: params.conversation.visitorId,
-		},
-		event: {
-			type: ConversationEventType.RESOLVED,
-			actorUserId: params.actorUserId,
-			createdAt: resolvedAt,
-		},
-	});
+  await createConversationEvent({
+    db,
+    context: {
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      websiteId: params.conversation.websiteId,
+      visitorId: params.conversation.visitorId,
+    },
+    event: {
+      type: ConversationEventType.RESOLVED,
+      actorUserId: params.actorUserId,
+      createdAt: resolvedAt,
+    },
+  });
 
-	return updated;
+  return updated;
 }
 
 export async function reopenConversation(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	const reopenedAt = new Date();
-	const reopenedAtIso = reopenedAt.toISOString();
+  const reopenedAt = new Date();
+  const reopenedAtIso = reopenedAt.toISOString();
 
-	const [updated] = await db
-		.update(conversation)
-		.set({
-			status: ConversationStatus.OPEN,
-			resolvedAt: null,
-			resolvedByUserId: null,
-			resolvedByAiAgentId: null,
-			resolutionTime: null,
-			updatedAt: reopenedAtIso,
-		})
-		.where(
-			and(
-				eq(conversation.id, params.conversation.id),
-				eq(conversation.organizationId, params.conversation.organizationId),
-				eq(conversation.websiteId, params.conversation.websiteId)
-			)
-		)
-		.returning();
+  const [updated] = await db
+    .update(conversation)
+    .set({
+      status: ConversationStatus.OPEN,
+      resolvedAt: null,
+      resolvedByUserId: null,
+      resolvedByAiAgentId: null,
+      resolutionTime: null,
+      updatedAt: reopenedAtIso,
+    })
+    .where(
+      and(
+        eq(conversation.id, params.conversation.id),
+        eq(conversation.organizationId, params.conversation.organizationId),
+        eq(conversation.websiteId, params.conversation.websiteId),
+      ),
+    )
+    .returning();
 
-	if (!updated) {
-		return null;
-	}
+  if (!updated) {
+    return null;
+  }
 
-	await createConversationEvent({
-		db,
-		context: {
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			websiteId: params.conversation.websiteId,
-			visitorId: params.conversation.visitorId,
-		},
-		event: {
-			type: ConversationEventType.REOPENED,
-			actorUserId: params.actorUserId,
-			createdAt: reopenedAt,
-		},
-	});
+  await createConversationEvent({
+    db,
+    context: {
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      websiteId: params.conversation.websiteId,
+      visitorId: params.conversation.visitorId,
+    },
+    event: {
+      type: ConversationEventType.REOPENED,
+      actorUserId: params.actorUserId,
+      createdAt: reopenedAt,
+    },
+  });
 
-	return updated;
+  return updated;
 }
 
 export async function markConversationAsSpam(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	const updatedAt = new Date();
-	const updatedAtIso = updatedAt.toISOString();
+  const updatedAt = new Date();
+  const updatedAtIso = updatedAt.toISOString();
 
-	const [updated] = await db
-		.update(conversation)
-		.set({
-			status: ConversationStatus.SPAM,
-			resolvedAt: null,
-			resolvedByUserId: null,
-			resolvedByAiAgentId: null,
-			updatedAt: updatedAtIso,
-		})
-		.where(
-			and(
-				eq(conversation.id, params.conversation.id),
-				eq(conversation.organizationId, params.conversation.organizationId),
-				eq(conversation.websiteId, params.conversation.websiteId)
-			)
-		)
-		.returning();
+  const [updated] = await db
+    .update(conversation)
+    .set({
+      status: ConversationStatus.SPAM,
+      resolvedAt: null,
+      resolvedByUserId: null,
+      resolvedByAiAgentId: null,
+      updatedAt: updatedAtIso,
+    })
+    .where(
+      and(
+        eq(conversation.id, params.conversation.id),
+        eq(conversation.organizationId, params.conversation.organizationId),
+        eq(conversation.websiteId, params.conversation.websiteId),
+      ),
+    )
+    .returning();
 
-	if (!updated) {
-		return null;
-	}
+  if (!updated) {
+    return null;
+  }
 
-	await createConversationEvent({
-		db,
-		context: {
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			websiteId: params.conversation.websiteId,
-			visitorId: params.conversation.visitorId,
-		},
-		event: {
-			type: ConversationEventType.STATUS_CHANGED,
-			actorUserId: params.actorUserId,
-			metadata: {
-				previousStatus: params.conversation.status,
-				newStatus: ConversationStatus.SPAM,
-			},
-			createdAt: updatedAt,
-		},
-	});
+  await createConversationEvent({
+    db,
+    context: {
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      websiteId: params.conversation.websiteId,
+      visitorId: params.conversation.visitorId,
+    },
+    event: {
+      type: ConversationEventType.STATUS_CHANGED,
+      actorUserId: params.actorUserId,
+      metadata: {
+        previousStatus: params.conversation.status,
+        newStatus: ConversationStatus.SPAM,
+      },
+      createdAt: updatedAt,
+    },
+  });
 
-	return updated;
+  return updated;
 }
 
 export async function markConversationAsNotSpam(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	const updatedAt = new Date();
-	const updatedAtIso = updatedAt.toISOString();
+  const updatedAt = new Date();
+  const updatedAtIso = updatedAt.toISOString();
 
-	const [updated] = await db
-		.update(conversation)
-		.set({
-			status: ConversationStatus.OPEN,
-			resolvedAt: null,
-			resolvedByUserId: null,
-			resolvedByAiAgentId: null,
-			resolutionTime: null,
-			updatedAt: updatedAtIso,
-		})
-		.where(
-			and(
-				eq(conversation.id, params.conversation.id),
-				eq(conversation.organizationId, params.conversation.organizationId),
-				eq(conversation.websiteId, params.conversation.websiteId)
-			)
-		)
-		.returning();
+  const [updated] = await db
+    .update(conversation)
+    .set({
+      status: ConversationStatus.OPEN,
+      resolvedAt: null,
+      resolvedByUserId: null,
+      resolvedByAiAgentId: null,
+      resolutionTime: null,
+      updatedAt: updatedAtIso,
+    })
+    .where(
+      and(
+        eq(conversation.id, params.conversation.id),
+        eq(conversation.organizationId, params.conversation.organizationId),
+        eq(conversation.websiteId, params.conversation.websiteId),
+      ),
+    )
+    .returning();
 
-	if (!updated) {
-		return null;
-	}
+  if (!updated) {
+    return null;
+  }
 
-	await createConversationEvent({
-		db,
-		context: {
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			websiteId: params.conversation.websiteId,
-			visitorId: params.conversation.visitorId,
-		},
-		event: {
-			type: ConversationEventType.STATUS_CHANGED,
-			actorUserId: params.actorUserId,
-			metadata: {
-				previousStatus: params.conversation.status,
-				newStatus: ConversationStatus.OPEN,
-			},
-			createdAt: updatedAt,
-		},
-	});
+  await createConversationEvent({
+    db,
+    context: {
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      websiteId: params.conversation.websiteId,
+      visitorId: params.conversation.visitorId,
+    },
+    event: {
+      type: ConversationEventType.STATUS_CHANGED,
+      actorUserId: params.actorUserId,
+      metadata: {
+        previousStatus: params.conversation.status,
+        newStatus: ConversationStatus.OPEN,
+      },
+      createdAt: updatedAt,
+    },
+  });
 
-	return updated;
+  return updated;
 }
 
 export async function archiveConversation(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	const archivedAt = new Date();
-	const archivedAtIso = archivedAt.toISOString();
+  const archivedAt = new Date();
+  const archivedAtIso = archivedAt.toISOString();
 
-	const [updated] = await db
-		.update(conversation)
-		.set({
-			deletedAt: archivedAtIso,
-			updatedAt: archivedAtIso,
-		})
-		.where(
-			and(
-				eq(conversation.id, params.conversation.id),
-				eq(conversation.organizationId, params.conversation.organizationId),
-				eq(conversation.websiteId, params.conversation.websiteId)
-			)
-		)
-		.returning();
+  const [updated] = await db
+    .update(conversation)
+    .set({
+      deletedAt: archivedAtIso,
+      updatedAt: archivedAtIso,
+    })
+    .where(
+      and(
+        eq(conversation.id, params.conversation.id),
+        eq(conversation.organizationId, params.conversation.organizationId),
+        eq(conversation.websiteId, params.conversation.websiteId),
+      ),
+    )
+    .returning();
 
-	if (!updated) {
-		return null;
-	}
+  if (!updated) {
+    return null;
+  }
 
-	await createConversationEvent({
-		db,
-		context: {
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			websiteId: params.conversation.websiteId,
-			visitorId: params.conversation.visitorId,
-		},
-		event: {
-			type: ConversationEventType.STATUS_CHANGED,
-			actorUserId: params.actorUserId,
-			metadata: {
-				archived: true,
-			},
-			createdAt: archivedAt,
-		},
-	});
+  await createConversationEvent({
+    db,
+    context: {
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      websiteId: params.conversation.websiteId,
+      visitorId: params.conversation.visitorId,
+    },
+    event: {
+      type: ConversationEventType.STATUS_CHANGED,
+      actorUserId: params.actorUserId,
+      metadata: {
+        archived: true,
+      },
+      createdAt: archivedAt,
+    },
+  });
 
-	return updated;
+  return updated;
 }
 
 export async function unarchiveConversation(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	const unarchivedAt = new Date();
-	const unarchivedAtIso = unarchivedAt.toISOString();
+  const unarchivedAt = new Date();
+  const unarchivedAtIso = unarchivedAt.toISOString();
 
-	const [updated] = await db
-		.update(conversation)
-		.set({
-			deletedAt: null,
-			updatedAt: unarchivedAtIso,
-		})
-		.where(
-			and(
-				eq(conversation.id, params.conversation.id),
-				eq(conversation.organizationId, params.conversation.organizationId),
-				eq(conversation.websiteId, params.conversation.websiteId)
-			)
-		)
-		.returning();
+  const [updated] = await db
+    .update(conversation)
+    .set({
+      deletedAt: null,
+      updatedAt: unarchivedAtIso,
+    })
+    .where(
+      and(
+        eq(conversation.id, params.conversation.id),
+        eq(conversation.organizationId, params.conversation.organizationId),
+        eq(conversation.websiteId, params.conversation.websiteId),
+      ),
+    )
+    .returning();
 
-	if (!updated) {
-		return null;
-	}
+  if (!updated) {
+    return null;
+  }
 
-	await createConversationEvent({
-		db,
-		context: {
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			websiteId: params.conversation.websiteId,
-			visitorId: params.conversation.visitorId,
-		},
-		event: {
-			type: ConversationEventType.STATUS_CHANGED,
-			actorUserId: params.actorUserId,
-			metadata: {
-				archived: false,
-			},
-			createdAt: unarchivedAt,
-		},
-	});
+  await createConversationEvent({
+    db,
+    context: {
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      websiteId: params.conversation.websiteId,
+      visitorId: params.conversation.visitorId,
+    },
+    event: {
+      type: ConversationEventType.STATUS_CHANGED,
+      actorUserId: params.actorUserId,
+      metadata: {
+        archived: false,
+      },
+      createdAt: unarchivedAt,
+    },
+  });
 
-	return updated;
+  return updated;
 }
 
 export async function markConversationAsRead(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ): Promise<{ conversation: ConversationRecord; lastSeenAt: string }> {
-	const lastSeenAt = new Date().toISOString();
+  const lastSeenAt = new Date().toISOString();
 
-	await db
-		.insert(conversationSeen)
-		.values({
-			id: generateULID(),
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			userId: params.actorUserId,
-			visitorId: null,
-			aiAgentId: null,
-			lastSeenAt,
-			createdAt: lastSeenAt,
-			updatedAt: lastSeenAt,
-		})
-		.onConflictDoUpdate({
-			target: [conversationSeen.conversationId, conversationSeen.userId],
-			set: {
-				lastSeenAt,
-				updatedAt: lastSeenAt,
-			},
-		});
+  await db
+    .insert(conversationSeen)
+    .values({
+      id: generateULID(),
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      userId: params.actorUserId,
+      visitorId: null,
+      aiAgentId: null,
+      lastSeenAt,
+      createdAt: lastSeenAt,
+      updatedAt: lastSeenAt,
+    })
+    .onConflictDoUpdate({
+      target: [conversationSeen.conversationId, conversationSeen.userId],
+      set: {
+        lastSeenAt,
+        updatedAt: lastSeenAt,
+      },
+    });
 
-	return {
-		conversation: params.conversation,
-		lastSeenAt,
-	};
+  return {
+    conversation: params.conversation,
+    lastSeenAt,
+  };
 }
 
 export async function markConversationAsSeenByVisitor(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		visitorId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    visitorId: string;
+  },
 ) {
-	const updatedAt = new Date().toISOString();
+  const updatedAt = new Date().toISOString();
 
-	await db
-		.insert(conversationSeen)
-		.values({
-			id: generateULID(),
-			conversationId: params.conversation.id,
-			organizationId: params.conversation.organizationId,
-			userId: null,
-			visitorId: params.visitorId,
-			aiAgentId: null,
-			lastSeenAt: updatedAt,
-			createdAt: updatedAt,
-			updatedAt,
-		})
-		.onConflictDoUpdate({
-			target: [conversationSeen.conversationId, conversationSeen.visitorId],
-			set: {
-				lastSeenAt: updatedAt,
-				updatedAt,
-			},
-		});
+  await db
+    .insert(conversationSeen)
+    .values({
+      id: generateULID(),
+      conversationId: params.conversation.id,
+      organizationId: params.conversation.organizationId,
+      userId: null,
+      visitorId: params.visitorId,
+      aiAgentId: null,
+      lastSeenAt: updatedAt,
+      createdAt: updatedAt,
+      updatedAt,
+    })
+    .onConflictDoUpdate({
+      target: [conversationSeen.conversationId, conversationSeen.visitorId],
+      set: {
+        lastSeenAt: updatedAt,
+        updatedAt,
+      },
+    });
 
-	return updatedAt;
+  return updatedAt;
 }
 
 export async function markConversationAsUnread(
-	db: Database,
-	params: {
-		conversation: ConversationRecord;
-		actorUserId: string;
-	}
+  db: Database,
+  params: {
+    conversation: ConversationRecord;
+    actorUserId: string;
+  },
 ) {
-	await db
-		.delete(conversationSeen)
-		.where(
-			and(
-				eq(conversationSeen.conversationId, params.conversation.id),
-				eq(conversationSeen.userId, params.actorUserId)
-			)
-		);
+  await db
+    .delete(conversationSeen)
+    .where(
+      and(
+        eq(conversationSeen.conversationId, params.conversation.id),
+        eq(conversationSeen.userId, params.actorUserId),
+      ),
+    );
 
-	return params.conversation;
+  return params.conversation;
 }

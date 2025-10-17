@@ -115,8 +115,8 @@ messagesRouter.openapi(
       return c.json(
         validateResponse(
           { error: "Visitor ID is required" },
-          z.object({ error: z.string() })
-        )
+          z.object({ error: z.string() }),
+        ),
       );
     }
 
@@ -167,8 +167,8 @@ messagesRouter.openapi(
     return c.json(
       validateResponse(
         { item: createdTimelineItem },
-        sendTimelineItemResponseSchema
-      )
+        sendTimelineItemResponseSchema,
+      ),
     );
-  }
+  },
 );

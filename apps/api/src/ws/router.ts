@@ -11,19 +11,19 @@ type DispatchOptions = {
 
 type ConnectionDispatcher = (
   connectionId: string,
-  event: AnyRealtimeEvent
+  event: AnyRealtimeEvent,
 ) => void;
 
 type VisitorDispatcher = (
   visitorId: string,
   event: AnyRealtimeEvent,
-  options?: DispatchOptions
+  options?: DispatchOptions,
 ) => void;
 
 type WebsiteDispatcher = (
   websiteId: string,
   event: AnyRealtimeEvent,
-  options?: DispatchOptions
+  options?: DispatchOptions,
 ) => void;
 
 type EventContext = {
@@ -40,7 +40,7 @@ type EventContext = {
 
 type EventHandler<T extends RealtimeEventType> = (
   ctx: EventContext,
-  event: RealtimeEvent<T>
+  event: RealtimeEvent<T>,
 ) => Promise<void> | void;
 
 type EventHandlers = {
@@ -81,7 +81,7 @@ const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 
 function resolveWebsiteDispatchOptions(
   rule: WebsiteDispatchRule | undefined,
-  ctx: EventContext
+  ctx: EventContext,
 ): DispatchOptions | undefined {
   if (!rule) {
     return;
@@ -101,7 +101,7 @@ function resolveWebsiteDispatchOptions(
 function dispatchEvent<T extends RealtimeEventType>(
   ctx: EventContext,
   event: RealtimeEvent<T>,
-  rules: DispatchRule
+  rules: DispatchRule,
 ): void {
   const websiteTarget = event.payload.websiteId ?? ctx.websiteId;
   if (websiteTarget && ctx.sendToWebsite && rules.website) {
@@ -221,13 +221,13 @@ const eventHandlers: EventHandlers = {
  */
 export async function routeEvent<T extends RealtimeEventType>(
   event: RealtimeEvent<T>,
-  context: EventContext
+  context: EventContext,
 ): Promise<void> {
   const handler = eventHandlers[event.type] as EventHandler<T>;
 
   if (!handler) {
     console.error(
-      `[EventRouter] No handler found for event type: ${event.type}`
+      `[EventRouter] No handler found for event type: ${event.type}`,
     );
     return;
   }

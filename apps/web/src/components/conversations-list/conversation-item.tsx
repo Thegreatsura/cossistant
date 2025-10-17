@@ -45,7 +45,7 @@ export function ConversationItem({
         websiteSlug,
         visitorId: header.visitorId,
       }),
-    [header.visitorId, trpc, websiteSlug]
+    [header.visitorId, trpc, websiteSlug],
   );
 
   const visitorQuery = useQuery({
@@ -107,7 +107,7 @@ export function ConversationItem({
     lastTimelineItem &&
       !isLastTimelineItemFromCurrentUser &&
       lastTimelineItemCreatedAt &&
-      (!headerLastSeenAt || lastTimelineItemCreatedAt > headerLastSeenAt)
+      (!headerLastSeenAt || lastTimelineItemCreatedAt > headerLastSeenAt),
   );
 
   const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
@@ -117,7 +117,7 @@ export function ConversationItem({
       className={cn(
         "group/conversation-item relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm",
         "focus-visible:outline-none focus-visible:ring-0",
-        focused && "bg-background-200 text-primary dark:bg-background-300"
+        focused && "bg-background-200 text-primary dark:bg-background-300",
       )}
       href={href}
       onMouseEnter={() => {
@@ -172,7 +172,7 @@ export function ConversationItem({
           aria-hidden="true"
           className={cn(
             "inline-block size-1.5 rounded-full bg-cossistant-orange opacity-0",
-            hasUnreadMessage && "opacity-100"
+            hasUnreadMessage && "opacity-100",
           )}
         />
       </div>

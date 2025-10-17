@@ -38,11 +38,11 @@ function createFakeTimers() {
   const advance = (ms: number) => {
     now += ms;
     const due = Array.from(timers.entries()).filter(
-      ([, timer]) => timer.triggerAt <= now
+      ([, timer]) => timer.triggerAt <= now,
     );
 
     for (const [handle, timer] of due.sort(
-      (a, b) => a[1].triggerAt - b[1].triggerAt
+      (a, b) => a[1].triggerAt - b[1].triggerAt,
     )) {
       timers.delete(handle);
       timer.callback();

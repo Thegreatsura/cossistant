@@ -9,42 +9,42 @@ import { getAuth } from "@/lib/auth/server";
 import { CtaButton } from "./cta-button";
 
 export function DashboardButtonSkeleton() {
-	return (
-		<Button className="min-w-24 rounded-full">
-			<Skeleton className="size-4" />
-		</Button>
-	);
+  return (
+    <Button className="min-w-24 rounded-full">
+      <Skeleton className="size-4" />
+    </Button>
+  );
 }
 
 export async function DashboardButton() {
-	const { user } = await getAuth();
+  const { user } = await getAuth();
 
-	if (!user) {
-		return (
-			<>
-				<TopbarButton
-					href="/login"
-					shortcuts={["l"]}
-					tooltip="Login"
-					withBrackets={false}
-				>
-					Login
-				</TopbarButton>
-				<CtaButton />
-			</>
-		);
-	}
+  if (!user) {
+    return (
+      <>
+        <TopbarButton
+          href="/login"
+          shortcuts={["l"]}
+          tooltip="Login"
+          withBrackets={false}
+        >
+          Login
+        </TopbarButton>
+        <CtaButton />
+      </>
+    );
+  }
 
-	return (
-		<Link href="/select">
-			<Button className="h-auto rounded-md p-1 pr-3">
-				<Avatar
-					className="size-7 ring-0 ring-offset-0"
-					fallbackName={user.name}
-					url={user.image}
-				/>
-				Dashboard
-			</Button>
-		</Link>
-	);
+  return (
+    <Link href="/select">
+      <Button className="h-auto rounded-md p-1 pr-3">
+        <Avatar
+          className="size-7 ring-0 ring-offset-0"
+          fallbackName={user.name}
+          url={user.image}
+        />
+        Dashboard
+      </Button>
+    </Link>
+  );
 }

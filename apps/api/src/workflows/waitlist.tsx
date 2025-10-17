@@ -11,28 +11,28 @@ import type { WaitlistJoinData } from "./types";
 const waitlistWorkflow = new Hono();
 
 waitlistWorkflow.post(
-	"/join",
-	serve<WaitlistJoinData>(async (context) => {
-		const { userId, email, name } = context.requestPayload;
+  "/join",
+  serve<WaitlistJoinData>(async (context) => {
+    const { userId, email, name } = context.requestPayload;
 
-		await context.run("post-join-waitlist", async () => {
-			console.log(
-				`Processing waitlist join for user ${userId} with email ${email}`
-			);
+    await context.run("post-join-waitlist", async () => {
+      console.log(
+        `Processing waitlist join for user ${userId} with email ${email}`,
+      );
 
-			// Add user in resend audience
-			// Send email and add user to default audience
-			await Promise.all([
-				sendEmail({
-					to: [email],
-					subject: "Welcome to Cossistant",
-					content: <JoinedWaitlistEmail email={email} name={name || ""} />,
-					includeUnsubscribe: false,
-				}),
-				addUserToDefaultAudience(email),
-			]);
-		});
-	})
+      // Add user in resend audience
+      // Send email and add user to default audience
+      await Promise.all([
+        sendEmail({
+          to: [email],
+          subject: "Welcome to Cossistant",
+          content: <JoinedWaitlistEmail email={email} name={name || ""} />,
+          includeUnsubscribe: false,
+        }),
+        addUserToDefaultAudience(email),
+      ]);
+    });
+  }),
 );
 
 export default waitlistWorkflow;

@@ -1,47 +1,47 @@
 import type { SenderType } from "@cossistant/types";
-import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
- * Shape returned to render-prop children describing the grouped message state
+ * Shape returned to render-prop children describing the grouped timeline items state
  * and viewer specific flags.
  */
-export type MessageGroupRenderProps = {
+export type TimelineItemGroupRenderProps = {
   // Sender information
   senderType: SenderType;
   senderId: string;
   viewerType?: SenderType;
 
   // POV flags - who is viewing
-  isSentByViewer: boolean; // True if the current viewer sent these messages
-  isReceivedByViewer: boolean; // True if the current viewer received these messages
+  isSentByViewer: boolean; // True if the current viewer sent these items
+  isReceivedByViewer: boolean; // True if the current viewer received these items
 
   // Sender type flags for convenience
   isVisitor: boolean;
   isAI: boolean;
   isTeamMember: boolean;
 
-  // Message info
-  messageCount: number;
-  firstMessageId: string | undefined;
-  lastMessageId: string | undefined;
+  // Item info
+  itemCount: number;
+  firstItemId: string | undefined;
+  lastItemId: string | undefined;
 
   // Seen status
   hasBeenSeenByViewer?: boolean;
-  seenByIds?: string[]; // IDs of users who have seen the last message in group
+  seenByIds?: string[]; // IDs of users who have seen the last item in group
 };
 
-export type MessageGroupProps = Omit<
+export type TimelineItemGroupProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
   children?:
     | React.ReactNode
-    | ((props: MessageGroupRenderProps) => React.ReactNode);
+    | ((props: TimelineItemGroupRenderProps) => React.ReactNode);
   asChild?: boolean;
   className?: string;
-  items: TimelineItem[];
+  items: TimelineItemType[];
 
   // POV context - who is viewing these timeline items
   viewerId?: string; // ID of the current viewer
@@ -58,8 +58,8 @@ export type MessageGroupProps = Omit<
  * Consumers can either render their own layout via a render prop or rely on
  * slotted children. Typically used for MESSAGE-type items; EVENT items are usually rendered separately.
  */
-export const MessageGroup = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageGroupProps>(
+export const TimelineItemGroup = (() => {
+  const Component = React.forwardRef<HTMLDivElement, TimelineItemGroupProps>(
     (
       {
         children,
@@ -121,7 +121,7 @@ export const MessageGroup = (() => {
         ? seenByIds.includes(viewerId)
         : undefined;
 
-      const renderProps: MessageGroupRenderProps = {
+      const renderProps: TimelineItemGroupRenderProps = {
         senderType,
         senderId,
         viewerType,
@@ -130,9 +130,9 @@ export const MessageGroup = (() => {
         isVisitor,
         isAI,
         isTeamMember,
-        messageCount: items.length,
-        firstMessageId: firstItem?.id,
-        lastMessageId: lastItem?.id,
+        itemCount: items.length,
+        firstItemId: firstItem?.id,
+        lastItemId: lastItem?.id,
         hasBeenSeenByViewer,
         seenByIds,
       };
@@ -160,11 +160,11 @@ export const MessageGroup = (() => {
     }
   );
 
-  Component.displayName = "MessageGroup";
+  Component.displayName = "TimelineItemGroup";
   return Component;
 })();
 
-export type MessageGroupAvatarProps = Omit<
+export type TimelineItemGroupAvatarProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -177,31 +177,32 @@ export type MessageGroupAvatarProps = Omit<
  * Optional slot rendered next to a grouped batch to display an avatar, agent
  * badge or any other sender metadata supplied by the consumer UI.
  */
-export const MessageGroupAvatar = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageGroupAvatarProps>(
-    ({ children, className, asChild = false, ...props }, ref) => {
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
+export const TimelineItemGroupAvatar = (() => {
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    TimelineItemGroupAvatarProps
+  >(({ children, className, asChild = false, ...props }, ref) => {
+    return useRenderElement(
+      "div",
+      {
+        className,
+        asChild,
+      },
+      {
+        ref,
+        props: {
+          ...props,
+          children,
         },
-        {
-          ref,
-          props: {
-            ...props,
-            children,
-          },
-        }
-      );
-    }
-  );
+      }
+    );
+  });
 
-  Component.displayName = "MessageGroupAvatar";
+  Component.displayName = "TimelineItemGroupAvatar";
   return Component;
 })();
 
-export type MessageGroupHeaderProps = Omit<
+export type TimelineItemGroupHeaderProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -220,12 +221,15 @@ export type MessageGroupHeaderProps = Omit<
 };
 
 /**
- * Decorative or semantic wrapper rendered above a message batch. Useful for
+ * Decorative or semantic wrapper rendered above a timeline item batch. Useful for
  * injecting agent names, timestamps or custom status labels tied to the sender
- * metadata supplied by `MessageGroup`.
+ * metadata supplied by `TimelineItemGroup`.
  */
-export const MessageGroupHeader = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageGroupHeaderProps>(
+export const TimelineItemGroupHeader = (() => {
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    TimelineItemGroupHeaderProps
+  >(
     (
       {
         children,
@@ -260,11 +264,11 @@ export const MessageGroupHeader = (() => {
     }
   );
 
-  Component.displayName = "MessageGroupHeader";
+  Component.displayName = "TimelineItemGroupHeader";
   return Component;
 })();
 
-export type MessageGroupContentProps = Omit<
+export type TimelineItemGroupContentProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -274,35 +278,36 @@ export type MessageGroupContentProps = Omit<
 };
 
 /**
- * Container for the actual message bubbles within a batch. Consumers can
+ * Container for the actual timeline items within a batch. Consumers can
  * override the structure while inheriting layout props passed down from the
  * parent group.
  */
-export const MessageGroupContent = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageGroupContentProps>(
-    ({ children, className, asChild = false, ...props }, ref) => {
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
+export const TimelineItemGroupContent = (() => {
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    TimelineItemGroupContentProps
+  >(({ children, className, asChild = false, ...props }, ref) => {
+    return useRenderElement(
+      "div",
+      {
+        className,
+        asChild,
+      },
+      {
+        ref,
+        props: {
+          ...props,
+          children,
         },
-        {
-          ref,
-          props: {
-            ...props,
-            children,
-          },
-        }
-      );
-    }
-  );
+      }
+    );
+  });
 
-  Component.displayName = "MessageGroupContent";
+  Component.displayName = "TimelineItemGroupContent";
   return Component;
 })();
 
-export type MessageGroupSeenIndicatorProps = Omit<
+export type TimelineItemGroupSeenIndicatorProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -318,14 +323,14 @@ export type MessageGroupSeenIndicatorProps = Omit<
 };
 
 /**
- * Utility slot for showing who has viewed the most recent message in the
+ * Utility slot for showing who has viewed the most recent timeline item in the
  * group. Works with simple text children or a render prop for advanced
  * displays.
  */
-export const MessageGroupSeenIndicator = (() => {
+export const TimelineItemGroupSeenIndicator = (() => {
   const Component = React.forwardRef<
     HTMLDivElement,
-    MessageGroupSeenIndicatorProps
+    TimelineItemGroupSeenIndicatorProps
   >(
     (
       { children, className, asChild = false, seenByIds = [], ...props },
@@ -354,11 +359,11 @@ export const MessageGroupSeenIndicator = (() => {
     }
   );
 
-  Component.displayName = "MessageGroupSeenIndicator";
+  Component.displayName = "TimelineItemGroupSeenIndicator";
   return Component;
 })();
 
-export type MessageGroupReadIndicatorProps = Omit<
+export type TimelineItemGroupReadIndicatorProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -379,10 +384,10 @@ export type MessageGroupReadIndicatorProps = Omit<
  * of readers and callers can decide whether to render avatars, tooltips or a
  * basic label.
  */
-export const MessageGroupReadIndicator = (() => {
+export const TimelineItemGroupReadIndicator = (() => {
   const Component = React.forwardRef<
     HTMLDivElement,
-    MessageGroupReadIndicatorProps
+    TimelineItemGroupReadIndicatorProps
   >(
     (
       {
@@ -434,6 +439,6 @@ export const MessageGroupReadIndicator = (() => {
     }
   );
 
-  Component.displayName = "MessageGroupReadIndicator";
+  Component.displayName = "TimelineItemGroupReadIndicator";
   return Component;
 })();

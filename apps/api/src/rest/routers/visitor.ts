@@ -61,7 +61,7 @@ function formatVisitorResponse(record: VisitorRecord): VisitorResponse {
 
 function getHeaderValue(
   request: Context<RestContext>["req"],
-  name: string
+  name: string,
 ): string | null {
   return request.header(name) ?? null;
 }
@@ -139,7 +139,7 @@ function inferCityFromTimezoneHeader(timezone: string | null): string | null {
 function setIfPresent<T extends keyof UpdateVisitorRequest>(
   target: Partial<UpdateVisitorRequest>,
   key: T,
-  value: UpdateVisitorRequest[T] | null | undefined
+  value: UpdateVisitorRequest[T] | null | undefined,
 ): void {
   if (value !== null && value !== undefined) {
     target[key] = value;
@@ -351,21 +351,21 @@ visitorRouter.openapi(
     try {
       const { db, website, body } = await safelyExtractRequestData(
         c,
-        updateVisitorRequestSchema
+        updateVisitorRequestSchema,
       );
       const visitorId = c.req.param("id");
 
       if (!visitorId) {
         return c.json(
           { error: "NOT_FOUND", message: "Visitor not found" },
-          404
+          404,
         );
       }
 
       if (!website?.id) {
         return c.json(
           { error: "UNAUTHORIZED", message: "Invalid API key" },
-          401
+          401,
         );
       }
 
@@ -434,7 +434,7 @@ visitorRouter.openapi(
       if (!updatedVisitor) {
         return c.json(
           { error: "NOT_FOUND", message: "Visitor not found" },
-          404
+          404,
         );
       }
 
@@ -448,10 +448,10 @@ visitorRouter.openapi(
           error: "INTERNAL_SERVER_ERROR",
           message: "Failed to update visitor information",
         },
-        500
+        500,
       );
     }
-  }
+  },
 );
 
 // PATCH /visitors/:id/metadata - Update contact metadata for a visitor
@@ -546,21 +546,21 @@ visitorRouter.openapi(
     try {
       const { db, website, body } = await safelyExtractRequestData(
         c,
-        updateVisitorMetadataRequestSchema
+        updateVisitorMetadataRequestSchema,
       );
       const visitorId = c.req.param("id");
 
       if (!visitorId) {
         return c.json(
           { error: "NOT_FOUND", message: "Visitor not found" },
-          404
+          404,
         );
       }
 
       if (!website?.id) {
         return c.json(
           { error: "UNAUTHORIZED", message: "Invalid API key" },
-          401
+          401,
         );
       }
 
@@ -577,7 +577,7 @@ visitorRouter.openapi(
             message:
               "Visitor is not identified. Please use the /contacts/identify endpoint first to create a contact for this visitor.",
           },
-          400
+          400,
         );
       }
 
@@ -597,7 +597,7 @@ visitorRouter.openapi(
       if (!visitor) {
         return c.json(
           { error: "NOT_FOUND", message: "Visitor not found" },
-          404
+          404,
         );
       }
 
@@ -611,10 +611,10 @@ visitorRouter.openapi(
           error: "INTERNAL_SERVER_ERROR",
           message: "Failed to update contact metadata",
         },
-        500
+        500,
       );
     }
-  }
+  },
 );
 
 // GET /visitors/:id - Get visitor information by ID
@@ -692,14 +692,14 @@ visitorRouter.openapi(
       if (!visitorId) {
         return c.json(
           { error: "NOT_FOUND", message: "Visitor not found" },
-          404
+          404,
         );
       }
 
       if (!website?.id) {
         return c.json(
           { error: "UNAUTHORIZED", message: "Invalid API key" },
-          401
+          401,
         );
       }
 
@@ -711,7 +711,7 @@ visitorRouter.openapi(
       if (!visitorRecord) {
         return c.json(
           { error: "NOT_FOUND", message: "Visitor not found" },
-          404
+          404,
         );
       }
 
@@ -725,8 +725,8 @@ visitorRouter.openapi(
           error: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch visitor information",
         },
-        500
+        500,
       );
     }
-  }
+  },
 );

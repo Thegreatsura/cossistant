@@ -4,23 +4,23 @@ import { notFound, redirect } from "next/navigation";
 import { getAuth } from "./server";
 
 export const ensureWebsiteAccess = async (websiteSlug: string) => {
-	const { user } = await getAuth();
+  const { user } = await getAuth();
 
-	if (!user) {
-		redirect("/login");
-	}
+  if (!user) {
+    redirect("/login");
+  }
 
-	const accessCheck = await checkUserWebsiteAccess(db, {
-		userId: user.id,
-		websiteSlug,
-	});
+  const accessCheck = await checkUserWebsiteAccess(db, {
+    userId: user.id,
+    websiteSlug,
+  });
 
-	if (!accessCheck.hasAccess) {
-		notFound();
-	}
+  if (!accessCheck.hasAccess) {
+    notFound();
+  }
 
-	return {
-		user,
-		website: accessCheck.website,
-	};
+  return {
+    user,
+    website: accessCheck.website,
+  };
 };

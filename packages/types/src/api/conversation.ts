@@ -232,7 +232,7 @@ export const getConversationSeenDataResponseSchema = z
         deletedAt: z.string().nullable().openapi({
           description: "When the seen record was deleted, if applicable",
         }),
-      })
+      }),
     ),
   })
   .openapi({

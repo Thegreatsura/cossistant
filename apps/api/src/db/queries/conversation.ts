@@ -37,7 +37,7 @@ export async function upsertConversation(
     websiteId: string;
     visitorId: string;
     conversationId?: string;
-  }
+  },
 ) {
   const newConversationId = params.conversationId ?? generateShortPrimaryId();
   const now = new Date().toISOString();
@@ -72,7 +72,7 @@ export async function listConversations(
     status?: "open" | "closed";
     orderBy?: "createdAt" | "updatedAt";
     order?: "asc" | "desc";
-  }
+  },
 ) {
   const page = params.page ?? 1;
   const limit = params.limit ?? 3;
@@ -137,8 +137,8 @@ export async function listConversations(
         and(
           eq(conversationTimelineItem.organizationId, params.organizationId),
           inArray(conversationTimelineItem.conversationId, conversationIds),
-          isNull(conversationTimelineItem.deletedAt)
-        )
+          isNull(conversationTimelineItem.deletedAt),
+        ),
       )
       .orderBy(desc(conversationTimelineItem.createdAt));
 
@@ -176,7 +176,7 @@ export async function getConversationByIdWithLastMessage(
     organizationId: string;
     websiteId: string;
     conversationId: string;
-  }
+  },
 ) {
   const [_conversation] = await db
     .select()
@@ -185,8 +185,8 @@ export async function getConversationByIdWithLastMessage(
       and(
         eq(conversation.id, params.conversationId),
         eq(conversation.organizationId, params.organizationId),
-        eq(conversation.websiteId, params.websiteId)
-      )
+        eq(conversation.websiteId, params.websiteId),
+      ),
     );
 
   if (!_conversation) {
@@ -201,8 +201,8 @@ export async function getConversationByIdWithLastMessage(
       and(
         eq(conversationTimelineItem.conversationId, params.conversationId),
         eq(conversationTimelineItem.organizationId, params.organizationId),
-        isNull(conversationTimelineItem.deletedAt)
-      )
+        isNull(conversationTimelineItem.deletedAt),
+      ),
     )
     .orderBy(desc(conversationTimelineItem.createdAt))
     .limit(1);
@@ -222,7 +222,7 @@ export async function listConversationsHeaders(
     limit?: number;
     cursor?: string | null;
     orderBy?: "createdAt" | "updatedAt";
-  }
+  },
 ) {
   const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
   const orderBy = params.orderBy ?? "updatedAt";
@@ -252,8 +252,8 @@ export async function listConversationsHeaders(
     .where(
       and(
         eq(conversationTimelineItem.organizationId, params.organizationId),
-        isNull(conversationTimelineItem.deletedAt)
-      )
+        isNull(conversationTimelineItem.deletedAt),
+      ),
     )
     .as("last_timeline_item");
 
@@ -262,15 +262,15 @@ export async function listConversationsHeaders(
     .select({
       conversationId: conversationView.conversationId,
       viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-        "view_ids"
+        "view_ids",
       ),
     })
     .from(conversationView)
     .where(
       and(
         eq(conversationView.organizationId, params.organizationId),
-        isNull(conversationView.deletedAt)
-      )
+        isNull(conversationView.deletedAt),
+      ),
     )
     .groupBy(conversationView.conversationId)
     .as("conv_views");
@@ -294,8 +294,8 @@ export async function listConversationsHeaders(
         lt(conversation[orderBy], cursorDate),
         and(
           eq(conversation[orderBy], cursorDate),
-          lt(conversation.id, cursorId)
-        )
+          lt(conversation.id, cursorId),
+        ),
       );
       if (cursorCondition) {
         whereConditions.push(cursorCondition);
@@ -310,7 +310,7 @@ export async function listConversationsHeaders(
 
       if (cursorConversation) {
         whereConditions.push(
-          lt(conversation[orderBy], cursorConversation[orderBy])
+          lt(conversation[orderBy], cursorConversation[orderBy]),
         );
       }
     }
@@ -354,21 +354,21 @@ export async function listConversationsHeaders(
       lastTimelineItemSubquery,
       and(
         eq(lastTimelineItemSubquery.conversationId, conversation.id),
-        eq(lastTimelineItemSubquery.rn, 1) // Only get the first (latest) timeline item
-      )
+        eq(lastTimelineItemSubquery.rn, 1), // Only get the first (latest) timeline item
+      ),
     )
     .leftJoin(
       conversationSeen,
       and(
         eq(conversationSeen.conversationId, conversation.id),
-        eq(conversationSeen.userId, params.userId)
-      )
+        eq(conversationSeen.userId, params.userId),
+      ),
     )
     .leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
     .where(and(...whereConditions))
     .orderBy(
       desc(conversation[orderBy]),
-      desc(conversation.id) // Secondary sort for stable pagination
+      desc(conversation.id), // Secondary sort for stable pagination
     )
     .limit(limit + 1);
 
@@ -406,8 +406,8 @@ export async function listConversationsHeaders(
       .where(
         and(
           eq(conversationSeen.organizationId, params.organizationId),
-          inArray(conversationSeen.conversationId, conversationIds)
-        )
+          inArray(conversationSeen.conversationId, conversationIds),
+        ),
       )
       .orderBy(desc(conversationSeen.lastSeenAt));
 
@@ -489,7 +489,7 @@ export async function getConversationHeader(
     websiteId: string;
     conversationId: string;
     userId?: string | null;
-  }
+  },
 ): Promise<ConversationHeader | null> {
   const lastTimelineItemSubquery = db
     .select({
@@ -511,8 +511,8 @@ export async function getConversationHeader(
       and(
         eq(conversationTimelineItem.organizationId, params.organizationId),
         eq(conversationTimelineItem.conversationId, params.conversationId),
-        isNull(conversationTimelineItem.deletedAt)
-      )
+        isNull(conversationTimelineItem.deletedAt),
+      ),
     )
     .orderBy(desc(conversationTimelineItem.createdAt))
     .limit(1)
@@ -522,7 +522,7 @@ export async function getConversationHeader(
     .select({
       conversationId: conversationView.conversationId,
       viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-        "view_ids"
+        "view_ids",
       ),
     })
     .from(conversationView)
@@ -530,8 +530,8 @@ export async function getConversationHeader(
       and(
         eq(conversationView.organizationId, params.organizationId),
         eq(conversationView.conversationId, params.conversationId),
-        isNull(conversationView.deletedAt)
-      )
+        isNull(conversationView.deletedAt),
+      ),
     )
     .groupBy(conversationView.conversationId)
     .as("conv_views_single");
@@ -572,22 +572,22 @@ export async function getConversationHeader(
     .leftJoin(contact, eq(visitor.contactId, contact.id))
     .leftJoin(
       lastTimelineItemSubquery,
-      eq(lastTimelineItemSubquery.conversationId, conversation.id)
+      eq(lastTimelineItemSubquery.conversationId, conversation.id),
     )
     .leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
     .leftJoin(
       conversationSeen,
       and(
         eq(conversationSeen.conversationId, conversation.id),
-        userJoinCondition
-      )
+        userJoinCondition,
+      ),
     )
     .where(
       and(
         eq(conversation.organizationId, params.organizationId),
         eq(conversation.websiteId, params.websiteId),
-        eq(conversation.id, params.conversationId)
-      )
+        eq(conversation.id, params.conversationId),
+      ),
     )
     .limit(1);
 
@@ -610,8 +610,8 @@ export async function getConversationHeader(
     .where(
       and(
         eq(conversationSeen.organizationId, params.organizationId),
-        eq(conversationSeen.conversationId, params.conversationId)
-      )
+        eq(conversationSeen.conversationId, params.conversationId),
+      ),
     )
     .orderBy(desc(conversationSeen.lastSeenAt));
 
@@ -673,7 +673,7 @@ export async function getConversationById(
   db: Database,
   params: {
     conversationId: string;
-  }
+  },
 ) {
   const [_conversation] = await db
     .select()
@@ -689,7 +689,7 @@ export async function getConversationSeenData(
   params: {
     conversationId: string;
     organizationId: string;
-  }
+  },
 ) {
   const seenRows = await db
     .select({
@@ -706,8 +706,8 @@ export async function getConversationSeenData(
     .where(
       and(
         eq(conversationSeen.organizationId, params.organizationId),
-        eq(conversationSeen.conversationId, params.conversationId)
-      )
+        eq(conversationSeen.conversationId, params.conversationId),
+      ),
     )
     .orderBy(desc(conversationSeen.lastSeenAt));
 
@@ -724,7 +724,7 @@ export async function getConversationTimelineItems(
     websiteId: string;
     limit?: number;
     cursor?: string | Date | null;
-  }
+  },
 ) {
   const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
@@ -750,9 +750,9 @@ export async function getConversationTimelineItems(
             lt(conversationTimelineItem.createdAt, cursorIso),
             and(
               eq(conversationTimelineItem.createdAt, cursorIso),
-              lt(conversationTimelineItem.id, cursorId)
-            )
-          )!
+              lt(conversationTimelineItem.id, cursorId),
+            ),
+          )!,
         );
       }
     } else {
@@ -763,7 +763,7 @@ export async function getConversationTimelineItems(
 
       if (!Number.isNaN(cursorDate.getTime())) {
         whereConditions.push(
-          lt(conversationTimelineItem.createdAt, cursorDate.toISOString())
+          lt(conversationTimelineItem.createdAt, cursorDate.toISOString()),
         );
       }
     }
@@ -776,7 +776,7 @@ export async function getConversationTimelineItems(
     .where(and(...whereConditions))
     .orderBy(
       desc(conversationTimelineItem.createdAt),
-      desc(conversationTimelineItem.id)
+      desc(conversationTimelineItem.id),
     )
     .limit(limit + 1);
 

@@ -6,15 +6,15 @@ import { HotkeysProvider } from "react-hotkeys-hook";
 import { TRPCReactProvider } from "@/lib/trpc/client";
 
 type ProviderProps = {
-	children: ReactNode;
+  children: ReactNode;
 };
 
 export function Providers({ children }: ProviderProps) {
-	return (
-		<HotkeysProvider>
-			<TRPCReactProvider>
-				<NuqsAdapter>{children}</NuqsAdapter>
-			</TRPCReactProvider>
-		</HotkeysProvider>
-	);
+  return (
+    <HotkeysProvider>
+      <TRPCReactProvider>
+        <NuqsAdapter>{children}</NuqsAdapter>
+      </TRPCReactProvider>
+    </HotkeysProvider>
+  );
 }

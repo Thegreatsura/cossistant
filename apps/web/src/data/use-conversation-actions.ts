@@ -1,9 +1,9 @@
 "use client";
 
 import type {
-	OrigamiTRPCRouter,
-	RouterInputs,
-	RouterOutputs,
+  OrigamiTRPCRouter,
+  RouterInputs,
+  RouterOutputs,
 } from "@api/trpc/types";
 import { ConversationStatus } from "@cossistant/types";
 import { useQueryNormalizer } from "@normy/react-query";
@@ -13,16 +13,16 @@ import { useCallback, useMemo } from "react";
 import { useUserSession, useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import {
-	type ConversationHeader,
-	createConversationHeadersInfiniteQueryKey,
+  type ConversationHeader,
+  createConversationHeadersInfiniteQueryKey,
 } from "./conversation-header-cache";
 
 type ConversationMutationResponse =
-	RouterOutputs["conversation"]["markResolved"];
+  RouterOutputs["conversation"]["markResolved"];
 type BlockVisitorResponse = RouterOutputs["visitor"]["block"];
 
 type BaseConversationMutationVariables =
-	RouterInputs["conversation"]["markResolved"];
+  RouterInputs["conversation"]["markResolved"];
 type MarkReadVariables = RouterInputs["conversation"]["markRead"];
 type MarkUnreadVariables = RouterInputs["conversation"]["markUnread"];
 type BlockVisitorVariables = RouterInputs["visitor"]["block"];
@@ -31,697 +31,697 @@ type UnblockVisitorVariables = RouterInputs["visitor"]["unblock"];
 type TRPCError = TRPCClientErrorLike<OrigamiTRPCRouter>;
 
 type MutationContext = {
-	previousHeader?: ConversationHeader | null;
-	visitorQueryKey?: readonly unknown[] | null;
-	previousVisitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
+  previousHeader?: ConversationHeader | null;
+  visitorQueryKey?: readonly unknown[] | null;
+  previousVisitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
 };
 
 function cloneConversationHeader(
-	header: ConversationHeader
+  header: ConversationHeader,
 ): ConversationHeader {
-	return JSON.parse(JSON.stringify(header)) as ConversationHeader;
+  return JSON.parse(JSON.stringify(header)) as ConversationHeader;
 }
 
 type UseConversationActionsParams = {
-	conversationId: string;
-	visitorId?: string | null;
+  conversationId: string;
+  visitorId?: string | null;
 };
 
 type UseConversationActionsReturn = {
-	markResolved: () => Promise<ConversationMutationResponse>;
-	markOpen: () => Promise<ConversationMutationResponse>;
-	markSpam: () => Promise<ConversationMutationResponse>;
-	markNotSpam: () => Promise<ConversationMutationResponse>;
-	markArchived: () => Promise<ConversationMutationResponse>;
-	markUnarchived: () => Promise<ConversationMutationResponse>;
-	markRead: () => Promise<ConversationMutationResponse>;
-	markUnread: () => Promise<ConversationMutationResponse>;
-	blockVisitor: () => Promise<BlockVisitorResponse>;
-	unblockVisitor: () => Promise<BlockVisitorResponse>;
-	isAnyPending: boolean;
-	pendingAction: {
-		markResolved: boolean;
-		markOpen: boolean;
-		markSpam: boolean;
-		markNotSpam: boolean;
-		markArchived: boolean;
-		markUnarchived: boolean;
-		markRead: boolean;
-		markUnread: boolean;
-		blockVisitor: boolean;
-		unblockVisitor: boolean;
-	};
+  markResolved: () => Promise<ConversationMutationResponse>;
+  markOpen: () => Promise<ConversationMutationResponse>;
+  markSpam: () => Promise<ConversationMutationResponse>;
+  markNotSpam: () => Promise<ConversationMutationResponse>;
+  markArchived: () => Promise<ConversationMutationResponse>;
+  markUnarchived: () => Promise<ConversationMutationResponse>;
+  markRead: () => Promise<ConversationMutationResponse>;
+  markUnread: () => Promise<ConversationMutationResponse>;
+  blockVisitor: () => Promise<BlockVisitorResponse>;
+  unblockVisitor: () => Promise<BlockVisitorResponse>;
+  isAnyPending: boolean;
+  pendingAction: {
+    markResolved: boolean;
+    markOpen: boolean;
+    markSpam: boolean;
+    markNotSpam: boolean;
+    markArchived: boolean;
+    markUnarchived: boolean;
+    markRead: boolean;
+    markUnread: boolean;
+    blockVisitor: boolean;
+    unblockVisitor: boolean;
+  };
 };
 
 function mergeWithServerConversation(
-	existing: ConversationHeader,
-	server: ConversationMutationResponse["conversation"]
+  existing: ConversationHeader,
+  server: ConversationMutationResponse["conversation"],
 ): ConversationHeader {
-	return {
-		...existing,
-		...server,
-	};
+  return {
+    ...existing,
+    ...server,
+  };
 }
 
 function computeResolutionTime(
-	existing: ConversationHeader,
-	now: string
+  existing: ConversationHeader,
+  now: string,
 ): number | null {
-	if (!existing.startedAt) {
-		return existing.resolutionTime ?? null;
-	}
+  if (!existing.startedAt) {
+    return existing.resolutionTime ?? null;
+  }
 
-	const diffSeconds = Math.max(
-		0,
-		Math.round(
-			(new Date(now).getTime() - new Date(existing.startedAt).getTime()) / 1000
-		)
-	);
+  const diffSeconds = Math.max(
+    0,
+    Math.round(
+      (new Date(now).getTime() - new Date(existing.startedAt).getTime()) / 1000,
+    ),
+  );
 
-	return diffSeconds;
+  return diffSeconds;
 }
 
 export function useConversationActions({
-	conversationId,
-	visitorId,
+  conversationId,
+  visitorId,
 }: UseConversationActionsParams): UseConversationActionsReturn {
-	const trpc = useTRPC();
-	const website = useWebsite();
-	const { user } = useUserSession();
-	const queryClient = useQueryClient();
-	const queryNormalizer = useQueryNormalizer();
-
-	const effectiveVisitorId = visitorId ?? null;
-
-	const headersQueryKey = useMemo(
-		() =>
-			createConversationHeadersInfiniteQueryKey(
-				trpc.conversation.listConversationsHeaders.queryOptions({
-					websiteSlug: website.slug,
-				}).queryKey
-			),
-		[trpc, website.slug]
-	);
-
-	const prepareContext = useCallback(async (): Promise<MutationContext> => {
-		await queryClient.cancelQueries({ queryKey: headersQueryKey });
-
-		const existingHeader =
-			queryNormalizer.getObjectById<ConversationHeader>(conversationId);
-
-		return {
-			previousHeader: existingHeader
-				? cloneConversationHeader(existingHeader)
-				: null,
-		};
-	}, [conversationId, headersQueryKey, queryClient, queryNormalizer]);
-
-	const restoreContext = useCallback(
-		(context?: MutationContext) => {
-			if (context?.previousHeader) {
-				queryNormalizer.setNormalizedData(context.previousHeader);
-			}
-
-			if (context?.visitorQueryKey) {
-				queryClient.setQueryData(
-					context.visitorQueryKey,
-					context.previousVisitor ?? null
-				);
-			}
-		},
-		[queryClient, queryNormalizer]
-	);
-
-	const applyOptimisticUpdate = useCallback(
-		(updater: (conversation: ConversationHeader) => ConversationHeader) => {
-			const existing =
-				queryNormalizer.getObjectById<ConversationHeader>(conversationId);
-
-			if (!existing) {
-				return;
-			}
-
-			const updated = updater(existing);
-			queryNormalizer.setNormalizedData(updated);
-		},
-		[conversationId, queryNormalizer]
-	);
-
-	const markResolvedMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		BaseConversationMutationVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markResolved.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				status: ConversationStatus.RESOLVED,
-				resolvedAt: now,
-				resolvedByUserId: user.id,
-				resolvedByAiAgentId: null,
-				resolutionTime: computeResolutionTime(existing, now),
-				updatedAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markOpenMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		BaseConversationMutationVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markOpen.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				status: ConversationStatus.OPEN,
-				resolvedAt: null,
-				resolvedByUserId: null,
-				resolvedByAiAgentId: null,
-				resolutionTime: null,
-				updatedAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markSpamMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		BaseConversationMutationVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markSpam.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				status: ConversationStatus.SPAM,
-				resolvedAt: null,
-				resolvedByUserId: null,
-				resolvedByAiAgentId: null,
-				updatedAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markNotSpamMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		BaseConversationMutationVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markNotSpam.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				status: ConversationStatus.OPEN,
-				resolvedAt: null,
-				resolvedByUserId: null,
-				resolvedByAiAgentId: null,
-				resolutionTime: null,
-				updatedAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markArchivedMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		BaseConversationMutationVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markArchived.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				deletedAt: now,
-				updatedAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markUnarchivedMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		BaseConversationMutationVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markUnarchived.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				deletedAt: null,
-				updatedAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markReadMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		MarkReadVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markRead.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const now = new Date().toISOString();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				lastSeenAt: now,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const markUnreadMutation = useMutation<
-		ConversationMutationResponse,
-		TRPCError,
-		MarkUnreadVariables,
-		MutationContext
-	>({
-		...trpc.conversation.markUnread.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-
-			applyOptimisticUpdate((existing) => ({
-				...existing,
-				lastSeenAt: null,
-			}));
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data) => {
-			applyOptimisticUpdate((existing) =>
-				mergeWithServerConversation(existing, data.conversation)
-			);
-		},
-	});
-
-	const blockVisitorMutation = useMutation<
-		BlockVisitorResponse,
-		TRPCError,
-		BlockVisitorVariables,
-		MutationContext
-	>({
-		...trpc.visitor.block.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const blockedAt = new Date().toISOString();
-
-			if (effectiveVisitorId) {
-				const visitorQueryKey = trpc.conversation.getVisitorById.queryOptions({
-					websiteSlug: website.slug,
-					visitorId: effectiveVisitorId,
-				}).queryKey;
-
-				context.visitorQueryKey = visitorQueryKey;
-				context.previousVisitor =
-					queryClient.getQueryData(visitorQueryKey) ?? null;
-
-				queryClient.setQueryData(visitorQueryKey, (existing) => {
-					if (!existing) {
-						return existing;
-					}
-
-					return {
-						...existing,
-						blockedAt,
-						blockedByUserId: user.id,
-						isBlocked: true,
-						updatedAt: blockedAt,
-					};
-				});
-			}
-
-			applyOptimisticUpdate((existing) => {
-				if (!effectiveVisitorId) {
-					return existing;
-				}
-
-				const visitor = existing.visitor;
-				if (!visitor || visitor.id !== effectiveVisitorId) {
-					return existing;
-				}
-
-				return {
-					...existing,
-					visitor: {
-						...visitor,
-						blockedAt,
-						blockedByUserId: user.id,
-						isBlocked: true,
-					},
-					updatedAt: blockedAt,
-				};
-			});
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data, _variables, context) => {
-			applyOptimisticUpdate((existing) => {
-				const merged = mergeWithServerConversation(existing, data.conversation);
-
-				if (!effectiveVisitorId) {
-					return merged;
-				}
-
-				const visitor = merged.visitor;
-				if (!visitor || visitor.id !== effectiveVisitorId) {
-					return merged;
-				}
-
-				return {
-					...merged,
-					visitor: {
-						...visitor,
-						blockedAt: data.visitor.blockedAt,
-						blockedByUserId: data.visitor.blockedByUserId,
-						isBlocked: data.visitor.isBlocked,
-						lastSeenAt: data.visitor.lastSeenAt ?? visitor.lastSeenAt,
-					},
-				};
-			});
-
-			if (context?.visitorQueryKey) {
-				queryClient.setQueryData(context.visitorQueryKey, data.visitor);
-			}
-		},
-	});
-
-	const unblockVisitorMutation = useMutation<
-		BlockVisitorResponse,
-		TRPCError,
-		UnblockVisitorVariables,
-		MutationContext
-	>({
-		...trpc.visitor.unblock.mutationOptions(),
-		onMutate: async () => {
-			const context = await prepareContext();
-			const unblockedAt = new Date().toISOString();
-
-			if (effectiveVisitorId) {
-				const visitorQueryKey = trpc.conversation.getVisitorById.queryOptions({
-					websiteSlug: website.slug,
-					visitorId: effectiveVisitorId,
-				}).queryKey;
-
-				context.visitorQueryKey = visitorQueryKey;
-				context.previousVisitor =
-					queryClient.getQueryData(visitorQueryKey) ?? null;
-
-				queryClient.setQueryData(visitorQueryKey, (existing) => {
-					if (!existing) {
-						return existing;
-					}
-
-					return {
-						...existing,
-						blockedAt: null,
-						blockedByUserId: null,
-						isBlocked: false,
-						updatedAt: unblockedAt,
-					};
-				});
-			}
-
-			applyOptimisticUpdate((existing) => {
-				if (!effectiveVisitorId) {
-					return existing;
-				}
-
-				const visitor = existing.visitor;
-				if (!visitor || visitor.id !== effectiveVisitorId) {
-					return existing;
-				}
-
-				return {
-					...existing,
-					visitor: {
-						...visitor,
-						blockedAt: null,
-						blockedByUserId: null,
-						isBlocked: false,
-					},
-					updatedAt: unblockedAt,
-				};
-			});
-
-			return context;
-		},
-		onError: (_error, _variables, context) => {
-			restoreContext(context);
-		},
-		onSuccess: (data, _variables, context) => {
-			applyOptimisticUpdate((existing) => {
-				const merged = mergeWithServerConversation(existing, data.conversation);
-
-				if (!effectiveVisitorId) {
-					return merged;
-				}
-
-				const visitor = merged.visitor;
-				if (!visitor || visitor.id !== effectiveVisitorId) {
-					return merged;
-				}
-
-				return {
-					...merged,
-					visitor: {
-						...visitor,
-						blockedAt: data.visitor.blockedAt,
-						blockedByUserId: data.visitor.blockedByUserId,
-						isBlocked: data.visitor.isBlocked,
-						lastSeenAt: data.visitor.lastSeenAt ?? visitor.lastSeenAt,
-					},
-				};
-			});
-
-			if (context?.visitorQueryKey) {
-				queryClient.setQueryData(context.visitorQueryKey, data.visitor);
-			}
-		},
-	});
-
-	const markResolved = useCallback(
-		() =>
-			markResolvedMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markResolvedMutation, website.slug]
-	);
-
-	const markOpen = useCallback(
-		() =>
-			markOpenMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markOpenMutation, website.slug]
-	);
-
-	const markSpam = useCallback(
-		() =>
-			markSpamMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markSpamMutation, website.slug]
-	);
-
-	const markNotSpam = useCallback(
-		() =>
-			markNotSpamMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markNotSpamMutation, website.slug]
-	);
-
-	const markArchived = useCallback(
-		() =>
-			markArchivedMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markArchivedMutation, website.slug]
-	);
-
-	const markUnarchived = useCallback(
-		() =>
-			markUnarchivedMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markUnarchivedMutation, website.slug]
-	);
-
-	const markRead = useCallback(
-		() =>
-			markReadMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markReadMutation, website.slug]
-	);
-
-	const markUnread = useCallback(
-		() =>
-			markUnreadMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, markUnreadMutation, website.slug]
-	);
-
-	const blockVisitor = useCallback(
-		() =>
-			blockVisitorMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[blockVisitorMutation, conversationId, website.slug]
-	);
-
-	const unblockVisitor = useCallback(
-		() =>
-			unblockVisitorMutation.mutateAsync({
-				conversationId,
-				websiteSlug: website.slug,
-			}),
-		[conversationId, unblockVisitorMutation, website.slug]
-	);
-
-	return {
-		markResolved,
-		markOpen,
-		markSpam,
-		markNotSpam,
-		markArchived,
-		markUnarchived,
-		markRead,
-		markUnread,
-		blockVisitor,
-		unblockVisitor,
-		isAnyPending:
-			markResolvedMutation.isPending ||
-			markOpenMutation.isPending ||
-			markSpamMutation.isPending ||
-			markNotSpamMutation.isPending ||
-			markArchivedMutation.isPending ||
-			markUnarchivedMutation.isPending ||
-			markReadMutation.isPending ||
-			markUnreadMutation.isPending ||
-			blockVisitorMutation.isPending ||
-			unblockVisitorMutation.isPending,
-		pendingAction: {
-			markResolved: markResolvedMutation.isPending,
-			markOpen: markOpenMutation.isPending,
-			markSpam: markSpamMutation.isPending,
-			markNotSpam: markNotSpamMutation.isPending,
-			markArchived: markArchivedMutation.isPending,
-			markUnarchived: markUnarchivedMutation.isPending,
-			markRead: markReadMutation.isPending,
-			markUnread: markUnreadMutation.isPending,
-			blockVisitor: blockVisitorMutation.isPending,
-			unblockVisitor: unblockVisitorMutation.isPending,
-		},
-	};
+  const trpc = useTRPC();
+  const website = useWebsite();
+  const { user } = useUserSession();
+  const queryClient = useQueryClient();
+  const queryNormalizer = useQueryNormalizer();
+
+  const effectiveVisitorId = visitorId ?? null;
+
+  const headersQueryKey = useMemo(
+    () =>
+      createConversationHeadersInfiniteQueryKey(
+        trpc.conversation.listConversationsHeaders.queryOptions({
+          websiteSlug: website.slug,
+        }).queryKey,
+      ),
+    [trpc, website.slug],
+  );
+
+  const prepareContext = useCallback(async (): Promise<MutationContext> => {
+    await queryClient.cancelQueries({ queryKey: headersQueryKey });
+
+    const existingHeader =
+      queryNormalizer.getObjectById<ConversationHeader>(conversationId);
+
+    return {
+      previousHeader: existingHeader
+        ? cloneConversationHeader(existingHeader)
+        : null,
+    };
+  }, [conversationId, headersQueryKey, queryClient, queryNormalizer]);
+
+  const restoreContext = useCallback(
+    (context?: MutationContext) => {
+      if (context?.previousHeader) {
+        queryNormalizer.setNormalizedData(context.previousHeader);
+      }
+
+      if (context?.visitorQueryKey) {
+        queryClient.setQueryData(
+          context.visitorQueryKey,
+          context.previousVisitor ?? null,
+        );
+      }
+    },
+    [queryClient, queryNormalizer],
+  );
+
+  const applyOptimisticUpdate = useCallback(
+    (updater: (conversation: ConversationHeader) => ConversationHeader) => {
+      const existing =
+        queryNormalizer.getObjectById<ConversationHeader>(conversationId);
+
+      if (!existing) {
+        return;
+      }
+
+      const updated = updater(existing);
+      queryNormalizer.setNormalizedData(updated);
+    },
+    [conversationId, queryNormalizer],
+  );
+
+  const markResolvedMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    BaseConversationMutationVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markResolved.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        status: ConversationStatus.RESOLVED,
+        resolvedAt: now,
+        resolvedByUserId: user.id,
+        resolvedByAiAgentId: null,
+        resolutionTime: computeResolutionTime(existing, now),
+        updatedAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markOpenMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    BaseConversationMutationVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markOpen.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        status: ConversationStatus.OPEN,
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByAiAgentId: null,
+        resolutionTime: null,
+        updatedAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markSpamMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    BaseConversationMutationVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markSpam.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        status: ConversationStatus.SPAM,
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByAiAgentId: null,
+        updatedAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markNotSpamMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    BaseConversationMutationVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markNotSpam.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        status: ConversationStatus.OPEN,
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByAiAgentId: null,
+        resolutionTime: null,
+        updatedAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markArchivedMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    BaseConversationMutationVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markArchived.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        deletedAt: now,
+        updatedAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markUnarchivedMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    BaseConversationMutationVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markUnarchived.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        deletedAt: null,
+        updatedAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markReadMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    MarkReadVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markRead.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const now = new Date().toISOString();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        lastSeenAt: now,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const markUnreadMutation = useMutation<
+    ConversationMutationResponse,
+    TRPCError,
+    MarkUnreadVariables,
+    MutationContext
+  >({
+    ...trpc.conversation.markUnread.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+
+      applyOptimisticUpdate((existing) => ({
+        ...existing,
+        lastSeenAt: null,
+      }));
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data) => {
+      applyOptimisticUpdate((existing) =>
+        mergeWithServerConversation(existing, data.conversation),
+      );
+    },
+  });
+
+  const blockVisitorMutation = useMutation<
+    BlockVisitorResponse,
+    TRPCError,
+    BlockVisitorVariables,
+    MutationContext
+  >({
+    ...trpc.visitor.block.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const blockedAt = new Date().toISOString();
+
+      if (effectiveVisitorId) {
+        const visitorQueryKey = trpc.conversation.getVisitorById.queryOptions({
+          websiteSlug: website.slug,
+          visitorId: effectiveVisitorId,
+        }).queryKey;
+
+        context.visitorQueryKey = visitorQueryKey;
+        context.previousVisitor =
+          queryClient.getQueryData(visitorQueryKey) ?? null;
+
+        queryClient.setQueryData(visitorQueryKey, (existing) => {
+          if (!existing) {
+            return existing;
+          }
+
+          return {
+            ...existing,
+            blockedAt,
+            blockedByUserId: user.id,
+            isBlocked: true,
+            updatedAt: blockedAt,
+          };
+        });
+      }
+
+      applyOptimisticUpdate((existing) => {
+        if (!effectiveVisitorId) {
+          return existing;
+        }
+
+        const visitor = existing.visitor;
+        if (!visitor || visitor.id !== effectiveVisitorId) {
+          return existing;
+        }
+
+        return {
+          ...existing,
+          visitor: {
+            ...visitor,
+            blockedAt,
+            blockedByUserId: user.id,
+            isBlocked: true,
+          },
+          updatedAt: blockedAt,
+        };
+      });
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data, _variables, context) => {
+      applyOptimisticUpdate((existing) => {
+        const merged = mergeWithServerConversation(existing, data.conversation);
+
+        if (!effectiveVisitorId) {
+          return merged;
+        }
+
+        const visitor = merged.visitor;
+        if (!visitor || visitor.id !== effectiveVisitorId) {
+          return merged;
+        }
+
+        return {
+          ...merged,
+          visitor: {
+            ...visitor,
+            blockedAt: data.visitor.blockedAt,
+            blockedByUserId: data.visitor.blockedByUserId,
+            isBlocked: data.visitor.isBlocked,
+            lastSeenAt: data.visitor.lastSeenAt ?? visitor.lastSeenAt,
+          },
+        };
+      });
+
+      if (context?.visitorQueryKey) {
+        queryClient.setQueryData(context.visitorQueryKey, data.visitor);
+      }
+    },
+  });
+
+  const unblockVisitorMutation = useMutation<
+    BlockVisitorResponse,
+    TRPCError,
+    UnblockVisitorVariables,
+    MutationContext
+  >({
+    ...trpc.visitor.unblock.mutationOptions(),
+    onMutate: async () => {
+      const context = await prepareContext();
+      const unblockedAt = new Date().toISOString();
+
+      if (effectiveVisitorId) {
+        const visitorQueryKey = trpc.conversation.getVisitorById.queryOptions({
+          websiteSlug: website.slug,
+          visitorId: effectiveVisitorId,
+        }).queryKey;
+
+        context.visitorQueryKey = visitorQueryKey;
+        context.previousVisitor =
+          queryClient.getQueryData(visitorQueryKey) ?? null;
+
+        queryClient.setQueryData(visitorQueryKey, (existing) => {
+          if (!existing) {
+            return existing;
+          }
+
+          return {
+            ...existing,
+            blockedAt: null,
+            blockedByUserId: null,
+            isBlocked: false,
+            updatedAt: unblockedAt,
+          };
+        });
+      }
+
+      applyOptimisticUpdate((existing) => {
+        if (!effectiveVisitorId) {
+          return existing;
+        }
+
+        const visitor = existing.visitor;
+        if (!visitor || visitor.id !== effectiveVisitorId) {
+          return existing;
+        }
+
+        return {
+          ...existing,
+          visitor: {
+            ...visitor,
+            blockedAt: null,
+            blockedByUserId: null,
+            isBlocked: false,
+          },
+          updatedAt: unblockedAt,
+        };
+      });
+
+      return context;
+    },
+    onError: (_error, _variables, context) => {
+      restoreContext(context);
+    },
+    onSuccess: (data, _variables, context) => {
+      applyOptimisticUpdate((existing) => {
+        const merged = mergeWithServerConversation(existing, data.conversation);
+
+        if (!effectiveVisitorId) {
+          return merged;
+        }
+
+        const visitor = merged.visitor;
+        if (!visitor || visitor.id !== effectiveVisitorId) {
+          return merged;
+        }
+
+        return {
+          ...merged,
+          visitor: {
+            ...visitor,
+            blockedAt: data.visitor.blockedAt,
+            blockedByUserId: data.visitor.blockedByUserId,
+            isBlocked: data.visitor.isBlocked,
+            lastSeenAt: data.visitor.lastSeenAt ?? visitor.lastSeenAt,
+          },
+        };
+      });
+
+      if (context?.visitorQueryKey) {
+        queryClient.setQueryData(context.visitorQueryKey, data.visitor);
+      }
+    },
+  });
+
+  const markResolved = useCallback(
+    () =>
+      markResolvedMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markResolvedMutation, website.slug],
+  );
+
+  const markOpen = useCallback(
+    () =>
+      markOpenMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markOpenMutation, website.slug],
+  );
+
+  const markSpam = useCallback(
+    () =>
+      markSpamMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markSpamMutation, website.slug],
+  );
+
+  const markNotSpam = useCallback(
+    () =>
+      markNotSpamMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markNotSpamMutation, website.slug],
+  );
+
+  const markArchived = useCallback(
+    () =>
+      markArchivedMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markArchivedMutation, website.slug],
+  );
+
+  const markUnarchived = useCallback(
+    () =>
+      markUnarchivedMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markUnarchivedMutation, website.slug],
+  );
+
+  const markRead = useCallback(
+    () =>
+      markReadMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markReadMutation, website.slug],
+  );
+
+  const markUnread = useCallback(
+    () =>
+      markUnreadMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, markUnreadMutation, website.slug],
+  );
+
+  const blockVisitor = useCallback(
+    () =>
+      blockVisitorMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [blockVisitorMutation, conversationId, website.slug],
+  );
+
+  const unblockVisitor = useCallback(
+    () =>
+      unblockVisitorMutation.mutateAsync({
+        conversationId,
+        websiteSlug: website.slug,
+      }),
+    [conversationId, unblockVisitorMutation, website.slug],
+  );
+
+  return {
+    markResolved,
+    markOpen,
+    markSpam,
+    markNotSpam,
+    markArchived,
+    markUnarchived,
+    markRead,
+    markUnread,
+    blockVisitor,
+    unblockVisitor,
+    isAnyPending:
+      markResolvedMutation.isPending ||
+      markOpenMutation.isPending ||
+      markSpamMutation.isPending ||
+      markNotSpamMutation.isPending ||
+      markArchivedMutation.isPending ||
+      markUnarchivedMutation.isPending ||
+      markReadMutation.isPending ||
+      markUnreadMutation.isPending ||
+      blockVisitorMutation.isPending ||
+      unblockVisitorMutation.isPending,
+    pendingAction: {
+      markResolved: markResolvedMutation.isPending,
+      markOpen: markOpenMutation.isPending,
+      markSpam: markSpamMutation.isPending,
+      markNotSpam: markNotSpamMutation.isPending,
+      markArchived: markArchivedMutation.isPending,
+      markUnarchived: markUnarchivedMutation.isPending,
+      markRead: markReadMutation.isPending,
+      markUnread: markUnreadMutation.isPending,
+      blockVisitor: blockVisitorMutation.isPending,
+      unblockVisitor: unblockVisitorMutation.isPending,
+    },
+  };
 }

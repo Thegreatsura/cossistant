@@ -40,7 +40,7 @@ type SetTypingOptions = TypingOptions & {
 function makeKey(
   conversationId: string,
   actorType: TypingActorType,
-  actorId: string
+  actorId: string,
 ): string {
   return `${conversationId}:${actorType}:${actorId}`;
 }
@@ -48,7 +48,7 @@ function makeKey(
 function removeEntry(
   state: TypingState,
   conversationId: string,
-  key: string
+  key: string,
 ): TypingState {
   const existingConversation = state.conversations[conversationId];
   if (!(existingConversation && key in existingConversation)) {
@@ -78,7 +78,7 @@ export type TypingStore = Store<TypingState> & {
 
 export function createTypingStore(
   initialState: TypingState = { conversations: {} },
-  dependencies: TypingStoreDependencies = {}
+  dependencies: TypingStoreDependencies = {},
 ): TypingStore {
   const {
     now = () => Date.now(),
@@ -106,13 +106,13 @@ export function createTypingStore(
   const scheduleRemoval = (
     key: string,
     options: TypingOptions,
-    ttl: number
+    ttl: number,
   ) => {
     clearTimer(key);
     const handle = schedule(() => {
       timers.delete(key);
       store.setState((state) =>
-        removeEntry(state, options.conversationId, key)
+        removeEntry(state, options.conversationId, key),
       );
     }, ttl);
     timers.set(key, handle);
@@ -192,14 +192,14 @@ export function createTypingStore(
 
 export function setTypingState(
   store: TypingStore,
-  options: SetTypingOptions
+  options: SetTypingOptions,
 ): void {
   store.setTyping(options);
 }
 
 export function clearTypingState(
   store: TypingStore,
-  options: TypingOptions
+  options: TypingOptions,
 ): void {
   store.removeTyping(options);
 }
@@ -212,7 +212,7 @@ export function applyConversationTypingEvent(
     ignoreUserId?: string | null;
     ignoreAiAgentId?: string | null;
     ttlMs?: number;
-  } = {}
+  } = {},
 ): void {
   const { payload } = event;
   let actorType: TypingActorType | null = null;
@@ -265,7 +265,7 @@ export function applyConversationTypingEvent(
 
 export function clearTypingFromTimelineItem(
   store: TypingStore,
-  event: RealtimeEvent<"timelineItemCreated">
+  event: RealtimeEvent<"timelineItemCreated">,
 ): void {
   const { item } = event.payload;
   let actorType: TypingActorType | null = null;
@@ -295,7 +295,7 @@ export function clearTypingFromTimelineItem(
 
 export function getConversationTyping(
   store: Store<TypingState>,
-  conversationId: string
+  conversationId: string,
 ): ConversationTypingState | undefined {
   return store.getState().conversations[conversationId];
 }

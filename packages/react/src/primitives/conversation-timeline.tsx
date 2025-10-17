@@ -1,28 +1,28 @@
-import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
- * High-level state of the list handed to render-prop children so they can show
+ * High-level state of the timeline handed to render-prop children so they can show
  * skeletons, empty states or pagination affordances.
  */
-export type MessageListRenderProps = {
+export type ConversationTimelineRenderProps = {
   itemCount: number;
   isLoading?: boolean;
   hasMore?: boolean;
   isEmpty: boolean;
 };
 
-export type MessageListProps = Omit<
+export type ConversationTimelineProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
   children?:
     | React.ReactNode
-    | ((props: MessageListRenderProps) => React.ReactNode);
+    | ((props: ConversationTimelineRenderProps) => React.ReactNode);
   asChild?: boolean;
   className?: string;
-  items?: TimelineItem[];
+  items?: TimelineItemType[];
   isLoading?: boolean;
   hasMore?: boolean;
   autoScroll?: boolean;
@@ -31,11 +31,11 @@ export type MessageListProps = Omit<
 };
 
 /**
- * Scrollable log that wires auto-scroll behaviour, live-region semantics and
- * pagination callbacks for support conversations.
+ * Scrollable conversation timeline that wires auto-scroll behaviour, live-region semantics and
+ * pagination callbacks for displaying timeline items (messages, events, etc.).
  */
-export const MessageList = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageListProps>(
+export const ConversationTimeline = (() => {
+  const Component = React.forwardRef<HTMLDivElement, ConversationTimelineProps>(
     (
       {
         children,
@@ -58,7 +58,7 @@ export const MessageList = (() => {
       const isInitialRender = React.useRef(true);
       const previousItemCount = React.useRef(items.length);
 
-      const renderProps: MessageListRenderProps = {
+      const renderProps: ConversationTimelineRenderProps = {
         itemCount: items.length,
         isLoading,
         hasMore,
@@ -114,7 +114,7 @@ export const MessageList = (() => {
           state: renderProps,
           props: {
             role: "log",
-            "aria-label": "Message list",
+            "aria-label": "Conversation timeline",
             "aria-live": "polite",
             "aria-relevant": "additions",
             onScroll: handleScroll,
@@ -126,11 +126,11 @@ export const MessageList = (() => {
     }
   );
 
-  Component.displayName = "MessageList";
+  Component.displayName = "ConversationTimeline";
   return Component;
 })();
 
-export type MessageListContainerProps = Omit<
+export type ConversationTimelineContainerProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -140,34 +140,35 @@ export type MessageListContainerProps = Omit<
 };
 
 /**
- * Wrapper around the scrollable list giving consumers an easy hook to add
- * padding, backgrounds or transitions without touching the core list logic.
+ * Wrapper around the scrollable timeline giving consumers an easy hook to add
+ * padding, backgrounds or transitions without touching the core timeline logic.
  */
-export const MessageListContainer = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageListContainerProps>(
-    ({ children, className, asChild = false, ...props }, ref) => {
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
+export const ConversationTimelineContainer = (() => {
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    ConversationTimelineContainerProps
+  >(({ children, className, asChild = false, ...props }, ref) => {
+    return useRenderElement(
+      "div",
+      {
+        className,
+        asChild,
+      },
+      {
+        ref,
+        props: {
+          ...props,
+          children,
         },
-        {
-          ref,
-          props: {
-            ...props,
-            children,
-          },
-        }
-      );
-    }
-  );
+      }
+    );
+  });
 
-  Component.displayName = "MessageListContainer";
+  Component.displayName = "ConversationTimelineContainer";
   return Component;
 })();
 
-export type MessageListLoadingProps = Omit<
+export type ConversationTimelineLoadingProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -177,36 +178,37 @@ export type MessageListLoadingProps = Omit<
 };
 
 /**
- * Accessible status region for loading more messages. Lets host apps render
+ * Accessible status region for loading more timeline items. Lets host apps render
  * skeletons or shimmer states without reimplementing ARIA wiring.
  */
-export const MessageListLoading = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageListLoadingProps>(
-    ({ children, className, asChild = false, ...props }, ref) => {
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
+export const ConversationTimelineLoading = (() => {
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    ConversationTimelineLoadingProps
+  >(({ children, className, asChild = false, ...props }, ref) => {
+    return useRenderElement(
+      "div",
+      {
+        className,
+        asChild,
+      },
+      {
+        ref,
+        props: {
+          role: "status",
+          "aria-label": "Loading timeline items",
+          ...props,
+          children,
         },
-        {
-          ref,
-          props: {
-            role: "status",
-            "aria-label": "Loading messages",
-            ...props,
-            children,
-          },
-        }
-      );
-    }
-  );
+      }
+    );
+  });
 
-  Component.displayName = "MessageListLoading";
+  Component.displayName = "ConversationTimelineLoading";
   return Component;
 })();
 
-export type MessageListEmptyProps = Omit<
+export type ConversationTimelineEmptyProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
@@ -216,31 +218,32 @@ export type MessageListEmptyProps = Omit<
 };
 
 /**
- * Placeholder state rendered when no messages are present. Uses a polite status
- * region so screen readers announce the absence of messages.
+ * Placeholder state rendered when no timeline items are present. Uses a polite status
+ * region so screen readers announce the empty state.
  */
-export const MessageListEmpty = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageListEmptyProps>(
-    ({ children, className, asChild = false, ...props }, ref) => {
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
+export const ConversationTimelineEmpty = (() => {
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    ConversationTimelineEmptyProps
+  >(({ children, className, asChild = false, ...props }, ref) => {
+    return useRenderElement(
+      "div",
+      {
+        className,
+        asChild,
+      },
+      {
+        ref,
+        props: {
+          role: "status",
+          "aria-label": "No timeline items",
+          ...props,
+          children,
         },
-        {
-          ref,
-          props: {
-            role: "status",
-            "aria-label": "No messages",
-            ...props,
-            children,
-          },
-        }
-      );
-    }
-  );
+      }
+    );
+  });
 
-  Component.displayName = "MessageListEmpty";
+  Component.displayName = "ConversationTimelineEmpty";
   return Component;
 })();

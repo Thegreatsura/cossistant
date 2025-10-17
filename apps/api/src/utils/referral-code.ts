@@ -5,9 +5,9 @@ import { nanoid } from "nanoid";
 import { slugify } from "./db";
 
 type UserInfo = {
-	name: string;
-	email: string;
-	image?: string;
+  name: string;
+  email: string;
+  image?: string;
 };
 
 /**
@@ -15,36 +15,36 @@ type UserInfo = {
  * to create a clean, readable code while ensuring uniqueness.
  */
 export async function generateUniqueReferralCode(
-	userInfo: UserInfo
+  userInfo: UserInfo,
 ): Promise<string> {
-	const baseCode = createBaseReferralCode(userInfo);
+  const baseCode = createBaseReferralCode(userInfo);
 
-	// Try the base code first
-	if (await isReferralCodeAvailable(baseCode)) {
-		return baseCode;
-	}
+  // Try the base code first
+  if (await isReferralCodeAvailable(baseCode)) {
+    return baseCode;
+  }
 
-	// Try with short nanoid suffix (3 chars for readability)
-	const maxRetries = 5;
-	for (let i = 0; i < maxRetries; i++) {
-		const codeWithSuffix = `${baseCode}-${nanoid(3)}`;
+  // Try with short nanoid suffix (3 chars for readability)
+  const maxRetries = 5;
+  for (let i = 0; i < maxRetries; i++) {
+    const codeWithSuffix = `${baseCode}-${nanoid(3)}`;
 
-		if (await isReferralCodeAvailable(codeWithSuffix)) {
-			return codeWithSuffix;
-		}
-	}
+    if (await isReferralCodeAvailable(codeWithSuffix)) {
+      return codeWithSuffix;
+    }
+  }
 
-	// Fallback: use email prefix with nanoid
-	const emailPrefix = userInfo.email.split("@")[0];
-	const fallbackCode = `${slugify(emailPrefix)}-${nanoid(6)}`;
+  // Fallback: use email prefix with nanoid
+  const emailPrefix = userInfo.email.split("@")[0];
+  const fallbackCode = `${slugify(emailPrefix)}-${nanoid(6)}`;
 
-	// This should virtually always work, but check anyway
-	if (await isReferralCodeAvailable(fallbackCode)) {
-		return fallbackCode;
-	}
+  // This should virtually always work, but check anyway
+  if (await isReferralCodeAvailable(fallbackCode)) {
+    return fallbackCode;
+  }
 
-	// Ultimate fallback: pure nanoid (should never reach here)
-	return `user-${nanoid(8)}`;
+  // Ultimate fallback: pure nanoid (should never reach here)
+  return `user-${nanoid(8)}`;
 }
 
 /**
@@ -52,31 +52,31 @@ export async function generateUniqueReferralCode(
  * Priority: name > username from email > email prefix
  */
 function createBaseReferralCode(userInfo: UserInfo): string {
-	// Try to use the full name if available
-	if (userInfo.name?.trim()) {
-		return slugify(userInfo.name.trim());
-	}
+  // Try to use the full name if available
+  if (userInfo.name?.trim()) {
+    return slugify(userInfo.name.trim());
+  }
 
-	// Fallback to email prefix
-	const emailPrefix = userInfo.email.split("@")[0];
-	return slugify(emailPrefix);
+  // Fallback to email prefix
+  const emailPrefix = userInfo.email.split("@")[0];
+  return slugify(emailPrefix);
 }
 
 /**
  * Checks if a referral code is available in the database
  */
 async function isReferralCodeAvailable(code: string): Promise<boolean> {
-	try {
-		const existing = await db
-			.select({ id: waitingListEntry.id })
-			.from(waitingListEntry)
-			.where(eq(waitingListEntry.uniqueReferralCode, code))
-			.limit(1);
+  try {
+    const existing = await db
+      .select({ id: waitingListEntry.id })
+      .from(waitingListEntry)
+      .where(eq(waitingListEntry.uniqueReferralCode, code))
+      .limit(1);
 
-		return existing.length === 0;
-	} catch (error) {
-		console.error("Error checking referral code availability:", error);
-		// If we can't check, assume it's not available to be safe
-		return false;
-	}
+    return existing.length === 0;
+  } catch (error) {
+    console.error("Error checking referral code availability:", error);
+    // If we can't check, assume it's not available to be safe
+    return false;
+  }
 }

@@ -103,7 +103,7 @@ export class CossistantClient {
 
   // Website information
   async fetchWebsite(
-    params: { force?: boolean } = {}
+    params: { force?: boolean } = {},
   ): Promise<PublicWebsiteResponse> {
     const { force = false } = params;
     const current: WebsiteState = this.websiteStore.getState();
@@ -149,7 +149,7 @@ export class CossistantClient {
   }
 
   async updateVisitorMetadata(
-    metadata: VisitorMetadata
+    metadata: VisitorMetadata,
   ): Promise<VisitorResponse> {
     return this.restClient.updateVisitorMetadata(metadata);
   }
@@ -166,19 +166,19 @@ export class CossistantClient {
   }
 
   async updateContactMetadata(
-    metadata: Record<string, unknown>
+    metadata: Record<string, unknown>,
   ): Promise<VisitorResponse> {
     return this.restClient.updateContactMetadata(metadata);
   }
 
   // Conversation management
   initiateConversation(
-    params: InitiateConversationParams = {}
+    params: InitiateConversationParams = {},
   ): InitiateConversationResult {
     const conversationId = params.conversationId ?? generateConversationId();
     const now = new Date().toISOString();
     const timelineItems = (params.defaultTimelineItems ?? []).map((item) =>
-      normalizeBootstrapTimelineItem(conversationId, item)
+      normalizeBootstrapTimelineItem(conversationId, item),
     );
     const existing = this.conversationsStore.getState().byId[conversationId];
     const baseVisitorId =
@@ -230,7 +230,7 @@ export class CossistantClient {
   }
 
   async createConversation(
-    params?: Partial<CreateConversationRequestBody>
+    params?: Partial<CreateConversationRequestBody>,
   ): Promise<CreateConversationResponseBody> {
     const response = await this.restClient.createConversation(params);
     this.conversationsStore.ingestConversation(response.conversation);
@@ -238,7 +238,7 @@ export class CossistantClient {
   }
 
   async listConversations(
-    params?: Partial<ListConversationsRequest>
+    params?: Partial<ListConversationsRequest>,
   ): Promise<ListConversationsResponse> {
     const response = await this.restClient.listConversations(params);
     this.conversationsStore.ingestList(response);
@@ -246,7 +246,7 @@ export class CossistantClient {
   }
 
   async getConversation(
-    params: GetConversationRequest
+    params: GetConversationRequest,
   ): Promise<GetConversationResponse> {
     const response = await this.restClient.getConversation(params);
     this.conversationsStore.ingestConversation(response.conversation);
@@ -256,7 +256,7 @@ export class CossistantClient {
   async markConversationSeen(
     params: {
       conversationId: string;
-    } & Partial<MarkConversationSeenRequestBody>
+    } & Partial<MarkConversationSeenRequestBody>,
   ): Promise<MarkConversationSeenResponseBody> {
     return this.restClient.markConversationSeen(params);
   }
@@ -277,7 +277,7 @@ export class CossistantClient {
   // Timeline items management
 
   async getConversationTimelineItems(
-    params: GetConversationTimelineItemsRequest & { conversationId: string }
+    params: GetConversationTimelineItemsRequest & { conversationId: string },
   ): Promise<GetConversationTimelineItemsResponse> {
     const response = await this.restClient.getConversationTimelineItems(params);
     this.timelineItemsStore.ingestPage(params.conversationId, {
@@ -289,7 +289,7 @@ export class CossistantClient {
   }
 
   async sendMessage(
-    params: SendTimelineItemRequest & { createIfPending?: boolean }
+    params: SendTimelineItemRequest & { createIfPending?: boolean },
   ): Promise<
     SendTimelineItemResponse & {
       conversation?: Conversation;
@@ -336,7 +336,7 @@ export class CossistantClient {
         this.conversationsStore.ingestConversation(response.conversation);
         this.timelineItemsStore.removeTimelineItem(
           rest.conversationId,
-          optimisticId
+          optimisticId,
         );
         this.timelineItemsStore.clearConversation(rest.conversationId);
 
@@ -365,7 +365,7 @@ export class CossistantClient {
       } catch (error) {
         this.timelineItemsStore.removeTimelineItem(
           rest.conversationId,
-          optimisticId
+          optimisticId,
         );
         throw error;
       }
@@ -388,13 +388,13 @@ export class CossistantClient {
       this.timelineItemsStore.finalizeTimelineItem(
         rest.conversationId,
         optimisticId,
-        response.item
+        response.item,
       );
       return response;
     } catch (error) {
       this.timelineItemsStore.removeTimelineItem(
         rest.conversationId,
-        optimisticId
+        optimisticId,
       );
       throw error;
     }
@@ -437,7 +437,7 @@ export class CossistantClient {
 
 function normalizeBootstrapTimelineItem(
   conversationId: string,
-  item: DefaultMessage | TimelineItem
+  item: DefaultMessage | TimelineItem,
 ): TimelineItem {
   if (isDefaultMessage(item)) {
     const createdAt = new Date().toISOString();
@@ -481,7 +481,7 @@ function normalizeBootstrapTimelineItem(
 }
 
 function isDefaultMessage(
-  item: DefaultMessage | TimelineItem
+  item: DefaultMessage | TimelineItem,
 ): item is DefaultMessage {
   return (item as DefaultMessage).content !== undefined;
 }

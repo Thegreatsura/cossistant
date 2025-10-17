@@ -28,7 +28,7 @@ export function Realtime({ children }: { children: ReactNode }) {
       trpc.visitor.listOnline.queryOptions({
         websiteSlug: website.slug,
       }),
-    [trpc, website.slug]
+    [trpc, website.slug],
   );
 
   const realtimeContext = useMemo<DashboardRealtimeContext>(
@@ -41,7 +41,7 @@ export function Realtime({ children }: { children: ReactNode }) {
       },
       userId: user?.id ?? null,
     }),
-    [queryClient, queryNormalizer, website.id, website.slug, user?.id]
+    [queryClient, queryNormalizer, website.id, website.slug, user?.id],
   );
 
   const events = useMemo<RealtimeEventHandlersMap<DashboardRealtimeContext>>(
@@ -101,7 +101,7 @@ export function Realtime({ children }: { children: ReactNode }) {
         },
       ],
     }),
-    [presenceQueryOptions.queryKey]
+    [presenceQueryOptions.queryKey],
   );
 
   useRealtime<DashboardRealtimeContext>({

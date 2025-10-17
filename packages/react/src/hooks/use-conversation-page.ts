@@ -1,4 +1,3 @@
-import type { ConversationEvent, Message } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useMemo, useRef } from "react";
 import { useSupport } from "../provider";
@@ -27,23 +26,16 @@ export type UseConversationPageOptions = {
 	onConversationIdChange?: (conversationId: string) => void;
 
 	/**
-	 * Optional messages to pass through (e.g., optimistic updates).
+	 * Optional timeline items to pass through (e.g., optimistic updates).
 	 */
-	messages?: Message[];
-
-	/**
-	 * Optional events to pass through.
-	 */
-	events?: ConversationEvent[];
+	items?: TimelineItem[];
 };
 
 export type UseConversationPageReturn = {
 	// Conversation state
 	conversationId: string;
 	isPending: boolean;
-	messages: Message[];
-	events: ConversationEvent[];
-	items: TimelineItem[]; // New: unified timeline items
+	items: TimelineItem[];
 	isLoading: boolean;
 	error: Error | null;
 
@@ -60,8 +52,8 @@ export type UseConversationPageReturn = {
 	};
 
 	// UI helpers
-	hasMessages: boolean;
-	lastMessage: Message | null;
+	hasItems: boolean;
+	lastTimelineItem: TimelineItem | null;
 };
 
 /**
@@ -107,8 +99,7 @@ export function useConversationPage(
 		conversationId: initialConversationId,
 		initialMessage,
 		onConversationIdChange,
-		messages: passedMessages = [],
-		events: passedEvents = [],
+		items: passedItems = [],
 	} = options;
 
 	const { client, visitor } = useSupport();
@@ -122,12 +113,14 @@ export function useConversationPage(
 		onConversationCreated: onConversationIdChange,
 	});
 
-	// 2. Get default messages for pending state
-	const defaultMessages = useDefaultMessages({
+	// 2. Get default timeline items for pending state
+	const defaultTimelineItems = useDefaultMessages({
 		conversationId: lifecycle.conversationId,
 	});
 
-	const effectiveDefaultMessages = hasInitialMessage ? [] : defaultMessages;
+	const effectiveDefaultTimelineItems = hasInitialMessage
+		? []
+		: defaultTimelineItems;
 
 	// 3. Fetch timeline items from backend if real conversation exists
 	const timelineQuery = useConversationTimelineItems(lifecycle.conversationId, {
@@ -141,72 +134,34 @@ export function useConversationPage(
 			return timelineQuery.items;
 		}
 
-		// If pending, convert default messages to timeline items
-		if (lifecycle.isPending && effectiveDefaultMessages.length > 0) {
-			return effectiveDefaultMessages.map((msg) => ({
-				id: msg.id,
-				conversationId: lifecycle.conversationId,
-				organizationId: "", // Not available for default messages
-				visibility: msg.visibility,
-				type: "message" as const,
-				text: msg.bodyMd,
-				parts: [{ type: "text" as const, text: msg.bodyMd }],
-				userId: msg.userId,
-				visitorId: msg.visitorId,
-				aiAgentId: msg.aiAgentId,
-				createdAt: msg.createdAt,
-				deletedAt: msg.deletedAt,
-			}));
+		// If pending, use default timeline items
+		if (lifecycle.isPending && effectiveDefaultTimelineItems.length > 0) {
+			return effectiveDefaultTimelineItems;
 		}
 
-		// Fallback to empty
+		// Use passed items as fallback
+		if (passedItems.length > 0) {
+			return passedItems;
+		}
+
 		return [];
 	}, [
 		timelineQuery.items,
 		lifecycle.isPending,
-		lifecycle.conversationId,
-		effectiveDefaultMessages,
+		effectiveDefaultTimelineItems,
+		passedItems,
 	]);
 
-	// Extract messages and events from timeline items for backward compatibility
-	const displayMessages = useMemo(() => {
-		return displayItems
-			.filter((item) => item.type === "message")
-			.map((item) => ({
-				id: item.id || "",
-				bodyMd: item.text || "",
-				type: "text" as const,
-				userId: item.userId,
-				visitorId: item.visitorId,
-				aiAgentId: item.aiAgentId,
-				conversationId: item.conversationId,
-				organizationId: item.organizationId,
-				websiteId: "", // Not available in timeline item
-				parentMessageId: null,
-				modelUsed: null,
-				visibility: item.visibility,
-				createdAt: item.createdAt,
-				updatedAt: item.createdAt,
-				deletedAt: item.deletedAt,
-			})) as Message[];
-	}, [displayItems]);
-
-	const displayEvents = useMemo(() => {
-		// Events are embedded in timeline items, extract them
-		// This is a fallback for legacy components
-		return [] as ConversationEvent[];
-	}, []);
-
-	const lastMessage = useMemo(
-		() => displayMessages.at(-1) ?? null,
-		[displayMessages]
+	const lastTimelineItem = useMemo(
+		() => displayItems.at(-1) ?? null,
+		[displayItems]
 	);
 
 	// 5. Set up message composer
 	const composer = useMessageComposer({
 		client,
 		conversationId: lifecycle.realConversationId,
-		defaultMessages: effectiveDefaultMessages,
+		defaultTimelineItems: effectiveDefaultTimelineItems,
 		visitorId: visitor?.id,
 		onMessageSent: (newConversationId) => {
 			// Transition from pending to real conversation
@@ -265,14 +220,12 @@ export function useConversationPage(
 		client,
 		conversationId: lifecycle.realConversationId,
 		visitorId: visitor?.id,
-		lastMessage,
+		lastTimelineItem,
 	});
 
 	return {
 		conversationId: lifecycle.conversationId,
 		isPending: lifecycle.isPending,
-		messages: displayMessages,
-		events: displayEvents,
 		items: displayItems,
 		isLoading: timelineQuery.isLoading,
 		error: timelineQuery.error || composer.error,
@@ -286,7 +239,7 @@ export function useConversationPage(
 			removeFile: composer.removeFile,
 			submit: composer.submit,
 		},
-		hasMessages: displayMessages.length > 0,
-		lastMessage,
+		hasItems: displayItems.length > 0,
+		lastTimelineItem,
 	};
 }

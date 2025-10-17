@@ -3,18 +3,18 @@ import { prefetch, trpc } from "@/lib/trpc/server";
 import { ContactsPageContent } from "./contacts-page-content";
 
 type DashboardPageProps = {
-	params: Promise<{
-		websiteSlug: string;
-	}>;
+  params: Promise<{
+    websiteSlug: string;
+  }>;
 };
 
 export default async function ContactsPage({ params }: DashboardPageProps) {
-	const { websiteSlug } = await params;
+  const { websiteSlug } = await params;
 
-	await ensureWebsiteAccess(websiteSlug);
-	await prefetch(
-		trpc.contact.list.queryOptions({ websiteSlug, page: 1, limit: 25 })
-	);
+  await ensureWebsiteAccess(websiteSlug);
+  await prefetch(
+    trpc.contact.list.queryOptions({ websiteSlug, page: 1, limit: 25 }),
+  );
 
-	return <ContactsPageContent websiteSlug={websiteSlug} />;
+  return <ContactsPageContent websiteSlug={websiteSlug} />;
 }

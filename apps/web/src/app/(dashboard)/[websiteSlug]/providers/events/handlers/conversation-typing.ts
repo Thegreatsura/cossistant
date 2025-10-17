@@ -26,7 +26,7 @@ export function handleConversationTyping({
 }
 
 export function handleTimelineItemCreatedTypingClear(
-  event: TimelineItemCreatedEvent
+  event: TimelineItemCreatedEvent,
 ) {
   // Clear typing state when a timeline item is created
   clearTypingFromTimelineItem(event);

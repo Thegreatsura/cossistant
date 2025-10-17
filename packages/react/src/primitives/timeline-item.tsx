@@ -1,4 +1,4 @@
-import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import { useRenderElement } from "../utils/use-render-element";
@@ -7,33 +7,35 @@ import { useRenderElement } from "../utils/use-render-element";
  * Metadata describing the origin of a timeline item and pre-parsed content that can
  * be consumed by render-prop children.
  */
-export type MessageRenderProps = {
+export type TimelineItemRenderProps = {
   isVisitor: boolean;
   isAI: boolean;
   isHuman: boolean;
   timestamp: Date;
-  text: string;
+  text: string | null;
   senderType: "visitor" | "ai" | "human";
   itemType: "message" | "event";
 };
 
-export type MessageProps = Omit<
+export type TimelineItemProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
-  children?: React.ReactNode | ((props: MessageRenderProps) => React.ReactNode);
+  children?:
+    | React.ReactNode
+    | ((props: TimelineItemRenderProps) => React.ReactNode);
   asChild?: boolean;
   className?: string;
-  item: TimelineItem;
+  item: TimelineItemType;
 };
 
 /**
- * Minimal timeline item wrapper that adds accessibility attributes and resolves the
- * sender type into convenient render props for custom bubble layouts. Works with
+ * Generic timeline item wrapper that adds accessibility attributes and resolves the
+ * sender type into convenient render props for custom layouts. Works with
  * both MESSAGE and EVENT timeline item types.
  */
-export const Message = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageProps>(
+export const TimelineItem = (() => {
+  const Component = React.forwardRef<HTMLDivElement, TimelineItemProps>(
     ({ children, className, asChild = false, item, ...props }, ref) => {
       // Determine sender type from timeline item properties
       const isVisitor = item.visitorId !== null;
@@ -42,7 +44,7 @@ export const Message = (() => {
 
       const senderType = isVisitor ? "visitor" : isAI ? "ai" : "human";
 
-      const renderProps: MessageRenderProps = {
+      const renderProps: TimelineItemRenderProps = {
         isVisitor,
         isAI,
         isHuman,
@@ -52,7 +54,7 @@ export const Message = (() => {
         itemType: item.type,
       };
 
-      const messageContent =
+      const content =
         typeof children === "function" ? children(renderProps) : children;
 
       const itemTypeLabel =
@@ -77,14 +79,14 @@ export const Message = (() => {
             role: "article",
             "aria-label": `${item.type === "message" ? "Message" : "Event"} from ${itemTypeLabel}`,
             ...props,
-            children: messageContent,
+            children: content,
           },
         }
       );
     }
   );
 
-  Component.displayName = "Message";
+  Component.displayName = "TimelineItem";
   return Component;
 })();
 
@@ -146,14 +148,14 @@ const MemoizedMarkdownBlock = React.memo(
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
 
-export type MessageContentProps = Omit<
+export type TimelineItemContentProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
   children?: React.ReactNode | ((content: string) => React.ReactNode);
   asChild?: boolean;
   className?: string;
-  text?: string;
+  text?: string | null;
   renderMarkdown?: boolean;
 };
 
@@ -162,8 +164,8 @@ export type MessageContentProps = Omit<
  * memoised renderer or handing the raw text to a render prop for custom
  * formatting.
  */
-export const MessageContent = (() => {
-  const Component = React.forwardRef<HTMLDivElement, MessageContentProps>(
+export const TimelineItemContent = (() => {
+  const Component = React.forwardRef<HTMLDivElement, TimelineItemContentProps>(
     (
       {
         children,
@@ -175,17 +177,18 @@ export const MessageContent = (() => {
       },
       ref
     ) => {
-      const messageContent = React.useMemo(() => {
+      const content = React.useMemo(() => {
+        const textContent = text ?? "";
         if (typeof children === "function") {
-          return children(text);
+          return children(textContent);
         }
         if (children) {
           return children;
         }
-        if (renderMarkdown && text) {
-          return <MemoizedMarkdownBlock content={text} />;
+        if (renderMarkdown && textContent) {
+          return <MemoizedMarkdownBlock content={textContent} />;
         }
-        return text;
+        return textContent;
       }, [children, text, renderMarkdown]);
 
       return useRenderElement(
@@ -198,7 +201,7 @@ export const MessageContent = (() => {
           ref,
           props: {
             ...props,
-            children: messageContent,
+            children: content,
             style: {
               ...props.style,
             },
@@ -208,11 +211,11 @@ export const MessageContent = (() => {
     }
   );
 
-  Component.displayName = "MessageContent";
+  Component.displayName = "TimelineItemContent";
   return Component;
 })();
 
-export type MessageTimestampProps = Omit<
+export type TimelineItemTimestampProps = Omit<
   React.HTMLAttributes<HTMLSpanElement>,
   "children"
 > & {
@@ -227,8 +230,11 @@ export type MessageTimestampProps = Omit<
  * Timestamp helper that renders a formatted date or allows callers to supply a
  * render prop for custom time displays while preserving semantic markup.
  */
-export const MessageTimestamp = (() => {
-  const Component = React.forwardRef<HTMLSpanElement, MessageTimestampProps>(
+export const TimelineItemTimestamp = (() => {
+  const Component = React.forwardRef<
+    HTMLSpanElement,
+    TimelineItemTimestampProps
+  >(
     (
       {
         children,
@@ -266,6 +272,6 @@ export const MessageTimestamp = (() => {
     }
   );
 
-  Component.displayName = "MessageTimestamp";
+  Component.displayName = "TimelineItemTimestamp";
   return Component;
 })();

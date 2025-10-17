@@ -5,41 +5,41 @@ import { redirect } from "next/navigation";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 
 type BillingPageProps = {
-	params: Promise<{
-		websiteSlug: string;
-	}>;
+  params: Promise<{
+    websiteSlug: string;
+  }>;
 };
 
 export default async function BillingRedirect({ params }: BillingPageProps) {
-	const { websiteSlug } = await params;
+  const { websiteSlug } = await params;
 
-	const { website } = await ensureWebsiteAccess(websiteSlug);
+  const { website } = await ensureWebsiteAccess(websiteSlug);
 
-	// Should not happen, but just in case
-	if (!website) {
-		redirect("/select");
-	}
+  // Should not happen, but just in case
+  if (!website) {
+    redirect("/select");
+  }
 
-	console.log("website", website);
+  console.log("website", website);
 
-	const customer = await polarClient.customers.getExternal({
-		externalId: website.id,
-	});
+  const customer = await polarClient.customers.getExternal({
+    externalId: website.id,
+  });
 
-	console.log("customer", customer);
+  console.log("customer", customer);
 
-	// Should not happen, but just in case
-	if (!customer) {
-		redirect("/select");
-	}
+  // Should not happen, but just in case
+  if (!customer) {
+    redirect("/select");
+  }
 
-	const customerPortal = await polarClient.customerSessions.create({
-		customerId: customer.id,
-	});
+  const customerPortal = await polarClient.customerSessions.create({
+    customerId: customer.id,
+  });
 
-	console.log("customerPortal", customerPortal);
+  console.log("customerPortal", customerPortal);
 
-	redirect(customerPortal.customerPortalUrl);
+  redirect(customerPortal.customerPortalUrl);
 }
 
 // CustomerPortal({

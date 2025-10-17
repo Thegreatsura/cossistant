@@ -23,7 +23,7 @@ const INITIAL_STATE: TimelineItemsState = {
 
 function sortTimelineItems(items: TimelineItem[]): TimelineItem[] {
   return [...items].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 }
 
@@ -37,7 +37,7 @@ function isSameTimelineItem(a: TimelineItem, b: TimelineItem): boolean {
 
 function mergeTimelineItems(
   existing: TimelineItem[],
-  incoming: TimelineItem[]
+  incoming: TimelineItem[],
 ): TimelineItem[] {
   if (incoming.length === 0) {
     return existing;
@@ -86,7 +86,7 @@ function applyPage(
   page: Pick<
     ConversationTimelineItemsState,
     "items" | "hasNextPage" | "nextCursor"
-  >
+  >,
 ): TimelineItemsState {
   const existing = state.conversations[conversationId];
   const mergedItems = mergeTimelineItems(existing?.items ?? [], page.items);
@@ -115,7 +115,7 @@ function applyPage(
 
 function applyTimelineItem(
   state: TimelineItemsState,
-  item: TimelineItem
+  item: TimelineItem,
 ): TimelineItemsState {
   const existing = state.conversations[item.conversationId];
   const mergedItems = mergeTimelineItems(existing?.items ?? [], [item]);
@@ -140,7 +140,7 @@ function applyTimelineItem(
 function removeTimelineItem(
   state: TimelineItemsState,
   conversationId: string,
-  itemId: string
+  itemId: string,
 ): TimelineItemsState {
   const existing = state.conversations[conversationId];
   if (!existing) {
@@ -174,19 +174,19 @@ function finalizeTimelineItem(
   state: TimelineItemsState,
   conversationId: string,
   optimisticId: string,
-  item: TimelineItem
+  item: TimelineItem,
 ): TimelineItemsState {
   const withoutOptimistic = removeTimelineItem(
     state,
     conversationId,
-    optimisticId
+    optimisticId,
   );
   return applyTimelineItem(withoutOptimistic, item);
 }
 
 // Normalize timeline item created event
 function normalizeRealtimeTimelineItem(
-  event: TimelineItemCreatedEvent
+  event: TimelineItemCreatedEvent,
 ): TimelineItem {
   const raw = event.payload.item;
   return {
@@ -208,7 +208,7 @@ function normalizeRealtimeTimelineItem(
 export type TimelineItemsStore = Store<TimelineItemsState> & {
   ingestPage(
     conversationId: string,
-    page: ConversationTimelineItemsState
+    page: ConversationTimelineItemsState,
   ): void;
   ingestTimelineItem(item: TimelineItem): void;
   ingestRealtimeTimelineItem(event: TimelineItemCreatedEvent): TimelineItem;
@@ -216,13 +216,13 @@ export type TimelineItemsStore = Store<TimelineItemsState> & {
   finalizeTimelineItem(
     conversationId: string,
     optimisticId: string,
-    item: TimelineItem
+    item: TimelineItem,
   ): void;
   clearConversation(conversationId: string): void;
 };
 
 export function createTimelineItemsStore(
-  initialState: TimelineItemsState = INITIAL_STATE
+  initialState: TimelineItemsState = INITIAL_STATE,
 ): TimelineItemsStore {
   const store = createStore<TimelineItemsState>(initialState);
 
@@ -241,12 +241,12 @@ export function createTimelineItemsStore(
     },
     removeTimelineItem(conversationId, itemId) {
       store.setState((state) =>
-        removeTimelineItem(state, conversationId, itemId)
+        removeTimelineItem(state, conversationId, itemId),
       );
     },
     finalizeTimelineItem(conversationId, optimisticId, item) {
       store.setState((state) =>
-        finalizeTimelineItem(state, conversationId, optimisticId, item)
+        finalizeTimelineItem(state, conversationId, optimisticId, item),
       );
     },
     clearConversation(conversationId) {
@@ -268,7 +268,7 @@ export function createTimelineItemsStore(
 
 export function getConversationTimelineItems(
   store: Store<TimelineItemsState>,
-  conversationId: string
+  conversationId: string,
 ): ConversationTimelineItemsState | undefined {
   return store.getState().conversations[conversationId];
 }

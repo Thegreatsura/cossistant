@@ -102,7 +102,7 @@ export const timelineItemPartsSchema = z
       timelinePartEventSchema,
       timelinePartImageSchema,
       timelineFileSchema,
-    ])
+    ]),
   )
   .openapi({
     description:

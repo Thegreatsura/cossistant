@@ -22,7 +22,7 @@ type QueryKeyInput = {
 };
 
 function toConversationMessage(
-  timelineItem: TimelineItemCreatedEvent["payload"]["item"]
+  timelineItem: TimelineItemCreatedEvent["payload"]["item"],
 ): ConversationMessage {
   // Convert timeline item to message format for the cache
   return {
@@ -45,7 +45,7 @@ function toConversationMessage(
 }
 
 function toHeaderLastTimelineItem(
-  timelineItem: TimelineItemCreatedEvent["payload"]["item"]
+  timelineItem: TimelineItemCreatedEvent["payload"]["item"],
 ): NonNullable<ConversationHeader["lastTimelineItem"]> {
   return {
     id: timelineItem.id,
@@ -64,7 +64,7 @@ function toHeaderLastTimelineItem(
 }
 
 function extractQueryInput(
-  queryKey: readonly unknown[]
+  queryKey: readonly unknown[],
 ): ConversationMessagesQueryInput | null {
   if (queryKey.length < 2) {
     return null;
@@ -89,7 +89,7 @@ function isInfiniteQueryKey(queryKey: readonly unknown[]): boolean {
     marker &&
       typeof marker === "object" &&
       "type" in marker &&
-      (marker as QueryKeyInput).type === "infinite"
+      (marker as QueryKeyInput).type === "infinite",
   );
 }
 
@@ -137,13 +137,13 @@ export const handleMessageCreated = ({
     upsertConversationMessageInCache(
       queryClient,
       queryKey,
-      conversationMessage
+      conversationMessage,
     );
   }
 
   const existingHeader =
     context.queryNormalizer.getObjectById<ConversationHeader>(
-      payload.conversationId
+      payload.conversationId,
     );
 
   if (!existingHeader) {
@@ -159,10 +159,10 @@ export const handleMessageCreated = ({
           .catch((error) => {
             console.error(
               "Failed to invalidate conversation header queries:",
-              error
+              error,
             );
           });
-      }
+      },
     );
     return;
   }

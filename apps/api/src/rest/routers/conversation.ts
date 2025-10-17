@@ -143,7 +143,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400
+        400,
       );
     }
 
@@ -177,8 +177,8 @@ conversationRouter.openapi(
                     ? new Date(item.createdAt)
                     : undefined,
                 },
-              })
-            )
+              }),
+            ),
           )
         : [];
 
@@ -213,7 +213,7 @@ conversationRouter.openapi(
         lastTimelineItem,
       },
     });
-  }
+  },
 );
 
 conversationRouter.openapi(
@@ -306,7 +306,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400
+        400,
       );
     }
 
@@ -334,7 +334,7 @@ conversationRouter.openapi(
       })),
       pagination: result.pagination,
     });
-  }
+  },
 );
 
 conversationRouter.openapi(
@@ -441,7 +441,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404
+        404,
       );
     }
 
@@ -457,7 +457,7 @@ conversationRouter.openapi(
         lastTimelineItem: conversation.lastTimelineItem,
       },
     });
-  }
+  },
 );
 
 conversationRouter.openapi(
@@ -569,7 +569,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400
+        400,
       );
     }
 
@@ -578,7 +578,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404
+        404,
       );
     }
 
@@ -600,9 +600,9 @@ conversationRouter.openapi(
 
     return c.json(
       validateResponse(response, markConversationSeenResponseSchema),
-      200
+      200,
     );
-  }
+  },
 );
 
 conversationRouter.openapi(
@@ -711,7 +711,7 @@ conversationRouter.openapi(
         {
           error: "Visitor not found, please pass a valid visitorId",
         },
-        400
+        400,
       );
     }
 
@@ -720,7 +720,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404
+        404,
       );
     }
 
@@ -754,9 +754,9 @@ conversationRouter.openapi(
 
     return c.json(
       validateResponse(response, setConversationTypingResponseSchema),
-      200
+      200,
     );
-  }
+  },
 );
 
 // GET /conversations/:conversationId/seen - Fetch seen data for a conversation
@@ -818,7 +818,7 @@ conversationRouter.openapi(
   async (c) => {
     const { db, website, organization } = await safelyExtractRequestQuery(
       c,
-      z.object({})
+      z.object({}),
     );
 
     const params = getConversationRequestSchema.parse({
@@ -836,7 +836,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404
+        404,
       );
     }
 
@@ -846,7 +846,7 @@ conversationRouter.openapi(
     });
 
     return c.json({ seenData }, 200);
-  }
+  },
 );
 
 // GET /conversations/:conversationId/timeline - Fetch timeline items for a conversation
@@ -920,7 +920,7 @@ conversationRouter.openapi(
     const { db, website, organization, query } =
       await safelyExtractRequestQuery(
         c,
-        getConversationTimelineItemsRequestSchema
+        getConversationTimelineItemsRequestSchema,
       );
 
     const params = getConversationRequestSchema.parse({
@@ -938,7 +938,7 @@ conversationRouter.openapi(
         {
           error: "Conversation not found",
         },
-        404
+        404,
       );
     }
 
@@ -955,7 +955,7 @@ conversationRouter.openapi(
         nextCursor: result.nextCursor ?? null,
         hasNextPage: result.hasNextPage,
       },
-      200
+      200,
     );
-  }
+  },
 );

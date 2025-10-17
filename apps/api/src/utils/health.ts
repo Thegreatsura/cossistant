@@ -2,20 +2,20 @@ import { db } from "@api/db";
 import { user } from "@api/db/schema";
 
 export async function checkHealth() {
-	// This is a simple health check that will return true if the database is
-	// This query should be cached by our multi region redis setup and improve latency worldwide
+  // This is a simple health check that will return true if the database is
+  // This query should be cached by our multi region redis setup and improve latency worldwide
 
-	await db
-		.select()
-		.from(user)
-		.orderBy(user.createdAt)
-		.limit(1)
-		.$withCache({
-			tag: "health-check",
-			config: {
-				ex: 600, // 10 minutes
-			},
-		});
+  await db
+    .select()
+    .from(user)
+    .orderBy(user.createdAt)
+    .limit(1)
+    .$withCache({
+      tag: "health-check",
+      config: {
+        ex: 600, // 10 minutes
+      },
+    });
 
-	return true;
+  return true;
 }

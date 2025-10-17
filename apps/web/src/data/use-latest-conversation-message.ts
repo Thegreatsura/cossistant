@@ -19,7 +19,7 @@ type UseLatestConversationMessageOptions = {
 };
 
 function findLatestTimelineItem(
-  data: InfiniteData<ConversationMessagesPage> | undefined
+  data: InfiniteData<ConversationMessagesPage> | undefined,
 ): LastTimelineItem {
   if (!data) {
     return null;
@@ -52,18 +52,18 @@ export function useLatestConversationMessage({
         conversationId,
         limit,
       }).queryKey,
-    [conversationId, limit, trpc, websiteSlug]
+    [conversationId, limit, trpc, websiteSlug],
   );
 
   const queryKey = useMemo(
     () => createConversationMessagesInfiniteQueryKey(baseQueryKey),
-    [baseQueryKey]
+    [baseQueryKey],
   );
 
   const getSnapshot = useCallback(() => {
     const data =
       queryClient.getQueryData<InfiniteData<ConversationMessagesPage>>(
-        queryKey
+        queryKey,
       );
 
     return findLatestTimelineItem(data);
@@ -74,7 +74,7 @@ export function useLatestConversationMessage({
       queryClient.getQueryCache().subscribe(() => {
         onStoreChange();
       }),
-    [queryClient]
+    [queryClient],
   );
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

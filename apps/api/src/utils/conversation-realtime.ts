@@ -138,7 +138,7 @@ export async function emitConversationCreatedEvent({
 }
 
 function serializeConversationEventForRealtime(
-  params: TimelineEventParams
+  params: TimelineEventParams,
 ): RealtimeEventData<"conversationEventCreated"> {
   const { conversation, event } = params;
   const metadata = event.metadata
@@ -171,7 +171,7 @@ function serializeConversationEventForRealtime(
 }
 
 export async function emitConversationEventCreated(
-  params: TimelineEventParams
+  params: TimelineEventParams,
 ) {
   const payload = serializeConversationEventForRealtime(params);
   await realtime.emit("conversationEventCreated", payload);

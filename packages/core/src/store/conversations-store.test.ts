@@ -9,7 +9,7 @@ import {
 } from "./conversations-store";
 
 function createMockConversation(
-  overrides: Partial<Conversation> = {}
+  overrides: Partial<Conversation> = {},
 ): Conversation {
   const base: Conversation = {
     id: "conv-1",
@@ -48,7 +48,7 @@ function createMockConversation(
 }
 
 function createPagination(
-  overrides: Partial<ListConversationsResponse["pagination"]> = {}
+  overrides: Partial<ListConversationsResponse["pagination"]> = {},
 ): ListConversationsResponse["pagination"] {
   return {
     page: 1,
@@ -62,7 +62,7 @@ function createPagination(
 
 function createListResponse(
   conversations: Conversation[],
-  overrides: Partial<ListConversationsResponse["pagination"]> = {}
+  overrides: Partial<ListConversationsResponse["pagination"]> = {},
 ): ListConversationsResponse {
   return {
     conversations,

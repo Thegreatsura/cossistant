@@ -57,7 +57,7 @@ export class CossistantRestClient {
 
     if (!this.publicKey) {
       throw new Error(
-        "Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_KEY or COSSISTANT_PUBLIC_KEY environment variable."
+        "Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_KEY or COSSISTANT_PUBLIC_KEY environment variable.",
       );
     }
 
@@ -152,7 +152,7 @@ export class CossistantRestClient {
 
   private async request<T>(
     path: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.config.apiUrl}${path}`;
 
@@ -241,7 +241,7 @@ export class CossistantRestClient {
   }
 
   async updateVisitorMetadata(
-    metadata: VisitorMetadata
+    metadata: VisitorMetadata,
   ): Promise<VisitorResponse> {
     const visitorId = this.resolveVisitorId();
     const response = await this.request<VisitorResponse>(
@@ -252,7 +252,7 @@ export class CossistantRestClient {
         headers: {
           "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     return this.normalizeVisitorResponse(response);
@@ -283,7 +283,7 @@ export class CossistantRestClient {
         headers: {
           "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     return {
@@ -306,7 +306,7 @@ export class CossistantRestClient {
    * Note: The visitor must be identified first via the identify() method
    */
   async updateContactMetadata(
-    metadata: Record<string, unknown>
+    metadata: Record<string, unknown>,
   ): Promise<VisitorResponse> {
     // This still uses the visitor metadata endpoint for backward compatibility
     // The endpoint will internally update the contact metadata
@@ -314,7 +314,7 @@ export class CossistantRestClient {
   }
 
   async createConversation(
-    params: Partial<CreateConversationRequestBody> = {}
+    params: Partial<CreateConversationRequestBody> = {},
   ): Promise<CreateConversationResponseBody> {
     const conversationId = params.conversationId || generateConversationId();
 
@@ -347,7 +347,7 @@ export class CossistantRestClient {
         method: "POST",
         body: JSON.stringify(body),
         headers,
-      }
+      },
     );
 
     // Convert date strings to Date objects
@@ -386,7 +386,7 @@ export class CossistantRestClient {
   }
 
   async listConversations(
-    params: Partial<ListConversationsRequest> = {}
+    params: Partial<ListConversationsRequest> = {},
   ): Promise<ListConversationsResponse> {
     // Get visitor ID from storage if we have the website ID, or use the provided one
     const storedVisitorId = this.websiteId
@@ -435,7 +435,7 @@ export class CossistantRestClient {
       `/conversations?${queryParams.toString()}`,
       {
         headers,
-      }
+      },
     );
 
     // Convert date strings to Date objects
@@ -451,7 +451,7 @@ export class CossistantRestClient {
   }
 
   async getConversation(
-    params: GetConversationRequest
+    params: GetConversationRequest,
   ): Promise<GetConversationResponse> {
     // Get visitor ID from storage if we have the website ID
     const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
@@ -466,7 +466,7 @@ export class CossistantRestClient {
       `/conversations/${params.conversationId}`,
       {
         headers,
-      }
+      },
     );
 
     // Convert date strings to Date objects
@@ -483,7 +483,7 @@ export class CossistantRestClient {
   async markConversationSeen(
     params: {
       conversationId: string;
-    } & Partial<MarkConversationSeenRequestBody>
+    } & Partial<MarkConversationSeenRequestBody>,
   ): Promise<MarkConversationSeenResponseBody> {
     const storedVisitorId = this.websiteId
       ? getVisitorId(this.websiteId)
@@ -510,7 +510,7 @@ export class CossistantRestClient {
         method: "POST",
         body: JSON.stringify(body),
         headers,
-      }
+      },
     );
 
     return {
@@ -526,7 +526,7 @@ export class CossistantRestClient {
       `/conversations/${params.conversationId}/seen`,
       {
         method: "GET",
-      }
+      },
     );
 
     return {
@@ -578,7 +578,7 @@ export class CossistantRestClient {
         method: "POST",
         body: JSON.stringify(body),
         headers,
-      }
+      },
     );
 
     return {
@@ -590,7 +590,7 @@ export class CossistantRestClient {
   }
 
   async sendMessage(
-    params: SendTimelineItemRequest
+    params: SendTimelineItemRequest,
   ): Promise<SendTimelineItemResponse> {
     // Get visitor ID from storage if we have the website ID
     const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
@@ -613,7 +613,7 @@ export class CossistantRestClient {
   }
 
   async getConversationTimelineItems(
-    params: GetConversationTimelineItemsRequest & { conversationId: string }
+    params: GetConversationTimelineItemsRequest & { conversationId: string },
   ): Promise<GetConversationTimelineItemsResponse> {
     // Get visitor ID from storage if we have the website ID
     const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
@@ -639,7 +639,7 @@ export class CossistantRestClient {
       `/conversations/${params.conversationId}/timeline?${queryParams.toString()}`,
       {
         headers,
-      }
+      },
     );
 
     return {

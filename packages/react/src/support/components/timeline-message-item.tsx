@@ -1,27 +1,27 @@
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type React from "react";
 import {
-  MessageContent,
-  MessageTimestamp,
-  Message as PrimitiveMessage,
-} from "../../primitives/message";
+  TimelineItem as PrimitiveTimelineItem,
+  TimelineItemContent,
+  TimelineItemTimestamp,
+} from "../../primitives/timeline-item";
 import { useSupportText } from "../text";
 import { cn } from "../utils";
 
-export type MessageProps = {
+export type TimelineMessageItemProps = {
   item: TimelineItem;
   isLast?: boolean;
   isSentByViewer?: boolean;
 };
 
-export function Message({
+export function TimelineMessageItem({
   item,
   isLast = false,
   isSentByViewer,
-}: MessageProps) {
+}: TimelineMessageItemProps) {
   const text = useSupportText();
   return (
-    <PrimitiveMessage item={item}>
+    <PrimitiveTimelineItem item={item}>
       {({ isVisitor, isAI, timestamp }) => {
         // Use passed isSentByViewer if provided, otherwise fall back to isVisitor
         const isSentByViewerFinal = isSentByViewer ?? isVisitor;
@@ -40,7 +40,7 @@ export function Message({
                 isSentByViewerFinal && "items-end"
               )}
             >
-              <MessageContent
+              <TimelineItemContent
                 className={cn(
                   "block w-max max-w-[300px] rounded-lg px-3.5 py-2.5 text-sm",
                   {
@@ -55,7 +55,7 @@ export function Message({
                 text={item.text}
               />
               {isLast && (
-                <MessageTimestamp
+                <TimelineItemTimestamp
                   className="px-1 text-muted-foreground text-xs"
                   timestamp={timestamp}
                 >
@@ -69,12 +69,12 @@ export function Message({
                         ` ${text("component.message.timestamp.aiIndicator")}`}
                     </>
                   )}
-                </MessageTimestamp>
+                </TimelineItemTimestamp>
               )}
             </div>
           </div>
         );
       }}
-    </PrimitiveMessage>
+    </PrimitiveTimelineItem>
   );
 }

@@ -1,9 +1,9 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import {
-  MessageGroupAvatar,
-  MessageGroupContent,
-  MessageGroupHeader,
-  MessageGroup as PrimitiveMessageGroup,
+  TimelineItemGroup as PrimitiveTimelineItemGroup,
+  TimelineItemGroupAvatar,
+  TimelineItemGroupContent,
+  TimelineItemGroupHeader,
 } from "@cossistant/next/primitives";
 import type { AvailableAIAgent } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
@@ -17,8 +17,8 @@ import type { ConversationHeader } from "@/contexts/inboxes";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
-import { Message } from "./message";
 import { ReadIndicator } from "./read-indicator";
+import { TimelineMessageItem } from "./timeline-message-item";
 
 const MESSAGE_ANIMATION = {
   initial: { opacity: 0, y: 6 },
@@ -30,9 +30,8 @@ const MESSAGE_ANIMATION = {
   },
 } as const;
 
-type Props = {
-  messages?: TimelineItem[]; // Legacy prop, now accepts timeline items
-  items?: TimelineItem[]; // Preferred prop name for timeline items
+type TimelineMessageGroupProps = {
+  items: TimelineItem[];
   availableAIAgents: AvailableAIAgent[];
   teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
   lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
@@ -40,22 +39,16 @@ type Props = {
   visitor: ConversationHeader["visitor"];
 };
 
-export function MessageGroup({
-  messages: legacyMessages,
+export function TimelineMessageGroup({
   items,
   availableAIAgents,
   teamMembers,
   lastReadMessageIds,
   currentUserId,
   visitor,
-}: Props) {
-  // Use timeline items - prefer items prop, fall back to messages prop
-  const timelineItems = useMemo(() => {
-    return items && items.length > 0 ? items : legacyMessages || [];
-  }, [items, legacyMessages]);
-
+}: TimelineMessageGroupProps) {
   // Get agent info for the sender
-  const firstItem = timelineItems[0];
+  const firstItem = items[0];
   const humanAgent = teamMembers.find(
     (agent) => agent.id === firstItem?.userId
   );
@@ -67,11 +60,11 @@ export function MessageGroup({
 
   // Extract who has read the last timeline item in this group (equal check).
   const readByIds: string[] = useMemo(() => {
-    if (!lastReadMessageIds || timelineItems.length === 0) {
+    if (!lastReadMessageIds || items.length === 0) {
       return [];
     }
 
-    const lastId = timelineItems.at(-1)?.id;
+    const lastId = items.at(-1)?.id;
     if (!lastId) {
       return [];
     }
@@ -83,15 +76,15 @@ export function MessageGroup({
       }
     }
     return userIds;
-  }, [lastReadMessageIds, timelineItems]);
+  }, [lastReadMessageIds, items]);
 
-  if (timelineItems.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 
   return (
-    <PrimitiveMessageGroup
-      items={timelineItems}
+    <PrimitiveTimelineItemGroup
+      items={items}
       lastReadItemIds={lastReadMessageIds}
       seenByIds={readByIds}
       viewerId={currentUserId}
@@ -115,7 +108,7 @@ export function MessageGroup({
         >
           {/* Avatar - only show for received messages */}
           {isReceivedByViewer && (
-            <MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
+            <TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
               {isVisitor ? (
                 <Avatar
                   className="size-7"
@@ -139,15 +132,15 @@ export function MessageGroup({
                   url={humanAgent?.image}
                 />
               )}
-            </MessageGroupAvatar>
+            </TimelineItemGroupAvatar>
           )}
 
-          <MessageGroupContent
+          <TimelineItemGroupContent
             className={cn("flex flex-col gap-0", isSentByViewer && "items-end")}
           >
             {/* Header - show sender name for received messages */}
             {isReceivedByViewer && (
-              <MessageGroupHeader className="mb-2 px-1 text-muted-foreground text-xs">
+              <TimelineItemGroupHeader className="mb-2 px-1 text-muted-foreground text-xs">
                 {isVisitor
                   ? visitorName
                   : isAI
@@ -155,18 +148,18 @@ export function MessageGroup({
                     : humanAgent?.name ||
                       humanAgent?.email?.split("@")[0] ||
                       "Unknown member"}
-              </MessageGroupHeader>
+              </TimelineItemGroupHeader>
             )}
 
             {/* Timeline items with read indicators */}
-            {timelineItems.map((item, index) => (
+            {items.map((item, index) => (
               <motion.div
                 className="relative"
                 key={item.id}
                 {...MESSAGE_ANIMATION}
               >
-                <Message
-                  isLast={index === timelineItems.length - 1}
+                <TimelineMessageItem
+                  isLast={index === items.length - 1}
                   isSentByViewer={isSentByViewer}
                   item={item}
                 />
@@ -178,15 +171,15 @@ export function MessageGroup({
                   isSentByViewer={isSentByViewer}
                   lastReadMessageIds={lastReadMessageIds}
                   messageId={item.id || ""}
-                  messages={timelineItems}
+                  messages={items}
                   teamMembers={teamMembers}
                   visitor={visitor}
                 />
               </motion.div>
             ))}
-          </MessageGroupContent>
+          </TimelineItemGroupContent>
         </div>
       )}
-    </PrimitiveMessageGroup>
+    </PrimitiveTimelineItemGroup>
   );
 }

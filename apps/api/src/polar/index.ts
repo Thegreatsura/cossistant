@@ -5,13 +5,13 @@ import { Hono } from "hono";
 const polarRouters = new Hono();
 
 polarRouters.post(
-	"/webhooks",
-	Webhooks({
-		webhookSecret: env.POLAR_WEBHOOK_SECRET,
-		onPayload: async (payload) => {
-			console.log("WEBHOOK RECEIVED", payload);
-		},
-	})
+  "/webhooks",
+  Webhooks({
+    webhookSecret: env.POLAR_WEBHOOK_SECRET,
+    onPayload: async (payload) => {
+      console.log("WEBHOOK RECEIVED", payload);
+    },
+  }),
 );
 
 export { polarRouters };

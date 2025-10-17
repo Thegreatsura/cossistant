@@ -103,7 +103,7 @@ export type RealtimeEventData<T extends RealtimeEventType> =
  */
 export function validateRealtimeEvent<T extends RealtimeEventType>(
   type: T,
-  data: unknown
+  data: unknown,
 ): RealtimeEventPayload<T> {
   const schema = realtimeSchema[type];
   return schema.parse(data) as RealtimeEventPayload<T>;
@@ -117,7 +117,7 @@ export function isValidEventType(type: unknown): type is RealtimeEventType {
 }
 
 export function getEventPayload<T extends RealtimeEventType>(
-  event: RealtimeEvent<T>
+  event: RealtimeEvent<T>,
 ): RealtimeEventPayload<T> {
   return event.payload;
 }

@@ -62,7 +62,7 @@ function isSameConversation(a: Conversation, b: Conversation): boolean {
 
 function mergeMap(
   existing: Record<string, Conversation>,
-  incoming: Conversation[]
+  incoming: Conversation[],
 ): [Record<string, Conversation>, boolean] {
   let changed = false;
   let next = existing;
@@ -84,7 +84,7 @@ function mergeMap(
 function mergeOrder(
   existing: string[],
   incoming: string[],
-  page: number
+  page: number,
 ): [string[], boolean] {
   if (incoming.length === 0) {
     return [existing, false];
@@ -118,7 +118,7 @@ function mergeOrder(
 
 function isSamePagination(
   a: ConversationPagination | null,
-  b: ConversationPagination | null
+  b: ConversationPagination | null,
 ): boolean {
   if (a === b) {
     return true;
@@ -137,17 +137,17 @@ function isSamePagination(
 
 function applyList(
   state: ConversationsState,
-  response: ListConversationsResponse
+  response: ListConversationsResponse,
 ): ConversationsState {
   const [byId, mapChanged] = mergeMap(state.byId, response.conversations);
   const [ids, idsChanged] = mergeOrder(
     state.ids,
     response.conversations.map((conversation) => conversation.id),
-    response.pagination.page
+    response.pagination.page,
   );
   const paginationChanged = !isSamePagination(
     state.pagination,
-    response.pagination
+    response.pagination,
   );
 
   if (!(mapChanged || idsChanged || paginationChanged)) {
@@ -163,7 +163,7 @@ function applyList(
 
 function applyConversation(
   state: ConversationsState,
-  conversation: Conversation
+  conversation: Conversation,
 ): ConversationsState {
   const previous = state.byId[conversation.id];
   const sameConversation = previous
@@ -192,7 +192,7 @@ export type ConversationsStore = Store<ConversationsState> & {
 };
 
 export function createConversationsStore(
-  initialState: ConversationsState = INITIAL_STATE
+  initialState: ConversationsState = INITIAL_STATE,
 ): ConversationsStore {
   const store = createStore<ConversationsState>(initialState);
 
@@ -208,25 +208,26 @@ export function createConversationsStore(
 }
 
 export function getConversations(
-  store: Store<ConversationsState>
+  store: Store<ConversationsState>,
 ): Conversation[] {
   const state = store.getState();
   return state.ids
     .map((id) => state.byId[id])
     .filter(
-      (conversation): conversation is Conversation => conversation !== undefined
+      (conversation): conversation is Conversation =>
+        conversation !== undefined,
     );
 }
 
 export function getConversationById(
   store: Store<ConversationsState>,
-  conversationId: string
+  conversationId: string,
 ): Conversation | undefined {
   return store.getState().byId[conversationId];
 }
 
 export function getConversationPagination(
-  store: Store<ConversationsState>
+  store: Store<ConversationsState>,
 ): ConversationPagination | null {
   return store.getState().pagination;
 }

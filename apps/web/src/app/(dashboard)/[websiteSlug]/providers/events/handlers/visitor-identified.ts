@@ -4,11 +4,11 @@ import type { DashboardRealtimeContext } from "../types";
 type VisitorIdentifiedEvent = RealtimeEvent<"visitorIdentified">;
 
 export const handleVisitorIdentified = ({
-	event,
-	context,
+  event,
+  context,
 }: {
-	event: VisitorIdentifiedEvent;
-	context: DashboardRealtimeContext;
+  event: VisitorIdentifiedEvent;
+  context: DashboardRealtimeContext;
 }) => {
-	context.queryNormalizer.setNormalizedData(event.payload.visitor);
+  context.queryNormalizer.setNormalizedData(event.payload.visitor);
 };

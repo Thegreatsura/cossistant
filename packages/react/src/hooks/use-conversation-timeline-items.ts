@@ -120,8 +120,8 @@ export function useConversationTimelineItems(
 			return Promise.resolve(undefined);
 		}
 
-		return refetch({ cursor: selection.nextCursor });
-	}, [selection.hasNextPage, selection.nextCursor, refetch]);
+		return refetch({ cursor: selection.nextCursor, limit: baseArgs.limit });
+	}, [selection.hasNextPage, selection.nextCursor, refetch, baseArgs.limit]);
 
 	const isInitialLoad = selection.items.length === 0;
 	const isLoading = isInitialLoad ? queryLoading : false;
