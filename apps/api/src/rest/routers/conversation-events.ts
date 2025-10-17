@@ -122,22 +122,28 @@ conversationEventsRouter.openapi(
                 });
 
                 const response: GetConversationEventsResponse = {
-                        events: result.events.map((event) => ({
-                                id: event.id,
-                                organizationId: event.organizationId,
-                                conversationId: event.conversationId,
-                                type: event.type,
-                                actorUserId: event.actorUserId,
-                                actorAiAgentId: event.actorAiAgentId,
-                                targetUserId: event.targetUserId,
-                                targetAiAgentId: event.targetAiAgentId,
-                                message: event.message ?? null,
-                                metadata: (event.metadata as Record<string, unknown> | null) ?? null,
-                                createdAt: event.createdAt,
-                                createdAt: event.createdAt,
-                                updatedAt: event.updatedAt,
-                                deletedAt: null,
-                        })),
+                        events: result.events.map((event) => {
+                                const createdAt =
+                                        event.createdAt instanceof Date
+                                                ? event.createdAt.toISOString()
+                                                : event.createdAt;
+
+                                return {
+                                        id: event.id,
+                                        organizationId: event.organizationId,
+                                        conversationId: event.conversationId,
+                                        type: event.type,
+                                        actorUserId: event.actorUserId,
+                                        actorAiAgentId: event.actorAiAgentId,
+                                        targetUserId: event.targetUserId,
+                                        targetAiAgentId: event.targetAiAgentId,
+                                        message: event.message ?? null,
+                                        metadata: (event.metadata as Record<string, unknown> | null) ?? null,
+                                        createdAt,
+                                        updatedAt: createdAt,
+                                        deletedAt: null,
+                                };
+                        }),
                         hasNextPage: result.hasNextPage,
                         ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
                 };
