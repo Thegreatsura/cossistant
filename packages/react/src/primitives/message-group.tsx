@@ -1,4 +1,5 @@
-import type { Message as MessageType, SenderType } from "@cossistant/types";
+import type { SenderType } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
@@ -7,169 +8,169 @@ import { useRenderElement } from "../utils/use-render-element";
  * and viewer specific flags.
  */
 export type MessageGroupRenderProps = {
-	// Sender information
-	senderType: SenderType;
-	senderId: string;
-	viewerType?: SenderType;
+  // Sender information
+  senderType: SenderType;
+  senderId: string;
+  viewerType?: SenderType;
 
-	// POV flags - who is viewing
-	isSentByViewer: boolean; // True if the current viewer sent these messages
-	isReceivedByViewer: boolean; // True if the current viewer received these messages
+  // POV flags - who is viewing
+  isSentByViewer: boolean; // True if the current viewer sent these messages
+  isReceivedByViewer: boolean; // True if the current viewer received these messages
 
-	// Sender type flags for convenience
-	isVisitor: boolean;
-	isAI: boolean;
-	isTeamMember: boolean;
+  // Sender type flags for convenience
+  isVisitor: boolean;
+  isAI: boolean;
+  isTeamMember: boolean;
 
-	// Message info
-	messageCount: number;
-	firstMessageId: string | undefined;
-	lastMessageId: string | undefined;
+  // Message info
+  messageCount: number;
+  firstMessageId: string | undefined;
+  lastMessageId: string | undefined;
 
-	// Seen status
-	hasBeenSeenByViewer?: boolean;
-	seenByIds?: string[]; // IDs of users who have seen the last message in group
+  // Seen status
+  hasBeenSeenByViewer?: boolean;
+  seenByIds?: string[]; // IDs of users who have seen the last message in group
 };
 
 export type MessageGroupProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?:
-		| React.ReactNode
-		| ((props: MessageGroupRenderProps) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	messages: MessageType[];
+  children?:
+    | React.ReactNode
+    | ((props: MessageGroupRenderProps) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  items: TimelineItem[];
 
-	// POV context - who is viewing these messages
-	viewerId?: string; // ID of the current viewer
-	viewerType?: SenderType; // Type of the current viewer
+  // POV context - who is viewing these timeline items
+  viewerId?: string; // ID of the current viewer
+  viewerType?: SenderType; // Type of the current viewer
 
-	// Seen data
-	seenByIds?: string[]; // IDs of users who have seen these messages
-	lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
+  // Seen data
+  seenByIds?: string[]; // IDs of users who have seen these timeline items
+  lastReadItemIds?: Map<string, string>; // Map of userId -> lastItemId they read
 };
 
 /**
- * Groups sequential messages from the same sender and exposes render helpers
+ * Groups sequential timeline items from the same sender and exposes render helpers
  * that describe who sent the batch and whether the active viewer has seen it.
  * Consumers can either render their own layout via a render prop or rely on
- * slotted children.
+ * slotted children. Typically used for MESSAGE-type items; EVENT items are usually rendered separately.
  */
 export const MessageGroup = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageGroupProps>(
-		(
-			{
-				children,
-				className,
-				asChild = false,
-				messages = [],
-				viewerId,
-				seenByIds = [],
-				lastReadMessageIds,
-				...restProps
-			},
-			ref
-		) => {
-			const { viewerType, ...elementProps } = restProps;
+  const Component = React.forwardRef<HTMLDivElement, MessageGroupProps>(
+    (
+      {
+        children,
+        className,
+        asChild = false,
+        items = [],
+        viewerId,
+        seenByIds = [],
+        lastReadItemIds,
+        ...restProps
+      },
+      ref
+    ) => {
+      const { viewerType, ...elementProps } = restProps;
 
-			// Determine sender type from first message in group
-			const firstMessage = messages[0];
-			// biome-ignore lint/style/useAtIndex: ok
-			const lastMessage = messages[messages.length - 1];
+      // Determine sender type from first timeline item in group
+      const firstItem = items[0];
+      // biome-ignore lint/style/useAtIndex: ok
+      const lastItem = items[items.length - 1];
 
-			// Determine sender info
-			let senderId = "";
-			let senderType: SenderType;
+      // Determine sender info
+      let senderId = "";
+      let senderType: SenderType;
 
-			if (firstMessage?.visitorId) {
-				senderId = firstMessage.visitorId;
-				senderType = "visitor" as SenderType;
-			} else if (firstMessage?.aiAgentId) {
-				senderId = firstMessage.aiAgentId;
-				senderType = "ai" as SenderType;
-			} else if (firstMessage?.userId) {
-				senderId = firstMessage.userId;
-				senderType = "team_member" as SenderType;
-			} else {
-				// Fallback
-				senderId = firstMessage?.id || "unknown";
-				senderType = "team_member" as SenderType;
-			}
+      if (firstItem?.visitorId) {
+        senderId = firstItem.visitorId;
+        senderType = "visitor" as SenderType;
+      } else if (firstItem?.aiAgentId) {
+        senderId = firstItem.aiAgentId;
+        senderType = "ai" as SenderType;
+      } else if (firstItem?.userId) {
+        senderId = firstItem.userId;
+        senderType = "team_member" as SenderType;
+      } else {
+        // Fallback
+        senderId = firstItem?.id || "unknown";
+        senderType = "team_member" as SenderType;
+      }
 
-			// Determine POV
-			const isSentByViewer = viewerId
-				? senderId === viewerId
-				: viewerType
-					? senderType === viewerType
-					: false;
-			const isReceivedByViewer = viewerId
-				? senderId !== viewerId
-				: viewerType
-					? senderType !== viewerType
-					: true;
+      // Determine POV
+      const isSentByViewer = viewerId
+        ? senderId === viewerId
+        : viewerType
+          ? senderType === viewerType
+          : false;
+      const isReceivedByViewer = viewerId
+        ? senderId !== viewerId
+        : viewerType
+          ? senderType !== viewerType
+          : true;
 
-			// Convenience flags
-			const isVisitor = senderType === "visitor";
-			const isAI = senderType === "ai";
-			const isTeamMember = senderType === "team_member";
+      // Convenience flags
+      const isVisitor = senderType === "visitor";
+      const isAI = senderType === "ai";
+      const isTeamMember = senderType === "team_member";
 
-			// Check if viewer has seen these messages
-			const hasBeenSeenByViewer = viewerId
-				? seenByIds.includes(viewerId)
-				: undefined;
+      // Check if viewer has seen these timeline items
+      const hasBeenSeenByViewer = viewerId
+        ? seenByIds.includes(viewerId)
+        : undefined;
 
-			const renderProps: MessageGroupRenderProps = {
-				senderType,
-				senderId,
-				viewerType,
-				isSentByViewer,
-				isReceivedByViewer,
-				isVisitor,
-				isAI,
-				isTeamMember,
-				messageCount: messages.length,
-				firstMessageId: firstMessage?.id,
-				lastMessageId: lastMessage?.id,
-				hasBeenSeenByViewer,
-				seenByIds,
-			};
+      const renderProps: MessageGroupRenderProps = {
+        senderType,
+        senderId,
+        viewerType,
+        isSentByViewer,
+        isReceivedByViewer,
+        isVisitor,
+        isAI,
+        isTeamMember,
+        messageCount: items.length,
+        firstMessageId: firstItem?.id,
+        lastMessageId: lastItem?.id,
+        hasBeenSeenByViewer,
+        seenByIds,
+      };
 
-			const content =
-				typeof children === "function" ? children(renderProps) : children;
+      const content =
+        typeof children === "function" ? children(renderProps) : children;
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					state: renderProps,
-					props: {
-						role: "group",
-						"aria-label": `Message group from ${senderType}`,
-						...elementProps,
-						children: content,
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          state: renderProps,
+          props: {
+            role: "group",
+            "aria-label": `Timeline item group from ${senderType}`,
+            ...elementProps,
+            children: content,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageGroup";
-	return Component;
+  Component.displayName = "MessageGroup";
+  return Component;
 })();
 
 export type MessageGroupAvatarProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode;
-	asChild?: boolean;
-	className?: string;
+  children?: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
 };
 
 /**
@@ -177,45 +178,45 @@ export type MessageGroupAvatarProps = Omit<
  * badge or any other sender metadata supplied by the consumer UI.
  */
 export const MessageGroupAvatar = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageGroupAvatarProps>(
-		({ children, className, asChild = false, ...props }, ref) => {
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children,
-					},
-				}
-			);
-		}
-	);
+  const Component = React.forwardRef<HTMLDivElement, MessageGroupAvatarProps>(
+    ({ children, className, asChild = false, ...props }, ref) => {
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageGroupAvatar";
-	return Component;
+  Component.displayName = "MessageGroupAvatar";
+  return Component;
 })();
 
 export type MessageGroupHeaderProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?:
-		| React.ReactNode
-		| ((props: {
-				name?: string;
-				senderId?: string;
-				senderType?: SenderType;
-		  }) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	name?: string;
-	senderId?: string;
-	senderType?: SenderType;
+  children?:
+    | React.ReactNode
+    | ((props: {
+        name?: string;
+        senderId?: string;
+        senderType?: SenderType;
+      }) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  name?: string;
+  senderId?: string;
+  senderType?: SenderType;
 };
 
 /**
@@ -224,52 +225,52 @@ export type MessageGroupHeaderProps = Omit<
  * metadata supplied by `MessageGroup`.
  */
 export const MessageGroupHeader = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageGroupHeaderProps>(
-		(
-			{
-				children,
-				className,
-				asChild = false,
-				name,
-				senderId,
-				senderType,
-				...props
-			},
-			ref
-		) => {
-			const content =
-				typeof children === "function"
-					? children({ name, senderId, senderType })
-					: children;
+  const Component = React.forwardRef<HTMLDivElement, MessageGroupHeaderProps>(
+    (
+      {
+        children,
+        className,
+        asChild = false,
+        name,
+        senderId,
+        senderType,
+        ...props
+      },
+      ref
+    ) => {
+      const content =
+        typeof children === "function"
+          ? children({ name, senderId, senderType })
+          : children;
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children: content,
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children: content,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageGroupHeader";
-	return Component;
+  Component.displayName = "MessageGroupHeader";
+  return Component;
 })();
 
 export type MessageGroupContentProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode;
-	asChild?: boolean;
-	className?: string;
+  children?: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
 };
 
 /**
@@ -278,42 +279,42 @@ export type MessageGroupContentProps = Omit<
  * parent group.
  */
 export const MessageGroupContent = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageGroupContentProps>(
-		({ children, className, asChild = false, ...props }, ref) => {
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children,
-					},
-				}
-			);
-		}
-	);
+  const Component = React.forwardRef<HTMLDivElement, MessageGroupContentProps>(
+    ({ children, className, asChild = false, ...props }, ref) => {
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageGroupContent";
-	return Component;
+  Component.displayName = "MessageGroupContent";
+  return Component;
 })();
 
 export type MessageGroupSeenIndicatorProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?:
-		| React.ReactNode
-		| ((props: {
-				seenByIds: string[];
-				hasBeenSeen: boolean;
-		  }) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	seenByIds?: string[];
+  children?:
+    | React.ReactNode
+    | ((props: {
+        seenByIds: string[];
+        hasBeenSeen: boolean;
+      }) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  seenByIds?: string[];
 };
 
 /**
@@ -322,117 +323,117 @@ export type MessageGroupSeenIndicatorProps = Omit<
  * displays.
  */
 export const MessageGroupSeenIndicator = (() => {
-	const Component = React.forwardRef<
-		HTMLDivElement,
-		MessageGroupSeenIndicatorProps
-	>(
-		(
-			{ children, className, asChild = false, seenByIds = [], ...props },
-			ref
-		) => {
-			const hasBeenSeen = seenByIds.length > 0;
-			const content =
-				typeof children === "function"
-					? children({ seenByIds, hasBeenSeen })
-					: children;
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    MessageGroupSeenIndicatorProps
+  >(
+    (
+      { children, className, asChild = false, seenByIds = [], ...props },
+      ref
+    ) => {
+      const hasBeenSeen = seenByIds.length > 0;
+      const content =
+        typeof children === "function"
+          ? children({ seenByIds, hasBeenSeen })
+          : children;
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children: content,
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children: content,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageGroupSeenIndicator";
-	return Component;
+  Component.displayName = "MessageGroupSeenIndicator";
+  return Component;
 })();
 
 export type MessageGroupReadIndicatorProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?:
-		| React.ReactNode
-		| ((props: {
-				readers: Array<{ userId: string; isLastRead: boolean }>;
-				lastReaderIds: string[];
-		  }) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	messageId: string;
-	lastReadMessageIds?: Map<string, string>;
+  children?:
+    | React.ReactNode
+    | ((props: {
+        readers: Array<{ userId: string; isLastRead: boolean }>;
+        lastReaderIds: string[];
+      }) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  itemId: string;
+  lastReadItemIds?: Map<string, string>;
 };
 
 /**
- * Renders read receipts for the tail message in a group. It surfaces the list
+ * Renders read receipts for the tail timeline item in a group. It surfaces the list
  * of readers and callers can decide whether to render avatars, tooltips or a
  * basic label.
  */
 export const MessageGroupReadIndicator = (() => {
-	const Component = React.forwardRef<
-		HTMLDivElement,
-		MessageGroupReadIndicatorProps
-	>(
-		(
-			{
-				children,
-				className,
-				asChild = false,
-				messageId,
-				lastReadMessageIds,
-				...props
-			},
-			ref
-		) => {
-			// Find all users who stopped reading at this message
-			const { lastReaderIds, readers } = React.useMemo(() => {
-				const _lastReaderIds: string[] = [];
-				const _readers: Array<{ userId: string; isLastRead: boolean }> = [];
+  const Component = React.forwardRef<
+    HTMLDivElement,
+    MessageGroupReadIndicatorProps
+  >(
+    (
+      {
+        children,
+        className,
+        asChild = false,
+        itemId,
+        lastReadItemIds,
+        ...props
+      },
+      ref
+    ) => {
+      // Find all users who stopped reading at this timeline item
+      const { lastReaderIds, readers } = React.useMemo(() => {
+        const _lastReaderIds: string[] = [];
+        const _readers: Array<{ userId: string; isLastRead: boolean }> = [];
 
-				if (lastReadMessageIds) {
-					lastReadMessageIds.forEach((lastMessageId, userId) => {
-						if (lastMessageId === messageId) {
-							_lastReaderIds.push(userId);
-							_readers.push({ userId, isLastRead: true });
-						}
-					});
-				}
+        if (lastReadItemIds) {
+          lastReadItemIds.forEach((lastItemId, userId) => {
+            if (lastItemId === itemId) {
+              _lastReaderIds.push(userId);
+              _readers.push({ userId, isLastRead: true });
+            }
+          });
+        }
 
-				return { lastReaderIds: _lastReaderIds, readers: _readers };
-			}, [messageId, lastReadMessageIds]);
+        return { lastReaderIds: _lastReaderIds, readers: _readers };
+      }, [itemId, lastReadItemIds]);
 
-			const content =
-				typeof children === "function"
-					? children({ readers, lastReaderIds })
-					: children;
+      const content =
+        typeof children === "function"
+          ? children({ readers, lastReaderIds })
+          : children;
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children: content,
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children: content,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageGroupReadIndicator";
-	return Component;
+  Component.displayName = "MessageGroupReadIndicator";
+  return Component;
 })();

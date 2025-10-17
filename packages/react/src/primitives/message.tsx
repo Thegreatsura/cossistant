@@ -1,216 +1,226 @@
-import type { Message as MessageType } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
- * Metadata describing the origin of a message and pre-parsed content that can
+ * Metadata describing the origin of a timeline item and pre-parsed content that can
  * be consumed by render-prop children.
  */
 export type MessageRenderProps = {
-	isVisitor: boolean;
-	isAI: boolean;
-	isHuman: boolean;
-	timestamp: Date;
-	bodyMd: string;
-	senderType: "visitor" | "ai" | "human";
+  isVisitor: boolean;
+  isAI: boolean;
+  isHuman: boolean;
+  timestamp: Date;
+  text: string;
+  senderType: "visitor" | "ai" | "human";
+  itemType: "message" | "event";
 };
 
 export type MessageProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode | ((props: MessageRenderProps) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	message: MessageType;
+  children?: React.ReactNode | ((props: MessageRenderProps) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  item: TimelineItem;
 };
 
 /**
- * Minimal message wrapper that adds accessibility attributes and resolves the
- * sender type into convenient render props for custom bubble layouts.
+ * Minimal timeline item wrapper that adds accessibility attributes and resolves the
+ * sender type into convenient render props for custom bubble layouts. Works with
+ * both MESSAGE and EVENT timeline item types.
  */
 export const Message = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageProps>(
-		({ children, className, asChild = false, message, ...props }, ref) => {
-			// Determine sender type from message properties
-			const isVisitor = message.visitorId !== null;
-			const isAI = message.aiAgentId !== null;
-			const isHuman = message.userId !== null && !isVisitor;
+  const Component = React.forwardRef<HTMLDivElement, MessageProps>(
+    ({ children, className, asChild = false, item, ...props }, ref) => {
+      // Determine sender type from timeline item properties
+      const isVisitor = item.visitorId !== null;
+      const isAI = item.aiAgentId !== null;
+      const isHuman = item.userId !== null && !isVisitor;
 
-			const senderType = isVisitor ? "visitor" : isAI ? "ai" : "human";
+      const senderType = isVisitor ? "visitor" : isAI ? "ai" : "human";
 
-			const renderProps: MessageRenderProps = {
-				isVisitor,
-				isAI,
-				isHuman,
-				timestamp: new Date(message.createdAt),
-				bodyMd: message.bodyMd,
-				senderType,
-			};
+      const renderProps: MessageRenderProps = {
+        isVisitor,
+        isAI,
+        isHuman,
+        timestamp: new Date(item.createdAt),
+        text: item.text,
+        senderType,
+        itemType: item.type,
+      };
 
-			const messageContent =
-				typeof children === "function" ? children(renderProps) : children;
+      const messageContent =
+        typeof children === "function" ? children(renderProps) : children;
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					state: renderProps,
-					props: {
-						role: "article",
-						"aria-label": `Message from ${
-							isVisitor ? "visitor" : isAI ? "AI assistant" : "human agent"
-						}`,
-						...props,
-						children: messageContent,
-					},
-				}
-			);
-		}
-	);
+      const itemTypeLabel =
+        item.type === "event"
+          ? "Event"
+          : isVisitor
+            ? "visitor"
+            : isAI
+              ? "AI assistant"
+              : "human agent";
 
-	Component.displayName = "Message";
-	return Component;
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          state: renderProps,
+          props: {
+            role: "article",
+            "aria-label": `${item.type === "message" ? "Message" : "Event"} from ${itemTypeLabel}`,
+            ...props,
+            children: messageContent,
+          },
+        }
+      );
+    }
+  );
+
+  Component.displayName = "Message";
+  return Component;
 })();
 
 const MemoizedMarkdownBlock = React.memo(
-	({ content }: { content: string }) => {
-		return (
-			<ReactMarkdown
-				components={{
-					// Customize paragraph rendering to prevent excessive spacing
-					p: ({ children }) => <span className="inline">{children}</span>,
-					// Ensure proper line break handling
-					br: () => <br />,
-					// Handle code blocks properly
-					code: ({ children, ...props }) => {
-						// Check if it's inline code by looking at the parent element
-						const isInline = !(
-							"className" in props &&
-							typeof props.className === "string" &&
-							props.className.includes("language-")
-						);
-						return isInline ? (
-							<code className="rounded bg-co-background-300 px-1 py-0.5 text-xs">
-								{children}
-							</code>
-						) : (
-							<pre className="overflow-x-auto rounded bg-co-background-300 p-2">
-								<code className="text-xs">{children}</code>
-							</pre>
-						);
-					},
-					// Handle strong/bold text
-					strong: ({ children }) => (
-						<strong className="font-semibold">{children}</strong>
-					),
-					// Handle links
-					a: ({ href, children }) => (
-						<a
-							className="underline hover:opacity-80"
-							href={href}
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							{children}
-						</a>
-					),
-				}}
-			>
-				{content}
-			</ReactMarkdown>
-		);
-	},
-	(prevProps, nextProps) => {
-		if (prevProps.content !== nextProps.content) {
-			return false;
-		}
-		return true;
-	}
+  ({ content }: { content: string }) => {
+    return (
+      <ReactMarkdown
+        components={{
+          // Customize paragraph rendering to prevent excessive spacing
+          p: ({ children }) => <span className="inline">{children}</span>,
+          // Ensure proper line break handling
+          br: () => <br />,
+          // Handle code blocks properly
+          code: ({ children, ...props }) => {
+            // Check if it's inline code by looking at the parent element
+            const isInline = !(
+              "className" in props &&
+              typeof props.className === "string" &&
+              props.className.includes("language-")
+            );
+            return isInline ? (
+              <code className="rounded bg-co-background-300 px-1 py-0.5 text-xs">
+                {children}
+              </code>
+            ) : (
+              <pre className="overflow-x-auto rounded bg-co-background-300 p-2">
+                <code className="text-xs">{children}</code>
+              </pre>
+            );
+          },
+          // Handle strong/bold text
+          strong: ({ children }) => (
+            <strong className="font-semibold">{children}</strong>
+          ),
+          // Handle links
+          a: ({ href, children }) => (
+            <a
+              className="underline hover:opacity-80"
+              href={href}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
+  },
+  (prevProps, nextProps) => {
+    if (prevProps.content !== nextProps.content) {
+      return false;
+    }
+    return true;
+  }
 );
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
 
 export type MessageContentProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+  React.HTMLAttributes<HTMLDivElement>,
+  "children"
 > & {
-	children?: React.ReactNode | ((content: string) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	bodyMd?: string;
-	renderMarkdown?: boolean;
+  children?: React.ReactNode | ((content: string) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  text?: string;
+  renderMarkdown?: boolean;
 };
 
 /**
- * Renders the body of a message, optionally piping Markdown content through a
+ * Renders the content of a timeline item, optionally piping Markdown content through a
  * memoised renderer or handing the raw text to a render prop for custom
  * formatting.
  */
 export const MessageContent = (() => {
-	const Component = React.forwardRef<HTMLDivElement, MessageContentProps>(
-		(
-			{
-				children,
-				className,
-				asChild = false,
-				bodyMd = "",
-				renderMarkdown = true,
-				...props
-			},
-			ref
-		) => {
-			const messageContent = React.useMemo(() => {
-				if (typeof children === "function") {
-					return children(bodyMd);
-				}
-				if (children) {
-					return children;
-				}
-				if (renderMarkdown && bodyMd) {
-					return <MemoizedMarkdownBlock content={bodyMd} />;
-				}
-				return bodyMd;
-			}, [children, bodyMd, renderMarkdown]);
+  const Component = React.forwardRef<HTMLDivElement, MessageContentProps>(
+    (
+      {
+        children,
+        className,
+        asChild = false,
+        text = "",
+        renderMarkdown = true,
+        ...props
+      },
+      ref
+    ) => {
+      const messageContent = React.useMemo(() => {
+        if (typeof children === "function") {
+          return children(text);
+        }
+        if (children) {
+          return children;
+        }
+        if (renderMarkdown && text) {
+          return <MemoizedMarkdownBlock content={text} />;
+        }
+        return text;
+      }, [children, text, renderMarkdown]);
 
-			return useRenderElement(
-				"div",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children: messageContent,
-						style: {
-							...props.style,
-						},
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "div",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children: messageContent,
+            style: {
+              ...props.style,
+            },
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageContent";
-	return Component;
+  Component.displayName = "MessageContent";
+  return Component;
 })();
 
 export type MessageTimestampProps = Omit<
-	React.HTMLAttributes<HTMLSpanElement>,
-	"children"
+  React.HTMLAttributes<HTMLSpanElement>,
+  "children"
 > & {
-	children?: React.ReactNode | ((timestamp: Date) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	timestamp: Date;
-	format?: (date: Date) => string;
+  children?: React.ReactNode | ((timestamp: Date) => React.ReactNode);
+  asChild?: boolean;
+  className?: string;
+  timestamp: Date;
+  format?: (date: Date) => string;
 };
 
 /**
@@ -218,44 +228,44 @@ export type MessageTimestampProps = Omit<
  * render prop for custom time displays while preserving semantic markup.
  */
 export const MessageTimestamp = (() => {
-	const Component = React.forwardRef<HTMLSpanElement, MessageTimestampProps>(
-		(
-			{
-				children,
-				className,
-				asChild = false,
-				timestamp,
-				format = (date) =>
-					date.toLocaleTimeString([], {
-						hour: "2-digit",
-						minute: "2-digit",
-					}),
-				...props
-			},
-			ref
-		) => {
-			const content =
-				typeof children === "function"
-					? children(timestamp)
-					: children || format(timestamp);
+  const Component = React.forwardRef<HTMLSpanElement, MessageTimestampProps>(
+    (
+      {
+        children,
+        className,
+        asChild = false,
+        timestamp,
+        format = (date) =>
+          date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        ...props
+      },
+      ref
+    ) => {
+      const content =
+        typeof children === "function"
+          ? children(timestamp)
+          : children || format(timestamp);
 
-			return useRenderElement(
-				"span",
-				{
-					className,
-					asChild,
-				},
-				{
-					ref,
-					props: {
-						...props,
-						children: content,
-					},
-				}
-			);
-		}
-	);
+      return useRenderElement(
+        "span",
+        {
+          className,
+          asChild,
+        },
+        {
+          ref,
+          props: {
+            ...props,
+            children: content,
+          },
+        }
+      );
+    }
+  );
 
-	Component.displayName = "MessageTimestamp";
-	return Component;
+  Component.displayName = "MessageTimestamp";
+  return Component;
 })();

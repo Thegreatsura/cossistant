@@ -1,102 +1,50 @@
 import { z } from "zod";
-import {
-	ConversationEventType,
-	ConversationStatus,
-	MessageType,
-	MessageVisibility,
-} from "./enums";
-
-export const messageSchema = z.object({
-	id: z.string(),
-	bodyMd: z.string(),
-	type: z.enum([MessageType.TEXT, MessageType.IMAGE, MessageType.FILE]),
-	userId: z.string().nullable(),
-	aiAgentId: z.string().nullable(),
-	parentMessageId: z.string().nullable(),
-	modelUsed: z.string().nullable(),
-	visitorId: z.string().nullable(),
-	conversationId: z.string(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	deletedAt: z.string().nullable(),
-	visibility: z.enum([MessageVisibility.PUBLIC, MessageVisibility.PRIVATE]),
-});
-
-export type Message = z.infer<typeof messageSchema>;
+import { timelineItemSchema } from "./api/timeline-item";
+import { ConversationEventType, ConversationStatus } from "./enums";
 
 export const viewSchema = z.object({
-	id: z.string(),
-	name: z.string(),
-	description: z.string().nullable(),
-	prompt: z.string().nullable(),
-	organizationId: z.string(),
-	websiteId: z.string(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	deletedAt: z.string().nullable(),
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  prompt: z.string().nullable(),
+  organizationId: z.string(),
+  websiteId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
 });
 
 export type InboxView = z.infer<typeof viewSchema>;
 
 export const conversationSchema = z.object({
-	id: z.string(),
-	title: z.string().optional(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	visitorId: z.string(),
-	websiteId: z.string(),
-	status: z
-		.enum([
-			ConversationStatus.OPEN,
-			ConversationStatus.RESOLVED,
-			ConversationStatus.SPAM,
-		])
-		.default(ConversationStatus.OPEN),
-	lastMessage: messageSchema.optional(),
+  id: z.string(),
+  title: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  visitorId: z.string(),
+  websiteId: z.string(),
+  status: z
+    .enum([
+      ConversationStatus.OPEN,
+      ConversationStatus.RESOLVED,
+      ConversationStatus.SPAM,
+    ])
+    .default(ConversationStatus.OPEN),
+  lastTimelineItem: timelineItemSchema.optional(),
 });
 
 export type Conversation = z.infer<typeof conversationSchema>;
 
-export const conversationEventSchema = z.object({
-	id: z.string(),
-	organizationId: z.string(),
-	conversationId: z.string(),
-	type: z.enum([
-		ConversationEventType.ASSIGNED,
-		ConversationEventType.UNASSIGNED,
-		ConversationEventType.PARTICIPANT_REQUESTED,
-		ConversationEventType.PARTICIPANT_JOINED,
-		ConversationEventType.PARTICIPANT_LEFT,
-		ConversationEventType.STATUS_CHANGED,
-		ConversationEventType.PRIORITY_CHANGED,
-		ConversationEventType.TAG_ADDED,
-		ConversationEventType.TAG_REMOVED,
-		ConversationEventType.RESOLVED,
-		ConversationEventType.REOPENED,
-	]),
-	actorUserId: z.string().nullable(),
-	actorAiAgentId: z.string().nullable(),
-	targetUserId: z.string().nullable(),
-	targetAiAgentId: z.string().nullable(),
-	message: z.string().optional(),
-	metadata: z.record(z.string(), z.unknown()).optional(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	deletedAt: z.string().nullable(),
-});
-
-export type ConversationEvent = z.infer<typeof conversationEventSchema>;
-
 export const conversationSeenSchema = z.object({
-	id: z.string(),
-	conversationId: z.string(),
-	userId: z.string().nullable(),
-	visitorId: z.string().nullable(),
-	aiAgentId: z.string().nullable(),
-	lastSeenAt: z.string(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	deletedAt: z.string().nullable(),
+  id: z.string(),
+  conversationId: z.string(),
+  userId: z.string().nullable(),
+  visitorId: z.string().nullable(),
+  aiAgentId: z.string().nullable(),
+  lastSeenAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
 });
 
 export type ConversationSeen = z.infer<typeof conversationSeenSchema>;
