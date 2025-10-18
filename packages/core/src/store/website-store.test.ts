@@ -140,7 +140,6 @@ describe("CossistantClient website integration", () => {
 		// @ts-expect-error test override of private field for mocking
 		client.restClient = {
 			getWebsite: async () => {
-				// biome-ignore lint/nursery/noUnnecessaryConditions: ok
 				if (shouldFail) {
 					throw new Error("fail");
 				}

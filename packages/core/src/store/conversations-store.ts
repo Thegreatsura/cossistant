@@ -112,7 +112,6 @@ function mergeOrder(
 		changed = true;
 	}
 
-	// biome-ignore lint/nursery/noUnnecessaryConditions: ok
 	return changed ? [next, true] : [existing, false];
 }
 

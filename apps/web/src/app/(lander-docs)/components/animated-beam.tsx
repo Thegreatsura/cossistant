@@ -63,7 +63,6 @@ export const AnimatedBeam = ({
 				y2: ["0%", "0%"],
 			};
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: ok
 	useEffect(() => {
 		const updatePath = () => {
 			if (containerRef.current && fromRef.current && toRef.current) {

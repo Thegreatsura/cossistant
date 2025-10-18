@@ -207,7 +207,6 @@ export const HumanAiGraphic = () => {
 	const [visibleItems, setVisibleItems] = useState<number[]>([]);
 
 	// Auto-scroll to bottom when new items are added
-	// biome-ignore lint/correctness/useExhaustiveDependencies: ok here
 	useEffect(() => {
 		if (scrollRef.current) {
 			scrollRef.current.scrollTo({

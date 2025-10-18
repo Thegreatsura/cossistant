@@ -20,7 +20,8 @@
         "noBitwiseOperators": "off"
       },
       "nursery": {
-        "noReactForwardRef": "off"
+        "noReactForwardRef": "off",
+        "noDeprecatedImports": "off"
       },
       "correctness": {
         "noUnusedImports": "off",

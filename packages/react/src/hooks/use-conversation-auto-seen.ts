@@ -90,7 +90,6 @@ export function useConversationAutoSeen(
 	}, []);
 
 	// Reset seen tracking when conversation changes
-	// biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally reset refs when conversationId changes
 	useEffect(() => {
 		lastSeenItemIdRef.current = null;
 		markSeenInFlightRef.current = false;

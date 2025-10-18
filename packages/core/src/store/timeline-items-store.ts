@@ -71,7 +71,6 @@ function mergeTimelineItems(
 			}
 		}
 
-		// biome-ignore lint/nursery/noUnnecessaryConditions: false positive
 		if (orderStable) {
 			return existing;
 		}

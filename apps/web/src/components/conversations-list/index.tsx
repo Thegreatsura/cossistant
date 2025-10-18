@@ -29,7 +29,6 @@ export function ConversationsList({
 		position: "left",
 	});
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Clear focus when filters change
 	useEffect(() => {
 		clearFocus();
 	}, [selectedConversationStatus, clearFocus]);
