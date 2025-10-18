@@ -1,5 +1,4 @@
 import type { RouterOutputs } from "@api/trpc/types";
-import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 
 export type ConversationTimelineItemsPage =

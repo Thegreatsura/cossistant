@@ -114,7 +114,7 @@ export function useSendConversationMessage({
           timelineItemsQueryKey,
           {
             ...createdItem,
-            parts: createdItem.parts as unknown[],
+            parts: createdItem.parts as ConversationTimelineItem["parts"],
           }
         );
       } catch (error) {
