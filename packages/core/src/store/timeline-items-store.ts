@@ -192,13 +192,13 @@ function normalizeRealtimeTimelineItem(
     organizationId: raw.organizationId,
     visibility: raw.visibility,
     type: raw.type,
-    text: raw.text ?? "",
+    text: raw.text ?? null,
     parts: raw.parts as TimelineItemParts,
     userId: raw.userId,
     visitorId: raw.visitorId,
     aiAgentId: raw.aiAgentId,
     createdAt: raw.createdAt,
-    deletedAt: raw.deletedAt ?? undefined,
+    deletedAt: raw.deletedAt ?? null,
   };
 }
 

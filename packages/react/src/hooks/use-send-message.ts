@@ -128,6 +128,7 @@ export function useSendMessage(
         const response = await client.sendMessage({
           conversationId,
           item: {
+            id: timelineItemPayload.id,
             text: timelineItemPayload.text ?? "",
             type: timelineItemPayload.type,
             visibility: timelineItemPayload.visibility,
@@ -135,13 +136,20 @@ export function useSendMessage(
             aiAgentId: timelineItemPayload.aiAgentId,
             visitorId: timelineItemPayload.visitorId,
             createdAt: timelineItemPayload.createdAt,
+            parts: timelineItemPayload.parts,
           },
           createIfPending: true,
         });
 
+        const messageId = response.item.id;
+
+        if (!messageId) {
+          throw new Error("SendMessage response missing item.id");
+        }
+
         const result: SendMessageResult = {
           conversationId,
-          messageId: response.item.id || "",
+          messageId,
         };
 
         if ("conversation" in response && response.conversation) {
