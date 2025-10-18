@@ -120,9 +120,10 @@ export function useConversationLifecycle(
 	const isPending = conversationId === PENDING_CONVERSATION_ID;
 	const realConversationId = isPending ? null : conversationId;
 
-	const isNewConversation = useCallback(() => {
-		return conversationId === PENDING_CONVERSATION_ID;
-	}, [conversationId]);
+	const isNewConversation = useCallback(
+		() => conversationId === PENDING_CONVERSATION_ID,
+		[conversationId]
+	);
 
 	return {
 		conversationId,

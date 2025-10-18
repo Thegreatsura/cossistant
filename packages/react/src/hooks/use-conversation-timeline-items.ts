@@ -53,16 +53,22 @@ export function useConversationTimelineItems(
 
 	const stableConversationId = conversationId ?? NO_CONVERSATION_ID;
 
-	const selection = useStoreSelector(store, (state) => {
-		return state.conversations[stableConversationId] ?? EMPTY_STATE;
-	});
+	const selection = useStoreSelector(
+		store,
+		(state) => state.conversations[stableConversationId] ?? EMPTY_STATE
+	);
 
-	const baseArgs = useMemo(() => {
-		return {
-			limit: options.limit ?? DEFAULT_LIMIT,
-			cursor: options.cursor ?? undefined,
-		} satisfies Pick<GetConversationTimelineItemsRequest, "limit" | "cursor">;
-	}, [options.cursor, options.limit]);
+	const baseArgs = useMemo(
+		() =>
+			({
+				limit: options.limit ?? DEFAULT_LIMIT,
+				cursor: options.cursor ?? undefined,
+			}) satisfies Pick<
+				GetConversationTimelineItemsRequest,
+				"limit" | "cursor"
+			>,
+		[options.cursor, options.limit]
+	);
 
 	const {
 		refetch: queryRefetch,

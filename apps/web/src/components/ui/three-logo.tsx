@@ -7,15 +7,15 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 type ThreeLogoProps = {
-  className?: string;
+	className?: string;
 };
 
 function LogoPlane() {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const { camera, size } = useThree();
+	const meshRef = useRef<THREE.Mesh>(null);
+	const { camera, size } = useThree();
 
-  // Create SVG data URL
-  const svgString = `
+	// Create SVG data URL
+	const svgString = `
     <svg width="1355" height="210" viewBox="0 0 1355 210" xmlns="http://www.w3.org/2000/svg">
       <title>Cossistant Logo</title>
       <path
@@ -37,104 +37,104 @@ function LogoPlane() {
     </svg>
   `;
 
-  // Create texture from SVG
-  const texture = new THREE.Texture();
+	// Create texture from SVG
+	const texture = new THREE.Texture();
 
-  useEffect(() => {
-    const img = new Image();
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+	useEffect(() => {
+		const img = new Image();
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
 
-    if (!ctx) {
-      return;
-    }
+		if (!ctx) {
+			return;
+		}
 
-    canvas.width = 1355;
-    canvas.height = 210;
+		canvas.width = 1355;
+		canvas.height = 210;
 
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
+		const blob = new Blob([svgString], { type: "image/svg+xml" });
+		const url = URL.createObjectURL(blob);
 
-    img.onload = () => {
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        texture.image = canvas;
-        texture.needsUpdate = true;
-        URL.revokeObjectURL(url);
-      }
-    };
+		img.onload = () => {
+			if (ctx) {
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+				texture.image = canvas;
+				texture.needsUpdate = true;
+				URL.revokeObjectURL(url);
+			}
+		};
 
-    img.src = url;
+		img.src = url;
 
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [texture]);
+		return () => {
+			URL.revokeObjectURL(url);
+		};
+	}, [texture]);
 
-  // Calculate plane size to fill the viewport
-  const fov = (camera as THREE.PerspectiveCamera).fov;
-  const distance = camera.position.z;
-  const aspect = size.width / size.height;
+	// Calculate plane size to fill the viewport
+	const fov = (camera as THREE.PerspectiveCamera).fov;
+	const distance = camera.position.z;
+	const aspect = size.width / size.height;
 
-  // Calculate the height and width that would fill the view
-  const vFOV = (fov * Math.PI) / 180;
-  const planeHeight = 2 * Math.tan(vFOV / 2) * distance;
-  const planeWidth = planeHeight * aspect;
+	// Calculate the height and width that would fill the view
+	const vFOV = (fov * Math.PI) / 180;
+	const planeHeight = 2 * Math.tan(vFOV / 2) * distance;
+	const planeWidth = planeHeight * aspect;
 
-  return (
-    <mesh position={[0, 0, 0]} ref={meshRef}>
-      <planeGeometry args={[planeWidth, planeHeight]} />
-      <meshBasicMaterial map={texture} transparent />
-    </mesh>
-  );
+	return (
+		<mesh position={[0, 0, 0]} ref={meshRef}>
+			<planeGeometry args={[planeWidth, planeHeight]} />
+			<meshBasicMaterial map={texture} transparent />
+		</mesh>
+	);
 }
 
 export function ThreeLogo({ className }: ThreeLogoProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 1355, height: 210 });
-  const [dpr, setDpr] = useState(1);
-  const { resolvedTheme } = useTheme();
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [dimensions, setDimensions] = useState({ width: 1355, height: 210 });
+	const [dpr, setDpr] = useState(1);
+	const { resolvedTheme } = useTheme();
 
-  useEffect(() => {
-    // Ensure DPR is an integer to prevent fractional canvas sizes in downstream consumers
-    if (typeof window !== "undefined") {
-      const device = window.devicePixelRatio || 1;
-      const clamped = Math.min(2, Math.max(1, device));
-      setDpr(Math.round(clamped));
-    }
-  }, []);
+	useEffect(() => {
+		// Ensure DPR is an integer to prevent fractional canvas sizes in downstream consumers
+		if (typeof window !== "undefined") {
+			const device = window.devicePixelRatio || 1;
+			const clamped = Math.min(2, Math.max(1, device));
+			setDpr(Math.round(clamped));
+		}
+	}, []);
 
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const { width } = containerRef.current.getBoundingClientRect();
-        // Maintain aspect ratio from viewBox (1355:210)
-        const aspectRatio = 1355 / 210;
-        const height = width / aspectRatio;
-        setDimensions({ width: Math.round(width), height: Math.round(height) });
-      }
-    };
+	useEffect(() => {
+		const updateDimensions = () => {
+			if (containerRef.current) {
+				const { width } = containerRef.current.getBoundingClientRect();
+				// Maintain aspect ratio from viewBox (1355:210)
+				const aspectRatio = 1355 / 210;
+				const height = width / aspectRatio;
+				setDimensions({ width: Math.round(width), height: Math.round(height) });
+			}
+		};
 
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
+		updateDimensions();
+		window.addEventListener("resize", updateDimensions);
+		return () => window.removeEventListener("resize", updateDimensions);
+	}, []);
 
-  return (
-    <div className={className} ref={containerRef} style={{ width: "100%" }}>
-      <Canvas
-        camera={{ position: [0, 0, 10], fov: 75 }}
-        dpr={dpr}
-        style={{ width: dimensions.width, height: dimensions.height }}
-      >
-        <LogoPlane />
-        <AsciiRenderer
-          bgColor="transparent"
-          characters=" .%=*:+-# "
-          fgColor={resolvedTheme === "dark" ? "white" : "black"}
-          resolution={0.2}
-        />
-      </Canvas>
-    </div>
-  );
+	return (
+		<div className={className} ref={containerRef} style={{ width: "100%" }}>
+			<Canvas
+				camera={{ position: [0, 0, 10], fov: 75 }}
+				dpr={dpr}
+				style={{ width: dimensions.width, height: dimensions.height }}
+			>
+				<LogoPlane />
+				<AsciiRenderer
+					bgColor="transparent"
+					characters=" .%=*:+-# "
+					fgColor={resolvedTheme === "dark" ? "white" : "black"}
+					resolution={0.2}
+				/>
+			</Canvas>
+		</div>
+	);
 }

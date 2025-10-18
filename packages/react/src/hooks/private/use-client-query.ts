@@ -68,11 +68,12 @@ export function useClientQuery<TData, TArgs = void>(
 
 	queryFnRef.current = queryFn;
 
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			isMountedRef.current = false;
-		};
-	}, []);
+		},
+		[]
+	);
 
 	useEffect(() => {
 		argsRef.current = initialArgs;
@@ -201,9 +202,7 @@ export function useClientQuery<TData, TArgs = void>(
 	}, [enabled, execute, refetchOnWindowFocus]);
 
 	const refetch = useCallback(
-		async (args?: TArgs) => {
-			return execute(args, true);
-		},
+		async (args?: TArgs) => execute(args, true),
 		[execute]
 	);
 

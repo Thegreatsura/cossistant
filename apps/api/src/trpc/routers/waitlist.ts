@@ -27,9 +27,9 @@ export const waitlistRouter = createTRPCRouter({
 				userId: optionalUserIdSchema,
 			})
 		)
-		.query(async ({ input }) => {
-			return getWaitlistEntryByUserId(db, { userId: input.userId });
-		}),
+		.query(async ({ input }) =>
+			getWaitlistEntryByUserId(db, { userId: input.userId })
+		),
 	redeemReferralCode: protectedProcedure
 		.input(
 			z.object({

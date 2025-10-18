@@ -8,25 +8,25 @@ import { useRenderElement } from "../utils/use-render-element";
  * be consumed by render-prop children.
  */
 export type TimelineItemRenderProps = {
-  isVisitor: boolean;
-  isAI: boolean;
-  isHuman: boolean;
-  timestamp: Date;
-  text: string | null;
-  senderType: "visitor" | "ai" | "human";
-  itemType: "message" | "event";
+	isVisitor: boolean;
+	isAI: boolean;
+	isHuman: boolean;
+	timestamp: Date;
+	text: string | null;
+	senderType: "visitor" | "ai" | "human";
+	itemType: "message" | "event";
 };
 
 export type TimelineItemProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?:
-    | React.ReactNode
-    | ((props: TimelineItemRenderProps) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  item: TimelineItemType;
+	children?:
+		| React.ReactNode
+		| ((props: TimelineItemRenderProps) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	item: TimelineItemType;
 };
 
 /**
@@ -35,128 +35,128 @@ export type TimelineItemProps = Omit<
  * both MESSAGE and EVENT timeline item types.
  */
 export const TimelineItem = (() => {
-  const Component = React.forwardRef<HTMLDivElement, TimelineItemProps>(
-    ({ children, className, asChild = false, item, ...props }, ref) => {
-      // Determine sender type from timeline item properties
-      const isVisitor = item.visitorId !== null;
-      const isAI = item.aiAgentId !== null;
-      const isHuman = item.userId !== null && !isVisitor;
+	const Component = React.forwardRef<HTMLDivElement, TimelineItemProps>(
+		({ children, className, asChild = false, item, ...props }, ref) => {
+			// Determine sender type from timeline item properties
+			const isVisitor = item.visitorId !== null;
+			const isAI = item.aiAgentId !== null;
+			const isHuman = item.userId !== null && !isVisitor;
 
-      const senderType = isVisitor ? "visitor" : isAI ? "ai" : "human";
+			const senderType = isVisitor ? "visitor" : isAI ? "ai" : "human";
 
-      const renderProps: TimelineItemRenderProps = {
-        isVisitor,
-        isAI,
-        isHuman,
-        timestamp: new Date(item.createdAt),
-        text: item.text,
-        senderType,
-        itemType: item.type,
-      };
+			const renderProps: TimelineItemRenderProps = {
+				isVisitor,
+				isAI,
+				isHuman,
+				timestamp: new Date(item.createdAt),
+				text: item.text,
+				senderType,
+				itemType: item.type,
+			};
 
-      const content =
-        typeof children === "function" ? children(renderProps) : children;
+			const content =
+				typeof children === "function" ? children(renderProps) : children;
 
-      const itemTypeLabel =
-        item.type === "event"
-          ? "Event"
-          : isVisitor
-            ? "visitor"
-            : isAI
-              ? "AI assistant"
-              : "human agent";
+			const itemTypeLabel =
+				item.type === "event"
+					? "Event"
+					: isVisitor
+						? "visitor"
+						: isAI
+							? "AI assistant"
+							: "human agent";
 
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref,
-          state: renderProps,
-          props: {
-            role: "article",
-            "aria-label": `${item.type === "message" ? "Message" : "Event"} from ${itemTypeLabel}`,
-            ...props,
-            children: content,
-          },
-        }
-      );
-    }
-  );
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					state: renderProps,
+					props: {
+						role: "article",
+						"aria-label": `${item.type === "message" ? "Message" : "Event"} from ${itemTypeLabel}`,
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "TimelineItem";
-  return Component;
+	Component.displayName = "TimelineItem";
+	return Component;
 })();
 
 const MemoizedMarkdownBlock = React.memo(
-  ({ content }: { content: string }) => {
-    return (
-      <ReactMarkdown
-        components={{
-          // Customize paragraph rendering to prevent excessive spacing
-          p: ({ children }) => <span className="inline">{children}</span>,
-          // Ensure proper line break handling
-          br: () => <br />,
-          // Handle code blocks properly
-          code: ({ children, ...props }) => {
-            // Check if it's inline code by looking at the parent element
-            const isInline = !(
-              "className" in props &&
-              typeof props.className === "string" &&
-              props.className.includes("language-")
-            );
-            return isInline ? (
-              <code className="rounded bg-co-background-300 px-1 py-0.5 text-xs">
-                {children}
-              </code>
-            ) : (
-              <pre className="overflow-x-auto rounded bg-co-background-300 p-2">
-                <code className="text-xs">{children}</code>
-              </pre>
-            );
-          },
-          // Handle strong/bold text
-          strong: ({ children }) => (
-            <strong className="font-semibold">{children}</strong>
-          ),
-          // Handle links
-          a: ({ href, children }) => (
-            <a
-              className="underline hover:opacity-80"
-              href={href}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    );
-  },
-  (prevProps, nextProps) => {
-    if (prevProps.content !== nextProps.content) {
-      return false;
-    }
-    return true;
-  }
+	({ content }: { content: string }) => {
+		return (
+			<ReactMarkdown
+				components={{
+					// Customize paragraph rendering to prevent excessive spacing
+					p: ({ children }) => <span className="inline">{children}</span>,
+					// Ensure proper line break handling
+					br: () => <br />,
+					// Handle code blocks properly
+					code: ({ children, ...props }) => {
+						// Check if it's inline code by looking at the parent element
+						const isInline = !(
+							"className" in props &&
+							typeof props.className === "string" &&
+							props.className.includes("language-")
+						);
+						return isInline ? (
+							<code className="rounded bg-co-background-300 px-1 py-0.5 text-xs">
+								{children}
+							</code>
+						) : (
+							<pre className="overflow-x-auto rounded bg-co-background-300 p-2">
+								<code className="text-xs">{children}</code>
+							</pre>
+						);
+					},
+					// Handle strong/bold text
+					strong: ({ children }) => (
+						<strong className="font-semibold">{children}</strong>
+					),
+					// Handle links
+					a: ({ href, children }) => (
+						<a
+							className="underline hover:opacity-80"
+							href={href}
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							{children}
+						</a>
+					),
+				}}
+			>
+				{content}
+			</ReactMarkdown>
+		);
+	},
+	(prevProps, nextProps) => {
+		if (prevProps.content !== nextProps.content) {
+			return false;
+		}
+		return true;
+	}
 );
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
 
 export type TimelineItemContentProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?: React.ReactNode | ((content: string) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  text?: string | null;
-  renderMarkdown?: boolean;
+	children?: React.ReactNode | ((content: string) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	text?: string | null;
+	renderMarkdown?: boolean;
 };
 
 /**
@@ -165,65 +165,65 @@ export type TimelineItemContentProps = Omit<
  * formatting.
  */
 export const TimelineItemContent = (() => {
-  const Component = React.forwardRef<HTMLDivElement, TimelineItemContentProps>(
-    (
-      {
-        children,
-        className,
-        asChild = false,
-        text = "",
-        renderMarkdown = true,
-        ...props
-      },
-      ref
-    ) => {
-      const content = React.useMemo(() => {
-        const textContent = text ?? "";
-        if (typeof children === "function") {
-          return children(textContent);
-        }
-        if (children) {
-          return children;
-        }
-        if (renderMarkdown && textContent) {
-          return <MemoizedMarkdownBlock content={textContent} />;
-        }
-        return textContent;
-      }, [children, text, renderMarkdown]);
+	const Component = React.forwardRef<HTMLDivElement, TimelineItemContentProps>(
+		(
+			{
+				children,
+				className,
+				asChild = false,
+				text = "",
+				renderMarkdown = true,
+				...props
+			},
+			ref
+		) => {
+			const content = React.useMemo(() => {
+				const textContent = text ?? "";
+				if (typeof children === "function") {
+					return children(textContent);
+				}
+				if (children) {
+					return children;
+				}
+				if (renderMarkdown && textContent) {
+					return <MemoizedMarkdownBlock content={textContent} />;
+				}
+				return textContent;
+			}, [children, text, renderMarkdown]);
 
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref,
-          props: {
-            ...props,
-            children: content,
-            style: {
-              ...props.style,
-            },
-          },
-        }
-      );
-    }
-  );
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children: content,
+						style: {
+							...props.style,
+						},
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "TimelineItemContent";
-  return Component;
+	Component.displayName = "TimelineItemContent";
+	return Component;
 })();
 
 export type TimelineItemTimestampProps = Omit<
-  React.HTMLAttributes<HTMLSpanElement>,
-  "children"
+	React.HTMLAttributes<HTMLSpanElement>,
+	"children"
 > & {
-  children?: React.ReactNode | ((timestamp: Date) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  timestamp: Date;
-  format?: (date: Date) => string;
+	children?: React.ReactNode | ((timestamp: Date) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	timestamp: Date;
+	format?: (date: Date) => string;
 };
 
 /**
@@ -231,47 +231,47 @@ export type TimelineItemTimestampProps = Omit<
  * render prop for custom time displays while preserving semantic markup.
  */
 export const TimelineItemTimestamp = (() => {
-  const Component = React.forwardRef<
-    HTMLSpanElement,
-    TimelineItemTimestampProps
-  >(
-    (
-      {
-        children,
-        className,
-        asChild = false,
-        timestamp,
-        format = (date) =>
-          date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        ...props
-      },
-      ref
-    ) => {
-      const content =
-        typeof children === "function"
-          ? children(timestamp)
-          : children || format(timestamp);
+	const Component = React.forwardRef<
+		HTMLSpanElement,
+		TimelineItemTimestampProps
+	>(
+		(
+			{
+				children,
+				className,
+				asChild = false,
+				timestamp,
+				format = (date) =>
+					date.toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					}),
+				...props
+			},
+			ref
+		) => {
+			const content =
+				typeof children === "function"
+					? children(timestamp)
+					: children || format(timestamp);
 
-      return useRenderElement(
-        "span",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref,
-          props: {
-            ...props,
-            children: content,
-          },
-        }
-      );
-    }
-  );
+			return useRenderElement(
+				"span",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref,
+					props: {
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "TimelineItemTimestamp";
-  return Component;
+	Component.displayName = "TimelineItemTimestamp";
+	return Component;
 })();

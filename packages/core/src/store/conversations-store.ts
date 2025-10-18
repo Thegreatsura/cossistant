@@ -5,229 +5,228 @@ import { createStore, type Store } from "./create-store";
 export type ConversationPagination = ListConversationsResponse["pagination"];
 
 export type ConversationsState = {
-  ids: string[];
-  byId: Record<string, Conversation>;
-  pagination: ConversationPagination | null;
+	ids: string[];
+	byId: Record<string, Conversation>;
+	pagination: ConversationPagination | null;
 };
 
 const INITIAL_STATE: ConversationsState = {
-  ids: [],
-  byId: {},
-  pagination: null,
+	ids: [],
+	byId: {},
+	pagination: null,
 };
 
 function isSameDate(a: Date | string, b: Date | string): boolean {
-  if (a === b) {
-    return true;
-  }
+	if (a === b) {
+		return true;
+	}
 
-  const aTime = typeof a === "string" ? new Date(a).getTime() : a.getTime();
-  const bTime = typeof b === "string" ? new Date(b).getTime() : b.getTime();
+	const aTime = typeof a === "string" ? new Date(a).getTime() : a.getTime();
+	const bTime = typeof b === "string" ? new Date(b).getTime() : b.getTime();
 
-  return aTime === bTime;
+	return aTime === bTime;
 }
 
 function isSameConversation(a: Conversation, b: Conversation): boolean {
-  // Check basic fields
-  const basicMatch =
-    a.id === b.id &&
-    a.title === b.title &&
-    a.status === b.status &&
-    a.visitorId === b.visitorId &&
-    a.websiteId === b.websiteId &&
-    isSameDate(a.createdAt, b.createdAt) &&
-    isSameDate(a.updatedAt, b.updatedAt);
+	// Check basic fields
+	const basicMatch =
+		a.id === b.id &&
+		a.title === b.title &&
+		a.status === b.status &&
+		a.visitorId === b.visitorId &&
+		a.websiteId === b.websiteId &&
+		isSameDate(a.createdAt, b.createdAt) &&
+		isSameDate(a.updatedAt, b.updatedAt);
 
-  if (!basicMatch) {
-    return false;
-  }
+	if (!basicMatch) {
+		return false;
+	}
 
-  // Check lastTimelineItem - both undefined/null is a match
-  if (!(a.lastTimelineItem || b.lastTimelineItem)) {
-    return true;
-  }
+	// Check lastTimelineItem - both undefined/null is a match
+	if (!(a.lastTimelineItem || b.lastTimelineItem)) {
+		return true;
+	}
 
-  // One has timeline item, one doesn't - not a match
-  if (!(a.lastTimelineItem && b.lastTimelineItem)) {
-    return false;
-  }
+	// One has timeline item, one doesn't - not a match
+	if (!(a.lastTimelineItem && b.lastTimelineItem)) {
+		return false;
+	}
 
-  // Both have timeline items - compare them
-  return (
-    a.lastTimelineItem.id === b.lastTimelineItem.id &&
-    a.lastTimelineItem.text === b.lastTimelineItem.text &&
-    isSameDate(a.lastTimelineItem.createdAt, b.lastTimelineItem.createdAt)
-  );
+	// Both have timeline items - compare them
+	return (
+		a.lastTimelineItem.id === b.lastTimelineItem.id &&
+		a.lastTimelineItem.text === b.lastTimelineItem.text &&
+		isSameDate(a.lastTimelineItem.createdAt, b.lastTimelineItem.createdAt)
+	);
 }
 
 function mergeMap(
-  existing: Record<string, Conversation>,
-  incoming: Conversation[],
+	existing: Record<string, Conversation>,
+	incoming: Conversation[]
 ): [Record<string, Conversation>, boolean] {
-  let changed = false;
-  let next = existing;
+	let changed = false;
+	let next = existing;
 
-  for (const conversation of incoming) {
-    const previous = next[conversation.id];
-    if (!(previous && isSameConversation(previous, conversation))) {
-      if (!changed) {
-        next = { ...next };
-        changed = true;
-      }
-      next[conversation.id] = conversation;
-    }
-  }
+	for (const conversation of incoming) {
+		const previous = next[conversation.id];
+		if (!(previous && isSameConversation(previous, conversation))) {
+			if (!changed) {
+				next = { ...next };
+				changed = true;
+			}
+			next[conversation.id] = conversation;
+		}
+	}
 
-  return [next, changed];
+	return [next, changed];
 }
 
 function mergeOrder(
-  existing: string[],
-  incoming: string[],
-  page: number,
+	existing: string[],
+	incoming: string[],
+	page: number
 ): [string[], boolean] {
-  if (incoming.length === 0) {
-    return [existing, false];
-  }
+	if (incoming.length === 0) {
+		return [existing, false];
+	}
 
-  if (page <= 1) {
-    const rest = existing.filter((id) => !incoming.includes(id));
-    const next = [...incoming, ...rest];
-    const changed =
-      next.length !== existing.length ||
-      next.some((value, index) => value !== existing[index]);
-    return changed ? [next, true] : [existing, false];
-  }
+	if (page <= 1) {
+		const rest = existing.filter((id) => !incoming.includes(id));
+		const next = [...incoming, ...rest];
+		const changed =
+			next.length !== existing.length ||
+			next.some((value, index) => value !== existing[index]);
+		return changed ? [next, true] : [existing, false];
+	}
 
-  let changed = false;
-  const seen = new Set(existing);
-  const next = [...existing];
+	let changed = false;
+	const seen = new Set(existing);
+	const next = [...existing];
 
-  for (const id of incoming) {
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    next.push(id);
-    changed = true;
-  }
+	for (const id of incoming) {
+		if (seen.has(id)) {
+			continue;
+		}
+		seen.add(id);
+		next.push(id);
+		changed = true;
+	}
 
-  // biome-ignore lint/nursery/noUnnecessaryConditions: ok
-  return changed ? [next, true] : [existing, false];
+	// biome-ignore lint/nursery/noUnnecessaryConditions: ok
+	return changed ? [next, true] : [existing, false];
 }
 
 function isSamePagination(
-  a: ConversationPagination | null,
-  b: ConversationPagination | null,
+	a: ConversationPagination | null,
+	b: ConversationPagination | null
 ): boolean {
-  if (a === b) {
-    return true;
-  }
-  if (!(a && b)) {
-    return !(a || b);
-  }
-  return (
-    a.page === b.page &&
-    a.limit === b.limit &&
-    a.total === b.total &&
-    a.totalPages === b.totalPages &&
-    a.hasMore === b.hasMore
-  );
+	if (a === b) {
+		return true;
+	}
+	if (!(a && b)) {
+		return !(a || b);
+	}
+	return (
+		a.page === b.page &&
+		a.limit === b.limit &&
+		a.total === b.total &&
+		a.totalPages === b.totalPages &&
+		a.hasMore === b.hasMore
+	);
 }
 
 function applyList(
-  state: ConversationsState,
-  response: ListConversationsResponse,
+	state: ConversationsState,
+	response: ListConversationsResponse
 ): ConversationsState {
-  const [byId, mapChanged] = mergeMap(state.byId, response.conversations);
-  const [ids, idsChanged] = mergeOrder(
-    state.ids,
-    response.conversations.map((conversation) => conversation.id),
-    response.pagination.page,
-  );
-  const paginationChanged = !isSamePagination(
-    state.pagination,
-    response.pagination,
-  );
+	const [byId, mapChanged] = mergeMap(state.byId, response.conversations);
+	const [ids, idsChanged] = mergeOrder(
+		state.ids,
+		response.conversations.map((conversation) => conversation.id),
+		response.pagination.page
+	);
+	const paginationChanged = !isSamePagination(
+		state.pagination,
+		response.pagination
+	);
 
-  if (!(mapChanged || idsChanged || paginationChanged)) {
-    return state;
-  }
+	if (!(mapChanged || idsChanged || paginationChanged)) {
+		return state;
+	}
 
-  return {
-    byId,
-    ids,
-    pagination: paginationChanged ? response.pagination : state.pagination,
-  };
+	return {
+		byId,
+		ids,
+		pagination: paginationChanged ? response.pagination : state.pagination,
+	};
 }
 
 function applyConversation(
-  state: ConversationsState,
-  conversation: Conversation,
+	state: ConversationsState,
+	conversation: Conversation
 ): ConversationsState {
-  const previous = state.byId[conversation.id];
-  const sameConversation = previous
-    ? isSameConversation(previous, conversation)
-    : false;
-  const byId = sameConversation
-    ? state.byId
-    : { ...state.byId, [conversation.id]: conversation };
-  const hasId = state.ids.includes(conversation.id);
-  const ids = hasId ? state.ids : [...state.ids, conversation.id];
+	const previous = state.byId[conversation.id];
+	const sameConversation = previous
+		? isSameConversation(previous, conversation)
+		: false;
+	const byId = sameConversation
+		? state.byId
+		: { ...state.byId, [conversation.id]: conversation };
+	const hasId = state.ids.includes(conversation.id);
+	const ids = hasId ? state.ids : [...state.ids, conversation.id];
 
-  if (byId === state.byId && ids === state.ids) {
-    return state;
-  }
+	if (byId === state.byId && ids === state.ids) {
+		return state;
+	}
 
-  return {
-    byId,
-    ids,
-    pagination: state.pagination,
-  };
+	return {
+		byId,
+		ids,
+		pagination: state.pagination,
+	};
 }
 
 export type ConversationsStore = Store<ConversationsState> & {
-  ingestList(response: ListConversationsResponse): void;
-  ingestConversation(conversation: Conversation): void;
+	ingestList(response: ListConversationsResponse): void;
+	ingestConversation(conversation: Conversation): void;
 };
 
 export function createConversationsStore(
-  initialState: ConversationsState = INITIAL_STATE,
+	initialState: ConversationsState = INITIAL_STATE
 ): ConversationsStore {
-  const store = createStore<ConversationsState>(initialState);
+	const store = createStore<ConversationsState>(initialState);
 
-  return {
-    ...store,
-    ingestList(response) {
-      store.setState((state) => applyList(state, response));
-    },
-    ingestConversation(conversation) {
-      store.setState((state) => applyConversation(state, conversation));
-    },
-  };
+	return {
+		...store,
+		ingestList(response) {
+			store.setState((state) => applyList(state, response));
+		},
+		ingestConversation(conversation) {
+			store.setState((state) => applyConversation(state, conversation));
+		},
+	};
 }
 
 export function getConversations(
-  store: Store<ConversationsState>,
+	store: Store<ConversationsState>
 ): Conversation[] {
-  const state = store.getState();
-  return state.ids
-    .map((id) => state.byId[id])
-    .filter(
-      (conversation): conversation is Conversation =>
-        conversation !== undefined,
-    );
+	const state = store.getState();
+	return state.ids
+		.map((id) => state.byId[id])
+		.filter(
+			(conversation): conversation is Conversation => conversation !== undefined
+		);
 }
 
 export function getConversationById(
-  store: Store<ConversationsState>,
-  conversationId: string,
+	store: Store<ConversationsState>,
+	conversationId: string
 ): Conversation | undefined {
-  return store.getState().byId[conversationId];
+	return store.getState().byId[conversationId];
 }
 
 export function getConversationPagination(
-  store: Store<ConversationsState>,
+	store: Store<ConversationsState>
 ): ConversationPagination | null {
-  return store.getState().pagination;
+	return store.getState().pagination;
 }

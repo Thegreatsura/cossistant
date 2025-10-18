@@ -260,17 +260,14 @@ export const useGroupedMessages = ({
 				return seenBy ? Array.from(seenBy) : [];
 			},
 
-			getLastReadMessageId: (userId: string): string | undefined => {
-				return lastReadMessageMap.get(userId);
-			},
+			getLastReadMessageId: (userId: string): string | undefined =>
+				lastReadMessageMap.get(userId),
 
-			isLastReadMessage: (messageId: string, userId: string): boolean => {
-				return lastReadMessageMap.get(userId) === messageId;
-			},
+			isLastReadMessage: (messageId: string, userId: string): boolean =>
+				lastReadMessageMap.get(userId) === messageId,
 
-			getUnreadCount: (userId: string): number => {
-				return unreadCountMap.get(userId) || 0;
-			},
+			getUnreadCount: (userId: string): number =>
+				unreadCountMap.get(userId) || 0,
 
 			hasUnreadAfter: (messageId: string, userId: string): boolean => {
 				const lastRead = lastReadMessageMap.get(userId);

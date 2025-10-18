@@ -47,19 +47,20 @@ export function useConversationSeen(
 			return [];
 		}
 
-		return Object.values(conversationSeen).map((entry) => {
-			return {
-				id: buildSeenId(conversationId, entry.actorType, entry.actorId),
-				conversationId,
-				userId: entry.actorType === "user" ? entry.actorId : null,
-				visitorId: entry.actorType === "visitor" ? entry.actorId : null,
-				aiAgentId: entry.actorType === "ai_agent" ? entry.actorId : null,
-				lastSeenAt: entry.lastSeenAt,
-				createdAt: entry.lastSeenAt,
-				updatedAt: entry.lastSeenAt,
-				deletedAt: null,
-			} satisfies ConversationSeen;
-		});
+		return Object.values(conversationSeen).map(
+			(entry) =>
+				({
+					id: buildSeenId(conversationId, entry.actorType, entry.actorId),
+					conversationId,
+					userId: entry.actorType === "user" ? entry.actorId : null,
+					visitorId: entry.actorType === "visitor" ? entry.actorId : null,
+					aiAgentId: entry.actorType === "ai_agent" ? entry.actorId : null,
+					lastSeenAt: entry.lastSeenAt,
+					createdAt: entry.lastSeenAt,
+					updatedAt: entry.lastSeenAt,
+					deletedAt: null,
+				}) satisfies ConversationSeen
+		);
 	}, [conversationId, conversationSeen]);
 }
 

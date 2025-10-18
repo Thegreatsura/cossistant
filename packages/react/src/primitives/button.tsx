@@ -13,8 +13,8 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
  */
 export const Button = (() => {
 	const Component = React.forwardRef<HTMLButtonElement, ButtonProps>(
-		({ className, asChild = false, ...props }, ref) => {
-			return useRenderElement(
+		({ className, asChild = false, ...props }, ref) =>
+			useRenderElement(
 				"button",
 				{
 					className,
@@ -27,8 +27,7 @@ export const Button = (() => {
 						...props,
 					},
 				}
-			);
-		}
+			)
 	);
 
 	Component.displayName = "Button";

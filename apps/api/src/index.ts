@@ -120,9 +120,7 @@ app.use("/trpc/*", async (c, next) => {
 
 // Auth routes with strict rate limiting
 app.use("/api/auth/*", authRateLimiter);
-app.all("/api/auth/*", async (c) => {
-	return await auth.handler(c.req.raw);
-});
+app.all("/api/auth/*", async (c) => await auth.handler(c.req.raw));
 
 // TRPC routes
 app.use(

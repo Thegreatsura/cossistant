@@ -13,8 +13,8 @@ export { MessageGroup, TimelineMessageGroup } from "./timeline-message-group";
 export type { TimelineMessageItemProps } from "./timeline-message-item";
 export { Message, TimelineMessageItem } from "./timeline-message-item";
 export type {
-  TypingIndicatorProps,
-  TypingParticipant,
-  TypingParticipantType,
+	TypingIndicatorProps,
+	TypingParticipant,
+	TypingParticipantType,
 } from "./typing-indicator";
 export { TypingIndicator } from "./typing-indicator";

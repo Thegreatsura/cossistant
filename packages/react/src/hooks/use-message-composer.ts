@@ -152,11 +152,12 @@ export function useMessageComposer(
 	});
 
 	// Clean up typing indicator on unmount
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			forceStopTyping();
-		};
-	}, [forceStopTyping]);
+		},
+		[forceStopTyping]
+	);
 
 	// Wrap setMessage to also report typing
 	const setMessage = useCallback(

@@ -215,6 +215,7 @@ export function useConversationPage(
 		composer.submit,
 		trimmedInitialMessage,
 	]);
+
 	// 6. Auto-mark messages as seen
 	useConversationAutoSeen({
 		client,

@@ -43,12 +43,12 @@ export const createCallerFactory = t.createCallerFactory;
 
 export const publicProcedure = t.procedure.use(withPrimaryDbMiddleware);
 
-const withPermissionMiddleware = t.middleware(async (opts) => {
-	return withPermission({
+const withPermissionMiddleware = t.middleware(async (opts) =>
+	withPermission({
 		ctx: opts.ctx,
 		next: opts.next,
-	});
-});
+	})
+);
 
 export const protectedProcedure = t.procedure
 	.use(withPermissionMiddleware)

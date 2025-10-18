@@ -11,15 +11,15 @@
  * @returns The normalized base language code (e.g., "en", "fr") or null if input is null/undefined
  */
 export function normalizeLocale(
-  locale: string | null | undefined,
+	locale: string | null | undefined
 ): string | null {
-  if (!locale) {
-    return null;
-  }
+	if (!locale) {
+		return null;
+	}
 
-  // Convert to lowercase and extract base language code
-  const normalized = locale.toLowerCase();
-  const [base] = normalized.split("-");
+	// Convert to lowercase and extract base language code
+	const normalized = locale.toLowerCase();
+	const [base] = normalized.split("-");
 
-  return base || null;
+	return base || null;
 }

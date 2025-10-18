@@ -67,13 +67,12 @@ export function useWebsiteStore(
 	const isLoading =
 		query.isLoading || state.status === "loading" || state.status === "idle";
 
-	const refresh = () => {
-		return query
+	const refresh = () =>
+		query
 			.refetch({ force: true })
 			.then((result) => result ?? client.websiteStore.getState().website)
 			.catch(() => client.websiteStore.getState().website)
 			.then((website) => website ?? null);
-	};
 
 	return {
 		website: state.website,

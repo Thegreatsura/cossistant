@@ -10,71 +10,69 @@ export type BubbleProps = {
 	className?: string;
 };
 
-export const Bubble: React.FC<BubbleProps> = ({ className }) => {
-	return (
-		<Primitive.Bubble
-			className={cn(
-				"relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
-				className
-			)}
-		>
-			{({ isOpen, unreadCount }) => (
-				<>
-					<AnimatePresence mode="wait">
-						{isOpen ? (
-							<motion.div
-								animate={{
-									scale: 1,
-									rotate: 0,
-									opacity: 1,
-									transition: { duration: 0.2, ease: "easeOut" },
-								}}
-								className="flex items-center justify-center"
-								exit={{
-									scale: 0.9,
-									rotate: -45,
-									opacity: 0,
-									transition: { duration: 0.1, ease: "easeIn" },
-								}}
-								initial={{ scale: 0.9, rotate: 45, opacity: 0 }}
-								key="chevron"
-							>
-								<Icon className="h-5 w-5" name="chevron-down" />
-							</motion.div>
-						) : (
-							<motion.div
-								animate={{
-									scale: 1,
-									rotate: 0,
-									opacity: 1,
-									transition: { duration: 0.2, ease: "easeOut" },
-								}}
-								className="flex items-center justify-center"
-								exit={{
-									scale: 0.9,
-									rotate: 45,
-									opacity: 0,
-									transition: { duration: 0.1, ease: "easeIn" },
-								}}
-								initial={{ scale: 0.9, rotate: -45, opacity: 0 }}
-								key="chat"
-							>
-								<Icon className="h-6 w-6" name="chat" variant="filled" />
-							</motion.div>
-						)}
-					</AnimatePresence>
-					{unreadCount > 0 && (
-						<motion.span
-							animate={{ scale: 1, opacity: 1 }}
-							className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-co-destructive font-medium text-co-destructive-foreground text-xs"
-							exit={{ scale: 0, opacity: 0 }}
-							initial={{ scale: 0, opacity: 0 }}
+export const Bubble: React.FC<BubbleProps> = ({ className }) => (
+	<Primitive.Bubble
+		className={cn(
+			"relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
+			className
+		)}
+	>
+		{({ isOpen, unreadCount }) => (
+			<>
+				<AnimatePresence mode="wait">
+					{isOpen ? (
+						<motion.div
+							animate={{
+								scale: 1,
+								rotate: 0,
+								opacity: 1,
+								transition: { duration: 0.2, ease: "easeOut" },
+							}}
+							className="flex items-center justify-center"
+							exit={{
+								scale: 0.9,
+								rotate: -45,
+								opacity: 0,
+								transition: { duration: 0.1, ease: "easeIn" },
+							}}
+							initial={{ scale: 0.9, rotate: 45, opacity: 0 }}
+							key="chevron"
 						>
-							{unreadCount}
-						</motion.span>
+							<Icon className="h-5 w-5" name="chevron-down" />
+						</motion.div>
+					) : (
+						<motion.div
+							animate={{
+								scale: 1,
+								rotate: 0,
+								opacity: 1,
+								transition: { duration: 0.2, ease: "easeOut" },
+							}}
+							className="flex items-center justify-center"
+							exit={{
+								scale: 0.9,
+								rotate: 45,
+								opacity: 0,
+								transition: { duration: 0.1, ease: "easeIn" },
+							}}
+							initial={{ scale: 0.9, rotate: -45, opacity: 0 }}
+							key="chat"
+						>
+							<Icon className="h-6 w-6" name="chat" variant="filled" />
+						</motion.div>
 					)}
-				</>
-			)}
-		</Primitive.Bubble>
-	);
-};
+				</AnimatePresence>
+				{unreadCount > 0 && (
+					<motion.span
+						animate={{ scale: 1, opacity: 1 }}
+						className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-co-destructive font-medium text-co-destructive-foreground text-xs"
+						exit={{ scale: 0, opacity: 0 }}
+						initial={{ scale: 0, opacity: 0 }}
+					>
+						{unreadCount}
+					</motion.span>
+				)}
+			</>
+		)}
+	</Primitive.Bubble>
+);
