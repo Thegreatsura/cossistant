@@ -497,6 +497,7 @@ export const HumanAiGraphic = () => {
         <ConversationEvent
           availableAIAgents={availableAIAgents}
           availableHumanAgents={availableHumanAgents}
+          createdAt={item.createdAt}
           event={item.event}
           key={`event-${index}`}
         />

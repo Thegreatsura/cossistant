@@ -155,27 +155,12 @@ export function ConversationTimelineList({
                   return null;
                 }
 
-                // Convert to ConversationEvent format for rendering
-                const event = {
-                  id: item.item.id || `event-${index}`,
-                  conversationId: item.item.conversationId,
-                  organizationId: item.item.organizationId,
-                  type: eventPart.eventType,
-                  actorUserId: eventPart.actorUserId,
-                  actorAiAgentId: eventPart.actorAiAgentId,
-                  targetUserId: eventPart.targetUserId,
-                  targetAiAgentId: eventPart.targetAiAgentId,
-                  metadata: {},
-                  createdAt: item.item.createdAt,
-                  updatedAt: item.item.createdAt,
-                  deletedAt: item.item.deletedAt || null,
-                };
-
                 return (
                   <ConversationEvent
                     availableAIAgents={availableAIAgents}
                     availableHumanAgents={availableHumanAgents}
-                    event={event}
+                    createdAt={item.item.createdAt}
+                    event={eventPart}
                     key={item.item.id || `timeline-event-${index}`}
                   />
                 );
