@@ -6,8 +6,8 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useTRPC } from "@/lib/trpc/client";
 import {
-	type ConversationMessagesPage,
-	createConversationMessagesInfiniteQueryKey,
+	type ConversationTimelineItemsPage,
+	createConversationTimelineItemsInfiniteQueryKey,
 } from "./conversation-message-cache";
 
 type LastTimelineItem = ConversationHeader["lastTimelineItem"];
@@ -19,7 +19,7 @@ type UseLatestConversationMessageOptions = {
 };
 
 function findLatestTimelineItem(
-	data: InfiniteData<ConversationMessagesPage> | undefined
+	data: InfiniteData<ConversationTimelineItemsPage> | undefined
 ): LastTimelineItem {
 	if (!data) {
 		return null;
@@ -56,13 +56,13 @@ export function useLatestConversationMessage({
 	);
 
 	const queryKey = useMemo(
-		() => createConversationMessagesInfiniteQueryKey(baseQueryKey),
+		() => createConversationTimelineItemsInfiniteQueryKey(baseQueryKey),
 		[baseQueryKey]
 	);
 
 	const getSnapshot = useCallback(() => {
 		const data =
-			queryClient.getQueryData<InfiniteData<ConversationMessagesPage>>(
+			queryClient.getQueryData<InfiniteData<ConversationTimelineItemsPage>>(
 				queryKey
 			);
 
