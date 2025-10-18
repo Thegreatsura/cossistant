@@ -84,7 +84,7 @@ export function ConversationTimelineList({
     () =>
       teamMembers.map((member) => ({
         id: member.id,
-        name: member.name || member.email.split("@")[0] || "Unknown member",
+        name: member.name ?? member.email?.split("@")[0] ?? "Unknown member",
         image: member.image,
         lastSeenAt: member.lastSeenAt,
       })),

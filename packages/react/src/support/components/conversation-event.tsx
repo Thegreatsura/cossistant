@@ -113,12 +113,12 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
         </div>
         <span className="px-2">{getEventText()}</span>
         {createdAt && (
-          <span className="text-[10px]">
+          <time className="text-[10px]">
             {new Date(createdAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}
-          </span>
+          </time>
         )}
       </div>
     </motion.div>

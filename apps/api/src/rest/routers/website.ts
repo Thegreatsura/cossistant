@@ -7,6 +7,7 @@ import {
   safelyExtractRequestData,
   validateResponse,
 } from "@api/utils/validate";
+import { getMostRecentLastOnlineAt } from "@api/utils/website";
 import { publicWebsiteResponseSchema } from "@cossistant/types";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq, or } from "drizzle-orm";
@@ -168,8 +169,8 @@ websiteRouter.openapi(
       })
     );
 
-    // iso string indicating support activity
-    const lastOnlineAt = new Date().toISOString();
+    // iso string indicating support activity - uses most recent lastSeenAt from available human agents
+    const lastOnlineAt = getMostRecentLastOnlineAt(availableHumanAgents);
 
     return c.json(
       validateResponse(

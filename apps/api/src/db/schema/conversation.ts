@@ -5,7 +5,6 @@ import {
   ConversationSentiment,
   ConversationStatus,
   ConversationTimelineType,
-  MessageType,
   TimelineItemVisibility,
 } from "@cossistant/types";
 
@@ -42,11 +41,6 @@ import { isoTimestamp as timestamp } from "../../utils/db/timestamp";
 import { aiAgent } from "./ai-agent";
 import { organization, user } from "./auth";
 import { view, visitor, website } from "./website";
-
-export const messageTypeEnum = pgEnum(
-  "message_type",
-  enumToPgEnum(MessageType)
-);
 
 export const conversationStatusEnum = pgEnum(
   "conversation_status",
@@ -171,11 +165,12 @@ export const conversation = pgTable(
     lastMessageAt: timestamp("last_message_at"),
     lastMessageBy: ulidNullableReference("last_message_by_id"),
     resolvedByUserId: ulidNullableReference("resolved_by_user_id").references(
-      () => user.id
+      () => user.id,
+      { onDelete: "set null" }
     ),
     resolvedByAiAgentId: ulidNullableReference(
       "resolved_by_ai_agent_id"
-    ).references(() => aiAgent.id),
+    ).references(() => aiAgent.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at")
       .$defaultFn(() => new Date().toISOString())
       .notNull(),

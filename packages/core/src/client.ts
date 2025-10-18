@@ -26,7 +26,6 @@ import type {
 import {
   ConversationStatus,
   ConversationTimelineType,
-  MessageType,
   SenderType,
   TimelineItemVisibility,
 } from "@cossistant/types/enums";
