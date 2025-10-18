@@ -1,31 +1,31 @@
 import {
-  archiveConversation,
-  type ConversationRecord,
-  markConversationAsNotSpam,
-  markConversationAsRead,
-  markConversationAsSpam,
-  markConversationAsUnread,
-  reopenConversation,
-  resolveConversation,
-  unarchiveConversation,
+	archiveConversation,
+	type ConversationRecord,
+	markConversationAsNotSpam,
+	markConversationAsRead,
+	markConversationAsSpam,
+	markConversationAsUnread,
+	reopenConversation,
+	resolveConversation,
+	unarchiveConversation,
 } from "@api/db/mutations/conversation";
 import {
-  getConversationById,
-  getConversationTimelineItems,
-  listConversationsHeaders,
+	getConversationById,
+	getConversationTimelineItems,
+	listConversationsHeaders,
 } from "@api/db/queries/conversation";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import {
-  emitConversationSeenEvent,
-  emitConversationTypingEvent,
+	emitConversationSeenEvent,
+	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
-  type ContactMetadata,
-  conversationMutationResponseSchema,
-  listConversationHeadersResponseSchema,
-  visitorResponseSchema,
+	type ContactMetadata,
+	conversationMutationResponseSchema,
+	listConversationHeadersResponseSchema,
+	visitorResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -33,474 +33,474 @@ import { createTRPCRouter, protectedProcedure } from "../init";
 import { loadConversationContext } from "../utils/conversation";
 
 function toConversationOutput(record: ConversationRecord) {
-  return {
-    ...record,
-  };
+	return {
+		...record,
+	};
 }
 
 export const conversationRouter = createTRPCRouter({
-  listConversationsHeaders: protectedProcedure
-    .input(
-      z.object({
-        websiteSlug: z.string(),
-        limit: z.number().int().min(1).max(500).optional(),
-        cursor: z.string().nullable().optional(),
-      })
-    )
-    .output(listConversationHeadersResponseSchema)
-    .query(async ({ ctx: { db, user }, input }) => {
-      const websiteData = await getWebsiteBySlugWithAccess(db, {
-        userId: user.id,
-        websiteSlug: input.websiteSlug,
-      });
+	listConversationsHeaders: protectedProcedure
+		.input(
+			z.object({
+				websiteSlug: z.string(),
+				limit: z.number().int().min(1).max(500).optional(),
+				cursor: z.string().nullable().optional(),
+			})
+		)
+		.output(listConversationHeadersResponseSchema)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
 
-      if (!websiteData) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Website not found or access denied",
-        });
-      }
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
 
-      // Fetch conversations for the website
-      const result = await listConversationsHeaders(db, {
-        organizationId: websiteData.organizationId,
-        websiteId: websiteData.id,
-        userId: user.id,
-        limit: input.limit,
-        cursor: input.cursor,
-      });
+			// Fetch conversations for the website
+			const result = await listConversationsHeaders(db, {
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				userId: user.id,
+				limit: input.limit,
+				cursor: input.cursor,
+			});
 
-      return {
-        items: result.items,
-        nextCursor: result.nextCursor,
-      };
-    }),
+			return {
+				items: result.items,
+				nextCursor: result.nextCursor,
+			};
+		}),
 
-  getConversationTimelineItems: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-        limit: z.number().int().min(1).max(100).optional().default(50),
-        cursor: z.union([z.string(), z.date()]).nullable().optional(),
-      })
-    )
-    .query(async ({ ctx: { db, user }, input }) => {
-      // Query website access and conversation in parallel
-      const [websiteData, conversation] = await Promise.all([
-        getWebsiteBySlugWithAccess(db, {
-          userId: user.id,
-          websiteSlug: input.websiteSlug,
-        }),
-        getConversationById(db, {
-          conversationId: input.conversationId,
-        }),
-      ]);
+	getConversationTimelineItems: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+				limit: z.number().int().min(1).max(100).optional().default(50),
+				cursor: z.union([z.string(), z.date()]).nullable().optional(),
+			})
+		)
+		.query(async ({ ctx: { db, user }, input }) => {
+			// Query website access and conversation in parallel
+			const [websiteData, conversation] = await Promise.all([
+				getWebsiteBySlugWithAccess(db, {
+					userId: user.id,
+					websiteSlug: input.websiteSlug,
+				}),
+				getConversationById(db, {
+					conversationId: input.conversationId,
+				}),
+			]);
 
-      if (!websiteData) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Website not found or access denied",
-        });
-      }
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
 
-      if (!conversation || conversation.websiteId !== websiteData.id) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Conversation not found",
-        });
-      }
+			if (!conversation || conversation.websiteId !== websiteData.id) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Conversation not found",
+				});
+			}
 
-      // Get timeline items
-      const result = await getConversationTimelineItems(db, {
-        conversationId: input.conversationId,
-        websiteId: websiteData.id,
-        limit: input.limit,
-        cursor: input.cursor,
-      });
+			// Get timeline items
+			const result = await getConversationTimelineItems(db, {
+				conversationId: input.conversationId,
+				websiteId: websiteData.id,
+				limit: input.limit,
+				cursor: input.cursor,
+			});
 
-      return {
-        items: result.items.map((item) => ({
-          id: item.id,
-          conversationId: item.conversationId,
-          organizationId: item.organizationId,
-          visibility: item.visibility,
-          type: item.type,
-          text: item.text,
-          parts: item.parts as unknown[],
-          userId: item.userId,
-          visitorId: item.visitorId,
-          aiAgentId: item.aiAgentId,
-          createdAt: item.createdAt,
-          deletedAt: item.deletedAt,
-        })),
-        nextCursor: result.nextCursor ?? null,
-        hasNextPage: result.hasNextPage,
-      };
-    }),
+			return {
+				items: result.items.map((item) => ({
+					id: item.id,
+					conversationId: item.conversationId,
+					organizationId: item.organizationId,
+					visibility: item.visibility,
+					type: item.type,
+					text: item.text,
+					parts: item.parts as unknown[],
+					userId: item.userId,
+					visitorId: item.visitorId,
+					aiAgentId: item.aiAgentId,
+					createdAt: item.createdAt,
+					deletedAt: item.deletedAt,
+				})),
+				nextCursor: result.nextCursor ?? null,
+				hasNextPage: result.hasNextPage,
+			};
+		}),
 
-  sendMessage: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-        text: z.string().min(1),
-        visibility: z.enum(["public", "private"]).default("public"),
-      })
-    )
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const [websiteData, conversation] = await Promise.all([
-        getWebsiteBySlugWithAccess(db, {
-          userId: user.id,
-          websiteSlug: input.websiteSlug,
-        }),
-        getConversationById(db, {
-          conversationId: input.conversationId,
-        }),
-      ]);
+	sendMessage: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+				text: z.string().min(1),
+				visibility: z.enum(["public", "private"]).default("public"),
+			})
+		)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const [websiteData, conversation] = await Promise.all([
+				getWebsiteBySlugWithAccess(db, {
+					userId: user.id,
+					websiteSlug: input.websiteSlug,
+				}),
+				getConversationById(db, {
+					conversationId: input.conversationId,
+				}),
+			]);
 
-      if (!websiteData) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Website not found or access denied",
-        });
-      }
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
 
-      if (!conversation || conversation.websiteId !== websiteData.id) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Conversation not found",
-        });
-      }
+			if (!conversation || conversation.websiteId !== websiteData.id) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Conversation not found",
+				});
+			}
 
-      const createdTimelineItem = await createTimelineItem({
-        db,
-        organizationId: websiteData.organizationId,
-        websiteId: websiteData.id,
-        conversationId: input.conversationId,
-        conversationOwnerVisitorId: conversation.visitorId,
-        item: {
-          type: "message",
-          text: input.text,
-          parts: [{ type: "text", text: input.text }],
-          visibility: input.visibility,
-          userId: user.id,
-          visitorId: null,
-          aiAgentId: null,
-        },
-      });
+			const createdTimelineItem = await createTimelineItem({
+				db,
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				conversationId: input.conversationId,
+				conversationOwnerVisitorId: conversation.visitorId,
+				item: {
+					type: "message",
+					text: input.text,
+					parts: [{ type: "text", text: input.text }],
+					visibility: input.visibility,
+					userId: user.id,
+					visitorId: null,
+					aiAgentId: null,
+				},
+			});
 
-      // Mark conversation as read by user after sending timeline item
-      const { lastSeenAt } = await markConversationAsRead(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+			// Mark conversation as read by user after sending timeline item
+			const { lastSeenAt } = await markConversationAsRead(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      await emitConversationSeenEvent({
-        conversation,
-        actor: { type: "user", userId: user.id },
-        lastSeenAt,
-      });
+			await emitConversationSeenEvent({
+				conversation,
+				actor: { type: "user", userId: user.id },
+				lastSeenAt,
+			});
 
-      return { item: createdTimelineItem };
-    }),
+			return { item: createdTimelineItem };
+		}),
 
-  markResolved: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await resolveConversation(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markResolved: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await resolveConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      if (!updatedConversation) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Unable to resolve conversation",
-        });
-      }
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to resolve conversation",
+				});
+			}
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markOpen: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await reopenConversation(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markOpen: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await reopenConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      if (!updatedConversation) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Unable to reopen conversation",
-        });
-      }
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to reopen conversation",
+				});
+			}
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markSpam: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await markConversationAsSpam(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markSpam: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsSpam(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      if (!updatedConversation) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Unable to mark conversation as spam",
-        });
-      }
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to mark conversation as spam",
+				});
+			}
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markNotSpam: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await markConversationAsNotSpam(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markNotSpam: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsNotSpam(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      if (!updatedConversation) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Unable to mark conversation as not spam",
-        });
-      }
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to mark conversation as not spam",
+				});
+			}
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markArchived: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await archiveConversation(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markArchived: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await archiveConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      if (!updatedConversation) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Unable to archive conversation",
-        });
-      }
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to archive conversation",
+				});
+			}
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markUnarchived: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await unarchiveConversation(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markUnarchived: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await unarchiveConversation(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      if (!updatedConversation) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Unable to unarchive conversation",
-        });
-      }
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to unarchive conversation",
+				});
+			}
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markRead: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const { conversation: updatedConversation, lastSeenAt } =
-        await markConversationAsRead(db, {
-          conversation,
-          actorUserId: user.id,
-        });
+	markRead: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const { conversation: updatedConversation, lastSeenAt } =
+				await markConversationAsRead(db, {
+					conversation,
+					actorUserId: user.id,
+				});
 
-      await emitConversationSeenEvent({
-        conversation: updatedConversation,
-        actor: { type: "user", userId: user.id },
-        lastSeenAt,
-      });
+			await emitConversationSeenEvent({
+				conversation: updatedConversation,
+				actor: { type: "user", userId: user.id },
+				lastSeenAt,
+			});
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  markUnread: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(conversationMutationResponseSchema)
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(
-        db,
-        user.id,
-        input
-      );
-      const updatedConversation = await markConversationAsUnread(db, {
-        conversation,
-        actorUserId: user.id,
-      });
+	markUnread: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await markConversationAsUnread(db, {
+				conversation,
+				actorUserId: user.id,
+			});
 
-      return { conversation: toConversationOutput(updatedConversation) };
-    }),
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
 
-  setTyping: protectedProcedure
-    .input(
-      z.object({
-        conversationId: z.string(),
-        websiteSlug: z.string(),
-        isTyping: z.boolean(),
-      })
-    )
-    .output(
-      z.object({
-        success: z.literal(true),
-      })
-    )
-    .mutation(async ({ ctx: { db, user }, input }) => {
-      const { conversation } = await loadConversationContext(db, user.id, {
-        websiteSlug: input.websiteSlug,
-        conversationId: input.conversationId,
-      });
+	setTyping: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+				isTyping: z.boolean(),
+			})
+		)
+		.output(
+			z.object({
+				success: z.literal(true),
+			})
+		)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(db, user.id, {
+				websiteSlug: input.websiteSlug,
+				conversationId: input.conversationId,
+			});
 
-      await emitConversationTypingEvent({
-        conversation,
-        actor: { type: "user", userId: user.id },
-        isTyping: input.isTyping,
-      });
+			await emitConversationTypingEvent({
+				conversation,
+				actor: { type: "user", userId: user.id },
+				isTyping: input.isTyping,
+			});
 
-      return { success: true } as const;
-    }),
+			return { success: true } as const;
+		}),
 
-  getVisitorById: protectedProcedure
-    .input(
-      z.object({
-        visitorId: z.string(),
-        websiteSlug: z.string(),
-      })
-    )
-    .output(visitorResponseSchema.nullable())
-    .query(async ({ ctx: { db, user }, input }) => {
-      // Query website access and visitor in parallel
-      const [websiteData, visitor] = await Promise.all([
-        getWebsiteBySlugWithAccess(db, {
-          userId: user.id,
-          websiteSlug: input.websiteSlug,
-        }),
-        getCompleteVisitorWithContact(db, {
-          visitorId: input.visitorId,
-        }),
-      ]);
+	getVisitorById: protectedProcedure
+		.input(
+			z.object({
+				visitorId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(visitorResponseSchema.nullable())
+		.query(async ({ ctx: { db, user }, input }) => {
+			// Query website access and visitor in parallel
+			const [websiteData, visitor] = await Promise.all([
+				getWebsiteBySlugWithAccess(db, {
+					userId: user.id,
+					websiteSlug: input.websiteSlug,
+				}),
+				getCompleteVisitorWithContact(db, {
+					visitorId: input.visitorId,
+				}),
+			]);
 
-      if (!websiteData) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Website not found or access denied",
-        });
-      }
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
 
-      if (!visitor || visitor.websiteId !== websiteData.id) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Visitor not found",
-        });
-      }
+			if (!visitor || visitor.websiteId !== websiteData.id) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Visitor not found",
+				});
+			}
 
-      return {
-        ...visitor,
-        contact: visitor.contact
-          ? {
-              ...visitor.contact,
-              metadata: visitor.contact.metadata as ContactMetadata,
-            }
-          : null,
-        isBlocked: Boolean(visitor.blockedAt),
-      };
-    }),
+			return {
+				...visitor,
+				contact: visitor.contact
+					? {
+							...visitor.contact,
+							metadata: visitor.contact.metadata as ContactMetadata,
+						}
+					: null,
+				isBlocked: Boolean(visitor.blockedAt),
+			};
+		}),
 });

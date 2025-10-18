@@ -1,10 +1,10 @@
 import type { Database } from "@api/db";
 import type {
-  ApiKeySelect,
-  OrganizationSelect,
-  SessionSelect,
-  UserSelect,
-  WebsiteSelect,
+	ApiKeySelect,
+	OrganizationSelect,
+	SessionSelect,
+	UserSelect,
+	WebsiteSelect,
 } from "@api/db/schema";
 import { session, user } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
@@ -13,99 +13,99 @@ import type { Session, User } from "better-auth";
 import { and, eq, gt } from "drizzle-orm";
 
 export type ApiKeyWithWebsiteAndOrganization = ApiKeySelect & {
-  website: WebsiteSelect;
-  organization: OrganizationSelect;
+	website: WebsiteSelect;
+	organization: OrganizationSelect;
 };
 
 const MAX_SESSION_TOKEN_LENGTH = 512;
 
 export function normalizeSessionToken(
-  token: string | null | undefined,
+	token: string | null | undefined
 ): string | undefined {
-  if (!token) {
-    return;
-  }
+	if (!token) {
+		return;
+	}
 
-  const trimmed = token.trim();
-  if (!trimmed) {
-    return;
-  }
+	const trimmed = token.trim();
+	if (!trimmed) {
+		return;
+	}
 
-  if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
-    return;
-  }
+	if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
+		return;
+	}
 
-  return trimmed;
+	return trimmed;
 }
 
 export async function resolveSession(
-  db: Database,
-  params: {
-    headers: Headers;
-    sessionToken?: string | null;
-  },
+	db: Database,
+	params: {
+		headers: Headers;
+		sessionToken?: string | null;
+	}
 ) {
-  let foundSession: {
-    session: Session & {
-      activeOrganizationId?: string | null | undefined;
-      activeTeamId?: string | null | undefined;
-    };
-    user: UserSelect;
-  } | null = null;
+	let foundSession: {
+		session: Session & {
+			activeOrganizationId?: string | null | undefined;
+			activeTeamId?: string | null | undefined;
+		};
+		user: UserSelect;
+	} | null = null;
 
-  const betterAuthSession = await auth.api.getSession({
-    headers: params.headers,
-  });
+	const betterAuthSession = await auth.api.getSession({
+		headers: params.headers,
+	});
 
-  const tokensToCheck = new Set<string>();
+	const tokensToCheck = new Set<string>();
 
-  if (betterAuthSession?.session?.token) {
-    tokensToCheck.add(betterAuthSession.session.token);
-  }
+	if (betterAuthSession?.session?.token) {
+		tokensToCheck.add(betterAuthSession.session.token);
+	}
 
-  const normalizedOverride = normalizeSessionToken(params.sessionToken);
+	const normalizedOverride = normalizeSessionToken(params.sessionToken);
 
-  if (normalizedOverride) {
-    tokensToCheck.add(normalizedOverride);
-  }
+	if (normalizedOverride) {
+		tokensToCheck.add(normalizedOverride);
+	}
 
-  const headerToken = normalizeSessionToken(
-    params.headers.get("x-user-session-token"),
-  );
+	const headerToken = normalizeSessionToken(
+		params.headers.get("x-user-session-token")
+	);
 
-  if (headerToken) {
-    tokensToCheck.add(headerToken);
-  }
+	if (headerToken) {
+		tokensToCheck.add(headerToken);
+	}
 
-  const now = new Date();
+	const now = new Date();
 
-  for (const token of tokensToCheck) {
-    const [res] = await db
-      .select()
-      .from(session)
-      .where(and(eq(session.token, token), gt(session.expiresAt, now)))
-      .innerJoin(user, eq(session.userId, user.id))
-      .limit(1)
-      .$withCache({ tag: `session:${token}` });
+	for (const token of tokensToCheck) {
+		const [res] = await db
+			.select()
+			.from(session)
+			.where(and(eq(session.token, token), gt(session.expiresAt, now)))
+			.innerJoin(user, eq(session.userId, user.id))
+			.limit(1)
+			.$withCache({ tag: `session:${token}` });
 
-    if (res) {
-      foundSession = {
-        session: res.session,
-        user: res.user,
-      };
+		if (res) {
+			foundSession = {
+				session: res.session,
+				user: res.user,
+			};
 
-      break;
-    }
-  }
+			break;
+		}
+	}
 
-  return foundSession;
+	return foundSession;
 }
 
 export async function getTRPCSession(
-  db: Database,
-  params: {
-    headers: Headers;
-  },
+	db: Database,
+	params: {
+		headers: Headers;
+	}
 ) {
-  return await resolveSession(db, { headers: params.headers });
+	return await resolveSession(db, { headers: params.headers });
 }
