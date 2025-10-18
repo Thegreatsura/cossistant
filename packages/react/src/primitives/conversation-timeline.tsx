@@ -7,27 +7,27 @@ import { useRenderElement } from "../utils/use-render-element";
  * skeletons, empty states or pagination affordances.
  */
 export type ConversationTimelineRenderProps = {
-  itemCount: number;
-  isLoading?: boolean;
-  hasMore?: boolean;
-  isEmpty: boolean;
+	itemCount: number;
+	isLoading?: boolean;
+	hasMore?: boolean;
+	isEmpty: boolean;
 };
 
 export type ConversationTimelineProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?:
-    | React.ReactNode
-    | ((props: ConversationTimelineRenderProps) => React.ReactNode);
-  asChild?: boolean;
-  className?: string;
-  items?: TimelineItemType[];
-  isLoading?: boolean;
-  hasMore?: boolean;
-  autoScroll?: boolean;
-  onScrollEnd?: () => void;
-  onScrollStart?: () => void;
+	children?:
+		| React.ReactNode
+		| ((props: ConversationTimelineRenderProps) => React.ReactNode);
+	asChild?: boolean;
+	className?: string;
+	items?: TimelineItemType[];
+	isLoading?: boolean;
+	hasMore?: boolean;
+	autoScroll?: boolean;
+	onScrollEnd?: () => void;
+	onScrollStart?: () => void;
 };
 
 /**
@@ -35,118 +35,118 @@ export type ConversationTimelineProps = Omit<
  * pagination callbacks for displaying timeline items (messages, events, etc.).
  */
 export const ConversationTimeline = (() => {
-  const Component = React.forwardRef<HTMLDivElement, ConversationTimelineProps>(
-    (
-      {
-        children,
-        className,
-        asChild = false,
-        items = [],
-        isLoading = false,
-        hasMore = false,
-        autoScroll = true,
-        onScrollEnd,
-        onScrollStart,
-        ...props
-      },
-      ref
-    ) => {
-      const internalRef = React.useRef<HTMLDivElement>(null);
-      const setRefs = React.useCallback(
-        (node: HTMLDivElement | null) => {
-          internalRef.current = node;
-          if (typeof ref === "function") {
-            ref(node);
-          } else if (ref) {
-            (ref as React.MutableRefObject<HTMLDivElement | null>).current =
-              node;
-          }
-        },
-        [ref]
-      );
+	const Component = React.forwardRef<HTMLDivElement, ConversationTimelineProps>(
+		(
+			{
+				children,
+				className,
+				asChild = false,
+				items = [],
+				isLoading = false,
+				hasMore = false,
+				autoScroll = true,
+				onScrollEnd,
+				onScrollStart,
+				...props
+			},
+			ref
+		) => {
+			const internalRef = React.useRef<HTMLDivElement>(null);
+			const setRefs = React.useCallback(
+				(node: HTMLDivElement | null) => {
+					internalRef.current = node;
+					if (typeof ref === "function") {
+						ref(node);
+					} else if (ref) {
+						(ref as React.MutableRefObject<HTMLDivElement | null>).current =
+							node;
+					}
+				},
+				[ref]
+			);
 
-      const isInitialRender = React.useRef(true);
-      const previousItemCount = React.useRef(items.length);
+			const isInitialRender = React.useRef(true);
+			const previousItemCount = React.useRef(items.length);
 
-      const renderProps: ConversationTimelineRenderProps = {
-        itemCount: items.length,
-        isLoading,
-        hasMore,
-        isEmpty: items.length === 0,
-      };
+			const renderProps: ConversationTimelineRenderProps = {
+				itemCount: items.length,
+				isLoading,
+				hasMore,
+				isEmpty: items.length === 0,
+			};
 
-      const content =
-        typeof children === "function" ? children(renderProps) : children;
+			const content =
+				typeof children === "function" ? children(renderProps) : children;
 
-      // Auto-scroll to bottom when new timeline items are added
-      React.useEffect(() => {
-        if (autoScroll && internalRef.current) {
-          const hasNewItems = items.length > previousItemCount.current;
+			// Auto-scroll to bottom when new timeline items are added
+			React.useEffect(() => {
+				if (autoScroll && internalRef.current) {
+					const hasNewItems = items.length > previousItemCount.current;
 
-          // Only scroll if there are new items or it's the first render
-          if (hasNewItems || isInitialRender.current) {
-            internalRef.current.scrollTop = internalRef.current.scrollHeight;
-          }
+					// Only scroll if there are new items or it's the first render
+					if (hasNewItems || isInitialRender.current) {
+						internalRef.current.scrollTop = internalRef.current.scrollHeight;
+					}
 
-          // Update refs for next render
-          previousItemCount.current = items.length;
-          isInitialRender.current = false;
-        }
-      }, [items.length, autoScroll]);
+					// Update refs for next render
+					previousItemCount.current = items.length;
+					isInitialRender.current = false;
+				}
+			}, [items.length, autoScroll]);
 
-      // Handle scroll events for infinite scrolling
-      const handleScroll = React.useCallback(
-        (e: React.UIEvent<HTMLDivElement>) => {
-          const element = e.currentTarget;
-          const { scrollTop, scrollHeight, clientHeight } = element;
+			// Handle scroll events for infinite scrolling
+			const handleScroll = React.useCallback(
+				(e: React.UIEvent<HTMLDivElement>) => {
+					const element = e.currentTarget;
+					const { scrollTop, scrollHeight, clientHeight } = element;
 
-          // Check if scrolled to top
-          if (scrollTop === 0 && onScrollStart) {
-            onScrollStart();
-          }
+					// Check if scrolled to top
+					if (scrollTop === 0 && onScrollStart) {
+						onScrollStart();
+					}
 
-          // Check if scrolled to bottom
-          if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
-            onScrollEnd();
-          }
-        },
-        [onScrollStart, onScrollEnd]
-      );
+					// Check if scrolled to bottom
+					if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
+						onScrollEnd();
+					}
+				},
+				[onScrollStart, onScrollEnd]
+			);
 
-      return useRenderElement(
-        "div",
-        {
-          className,
-          asChild,
-        },
-        {
-          ref: setRefs,
-          state: renderProps,
-          props: {
-            role: "log",
-            "aria-label": "Conversation timeline",
-            "aria-live": "polite",
-            "aria-relevant": "additions",
-            onScroll: handleScroll,
-            ...props,
-            children: content,
-          },
-        }
-      );
-    }
-  );
+			return useRenderElement(
+				"div",
+				{
+					className,
+					asChild,
+				},
+				{
+					ref: setRefs,
+					state: renderProps,
+					props: {
+						role: "log",
+						"aria-label": "Conversation timeline",
+						"aria-live": "polite",
+						"aria-relevant": "additions",
+						onScroll: handleScroll,
+						...props,
+						children: content,
+					},
+				}
+			);
+		}
+	);
 
-  Component.displayName = "ConversationTimeline";
-  return Component;
+	Component.displayName = "ConversationTimeline";
+	return Component;
 })();
 
 export type ConversationTimelineContainerProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?: React.ReactNode;
-  asChild?: boolean;
-  className?: string;
+	children?: React.ReactNode;
+	asChild?: boolean;
+	className?: string;
 };
 
 /**
@@ -154,37 +154,37 @@ export type ConversationTimelineContainerProps = Omit<
  * padding, backgrounds or transitions without touching the core timeline logic.
  */
 export const ConversationTimelineContainer = (() => {
-  const Component = React.forwardRef<
-    HTMLDivElement,
-    ConversationTimelineContainerProps
-  >(({ children, className, asChild = false, ...props }, ref) =>
-    useRenderElement(
-      "div",
-      {
-        className,
-        asChild,
-      },
-      {
-        ref,
-        props: {
-          ...props,
-          children,
-        },
-      }
-    )
-  );
+	const Component = React.forwardRef<
+		HTMLDivElement,
+		ConversationTimelineContainerProps
+	>(({ children, className, asChild = false, ...props }, ref) =>
+		useRenderElement(
+			"div",
+			{
+				className,
+				asChild,
+			},
+			{
+				ref,
+				props: {
+					...props,
+					children,
+				},
+			}
+		)
+	);
 
-  Component.displayName = "ConversationTimelineContainer";
-  return Component;
+	Component.displayName = "ConversationTimelineContainer";
+	return Component;
 })();
 
 export type ConversationTimelineLoadingProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?: React.ReactNode;
-  asChild?: boolean;
-  className?: string;
+	children?: React.ReactNode;
+	asChild?: boolean;
+	className?: string;
 };
 
 /**
@@ -192,39 +192,39 @@ export type ConversationTimelineLoadingProps = Omit<
  * skeletons or shimmer states without reimplementing ARIA wiring.
  */
 export const ConversationTimelineLoading = (() => {
-  const Component = React.forwardRef<
-    HTMLDivElement,
-    ConversationTimelineLoadingProps
-  >(({ children, className, asChild = false, ...props }, ref) =>
-    useRenderElement(
-      "div",
-      {
-        className,
-        asChild,
-      },
-      {
-        ref,
-        props: {
-          role: "status",
-          "aria-label": "Loading timeline items",
-          ...props,
-          children,
-        },
-      }
-    )
-  );
+	const Component = React.forwardRef<
+		HTMLDivElement,
+		ConversationTimelineLoadingProps
+	>(({ children, className, asChild = false, ...props }, ref) =>
+		useRenderElement(
+			"div",
+			{
+				className,
+				asChild,
+			},
+			{
+				ref,
+				props: {
+					role: "status",
+					"aria-label": "Loading timeline items",
+					...props,
+					children,
+				},
+			}
+		)
+	);
 
-  Component.displayName = "ConversationTimelineLoading";
-  return Component;
+	Component.displayName = "ConversationTimelineLoading";
+	return Component;
 })();
 
 export type ConversationTimelineEmptyProps = Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "children"
+	React.HTMLAttributes<HTMLDivElement>,
+	"children"
 > & {
-  children?: React.ReactNode;
-  asChild?: boolean;
-  className?: string;
+	children?: React.ReactNode;
+	asChild?: boolean;
+	className?: string;
 };
 
 /**
@@ -232,28 +232,28 @@ export type ConversationTimelineEmptyProps = Omit<
  * region so screen readers announce the empty state.
  */
 export const ConversationTimelineEmpty = (() => {
-  const Component = React.forwardRef<
-    HTMLDivElement,
-    ConversationTimelineEmptyProps
-  >(({ children, className, asChild = false, ...props }, ref) =>
-    useRenderElement(
-      "div",
-      {
-        className,
-        asChild,
-      },
-      {
-        ref,
-        props: {
-          role: "status",
-          "aria-label": "No timeline items",
-          ...props,
-          children,
-        },
-      }
-    )
-  );
+	const Component = React.forwardRef<
+		HTMLDivElement,
+		ConversationTimelineEmptyProps
+	>(({ children, className, asChild = false, ...props }, ref) =>
+		useRenderElement(
+			"div",
+			{
+				className,
+				asChild,
+			},
+			{
+				ref,
+				props: {
+					role: "status",
+					"aria-label": "No timeline items",
+					...props,
+					children,
+				},
+			}
+		)
+	);
 
-  Component.displayName = "ConversationTimelineEmpty";
-  return Component;
+	Component.displayName = "ConversationTimelineEmpty";
+	return Component;
 })();

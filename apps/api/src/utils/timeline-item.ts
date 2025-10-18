@@ -4,191 +4,191 @@ import { conversationTimelineItem } from "@api/db/schema";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
 import {
-  ConversationTimelineType,
-  TimelineItemVisibility,
+	ConversationTimelineType,
+	TimelineItemVisibility,
 } from "@cossistant/types";
 import { timelineItemSchema } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEventData } from "@cossistant/types/realtime-events";
 
 export type CreateTimelineItemOptions = {
-  db: Database;
-  organizationId: string;
-  websiteId: string;
-  conversationId: string;
-  conversationOwnerVisitorId?: string | null;
-  item: {
-    type:
-      | typeof ConversationTimelineType.MESSAGE
-      | typeof ConversationTimelineType.EVENT;
-    text?: string | null;
-    parts: unknown[];
-    userId?: string | null;
-    aiAgentId?: string | null;
-    visitorId?: string | null;
-    visibility?:
-      | typeof TimelineItemVisibility.PUBLIC
-      | typeof TimelineItemVisibility.PRIVATE;
-    createdAt?: Date;
-  };
+	db: Database;
+	organizationId: string;
+	websiteId: string;
+	conversationId: string;
+	conversationOwnerVisitorId?: string | null;
+	item: {
+		type:
+			| typeof ConversationTimelineType.MESSAGE
+			| typeof ConversationTimelineType.EVENT;
+		text?: string | null;
+		parts: unknown[];
+		userId?: string | null;
+		aiAgentId?: string | null;
+		visitorId?: string | null;
+		visibility?:
+			| typeof TimelineItemVisibility.PUBLIC
+			| typeof TimelineItemVisibility.PRIVATE;
+		createdAt?: Date;
+	};
 };
 
 type TimelineItem = {
-  id: string;
-  conversationId: string;
-  organizationId: string;
-  visibility:
-    | typeof TimelineItemVisibility.PUBLIC
-    | typeof TimelineItemVisibility.PRIVATE;
-  type:
-    | typeof ConversationTimelineType.MESSAGE
-    | typeof ConversationTimelineType.EVENT;
-  text: string | null;
-  parts: unknown;
-  userId: string | null;
-  visitorId: string | null;
-  aiAgentId: string | null;
-  createdAt: string;
-  deletedAt: string | null;
+	id: string;
+	conversationId: string;
+	organizationId: string;
+	visibility:
+		| typeof TimelineItemVisibility.PUBLIC
+		| typeof TimelineItemVisibility.PRIVATE;
+	type:
+		| typeof ConversationTimelineType.MESSAGE
+		| typeof ConversationTimelineType.EVENT;
+	text: string | null;
+	parts: unknown;
+	userId: string | null;
+	visitorId: string | null;
+	aiAgentId: string | null;
+	createdAt: string;
+	deletedAt: string | null;
 };
 
 function serializeTimelineItemForRealtime(
-  item: TimelineItem,
-  context: {
-    conversationId: string;
-    websiteId: string;
-    organizationId: string;
-    userId: string | null;
-    visitorId: string | null;
-  }
+	item: TimelineItem,
+	context: {
+		conversationId: string;
+		websiteId: string;
+		organizationId: string;
+		userId: string | null;
+		visitorId: string | null;
+	}
 ): RealtimeEventData<"timelineItemCreated"> {
-  return {
-    item: {
-      id: item.id,
-      conversationId: item.conversationId,
-      organizationId: item.organizationId,
-      visibility: item.visibility,
-      type:
-        item.type === ConversationTimelineType.MESSAGE ? "message" : "event",
-      text: item.text,
-      parts: item.parts as unknown[],
-      userId: item.userId,
-      visitorId: item.visitorId,
-      aiAgentId: item.aiAgentId,
-      createdAt: item.createdAt,
-      deletedAt: item.deletedAt,
-    },
-    conversationId: context.conversationId,
-    websiteId: context.websiteId,
-    organizationId: context.organizationId,
-    userId: context.userId,
-    visitorId: context.visitorId,
-  };
+	return {
+		item: {
+			id: item.id,
+			conversationId: item.conversationId,
+			organizationId: item.organizationId,
+			visibility: item.visibility,
+			type:
+				item.type === ConversationTimelineType.MESSAGE ? "message" : "event",
+			text: item.text,
+			parts: item.parts as unknown[],
+			userId: item.userId,
+			visitorId: item.visitorId,
+			aiAgentId: item.aiAgentId,
+			createdAt: item.createdAt,
+			deletedAt: item.deletedAt,
+		},
+		conversationId: context.conversationId,
+		websiteId: context.websiteId,
+		organizationId: context.organizationId,
+		userId: context.userId,
+		visitorId: context.visitorId,
+	};
 }
 
 export async function createTimelineItem(
-  options: CreateTimelineItemOptions
+	options: CreateTimelineItemOptions
 ): Promise<TimelineItem> {
-  const { db, organizationId, websiteId, conversationId, item } = options;
+	const { db, organizationId, websiteId, conversationId, item } = options;
 
-  const itemId = generateULID();
-  const createdAt = item.createdAt
-    ? item.createdAt.toISOString()
-    : new Date().toISOString();
+	const itemId = generateULID();
+	const createdAt = item.createdAt
+		? item.createdAt.toISOString()
+		: new Date().toISOString();
 
-  const [createdItem] = await db
-    .insert(conversationTimelineItem)
-    .values({
-      id: itemId,
-      conversationId,
-      organizationId,
-      visibility: item.visibility ?? TimelineItemVisibility.PUBLIC,
-      type: item.type,
-      text: item.text ?? null,
-      parts: item.parts as unknown,
-      userId: item.userId ?? null,
-      visitorId: item.visitorId ?? null,
-      aiAgentId: item.aiAgentId ?? null,
-      createdAt,
-      deletedAt: null,
-    })
-    .returning();
+	const [createdItem] = await db
+		.insert(conversationTimelineItem)
+		.values({
+			id: itemId,
+			conversationId,
+			organizationId,
+			visibility: item.visibility ?? TimelineItemVisibility.PUBLIC,
+			type: item.type,
+			text: item.text ?? null,
+			parts: item.parts as unknown,
+			userId: item.userId ?? null,
+			visitorId: item.visitorId ?? null,
+			aiAgentId: item.aiAgentId ?? null,
+			createdAt,
+			deletedAt: null,
+		})
+		.returning();
 
-  const parsedItem = timelineItemSchema.parse({
-    ...createdItem,
-    parts: createdItem.parts,
-  });
+	const parsedItem = timelineItemSchema.parse({
+		...createdItem,
+		parts: createdItem.parts,
+	});
 
-  let visitorIdForEvent =
-    options.conversationOwnerVisitorId ?? parsedItem.visitorId ?? null;
+	let visitorIdForEvent =
+		options.conversationOwnerVisitorId ?? parsedItem.visitorId ?? null;
 
-  if (!visitorIdForEvent) {
-    visitorIdForEvent =
-      (await resolveConversationVisitorId(options.db, conversationId)) ?? null;
-  }
+	if (!visitorIdForEvent) {
+		visitorIdForEvent =
+			(await resolveConversationVisitorId(options.db, conversationId)) ?? null;
+	}
 
-  if (!parsedItem.id) {
-    throw new Error("Timeline item ID is required");
-  }
+	if (!parsedItem.id) {
+		throw new Error("Timeline item ID is required");
+	}
 
-  const realtimePayload = serializeTimelineItemForRealtime(
-    {
-      id: parsedItem.id,
-      conversationId: parsedItem.conversationId,
-      organizationId: parsedItem.organizationId,
-      visibility: parsedItem.visibility,
-      type: parsedItem.type,
-      text: parsedItem.text ?? null,
-      parts: parsedItem.parts,
-      userId: parsedItem.userId,
-      visitorId: parsedItem.visitorId,
-      aiAgentId: parsedItem.aiAgentId,
-      createdAt: parsedItem.createdAt,
-      deletedAt: parsedItem.deletedAt ?? null,
-    },
-    {
-      conversationId,
-      websiteId,
-      organizationId,
-      userId: parsedItem.userId,
-      visitorId: visitorIdForEvent,
-    }
-  );
+	const realtimePayload = serializeTimelineItemForRealtime(
+		{
+			id: parsedItem.id,
+			conversationId: parsedItem.conversationId,
+			organizationId: parsedItem.organizationId,
+			visibility: parsedItem.visibility,
+			type: parsedItem.type,
+			text: parsedItem.text ?? null,
+			parts: parsedItem.parts,
+			userId: parsedItem.userId,
+			visitorId: parsedItem.visitorId,
+			aiAgentId: parsedItem.aiAgentId,
+			createdAt: parsedItem.createdAt,
+			deletedAt: parsedItem.deletedAt ?? null,
+		},
+		{
+			conversationId,
+			websiteId,
+			organizationId,
+			userId: parsedItem.userId,
+			visitorId: visitorIdForEvent,
+		}
+	);
 
-  await realtime.emit("timelineItemCreated", realtimePayload);
+	await realtime.emit("timelineItemCreated", realtimePayload);
 
-  return {
-    id: parsedItem.id,
-    conversationId: parsedItem.conversationId,
-    organizationId: parsedItem.organizationId,
-    visibility: parsedItem.visibility,
-    type: parsedItem.type,
-    text: parsedItem.text ?? null,
-    parts: parsedItem.parts,
-    userId: parsedItem.userId,
-    visitorId: parsedItem.visitorId,
-    aiAgentId: parsedItem.aiAgentId,
-    createdAt: parsedItem.createdAt,
-    deletedAt: parsedItem.deletedAt ?? null,
-  };
+	return {
+		id: parsedItem.id,
+		conversationId: parsedItem.conversationId,
+		organizationId: parsedItem.organizationId,
+		visibility: parsedItem.visibility,
+		type: parsedItem.type,
+		text: parsedItem.text ?? null,
+		parts: parsedItem.parts,
+		userId: parsedItem.userId,
+		visitorId: parsedItem.visitorId,
+		aiAgentId: parsedItem.aiAgentId,
+		createdAt: parsedItem.createdAt,
+		deletedAt: parsedItem.deletedAt ?? null,
+	};
 }
 
 async function resolveConversationVisitorId(
-  db: Database,
-  conversationId: string
+	db: Database,
+	conversationId: string
 ): Promise<string | undefined> {
-  try {
-    const conversationRecord = await getConversationById(db, {
-      conversationId,
-    });
-    return conversationRecord?.visitorId ?? undefined;
-  } catch (error) {
-    console.error(
-      "[TIMELINE_ITEM_CREATED] Failed to resolve conversation visitor",
-      {
-        error,
-        conversationId,
-      }
-    );
-    return;
-  }
+	try {
+		const conversationRecord = await getConversationById(db, {
+			conversationId,
+		});
+		return conversationRecord?.visitorId ?? undefined;
+	} catch (error) {
+		console.error(
+			"[TIMELINE_ITEM_CREATED] Failed to resolve conversation visitor",
+			{
+				error,
+				conversationId,
+			}
+		);
+		return;
+	}
 }
