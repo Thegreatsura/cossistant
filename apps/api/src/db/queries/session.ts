@@ -1,111 +1,128 @@
 import type { Database } from "@api/db";
-import type {
-	ApiKeySelect,
-	OrganizationSelect,
-	SessionSelect,
-	UserSelect,
-	WebsiteSelect,
-} from "@api/db/schema";
+import type { UserSelect } from "@api/db/schema";
 import { session, user } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
 import type { Session, User } from "better-auth";
 
 import { and, eq, gt } from "drizzle-orm";
 
-export type ApiKeyWithWebsiteAndOrganization = ApiKeySelect & {
-	website: WebsiteSelect;
-	organization: OrganizationSelect;
-};
-
 const MAX_SESSION_TOKEN_LENGTH = 512;
 
 export function normalizeSessionToken(
-	token: string | null | undefined
+  token: string | null | undefined
 ): string | undefined {
-	if (!token) {
-		return;
-	}
+  if (!token) {
+    return;
+  }
 
-	const trimmed = token.trim();
-	if (!trimmed) {
-		return;
-	}
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return;
+  }
 
-	if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
-		return;
-	}
+  if (trimmed.length > MAX_SESSION_TOKEN_LENGTH) {
+    return;
+  }
 
-	return trimmed;
+  return trimmed;
 }
 
 export async function resolveSession(
-	db: Database,
-	params: {
-		headers: Headers;
-		sessionToken?: string | null;
-	}
+  db: Database,
+  params: {
+    headers: Headers;
+    sessionToken?: string | null;
+  }
 ) {
-	let foundSession: {
-		session: Session & {
-			activeOrganizationId?: string | null | undefined;
-			activeTeamId?: string | null | undefined;
-		};
-		user: UserSelect;
-	} | null = null;
+  let foundSession: {
+    session: Session & {
+      activeOrganizationId?: string | null | undefined;
+      activeTeamId?: string | null | undefined;
+    };
+    user: UserSelect;
+  } | null = null;
 
-	const betterAuthSession = await auth.api.getSession({
-		headers: params.headers,
-	});
+  const betterAuthSession = await auth.api.getSession({
+    headers: params.headers,
+  });
 
-	const tokensToCheck = new Set<string>();
+  const now = new Date();
 
-	if (betterAuthSession?.session?.token) {
-		tokensToCheck.add(betterAuthSession.session.token);
-	}
+  // Normalize and validate the cookie token from better-auth
+  const normalizedCookieToken = normalizeSessionToken(
+    betterAuthSession?.session?.token
+  );
 
-	const normalizedOverride = normalizeSessionToken(params.sessionToken);
+  // Try the cookie token first (most trusted source)
+  if (normalizedCookieToken) {
+    const [res] = await db
+      .select()
+      .from(session)
+      .where(
+        and(
+          eq(session.token, normalizedCookieToken),
+          gt(session.expiresAt, now)
+        )
+      )
+      .innerJoin(user, eq(session.userId, user.id))
+      .limit(1)
+      .$withCache({ tag: `session:${normalizedCookieToken}` });
 
-	if (normalizedOverride) {
-		tokensToCheck.add(normalizedOverride);
-	}
+    if (res) {
+      foundSession = {
+        session: res.session,
+        user: res.user,
+      };
 
-	const headerToken = normalizeSessionToken(
-		params.headers.get("x-user-session-token")
-	);
+      return foundSession;
+    }
+  }
 
-	if (headerToken) {
-		tokensToCheck.add(headerToken);
-	}
+  // Only check fallback tokens if no valid cookie session exists
+  const tokensToCheck = new Set<string>();
 
-	const now = new Date();
+  const normalizedOverride = normalizeSessionToken(params.sessionToken);
 
-	for (const token of tokensToCheck) {
-		const [res] = await db
-			.select()
-			.from(session)
-			.where(and(eq(session.token, token), gt(session.expiresAt, now)))
-			.innerJoin(user, eq(session.userId, user.id))
-			.limit(1)
-			.$withCache({ tag: `session:${token}` });
+  if (normalizedOverride) {
+    tokensToCheck.add(normalizedOverride);
+  }
 
-		if (res) {
-			foundSession = {
-				session: res.session,
-				user: res.user,
-			};
+  const headerToken = normalizeSessionToken(
+    params.headers.get("x-user-session-token")
+  );
 
-			break;
-		}
-	}
+  if (headerToken) {
+    tokensToCheck.add(headerToken);
+  }
 
-	return foundSession;
+  // Check fallback tokens
+  for (const token of tokensToCheck) {
+    const [res] = await db
+      .select()
+      .from(session)
+      .where(and(eq(session.token, token), gt(session.expiresAt, now)))
+      .innerJoin(user, eq(session.userId, user.id))
+      .limit(1)
+      .$withCache({ tag: `session:${token}` });
+
+    if (res) {
+      foundSession = {
+        session: res.session,
+        user: res.user,
+      };
+
+      break;
+    }
+  }
+
+  return foundSession;
 }
 
 export async function getTRPCSession(
-	db: Database,
-	params: {
-		headers: Headers;
-	}
+  db: Database,
+  params: {
+    headers: Headers;
+  }
 ) {
-	return await resolveSession(db, { headers: params.headers });
+  return await resolveSession(db, { headers: params.headers });
 }

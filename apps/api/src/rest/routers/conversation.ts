@@ -51,9 +51,9 @@ conversationRouter.openapi(
   {
     method: "post",
     path: "/",
-    summary: "Create a conversation with or without initial messages",
+    summary: "Create a conversation (optionally with initial timeline items)",
     description:
-      "Create a conversation, accepts a conversation id or not and a set of default messages.",
+      "Create a conversation; optionally pass a conversationId and a set of default timeline items.",
     tags: ["Conversations"],
     request: {
       body: {
@@ -101,8 +101,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "Bearer sk_test_xxx",
         },
       },
       {
@@ -114,8 +113,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "pk_test_xxx",
         },
       },
       {
@@ -264,8 +262,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "Bearer sk_test_xxx",
         },
       },
       {
@@ -277,8 +274,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "pk_test_xxx",
         },
       },
       {
@@ -393,8 +389,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "Bearer sk_test_xxx",
         },
       },
       {
@@ -406,8 +401,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "pk_test_xxx",
         },
       },
       {
@@ -529,8 +523,7 @@ conversationRouter.openapi(
         schema: {
           type: "string",
           pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "pk_test_xxx",
         },
       },
       {

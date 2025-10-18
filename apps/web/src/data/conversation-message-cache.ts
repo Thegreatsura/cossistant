@@ -10,9 +10,7 @@ export type ConversationTimelineItem =
 function sortTimelineItemsByCreatedAt(
   items: ConversationTimelineItem[]
 ): ConversationTimelineItem[] {
-  return [...items].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
+  return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 function initializeInfiniteData(

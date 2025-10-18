@@ -732,6 +732,7 @@ export async function getConversationTimelineItems(
   // Build where clause scoped to the conversation
   const whereConditions = [
     eq(conversationTimelineItem.conversationId, params.conversationId),
+    isNull(conversationTimelineItem.deletedAt),
   ];
 
   // When paginating fetch timeline items older than the current batch.

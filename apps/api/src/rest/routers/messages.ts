@@ -76,8 +76,7 @@ messagesRouter.openapi(
         schema: {
           type: "string",
           pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "Bearer sk_test_xxx",
         },
       },
       {
@@ -89,8 +88,7 @@ messagesRouter.openapi(
         schema: {
           type: "string",
           pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-          example:
-            "pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          example: "pk_test_xxx",
         },
       },
       {
@@ -117,7 +115,8 @@ messagesRouter.openapi(
         validateResponse(
           { error: "Visitor ID is required" },
           z.object({ error: z.string() })
-        )
+        ),
+        400
       );
     }
 
@@ -125,7 +124,7 @@ messagesRouter.openapi(
       conversationId: body.conversationId,
     });
 
-    if (conversation && conversation.websiteId === website.id) {
+    if (!conversation || conversation.websiteId !== website.id) {
       return c.json(
         validateResponse(
           { error: "Conversation for website not found" },

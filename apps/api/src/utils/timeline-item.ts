@@ -1,4 +1,5 @@
 import type { Database } from "@api/db";
+import { getConversationById } from "@api/db/queries/conversation";
 import { conversationTimelineItem } from "@api/db/schema";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
@@ -171,29 +172,15 @@ export async function createTimelineItem(
   };
 }
 
-type GetConversationByIdFn =
-  (typeof import("@api/db/queries/conversation"))["getConversationById"];
-
-let getConversationByIdCached: GetConversationByIdFn | null = null;
-
 async function resolveConversationVisitorId(
   db: Database,
   conversationId: string
 ): Promise<string | undefined> {
   try {
-    if (!getConversationByIdCached) {
-      const module = await import("@api/db/queries/conversation");
-      getConversationByIdCached = module.getConversationById;
-    }
-
-    if (getConversationByIdCached) {
-      const conversationRecord = await getConversationByIdCached(db, {
-        conversationId,
-      });
-      return conversationRecord?.visitorId ?? undefined;
-    }
-
-    return;
+    const conversationRecord = await getConversationById(db, {
+      conversationId,
+    });
+    return conversationRecord?.visitorId ?? undefined;
   } catch (error) {
     console.error(
       "[TIMELINE_ITEM_CREATED] Failed to resolve conversation visitor",
