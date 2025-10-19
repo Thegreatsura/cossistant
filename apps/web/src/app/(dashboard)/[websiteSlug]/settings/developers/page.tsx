@@ -21,10 +21,23 @@ export default async function DevelopersSettingsPage({
     <SettingsPage className="pt-20">
       <SettingsHeader>Developers</SettingsHeader>
 
-      <SettingsRow description="View your plan and usage details." title="Plan">
+      <SettingsRow
+        description="View and manage your public and private API keys."
+        title="Public and private API keys"
+      >
         <ul className="list-inside list-disc text-primary/60 text-sm">
-          <li>- display and copy organisation id</li>
-          <li>- display and copy organisation slug</li>
+          <li>- display and copy public API key</li>
+          <li>- display and copy private API key</li>
+          <li>- regenerate public API key</li>
+          <li>- regenerate private API key</li>
+          <li>- revoke public API key</li>
+          <li>- revoke private API key</li>
+          <li>- create new public API key</li>
+          <li>- create new private API key</li>
+          <li>
+            - private keys can be test keys. Private keys can only be seen once
+            they are created.
+          </li>
         </ul>
       </SettingsRow>
     </SettingsPage>
