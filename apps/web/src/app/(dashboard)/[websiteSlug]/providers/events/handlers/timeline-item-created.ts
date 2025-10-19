@@ -1,7 +1,7 @@
 import { clearTypingFromTimelineItem } from "@cossistant/react/realtime/typing-store";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
-import type { ConversationHeader } from "@/data/conversation-header-cache";
+import { type ConversationHeader, updateConversationHeaderInCache } from "@/data/conversation-header-cache";
 import {
 	type ConversationTimelineItem,
 	upsertConversationTimelineItemInCache,
@@ -92,15 +92,15 @@ export const handleMessageCreated = ({
 		upsertConversationTimelineItemInCache(queryClient, queryKey, item);
 	}
 
-	const existingHeader =
-		context.queryNormalizer.getObjectById<ConversationHeader>(
-			payload.conversationId
-		);
+        const existingHeader =
+                context.queryNormalizer.getObjectById<ConversationHeader>(
+                        payload.conversationId
+                );
 
-	if (!existingHeader) {
-		forEachConversationHeadersQuery(
-			queryClient,
-			context.website.slug,
+        if (!existingHeader) {
+                forEachConversationHeadersQuery(
+                        queryClient,
+                        context.website.slug,
 			(queryKey) => {
 				queryClient
 					.invalidateQueries({
@@ -115,13 +115,32 @@ export const handleMessageCreated = ({
 					});
 			}
 		);
-		return;
-	}
+                return;
+        }
 
-	context.queryNormalizer.setNormalizedData({
-		...existingHeader,
-		lastTimelineItem: item as unknown as ConversationHeader["lastTimelineItem"],
-		lastMessageAt: item.createdAt,
-		updatedAt: item.createdAt,
+        forEachConversationHeadersQuery(
+                queryClient,
+                context.website.slug,
+                (queryKey) => {
+                        updateConversationHeaderInCache(
+                                queryClient,
+                                queryKey,
+                                payload.conversationId,
+                                (header) => ({
+                                        ...header,
+                                        lastTimelineItem:
+                                                item as unknown as ConversationHeader["lastTimelineItem"],
+                                        lastMessageAt: item.createdAt,
+                                        updatedAt: item.createdAt,
+                                })
+                        );
+                }
+        );
+
+        context.queryNormalizer.setNormalizedData({
+                ...existingHeader,
+                lastTimelineItem: item as unknown as ConversationHeader["lastTimelineItem"],
+                lastMessageAt: item.createdAt,
+                updatedAt: item.createdAt,
 	});
 };
