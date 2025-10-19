@@ -15,6 +15,7 @@ export default async function DevelopersSettingsPage({
   params,
 }: DevelopersSettingsPageProps) {
   const { websiteSlug } = await params;
+
   await ensureWebsiteAccess(websiteSlug);
 
   return (
@@ -38,6 +39,17 @@ export default async function DevelopersSettingsPage({
             - private keys can be test keys. Private keys can only be seen once
             they are created.
           </li>
+        </ul>
+      </SettingsRow>
+
+      <SettingsRow
+        description="A list of whitelisted domains from which your public API keys can be used."
+        title="Allowed domains"
+      >
+        <ul className="list-inside list-disc text-primary/60 text-sm">
+          <li>- display and copy allowed domains</li>
+          <li>- add allowed domain</li>
+          <li>- remove allowed domain</li>
         </ul>
       </SettingsRow>
     </SettingsPage>
