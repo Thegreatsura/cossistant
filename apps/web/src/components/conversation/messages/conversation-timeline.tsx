@@ -1,17 +1,17 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import { useGroupedMessages } from "@cossistant/next/hooks";
 import {
-	MessageListContainer,
-	MessageList as PrimitiveMessageList,
+	ConversationTimelineContainer,
+	ConversationTimeline as PrimitiveConversationTimeline,
 } from "@cossistant/next/primitives";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
 
-import type {
-	AvailableAIAgent,
-	ConversationEvent as ConversationEventType,
-	Message as MessageType,
-} from "@cossistant/types";
+import type { AvailableAIAgent } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
+import type {
+	TimelineItem,
+	TimelinePartEvent,
+} from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { AnimatePresence } from "motion/react";
 import type { RefObject } from "react";
@@ -19,13 +19,25 @@ import { useEffect, useMemo, useRef } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
-import { MessageGroup } from "./group";
+import { TimelineMessageGroup } from "./timeline-message-group";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
-type Props = {
+// Helper to extract event part from timeline item
+function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
+	if (item.type !== "event") {
+		return null;
+	}
+
+	const eventPart = item.parts.find(
+		(part): part is TimelinePartEvent => part.type === "event"
+	);
+
+	return eventPart || null;
+}
+
+type ConversationTimelineListProps = {
 	ref?: React.RefObject<HTMLDivElement | null>;
-	messages: MessageType[];
-	events: ConversationEventType[];
+	items: TimelineItem[];
 	teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
 	availableAIAgents: AvailableAIAgent[];
 	seenData?: ConversationSeen[];
@@ -36,10 +48,9 @@ type Props = {
 	onFetchMoreIfNeeded?: () => void;
 };
 
-export function MessagesList({
+export function ConversationTimelineList({
 	ref,
-	messages = [],
-	events = [],
+	items: timelineItems,
 	teamMembers = [],
 	availableAIAgents = [],
 	seenData = [],
@@ -48,7 +59,7 @@ export function MessagesList({
 	className,
 	onFetchMoreIfNeeded,
 	visitor,
-}: Props) {
+}: ConversationTimelineListProps) {
 	const fallbackRef = useRef<HTMLDivElement | null>(null);
 	const messageListRef =
 		(ref as RefObject<HTMLDivElement | null> | undefined) ?? fallbackRef;
@@ -59,8 +70,7 @@ export function MessagesList({
 		getLastReadMessageId,
 		isMessageSeenByViewer,
 	} = useGroupedMessages({
-		messages,
-		events,
+		items: timelineItems,
 		seenData,
 		currentViewerId: currentUserId,
 		viewerType: SenderType.TEAM_MEMBER,
@@ -74,38 +84,41 @@ export function MessagesList({
 		() =>
 			teamMembers.map((member) => ({
 				id: member.id,
-				name: member.name || member.email.split("@")[0] || "Unknown member",
+				name: member.name ?? member.email?.split("@")[0] ?? "Unknown member",
 				image: member.image,
 				lastSeenAt: member.lastSeenAt,
 			})),
 		[teamMembers]
 	);
 
-	const activeTypingEntities = useMemo(() => {
-		return typingEntries
-			.map((entry): TypingParticipant | null => {
-				if (entry.actorType === "visitor") {
-					return {
-						id: entry.actorId,
-						type: "visitor" as const,
-						preview: entry.preview,
-					};
-				}
+	const activeTypingEntities = useMemo(
+		() =>
+			typingEntries
+				.map((entry): TypingParticipant | null => {
+					if (entry.actorType === "visitor") {
+						return {
+							id: entry.actorId,
+							type: "visitor" as const,
+							preview: entry.preview,
+						};
+					}
 
-				if (entry.actorType === "ai_agent") {
-					return {
-						id: entry.actorId,
-						type: "ai" as const,
-						preview: entry.preview,
-					};
-				}
+					if (entry.actorType === "ai_agent") {
+						return {
+							id: entry.actorId,
+							type: "ai" as const,
+							preview: entry.preview,
+						};
+					}
 
-				return null;
-			})
-			.filter(
-				(participant): participant is TypingParticipant => participant !== null
-			);
-	}, [typingEntries]);
+					return null;
+				})
+				.filter(
+					(participant): participant is TypingParticipant =>
+						participant !== null
+				),
+		[typingEntries]
+	);
 
 	useEffect(() => {
 		if (!messageListRef.current || activeTypingEntities.length === 0) {
@@ -116,7 +129,7 @@ export function MessagesList({
 	}, [activeTypingEntities, messageListRef]);
 
 	return (
-		<PrimitiveMessageList
+		<PrimitiveConversationTimeline
 			autoScroll={true}
 			className={cn(
 				"overflow-y-auto pt-20 pr-4 pb-48 pl-4",
@@ -124,37 +137,45 @@ export function MessagesList({
 				"h-full w-full",
 				className
 			)}
-			events={events}
-			id="message-list"
-			messages={messages}
+			id="conversation-timeline"
+			items={timelineItems}
 			onScrollStart={onFetchMoreIfNeeded}
 			ref={ref ?? messageListRef}
 		>
 			<div className="mx-auto xl:max-w-xl 2xl:max-w-2xl">
-				<MessageListContainer className="flex min-h-full w-full flex-col gap-3">
+				<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
 					<AnimatePresence initial={false} mode="popLayout">
 						{items.map((item, index) => {
-							if (item.type === "event") {
+							if (item.type === "timeline_event") {
+								// Extract event data from parts
+								const eventPart = extractEventPart(item.item);
+
+								// Only render if we have valid event data
+								if (!eventPart) {
+									return null;
+								}
+
 								return (
 									<ConversationEvent
 										availableAIAgents={availableAIAgents}
 										availableHumanAgents={availableHumanAgents}
-										event={item.event}
-										key={item.event.id}
+										createdAt={item.item.createdAt}
+										event={eventPart}
+										key={item.item.id || `timeline-event-${index}`}
 									/>
 								);
 							}
 
-							// Use first message ID as stable key
-							const groupKey = item.messages[0]?.id || `group-${index}`;
+							// Use first timeline item ID as stable key
+							const groupKey = item.items?.[0]?.id || `group-${index}`;
 
 							return (
-								<MessageGroup
+								<TimelineMessageGroup
 									availableAIAgents={availableAIAgents}
 									currentUserId={currentUserId}
+									items={item.items || []}
 									key={groupKey}
 									lastReadMessageIds={lastReadMessageMap}
-									messages={item.messages}
 									teamMembers={teamMembers}
 									visitor={visitor}
 								/>
@@ -170,8 +191,8 @@ export function MessagesList({
 							visitor={visitor}
 						/>
 					)}
-				</MessageListContainer>
+				</ConversationTimelineContainer>
 			</div>
-		</PrimitiveMessageList>
+		</PrimitiveConversationTimeline>
 	);
 }

@@ -11,25 +11,20 @@ import {
 } from "@api/db/mutations/conversation";
 import {
 	getConversationById,
-	getConversationEvents,
+	getConversationTimelineItems,
 	listConversationsHeaders,
 } from "@api/db/queries/conversation";
-import { getConversationMessages } from "@api/db/queries/message";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import {
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
-import { createMessage } from "@api/utils/message";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	type ContactMetadata,
-	conversationEventSchema,
 	conversationMutationResponseSchema,
 	listConversationHeadersResponseSchema,
-	MessageType,
-	MessageVisibility,
-	messageSchema,
 	visitorResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
@@ -81,20 +76,13 @@ export const conversationRouter = createTRPCRouter({
 			};
 		}),
 
-	getConversationMessages: protectedProcedure
+	getConversationTimelineItems: protectedProcedure
 		.input(
 			z.object({
 				conversationId: z.string(),
 				websiteSlug: z.string(),
 				limit: z.number().int().min(1).max(100).optional().default(50),
 				cursor: z.union([z.string(), z.date()]).nullable().optional(),
-			})
-		)
-		.output(
-			z.object({
-				items: z.array(messageSchema),
-				nextCursor: z.string().nullable(),
-				hasNextPage: z.boolean(),
 			})
 		)
 		.query(async ({ ctx: { db, user }, input }) => {
@@ -123,8 +111,8 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
-			// Get messages
-			const result = await getConversationMessages(db, {
+			// Get timeline items
+			const result = await getConversationTimelineItems(db, {
 				conversationId: input.conversationId,
 				websiteId: websiteData.id,
 				limit: input.limit,
@@ -132,71 +120,21 @@ export const conversationRouter = createTRPCRouter({
 			});
 
 			return {
-				items: result.messages,
-				nextCursor: result.nextCursor,
-				hasNextPage: result.hasNextPage,
-			};
-		}),
-
-	getConversationEvents: protectedProcedure
-		.input(
-			z.object({
-				conversationId: z.string(),
-				websiteSlug: z.string(),
-				limit: z.number().int().min(1).max(100).optional().default(50),
-				cursor: z.union([z.string(), z.date()]).nullable().optional(),
-			})
-		)
-		.output(
-			z.object({
-				items: z.array(conversationEventSchema),
-				nextCursor: z.string().nullable(),
-				hasNextPage: z.boolean(),
-			})
-		)
-		.query(async ({ ctx: { db, user }, input }) => {
-			// Query website access and conversation in parallel
-			const [websiteData, conversation] = await Promise.all([
-				getWebsiteBySlugWithAccess(db, {
-					userId: user.id,
-					websiteSlug: input.websiteSlug,
-				}),
-				getConversationById(db, {
-					conversationId: input.conversationId,
-				}),
-			]);
-
-			if (!websiteData) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Website not found or access denied",
-				});
-			}
-
-			if (!conversation || conversation.websiteId !== websiteData.id) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Conversation not found",
-				});
-			}
-
-			// Get events
-			const result = await getConversationEvents(db, {
-				conversationId: input.conversationId,
-				websiteId: websiteData.id,
-				limit: input.limit,
-				cursor: input.cursor,
-			});
-
-			return {
-				items: result.events.map((event) => ({
-					...event,
-					metadata: event.metadata as Record<string, unknown>,
-					updatedAt: event.createdAt,
-					deletedAt: null,
-					message: event.message ?? undefined,
+				items: result.items.map((item) => ({
+					id: item.id,
+					conversationId: item.conversationId,
+					organizationId: item.organizationId,
+					visibility: item.visibility,
+					type: item.type,
+					text: item.text,
+					parts: item.parts as unknown[],
+					userId: item.userId,
+					visitorId: item.visitorId,
+					aiAgentId: item.aiAgentId,
+					createdAt: item.createdAt,
+					deletedAt: item.deletedAt,
 				})),
-				nextCursor: result.nextCursor,
+				nextCursor: result.nextCursor ?? null,
 				hasNextPage: result.hasNextPage,
 			};
 		}),
@@ -206,16 +144,10 @@ export const conversationRouter = createTRPCRouter({
 			z.object({
 				conversationId: z.string(),
 				websiteSlug: z.string(),
-				bodyMd: z.string().min(1),
-				type: z
-					.enum([MessageType.TEXT, MessageType.IMAGE, MessageType.FILE])
-					.default(MessageType.TEXT),
-				visibility: z
-					.enum([MessageVisibility.PUBLIC, MessageVisibility.PRIVATE])
-					.default(MessageVisibility.PUBLIC),
+				text: z.string().min(1),
+				visibility: z.enum(["public", "private"]).default("public"),
 			})
 		)
-		.output(z.object({ message: messageSchema }))
 		.mutation(async ({ ctx: { db, user }, input }) => {
 			const [websiteData, conversation] = await Promise.all([
 				getWebsiteBySlugWithAccess(db, {
@@ -241,15 +173,16 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
-			const createdMessage = await createMessage({
+			const createdTimelineItem = await createTimelineItem({
 				db,
 				organizationId: websiteData.organizationId,
 				websiteId: websiteData.id,
 				conversationId: input.conversationId,
 				conversationOwnerVisitorId: conversation.visitorId,
-				message: {
-					bodyMd: input.bodyMd,
-					type: input.type,
+				item: {
+					type: "message",
+					text: input.text,
+					parts: [{ type: "text", text: input.text }],
 					visibility: input.visibility,
 					userId: user.id,
 					visitorId: null,
@@ -257,7 +190,7 @@ export const conversationRouter = createTRPCRouter({
 				},
 			});
 
-			// Mark conversation as read by user after sending message
+			// Mark conversation as read by user after sending timeline item
 			const { lastSeenAt } = await markConversationAsRead(db, {
 				conversation,
 				actorUserId: user.id,
@@ -269,7 +202,7 @@ export const conversationRouter = createTRPCRouter({
 				lastSeenAt,
 			});
 
-			return { message: createdMessage };
+			return { item: createdTimelineItem };
 		}),
 
 	markResolved: protectedProcedure

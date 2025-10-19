@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { visitorResponseSchema } from "./api/visitor";
-import { ConversationEventType, MessageType, MessageVisibility } from "./enums";
+import { ConversationTimelineType, TimelineItemVisibility } from "./enums";
 import { conversationSchema } from "./schemas";
 import { conversationHeaderSchema } from "./trpc/conversation";
 
@@ -46,44 +46,28 @@ export const realtimeSchema = {
 		isTyping: z.boolean(),
 		visitorPreview: z.string().max(2000).nullable().optional(),
 	}),
-        conversationEventCreated: baseRealtimeEvent.extend({
-                conversationId: z.string(),
-                aiAgentId: z.string().nullable(),
-                event: z.object({
-                        id: z.string(),
-                        conversationId: z.string(),
-                        organizationId: z.string(),
-                        type: z.nativeEnum(ConversationEventType),
-                        actorUserId: z.string().nullable(),
-                        actorAiAgentId: z.string().nullable(),
-                        targetUserId: z.string().nullable(),
-                        targetAiAgentId: z.string().nullable(),
-                        message: z.string().nullable().optional(),
-                        metadata: z.record(z.string(), z.unknown()).nullable().optional(),
-                        createdAt: z.string(),
-                        updatedAt: z.string(),
-                        deletedAt: z.string().nullable(),
-                }),
-        }),
-	messageCreated: baseRealtimeEvent.extend({
-		message: z.object({
+	timelineItemCreated: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		item: z.object({
 			id: z.string(),
-			bodyMd: z.string(),
-			type: z.enum([MessageType.TEXT, MessageType.IMAGE, MessageType.FILE]),
+			conversationId: z.string(),
+			organizationId: z.string(),
+			visibility: z.enum([
+				TimelineItemVisibility.PUBLIC,
+				TimelineItemVisibility.PRIVATE,
+			]),
+			type: z.enum([
+				ConversationTimelineType.MESSAGE,
+				ConversationTimelineType.EVENT,
+			]),
+			text: z.string().nullable(),
+			parts: z.array(z.unknown()),
 			userId: z.string().nullable(),
 			visitorId: z.string().nullable(),
-			organizationId: z.string(),
-			websiteId: z.string(),
-			conversationId: z.string(),
-			parentMessageId: z.string().nullable(),
 			aiAgentId: z.string().nullable(),
-			modelUsed: z.string().nullable(),
-			visibility: z.enum([MessageVisibility.PUBLIC, MessageVisibility.PRIVATE]),
 			createdAt: z.string(),
-			updatedAt: z.string(),
 			deletedAt: z.string().nullable(),
 		}),
-		conversationId: z.string(),
 	}),
 	conversationCreated: baseRealtimeEvent.extend({
 		conversationId: z.string(),

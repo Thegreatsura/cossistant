@@ -1,21 +1,10 @@
 import type { Database } from "@api/db";
-import type {
-  ApiKeySelect,
-  OrganizationSelect,
-  SessionSelect,
-  UserSelect,
-  WebsiteSelect,
-} from "@api/db/schema";
+import type { UserSelect } from "@api/db/schema";
 import { session, user } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
 import type { Session, User } from "better-auth";
 
 import { and, eq, gt } from "drizzle-orm";
-
-export type ApiKeyWithWebsiteAndOrganization = ApiKeySelect & {
-  website: WebsiteSelect;
-  organization: OrganizationSelect;
-};
 
 const MAX_SESSION_TOKEN_LENGTH = 512;
 
@@ -57,11 +46,40 @@ export async function resolveSession(
     headers: params.headers,
   });
 
-  const tokensToCheck = new Set<string>();
+  const now = new Date();
 
-  if (betterAuthSession?.session?.token) {
-    tokensToCheck.add(betterAuthSession.session.token);
+  // Normalize and validate the cookie token from better-auth
+  const normalizedCookieToken = normalizeSessionToken(
+    betterAuthSession?.session?.token
+  );
+
+  // Try the cookie token first (most trusted source)
+  if (normalizedCookieToken) {
+    const [res] = await db
+      .select()
+      .from(session)
+      .where(
+        and(
+          eq(session.token, normalizedCookieToken),
+          gt(session.expiresAt, now)
+        )
+      )
+      .innerJoin(user, eq(session.userId, user.id))
+      .limit(1)
+      .$withCache({ tag: `session:${normalizedCookieToken}` });
+
+    if (res) {
+      foundSession = {
+        session: res.session,
+        user: res.user,
+      };
+
+      return foundSession;
+    }
   }
+
+  // Only check fallback tokens if no valid cookie session exists
+  const tokensToCheck = new Set<string>();
 
   const normalizedOverride = normalizeSessionToken(params.sessionToken);
 
@@ -77,8 +95,7 @@ export async function resolveSession(
     tokensToCheck.add(headerToken);
   }
 
-  const now = new Date();
-
+  // Check fallback tokens
   for (const token of tokensToCheck) {
     const [res] = await db
       .select()

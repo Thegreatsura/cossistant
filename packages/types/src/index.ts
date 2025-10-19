@@ -4,12 +4,8 @@ export * from "./api";
 export * from "./enums";
 export * from "./presence";
 export * from "./realtime-events";
-export type { Conversation, ConversationEvent, Message } from "./schemas";
-export {
-	conversationEventSchema,
-	conversationSchema,
-	messageSchema,
-} from "./schemas";
+export type { Conversation } from "./schemas";
+export { conversationSchema } from "./schemas";
 export * from "./trpc/contact";
 export * from "./trpc/conversation";
 export * from "./trpc/visitor";

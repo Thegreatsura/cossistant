@@ -22,9 +22,10 @@ function TextShimmerComponent({
 		Component as keyof JSX.IntrinsicElements
 	);
 
-	const dynamicSpread = useMemo(() => {
-		return children.length * spread;
-	}, [children, spread]);
+	const dynamicSpread = useMemo(
+		() => children.length * spread,
+		[children, spread]
+	);
 
 	return (
 		<MotionComponent

@@ -19,32 +19,31 @@ function createMockConversation(
 		visitorId: "visitor-1",
 		websiteId: "site-1",
 		status: "open",
-		lastMessage: undefined,
+		lastTimelineItem: undefined,
 	};
 
 	const conversation: Conversation = { ...base, ...overrides };
-	const defaultLastMessage: Conversation["lastMessage"] = {
-		id: "msg-1",
-		bodyMd: "Hello",
-		type: "text",
+	const defaultLastTimelineItem: Conversation["lastTimelineItem"] = {
+		id: "item-1",
+		conversationId: conversation.id,
+		organizationId: "org-1",
+		type: "message",
+		text: "Hello",
+		parts: [{ type: "text", text: "Hello" }],
+		visibility: "public",
 		userId: "user-1",
 		aiAgentId: null,
-		parentMessageId: null,
-		modelUsed: null,
 		visitorId: conversation.visitorId,
-		conversationId: conversation.id,
 		createdAt: "2024-01-01T00:00:00.000Z",
-		updatedAt: "2024-01-01T00:00:00.000Z",
 		deletedAt: null,
-		visibility: "public",
 	};
 
 	return {
 		...conversation,
-		lastMessage:
-			overrides.lastMessage === undefined
-				? defaultLastMessage
-				: overrides.lastMessage,
+		lastTimelineItem:
+			overrides.lastTimelineItem === undefined
+				? defaultLastTimelineItem
+				: overrides.lastTimelineItem,
 	};
 }
 

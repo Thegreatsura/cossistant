@@ -6,43 +6,39 @@ import {
 	type RealtimeEvent,
 } from "@cossistant/types";
 import type {
-        CreateConversationRequestBody,
-        CreateConversationResponseBody,
-        GetConversationRequest,
-        GetConversationResponse,
-        ListConversationsRequest,
-        ListConversationsResponse,
-        MarkConversationSeenRequestBody,
-        MarkConversationSeenResponseBody,
-        SetConversationTypingResponseBody,
+	CreateConversationRequestBody,
+	CreateConversationResponseBody,
+	GetConversationRequest,
+	GetConversationResponse,
+	ListConversationsRequest,
+	ListConversationsResponse,
+	MarkConversationSeenRequestBody,
+	MarkConversationSeenResponseBody,
+	SetConversationTypingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
-        GetConversationEventsRequest,
-        GetConversationEventsResponse,
-} from "@cossistant/types/api/conversation-event";
-import type {
-	GetMessagesRequest,
-	GetMessagesResponse,
-	SendMessageRequest,
-	SendMessageResponse,
-} from "@cossistant/types/api/message";
+	GetConversationTimelineItemsRequest,
+	GetConversationTimelineItemsResponse,
+	SendTimelineItemRequest,
+	SendTimelineItemResponse,
+	TimelineItem,
+} from "@cossistant/types/api/timeline-item";
 import {
 	ConversationStatus,
-	MessageType,
-	MessageVisibility,
+	ConversationTimelineType,
 	SenderType,
+	TimelineItemVisibility,
 } from "@cossistant/types/enums";
-import type { Conversation, Message } from "@cossistant/types/schemas";
+import type { Conversation } from "@cossistant/types/schemas";
 import { CossistantRestClient } from "./rest-client";
 import {
 	type ConversationsStore,
 	createConversationsStore,
 } from "./store/conversations-store";
-import { createMessagesStore, type MessagesStore } from "./store/messages-store";
 import {
-        createConversationEventsStore,
-        type ConversationEventsStore,
-} from "./store/conversation-events-store";
+	createTimelineItemsStore,
+	type TimelineItemsStore,
+} from "./store/timeline-items-store";
 import {
 	createWebsiteStore,
 	type WebsiteState,
@@ -58,7 +54,7 @@ import { generateConversationId, generateMessageId } from "./utils";
 
 type PendingConversation = {
 	conversation: Conversation;
-	initialMessages: Message[];
+	initialTimelineItems: TimelineItem[];
 };
 
 type InitiateConversationParams = {
@@ -67,33 +63,31 @@ type InitiateConversationParams = {
 	websiteId?: string | null;
 	title?: string;
 	status?: Conversation["status"];
-	defaultMessages?: Array<DefaultMessage | Message>;
+	defaultTimelineItems?: Array<DefaultMessage | TimelineItem>;
 };
 
 type InitiateConversationResult = {
 	conversationId: string;
 	conversation: Conversation;
-	defaultMessages: Message[];
+	defaultTimelineItems: TimelineItem[];
 };
 
 export class CossistantClient {
 	private restClient: CossistantRestClient;
 	private config: CossistantConfig;
-        private pendingConversations = new Map<string, PendingConversation>();
-        private websiteRequest: Promise<PublicWebsiteResponse> | null = null;
-        readonly conversationsStore: ConversationsStore;
-        readonly messagesStore: MessagesStore;
-        readonly eventsStore: ConversationEventsStore;
-        readonly websiteStore: WebsiteStore;
+	private pendingConversations = new Map<string, PendingConversation>();
+	private websiteRequest: Promise<PublicWebsiteResponse> | null = null;
+	readonly conversationsStore: ConversationsStore;
+	readonly timelineItemsStore: TimelineItemsStore;
+	readonly websiteStore: WebsiteStore;
 
-        constructor(config: CossistantConfig) {
-                this.config = config;
-                this.restClient = new CossistantRestClient(config);
-                this.conversationsStore = createConversationsStore();
-                this.messagesStore = createMessagesStore();
-                this.eventsStore = createConversationEventsStore();
-                this.websiteStore = createWebsiteStore();
-        }
+	constructor(config: CossistantConfig) {
+		this.config = config;
+		this.restClient = new CossistantRestClient(config);
+		this.conversationsStore = createConversationsStore();
+		this.timelineItemsStore = createTimelineItemsStore();
+		this.websiteStore = createWebsiteStore();
+	}
 
 	// Configuration updates
 	updateConfiguration(config: Partial<CossistantConfig>): void {
@@ -182,8 +176,8 @@ export class CossistantClient {
 	): InitiateConversationResult {
 		const conversationId = params.conversationId ?? generateConversationId();
 		const now = new Date().toISOString();
-		const messages = (params.defaultMessages ?? []).map((message) =>
-			normalizeBootstrapMessage(conversationId, message)
+		const timelineItems = (params.defaultTimelineItems ?? []).map((item) =>
+			normalizeBootstrapTimelineItem(conversationId, item)
 		);
 		const existing = this.conversationsStore.getState().byId[conversationId];
 		const baseVisitorId =
@@ -197,7 +191,7 @@ export class CossistantClient {
 					title: params.title ?? existing.title,
 					status: params.status ?? existing.status,
 					updatedAt: now,
-					lastMessage: messages.at(-1) ?? existing.lastMessage,
+					lastTimelineItem: timelineItems.at(-1) ?? existing.lastTimelineItem,
 				}
 			: {
 					id: conversationId,
@@ -207,14 +201,14 @@ export class CossistantClient {
 					visitorId: baseVisitorId,
 					websiteId: baseWebsiteId,
 					status: params.status ?? ConversationStatus.OPEN,
-					lastMessage: messages.at(-1),
+					lastTimelineItem: timelineItems.at(-1),
 				};
 
 		this.conversationsStore.ingestConversation(conversation);
 
-		if (messages.length > 0) {
-			this.messagesStore.ingestPage(conversationId, {
-				messages,
+		if (timelineItems.length > 0) {
+			this.timelineItemsStore.ingestPage(conversationId, {
+				items: timelineItems,
 				hasNextPage: false,
 				nextCursor: undefined,
 			});
@@ -223,14 +217,14 @@ export class CossistantClient {
 		if (!existing || this.pendingConversations.has(conversationId)) {
 			this.pendingConversations.set(conversationId, {
 				conversation,
-				initialMessages: messages,
+				initialTimelineItems: timelineItems,
 			});
 		}
 
 		return {
 			conversationId,
 			conversation,
-			defaultMessages: messages,
+			defaultTimelineItems: timelineItems,
 		};
 	}
 
@@ -279,64 +273,57 @@ export class CossistantClient {
 		return this.restClient.setConversationTyping(params);
 	}
 
-        // Message & event management
-        async getConversationEvents(
-                params: GetConversationEventsRequest
-        ): Promise<GetConversationEventsResponse> {
-                const response = await this.restClient.getConversationEvents(params);
-                this.eventsStore.ingestPage(params.conversationId, {
-                        events: response.events,
-                        hasNextPage: response.hasNextPage,
-                        nextCursor: response.nextCursor ?? undefined,
-                });
-                return response;
-        }
+	// Timeline items management
 
-        async getConversationMessages(
-                params: GetMessagesRequest
-        ): Promise<GetMessagesResponse> {
-                const response = await this.restClient.getConversationMessages(params);
-                this.messagesStore.ingestPage(params.conversationId, {
-			messages: response.messages,
+	async getConversationTimelineItems(
+		params: GetConversationTimelineItemsRequest & { conversationId: string }
+	): Promise<GetConversationTimelineItemsResponse> {
+		const response = await this.restClient.getConversationTimelineItems(params);
+		this.timelineItemsStore.ingestPage(params.conversationId, {
+			items: response.items,
 			hasNextPage: response.hasNextPage,
-			nextCursor: response.nextCursor,
+			nextCursor: response.nextCursor ?? undefined,
 		});
 		return response;
 	}
 
 	async sendMessage(
-		params: SendMessageRequest & { createIfPending?: boolean }
+		params: SendTimelineItemRequest & { createIfPending?: boolean }
 	): Promise<
-		SendMessageResponse & {
+		SendTimelineItemResponse & {
 			conversation?: Conversation;
-			initialMessages?: Message[];
+			initialTimelineItems?: TimelineItem[];
 			wasConversationCreated?: boolean;
 		}
 	> {
 		const { createIfPending, ...rest } = params;
-		const optimisticId = rest.message.id ?? generateMessageId();
-		const createdAt = rest.message.createdAt
-			? rest.message.createdAt
+		const optimisticId = rest.item.id ?? generateMessageId();
+		const createdAt = rest.item.createdAt
+			? rest.item.createdAt
 			: new Date().toISOString();
 
-		const optimisticMessage: Message = {
+		// Add optimistic timeline item
+		const optimisticTimelineItem: TimelineItem = {
 			id: optimisticId,
-			bodyMd: rest.message.bodyMd,
-			type: (rest.message.type ?? MessageType.TEXT) as Message["type"],
-			userId: rest.message.userId ?? null,
-			aiAgentId: rest.message.aiAgentId ?? null,
-			parentMessageId: null,
-			modelUsed: null,
-			visitorId: rest.message.visitorId ?? null,
 			conversationId: rest.conversationId,
+			organizationId: "", // Not available yet
+			visibility: rest.item.visibility ?? TimelineItemVisibility.PUBLIC,
+			type: rest.item.type ?? ConversationTimelineType.MESSAGE,
+			text: rest.item.text,
+			parts:
+				rest.item.parts && rest.item.parts.length > 0
+					? rest.item.parts
+					: rest.item.text
+						? [{ type: "text" as const, text: rest.item.text }]
+						: [],
+			userId: rest.item.userId ?? null,
+			visitorId: rest.item.visitorId ?? null,
+			aiAgentId: rest.item.aiAgentId ?? null,
 			createdAt,
-			updatedAt: createdAt,
 			deletedAt: null,
-			visibility: (rest.message.visibility ??
-				MessageVisibility.PUBLIC) as Message["visibility"],
 		};
 
-		this.messagesStore.ingestMessage(optimisticMessage);
+		this.timelineItemsStore.ingestTimelineItem(optimisticTimelineItem);
 
 		const pending = this.pendingConversations.get(rest.conversationId);
 
@@ -344,60 +331,75 @@ export class CossistantClient {
 			try {
 				const response = await this.restClient.createConversation({
 					conversationId: rest.conversationId,
-					defaultMessages: [...pending.initialMessages, optimisticMessage],
+					defaultTimelineItems: [
+						...pending.initialTimelineItems,
+						optimisticTimelineItem,
+					],
 				});
 
-                                this.conversationsStore.ingestConversation(response.conversation);
-                                this.messagesStore.removeMessage(rest.conversationId, optimisticId);
-                                this.messagesStore.clearConversation(rest.conversationId);
-                                this.eventsStore.clearConversation(rest.conversationId);
-                                this.messagesStore.ingestPage(rest.conversationId, {
-                                        messages: response.initialMessages,
-                                        hasNextPage: false,
-                                        nextCursor: undefined,
-                                });
+				this.conversationsStore.ingestConversation(response.conversation);
+				this.timelineItemsStore.removeTimelineItem(
+					rest.conversationId,
+					optimisticId
+				);
+				this.timelineItemsStore.clearConversation(rest.conversationId);
+
+				this.timelineItemsStore.ingestPage(rest.conversationId, {
+					items: response.initialTimelineItems,
+					hasNextPage: false,
+					nextCursor: undefined,
+				});
 
 				this.pendingConversations.delete(rest.conversationId);
 
-				const message =
-					response.initialMessages.at(-1) ?? response.initialMessages[0];
+				const item =
+					response.initialTimelineItems.at(-1) ??
+					response.initialTimelineItems[0];
 
 				return {
-					message: message as Message,
+					item: item as TimelineItem,
 					conversation: response.conversation,
-					initialMessages: response.initialMessages,
+					initialTimelineItems: response.initialTimelineItems,
 					wasConversationCreated: true,
-				} satisfies SendMessageResponse & {
+				} satisfies SendTimelineItemResponse & {
 					conversation: Conversation;
-					initialMessages: Message[];
+					initialTimelineItems: TimelineItem[];
 					wasConversationCreated: true;
 				};
 			} catch (error) {
-				this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+				this.timelineItemsStore.removeTimelineItem(
+					rest.conversationId,
+					optimisticId
+				);
 				throw error;
 			}
 		}
 
-		const { createdAt: _createdAt, ...restMessage } = rest.message;
+		const { createdAt: _createdAt, ...restItem } = rest.item;
 
-		const payload: SendMessageRequest = {
+		const payload: SendTimelineItemRequest = {
 			...rest,
-			message: {
-				...restMessage,
+			item: {
+				...restItem,
 				id: optimisticId,
 			},
 		};
 
 		try {
 			const response = await this.restClient.sendMessage(payload);
-			this.messagesStore.finalizeMessage(
+
+			// Finalize the timeline item
+			this.timelineItemsStore.finalizeTimelineItem(
 				rest.conversationId,
 				optimisticId,
-				response.message
+				response.item
 			);
 			return response;
 		} catch (error) {
-			this.messagesStore.removeMessage(rest.conversationId, optimisticId);
+			this.timelineItemsStore.removeTimelineItem(
+				rest.conversationId,
+				optimisticId
+			);
 			throw error;
 		}
 	}
@@ -408,27 +410,28 @@ export class CossistantClient {
 
 			this.conversationsStore.ingestConversation({
 				...conversation,
-				lastMessage: conversation.lastMessage ?? undefined,
+				lastTimelineItem: conversation.lastTimelineItem ?? undefined,
 			});
-                } else if (event.type === "messageCreated") {
-                        const message = this.messagesStore.ingestRealtime(event);
+		} else if (event.type === "timelineItemCreated") {
+			// Ingest timeline item into store
+			const timelineItem =
+				this.timelineItemsStore.ingestRealtimeTimelineItem(event);
 
-                        const existingConversation =
-                                this.conversationsStore.getState().byId[message.conversationId];
+			// Update conversation with last timeline item
+			const existingConversation =
+				this.conversationsStore.getState().byId[timelineItem.conversationId];
 
-                        if (existingConversation) {
-                                const nextConversation = {
-                                        ...existingConversation,
-                                        updatedAt: message.updatedAt,
-                                        lastMessage: message,
-                                };
+			if (existingConversation) {
+				const nextConversation = {
+					...existingConversation,
+					updatedAt: timelineItem.createdAt,
+					lastTimelineItem: timelineItem,
+				};
 
-                                this.conversationsStore.ingestConversation(nextConversation);
-                        }
-                } else if (event.type === "conversationEventCreated") {
-                        this.eventsStore.ingestRealtime(event);
-                }
-        }
+				this.conversationsStore.ingestConversation(nextConversation);
+			}
+		}
+	}
 
 	// Cleanup method
 	destroy(): void {
@@ -436,63 +439,53 @@ export class CossistantClient {
 	}
 }
 
-function normalizeBootstrapMessage(
+function normalizeBootstrapTimelineItem(
 	conversationId: string,
-	message: DefaultMessage | Message
-): Message {
-	if (isDefaultMessage(message)) {
+	item: DefaultMessage | TimelineItem
+): TimelineItem {
+	if (isDefaultMessage(item)) {
 		const createdAt = new Date().toISOString();
 
 		return {
 			id: generateMessageId(),
-			bodyMd: message.content,
-			type: MessageType.TEXT,
+			conversationId,
+			organizationId: "", // Not available at this point
+			type: ConversationTimelineType.MESSAGE,
+			text: item.content,
+			parts: [{ type: "text" as const, text: item.content }],
+			visibility: TimelineItemVisibility.PUBLIC,
 			userId:
-				message.senderType === SenderType.TEAM_MEMBER
-					? (message.senderId ?? null)
+				item.senderType === SenderType.TEAM_MEMBER
+					? (item.senderId ?? null)
 					: null,
 			aiAgentId:
-				message.senderType === SenderType.AI
-					? (message.senderId ?? null)
-					: null,
+				item.senderType === SenderType.AI ? (item.senderId ?? null) : null,
 			visitorId:
-				message.senderType === SenderType.VISITOR
-					? (message.senderId ?? null)
-					: null,
-			conversationId,
+				item.senderType === SenderType.VISITOR ? (item.senderId ?? null) : null,
 			createdAt,
-			updatedAt: createdAt,
 			deletedAt: null,
-			parentMessageId: null,
-			modelUsed: null,
-			visibility: MessageVisibility.PUBLIC,
-		} satisfies Message;
+		} satisfies TimelineItem;
 	}
 
-	const createdAt = message.createdAt
-		? message.createdAt
-		: new Date().toISOString();
-	const updatedAt = message.updatedAt ? message.updatedAt : createdAt;
+	const createdAt = item.createdAt ? item.createdAt : new Date().toISOString();
 
 	return {
-		...message,
-		id: message.id ?? generateMessageId(),
+		...item,
+		id: item.id ?? generateMessageId(),
 		conversationId,
-		type: (message.type ?? MessageType.TEXT) as Message["type"],
+		organizationId: item.organizationId || "",
+		type: item.type ?? ConversationTimelineType.MESSAGE,
 		createdAt,
-		updatedAt,
-		deletedAt: message.deletedAt ?? null,
-		parentMessageId: message.parentMessageId ?? null,
-		modelUsed: message.modelUsed ?? null,
-		userId: message.userId ?? null,
-		aiAgentId: message.aiAgentId ?? null,
-		visitorId: message.visitorId ?? null,
-		visibility: message.visibility ?? MessageVisibility.PUBLIC,
-	} satisfies Message;
+		deletedAt: item.deletedAt ?? null,
+		userId: item.userId ?? null,
+		aiAgentId: item.aiAgentId ?? null,
+		visitorId: item.visitorId ?? null,
+		visibility: item.visibility ?? TimelineItemVisibility.PUBLIC,
+	} satisfies TimelineItem;
 }
 
 function isDefaultMessage(
-	message: DefaultMessage | Message
-): message is DefaultMessage {
-	return (message as DefaultMessage).content !== undefined;
+	item: DefaultMessage | TimelineItem
+): item is DefaultMessage {
+	return (item as DefaultMessage).content !== undefined;
 }

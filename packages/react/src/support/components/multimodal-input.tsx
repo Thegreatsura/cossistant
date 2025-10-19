@@ -194,17 +194,15 @@ export type SendButtonProps = {
 export const SendButton: React.FC<SendButtonProps> = ({
 	className,
 	disabled = false,
-}) => {
-	return (
-		<Primitive.Button
-			className={cn(
-				"group flex h-8 w-8 items-center justify-center rounded-md text-co-primary hover:bg-co-muted disabled:cursor-not-allowed disabled:opacity-50",
-				className
-			)}
-			disabled={disabled}
-			type="submit"
-		>
-			<Icon className="h-4 w-4" filledOnHover name="send" />
-		</Primitive.Button>
-	);
-};
+}) => (
+	<Primitive.Button
+		className={cn(
+			"group flex h-8 w-8 items-center justify-center rounded-md text-co-primary hover:bg-co-muted disabled:cursor-not-allowed disabled:opacity-50",
+			className
+		)}
+		disabled={disabled}
+		type="submit"
+	>
+		<Icon className="h-4 w-4" filledOnHover name="send" />
+	</Primitive.Button>
+);

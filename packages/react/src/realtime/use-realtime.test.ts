@@ -3,29 +3,26 @@ import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import { shouldDeliverEvent } from "./event-filter";
 
 describe("shouldDeliverEvent", () => {
-	const baseEvent: RealtimeEvent<"messageCreated"> = {
-		type: "messageCreated",
+	const baseEvent: RealtimeEvent<"timelineItemCreated"> = {
+		type: "timelineItemCreated",
 		payload: {
 			websiteId: "site-1",
 			organizationId: "org-1",
 			userId: "user-1",
 			visitorId: "visitor-1",
 			conversationId: "conv-1",
-			message: {
-				id: "msg-1",
-				bodyMd: "Hello",
-				type: "text",
+			item: {
+				id: "item-1",
+				conversationId: "conv-1",
+				organizationId: "org-1",
+				type: "message",
+				text: "Hello",
+				parts: [{ type: "text", text: "Hello" }],
+				visibility: "public",
 				userId: "user-1",
 				aiAgentId: null,
 				visitorId: "visitor-1",
-				organizationId: "org-1",
-				websiteId: "site-1",
-				conversationId: "conv-1",
-				parentMessageId: null,
-				modelUsed: null,
-				visibility: "public",
 				createdAt: "2024-01-01T00:00:00.000Z",
-				updatedAt: "2024-01-01T00:00:00.000Z",
 				deletedAt: null,
 			},
 		},
@@ -41,14 +38,14 @@ describe("shouldDeliverEvent", () => {
 		expect(result).toBe(false);
 	});
 
-	it("falls back to the message visitor when the payload visitor is null", () => {
-		const eventWithoutVisitor: RealtimeEvent<"messageCreated"> = {
+	it("falls back to the timeline item visitor when the payload visitor is null", () => {
+		const eventWithoutVisitor: RealtimeEvent<"timelineItemCreated"> = {
 			...baseEvent,
 			payload: {
 				...baseEvent.payload,
 				visitorId: null,
-				message: {
-					...baseEvent.payload.message,
+				item: {
+					...baseEvent.payload.item,
 					visitorId: "visitor-1",
 				},
 			},

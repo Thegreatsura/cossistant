@@ -263,23 +263,23 @@ export function applyConversationTypingEvent(
 	});
 }
 
-export function clearTypingFromMessage(
+export function clearTypingFromTimelineItem(
 	store: TypingStore,
-	event: RealtimeEvent<"messageCreated">
+	event: RealtimeEvent<"timelineItemCreated">
 ): void {
-	const { message } = event.payload;
+	const { item } = event.payload;
 	let actorType: TypingActorType | null = null;
 	let actorId: string | null = null;
 
-	if (message.userId) {
+	if (item.userId) {
 		actorType = "user";
-		actorId = message.userId;
-	} else if (message.visitorId) {
+		actorId = item.userId;
+	} else if (item.visitorId) {
 		actorType = "visitor";
-		actorId = message.visitorId;
-	} else if (message.aiAgentId) {
+		actorId = item.visitorId;
+	} else if (item.aiAgentId) {
 		actorType = "ai_agent";
-		actorId = message.aiAgentId;
+		actorId = item.aiAgentId;
 	}
 
 	if (!(actorType && actorId)) {
@@ -287,7 +287,7 @@ export function clearTypingFromMessage(
 	}
 
 	clearTypingState(store, {
-		conversationId: message.conversationId,
+		conversationId: item.conversationId,
 		actorType,
 		actorId,
 	});

@@ -728,9 +728,8 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 	},
 };
 
-const getIconContent = (name: IconName, variant: IconVariant): ReactNode => {
-	return iconRegistry[name]?.[variant] || iconRegistry[name]?.default || null;
-};
+const getIconContent = (name: IconName, variant: IconVariant): ReactNode =>
+	iconRegistry[name]?.[variant] || iconRegistry[name]?.default || null;
 
 // Deprecated: previously used to switch path attributes for string-only paths
 // Keeping here commented for reference; fully ReactNode-based now

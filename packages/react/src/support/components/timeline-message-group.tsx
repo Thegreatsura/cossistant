@@ -1,23 +1,20 @@
-import type {
-	AvailableAIAgent,
-	AvailableHumanAgent,
-	Message as MessageType,
-} from "@cossistant/types";
+import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
 import type React from "react";
 import { useMemo } from "react";
 import {
-	MessageGroupAvatar,
-	MessageGroupContent,
-	MessageGroupHeader,
-	MessageGroupSeenIndicator,
-	MessageGroup as PrimitiveMessageGroup,
-} from "../../primitives/message-group";
+	TimelineItemGroup as PrimitiveTimelineItemGroup,
+	TimelineItemGroupAvatar,
+	TimelineItemGroupContent,
+	TimelineItemGroupHeader,
+	TimelineItemGroupSeenIndicator,
+} from "../../primitives/timeline-item-group";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
-import { Message } from "./message";
+import { TimelineMessageItem } from "./timeline-message-item";
 
 const MESSAGE_ANIMATION = {
 	initial: { opacity: 0, y: 6 },
@@ -38,28 +35,28 @@ const SEEN_ANIMATION = {
 	},
 } as const;
 
-export type MessageGroupProps = {
-	messages: MessageType[];
+export type TimelineMessageGroupProps = {
+	items: TimelineItem[];
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	currentVisitorId?: string;
 	seenByIds?: string[];
 };
 
-export const MessageGroup: React.FC<MessageGroupProps> = ({
-	messages,
+export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
+	items,
 	availableAIAgents,
 	availableHumanAgents,
 	currentVisitorId,
 	seenByIds = [],
 }) => {
 	// Get agent info for the sender
-	const firstMessage = messages[0];
+	const firstItem = items[0];
 	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === firstMessage?.userId
+		(agent) => agent.id === firstItem?.userId
 	);
 	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === firstMessage?.aiAgentId
+		(agent) => agent.id === firstItem?.aiAgentId
 	);
 
 	const seenByNames = useMemo(() => {
@@ -78,13 +75,13 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 		return Array.from(deduped);
 	}, [seenByIds, availableHumanAgents, availableAIAgents]);
 
-	if (messages.length === 0) {
+	if (items.length === 0) {
 		return null;
 	}
 
 	return (
-		<PrimitiveMessageGroup
-			messages={messages}
+		<PrimitiveTimelineItemGroup
+			items={items}
 			seenByIds={seenByIds}
 			viewerId={currentVisitorId}
 			viewerType={SenderType.VISITOR}
@@ -107,7 +104,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 				>
 					{/* Avatar - only show for received messages (agents) */}
 					{isReceivedByViewer && (
-						<MessageGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
+						<TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
 							{isAI ? (
 								<div className="flex size-6 items-center justify-center rounded-full bg-primary/10">
 									<CossistantLogo className="h-4 w-4 text-primary" />
@@ -119,27 +116,27 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 									name={humanAgent?.name || "Support"}
 								/>
 							)}
-						</MessageGroupAvatar>
+						</TimelineItemGroupAvatar>
 					)}
 
-					<MessageGroupContent
+					<TimelineItemGroupContent
 						className={cn("flex flex-col gap-1", isSentByViewer && "items-end")}
 					>
 						{/* Header - show sender name for received messages (agents) */}
 						{isReceivedByViewer && (
-							<MessageGroupHeader className="px-1 text-muted-foreground text-xs">
+							<TimelineItemGroupHeader className="px-1 text-muted-foreground text-xs">
 								{isAI
 									? aiAgent?.name || "AI Assistant"
 									: humanAgent?.name || "Support"}
-							</MessageGroupHeader>
+							</TimelineItemGroupHeader>
 						)}
 
-						{messages.map((message, index) => (
-							<motion.div key={message.id} {...MESSAGE_ANIMATION}>
-								<Message
-									isLast={index === messages.length - 1}
+						{items.map((item, index) => (
+							<motion.div key={item.id} {...MESSAGE_ANIMATION}>
+								<TimelineMessageItem
+									isLast={index === items.length - 1}
 									isSentByViewer={isSentByViewer}
-									message={message}
+									item={item}
 								/>
 							</motion.div>
 						))}
@@ -148,17 +145,17 @@ export const MessageGroup: React.FC<MessageGroupProps> = ({
 							seenByIds.length > 0 &&
 							seenByNames.length > 0 && (
 								<motion.div key="seen-indicator" {...SEEN_ANIMATION}>
-									<MessageGroupSeenIndicator
+									<TimelineItemGroupSeenIndicator
 										className="my-4 px-1 text-muted-foreground text-xs"
 										seenByIds={seenByIds}
 									>
 										{() => `Seen by ${seenByNames.join(", ")}`}
-									</MessageGroupSeenIndicator>
+									</TimelineItemGroupSeenIndicator>
 								</motion.div>
 							)}
-					</MessageGroupContent>
+					</TimelineItemGroupContent>
 				</div>
 			)}
-		</PrimitiveMessageGroup>
+		</PrimitiveTimelineItemGroup>
 	);
 };

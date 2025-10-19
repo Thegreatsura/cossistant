@@ -7,11 +7,11 @@ function getTargetVisitorId(event: AnyRealtimeEvent): string | null {
 		return payloadVisitorId;
 	}
 
-	if (event.type === "messageCreated") {
-		const messageVisitorId = event.payload.message.visitorId;
+	if (event.type === "timelineItemCreated") {
+		const itemVisitorId = event.payload.item.visitorId;
 
-		if (typeof messageVisitorId === "string" && messageVisitorId.length > 0) {
-			return messageVisitorId;
+		if (typeof itemVisitorId === "string" && itemVisitorId.length > 0) {
+			return itemVisitorId;
 		}
 	}
 

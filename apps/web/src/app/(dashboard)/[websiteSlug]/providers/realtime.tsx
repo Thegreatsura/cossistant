@@ -12,7 +12,7 @@ import { useTRPC } from "@/lib/trpc/client";
 import { handleConversationCreated } from "./events/handlers/conversation-created";
 import { handleConversationSeen } from "./events/handlers/conversation-seen";
 import { handleConversationTyping } from "./events/handlers/conversation-typing";
-import { handleMessageCreated } from "./events/handlers/message-created";
+import { handleMessageCreated } from "./events/handlers/timeline-item-created";
 import { handleVisitorIdentified } from "./events/handlers/visitor-identified";
 import type { DashboardRealtimeContext } from "./events/types";
 
@@ -54,7 +54,7 @@ export function Realtime({ children }: { children: ReactNode }) {
 					});
 				},
 			],
-			messageCreated: [
+			timelineItemCreated: [
 				(_data, meta) => {
 					handleMessageCreated({
 						event: meta.event,

@@ -2,19 +2,19 @@
 
 import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
 import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useMemo, useRef } from "react";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
 import { useConversationActions } from "@/data/use-conversation-actions";
-import { useConversationEvents } from "@/data/use-conversation-events";
-import { useConversationMessages } from "@/data/use-conversation-messages";
+import { useConversationTimelineItems } from "@/data/use-conversation-timeline-items";
 import { useVisitor } from "@/data/use-visitor";
 import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { Page } from "../ui/layout";
 import { VisitorSidebar } from "../ui/layout/sidebars/visitor/visitor-sidebar";
 import { ConversationHeader } from "./header";
-import { MessagesList } from "./messages/list";
+import { ConversationTimelineList } from "./messages/conversation-timeline";
 import { MultimodalInput } from "./multimodal-input";
 
 type ConversationProps = {
@@ -76,11 +76,12 @@ export function Conversation({
 		handleTypingChange(value);
 	};
 
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			stopTyping();
-		};
-	}, [stopTyping]);
+		},
+		[stopTyping]
+	);
 
 	const members = useWebsiteMembers();
 	const { selectedConversation } = useInboxes();
@@ -91,21 +92,11 @@ export function Conversation({
 
 	const lastMarkedMessageIdRef = useRef<string | null>(null);
 
-	const {
-		messages,
-		fetchNextPage: fetchNextPageMessages,
-		hasNextPage: hasNextPageMessages,
-	} = useConversationMessages({
+	const { items, fetchNextPage, hasNextPage } = useConversationTimelineItems({
 		conversationId,
 		websiteSlug,
 		options: { limit: MESSAGES_PAGE_LIMIT },
 	});
-
-	const {
-		events,
-		fetchNextPage: fetchNextPageEvents,
-		hasNextPage: hasNextPageEvents,
-	} = useConversationEvents({ conversationId, websiteSlug });
 
 	const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
 
@@ -114,7 +105,11 @@ export function Conversation({
 		initialData: selectedConversation?.seenData ?? [],
 	});
 
-	const lastMessage = useMemo(() => messages.at(-1) ?? null, [messages]);
+	// Get last message from timeline items (filter for message type)
+	const lastMessage = useMemo(
+		() => items.filter((item) => item.type === "message").at(-1) ?? null,
+		[items]
+	);
 
 	useEffect(() => {
 		if (!lastMessage) {
@@ -127,7 +122,7 @@ export function Conversation({
 		}
 
 		if (lastMessage.userId === currentUserId) {
-			lastMarkedMessageIdRef.current = lastMessage.id;
+			lastMarkedMessageIdRef.current = lastMessage.id || null;
 			return;
 		}
 
@@ -137,17 +132,17 @@ export function Conversation({
 			: null;
 
 		if (lastSeenAt && lastSeenAt >= lastMessageCreatedAt) {
-			lastMarkedMessageIdRef.current = lastMessage.id;
+			lastMarkedMessageIdRef.current = lastMessage.id || null;
 			return;
 		}
 
-		if (lastMarkedMessageIdRef.current === lastMessage.id) {
+		if (lastMarkedMessageIdRef.current === (lastMessage.id || null)) {
 			return;
 		}
 
 		markRead()
 			.then(() => {
-				lastMarkedMessageIdRef.current = lastMessage.id;
+				lastMarkedMessageIdRef.current = lastMessage.id || null;
 			})
 			.catch(() => {
 				// no-op: we'll retry on next render if needed
@@ -161,17 +156,9 @@ export function Conversation({
 	]);
 
 	const onFetchMoreIfNeeded = async () => {
-		const promises: Promise<unknown>[] = [];
-
-		if (hasNextPageMessages) {
-			promises.push(fetchNextPageMessages());
+		if (hasNextPage) {
+			await fetchNextPage();
 		}
-
-		if (hasNextPageEvents) {
-			promises.push(fetchNextPageEvents());
-		}
-
-		await Promise.all(promises);
 	};
 
 	if (!visitor) {
@@ -183,12 +170,11 @@ export function Conversation({
 			<Page className="relative py-0 pr-0.5 pl-0">
 				<div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-14 bg-gradient-to-b from-co-background/50 to-transparent dark:from-co-background-100/80" />
 				<ConversationHeader />
-				<MessagesList
+				<ConversationTimelineList
 					availableAIAgents={[]}
 					conversationId={conversationId}
 					currentUserId={currentUserId}
-					events={events}
-					messages={messages}
+					items={items as TimelineItem[]}
 					onFetchMoreIfNeeded={onFetchMoreIfNeeded}
 					seenData={seenData}
 					teamMembers={members}

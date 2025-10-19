@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import {
 	applyConversationTypingEvent,
-	clearTypingFromMessage,
+	clearTypingFromTimelineItem,
 	clearTypingState,
 	createTypingStore,
 	setTypingState,
@@ -156,7 +156,7 @@ describe("typing store", () => {
 		expect(entries[0]?.preview).toBe("Hi");
 	});
 
-	it("clears typing when a message is created", () => {
+	it("clears typing when a timeline item is created", () => {
 		setTypingState(store, {
 			conversationId: "conv-1",
 			actorType: "visitor",
@@ -164,35 +164,32 @@ describe("typing store", () => {
 			isTyping: true,
 		});
 
-		const messageEvent: RealtimeEvent<"messageCreated"> = {
-			type: "messageCreated",
+		const timelineItemEvent: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
 			payload: {
 				conversationId: "conv-1",
 				websiteId: "site-1",
 				organizationId: "org-1",
 				userId: null,
 				visitorId: "visitor-1",
-				message: {
-					id: "msg-1",
-					bodyMd: "hello",
-					type: "text",
+				item: {
+					id: "item-1",
+					conversationId: "conv-1",
+					organizationId: "org-1",
+					type: "message",
+					text: "hello",
+					parts: [{ type: "text", text: "hello" }],
 					userId: null,
 					aiAgentId: null,
 					visitorId: "visitor-1",
-					conversationId: "conv-1",
-					organizationId: "org-1",
-					websiteId: "site-1",
-					parentMessageId: null,
-					modelUsed: null,
 					visibility: "public",
 					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
 					deletedAt: null,
 				},
 			},
 		};
 
-		clearTypingFromMessage(store, messageEvent);
+		clearTypingFromTimelineItem(store, timelineItemEvent);
 		expect(getEntries("conv-1")).toHaveLength(0);
 	});
 });

@@ -1,5 +1,5 @@
 import type { CossistantClient } from "@cossistant/core";
-import type { Message } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useCallback, useEffect } from "react";
 import {
 	type UseMultimodalInputOptions,
@@ -16,14 +16,14 @@ export type UseMessageComposerOptions = {
 
 	/**
 	 * Current conversation ID. Can be null if no real conversation exists yet.
-	 * Pass null when showing default messages before user sends first message.
+	 * Pass null when showing default timeline items before user sends first message.
 	 */
 	conversationId: string | null;
 
 	/**
-	 * Default messages to include when creating a new conversation.
+	 * Default timeline items to include when creating a new conversation.
 	 */
-	defaultMessages?: Message[];
+	defaultTimelineItems?: TimelineItem[];
 
 	/**
 	 * Visitor ID to associate with messages.
@@ -109,7 +109,7 @@ export function useMessageComposer(
 	const {
 		client,
 		conversationId,
-		defaultMessages = [],
+		defaultTimelineItems = [],
 		visitorId,
 		onMessageSent,
 		onError,
@@ -137,7 +137,7 @@ export function useMessageComposer(
 				conversationId,
 				message: messageText,
 				files,
-				defaultMessages,
+				defaultTimelineItems,
 				visitorId,
 				onSuccess: (resultConversationId, messageId) => {
 					onMessageSent?.(resultConversationId, messageId);
@@ -152,11 +152,12 @@ export function useMessageComposer(
 	});
 
 	// Clean up typing indicator on unmount
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			forceStopTyping();
-		};
-	}, [forceStopTyping]);
+		},
+		[forceStopTyping]
+	);
 
 	// Wrap setMessage to also report typing
 	const setMessage = useCallback(

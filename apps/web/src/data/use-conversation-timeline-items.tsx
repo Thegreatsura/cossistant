@@ -2,9 +2,8 @@
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc/client";
-import { createConversationMessagesInfiniteQueryKey } from "./conversation-message-cache";
 
-type UseConversationHeadersOptions = {
+type UseConversationTimelineItemsOptions = {
 	limit?: number;
 	enabled?: boolean;
 };
@@ -14,30 +13,31 @@ const DEFAULT_PAGE_LIMIT = 50;
 // 5 minutes
 const STALE_TIME = 300_000;
 
-export function useConversationMessages({
+export function useConversationTimelineItems({
 	websiteSlug,
 	conversationId,
 	options,
 }: {
 	websiteSlug: string;
 	conversationId: string;
-	options?: UseConversationHeadersOptions;
+	options?: UseConversationTimelineItemsOptions;
 }) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	const baseQueryKey = trpc.conversation.getConversationMessages.queryOptions({
-		websiteSlug,
-		conversationId,
-		// ensure cache key differentiates by page size
-		limit: options?.limit ?? 50,
-	}).queryKey;
+	const baseQueryKey =
+		trpc.conversation.getConversationTimelineItems.queryOptions({
+			websiteSlug,
+			conversationId,
+			// ensure cache key differentiates by page size
+			limit: options?.limit ?? DEFAULT_PAGE_LIMIT,
+		}).queryKey;
 
 	const query = useInfiniteQuery({
-		queryKey: createConversationMessagesInfiniteQueryKey(baseQueryKey),
+		queryKey: [...baseQueryKey, { type: "infinite" }],
 		queryFn: async ({ pageParam }) => {
 			const response = await queryClient.fetchQuery(
-				trpc.conversation.getConversationMessages.queryOptions({
+				trpc.conversation.getConversationTimelineItems.queryOptions({
 					websiteSlug,
 					conversationId,
 					limit: options?.limit ?? DEFAULT_PAGE_LIMIT,
@@ -53,7 +53,7 @@ export function useConversationMessages({
 		staleTime: STALE_TIME,
 	});
 
-	const messages =
+	const items =
 		query.data?.pages
 			.flatMap((page) => page.items)
 			.sort(
@@ -62,7 +62,7 @@ export function useConversationMessages({
 			) ?? [];
 
 	return {
-		messages,
+		items,
 		isLoading: query.isLoading,
 		isFetching: query.isFetching,
 		isFetchingNextPage: query.isFetchingNextPage,

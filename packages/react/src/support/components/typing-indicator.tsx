@@ -17,15 +17,13 @@ export type TypingIndicatorProps = React.HTMLAttributes<HTMLDivElement> & {
 	withAvatars?: boolean;
 };
 
-export const BouncingDots = () => {
-	return (
-		<div className="flex gap-1">
-			<span className="dot-bounce-1 size-1 rounded-full bg-co-primary" />
-			<span className="dot-bounce-2 size-1 rounded-full bg-co-primary" />
-			<span className="dot-bounce-3 size-1 rounded-full bg-co-primary" />
-		</div>
-	);
-};
+export const BouncingDots = () => (
+	<div className="flex gap-1">
+		<span className="dot-bounce-1 size-1 rounded-full bg-co-primary" />
+		<span className="dot-bounce-2 size-1 rounded-full bg-co-primary" />
+		<span className="dot-bounce-3 size-1 rounded-full bg-co-primary" />
+	</div>
+);
 
 export const TypingIndicator = React.forwardRef<
 	HTMLDivElement,

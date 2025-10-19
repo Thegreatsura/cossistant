@@ -5,15 +5,15 @@
     "build": "turbo run build",
     "dev": "docker compose up -d && turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "format:ultracite": "ultracite format",
+    "check": "npx ultracite@latest check",
+    "fix": "npx ultracite@latest fix",
     "check-types": "turbo run check-types",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.4",
+    "@biomejs/biome": "2.2.6",
     "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
@@ -22,7 +22,7 @@
     "tsx": "4.20.5",
     "turbo": "^2.5.6",
     "typescript": "5.9.2",
-    "ultracite": "^5.3.4"
+    "ultracite": "5.6.4"
   },
   "engines": {
     "node": ">=18"

@@ -2,7 +2,7 @@ import { env } from "@api/env";
 import { updateContactSubscriptionStatus } from "@api/lib/resend";
 import { emailSchema } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
-import z from "zod";
+import { z } from "zod";
 import { createTRPCRouter, rateLimitedPublicProcedure } from "../init";
 
 export const resendRouter = createTRPCRouter({

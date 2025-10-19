@@ -1,10 +1,8 @@
 import type { IdentifyContactResponse } from "@cossistant/types/api/contact";
 import type {
-        GetConversationEventsRequest,
-        GetConversationEventsResponse,
-        CreateConversationRequestBody,
-        CreateConversationResponseBody,
-        GetConversationRequest,
+	CreateConversationRequestBody,
+	CreateConversationResponseBody,
+	GetConversationRequest,
 	GetConversationResponse,
 	GetConversationSeenDataResponse,
 	ListConversationsRequest,
@@ -15,11 +13,11 @@ import type {
 	SetConversationTypingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
-	GetMessagesRequest,
-	GetMessagesResponse,
-	SendMessageRequest,
-	SendMessageResponse,
-} from "@cossistant/types/api/message";
+	GetConversationTimelineItemsRequest,
+	GetConversationTimelineItemsResponse,
+	SendTimelineItemRequest,
+	SendTimelineItemResponse,
+} from "@cossistant/types/api/timeline-item";
 import {
 	CossistantAPIError,
 	type CossistantConfig,
@@ -333,7 +331,7 @@ export class CossistantRestClient {
 		const body: CreateConversationRequestBody = {
 			conversationId,
 			visitorId,
-			defaultMessages: params.defaultMessages || [],
+			defaultTimelineItems: params.defaultTimelineItems || [],
 			channel: params.channel || "widget",
 		};
 
@@ -358,9 +356,9 @@ export class CossistantRestClient {
 				...response.conversation,
 				createdAt: response.conversation.createdAt,
 				updatedAt: response.conversation.updatedAt,
-				lastMessage: response.conversation.lastMessage,
+				lastTimelineItem: response.conversation.lastTimelineItem,
 			},
-			initialMessages: response.initialMessages,
+			initialTimelineItems: response.initialTimelineItems,
 		};
 	}
 
@@ -446,7 +444,7 @@ export class CossistantRestClient {
 				...conv,
 				createdAt: conv.createdAt,
 				updatedAt: conv.updatedAt,
-				lastMessage: conv.lastMessage,
+				lastTimelineItem: conv.lastTimelineItem,
 			})),
 			pagination: response.pagination,
 		};
@@ -477,7 +475,7 @@ export class CossistantRestClient {
 				...response.conversation,
 				createdAt: response.conversation.createdAt,
 				updatedAt: response.conversation.updatedAt,
-				lastMessage: response.conversation.lastMessage,
+				lastTimelineItem: response.conversation.lastTimelineItem,
 			},
 		};
 	}
@@ -542,12 +540,12 @@ export class CossistantRestClient {
 		};
 	}
 
-        async setConversationTyping(params: {
-                conversationId: string;
-                isTyping: boolean;
-                visitorPreview?: string | null;
-                visitorId?: string;
-        }): Promise<SetConversationTypingResponseBody> {
+	async setConversationTyping(params: {
+		conversationId: string;
+		isTyping: boolean;
+		visitorPreview?: string | null;
+		visitorId?: string;
+	}): Promise<SetConversationTypingResponseBody> {
 		const storedVisitorId = this.websiteId
 			? getVisitorId(this.websiteId)
 			: undefined;
@@ -583,58 +581,45 @@ export class CossistantRestClient {
 			}
 		);
 
-                return {
-                        conversationId: response.conversationId,
-                        isTyping: response.isTyping,
-                        visitorPreview: response.visitorPreview,
-                        sentAt: response.sentAt,
-                };
-        }
+		return {
+			conversationId: response.conversationId,
+			isTyping: response.isTyping,
+			visitorPreview: response.visitorPreview,
+			sentAt: response.sentAt,
+		};
+	}
 
-        async getConversationEvents(
-                params: GetConversationEventsRequest
-        ): Promise<GetConversationEventsResponse> {
-                const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
+	async sendMessage(
+		params: SendTimelineItemRequest
+	): Promise<SendTimelineItemResponse> {
+		// Get visitor ID from storage if we have the website ID
+		const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
 
-                const queryParams = new URLSearchParams();
-                queryParams.set("conversationId", params.conversationId);
+		// Add visitor ID header if available
+		const headers: Record<string, string> = {};
+		if (visitorId) {
+			headers["X-Visitor-Id"] = visitorId;
+		}
 
-                if (params.limit) {
-                        queryParams.set("limit", params.limit.toString());
-                }
+		const response = await this.request<SendTimelineItemResponse>("/messages", {
+			method: "POST",
+			body: JSON.stringify(params),
+			headers,
+		});
 
-                if (params.cursor) {
-                        queryParams.set("cursor", params.cursor);
-                }
+		return {
+			item: response.item,
+		};
+	}
 
-                const headers: Record<string, string> = {};
-                if (visitorId) {
-                        headers["X-Visitor-Id"] = visitorId;
-                }
-
-                const response = await this.request<GetConversationEventsResponse>(
-                        `/conversation-events?${queryParams.toString()}`,
-                        {
-                                headers,
-                        }
-                );
-
-                return {
-                        events: response.events,
-                        nextCursor: response.nextCursor,
-                        hasNextPage: response.hasNextPage,
-                };
-        }
-
-        async getConversationMessages(
-                params: GetMessagesRequest
-        ): Promise<GetMessagesResponse> {
+	async getConversationTimelineItems(
+		params: GetConversationTimelineItemsRequest & { conversationId: string }
+	): Promise<GetConversationTimelineItemsResponse> {
 		// Get visitor ID from storage if we have the website ID
 		const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
 
 		// Create query parameters
 		const queryParams = new URLSearchParams();
-		queryParams.set("conversationId", params.conversationId);
 
 		if (params.limit) {
 			queryParams.set("limit", params.limit.toString());
@@ -650,38 +635,17 @@ export class CossistantRestClient {
 			headers["X-Visitor-Id"] = visitorId;
 		}
 
-		const response = await this.request<GetMessagesResponse>(
-			`/messages?${queryParams.toString()}`,
+		const response = await this.request<GetConversationTimelineItemsResponse>(
+			`/conversations/${params.conversationId}/timeline?${queryParams.toString()}`,
 			{
 				headers,
 			}
 		);
 
 		return {
-			messages: response.messages,
+			items: response.items,
 			nextCursor: response.nextCursor,
 			hasNextPage: response.hasNextPage,
-		};
-	}
-
-	async sendMessage(params: SendMessageRequest): Promise<SendMessageResponse> {
-		// Get visitor ID from storage if we have the website ID
-		const visitorId = this.websiteId ? getVisitorId(this.websiteId) : undefined;
-
-		// Add visitor ID header if available
-		const headers: Record<string, string> = {};
-		if (visitorId) {
-			headers["X-Visitor-Id"] = visitorId;
-		}
-
-		const response = await this.request<SendMessageResponse>("/messages", {
-			method: "POST",
-			body: JSON.stringify(params),
-			headers,
-		});
-
-		return {
-			message: response.message,
 		};
 	}
 }

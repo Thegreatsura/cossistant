@@ -164,15 +164,16 @@ export function useAgentTypingReporter({
 		void sendTyping(false);
 	}, [clearKeepAlive, clearStopTypingTimeout, sendTyping]);
 
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			if (typingActiveRef.current) {
 				void sendTyping(false);
 			}
 			clearKeepAlive();
 			clearStopTypingTimeout();
-		};
-	}, [clearKeepAlive, clearStopTypingTimeout, sendTyping]);
+		},
+		[clearKeepAlive, clearStopTypingTimeout, sendTyping]
+	);
 
 	return {
 		handleInputChange,

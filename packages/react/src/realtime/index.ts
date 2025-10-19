@@ -12,7 +12,7 @@ export {
 export { SupportRealtimeProvider } from "./support-provider";
 export {
 	applyConversationTypingEvent,
-	clearTypingFromMessage,
+	clearTypingFromTimelineItem,
 	clearTypingState,
 	setTypingState,
 } from "./typing-store";

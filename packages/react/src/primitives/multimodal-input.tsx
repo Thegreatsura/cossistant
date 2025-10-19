@@ -78,7 +78,6 @@ export const MultimodalInput = (() => {
 			};
 
 			// Auto-resize
-			// biome-ignore lint/correctness/useExhaustiveDependencies: works well here
 			React.useLayoutEffect(() => {
 				const el = innerRef.current;
 				if (!el) {

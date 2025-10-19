@@ -74,38 +74,35 @@ describe("routeEvent", () => {
 	});
 });
 
-describe("messageCreated handler", () => {
+describe("timelineItemCreated handler", () => {
 	beforeEach(() => {
 		sendToWebsite.mockReset();
 		sendToVisitor.mockReset();
 		sendToConnection.mockReset();
 	});
 
-	it("forwards messages to dashboards and the matching visitor", async () => {
-		const event: RealtimeEvent<"messageCreated"> = {
-			type: "messageCreated",
+	it("forwards timeline items to dashboards and the matching visitor", async () => {
+		const event: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
 			payload: {
 				websiteId: "site-1",
 				organizationId: "org-1",
 				userId: "user-1",
 				visitorId: "visitor-1",
 				conversationId: "conv-1",
-				message: {
-					id: "msg-1",
-					bodyMd: "hello",
-					type: "text",
+				item: {
+					id: "item-1",
+					conversationId: "conv-1",
+					organizationId: "org-1",
+					type: "message",
+					text: "hello",
+					parts: [{ type: "text", text: "hello" }],
 					userId: "user-1",
 					aiAgentId: null,
 					visitorId: "visitor-1",
-					organizationId: "org-1",
-					websiteId: "site-1",
-					conversationId: "conv-1",
-					parentMessageId: null,
-					modelUsed: null,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-					deletedAt: null,
 					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
 				},
 			},
 		};
@@ -125,31 +122,28 @@ describe("messageCreated handler", () => {
 		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-1", event]);
 	});
 
-	it("falls back to context visitor when message has no visitorId", async () => {
-		const event: RealtimeEvent<"messageCreated"> = {
-			type: "messageCreated",
+	it("falls back to context visitor when timeline item has no visitorId", async () => {
+		const event: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
 			payload: {
 				websiteId: "site-ctx",
 				organizationId: "org-ctx",
 				userId: "user-2",
 				visitorId: "visitor-from-context",
 				conversationId: "conv-ctx",
-				message: {
-					id: "msg-ctx-1",
-					bodyMd: "from agent",
-					type: "text",
+				item: {
+					id: "item-ctx-1",
+					conversationId: "conv-ctx",
+					organizationId: "org-ctx",
+					type: "message",
+					text: "from agent",
+					parts: [{ type: "text", text: "from agent" }],
 					userId: "user-2",
 					aiAgentId: null,
 					visitorId: null,
-					organizationId: "org-ctx",
-					websiteId: "site-ctx",
-					conversationId: "conv-ctx",
-					parentMessageId: null,
-					modelUsed: null,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-					deletedAt: null,
 					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
 				},
 			},
 		};
@@ -284,32 +278,32 @@ describe("conversationEventCreated handler", () => {
 	});
 
 	it("broadcasts timeline events to dashboards and visitor", async () => {
-                const event: RealtimeEvent<"conversationEventCreated"> = {
-                        type: "conversationEventCreated",
-                        payload: {
-                                websiteId: "site-event",
-                                organizationId: "org-event",
-                                conversationId: "conv-event",
-                                userId: null,
-                                visitorId: null,
-                                aiAgentId: null,
-                                event: {
-                                        id: "evt-1",
-                                        conversationId: "conv-event",
-                                        organizationId: "org-event",
-                                        type: ConversationEventType.STATUS_CHANGED,
-                                        actorUserId: "user-1",
-                                        actorAiAgentId: null,
-                                        targetUserId: null,
-                                        targetAiAgentId: null,
-                                        message: null,
-                                        metadata: null,
-                                        createdAt: "2024-01-01T00:00:00.000Z",
-                                        updatedAt: "2024-01-01T00:00:00.000Z",
-                                        deletedAt: null,
-                                },
-                        },
-                };
+		const event: RealtimeEvent<"conversationEventCreated"> = {
+			type: "conversationEventCreated",
+			payload: {
+				websiteId: "site-event",
+				organizationId: "org-event",
+				conversationId: "conv-event",
+				userId: null,
+				visitorId: null,
+				aiAgentId: null,
+				event: {
+					id: "evt-1",
+					conversationId: "conv-event",
+					organizationId: "org-event",
+					type: ConversationEventType.STATUS_CHANGED,
+					actorUserId: "user-1",
+					actorAiAgentId: null,
+					targetUserId: null,
+					targetAiAgentId: null,
+					message: null,
+					metadata: null,
+					createdAt: "2024-01-01T00:00:00.000Z",
+					updatedAt: "2024-01-01T00:00:00.000Z",
+					deletedAt: null,
+				},
+			},
+		};
 
 		await routeEvent(event, {
 			connectionId: "conn-event",
@@ -380,7 +374,7 @@ describe("conversationCreated handler", () => {
 					deletedAt: null,
 					lastMessageAt: null,
 					lastSeenAt: null,
-					lastMessagePreview: null,
+					lastTimelineItem: null,
 					viewIds: [],
 					seenData: [],
 				},

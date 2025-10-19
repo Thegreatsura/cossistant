@@ -1,8 +1,7 @@
 import type { CossistantClient } from "@cossistant/core";
 import { generateMessageId } from "@cossistant/core";
-import { MessageType, MessageVisibility } from "@cossistant/types";
 import type { CreateConversationResponseBody } from "@cossistant/types/api/conversation";
-import type { Message } from "@cossistant/types/schemas";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useCallback, useState } from "react";
 
 import { useSupport } from "../provider";
@@ -11,7 +10,7 @@ export type SendMessageOptions = {
 	conversationId?: string | null;
 	message: string;
 	files?: File[];
-	defaultMessages?: Message[];
+	defaultTimelineItems?: TimelineItem[];
 	visitorId?: string;
 	onSuccess?: (conversationId: string, messageId: string) => void;
 	onError?: (error: Error) => void;
@@ -21,7 +20,7 @@ export type SendMessageResult = {
 	conversationId: string;
 	messageId: string;
 	conversation?: CreateConversationResponseBody["conversation"];
-	initialMessages?: CreateConversationResponseBody["initialMessages"];
+	initialTimelineItems?: CreateConversationResponseBody["initialTimelineItems"];
 };
 
 export type UseSendMessageResult = {
@@ -50,28 +49,27 @@ function toError(error: unknown): Error {
 	return new Error("Unknown error");
 }
 
-function buildMessagePayload(
+function buildTimelineItemPayload(
 	body: string,
 	conversationId: string,
 	visitorId?: string | null
-): Message {
+): TimelineItem {
 	const nowIso = new Date().toISOString();
 
 	return {
 		id: generateMessageId(),
-		bodyMd: body,
-		type: MessageType.TEXT,
+		conversationId,
+		organizationId: "", // Will be set by backend
+		type: "message" as const,
+		text: body,
+		parts: [{ type: "text" as const, text: body }],
+		visibility: "public" as const,
 		userId: null,
 		aiAgentId: null,
 		visitorId: visitorId ?? null,
-		conversationId,
 		createdAt: nowIso,
-		updatedAt: nowIso,
 		deletedAt: null,
-		parentMessageId: null,
-		modelUsed: null,
-		visibility: MessageVisibility.PUBLIC,
-	} satisfies Message;
+	} satisfies TimelineItem;
 }
 
 export function useSendMessage(
@@ -88,7 +86,7 @@ export function useSendMessage(
 			const {
 				conversationId: providedConversationId,
 				message,
-				defaultMessages = [],
+				defaultTimelineItems = [],
 				visitorId,
 				onSuccess,
 				onError,
@@ -106,22 +104,22 @@ export function useSendMessage(
 
 			try {
 				let conversationId = providedConversationId ?? undefined;
-				let preparedDefaultMessages = defaultMessages;
+				let preparedDefaultTimelineItems = defaultTimelineItems;
 				let initialConversation:
 					| CreateConversationResponseBody["conversation"]
 					| undefined;
 
 				if (!conversationId) {
 					const initiated = client.initiateConversation({
-						defaultMessages,
+						defaultTimelineItems,
 						visitorId: visitorId ?? undefined,
 					});
 					conversationId = initiated.conversationId;
-					preparedDefaultMessages = initiated.defaultMessages;
+					preparedDefaultTimelineItems = initiated.defaultTimelineItems;
 					initialConversation = initiated.conversation;
 				}
 
-				const messagePayload = buildMessagePayload(
+				const timelineItemPayload = buildTimelineItemPayload(
 					message,
 					conversationId,
 					visitorId ?? null
@@ -129,21 +127,37 @@ export function useSendMessage(
 
 				const response = await client.sendMessage({
 					conversationId,
-					message: messagePayload,
+					item: {
+						id: timelineItemPayload.id,
+						text: timelineItemPayload.text ?? "",
+						type: timelineItemPayload.type,
+						visibility: timelineItemPayload.visibility,
+						userId: timelineItemPayload.userId,
+						aiAgentId: timelineItemPayload.aiAgentId,
+						visitorId: timelineItemPayload.visitorId,
+						createdAt: timelineItemPayload.createdAt,
+						parts: timelineItemPayload.parts,
+					},
 					createIfPending: true,
 				});
 
+				const messageId = response.item.id;
+
+				if (!messageId) {
+					throw new Error("SendMessage response missing item.id");
+				}
+
 				const result: SendMessageResult = {
 					conversationId,
-					messageId: response.message.id,
+					messageId,
 				};
 
 				if ("conversation" in response && response.conversation) {
 					result.conversation = response.conversation;
-					result.initialMessages = response.initialMessages;
+					result.initialTimelineItems = response.initialTimelineItems;
 				} else if (initialConversation) {
 					result.conversation = initialConversation;
-					result.initialMessages = preparedDefaultMessages;
+					result.initialTimelineItems = preparedDefaultTimelineItems;
 				}
 
 				setIsPending(false);

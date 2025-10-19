@@ -34,23 +34,21 @@ export const mdxComponents = {
 			{...props}
 		/>
 	),
-	h2: ({ className, ...props }: React.ComponentProps<"h2">) => {
-		return (
-			<h2
-				className={cn(
-					"[&+p]:!mt-4 mt-12 scroll-m-28 font-heading font-medium text-2xl tracking-tight first:mt-0 lg:mt-20 *:[code]:text-2xl",
-					className
-				)}
-				id={props.children
-					?.toString()
-					.replace(/ /g, "-")
-					.replace(/'/g, "")
-					.replace(/\?/g, "")
-					.toLowerCase()}
-				{...props}
-			/>
-		);
-	},
+	h2: ({ className, ...props }: React.ComponentProps<"h2">) => (
+		<h2
+			className={cn(
+				"[&+p]:!mt-4 mt-12 scroll-m-28 font-heading font-medium text-2xl tracking-tight first:mt-0 lg:mt-20 *:[code]:text-2xl",
+				className
+			)}
+			id={props.children
+				?.toString()
+				.replace(/ /g, "-")
+				.replace(/'/g, "")
+				.replace(/\?/g, "")
+				.toLowerCase()}
+			{...props}
+		/>
+	),
 	h3: ({ className, ...props }: React.ComponentProps<"h3">) => (
 		<h3
 			className={cn(
@@ -162,30 +160,26 @@ export const mdxComponents = {
 			{...props}
 		/>
 	),
-	pre: ({ className, children, ...props }: React.ComponentProps<"pre">) => {
-		return (
-			<pre
-				className={cn(
-					"no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-slot=tabs]]:p-0 has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0",
-					className
-				)}
-				{...props}
-			>
-				{children}
-			</pre>
-		);
-	},
-	figure: ({ className, ...props }: React.ComponentProps<"figure">) => {
-		return (
-			<figure
-				className={cn(
-					"border border-primary/10 border-dashed bg-background-100/50 dark:bg-background-100",
-					className
-				)}
-				{...props}
-			/>
-		);
-	},
+	pre: ({ className, children, ...props }: React.ComponentProps<"pre">) => (
+		<pre
+			className={cn(
+				"no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-slot=tabs]]:p-0 has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0",
+				className
+			)}
+			{...props}
+		>
+			{children}
+		</pre>
+	),
+	figure: ({ className, ...props }: React.ComponentProps<"figure">) => (
+		<figure
+			className={cn(
+				"border border-primary/10 border-dashed bg-background-100/50 dark:bg-background-100",
+				className
+			)}
+			{...props}
+		/>
+	),
 	figcaption: ({
 		className,
 		children,
@@ -292,11 +286,9 @@ export const mdxComponents = {
 			{...props}
 		/>
 	),
-	Tabs: ({ className, ...props }: React.ComponentProps<typeof Tabs>) => {
-		return (
-			<Tabs className={cn("relative mt-6 w-full", className)} {...props} />
-		);
-	},
+	Tabs: ({ className, ...props }: React.ComponentProps<typeof Tabs>) => (
+		<Tabs className={cn("relative mt-6 w-full", className)} {...props} />
+	),
 	TabsList: ({
 		className,
 		...props

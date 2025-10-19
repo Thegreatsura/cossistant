@@ -1,48 +1,29 @@
-import { clearTypingFromMessage } from "@cossistant/react/realtime/typing-store";
-import type { MessageType, MessageVisibility } from "@cossistant/types";
+import { clearTypingFromTimelineItem } from "@cossistant/react/realtime/typing-store";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationHeader } from "@/data/conversation-header-cache";
 import {
-	type ConversationMessage,
-	upsertConversationMessageInCache,
+	type ConversationTimelineItem,
+	upsertConversationTimelineItemInCache,
 } from "@/data/conversation-message-cache";
 import type { DashboardRealtimeContext } from "../types";
 import { forEachConversationHeadersQuery } from "./utils/conversation-headers";
 
-type MessageCreatedEvent = RealtimeEvent<"messageCreated">;
+type TimelineItemCreatedEvent = RealtimeEvent<"timelineItemCreated">;
 
-type ConversationMessagesQueryInput = {
+type ConversationTimelineItemsQueryInput = {
 	conversationId?: string;
 	websiteSlug?: string;
 };
 
 type QueryKeyInput = {
-	input?: ConversationMessagesQueryInput;
+	input?: ConversationTimelineItemsQueryInput;
 	type?: string;
 };
 
-function toConversationMessage(
-	eventMessage: MessageCreatedEvent["payload"]["message"]
-): ConversationMessage {
-	return {
-		...eventMessage,
-		type: eventMessage.type as MessageType,
-		visibility: eventMessage.visibility as MessageVisibility,
-		createdAt: eventMessage.createdAt,
-		updatedAt: eventMessage.updatedAt,
-		deletedAt: eventMessage.deletedAt ? eventMessage.deletedAt : null,
-	};
-}
-
-function toHeaderLastMessage(
-	eventMessage: MessageCreatedEvent["payload"]["message"]
-): NonNullable<ConversationHeader["lastMessagePreview"]> {
-	return { ...eventMessage };
-}
-
 function extractQueryInput(
 	queryKey: readonly unknown[]
-): ConversationMessagesQueryInput | null {
+): ConversationTimelineItemsQueryInput | null {
 	if (queryKey.length < 2) {
 		return null;
 	}
@@ -74,22 +55,19 @@ export const handleMessageCreated = ({
 	event,
 	context,
 }: {
-	event: MessageCreatedEvent;
+	event: TimelineItemCreatedEvent;
 	context: DashboardRealtimeContext;
 }) => {
 	const { queryClient, website } = context;
 	const { payload } = event;
-	const { message } = payload;
-	const conversationMessage = toConversationMessage(message);
+	const { item } = payload;
 
-	// Clear typing state when a message is sent
-	clearTypingFromMessage(event);
+	// Clear typing state when a timeline item is created
+	clearTypingFromTimelineItem(event);
 
-	const headerMessage = toHeaderLastMessage(payload.message);
-
-	const queries = queryClient
-		.getQueryCache()
-		.findAll({ queryKey: [["conversation", "getConversationMessages"]] });
+	const queries = queryClient.getQueryCache().findAll({
+		queryKey: [["conversation", "getConversationTimelineItems"]],
+	});
 
 	for (const query of queries) {
 		const queryKey = query.queryKey as readonly unknown[];
@@ -111,11 +89,7 @@ export const handleMessageCreated = ({
 			continue;
 		}
 
-		upsertConversationMessageInCache(
-			queryClient,
-			queryKey,
-			conversationMessage
-		);
+		upsertConversationTimelineItemInCache(queryClient, queryKey, item);
 	}
 
 	const existingHeader =
@@ -146,8 +120,8 @@ export const handleMessageCreated = ({
 
 	context.queryNormalizer.setNormalizedData({
 		...existingHeader,
-		lastMessagePreview: headerMessage,
-		lastMessageAt: headerMessage.createdAt,
-		updatedAt: headerMessage.updatedAt,
+		lastTimelineItem: item as unknown as ConversationHeader["lastTimelineItem"],
+		lastMessageAt: item.createdAt,
+		updatedAt: item.createdAt,
 	});
 };

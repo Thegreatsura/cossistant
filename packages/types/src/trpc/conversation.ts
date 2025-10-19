@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { timelineItemSchema } from "../api/timeline-item";
 import { visitorProfileSchema } from "../api/visitor";
 import {
 	ConversationPriority,
 	ConversationSentiment,
 	ConversationStatus,
 } from "../enums";
-import { conversationSeenSchema, messageSchema } from "../schemas";
+import { conversationSeenSchema } from "../schemas";
 
 export const conversationStatusSchema = z.enum([
 	ConversationStatus.OPEN,
@@ -81,7 +82,7 @@ export const conversationHeaderSchema = z.object({
 	deletedAt: z.string().nullable(),
 	lastMessageAt: z.string().nullable(),
 	lastSeenAt: z.string().nullable(),
-	lastMessagePreview: messageSchema.nullable(),
+	lastTimelineItem: timelineItemSchema.nullable(),
 	viewIds: z.array(z.string()),
 	seenData: z.array(conversationSeenSchema),
 });

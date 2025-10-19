@@ -1,5 +1,5 @@
 import type { CossistantClient } from "@cossistant/core";
-import type { Message } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useRef, useState } from "react";
 import {
 	hydrateConversationSeen,
@@ -23,10 +23,10 @@ export type UseConversationAutoSeenOptions = {
 	visitorId?: string;
 
 	/**
-	 * The last message in the conversation.
+	 * The last timeline item in the conversation.
 	 * Used to determine if we should mark as seen.
 	 */
-	lastMessage: Message | null;
+	lastTimelineItem: TimelineItem | null;
 
 	/**
 	 * Whether to enable auto-seen tracking.
@@ -36,8 +36,8 @@ export type UseConversationAutoSeenOptions = {
 };
 
 /**
- * Automatically marks messages as seen when:
- * - A new message arrives from someone else
+ * Automatically marks timeline items as seen when:
+ * - A new timeline item arrives from someone else
  * - The page is visible/focused
  * - The visitor is the current user
  *
@@ -52,7 +52,7 @@ export type UseConversationAutoSeenOptions = {
  *   client,
  *   conversationId: realConversationId,
  *   visitorId: visitor?.id,
- *   lastMessage: messages[messages.length - 1] ?? null,
+ *   lastTimelineItem: items[items.length - 1] ?? null,
  * });
  * ```
  */
@@ -63,11 +63,11 @@ export function useConversationAutoSeen(
 		client,
 		conversationId,
 		visitorId,
-		lastMessage,
+		lastTimelineItem,
 		enabled = true,
 	} = options;
 
-	const lastSeenMessageIdRef = useRef<string | null>(null);
+	const lastSeenItemIdRef = useRef<string | null>(null);
 	const markSeenInFlightRef = useRef(false);
 	const [isPageVisible, setIsPageVisible] = useState(
 		typeof document !== "undefined" ? !document.hidden : true
@@ -90,9 +90,8 @@ export function useConversationAutoSeen(
 	}, []);
 
 	// Reset seen tracking when conversation changes
-	// biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally reset refs when conversationId changes
 	useEffect(() => {
-		lastSeenMessageIdRef.current = null;
+		lastSeenItemIdRef.current = null;
 		markSeenInFlightRef.current = false;
 	}, [conversationId]);
 
@@ -112,28 +111,28 @@ export function useConversationAutoSeen(
 		}
 	}, [enabled, client, conversationId]);
 
-	// Auto-mark messages as seen
+	// Auto-mark timeline items as seen
 	useEffect(() => {
 		const shouldMark =
 			enabled &&
 			client &&
 			conversationId &&
 			visitorId &&
-			lastMessage &&
+			lastTimelineItem &&
 			isPageVisible;
 
 		if (!shouldMark) {
 			return;
 		}
 
-		// Don't mark our own messages as seen via API (we already know we saw them)
-		if (lastMessage.visitorId === visitorId) {
-			lastSeenMessageIdRef.current = lastMessage.id;
+		// Don't mark our own timeline items as seen via API (we already know we saw them)
+		if (lastTimelineItem.visitorId === visitorId) {
+			lastSeenItemIdRef.current = lastTimelineItem.id || null;
 			return;
 		}
 
-		// Already marked this message
-		if (lastSeenMessageIdRef.current === lastMessage.id) {
+		// Already marked this item
+		if (lastSeenItemIdRef.current === lastTimelineItem.id) {
 			return;
 		}
 
@@ -147,7 +146,7 @@ export function useConversationAutoSeen(
 		client
 			.markConversationSeen({ conversationId })
 			.then((response) => {
-				lastSeenMessageIdRef.current = lastMessage.id;
+				lastSeenItemIdRef.current = lastTimelineItem.id || null;
 
 				// Optimistically update local seen store
 				upsertConversationSeen({
@@ -163,5 +162,12 @@ export function useConversationAutoSeen(
 			.finally(() => {
 				markSeenInFlightRef.current = false;
 			});
-	}, [enabled, client, conversationId, visitorId, lastMessage, isPageVisible]);
+	}, [
+		enabled,
+		client,
+		conversationId,
+		visitorId,
+		lastTimelineItem,
+		isPageVisible,
+	]);
 }

@@ -72,7 +72,6 @@ export function Globe({
 		}
 	};
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: ok
 	useEffect(() => {
 		const onResize = () => {
 			if (canvasRef.current) {

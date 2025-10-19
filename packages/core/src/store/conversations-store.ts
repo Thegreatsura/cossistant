@@ -27,44 +27,36 @@ function isSameDate(a: Date | string, b: Date | string): boolean {
 	return aTime === bTime;
 }
 
-function isSameMessage(
-	a: Conversation["lastMessage"],
-	b: Conversation["lastMessage"]
-): boolean {
-	if (a === b) {
-		return true;
-	}
-	if (!(a && b)) {
-		return !(a || b);
-	}
-	return (
-		a.id === b.id &&
-		a.bodyMd === b.bodyMd &&
-		a.type === b.type &&
-		a.userId === b.userId &&
-		a.aiAgentId === b.aiAgentId &&
-		a.parentMessageId === b.parentMessageId &&
-		a.modelUsed === b.modelUsed &&
-		a.visitorId === b.visitorId &&
-		a.conversationId === b.conversationId &&
-		a.visibility === b.visibility &&
-		isSameDate(a.createdAt, b.createdAt) &&
-		isSameDate(a.updatedAt, b.updatedAt) &&
-		((a.deletedAt === null && b.deletedAt === null) ||
-			(!!a.deletedAt && !!b.deletedAt && isSameDate(a.deletedAt, b.deletedAt)))
-	);
-}
-
 function isSameConversation(a: Conversation, b: Conversation): boolean {
-	return (
+	// Check basic fields
+	const basicMatch =
 		a.id === b.id &&
 		a.title === b.title &&
 		a.status === b.status &&
 		a.visitorId === b.visitorId &&
 		a.websiteId === b.websiteId &&
 		isSameDate(a.createdAt, b.createdAt) &&
-		isSameDate(a.updatedAt, b.updatedAt) &&
-		isSameMessage(a.lastMessage ?? undefined, b.lastMessage ?? undefined)
+		isSameDate(a.updatedAt, b.updatedAt);
+
+	if (!basicMatch) {
+		return false;
+	}
+
+	// Check lastTimelineItem - both undefined/null is a match
+	if (!(a.lastTimelineItem || b.lastTimelineItem)) {
+		return true;
+	}
+
+	// One has timeline item, one doesn't - not a match
+	if (!(a.lastTimelineItem && b.lastTimelineItem)) {
+		return false;
+	}
+
+	// Both have timeline items - compare them
+	return (
+		a.lastTimelineItem.id === b.lastTimelineItem.id &&
+		a.lastTimelineItem.text === b.lastTimelineItem.text &&
+		isSameDate(a.lastTimelineItem.createdAt, b.lastTimelineItem.createdAt)
 	);
 }
 
@@ -120,7 +112,6 @@ function mergeOrder(
 		changed = true;
 	}
 
-	// biome-ignore lint/nursery/noUnnecessaryConditions: ok
 	return changed ? [next, true] : [existing, false];
 }
 

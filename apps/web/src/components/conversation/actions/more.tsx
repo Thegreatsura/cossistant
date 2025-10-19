@@ -340,13 +340,14 @@ export function MoreConversationActions({
 		]
 	);
 
-	useEffect(() => {
-		return () => {
+	useEffect(
+		() => () => {
 			if (tooltipTimeoutRef.current) {
 				clearTimeout(tooltipTimeoutRef.current);
 			}
-		};
-	}, []);
+		},
+		[]
+	);
 
 	const handleCopyId = useCallback(async () => {
 		try {
@@ -535,15 +536,10 @@ export function MoreConversationActions({
 					<DropdownMenuItem
 						onSelect={(event) => {
 							event.preventDefault();
-							void runMenuAction(
-								async () => {
-									return handleCopyId();
-								},
-								{
-									successMessage: copyIdSuccessMessage,
-									errorMessage: copyIdErrorMessage,
-								}
-							);
+							void runMenuAction(async () => handleCopyId(), {
+								successMessage: copyIdSuccessMessage,
+								errorMessage: copyIdErrorMessage,
+							});
 						}}
 					>
 						Copy conversation ID
@@ -551,15 +547,10 @@ export function MoreConversationActions({
 					<DropdownMenuItem
 						onSelect={(event) => {
 							event.preventDefault();
-							void runMenuAction(
-								async () => {
-									return handleCopyUrl();
-								},
-								{
-									successMessage: copyUrlSuccessMessage,
-									errorMessage: copyUrlErrorMessage,
-								}
-							);
+							void runMenuAction(async () => handleCopyUrl(), {
+								successMessage: copyUrlSuccessMessage,
+								errorMessage: copyUrlErrorMessage,
+							});
 						}}
 					>
 						Copy conversation URL

@@ -1,10 +1,9 @@
-import {
-	type AvailableAIAgent,
-	type AvailableHumanAgent,
-	type ConversationEvent,
-	type Message as MessageType,
-	SenderType,
-} from "@cossistant/types";
+import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
+import { SenderType } from "@cossistant/types";
+import type {
+	TimelineItem,
+	TimelinePartEvent,
+} from "@cossistant/types/api/timeline-item";
 import { AnimatePresence } from "motion/react";
 import type React from "react";
 import { useMemo } from "react";
@@ -14,28 +13,39 @@ import {
 } from "../../hooks";
 import { useGroupedMessages } from "../../hooks/private/use-grouped-messages";
 import {
-	MessageListContainer,
-	MessageList as PrimitiveMessageList,
-} from "../../primitives/message-list";
+	ConversationTimelineContainer,
+	ConversationTimeline as PrimitiveConversationTimeline,
+} from "../../primitives/conversation-timeline";
 import { cn } from "../utils";
 import { ConversationEvent as ConversationEventComponent } from "./conversation-event";
-import { MessageGroup } from "./message-group";
+import { TimelineMessageGroup } from "./timeline-message-group";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
-export type MessageListProps = {
+// Helper to extract event part from timeline item
+function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
+	if (item.type !== "event") {
+		return null;
+	}
+
+	const eventPart = item.parts.find(
+		(part): part is TimelinePartEvent => part.type === "event"
+	);
+
+	return eventPart || null;
+}
+
+export type ConversationTimelineProps = {
 	conversationId: string;
-	messages: MessageType[];
-	events: ConversationEvent[];
+	items: TimelineItem[];
 	className?: string;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	currentVisitorId?: string;
 };
 
-export const MessageList: React.FC<MessageListProps> = ({
+export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 	conversationId,
-	messages,
-	events = [],
+	items: timelineItems,
 	className,
 	availableAIAgents = [],
 	availableHumanAgents = [],
@@ -47,8 +57,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 	});
 
 	const { items, getMessageSeenBy } = useGroupedMessages({
-		messages,
-		events,
+		items: timelineItems,
 		seenData,
 		currentViewerId: currentVisitorId,
 		viewerType: SenderType.VISITOR,
@@ -62,8 +71,8 @@ export const MessageList: React.FC<MessageListProps> = ({
 				continue;
 			}
 			if (item.type === "message_group") {
-				const firstMessage = item.messages[0];
-				if (firstMessage?.visitorId === currentVisitorId) {
+				const firstItem = item.items?.[0];
+				if (firstItem?.visitorId === currentVisitorId) {
 					return i;
 				}
 			}
@@ -71,32 +80,35 @@ export const MessageList: React.FC<MessageListProps> = ({
 		return -1;
 	}, [items, currentVisitorId]);
 
-	const typingParticipants = useMemo(() => {
-		return typingEntries
-			.map((entry): TypingParticipant | null => {
-				if (entry.actorType === "user") {
-					return {
-						id: entry.actorId,
-						type: "team_member" as const,
-					};
-				}
+	const typingParticipants = useMemo(
+		() =>
+			typingEntries
+				.map((entry): TypingParticipant | null => {
+					if (entry.actorType === "user") {
+						return {
+							id: entry.actorId,
+							type: "team_member" as const,
+						};
+					}
 
-				if (entry.actorType === "ai_agent") {
-					return {
-						id: entry.actorId,
-						type: "ai" as const,
-					};
-				}
+					if (entry.actorType === "ai_agent") {
+						return {
+							id: entry.actorId,
+							type: "ai" as const,
+						};
+					}
 
-				return null;
-			})
-			.filter(
-				(participant): participant is TypingParticipant => participant !== null
-			);
-	}, [typingEntries]);
+					return null;
+				})
+				.filter(
+					(participant): participant is TypingParticipant =>
+						participant !== null
+				),
+		[typingEntries]
+	);
 
 	return (
-		<PrimitiveMessageList
+		<PrimitiveConversationTimeline
 			autoScroll={true}
 			className={cn(
 				"overflow-y-auto scroll-smooth px-3 py-6",
@@ -104,20 +116,28 @@ export const MessageList: React.FC<MessageListProps> = ({
 				"h-full w-full",
 				className
 			)}
-			events={events}
-			id="message-list"
-			messages={messages}
+			id="conversation-timeline"
+			items={timelineItems}
 		>
-			<MessageListContainer className="flex min-h-full w-full flex-col gap-3">
+			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
 				<AnimatePresence initial={false} mode="popLayout">
 					{items.map((item, index) => {
-						if (item.type === "event") {
+						if (item.type === "timeline_event") {
+							// Extract event data from parts
+							const eventPart = extractEventPart(item.item);
+
+							// Only render if we have valid event data
+							if (!eventPart) {
+								return null;
+							}
+
 							return (
 								<ConversationEventComponent
 									availableAIAgents={availableAIAgents}
 									availableHumanAgents={availableHumanAgents}
-									event={item.event}
-									key={item.event.id}
+									createdAt={item.item.createdAt}
+									event={eventPart}
+									key={item.item.id || `timeline-event-${index}`}
 								/>
 							);
 						}
@@ -129,16 +149,16 @@ export const MessageList: React.FC<MessageListProps> = ({
 								? getMessageSeenBy(item.lastMessageId)
 								: [];
 
-						// Use first message ID as stable key
-						const groupKey = item.messages[0]?.id || `group-${index}`;
+						// Use first timeline item ID as stable key
+						const groupKey = item.items?.[0]?.id || `group-${index}`;
 
 						return (
-							<MessageGroup
+							<TimelineMessageGroup
 								availableAIAgents={availableAIAgents}
 								availableHumanAgents={availableHumanAgents}
 								currentVisitorId={currentVisitorId}
+								items={item.items || []}
 								key={groupKey}
-								messages={item.messages}
 								seenByIds={seenByIds}
 							/>
 						);
@@ -154,7 +174,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 						/>
 					) : null}
 				</div>
-			</MessageListContainer>
-		</PrimitiveMessageList>
+			</ConversationTimelineContainer>
+		</PrimitiveConversationTimeline>
 	);
 };

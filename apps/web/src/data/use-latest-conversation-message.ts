@@ -6,11 +6,11 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useTRPC } from "@/lib/trpc/client";
 import {
-	type ConversationMessagesPage,
-	createConversationMessagesInfiniteQueryKey,
+	type ConversationTimelineItemsPage,
+	createConversationTimelineItemsInfiniteQueryKey,
 } from "./conversation-message-cache";
 
-type LastMessagePreview = ConversationHeader["lastMessagePreview"];
+type LastTimelineItem = ConversationHeader["lastTimelineItem"];
 
 type UseLatestConversationMessageOptions = {
 	conversationId: string;
@@ -18,19 +18,19 @@ type UseLatestConversationMessageOptions = {
 	limit?: number;
 };
 
-function findLatestMessage(
-	data: InfiniteData<ConversationMessagesPage> | undefined
-): LastMessagePreview {
+function findLatestTimelineItem(
+	data: InfiniteData<ConversationTimelineItemsPage> | undefined
+): LastTimelineItem {
 	if (!data) {
 		return null;
 	}
 
 	for (let pageIndex = data.pages.length - 1; pageIndex >= 0; pageIndex--) {
 		const page = data.pages[pageIndex];
-		const lastMessage = page.items.at(-1);
+		const lastItem = page.items.at(-1);
 
-		if (lastMessage) {
-			return lastMessage as LastMessagePreview;
+		if (lastItem) {
+			return lastItem as LastTimelineItem;
 		}
 	}
 
@@ -41,13 +41,13 @@ export function useLatestConversationMessage({
 	conversationId,
 	websiteSlug,
 	limit = 50,
-}: UseLatestConversationMessageOptions): LastMessagePreview {
+}: UseLatestConversationMessageOptions): LastTimelineItem {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
 	const baseQueryKey = useMemo(
 		() =>
-			trpc.conversation.getConversationMessages.queryOptions({
+			trpc.conversation.getConversationTimelineItems.queryOptions({
 				websiteSlug,
 				conversationId,
 				limit,
@@ -56,17 +56,17 @@ export function useLatestConversationMessage({
 	);
 
 	const queryKey = useMemo(
-		() => createConversationMessagesInfiniteQueryKey(baseQueryKey),
+		() => createConversationTimelineItemsInfiniteQueryKey(baseQueryKey),
 		[baseQueryKey]
 	);
 
 	const getSnapshot = useCallback(() => {
 		const data =
-			queryClient.getQueryData<InfiniteData<ConversationMessagesPage>>(
+			queryClient.getQueryData<InfiniteData<ConversationTimelineItemsPage>>(
 				queryKey
 			);
 
-		return findLatestMessage(data);
+		return findLatestTimelineItem(data);
 	}, [queryClient, queryKey]);
 
 	const subscribe = useCallback(

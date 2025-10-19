@@ -27,19 +27,19 @@ export function ConversationHeader() {
 		return null;
 	}
 
-	const lastMessagePreview = selectedConversation?.lastMessagePreview ?? null;
-	const lastMessageCreatedAt = lastMessagePreview?.createdAt
-		? new Date(lastMessagePreview.createdAt)
+	const lastTimelineItem = selectedConversation?.lastTimelineItem ?? null;
+	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
+		? new Date(lastTimelineItem.createdAt)
 		: null;
 	const lastSeenAt = selectedConversation?.lastSeenAt
 		? new Date(selectedConversation.lastSeenAt)
 		: null;
 
 	const hasUnreadMessage = Boolean(
-		lastMessagePreview &&
-			lastMessagePreview.userId !== user.id &&
-			lastMessageCreatedAt &&
-			(!lastSeenAt || lastMessageCreatedAt > lastSeenAt)
+		lastTimelineItem &&
+			lastTimelineItem.userId !== user.id &&
+			lastTimelineItemCreatedAt &&
+			(!lastSeenAt || lastTimelineItemCreatedAt > lastSeenAt)
 	);
 
 	return (

@@ -1,26 +1,23 @@
 import type { RouterOutputs } from "@api/trpc/types";
-import { MessageGroupReadIndicator } from "@cossistant/next/primitives";
-import type {
-	AvailableAIAgent,
-	ConversationHeader,
-	Message,
-	MessageType,
-} from "@cossistant/types";
+import { TimelineItemGroupReadIndicator } from "@cossistant/next/primitives";
+import type { AvailableAIAgent } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
+import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 
-type Props = {
+type ReadIndicatorProps = {
 	lastReadMessageIds: Map<string, string> | undefined;
 	messageId: string;
 	currentUserId: string | undefined;
-	firstMessage: Message | undefined;
+	firstMessage: TimelineItem | undefined;
 	teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
 	availableAIAgents: AvailableAIAgent[];
 	visitor: ConversationHeader["visitor"];
-	messages: Message[];
+	messages: TimelineItem[];
 	isSentByViewer: boolean;
 };
 
@@ -34,14 +31,14 @@ export function ReadIndicator({
 	visitor,
 	messages,
 	isSentByViewer,
-}: Props) {
+}: ReadIndicatorProps) {
 	const visitorName = getVisitorNameWithFallback(visitor);
 
 	return (
-		<MessageGroupReadIndicator
+		<TimelineItemGroupReadIndicator
 			className="mt-1"
-			lastReadMessageIds={lastReadMessageIds}
-			messageId={messageId}
+			itemId={messageId}
+			lastReadItemIds={lastReadMessageIds}
 		>
 			{({ lastReaderIds }) => {
 				if (lastReaderIds.length === 0) {
@@ -81,7 +78,8 @@ export function ReadIndicator({
 						}
 
 						const _isVisitor =
-							visitor?.id === id || messages.some((m) => m.visitorId === id);
+							visitor?.id === id ||
+							messages.some((item) => item.visitorId === id);
 
 						if (_isVisitor) {
 							return {
@@ -155,6 +153,6 @@ export function ReadIndicator({
 					</div>
 				);
 			}}
-		</MessageGroupReadIndicator>
+		</TimelineItemGroupReadIndicator>
 	);
 }

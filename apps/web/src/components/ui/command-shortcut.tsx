@@ -3,25 +3,23 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const DeleteIcon = ({ className }: { className?: string }) => {
-	return (
-		<svg
-			className={className}
-			fill="none"
-			stroke="currentColor"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			strokeWidth="1.5"
-			viewBox="0 0 24 24"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<title>Delete</title>
-			<path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z" />
-			<path d="m12 9 6 6" />
-			<path d="m18 9-6 6" />
-		</svg>
-	);
-};
+const DeleteIcon = ({ className }: { className?: string }) => (
+	<svg
+		className={className}
+		fill="none"
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="1.5"
+		viewBox="0 0 24 24"
+		xmlns="http://www.w3.org/2000/svg"
+	>
+		<title>Delete</title>
+		<path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z" />
+		<path d="m12 9 6 6" />
+		<path d="m18 9-6 6" />
+	</svg>
+);
 
 export const CommandShortcut = ({
 	className,
@@ -51,22 +49,18 @@ export const CommandShortcut = ({
 		return child;
 	};
 
-	const renderShortcut = (_children: string[]) => {
-		return (
-			<>
-				{_children.map((child, index) => {
-					return (
-						<span key={child}>
-							<span>{renderChild(child)}</span>
-							{index < _children.length - 1 && (
-								<span className="mx-0.5 text-primary-foreground/80">+</span>
-							)}
-						</span>
-					);
-				})}
-			</>
-		);
-	};
+	const renderShortcut = (_children: string[]) => (
+		<>
+			{_children.map((child, index) => (
+				<span key={`${child}-${index}`}>
+					<span>{renderChild(child)}</span>
+					{index < _children.length - 1 && (
+						<span className="mx-0.5 text-primary-foreground/80">+</span>
+					)}
+				</span>
+			))}
+		</>
+	);
 
 	return (
 		<span

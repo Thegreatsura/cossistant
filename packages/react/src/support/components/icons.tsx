@@ -109,13 +109,11 @@ const iconRegistry: Record<IconName, Record<IconVariant, string>> = {
 	},
 };
 
-const getIconPath = (name: IconName, variant: IconVariant): string => {
-	return iconRegistry[name]?.[variant] || iconRegistry[name]?.default || "";
-};
+const getIconPath = (name: IconName, variant: IconVariant): string =>
+	iconRegistry[name]?.[variant] || iconRegistry[name]?.default || "";
 
-const getIconType = (variant: IconVariant) => {
-	return variant === "filled" ? "filled" : "stroked";
-};
+const getIconType = (variant: IconVariant) =>
+	variant === "filled" ? "filled" : "stroked";
 
 export const Icon: React.FC<IconProps> = ({
 	name,

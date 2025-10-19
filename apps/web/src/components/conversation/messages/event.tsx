@@ -1,7 +1,7 @@
 import type {
 	AvailableAIAgent,
 	AvailableHumanAgent,
-	ConversationEvent as ConversationEventType,
+	TimelinePartEvent,
 } from "@cossistant/types";
 import { motion } from "motion/react";
 import type React from "react";
@@ -9,13 +9,15 @@ import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 
 export type ConversationEventProps = {
-	event: ConversationEventType;
+	event: TimelinePartEvent;
+	createdAt?: string;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 };
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	event,
+	createdAt,
 	availableAIAgents,
 	availableHumanAgents,
 }) => {
@@ -34,7 +36,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 
 	// Convert event type to plain English
 	const getEventText = () => {
-		switch (event.type) {
+		switch (event.eventType) {
 			case "assigned":
 				return `${actorName} assigned the conversation`;
 			case "unassigned":
@@ -85,13 +87,13 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 					)}
 				</div>
 				<span className="px-2">{getEventText()}</span>
-				{event.createdAt && (
-					<span className="text-[10px]">
-						{new Date(event.createdAt).toLocaleTimeString([], {
+				{createdAt && (
+					<time className="text-[10px]">
+						{new Date(createdAt).toLocaleTimeString([], {
 							hour: "2-digit",
 							minute: "2-digit",
 						})}
-					</span>
+					</time>
 				)}
 			</div>
 		</motion.div>

@@ -86,39 +86,41 @@ export function useRealtime<
 		errorHandlerRef.current = onEventError;
 	}, [onEventError]);
 
-	useEffect(() => {
-		return connection.subscribe((event) => {
-			const handlers = handlersRef.current[event.type];
+	useEffect(
+		() =>
+			connection.subscribe((event) => {
+				const handlers = handlersRef.current[event.type];
 
-			if (!handlers) {
-				return;
-			}
+				if (!handlers) {
+					return;
+				}
 
-			if (
-				!shouldDeliverEvent(event, websiteIdRef.current, visitorIdRef.current)
-			) {
-				return;
-			}
+				if (
+					!shouldDeliverEvent(event, websiteIdRef.current, visitorIdRef.current)
+				) {
+					return;
+				}
 
-			const payload = Array.isArray(handlers) ? handlers : [handlers];
+				const payload = Array.isArray(handlers) ? handlers : [handlers];
 
-			for (const handler of payload) {
-				Promise.resolve(
-					handler(event.payload as never, {
-						event: event as never,
-						context: contextRef.current as TContext,
-					})
-				).catch((error) => {
-					const errorHandler = errorHandlerRef.current;
-					if (errorHandler) {
-						errorHandler(error, event);
-					} else {
-						console.error("[Realtime] Event handler threw an error", error);
-					}
-				});
-			}
-		});
-	}, [connection]);
+				for (const handler of payload) {
+					Promise.resolve(
+						handler(event.payload as never, {
+							event: event as never,
+							context: contextRef.current as TContext,
+						})
+					).catch((error) => {
+						const errorHandler = errorHandlerRef.current;
+						if (errorHandler) {
+							errorHandler(error, event);
+						} else {
+							console.error("[Realtime] Event handler threw an error", error);
+						}
+					});
+				}
+			}),
+		[connection]
+	);
 
 	return connection;
 }

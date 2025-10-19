@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { APIKeyType, WebsiteInstallationTarget } from "../enums";
-import { publicVisitorResponseSchema, visitorResponseSchema } from "./visitor";
+import { publicVisitorResponseSchema } from "./visitor";
 
 /**
  * Website creation request schema

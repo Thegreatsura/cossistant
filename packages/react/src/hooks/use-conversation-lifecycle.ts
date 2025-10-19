@@ -1,4 +1,3 @@
-import type { Message } from "@cossistant/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PENDING_CONVERSATION_ID } from "../utils/id";
 
@@ -36,11 +35,6 @@ export type UseConversationLifecycleOptions = {
 	 * Default: false (lazy creation)
 	 */
 	autoCreate?: boolean;
-
-	/**
-	 * Default messages to show before conversation is created.
-	 */
-	defaultMessages?: Message[];
 
 	/**
 	 * Visitor ID to associate with the conversation.
@@ -84,7 +78,6 @@ export type UseConversationLifecycleReturn = ConversationLifecycleState & {
  * ```tsx
  * const { conversationId, isPending, realConversationId } = useConversationLifecycle({
  *   initialConversationId: params.conversationId,
- *   defaultMessages: welcomeMessages,
  *   visitorId: visitor?.id,
  * });
  *
@@ -127,9 +120,10 @@ export function useConversationLifecycle(
 	const isPending = conversationId === PENDING_CONVERSATION_ID;
 	const realConversationId = isPending ? null : conversationId;
 
-	const isNewConversation = useCallback(() => {
-		return conversationId === PENDING_CONVERSATION_ID;
-	}, [conversationId]);
+	const isNewConversation = useCallback(
+		() => conversationId === PENDING_CONVERSATION_ID,
+		[conversationId]
+	);
 
 	return {
 		conversationId,

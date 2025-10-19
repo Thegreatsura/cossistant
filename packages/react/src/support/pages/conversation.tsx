@@ -1,12 +1,9 @@
-import type {
-	ConversationEvent,
-	Message as MessageType,
-} from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
 import { AvatarStack } from "../components/avatar-stack";
+import { ConversationTimelineList } from "../components/conversation-timeline";
 import { Header } from "../components/header";
-import { MessageList } from "../components/message-list";
 import { MultimodalInput } from "../components/multimodal-input";
 import { useSupportNavigation } from "../store";
 import { Text, useSupportText } from "../text";
@@ -23,14 +20,9 @@ type ConversationPageProps = {
 	initialMessage?: string;
 
 	/**
-	 * Optional messages to display (for optimistic updates or initial state).
+	 * Optional timeline items to display (for optimistic updates or initial state).
 	 */
-	messages?: MessageType[];
-
-	/**
-	 * Optional events to display.
-	 */
-	events?: ConversationEvent[];
+	items?: TimelineItem[];
 };
 
 /**
@@ -42,8 +34,7 @@ type ConversationPageProps = {
 export const ConversationPage = ({
 	conversationId: initialConversationId,
 	initialMessage,
-	messages: passedMessages = [],
-	events = [],
+	items: passedItems = [],
 }: ConversationPageProps) => {
 	const { website, availableAIAgents, availableHumanAgents, visitor } =
 		useSupport();
@@ -53,8 +44,7 @@ export const ConversationPage = ({
 	// Main conversation hook - handles all logic
 	const conversation = useConversationPage({
 		conversationId: initialConversationId,
-		messages: passedMessages,
-		events,
+		items: passedItems,
 		initialMessage,
 		onConversationIdChange: (newConversationId) => {
 			// Update navigation when conversation is created
@@ -95,14 +85,13 @@ export const ConversationPage = ({
 				</div>
 			</Header>
 
-			<MessageList
+			<ConversationTimelineList
 				availableAIAgents={availableAIAgents}
 				availableHumanAgents={availableHumanAgents}
 				className="min-h-0 flex-1 px-4"
 				conversationId={conversation.conversationId}
 				currentVisitorId={visitor?.id}
-				events={conversation.events}
-				messages={conversation.messages}
+				items={conversation.items}
 			/>
 
 			<div className="flex-shrink-0 p-1">

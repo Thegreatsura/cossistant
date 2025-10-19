@@ -379,11 +379,13 @@ visitorRouter.openapi(
 
 			const isCountryStringInBody = typeof body.country === "string";
 			const hasCountryInBody =
-				isCountryStringInBody && body.country.trim().length > 0;
+				isCountryStringInBody && body.country && body.country.trim().length > 0;
 
 			const isCountryCodeStringInBody = typeof body.countryCode === "string";
 			const hasCountryCodeInBody =
-				isCountryCodeStringInBody && body.countryCode.trim().length > 0;
+				isCountryCodeStringInBody &&
+				body.countryCode &&
+				body.countryCode.trim().length > 0;
 
 			const localeCandidate =
 				body.language ?? networkContext.language ?? preferredLocale;

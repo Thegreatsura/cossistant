@@ -1,7 +1,7 @@
 import {
 	applyConversationTypingEvent as applyEvent,
 	type ConversationTypingState,
-	clearTypingFromMessage as clearFromMessage,
+	clearTypingFromTimelineItem as clearFromTimelineItem,
 	clearTypingState as clearState,
 	createTypingStore,
 	setTypingState as setState,
@@ -85,6 +85,8 @@ export function applyConversationTypingEvent(
 	applyEvent(store, event, options);
 }
 
-export function clearTypingFromMessage(event: RealtimeEvent<"messageCreated">) {
-	clearFromMessage(store, event);
+export function clearTypingFromTimelineItem(
+	event: RealtimeEvent<"timelineItemCreated">
+) {
+	clearFromTimelineItem(store, event);
 }

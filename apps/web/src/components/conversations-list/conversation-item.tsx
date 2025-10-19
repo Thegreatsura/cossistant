@@ -32,10 +32,8 @@ export function ConversationItem({
 	focused = false,
 	setFocused,
 }: Props) {
-	const {
-		visitor: headerVisitor,
-		lastMessagePreview: headerLastMessagePreview,
-	} = header;
+	const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
+		header;
 	const { prefetchConversation } = usePrefetchConversationData();
 	const { user } = useUserSession();
 	const trpc = useTRPC();
@@ -86,29 +84,30 @@ export function ConversationItem({
 		return null;
 	}, [typingEntries, visitor]);
 
-	const cachedLastMessagePreview = useLatestConversationMessage({
+	const cachedLastTimelineItem = useLatestConversationMessage({
 		conversationId: header.id,
 		websiteSlug,
 	});
 
-	const lastMessagePreview =
-		cachedLastMessagePreview ?? headerLastMessagePreview ?? null;
+	const lastTimelineItem =
+		cachedLastTimelineItem ?? headerLastTimelineItem ?? null;
 
-	const lastMessageCreatedAt = lastMessagePreview?.createdAt
-		? new Date(lastMessagePreview.createdAt)
+	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
+		? new Date(lastTimelineItem.createdAt)
 		: null;
 
 	const headerLastSeenAt = header.lastSeenAt
 		? new Date(header.lastSeenAt)
 		: null;
 
-	const isLastMessageFromCurrentUser = lastMessagePreview?.userId === user.id;
+	const isLastTimelineItemFromCurrentUser =
+		lastTimelineItem?.userId === user.id;
 
 	const hasUnreadMessage = Boolean(
-		lastMessagePreview &&
-			!isLastMessageFromCurrentUser &&
-			lastMessageCreatedAt &&
-			(!headerLastSeenAt || lastMessageCreatedAt > headerLastSeenAt)
+		lastTimelineItem &&
+			!isLastTimelineItemFromCurrentUser &&
+			lastTimelineItemCreatedAt &&
+			(!headerLastSeenAt || lastTimelineItemCreatedAt > headerLastSeenAt)
 	);
 
 	const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
@@ -152,7 +151,7 @@ export function ConversationItem({
 					<BouncingDots />
 				) : (
 					<p className={cn("truncate pr-6 text-muted-foreground")}>
-						{lastMessagePreview?.bodyMd ?? ""}
+						{lastTimelineItem?.text ?? ""}
 					</p>
 				)}
 			</div>
@@ -164,9 +163,9 @@ export function ConversationItem({
 						status={header.status}
 						visitorId={header.visitorId}
 					/>
-				) : lastMessageCreatedAt ? (
+				) : lastTimelineItemCreatedAt ? (
 					<span className="shrink-0 pr-2 text-primary/40 text-xs">
-						{formatTimeAgo(lastMessageCreatedAt)}
+						{formatTimeAgo(lastTimelineItemCreatedAt)}
 					</span>
 				) : null}
 				<span

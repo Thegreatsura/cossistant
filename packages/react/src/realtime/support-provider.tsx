@@ -6,7 +6,7 @@ import { useSupport } from "../provider";
 import { applyConversationSeenEvent } from "./seen-store";
 import {
 	applyConversationTypingEvent,
-	clearTypingFromMessage,
+	clearTypingFromTimelineItem,
 } from "./typing-store";
 import { useRealtime } from "./use-realtime";
 
@@ -40,13 +40,13 @@ export function SupportRealtimeProvider({
 
 	const events = useMemo(
 		() => ({
-			messageCreated: (
+			timelineItemCreated: (
 				_data: unknown,
 				{
 					event,
 					context,
 				}: {
-					event: RealtimeEvent<"messageCreated">;
+					event: RealtimeEvent<"timelineItemCreated">;
 					context: SupportRealtimeContext;
 				}
 			) => {
@@ -57,8 +57,8 @@ export function SupportRealtimeProvider({
 					return;
 				}
 
-				// Clear typing state when a message is sent
-				clearTypingFromMessage(event);
+				// Clear typing state when a timeline item is created
+				clearTypingFromTimelineItem(event);
 
 				context.client.handleRealtimeEvent(event);
 			},
@@ -82,11 +82,11 @@ export function SupportRealtimeProvider({
 				// Update the seen store so the UI reflects who has seen messages
 				applyConversationSeenEvent(event);
 			},
-                        conversationTyping: (
-                                _data: unknown,
-                                {
-                                        event,
-                                        context,
+			conversationTyping: (
+				_data: unknown,
+				{
+					event,
+					context,
 				}: {
 					event: RealtimeEvent<"conversationTyping">;
 					context: SupportRealtimeContext;
@@ -100,35 +100,35 @@ export function SupportRealtimeProvider({
 				}
 
 				// Update typing store, but ignore events from the current visitor (their own typing)
-                                // Note: We use context.visitorId which is fresh from the context object
-                                applyConversationTypingEvent(event, {
-                                        ignoreVisitorId: context.visitorId,
-                                });
-                        },
-                        conversationEventCreated: (
-                                _data: unknown,
-                                {
-                                        event,
-                                        context,
-                                }: {
-                                        event: RealtimeEvent<"conversationEventCreated">;
-                                        context: SupportRealtimeContext;
-                                }
-                        ) => {
-                                if (
-                                        context.websiteId &&
-                                        event.payload.websiteId !== context.websiteId
-                                ) {
-                                        return;
-                                }
+				// Note: We use context.visitorId which is fresh from the context object
+				applyConversationTypingEvent(event, {
+					ignoreVisitorId: context.visitorId,
+				});
+			},
+			conversationEventCreated: (
+				_data: unknown,
+				{
+					event,
+					context,
+				}: {
+					event: RealtimeEvent<"conversationEventCreated">;
+					context: SupportRealtimeContext;
+				}
+			) => {
+				if (
+					context.websiteId &&
+					event.payload.websiteId !== context.websiteId
+				) {
+					return;
+				}
 
-                                context.client.handleRealtimeEvent(event);
-                        },
-                }),
-                // Empty dependencies is fine here since we use the context parameter
-                // which always has fresh data from the memoized realtimeContext
-                []
-        );
+				context.client.handleRealtimeEvent(event);
+			},
+		}),
+		// Empty dependencies is fine here since we use the context parameter
+		// which always has fresh data from the memoized realtimeContext
+		[]
+	);
 
 	useRealtime<SupportRealtimeContext>({
 		context: realtimeContext,

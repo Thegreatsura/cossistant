@@ -1,8 +1,9 @@
 import { type Conversation, ConversationStatus } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type React from "react";
 import { useMemo } from "react";
 import {
-	useConversationMessages,
+	useConversationTimelineItems,
 	useConversationTyping,
 	useSupport,
 } from "../..";
@@ -43,30 +44,30 @@ export type ConversationButtonLinkState = {
 	assignedAgent: ConversationButtonLinkAgent;
 };
 
-function getLastMessageInfo(
-	message: NonNullable<Conversation["lastMessage"]>,
+function getLastTimelineItemInfo(
+	item: NonNullable<Conversation["lastTimelineItem"]>,
 	availableHumanAgents: ReturnType<typeof useSupport>["availableHumanAgents"],
 	website: ReturnType<typeof useSupport>["website"],
 	text: ReturnType<typeof useSupportText>
 ) {
-	const isFromVisitor = message.visitorId !== null;
+	const isFromVisitor = item.visitorId !== null;
 
 	let senderName = text("common.fallbacks.unknown");
 	let senderImage: string | null = null;
 
 	if (isFromVisitor) {
 		senderName = text("common.fallbacks.you");
-	} else if (message.userId) {
-		const agent = availableHumanAgents.find((a) => a.id === message.userId);
+	} else if (item.userId) {
+		const agent = availableHumanAgents.find((a) => a.id === item.userId);
 		if (agent) {
 			senderName = agent.name;
 			senderImage = agent.image;
 		} else {
 			senderName = text("common.fallbacks.supportTeam");
 		}
-	} else if (message.aiAgentId && website?.availableAIAgents) {
+	} else if (item.aiAgentId && website?.availableAIAgents) {
 		const aiAgent = website.availableAIAgents.find(
-			(a) => a.id === message.aiAgentId
+			(a) => a.id === item.aiAgentId
 		);
 		if (aiAgent) {
 			senderName = aiAgent.name;
@@ -79,8 +80,8 @@ function getLastMessageInfo(
 	}
 
 	return {
-		content: message.bodyMd,
-		time: formatTimeAgo(message.createdAt),
+		content: item.text || "",
+		time: formatTimeAgo(item.createdAt),
 		isFromVisitor,
 		senderName,
 		senderImage,
@@ -94,7 +95,7 @@ export function ConversationButtonLink({
 }: ConversationButtonLinkProps) {
 	const { availableHumanAgents, availableAIAgents, website, visitor } =
 		useSupport();
-	const { messages } = useConversationMessages(conversation.id);
+	const { items } = useConversationTimelineItems(conversation.id);
 	const text = useSupportText();
 	const typingEntries = useConversationTyping(conversation.id, {
 		excludeVisitorId: visitor?.id ?? null,
@@ -125,45 +126,50 @@ export function ConversationButtonLink({
 		return { name };
 	}, [typingEntries, availableHumanAgents, availableAIAgents, text]);
 
-	// Process the last message (memoized to avoid expensive recomputation)
+	// Process the last timeline item (memoized to avoid expensive recomputation)
 	const lastMessage = useMemo(() => {
-		const cachedLastMessage =
+		const cachedLastTimelineItem =
 			// biome-ignore lint/style/useAtIndex: ok here
-			messages.length > 0 ? messages[messages.length - 1] : null;
+			items.length > 0 ? items[items.length - 1] : null;
 
-		const messageToDisplay = cachedLastMessage || conversation.lastMessage;
+		const timelineItemToDisplay =
+			cachedLastTimelineItem || conversation.lastTimelineItem;
 
-		return messageToDisplay
-			? getLastMessageInfo(
-					messageToDisplay,
+		return timelineItemToDisplay
+			? getLastTimelineItemInfo(
+					timelineItemToDisplay,
 					availableHumanAgents,
 					website,
 					text
 				)
 			: null;
-	}, [messages, conversation.lastMessage, availableHumanAgents, website, text]);
+	}, [
+		items,
+		conversation.lastTimelineItem,
+		availableHumanAgents,
+		website,
+		text,
+	]);
 
 	const assignedAgent = useMemo<ConversationButtonLinkAgent>(() => {
 		const supportFallbackName = text("common.fallbacks.supportTeam");
 		const aiFallbackName = text("common.fallbacks.aiAssistant");
 
-		const knownMessages = messages.slice();
+		const knownItems = items.slice();
 		if (
-			conversation.lastMessage &&
-			!knownMessages.some(
-				(message) => message.id === conversation.lastMessage?.id
-			)
+			conversation.lastTimelineItem &&
+			!knownItems.some((item) => item.id === conversation.lastTimelineItem?.id)
 		) {
-			knownMessages.push(conversation.lastMessage);
+			knownItems.push(conversation.lastTimelineItem);
 		}
 
-		const lastAgentMessage = [...knownMessages]
+		const lastAgentItem = [...knownItems]
 			.reverse()
-			.find((message) => message.userId !== null || message.aiAgentId !== null);
+			.find((item) => item.userId !== null || item.aiAgentId !== null);
 
-		if (lastAgentMessage?.userId) {
+		if (lastAgentItem?.userId) {
 			const human = availableHumanAgents.find(
-				(agent) => agent.id === lastAgentMessage.userId
+				(agent) => agent.id === lastAgentItem.userId
 			);
 
 			if (human) {
@@ -181,9 +187,9 @@ export function ConversationButtonLink({
 			} satisfies ConversationButtonLinkAgent;
 		}
 
-		if (lastAgentMessage?.aiAgentId) {
+		if (lastAgentItem?.aiAgentId) {
 			const ai = availableAIAgents.find(
-				(agent) => agent.id === lastAgentMessage.aiAgentId
+				(agent) => agent.id === lastAgentItem.aiAgentId
 			);
 
 			if (ai) {
@@ -225,8 +231,8 @@ export function ConversationButtonLink({
 			image: null,
 		} satisfies ConversationButtonLinkAgent;
 	}, [
-		messages,
-		conversation.lastMessage,
+		items,
+		conversation.lastTimelineItem,
 		availableHumanAgents,
 		availableAIAgents,
 		text,

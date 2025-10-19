@@ -1,12 +1,12 @@
 import {
 	applyConversationTypingEvent,
-	clearTypingFromMessage,
+	clearTypingFromTimelineItem,
 } from "@cossistant/react/realtime/typing-store";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { DashboardRealtimeContext } from "../types";
 
 type ConversationTypingEvent = RealtimeEvent<"conversationTyping">;
-type MessageCreatedEvent = RealtimeEvent<"messageCreated">;
+type TimelineItemCreatedEvent = RealtimeEvent<"timelineItemCreated">;
 
 export function handleConversationTyping({
 	event,
@@ -25,7 +25,9 @@ export function handleConversationTyping({
 	});
 }
 
-export function handleMessageCreatedTypingClear(event: MessageCreatedEvent) {
-	// Clear typing state when a message is sent
-	clearTypingFromMessage(event);
+export function handleTimelineItemCreatedTypingClear(
+	event: TimelineItemCreatedEvent
+) {
+	// Clear typing state when a timeline item is created
+	clearTypingFromTimelineItem(event);
 }

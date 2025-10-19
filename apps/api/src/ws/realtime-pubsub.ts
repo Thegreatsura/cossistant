@@ -275,7 +275,6 @@ async function runConsumerLoop(): Promise<void> {
 		return;
 	}
 
-	// biome-ignore lint/nursery/noUnnecessaryConditions: ok for usecase
 	if (consumerRunning) {
 		return;
 	}

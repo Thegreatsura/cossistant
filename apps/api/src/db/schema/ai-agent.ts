@@ -15,7 +15,7 @@ import {
 import { ulidPrimaryKey, ulidReference } from "../../utils/db/ids";
 import { isoTimestamp as timestamp } from "../../utils/db/timestamp";
 import { organization } from "./auth";
-import { message } from "./conversation";
+import { conversationTimelineItem } from "./conversation";
 import { website } from "./website";
 
 export const aiAgent = pgTable(
@@ -66,7 +66,7 @@ export const aiAgentRelations = relations(aiAgent, ({ one, many }) => ({
 		fields: [aiAgent.websiteId],
 		references: [website.id],
 	}),
-	messages: many(message),
+	conversationTimelineItems: many(conversationTimelineItem),
 }));
 
 export type AiAgentSelect = InferSelectModel<typeof aiAgent>;

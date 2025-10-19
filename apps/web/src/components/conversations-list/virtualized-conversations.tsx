@@ -27,18 +27,16 @@ const VirtualConversationItem = memo(
 		websiteSlug: string;
 		focused: boolean;
 		onMouseEnter: () => void;
-	}) => {
-		return (
-			<ConversationItem
-				focused={focused}
-				header={conversation}
-				href={href}
-				key={conversation.id}
-				setFocused={onMouseEnter}
-				websiteSlug={websiteSlug}
-			/>
-		);
-	}
+	}) => (
+		<ConversationItem
+			focused={focused}
+			header={conversation}
+			href={href}
+			key={conversation.id}
+			setFocused={onMouseEnter}
+			websiteSlug={websiteSlug}
+		/>
+	)
 );
 
 VirtualConversationItem.displayName = "VirtualConversationItem";

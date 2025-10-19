@@ -75,7 +75,7 @@ const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 		conversationCreated: { website: true, visitor: true },
 		conversationSeen: { website: true, visitor: true },
 		conversationTyping: { website: true, visitor: true },
-		messageCreated: { website: true, visitor: true },
+		timelineItemCreated: { website: true, visitor: true },
 		visitorIdentified: { website: true, visitor: true },
 	};
 
@@ -176,7 +176,7 @@ const eventHandlers: EventHandlers = {
 		const data = event.payload;
 	},
 
-	messageCreated: (_ctx, event) => {
+	timelineItemCreated: (_ctx, event) => {
 		const data = event.payload;
 	},
 

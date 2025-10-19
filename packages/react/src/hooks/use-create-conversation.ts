@@ -1,6 +1,7 @@
 import type { CossistantClient } from "@cossistant/core";
 import type { CreateConversationResponseBody } from "@cossistant/types/api/conversation";
-import type { Conversation, Message } from "@cossistant/types/schemas";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { Conversation } from "@cossistant/types/schemas";
 import { useCallback, useState } from "react";
 import { useSupport } from "../provider";
 
@@ -12,7 +13,7 @@ export type UseCreateConversationOptions = {
 
 export type CreateConversationVariables = {
 	conversationId?: string;
-	defaultMessages?: Message[];
+	defaultTimelineItems?: TimelineItem[];
 	visitorId?: string;
 	websiteId?: string | null;
 	status?: Conversation["status"];
@@ -64,13 +65,13 @@ export function useCreateConversation(
 					status,
 					title,
 					conversationId: providedConversationId,
-					defaultMessages = [],
+					defaultTimelineItems = [],
 					visitorId,
 				} = variables;
 
 				const initiated = client.initiateConversation({
 					conversationId: providedConversationId ?? undefined,
-					defaultMessages,
+					defaultTimelineItems,
 					visitorId: visitorId ?? undefined,
 					websiteId: websiteId ?? undefined,
 					status: status ?? undefined,
@@ -79,7 +80,7 @@ export function useCreateConversation(
 
 				const response: CreateConversationResponseBody = {
 					conversation: initiated.conversation,
-					initialMessages: initiated.defaultMessages,
+					initialTimelineItems: initiated.defaultTimelineItems,
 				};
 
 				setIsPending(false);

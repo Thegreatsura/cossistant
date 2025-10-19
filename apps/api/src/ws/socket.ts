@@ -1,6 +1,7 @@
 import { db } from "@api/db";
 import type { ApiKeyWithWebsiteAndOrganization } from "@api/db/queries/api-keys";
 import { normalizeSessionToken, resolveSession } from "@api/db/queries/session";
+import { getWebsiteByIdWithAccess } from "@api/db/queries/website";
 import { website as websiteTable } from "@api/db/schema";
 import {
 	AuthValidationError,
@@ -636,10 +637,10 @@ async function performApiKeyAuthentication(
 /**
  * Validate and apply website override to authentication result
  */
-function applyWebsiteOverride(
+async function applyWebsiteOverride(
 	result: WebSocketAuthSuccess,
 	websiteIdParam: string | undefined
-): void {
+): Promise<void> {
 	if (!websiteIdParam) {
 		return;
 	}
@@ -651,7 +652,29 @@ function applyWebsiteOverride(
 		if (boundId && boundId !== websiteIdParam) {
 			throw new AuthValidationError(403, "Website mismatch for API key");
 		}
+
+		result.websiteId = websiteIdParam;
+		if (!result.organizationId) {
+			result.organizationId = result.apiKey.organization.id;
+		}
+		return;
 	}
+
+	if (result.userId) {
+		const site = await getWebsiteByIdWithAccess(db, {
+			userId: result.userId,
+			websiteId: websiteIdParam,
+		});
+
+		if (!site) {
+			throw new AuthValidationError(403, "Website override not permitted");
+		}
+
+		result.websiteId = site.id;
+		result.organizationId = site.organizationId;
+		return;
+	}
+
 	result.websiteId = websiteIdParam;
 }
 
@@ -724,7 +747,7 @@ async function authenticateWebSocketConnection(
 		// Add visitorId and website override if authentication was successful
 		if (result) {
 			result.visitorId = visitorId;
-			applyWebsiteOverride(result, websiteIdParam);
+			await applyWebsiteOverride(result, websiteIdParam);
 			logAuthSuccess(result);
 		}
 

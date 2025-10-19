@@ -37,8 +37,8 @@ export function DocsSidebar({
 						<SidebarGroupContent>
 							{item.type === "folder" && (
 								<SidebarMenu className="gap-0.5">
-									{item.children.map((subItem) => {
-										return (
+									{item.children.map(
+										(subItem) =>
 											subItem.type === "page" && (
 												<SidebarMenuItem key={subItem.url}>
 													<SidebarMenuButton
@@ -50,8 +50,7 @@ export function DocsSidebar({
 													</SidebarMenuButton>
 												</SidebarMenuItem>
 											)
-										);
-									})}
+									)}
 								</SidebarMenu>
 							)}
 						</SidebarGroupContent>

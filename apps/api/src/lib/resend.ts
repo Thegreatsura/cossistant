@@ -117,9 +117,7 @@ export const addUserToDefaultAudience = async (
 
 export const removeUserFromDefaultAudience = async (
 	email: string
-): Promise<boolean> => {
-	return removeContactFromAudience(env.RESEND_AUDIENCE_ID, email);
-};
+): Promise<boolean> => removeContactFromAudience(env.RESEND_AUDIENCE_ID, email);
 
 const resend = new Resend(env.RESEND_API_KEY);
 

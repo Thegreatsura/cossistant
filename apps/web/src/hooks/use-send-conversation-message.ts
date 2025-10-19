@@ -1,14 +1,13 @@
 "use client";
 
-import { MessageType, MessageVisibility } from "@cossistant/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 
 import {
-	type ConversationMessage,
-	createConversationMessagesInfiniteQueryKey,
-	removeConversationMessageFromCache,
-	upsertConversationMessageInCache,
+	type ConversationTimelineItem,
+	createConversationTimelineItemsInfiniteQueryKey,
+	removeConversationTimelineItemFromCache,
+	upsertConversationTimelineItemInCache,
 } from "@/data/conversation-message-cache";
 import { useTRPC } from "@/lib/trpc/client";
 
@@ -40,10 +39,10 @@ export function useSendConversationMessage({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	const messagesQueryKey = useMemo(
+	const timelineItemsQueryKey = useMemo(
 		() =>
-			createConversationMessagesInfiniteQueryKey(
-				trpc.conversation.getConversationMessages.queryOptions({
+			createConversationTimelineItemsInfiniteQueryKey(
+				trpc.conversation.getConversationTimelineItems.queryOptions({
 					conversationId,
 					websiteSlug,
 					limit: pageLimit,
@@ -69,67 +68,59 @@ export function useSendConversationMessage({
 			}
 
 			const optimisticId = `optimistic-${crypto.randomUUID()}`;
-			const timestamp = new Date();
+			const timestamp = new Date().toISOString();
 
-			const optimisticMessage: ConversationMessage = {
+			const optimisticItem: ConversationTimelineItem = {
 				id: optimisticId,
-				bodyMd: trimmedMessage,
-				type: MessageType.TEXT,
+				conversationId,
+				organizationId: "", // Will be set by backend
+				type: "message",
+				text: trimmedMessage,
+				parts: [{ type: "text", text: trimmedMessage }],
+				visibility: "public",
 				userId: currentUserId,
 				aiAgentId: null,
-				parentMessageId: null,
-				modelUsed: null,
 				visitorId: null,
-				conversationId,
 				createdAt: timestamp,
-				updatedAt: timestamp,
 				deletedAt: null,
-				visibility: MessageVisibility.PUBLIC,
 			};
 
-			await queryClient.cancelQueries({ queryKey: messagesQueryKey });
+			await queryClient.cancelQueries({ queryKey: timelineItemsQueryKey });
 
-			upsertConversationMessageInCache(
+			upsertConversationTimelineItemInCache(
 				queryClient,
-				messagesQueryKey,
-				optimisticMessage
+				timelineItemsQueryKey,
+				optimisticItem
 			);
 
 			try {
 				const response = await sendMessage({
 					conversationId,
 					websiteSlug,
-					bodyMd: trimmedMessage,
-					type: MessageType.TEXT,
-					visibility: MessageVisibility.PUBLIC,
+					text: trimmedMessage,
+					visibility: "public",
 				});
 
-				const { message: createdMessage } = response;
+				const { item: createdItem } = response;
 
-				removeConversationMessageFromCache(
+				removeConversationTimelineItemFromCache(
 					queryClient,
-					messagesQueryKey,
+					timelineItemsQueryKey,
 					optimisticId
 				);
 
-				const normalizedMessage: ConversationMessage = {
-					...createdMessage,
-					createdAt: new Date(createdMessage.createdAt),
-					updatedAt: new Date(createdMessage.updatedAt),
-					deletedAt: createdMessage.deletedAt
-						? new Date(createdMessage.deletedAt)
-						: null,
-				};
-
-				upsertConversationMessageInCache(
+				upsertConversationTimelineItemInCache(
 					queryClient,
-					messagesQueryKey,
-					normalizedMessage
+					timelineItemsQueryKey,
+					{
+						...createdItem,
+						parts: createdItem.parts as ConversationTimelineItem["parts"],
+					}
 				);
 			} catch (error) {
-				removeConversationMessageFromCache(
+				removeConversationTimelineItemFromCache(
 					queryClient,
-					messagesQueryKey,
+					timelineItemsQueryKey,
 					optimisticId
 				);
 
@@ -139,7 +130,7 @@ export function useSendConversationMessage({
 		[
 			conversationId,
 			currentUserId,
-			messagesQueryKey,
+			timelineItemsQueryKey,
 			queryClient,
 			sendMessage,
 			websiteSlug,

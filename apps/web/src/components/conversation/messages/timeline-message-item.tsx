@@ -1,25 +1,25 @@
 import {
-	MessageContent,
-	MessageTimestamp,
-	Message as PrimitiveMessage,
+	TimelineItem as PrimitiveTimelineItem,
+	TimelineItemContent,
+	TimelineItemTimestamp,
 } from "@cossistant/next/primitives";
-import type { Message as MessageType } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type React from "react";
 import { cn } from "@/lib/utils";
 
-export type MessageProps = {
-	message: MessageType;
+export type TimelineMessageItemProps = {
+	item: TimelineItem;
 	isLast?: boolean;
 	isSentByViewer?: boolean;
 };
 
-export function Message({
-	message,
+export function TimelineMessageItem({
+	item,
 	isLast = false,
 	isSentByViewer = false,
-}: MessageProps) {
+}: TimelineMessageItemProps) {
 	return (
-		<PrimitiveMessage message={message}>
+		<PrimitiveTimelineItem item={item}>
 			{({ isAI, timestamp }) => (
 				<div
 					className={cn(
@@ -34,8 +34,7 @@ export function Message({
 							isSentByViewer && "items-end"
 						)}
 					>
-						<MessageContent
-							bodyMd={message.bodyMd}
+						<TimelineItemContent
 							className={cn(
 								"block max-w-full rounded-lg px-3 py-2 text-sm md:w-max md:max-w-[420px]",
 								{
@@ -47,9 +46,10 @@ export function Message({
 								}
 							)}
 							renderMarkdown
+							text={item.text}
 						/>
 						{isLast && (
-							<MessageTimestamp
+							<TimelineItemTimestamp
 								className="px-1 text-muted-foreground text-xs"
 								timestamp={timestamp}
 							>
@@ -62,11 +62,11 @@ export function Message({
 										{isAI && " • AI agent"}
 									</>
 								)}
-							</MessageTimestamp>
+							</TimelineItemTimestamp>
 						)}
 					</div>
 				</div>
 			)}
-		</PrimitiveMessage>
+		</PrimitiveTimelineItem>
 	);
 }

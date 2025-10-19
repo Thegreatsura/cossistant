@@ -7,6 +7,7 @@ import {
 	safelyExtractRequestData,
 	validateResponse,
 } from "@api/utils/validate";
+import { getMostRecentLastOnlineAt } from "@api/utils/website";
 import { publicWebsiteResponseSchema } from "@cossistant/types";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq, or } from "drizzle-orm";
@@ -44,8 +45,7 @@ websiteRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "Bearer sk_test_xxx",
 				},
 			},
 			{
@@ -57,8 +57,7 @@ websiteRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "pk_test_xxx",
 				},
 			},
 			{
@@ -170,8 +169,8 @@ websiteRouter.openapi(
 			})
 		);
 
-		// iso string indicating support activity
-		const lastOnlineAt = new Date().toISOString();
+		// iso string indicating support activity - uses most recent lastSeenAt from available human agents
+		const lastOnlineAt = getMostRecentLastOnlineAt(availableHumanAgents);
 
 		return c.json(
 			validateResponse(

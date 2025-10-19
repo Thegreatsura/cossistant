@@ -10,31 +10,27 @@ import { AnimatedBeam } from "../animated-beam";
 const Circle = forwardRef<
 	HTMLDivElement,
 	{ className?: string; children?: React.ReactNode }
->(({ className, children }, ref) => {
-	return (
-		<div
-			className={cn(
-				"relative z-10 flex size-12 items-center justify-center rounded border border-primary/10 border-dashed bg-background-200 p-2 dark:bg-background-500",
-				className
-			)}
-			ref={ref}
-		>
-			{children}
-		</div>
-	);
-});
+>(({ className, children }, ref) => (
+	<div
+		className={cn(
+			"relative z-10 flex size-12 items-center justify-center rounded border border-primary/10 border-dashed bg-background-200 p-2 dark:bg-background-500",
+			className
+		)}
+		ref={ref}
+	>
+		{children}
+	</div>
+));
 
 Circle.displayName = "Circle";
 
-const TypingDots = () => {
-	return (
-		<span className="inline-flex space-x-0.5">
-			<span className="dot-bounce-1">.</span>
-			<span className="dot-bounce-2">.</span>
-			<span className="dot-bounce-3">.</span>
-		</span>
-	);
-};
+const TypingDots = () => (
+	<span className="inline-flex space-x-0.5">
+		<span className="dot-bounce-1">.</span>
+		<span className="dot-bounce-2">.</span>
+		<span className="dot-bounce-3">.</span>
+	</span>
+);
 
 export function CustomToolsGraphic() {
 	const containerRef = useRef<HTMLDivElement>(null);

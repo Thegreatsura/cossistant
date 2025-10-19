@@ -228,14 +228,13 @@ function AvatarFallback({
 	withBoringAvatar = false,
 	...props
 }: AvatarFallbackProps) {
-	const getInitials = (str: string) => {
-		return str
+	const getInitials = (str: string) =>
+		str
 			.split(REGEX_SPLIT_INITIALS)
 			.map((word) => word.charAt(0))
 			.join("")
 			.toUpperCase()
 			.slice(0, 2);
-	};
 
 	return (
 		<AvatarPrimitive.Fallback

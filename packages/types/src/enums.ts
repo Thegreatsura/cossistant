@@ -1,11 +1,3 @@
-export const MessageType = {
-	TEXT: "text",
-	IMAGE: "image",
-	FILE: "file",
-} as const;
-
-export type MessageType = (typeof MessageType)[keyof typeof MessageType];
-
 export const SenderType = {
 	VISITOR: "visitor",
 	TEAM_MEMBER: "team_member",
@@ -30,10 +22,18 @@ export const ConversationPriority = {
 	URGENT: "urgent",
 } as const;
 
-export const MessageVisibility = {
+export const TimelineItemVisibility = {
 	PUBLIC: "public",
 	PRIVATE: "private",
 } as const;
+
+export const ConversationTimelineType = {
+	MESSAGE: "message",
+	EVENT: "event",
+} as const;
+
+export type ConversationTimelineType =
+	(typeof ConversationTimelineType)[keyof typeof ConversationTimelineType];
 
 export const ConversationEventType = {
 	ASSIGNED: "assigned",
@@ -71,8 +71,8 @@ export type ConversationParticipationStatus =
 export type ConversationEventType =
 	(typeof ConversationEventType)[keyof typeof ConversationEventType];
 
-export type MessageVisibility =
-	(typeof MessageVisibility)[keyof typeof MessageVisibility];
+export type TimelineItemVisibility =
+	(typeof TimelineItemVisibility)[keyof typeof TimelineItemVisibility];
 
 export type ConversationPriority =
 	(typeof ConversationPriority)[keyof typeof ConversationPriority];

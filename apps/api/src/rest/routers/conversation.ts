@@ -4,6 +4,7 @@ import {
 	getConversationByIdWithLastMessage,
 	getConversationHeader,
 	getConversationSeenData,
+	getConversationTimelineItems,
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
@@ -13,7 +14,7 @@ import {
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
-import { createMessage } from "@api/utils/message";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
 	safelyExtractRequestQuery,
@@ -31,7 +32,11 @@ import {
 	setConversationTypingRequestSchema,
 	setConversationTypingResponseSchema,
 } from "@cossistant/types/api/conversation";
-import type { Message } from "@cossistant/types/schemas";
+import {
+	getConversationTimelineItemsRequestSchema,
+	getConversationTimelineItemsResponseSchema,
+	type TimelineItem,
+} from "@cossistant/types/api/timeline-item";
 import { conversationSeenSchema } from "@cossistant/types/schemas";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
@@ -46,9 +51,9 @@ conversationRouter.openapi(
 	{
 		method: "post",
 		path: "/",
-		summary: "Create a conversation with or without initial messages",
+		summary: "Create a conversation (optionally with initial timeline items)",
 		description:
-			"Create a conversation, accepts a conversation id or not and a set of default messages.",
+			"Create a conversation; optionally pass a conversationId and a set of default timeline items.",
 		tags: ["Conversations"],
 		request: {
 			body: {
@@ -96,8 +101,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "Bearer sk_test_xxx",
 				},
 			},
 			{
@@ -109,8 +113,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "pk_test_xxx",
 				},
 			},
 			{
@@ -150,35 +153,37 @@ conversationRouter.openapi(
 			conversationId: body.conversationId,
 		});
 
-		let initialMessages: Message[] = [];
+		const defaults = body.defaultTimelineItems ?? [];
+		const createdItems =
+			defaults.length > 0
+				? await Promise.all(
+						defaults.map((item) =>
+							createTimelineItem({
+								db,
+								organizationId: organization.id,
+								websiteId: website.id,
+								conversationId: conversation.id,
+								conversationOwnerVisitorId: conversation.visitorId,
+								item: {
+									type: item.type ?? "message",
+									text: item.text,
+									parts: item.parts,
+									visibility: item.visibility,
+									userId: item.userId ?? null,
+									aiAgentId: item.aiAgentId ?? null,
+									visitorId: item.visitorId ?? null,
+									createdAt: item.createdAt
+										? new Date(item.createdAt)
+										: undefined,
+								},
+							})
+						)
+					)
+				: [];
 
-		const defaults = body.defaultMessages ?? [];
-		if (defaults.length > 0) {
-			initialMessages = await Promise.all(
-				defaults.map((msg) =>
-					createMessage({
-						db,
-						organizationId: organization.id,
-						websiteId: website.id,
-						conversationId: conversation.id,
-						conversationOwnerVisitorId: conversation.visitorId,
-						message: {
-							bodyMd: msg.bodyMd,
-							type: msg.type ?? undefined,
-							userId: msg.userId ?? null,
-							aiAgentId: msg.aiAgentId ?? null,
-							visitorId: msg.visitorId ?? null,
-							visibility: msg.visibility ?? undefined,
-							createdAt: new Date(msg.createdAt),
-						},
-					})
-				)
-			);
-		}
-
-		// Get the last message if any were sent
-		const lastMessage =
-			initialMessages.length > 0 ? initialMessages.at(-1) : undefined;
+		// Get the last timeline item if any were sent
+		const lastTimelineItem =
+			createdItems.length > 0 ? createdItems.at(-1) : undefined;
 
 		const header = await getConversationHeader(db, {
 			organizationId: organization.id,
@@ -194,23 +199,19 @@ conversationRouter.openapi(
 			});
 		}
 
-		return c.json(
-			validateResponse(
-				{
-					initialMessages,
-					conversation: {
-						id: conversation.id,
-						createdAt: conversation.createdAt,
-						updatedAt: conversation.updatedAt,
-						visitorId: conversation.visitorId,
-						websiteId: conversation.websiteId,
-						status: conversation.status,
-						lastMessage,
-					},
-				},
-				createConversationResponseSchema
-			)
-		);
+		return c.json({
+			initialTimelineItems: createdItems,
+			conversation: {
+				id: conversation.id,
+				title: conversation.title ?? undefined,
+				createdAt: conversation.createdAt,
+				updatedAt: conversation.updatedAt,
+				visitorId: conversation.visitorId,
+				websiteId: conversation.websiteId,
+				status: conversation.status,
+				lastTimelineItem,
+			},
+		});
 	}
 );
 
@@ -261,8 +262,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "Bearer sk_test_xxx",
 				},
 			},
 			{
@@ -274,8 +274,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "pk_test_xxx",
 				},
 			},
 			{
@@ -319,8 +318,7 @@ conversationRouter.openapi(
 			order: query.order,
 		});
 
-		// Transform database response to match API schema
-		const apiResponse = {
+		return c.json({
 			conversations: result.conversations.map((conv) => ({
 				id: conv.id,
 				title: conv.title ?? undefined,
@@ -329,14 +327,10 @@ conversationRouter.openapi(
 				visitorId: conv.visitorId,
 				websiteId: conv.websiteId,
 				status: conv.status,
-				lastMessage: conv.lastMessage,
+				lastTimelineItem: conv.lastTimelineItem,
 			})),
 			pagination: result.pagination,
-		};
-
-		return c.json(
-			validateResponse(apiResponse, listConversationsResponseSchema)
-		);
+		});
 	}
 );
 
@@ -395,8 +389,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^Bearer sk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"Bearer sk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "Bearer sk_test_xxx",
 				},
 			},
 			{
@@ -408,8 +401,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "pk_test_xxx",
 				},
 			},
 			{
@@ -448,8 +440,7 @@ conversationRouter.openapi(
 			);
 		}
 
-		// Transform database response to match API schema
-		const apiResponse = {
+		return c.json({
 			conversation: {
 				id: conversation.id,
 				title: conversation.title ?? undefined,
@@ -458,11 +449,9 @@ conversationRouter.openapi(
 				visitorId: conversation.visitorId,
 				websiteId: conversation.websiteId,
 				status: conversation.status,
-				lastMessage: conversation.lastMessage,
+				lastTimelineItem: conversation.lastTimelineItem,
 			},
-		};
-
-		return c.json(validateResponse(apiResponse, getConversationResponseSchema));
+		});
 	}
 );
 
@@ -534,8 +523,7 @@ conversationRouter.openapi(
 				schema: {
 					type: "string",
 					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
-					example:
-						"pk_test_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+					example: "pk_test_xxx",
 				},
 			},
 			{
@@ -852,5 +840,116 @@ conversationRouter.openapi(
 		});
 
 		return c.json({ seenData }, 200);
+	}
+);
+
+// GET /conversations/:conversationId/timeline - Fetch timeline items for a conversation
+conversationRouter.openapi(
+	{
+		method: "get",
+		path: "/{conversationId}/timeline",
+		summary: "Get conversation timeline items",
+		description:
+			"Fetch paginated timeline items (messages and events) for a conversation in chronological order.",
+		tags: ["Conversations"],
+		request: {
+			query: getConversationTimelineItemsRequestSchema,
+		},
+		responses: {
+			200: {
+				description: "Timeline items retrieved successfully",
+				content: {
+					"application/json": {
+						schema: getConversationTimelineItemsResponseSchema,
+					},
+				},
+			},
+			404: {
+				description: "Conversation not found",
+				content: {
+					"application/json": {
+						schema: z.object({ error: z.string() }),
+					},
+				},
+			},
+		},
+		security: [
+			{
+				"Public API Key": [],
+			},
+		],
+		parameters: [
+			{
+				name: "conversationId",
+				in: "path",
+				description: "The ID of the conversation",
+				required: true,
+				schema: {
+					type: "string",
+				},
+			},
+			{
+				name: "X-Public-Key",
+				in: "header",
+				description: "Public API key for browser-based authentication.",
+				required: false,
+				schema: {
+					type: "string",
+					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
+				},
+			},
+			{
+				name: "X-Visitor-Id",
+				in: "header",
+				description: "Visitor ID from localStorage.",
+				required: false,
+				schema: {
+					type: "string",
+					pattern: "^[0-9A-HJKMNP-TV-Z]{26}$",
+				},
+			},
+		],
+	},
+	async (c) => {
+		const { db, website, organization, query } =
+			await safelyExtractRequestQuery(
+				c,
+				getConversationTimelineItemsRequestSchema
+			);
+
+		const params = getConversationRequestSchema.parse({
+			conversationId: c.req.param("conversationId"),
+		});
+
+		const conversationRecord = await getConversationByIdWithLastMessage(db, {
+			organizationId: organization.id,
+			websiteId: website.id,
+			conversationId: params.conversationId,
+		});
+
+		if (!conversationRecord) {
+			return c.json(
+				{
+					error: "Conversation not found",
+				},
+				404
+			);
+		}
+
+		const result = await getConversationTimelineItems(db, {
+			conversationId: params.conversationId,
+			websiteId: website.id,
+			limit: query.limit,
+			cursor: query.cursor,
+		});
+
+		return c.json(
+			{
+				items: result.items as TimelineItem[],
+				nextCursor: result.nextCursor ?? null,
+				hasNextPage: result.hasNextPage,
+			},
+			200
+		);
 	}
 );

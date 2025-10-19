@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
-import { conversationSchema, messageSchema } from "../schemas";
-import { createMessageSchema } from "./messages";
+import { conversationSchema } from "../schemas";
+import { timelineItemSchema } from "./timeline-item";
 
 export const createConversationRequestSchema = z
 	.object({
@@ -12,8 +12,8 @@ export const createConversationRequestSchema = z
 			description:
 				"Default conversation ID, if not provided the ID will be automatically generated.",
 		}),
-		defaultMessages: z.array(createMessageSchema).openapi({
-			description: "Default messages to initiate the conversation with",
+		defaultTimelineItems: z.array(timelineItemSchema).openapi({
+			description: "Default timeline items to initiate the conversation with",
 		}),
 		channel: z.string().default("widget").openapi({
 			description: "Which channel the conversation is from",
@@ -30,7 +30,7 @@ export type CreateConversationRequestBody = z.infer<
 
 export const createConversationResponseSchema = z
 	.object({
-		initialMessages: z.array(messageSchema),
+		initialTimelineItems: z.array(timelineItemSchema),
 		conversation: conversationSchema,
 	})
 	.openapi({
