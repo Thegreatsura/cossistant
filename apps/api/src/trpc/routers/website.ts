@@ -1,44 +1,143 @@
-import { createDefaultWebsiteKeys } from "@api/db/queries/api-keys";
+import {
+        createApiKey,
+        createDefaultWebsiteKeys,
+        getApiKeyById,
+        getApiKeysByOrganization,
+        revokeApiKey,
+} from "@api/db/queries/api-keys";
 import { createDefaultWebsiteViews } from "@api/db/queries/view";
 import {
-	createWebsite,
-	getWebsiteBySlugWithAccess,
+        createWebsite,
+        getWebsiteBySlugWithAccess,
+        updateWebsite,
 } from "@api/db/queries/website";
 import { website } from "@api/db/schema";
 import polarClient from "@api/lib/polar";
+import { isOrganizationAdminOrOwner } from "@api/utils/access-control";
 import { domainToSlug } from "@api/utils/domain-slug";
+import { generateULID } from "@api/utils/db/ids";
 import {
-	checkWebsiteDomainRequestSchema,
-	createWebsiteRequestSchema,
-	createWebsiteResponseSchema,
+        APIKeyType,
+        checkWebsiteDomainRequestSchema,
+        createWebsiteApiKeyRequestSchema,
+        createWebsiteRequestSchema,
+        createWebsiteResponseSchema,
+        revokeWebsiteApiKeyRequestSchema,
+        updateWebsiteRequestSchema,
+        websiteApiKeySchema,
+        websiteDeveloperSettingsResponseSchema,
+        websiteSummarySchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
+type ApiKeyRecord = Awaited<
+        ReturnType<typeof getApiKeysByOrganization>
+>[number];
+
+type ApiKeyLike =
+        | ApiKeyRecord
+        | Awaited<ReturnType<typeof createApiKey>>
+        | Awaited<ReturnType<typeof revokeApiKey>>;
+
+const toWebsiteApiKey = (
+        key: ApiKeyLike,
+        options?: { includeRawKey?: boolean }
+) => ({
+        id: key.id,
+        name: key.name,
+        keyType: key.keyType,
+        key:
+                options?.includeRawKey || key.keyType !== APIKeyType.PRIVATE
+                        ? key.key
+                        : null,
+        isTest: key.isTest,
+        isActive: key.isActive,
+        createdAt: key.createdAt,
+        lastUsedAt: key.lastUsedAt ?? null,
+        revokedAt: key.revokedAt ?? null,
+});
+
 export const websiteRouter = createTRPCRouter({
-	getBySlug: protectedProcedure
-		.input(z.object({ slug: z.string() }))
-		.query(async ({ ctx: { db, user }, input }) => {
-			const websiteData = await getWebsiteBySlugWithAccess(db, {
-				userId: user.id,
-				websiteSlug: input.slug,
-			});
+        getBySlug: protectedProcedure
+                .input(z.object({ slug: z.string() }))
+                .query(async ({ ctx: { db, user }, input }) => {
+                        const websiteData = await getWebsiteBySlugWithAccess(db, {
+                                userId: user.id,
+                                websiteSlug: input.slug,
+                        });
 
-			if (!websiteData) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Website not found or access denied",
-				});
-			}
+                        if (!websiteData) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "Website not found or access denied",
+                                });
+                        }
 
-			return websiteData;
-		}),
-	create: protectedProcedure
-		.input(createWebsiteRequestSchema)
-		.output(createWebsiteResponseSchema)
-		.mutation(async ({ ctx: { db, user }, input }) => {
+                        return websiteData;
+                }),
+        developerSettings: protectedProcedure
+                .input(z.object({ slug: z.string() }))
+                .output(websiteDeveloperSettingsResponseSchema)
+                .query(async ({ ctx, input }) => {
+                        const site = await ctx.db.query.website.findFirst({
+                                where: and(
+                                        eq(website.slug, input.slug),
+                                        isNull(website.deletedAt)
+                                ),
+                                columns: {
+                                        id: true,
+                                        slug: true,
+                                        name: true,
+                                        organizationId: true,
+                                        whitelistedDomains: true,
+                                },
+                        });
+
+                        if (!site) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "Website not found",
+                                });
+                        }
+
+                        const hasAdminAccess = await isOrganizationAdminOrOwner(
+                                ctx.db,
+                                {
+                                        organizationId: site.organizationId,
+                                        userId: ctx.user.id,
+                                }
+                        );
+
+                        if (!hasAdminAccess) {
+                                throw new TRPCError({
+                                        code: "FORBIDDEN",
+                                        message: "You do not have permission to manage API keys for this website.",
+                                });
+                        }
+
+                        const apiKeys = await getApiKeysByOrganization(ctx.db, {
+                                orgId: site.organizationId,
+                                websiteId: site.id,
+                        });
+
+                        return {
+                                website: {
+                                        id: site.id,
+                                        slug: site.slug,
+                                        name: site.name,
+                                        organizationId: site.organizationId,
+                                        whitelistedDomains: site.whitelistedDomains,
+                                },
+                                apiKeys: apiKeys.map((key) => toWebsiteApiKey(key)),
+                        };
+                }),
+        create: protectedProcedure
+                .input(createWebsiteRequestSchema)
+                .output(createWebsiteResponseSchema)
+                .mutation(async ({ ctx: { db, user }, input }) => {
 			// Check if website with same verified domain already exists
 			const existingDomainWebsite = await db.query.website.findFirst({
 				where: and(
@@ -96,32 +195,198 @@ export const websiteRouter = createTRPCRouter({
 				}),
 			]);
 
-			return {
-				id: createdWebsite.id,
-				name: createdWebsite.name,
-				whitelistedDomains: createdWebsite.whitelistedDomains,
-				organizationId: createdWebsite.organizationId,
-				apiKeys: apiKeys.map((key) => ({
-					id: key.id,
-					key: key.key,
-					createdAt: key.createdAt,
-					isTest: key.isTest,
-					isActive: key.isActive,
-					keyType: key.keyType,
-				})),
-			};
-		}),
-	checkDomain: protectedProcedure
-		.input(checkWebsiteDomainRequestSchema)
-		.output(z.boolean())
-		.query(async ({ ctx: { db }, input }) => {
-			const existingWebsite = await db.query.website.findFirst({
+                        return {
+                                id: createdWebsite.id,
+                                name: createdWebsite.name,
+                                whitelistedDomains: createdWebsite.whitelistedDomains,
+                                organizationId: createdWebsite.organizationId,
+                                apiKeys: apiKeys.map((key) =>
+                                        toWebsiteApiKey(key, { includeRawKey: true })
+                                ),
+                        };
+                }),
+        createApiKey: protectedProcedure
+                .input(createWebsiteApiKeyRequestSchema)
+                .output(websiteApiKeySchema)
+                .mutation(async ({ ctx, input }) => {
+                        const site = await ctx.db.query.website.findFirst({
+                                where: and(
+                                        eq(website.id, input.websiteId),
+                                        eq(website.organizationId, input.organizationId),
+                                        isNull(website.deletedAt)
+                                ),
+                                columns: { id: true, organizationId: true },
+                        });
+
+                        if (!site) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "Website not found",
+                                });
+                        }
+
+                        const hasAdminAccess = await isOrganizationAdminOrOwner(
+                                ctx.db,
+                                {
+                                        organizationId: input.organizationId,
+                                        userId: ctx.user.id,
+                                }
+                        );
+
+                        if (!hasAdminAccess) {
+                                throw new TRPCError({
+                                        code: "FORBIDDEN",
+                                        message: "You do not have permission to create API keys for this website.",
+                                });
+                        }
+
+                        const createdKey = await createApiKey(ctx.db, {
+                                id: generateULID(),
+                                name: input.name,
+                                organizationId: input.organizationId,
+                                websiteId: input.websiteId,
+                                keyType: input.keyType,
+                                createdBy: ctx.user.id,
+                                isTest: input.isTest,
+                        });
+
+                        return toWebsiteApiKey(createdKey, { includeRawKey: true });
+                }),
+        revokeApiKey: protectedProcedure
+                .input(revokeWebsiteApiKeyRequestSchema)
+                .output(websiteApiKeySchema)
+                .mutation(async ({ ctx, input }) => {
+                        const site = await ctx.db.query.website.findFirst({
+                                where: and(
+                                        eq(website.id, input.websiteId),
+                                        eq(website.organizationId, input.organizationId),
+                                        isNull(website.deletedAt)
+                                ),
+                                columns: { id: true, organizationId: true },
+                        });
+
+                        if (!site) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "Website not found",
+                                });
+                        }
+
+                        const hasAdminAccess = await isOrganizationAdminOrOwner(
+                                ctx.db,
+                                {
+                                        organizationId: input.organizationId,
+                                        userId: ctx.user.id,
+                                }
+                        );
+
+                        if (!hasAdminAccess) {
+                                throw new TRPCError({
+                                        code: "FORBIDDEN",
+                                        message: "You do not have permission to revoke API keys for this website.",
+                                });
+                        }
+
+                        const existingKey = await getApiKeyById(ctx.db, {
+                                orgId: input.organizationId,
+                                apiKeyId: input.apiKeyId,
+                        });
+
+                        if (!existingKey || existingKey.websiteId !== input.websiteId) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "API key not found",
+                                });
+                        }
+
+                        const revoked = await revokeApiKey(ctx.db, {
+                                orgId: input.organizationId,
+                                apiKeyId: input.apiKeyId,
+                                revokedBy: ctx.user.id,
+                        });
+
+                        if (!revoked) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "API key not found",
+                                });
+                        }
+
+                        return toWebsiteApiKey(revoked);
+                }),
+        checkDomain: protectedProcedure
+                .input(checkWebsiteDomainRequestSchema)
+                .output(z.boolean())
+                .query(async ({ ctx: { db }, input }) => {
+                        const existingWebsite = await db.query.website.findFirst({
 				where: and(
 					eq(website.domain, input.domain),
 					eq(website.isDomainOwnershipVerified, true)
 				),
 			});
 
-			return !!existingWebsite;
-		}),
+                        return !!existingWebsite;
+                }),
+        update: protectedProcedure
+                .input(updateWebsiteRequestSchema)
+                .output(websiteSummarySchema)
+                .mutation(async ({ ctx, input }) => {
+                        const site = await ctx.db.query.website.findFirst({
+                                where: and(
+                                        eq(website.id, input.websiteId),
+                                        eq(website.organizationId, input.organizationId),
+                                        isNull(website.deletedAt)
+                                ),
+                                columns: {
+                                        id: true,
+                                        slug: true,
+                                        name: true,
+                                        organizationId: true,
+                                        whitelistedDomains: true,
+                                },
+                        });
+
+                        if (!site) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "Website not found",
+                                });
+                        }
+
+                        const hasAdminAccess = await isOrganizationAdminOrOwner(
+                                ctx.db,
+                                {
+                                        organizationId: input.organizationId,
+                                        userId: ctx.user.id,
+                                }
+                        );
+
+                        if (!hasAdminAccess) {
+                                throw new TRPCError({
+                                        code: "FORBIDDEN",
+                                        message: "You do not have permission to update this website.",
+                                });
+                        }
+
+                        const updatedSite = await updateWebsite(ctx.db, {
+                                orgId: input.organizationId,
+                                websiteId: input.websiteId,
+                                data: input.data,
+                        });
+
+                        if (!updatedSite) {
+                                throw new TRPCError({
+                                        code: "NOT_FOUND",
+                                        message: "Website not found",
+                                });
+                        }
+
+                        return {
+                                id: updatedSite.id,
+                                slug: updatedSite.slug,
+                                name: updatedSite.name,
+                                organizationId: updatedSite.organizationId,
+                                whitelistedDomains: updatedSite.whitelistedDomains,
+                        };
+                }),
 });
