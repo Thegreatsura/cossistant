@@ -4,7 +4,6 @@ import type { VisitorPresenceEntry } from "@cossistant/types";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 import { useTRPC } from "@/lib/trpc/client";
-import { useWebsite } from "./website";
 
 type VisitorPresenceContextValue = {
   visitors: VisitorPresenceEntry[];

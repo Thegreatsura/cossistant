@@ -58,7 +58,7 @@ export function NavigationTopbar() {
             />
             <p>
               {isLoading ? "—" : onlineCount} visitor
-              {onlineCount > 1 ? "s" : ""} online
+              {onlineCount !== 1 ? "s" : ""} online
             </p>
           </span>
         </div>
