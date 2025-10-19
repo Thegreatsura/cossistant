@@ -1,10 +1,10 @@
 import { clearTypingFromTimelineItem } from "@cossistant/react/realtime/typing-store";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
-import type { ConversationHeader } from "@/data/conversation-header-cache";
+import { type ConversationHeader, updateConversationHeaderInCache } from "@/data/conversation-header-cache";
 import {
-	type ConversationTimelineItem,
-	upsertConversationTimelineItemInCache,
+        type ConversationTimelineItem,
+        upsertConversationTimelineItemInCache,
 } from "@/data/conversation-message-cache";
 import type { DashboardRealtimeContext } from "../types";
 import { forEachConversationHeadersQuery } from "./utils/conversation-headers";
@@ -52,11 +52,11 @@ function isInfiniteQueryKey(queryKey: readonly unknown[]): boolean {
 }
 
 export const handleMessageCreated = ({
-	event,
-	context,
+        event,
+        context,
 }: {
-	event: TimelineItemCreatedEvent;
-	context: DashboardRealtimeContext;
+        event: TimelineItemCreatedEvent;
+        context: DashboardRealtimeContext;
 }) => {
 	const { queryClient, website } = context;
 	const { payload } = event;
@@ -90,17 +90,17 @@ export const handleMessageCreated = ({
 		}
 
 		upsertConversationTimelineItemInCache(queryClient, queryKey, item);
-	}
+        }
 
-	const existingHeader =
-		context.queryNormalizer.getObjectById<ConversationHeader>(
-			payload.conversationId
-		);
+        const existingHeader =
+                context.queryNormalizer.getObjectById<ConversationHeader>(
+                        payload.conversationId
+                );
 
-	if (!existingHeader) {
-		forEachConversationHeadersQuery(
-			queryClient,
-			context.website.slug,
+        if (!existingHeader) {
+                forEachConversationHeadersQuery(
+                        queryClient,
+                        context.website.slug,
 			(queryKey) => {
 				queryClient
 					.invalidateQueries({
@@ -114,14 +114,71 @@ export const handleMessageCreated = ({
 						);
 					});
 			}
-		);
-		return;
-	}
+                );
+                return;
+        }
 
-	context.queryNormalizer.setNormalizedData({
-		...existingHeader,
-		lastTimelineItem: item as unknown as ConversationHeader["lastTimelineItem"],
-		lastMessageAt: item.createdAt,
-		updatedAt: item.createdAt,
-	});
+        const headerUpdater = createHeaderUpdaterFromTimelineItem(item);
+
+        forEachConversationHeadersQuery(
+                queryClient,
+                context.website.slug,
+                (queryKey) => {
+                        updateConversationHeaderInCache(
+                                queryClient,
+                                queryKey,
+                                payload.conversationId,
+                                headerUpdater
+                        );
+                }
+        );
+
+        context.queryNormalizer.setNormalizedData(
+                headerUpdater(existingHeader)
+        );
 };
+
+function createHeaderUpdaterFromTimelineItem(
+        item: TimelineItem
+): (header: ConversationHeader) => ConversationHeader {
+        const lastTimelineItem = toHeaderTimelineItem(item);
+        const lastMessageAt = item.createdAt;
+
+        if (!lastTimelineItem) {
+                return (header) => header;
+        }
+
+        return (header: ConversationHeader): ConversationHeader => ({
+                ...header,
+                lastTimelineItem,
+                lastMessageAt,
+                updatedAt: lastMessageAt,
+        });
+}
+
+function toHeaderTimelineItem(
+        item: TimelineItem
+): ConversationHeader["lastTimelineItem"] {
+        if (!item.id) {
+                console.warn(
+                        "Received timeline item without an id, skipping header timeline update",
+                        item
+                );
+                return null;
+        }
+
+        return {
+                id: item.id,
+                conversationId: item.conversationId,
+                text: item.text ?? null,
+                type: item.type,
+                parts: item.parts,
+                visibility: item.visibility,
+                userId: item.userId,
+                visitorId: item.visitorId,
+                organizationId: item.organizationId,
+                aiAgentId: item.aiAgentId,
+                createdAt: item.createdAt,
+                deletedAt: item.deletedAt ?? null,
+        } satisfies NonNullable<ConversationHeader["lastTimelineItem"]>;
+}
