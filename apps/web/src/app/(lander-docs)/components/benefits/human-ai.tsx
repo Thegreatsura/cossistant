@@ -240,7 +240,7 @@ export const HumanAiGraphic = () => {
 
   useEffect(() => {
     if (isInView) {
-      const timeouts: NodeJS.Timeout[] = [];
+      const timeouts: Array<ReturnType<typeof setTimeout>> = [];
 
       const runAnimation = () => {
         setVisibleItems([]);
