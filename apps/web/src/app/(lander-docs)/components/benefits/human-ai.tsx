@@ -119,7 +119,7 @@ const chatSequence: ChatSequenceItem[] = [
       id: "3",
       conversationId: "1",
       organizationId: "1",
-      type: "event",
+      type: "message",
       text: "Created a ticket to track this. Thanks!",
       parts: [
         { type: "text", text: "Created a ticket to track this. Thanks!" },
