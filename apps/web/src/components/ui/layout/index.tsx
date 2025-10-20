@@ -51,7 +51,24 @@ export const Page = ({
 }) => (
   <div
     className={cn(
-      "scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-500 relative flex h-full flex-1 flex-col overflow-y-auto p-4 pt-14",
+      "relative flex h-full flex-1 flex-col overflow-hidden",
+      className
+    )}
+  >
+    {children}
+  </div>
+);
+
+export const PageContent = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      "scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-100 relative flex h-full flex-1 flex-col overflow-y-auto p-4 pt-14",
       className
     )}
   >

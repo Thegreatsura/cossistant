@@ -7,8 +7,8 @@ import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export function copyToClipboardWithMeta(value: string) {
-	navigator.clipboard.writeText(value);
+export async function copyToClipboardWithMeta(value: string) {
+	return navigator.clipboard.writeText(value);
 }
 
 export function CopyButton({
@@ -42,9 +42,17 @@ export function CopyButton({
 					className
 				)}
 				data-slot="copy-button"
-				onClick={() => {
-					copyToClipboardWithMeta(value);
-					setHasCopied(true);
+				onClick={async () => {
+					try {
+						await copyToClipboardWithMeta(value);
+						setHasCopied(true);
+					} catch (error) {
+						toast.error(
+							error instanceof Error
+								? error.message
+								: "Unable to copy to clipboard."
+						);
+					}
 				}}
 				size="icon"
 				variant={variant}

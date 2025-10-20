@@ -28,10 +28,8 @@ export function SettingsNavigationSidebar() {
       >
         <SidebarItem
           active={false}
+          href={`/${website.slug}/inbox`}
           iconName="arrow-left"
-          onClick={() => {
-            router.back();
-          }}
         >
           Settings
         </SidebarItem>

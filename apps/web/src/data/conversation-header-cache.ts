@@ -19,9 +19,9 @@ function hasConversation(
 }
 
 export function prependConversationHeaderInCache(
-        queryClient: QueryClient,
-        queryKey: readonly unknown[],
-        header: ConversationHeader
+	queryClient: QueryClient,
+	queryKey: readonly unknown[],
+	header: ConversationHeader
 ): void {
 	queryClient.setQueryData<InfiniteData<ConversationHeadersPage>>(
 		queryKey,
@@ -67,67 +67,63 @@ export function prependConversationHeaderInCache(
 				pageParams: [...existing.pageParams],
 			} satisfies InfiniteData<ConversationHeadersPage>;
 		}
-        );
+	);
 }
 
 function updateConversationHeaderInInfiniteData(
-        existing: InfiniteData<ConversationHeadersPage> | undefined,
-        conversationId: string,
-        updater: (header: ConversationHeader) => ConversationHeader
+	existing: InfiniteData<ConversationHeadersPage> | undefined,
+	conversationId: string,
+	updater: (header: ConversationHeader) => ConversationHeader
 ): InfiniteData<ConversationHeadersPage> | undefined {
-        if (!existing) {
-                return existing;
-        }
+	if (!existing) {
+		return existing;
+	}
 
-        let updated = false;
+	let updated = false;
 
-        const pages = existing.pages.map((page) => {
-                let pageUpdated = false;
+	const pages = existing.pages.map((page) => {
+		let pageUpdated = false;
 
-                const items = page.items.map((item) => {
-                        if (item.id !== conversationId) {
-                                return item;
-                        }
+		const items = page.items.map((item) => {
+			if (item.id !== conversationId) {
+				return item;
+			}
 
-                        updated = true;
-                        pageUpdated = true;
+			updated = true;
+			pageUpdated = true;
 
-                        return updater(item);
-                });
+			return updater(item);
+		});
 
-                if (!pageUpdated) {
-                        return page;
-                }
+		if (!pageUpdated) {
+			return page;
+		}
 
-                return {
-                        ...page,
-                        items,
-                };
-        });
+		return {
+			...page,
+			items,
+		};
+	});
 
-        if (!updated) {
-                return existing;
-        }
+	if (!updated) {
+		return existing;
+	}
 
-        return {
-                pages,
-                pageParams: [...existing.pageParams],
-        } satisfies InfiniteData<ConversationHeadersPage>;
+	return {
+		pages,
+		pageParams: [...existing.pageParams],
+	} satisfies InfiniteData<ConversationHeadersPage>;
 }
 
 export function updateConversationHeaderInCache(
-        queryClient: QueryClient,
-        queryKey: readonly unknown[],
-        conversationId: string,
-        updater: (header: ConversationHeader) => ConversationHeader
+	queryClient: QueryClient,
+	queryKey: readonly unknown[],
+	conversationId: string,
+	updater: (header: ConversationHeader) => ConversationHeader
 ): void {
-        queryClient.setQueryData<InfiniteData<ConversationHeadersPage> | undefined>(
-                queryKey,
-                (existing) =>
-                        updateConversationHeaderInInfiniteData(
-                                existing,
-                                conversationId,
-                                updater
-                        )
-        );
+	queryClient.setQueryData<InfiniteData<ConversationHeadersPage> | undefined>(
+		queryKey,
+		(existing) =>
+			updateConversationHeaderInInfiniteData(existing, conversationId, updater)
+	);
 }

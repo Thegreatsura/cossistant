@@ -92,8 +92,8 @@
 	--muted-foreground: oklch(55.6% 0 0);
 	--accent: oklch(97% 0 0);
 	--accent-foreground: oklch(20.5% 0 0);
-	--destructive: oklch(57.7% 0.245 27.325);
-	--destructive-foreground: oklch(57.7% 0.245 27.325);
+	--destructive: oklch(80% 0.22 31);
+	--destructive-foreground: oklch(80% 0.22 31);
 	--border: oklch(92.2% 0 0);
 	--input: oklch(92.2% 0 0);
 	--ring: oklch(70.8% 0 0);
@@ -149,8 +149,8 @@
 	--accent: oklch(26.9% 0 0);
 	--accent-foreground: oklch(98.5% 0 0);
 
-	--destructive: oklch(39.6% 0.141 25.723);
-	--destructive-foreground: oklch(63.7% 0.237 25.331);
+	--destructive: oklch(80% 0.22 31);
+	--destructive-foreground: oklch(80% 0.22 31);
 
 	--border: oklch(26.9% 0 0);
 	--input: oklch(26.9% 0 0);
@@ -195,6 +195,47 @@
 
 	body {
 		@apply bg-background text-foreground;
+	}
+
+	/* Prevent ALL overflow globally - this is the nuclear option */
+	html {
+		overflow: hidden !important;
+		height: 100%;
+	}
+
+	body {
+		overflow-y: auto;
+		overflow-x: hidden;
+		height: 100%;
+		max-width: 100vw;
+	}
+
+	/* Lock scrolling when dialogs/sheets are present (including during transitions) */
+	body:has([data-slot="sheet-overlay"]),
+	body:has([data-slot="dialog-overlay"]) {
+		overflow: hidden !important;
+		padding-right: var(--scrollbar-width, 0px);
+	}
+
+	body[data-scroll-locked] {
+		overflow: hidden !important;
+		padding-right: var(--scrollbar-width, 0px);
+	}
+
+	/* Portal container should not affect layout */
+	#radix-portal-root {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 0;
+		height: 0;
+		pointer-events: none;
+		z-index: 9999;
+	}
+
+	/* Portal children should have pointer events */
+	#radix-portal-root > * {
+		pointer-events: auto;
 	}
 }
 

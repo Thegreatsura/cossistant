@@ -1,9 +1,12 @@
+import { PageContent } from "@/components/ui/layout";
 import {
   SettingsHeader,
   SettingsPage,
   SettingsRow,
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
+import { AllowedDomainsForm } from "./allowed-domains-form";
+import { ApiKeysSection } from "./api-keys-section";
 
 type DevelopersSettingsPageProps = {
   params: Promise<{
@@ -16,42 +19,36 @@ export default async function DevelopersSettingsPage({
 }: DevelopersSettingsPageProps) {
   const { websiteSlug } = await params;
 
-  await ensureWebsiteAccess(websiteSlug);
+  const { website } = await ensureWebsiteAccess(websiteSlug);
 
   return (
-    <SettingsPage className="pt-20">
+    <SettingsPage>
       <SettingsHeader>Developers</SettingsHeader>
+      <PageContent className="py-30">
+        <SettingsRow
+          description="Create, review, and revoke the API keys connected to this website."
+          title="Public and private API keys"
+        >
+          <ApiKeysSection
+            organizationId={website.organizationId}
+            websiteId={website.id}
+            websiteName={website.name}
+            websiteSlug={website.slug}
+          />
+        </SettingsRow>
 
-      <SettingsRow
-        description="View and manage your public and private API keys."
-        title="Public and private API keys"
-      >
-        <ul className="list-inside list-disc text-primary/60 text-sm">
-          <li>- display and copy public API key</li>
-          <li>- display and copy private API key</li>
-          <li>- regenerate public API key</li>
-          <li>- regenerate private API key</li>
-          <li>- revoke public API key</li>
-          <li>- revoke private API key</li>
-          <li>- create new public API key</li>
-          <li>- create new private API key</li>
-          <li>
-            - private keys can be test keys. Private keys can only be seen once
-            they are created.
-          </li>
-        </ul>
-      </SettingsRow>
-
-      <SettingsRow
-        description="A list of whitelisted domains from which your public API keys can be used."
-        title="Allowed domains"
-      >
-        <ul className="list-inside list-disc text-primary/60 text-sm">
-          <li>- display and copy allowed domains</li>
-          <li>- add allowed domain</li>
-          <li>- remove allowed domain</li>
-        </ul>
-      </SettingsRow>
+        <SettingsRow
+          description="Manage the allowlist of domains that can use your public keys."
+          title="Allowed domains"
+        >
+          <AllowedDomainsForm
+            initialDomains={website.whitelistedDomains}
+            organizationId={website.organizationId}
+            websiteId={website.id}
+            websiteSlug={website.slug}
+          />
+        </SettingsRow>
+      </PageContent>
     </SettingsPage>
   );
 }

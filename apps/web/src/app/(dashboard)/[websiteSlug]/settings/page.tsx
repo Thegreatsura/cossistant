@@ -18,7 +18,7 @@ export default async function GeneralSettingsPage({
   await ensureWebsiteAccess(websiteSlug);
 
   return (
-    <SettingsPage className="pt-20">
+    <SettingsPage>
       <SettingsHeader>General</SettingsHeader>
 
       <SettingsRow

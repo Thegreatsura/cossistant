@@ -19,6 +19,10 @@ export const ensureWebsiteAccess = async (websiteSlug: string) => {
 		notFound();
 	}
 
+	if (!accessCheck.website) {
+		notFound();
+	}
+
 	return {
 		user,
 		website: accessCheck.website,

@@ -18,7 +18,7 @@ export default async function UsageSettingsPage({
   await ensureWebsiteAccess(websiteSlug);
 
   return (
-    <SettingsPage className="pt-20">
+    <SettingsPage>
       <SettingsHeader>Plan & Usage</SettingsHeader>
 
       <SettingsRow description="View your plan and usage details." title="Plan">
