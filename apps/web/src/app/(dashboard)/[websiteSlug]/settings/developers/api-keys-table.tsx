@@ -92,7 +92,7 @@ export function ApiKeysTable({
 
   if (!sortedKeys.length) {
     return (
-      <div className="rounded-lg border border-border bg-muted/30 px-4 py-6 text-center text-muted-foreground text-sm">
+      <div className="px-4 py-10 text-center text-muted-foreground text-sm">
         No API keys have been created yet. Generate a key below to get started.
       </div>
     );
@@ -104,7 +104,6 @@ export function ApiKeysTable({
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Type</TableHead>
-          <TableHead>Environment</TableHead>
           <TableHead>Key</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -125,11 +124,9 @@ export function ApiKeysTable({
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant="outline">{formatType(apiKey.keyType)}</Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={apiKey.isTest ? "secondary" : "default"}>
-                  {formatEnvironment(apiKey.isTest)}
+                <Badge variant="outline">
+                  {formatEnvironment(apiKey.isTest)}{" "}
+                  {formatType(apiKey.keyType)} Key
                 </Badge>
               </TableCell>
               <TableCell>
