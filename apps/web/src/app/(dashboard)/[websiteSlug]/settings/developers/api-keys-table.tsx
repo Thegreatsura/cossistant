@@ -73,7 +73,6 @@ export function ApiKeysTable({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Type</TableHead>
-            <TableHead>Environment</TableHead>
             <TableHead>Key</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -81,7 +80,7 @@ export function ApiKeysTable({
         <TableBody>
           {LOADING_ROWS.map((row) => (
             <TableRow key={row}>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={4}>
                 <Skeleton className="h-9 w-full" />
               </TableCell>
             </TableRow>
