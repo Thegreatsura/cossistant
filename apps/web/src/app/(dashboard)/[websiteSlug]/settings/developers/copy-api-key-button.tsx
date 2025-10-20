@@ -30,7 +30,7 @@ export function CopyApiKeyButton({ apiKey }: CopyApiKeyButtonProps) {
         type="button"
         variant="ghost"
       >
-        <Icon className="size-4" name="clipboard" />
+        <Icon className="size-4" filledOnHover name="clipboard" />
       </Button>
     </TooltipOnHover>
   );
