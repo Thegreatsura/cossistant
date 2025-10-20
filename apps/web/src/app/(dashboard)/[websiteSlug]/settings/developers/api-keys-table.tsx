@@ -4,6 +4,7 @@ import type { RouterOutputs } from "@cossistant/api/types";
 import { APIKeyType } from "@cossistant/types";
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
+import { BaseSubmitButton } from "@/components/ui/base-submit-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -141,18 +142,15 @@ export function ApiKeysTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  <Button
+                  <BaseSubmitButton
                     disabled={revokingKeyId === apiKey.id}
+                    isSubmitting={revokingKeyId === apiKey.id}
                     onClick={() => onRequestRevoke(apiKey)}
-                    size="sm"
+                    size="xs"
                     variant="destructive"
                   >
-                    {revokingKeyId === apiKey.id ? (
-                      <span>Revoking…</span>
-                    ) : (
-                      <span>Revoke</span>
-                    )}
-                  </Button>
+                    Revoke
+                  </BaseSubmitButton>
                 </div>
               </TableCell>
             </TableRow>

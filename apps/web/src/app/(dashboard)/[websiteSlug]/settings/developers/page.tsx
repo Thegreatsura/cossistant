@@ -32,6 +32,7 @@ export default async function DevelopersSettingsPage({
           <ApiKeysSection
             organizationId={website.organizationId}
             websiteId={website.id}
+            websiteName={website.name}
             websiteSlug={website.slug}
           />
         </SettingsRow>

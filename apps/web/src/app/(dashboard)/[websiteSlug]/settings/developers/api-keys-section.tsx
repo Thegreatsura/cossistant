@@ -4,6 +4,7 @@ import type { RouterOutputs } from "@cossistant/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BaseSubmitButton } from "@/components/ui/base-submit-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,11 +26,13 @@ type ApiKeysSectionProps = {
   websiteSlug: string;
   websiteId: string;
   organizationId: string;
+  websiteName: string;
 };
 
 export function ApiKeysSection({
   organizationId,
   websiteId,
+  websiteName,
   websiteSlug,
 }: ApiKeysSectionProps) {
   const trpc = useTRPC();
@@ -86,11 +89,7 @@ export function ApiKeysSection({
         revokingKeyId={revokingKeyId}
       />
       <SettingsRowFooter>
-        <CreateApiKeySheet
-          organizationId={organizationId}
-          websiteId={websiteId}
-          websiteSlug={websiteSlug}
-        />
+        <CreateApiKeySheet organizationId={organizationId} />
       </SettingsRowFooter>
       <Dialog
         onOpenChange={(open) => !open && setRevokeTarget(null)}
@@ -113,14 +112,14 @@ export function ApiKeysSection({
             >
               Cancel
             </Button>
-            <Button
+            <BaseSubmitButton
               disabled={isRevoking}
+              isSubmitting={isRevoking}
               onClick={handleConfirmRevoke}
-              type="button"
               variant="destructive"
             >
-              {isRevoking ? "Revoking…" : "Revoke key"}
-            </Button>
+              Revoke key
+            </BaseSubmitButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
