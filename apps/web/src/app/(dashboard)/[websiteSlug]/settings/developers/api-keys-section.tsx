@@ -183,9 +183,17 @@ export function ApiKeysSection({
                 }
         };
 
-        const handleCopyCreatedKey = (keyValue: string) => {
-                copyToClipboardWithMeta(keyValue);
-                toast.success("API key copied to clipboard");
+        const handleCopyCreatedKey = async (keyValue: string) => {
+                try {
+                        await copyToClipboardWithMeta(keyValue);
+                        toast.success("API key copied to clipboard");
+                } catch (error) {
+                        toast.error(
+                                error instanceof Error
+                                        ? error.message
+                                        : "Failed to copy API key."
+                        );
+                }
         };
 
         return (
@@ -348,7 +356,7 @@ export function ApiKeysSection({
                                                         <Button
                                                                 size="sm"
                                                                 variant="outline"
-                                                                onClick={() => handleCopyCreatedKey(lastCreatedKey.key!)}
+                                                                onClick={() => { void handleCopyCreatedKey(lastCreatedKey.key!); }}
                                                         >
                                                                 <Icon className="size-4" name="clipboard" />
                                                                 <span className="sr-only sm:not-sr-only">Copy</span>

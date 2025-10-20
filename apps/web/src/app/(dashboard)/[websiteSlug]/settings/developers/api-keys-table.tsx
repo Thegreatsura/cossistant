@@ -150,14 +150,22 @@ export function ApiKeysTable({
                                                                                 variant="outline"
                                                                                 size="sm"
                                                                                 disabled={!canCopy}
-                                                                                onClick={() => {
+                                                                                onClick={async () => {
                                                                                         if (!apiKey.key) {
                                                                                                 toast.error("This key cannot be copied.");
                                                                                                 return;
                                                                                         }
 
-                                                                                        copyToClipboardWithMeta(apiKey.key);
-                                                                                        toast.success("API key copied to clipboard");
+                                                                                        try {
+                                                                                                await copyToClipboardWithMeta(apiKey.key);
+                                                                                                toast.success("API key copied to clipboard");
+                                                                                        } catch (error) {
+                                                                                                toast.error(
+                                                                                                        error instanceof Error
+                                                                                                                ? error.message
+                                                                                                                : "Failed to copy API key."
+                                                                                                );
+                                                                                        }
                                                                                 }}
                                                                         >
                                                                                 <Icon className="size-4" name="clipboard" />

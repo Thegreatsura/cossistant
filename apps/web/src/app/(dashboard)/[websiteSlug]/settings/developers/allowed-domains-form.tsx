@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { BaseSubmitButton } from "@/components/ui/base-submit-button";
@@ -21,13 +21,38 @@ type AllowedDomainsFormProps = {
         websiteSlug: string;
 };
 
+const allowedProtocols = new Set(["http:", "https:"]);
+
+export const normalizeDomainOrigin = (value: string) => {
+        const parsed = new URL(value);
+
+        if (!allowedProtocols.has(parsed.protocol)) {
+                throw new Error("Only http:// or https:// URLs are allowed.");
+        }
+
+        return parsed.origin;
+};
+
 const allowedDomainsSchema = z.object({
         domains: z
                 .array(
                         z
                                 .string({ required_error: "Enter a domain." })
+                                .trim()
                                 .min(1, { message: "Domains cannot be empty." })
-                                .url({ message: "Enter a valid URL including http:// or https://." })
+                                .superRefine((value, ctx) => {
+                                        try {
+                                                normalizeDomainOrigin(value);
+                                        } catch (error) {
+                                                ctx.addIssue({
+                                                        code: z.ZodIssueCode.custom,
+                                                        message:
+                                                                error instanceof Error
+                                                                        ? error.message
+                                                                        : "Enter a valid URL including http:// or https://.",
+                                                });
+                                        }
+                                })
                 )
                 .min(1, { message: "Add at least one domain." }),
 });
@@ -42,10 +67,23 @@ export function AllowedDomainsForm({
 }: AllowedDomainsFormProps) {
         const trpc = useTRPC();
         const queryClient = useQueryClient();
+        const normalizedInitialDomains = useMemo(
+                () =>
+                        initialDomains.map((domain) => {
+                                try {
+                                        return normalizeDomainOrigin(domain);
+                                } catch {
+                                        return domain;
+                                }
+                        }),
+                [initialDomains]
+        );
         const form = useForm<AllowedDomainsFormValues>({
                 resolver: zodResolver(allowedDomainsSchema),
                 defaultValues: {
-                        domains: initialDomains.length ? initialDomains : [""],
+                        domains: normalizedInitialDomains.length
+                                ? normalizedInitialDomains
+                                : [""]
                 },
         });
 
@@ -55,8 +93,12 @@ export function AllowedDomainsForm({
         });
 
         useEffect(() => {
-                form.reset({ domains: initialDomains.length ? initialDomains : [""] });
-        }, [form, initialDomains]);
+                form.reset({
+                        domains: normalizedInitialDomains.length
+                                ? normalizedInitialDomains
+                                : [""]
+                });
+        }, [form, normalizedInitialDomains]);
 
         const invalidateDeveloperSettings = () =>
                 queryClient.invalidateQueries(
@@ -77,7 +119,21 @@ export function AllowedDomainsForm({
 
         const handleSubmit = async (values: AllowedDomainsFormValues) => {
                 const sanitized = values.domains.map((domain) => domain.trim()).filter(Boolean);
-                const uniqueDomains = Array.from(new Set(sanitized));
+
+                let normalizedOrigins: string[];
+
+                try {
+                        normalizedOrigins = sanitized.map((domain) => normalizeDomainOrigin(domain));
+                } catch (error) {
+                        toast.error(
+                                error instanceof Error
+                                        ? error.message
+                                        : "One or more domains are invalid."
+                        );
+                        return;
+                }
+
+                const uniqueDomains = Array.from(new Set(normalizedOrigins));
 
                 await updateWebsite({
                         organizationId,

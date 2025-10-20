@@ -208,7 +208,6 @@ const websiteUpdateDataSchema = z
                 status: z.enum(WEBSITE_STATUS_VALUES).optional(),
                 isDomainOwnershipVerified: z.boolean().optional(),
                 teamId: z.string().nullable().optional(),
-                deletedAt: z.string().nullable().optional(),
         })
         .refine((value) => Object.keys(value).length > 0, {
                 message: "Provide at least one field to update.",

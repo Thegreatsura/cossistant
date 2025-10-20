@@ -10,9 +10,9 @@ export async function isOrganizationAdminOrOwner(
 	db: Database,
 	params: { userId: string; organizationId: string }
 ): Promise<boolean> {
-	const [result] = await db
-		.select({ role: member.role })
-		.from(member)
+        const [result] = await db
+                .select({ id: member.id })
+                .from(member)
 		.where(
 			and(
 				eq(member.userId, params.userId),
