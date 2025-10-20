@@ -330,20 +330,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                     fileName=".env"
                     language="ansi"
                   />
-                  {lastCreatedKey.keyType === APIKeyType.PRIVATE && (
-                    <Alert className="mt-10" variant="info">
-                      <AlertTitle>Copy your new private key now</AlertTitle>
-                      <AlertDescription className="space-y-3">
-                        <p>
-                          This key will not be shown again. Keep it secure and
-                          store it in your secret manager before closing this
-                          sheet. If you lose it, you'll need to create a new
-                          key.
-                        </p>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  <div className="mt-10 flex gap-2">
+                  <div className="mt-6 flex gap-2">
                     <Button
                       onClick={() =>
                         handleCopyCreatedKey(lastCreatedKey.key ?? "")
@@ -362,6 +349,21 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                       Close
                     </Button>
                   </div>
+                  {lastCreatedKey.keyType === APIKeyType.PRIVATE && (
+                    <Alert className="mt-14" variant="info">
+                      <AlertTitle>
+                        [Psss, don't forget to copy your key now]
+                      </AlertTitle>
+                      <AlertDescription className="space-y-3">
+                        <p>
+                          This key will not be shown again. Keep it secure and
+                          store it in your secret manager before closing this
+                          sheet. If you lose it, you'll need to create a new
+                          key.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
             </Step>

@@ -9,7 +9,7 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: "bg-card text-card-foreground",
-        info: "border-cossistant-blue/20 bg-cossistant-blue/5 text-cossistant-blue *:data-[slot=alert-description]:text-cossistant-blue/90 [&>svg]:text-current",
+        info: "border-cossistant-blue/15 bg-cossistant-blue/5 text-cossistant-blue *:data-[slot=alert-description]:text-cossistant-blue/85 [&>svg]:text-current",
         destructive:
           "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current",
       },
@@ -39,7 +39,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "col-start-2 mb-2 line-clamp-1 min-h-4 font-medium text-base tracking-tight",
+        "col-start-2 mb-2 line-clamp-1 min-h-4 font-medium text-sm tracking-tight",
         className
       )}
       data-slot="alert-title"
