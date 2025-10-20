@@ -86,6 +86,7 @@ export function AllowedDomainsForm({
                                 : [""]
                 },
         });
+        const { reset } = form;
 
         const { fields, append, remove } = useFieldArray({
                 control: form.control,
@@ -93,12 +94,12 @@ export function AllowedDomainsForm({
         });
 
         useEffect(() => {
-                form.reset({
+                reset({
                         domains: normalizedInitialDomains.length
                                 ? normalizedInitialDomains
                                 : [""]
                 });
-        }, [form, normalizedInitialDomains]);
+        }, [reset, normalizedInitialDomains]);
 
         const invalidateDeveloperSettings = () =>
                 queryClient.invalidateQueries(
@@ -141,7 +142,7 @@ export function AllowedDomainsForm({
                         data: { whitelistedDomains: uniqueDomains },
                 });
 
-                form.reset({ domains: uniqueDomains });
+                reset({ domains: uniqueDomains });
         };
 
         return (

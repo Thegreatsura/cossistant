@@ -47,7 +47,11 @@ const toWebsiteApiKey = (
         options?: { includeRawKey?: boolean }
 ) => ({
         id: key.id,
-        name: key.name,
+        name:
+                key.name ??
+                `${key.isTest ? "Test " : ""}${
+                        key.keyType === APIKeyType.PRIVATE ? "Private" : "Public"
+                } API Key`,
         keyType: key.keyType,
         key:
                 options?.includeRawKey || key.keyType !== APIKeyType.PRIVATE
