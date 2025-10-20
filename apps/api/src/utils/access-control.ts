@@ -7,20 +7,21 @@ const ORGANIZATION_ADMIN_ROLES = ["owner", "admin"] as const;
 export type OrganizationAdminRole = (typeof ORGANIZATION_ADMIN_ROLES)[number];
 
 export async function isOrganizationAdminOrOwner(
-        db: Database,
-        params: { userId: string; organizationId: string }
+	db: Database,
+	params: { userId: string; organizationId: string }
 ): Promise<boolean> {
-        const [result] = await db
-                .select({ role: member.role })
-                .from(member)
-                .where(
-                        and(
-                                eq(member.userId, params.userId),
-                                eq(member.organizationId, params.organizationId),
-                                inArray(member.role, ORGANIZATION_ADMIN_ROLES)
-                        )
-                )
-                .limit(1);
+	const [result] = await db
+		.select({ role: member.role })
+		.from(member)
+		.where(
+			and(
+				eq(member.userId, params.userId),
+				eq(member.organizationId, params.organizationId),
+				inArray(member.role, ORGANIZATION_ADMIN_ROLES)
+			)
+		)
+		.limit(1)
+		.$withCache({ tag: "org-admin-membership" });
 
-        return Boolean(result);
+	return Boolean(result);
 }
