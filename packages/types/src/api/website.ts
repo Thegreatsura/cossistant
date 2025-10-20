@@ -1,9 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import {
-        APIKeyType,
-        WebsiteInstallationTarget,
-        WebsiteStatus,
-} from "../enums";
+import { APIKeyType, WebsiteInstallationTarget, WebsiteStatus } from "../enums";
 import { publicVisitorResponseSchema } from "./visitor";
 
 /**
@@ -44,192 +40,187 @@ export type CreateWebsiteRequest = z.infer<typeof createWebsiteRequestSchema>;
 const API_KEY_TYPE_VALUES = [APIKeyType.PUBLIC, APIKeyType.PRIVATE] as const;
 
 const WEBSITE_STATUS_VALUES = [
-        WebsiteStatus.ACTIVE,
-        WebsiteStatus.INACTIVE,
+	WebsiteStatus.ACTIVE,
+	WebsiteStatus.INACTIVE,
 ] as const;
 
 export const websiteApiKeySchema = z
-        .object({
-                id: z.ulid().openapi({
-                        description: "The API key's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                name: z.string().openapi({
-                        description: "The API key's display name.",
-                        example: "Production public key",
-                }),
-                key: z.string().nullable().openapi({
-                        description:
-                                "The API key's raw value when available. Private keys will be null when fetched after creation.",
-                        example: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                }),
-                keyType: z.enum(API_KEY_TYPE_VALUES).openapi({
-                        description: "The API key's type (public or private).",
-                        example: APIKeyType.PUBLIC,
-                }),
-                isTest: z.boolean().openapi({
-                        description: "Whether the API key is a test key.",
-                        example: false,
-                }),
-                isActive: z.boolean().openapi({
-                        description: "Whether the API key is active.",
-                        example: true,
-                }),
-                createdAt: z.string().openapi({
-                        description: "Timestamp indicating when the API key was created.",
-                        example: "2024-01-01T00:00:00.000Z",
-                }),
-                lastUsedAt: z.string().nullable().openapi({
-                        description: "Timestamp indicating when the API key was last used.",
-                        example: "2024-01-10T12:00:00.000Z",
-                }),
-                revokedAt: z.string().nullable().openapi({
-                        description: "Timestamp indicating when the API key was revoked, if applicable.",
-                        example: null,
-                }),
-        })
-        .openapi({
-                description: "A website API key summary.",
-        });
+	.object({
+		id: z.ulid().openapi({
+			description: "The API key's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		name: z.string().openapi({
+			description: "The API key's display name.",
+			example: "Production public key",
+		}),
+		key: z.string().nullable().openapi({
+			description:
+				"The API key's raw value when available. Private keys will be null when fetched after creation.",
+			example: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		}),
+		keyType: z.enum(API_KEY_TYPE_VALUES).openapi({
+			description: "The API key's type (public or private).",
+			example: APIKeyType.PUBLIC,
+		}),
+		isTest: z.boolean().openapi({
+			description: "Whether the API key is a test key.",
+			example: false,
+		}),
+		isActive: z.boolean().openapi({
+			description: "Whether the API key is active.",
+			example: true,
+		}),
+		createdAt: z.string().openapi({
+			description: "Timestamp indicating when the API key was created.",
+			example: "2024-01-01T00:00:00.000Z",
+		}),
+		lastUsedAt: z.string().nullable().openapi({
+			description: "Timestamp indicating when the API key was last used.",
+			example: "2024-01-10T12:00:00.000Z",
+		}),
+		revokedAt: z.string().nullable().openapi({
+			description:
+				"Timestamp indicating when the API key was revoked, if applicable.",
+			example: null,
+		}),
+	})
+	.openapi({
+		description: "A website API key summary.",
+	});
 
 export type WebsiteApiKey = z.infer<typeof websiteApiKeySchema>;
 
 export const websiteSummarySchema = z
-        .object({
-                id: z.ulid().openapi({
-                        description: "The website's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                slug: z.string().openapi({
-                        description: "The website's slug.",
-                        example: "dub-co",
-                }),
-                name: z.string().openapi({
-                        description: "The website's name.",
-                        example: "Dub",
-                }),
-                organizationId: z.ulid().openapi({
-                        description: "The owning organization's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                whitelistedDomains: z.array(z.url()).openapi({
-                        description: "The domains allowed to use the website's public keys.",
-                        example: ["https://dub.co", "http://localhost:3000"],
-                }),
-        })
-        .openapi({
-                description: "Summary information for a website used in settings screens.",
-        });
+	.object({
+		id: z.ulid().openapi({
+			description: "The website's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		slug: z.string().openapi({
+			description: "The website's slug.",
+			example: "dub-co",
+		}),
+		name: z.string().openapi({
+			description: "The website's name.",
+			example: "Dub",
+		}),
+		organizationId: z.ulid().openapi({
+			description: "The owning organization's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		whitelistedDomains: z.array(z.url()).openapi({
+			description: "The domains allowed to use the website's public keys.",
+			example: ["https://dub.co", "http://localhost:3000"],
+		}),
+	})
+	.openapi({
+		description: "Summary information for a website used in settings screens.",
+	});
 
 export type WebsiteSummary = z.infer<typeof websiteSummarySchema>;
 
 export const websiteDeveloperSettingsResponseSchema = z
-        .object({
-                website: websiteSummarySchema,
-                apiKeys: z.array(websiteApiKeySchema),
-        })
-        .openapi({
-                description: "Developer settings payload including website information and API keys.",
-        });
+	.object({
+		website: websiteSummarySchema,
+		apiKeys: z.array(websiteApiKeySchema),
+	})
+	.openapi({
+		description:
+			"Developer settings payload including website information and API keys.",
+	});
 
 export type WebsiteDeveloperSettingsResponse = z.infer<
-        typeof websiteDeveloperSettingsResponseSchema
+	typeof websiteDeveloperSettingsResponseSchema
 >;
 
 export const createWebsiteApiKeyRequestSchema = z
-        .object({
-                organizationId: z.ulid().openapi({
-                        description: "The organization's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                websiteId: z.ulid().openapi({
-                        description: "The website's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                name: z
-                        .string()
-                        .min(3)
-                        .max(80)
-                        .openapi({
-                                description: "A human-friendly label for the API key.",
-                                example: "Docs integration",
-                        }),
-                keyType: z.enum(API_KEY_TYPE_VALUES).openapi({
-                        description: "The type of API key to generate.",
-                        example: APIKeyType.PRIVATE,
-                }),
-                isTest: z.boolean().openapi({
-                        description: "Whether to generate a test key scoped to localhost.",
-                        example: false,
-                }),
-        })
-        .openapi({
-                description: "Payload to create a website API key.",
-        });
+	.object({
+		organizationId: z.ulid().openapi({
+			description: "The organization's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		websiteId: z.ulid().openapi({
+			description: "The website's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		name: z.string().min(3).max(80).openapi({
+			description: "A human-friendly label for the API key.",
+			example: "Docs integration",
+		}),
+		keyType: z.enum(API_KEY_TYPE_VALUES).openapi({
+			description: "The type of API key to generate.",
+			example: APIKeyType.PRIVATE,
+		}),
+		isTest: z.boolean().openapi({
+			description: "Whether to generate a test key scoped to localhost.",
+			example: false,
+		}),
+	})
+	.openapi({
+		description: "Payload to create a website API key.",
+	});
 
 export type CreateWebsiteApiKeyRequest = z.infer<
-        typeof createWebsiteApiKeyRequestSchema
+	typeof createWebsiteApiKeyRequestSchema
 >;
 
 export const revokeWebsiteApiKeyRequestSchema = z
-        .object({
-                organizationId: z.ulid().openapi({
-                        description: "The organization's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                websiteId: z.ulid().openapi({
-                        description: "The website's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                apiKeyId: z.ulid().openapi({
-                        description: "The API key's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-        })
-        .openapi({
-                description: "Payload to revoke a website API key.",
-        });
+	.object({
+		organizationId: z.ulid().openapi({
+			description: "The organization's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		websiteId: z.ulid().openapi({
+			description: "The website's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		apiKeyId: z.ulid().openapi({
+			description: "The API key's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+	})
+	.openapi({
+		description: "Payload to revoke a website API key.",
+	});
 
 export type RevokeWebsiteApiKeyRequest = z.infer<
-        typeof revokeWebsiteApiKeyRequestSchema
+	typeof revokeWebsiteApiKeyRequestSchema
 >;
 
 const websiteUpdateDataSchema = z
-        .object({
-                name: z.string().min(1).max(120).optional(),
-                slug: z.string().min(1).optional(),
-                domain: z.string().min(1).optional(),
-                description: z.string().nullable().optional(),
-                logoUrl: z.string().url().nullable().optional(),
-                whitelistedDomains: z.array(z.url()).optional(),
-                installationTarget: z
-                        .nativeEnum(WebsiteInstallationTarget)
-                        .optional(),
-                status: z.enum(WEBSITE_STATUS_VALUES).optional(),
-                isDomainOwnershipVerified: z.boolean().optional(),
-                teamId: z.string().nullable().optional(),
-        })
-        .refine((value) => Object.keys(value).length > 0, {
-                message: "Provide at least one field to update.",
-        });
+	.object({
+		name: z.string().min(1).max(120).optional(),
+		slug: z.string().min(1).optional(),
+		domain: z.string().min(1).optional(),
+		description: z.string().nullable().optional(),
+		logoUrl: z.string().url().nullable().optional(),
+		whitelistedDomains: z.array(z.url()).optional(),
+		installationTarget: z.enum(WebsiteInstallationTarget).optional(),
+		status: z.enum(WEBSITE_STATUS_VALUES).optional(),
+		teamId: z.string().nullable().optional(),
+	})
+	.refine((value) => Object.keys(value).length > 0, {
+		message: "Provide at least one field to update.",
+	});
 
 export const updateWebsiteRequestSchema = z
-        .object({
-                organizationId: z.ulid().openapi({
-                        description: "The organization's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                websiteId: z.ulid().openapi({
-                        description: "The website's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                data: websiteUpdateDataSchema.openapi({
-                        description: "The fields to update on the website.",
-                }),
-        })
-        .openapi({
-                description: "Payload to update website settings.",
-        });
+	.object({
+		organizationId: z.ulid().openapi({
+			description: "The organization's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		websiteId: z.ulid().openapi({
+			description: "The website's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		data: websiteUpdateDataSchema.openapi({
+			description: "The fields to update on the website.",
+		}),
+	})
+	.openapi({
+		description: "Payload to update website settings.",
+	});
 
 export type UpdateWebsiteRequest = z.infer<typeof updateWebsiteRequestSchema>;
 
@@ -237,39 +228,37 @@ export type UpdateWebsiteRequest = z.infer<typeof updateWebsiteRequestSchema>;
  * Website creation response schema
  */
 export const createWebsiteResponseSchema = z.object({
-        id: z.ulid().openapi({
-                description: "The website's unique identifier.",
-                example: "01JG000000000000000000000",
-        }),
-        name: z.string().openapi({
-                description: "The website's name.",
-                example: "Dub",
-        }),
-        whitelistedDomains: z.array(z.url()).openapi({
-                description: "The website's whitelisted domains.",
-                example: ["http://localhost:3000", "https://dub.co"],
-        }),
-        organizationId: z.ulid().openapi({
-                description: "The organization's unique identifier.",
-                example: "01JG000000000000000000000",
-        }),
-        apiKeys: z
-                .array(websiteApiKeySchema)
-                .openapi({
-                        description: "The website's API keys.",
-                        example: [
-                                {
-                                        id: "01JG000000000000000000000",
-                                        key: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                                        createdAt: "2021-01-01T00:00:00.000Z",
-                                        isTest: true,
-                                        isActive: true,
-                                        keyType: APIKeyType.PUBLIC,
-                                        lastUsedAt: null,
-                                        revokedAt: null,
-                                },
-                        ],
-                }),
+	id: z.ulid().openapi({
+		description: "The website's unique identifier.",
+		example: "01JG000000000000000000000",
+	}),
+	name: z.string().openapi({
+		description: "The website's name.",
+		example: "Dub",
+	}),
+	whitelistedDomains: z.array(z.url()).openapi({
+		description: "The website's whitelisted domains.",
+		example: ["http://localhost:3000", "https://dub.co"],
+	}),
+	organizationId: z.ulid().openapi({
+		description: "The organization's unique identifier.",
+		example: "01JG000000000000000000000",
+	}),
+	apiKeys: z.array(websiteApiKeySchema).openapi({
+		description: "The website's API keys.",
+		example: [
+			{
+				id: "01JG000000000000000000000",
+				key: "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				createdAt: "2021-01-01T00:00:00.000Z",
+				isTest: true,
+				isActive: true,
+				keyType: APIKeyType.PUBLIC,
+				lastUsedAt: null,
+				revokedAt: null,
+			},
+		],
+	}),
 });
 
 export type CreateWebsiteResponse = z.infer<typeof createWebsiteResponseSchema>;
