@@ -35,6 +35,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Step, Steps } from "@/components/ui/steps";
+import { Switch } from "@/components/ui/switch";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
@@ -215,7 +216,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                               {KEY_TYPE_OPTIONS.map((option) => (
                                 <Label
                                   className={cn(
-                                    "flex w-full cursor-pointer flex-col gap-3 rounded-md border bg-background p-3 text-sm",
+                                    "flex w-full cursor-pointer flex-col items-start gap-3 rounded-md border bg-background p-3 text-sm",
                                     field.value === option.value
                                       ? "border-primary/30 bg-background-200"
                                       : "border-primary/10"
@@ -272,39 +273,33 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                       name="environment"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="mb-2">Environment</FormLabel>
                           <FormControl>
-                            <RadioGroup
-                              className="flex gap-3"
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
-                              {ENVIRONMENT_OPTIONS.map((option) => (
-                                <Label
-                                  className={cn(
-                                    "flex w-full cursor-pointer flex-col gap-3 rounded-md border bg-background p-3 text-sm",
-                                    field.value === option.value
-                                      ? "border-primary/30 bg-background-200"
-                                      : "border-primary/10"
-                                  )}
-                                  htmlFor={`environment-${option.value}`}
-                                  key={option.value}
-                                >
-                                  <RadioGroupItem
-                                    className="sr-only"
-                                    id={`environment-${option.value}`}
-                                    value={option.value}
-                                  />
-                                  <span className="font-medium">
-                                    {option.title}
-                                  </span>
-                                  <span className="text-muted-foreground text-xs">
-                                    {option.description}
-                                  </span>
-                                </Label>
-                              ))}
-                            </RadioGroup>
+                            <div className="flex items-center justify-between rounded-md border border-primary/10 bg-background-100 p-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-medium text-sm">
+                                  {field.value === "production"
+                                    ? "Production"
+                                    : "Test"}
+                                </span>
+                                <span className="text-muted-foreground text-xs">
+                                  {field.value === "production"
+                                    ? "Works on every secured domain in the allowlist configured below."
+                                    : "Only works on localhost. Ideal for local development."}
+                                </span>
+                              </div>
+                              <Switch
+                                checked={field.value === "production"}
+                                onCheckedChange={(checked) => {
+                                  field.onChange(
+                                    checked ? "production" : "test"
+                                  );
+                                }}
+                              />
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            Switch between production and test environments.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
