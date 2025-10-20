@@ -19,11 +19,10 @@ export const useSteps = () => {
   return context;
 };
 
-let stepCounter = 0;
-
 type StepProps = React.ComponentProps<"div"> & {
   enabled?: boolean;
   completed?: boolean;
+  index?: number;
 };
 
 export const Step = ({
@@ -31,29 +30,21 @@ export const Step = ({
   children,
   enabled = true,
   completed = false,
+  index = 0,
   ...props
 }: StepProps): React.ReactElement => {
   const context = useContext(StepsContext);
-  const [stepIndex] = useState(stepCounter++);
-
-  React.useEffect(
-    () => () => {
-      stepCounter--;
-    },
-    []
-  );
 
   const childArray = React.Children.toArray(children);
   const title = childArray[0];
   const content = childArray.slice(1);
 
-  const isCompleted =
-    completed ?? context?.completedSteps.has(stepIndex) ?? false;
+  const isCompleted = completed ?? context?.completedSteps.has(index) ?? false;
   const interactive = context?.interactive ?? false;
 
   const handleToggleComplete = () => {
     if (context && enabled) {
-      context.toggleStep(stepIndex);
+      context.toggleStep(index);
     }
   };
 
@@ -124,9 +115,12 @@ export const Steps = ({
     });
   };
 
-  React.useEffect(() => {
-    stepCounter = 0;
-  }, []);
+  const childrenWithIndex = React.Children.map(children, (child, index) => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child, { index } as never);
+    }
+    return child;
+  });
 
   return (
     <StepsContext.Provider value={{ completedSteps, toggleStep, interactive }}>
@@ -137,7 +131,7 @@ export const Steps = ({
         )}
         {...props}
       >
-        {children}
+        {childrenWithIndex}
       </div>
     </StepsContext.Provider>
   );
