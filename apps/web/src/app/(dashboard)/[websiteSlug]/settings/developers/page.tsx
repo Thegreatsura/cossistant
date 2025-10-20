@@ -1,3 +1,4 @@
+import { PageContent } from "@/components/ui/layout";
 import {
   SettingsHeader,
   SettingsPage,
@@ -21,30 +22,32 @@ export default async function DevelopersSettingsPage({
   const { website } = await ensureWebsiteAccess(websiteSlug);
 
   return (
-    <SettingsPage className="pt-20">
+    <SettingsPage>
       <SettingsHeader>Developers</SettingsHeader>
-      <SettingsRow
-        description="Create, review, and revoke the API keys connected to this website."
-        title="Public and private API keys"
-      >
-        <ApiKeysSection
-          organizationId={website.organizationId}
-          websiteId={website.id}
-          websiteSlug={website.slug}
-        />
-      </SettingsRow>
+      <PageContent className="py-30">
+        <SettingsRow
+          description="Create, review, and revoke the API keys connected to this website."
+          title="Public and private API keys"
+        >
+          <ApiKeysSection
+            organizationId={website.organizationId}
+            websiteId={website.id}
+            websiteSlug={website.slug}
+          />
+        </SettingsRow>
 
-      <SettingsRow
-        description="Manage the allowlist of domains that can use your public keys."
-        title="Allowed domains"
-      >
-        <AllowedDomainsForm
-          initialDomains={website.whitelistedDomains}
-          organizationId={website.organizationId}
-          websiteId={website.id}
-          websiteSlug={website.slug}
-        />
-      </SettingsRow>
+        <SettingsRow
+          description="Manage the allowlist of domains that can use your public keys."
+          title="Allowed domains"
+        >
+          <AllowedDomainsForm
+            initialDomains={website.whitelistedDomains}
+            organizationId={website.organizationId}
+            websiteId={website.id}
+            websiteSlug={website.slug}
+          />
+        </SettingsRow>
+      </PageContent>
     </SettingsPage>
   );
 }

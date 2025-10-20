@@ -1,5 +1,5 @@
 import type React from "react";
-import { Page, PageHeader } from "@/components/ui/layout";
+import { Page, PageContent, PageHeader } from "@/components/ui/layout";
 import { cn } from "@/lib/utils";
 
 type SettingsRowProps = {
@@ -14,16 +14,12 @@ type SettingsPageProps = {
 };
 
 export function SettingsPage({ children, className }: SettingsPageProps) {
-  return (
-    <Page className={cn("relative flex flex-col gap-4 py-20", className)}>
-      {children}
-    </Page>
-  );
+  return <Page className={cn(className)}>{children}</Page>;
 }
 
 export function SettingsHeader({ children }: { children: React.ReactNode }) {
   return (
-    <PageHeader className="z-10 border-primary/10 border-b bg-background pl-3.5 text-sm 2xl:border-transparent 2xl:bg-transparent dark:bg-background-100 2xl:dark:bg-transparent">
+    <PageHeader className="absolute z-10 border-primary/10 border-b bg-background pl-3.5 text-sm 2xl:border-transparent 2xl:bg-transparent dark:bg-background-100 2xl:dark:bg-transparent">
       {children}
     </PageHeader>
   );

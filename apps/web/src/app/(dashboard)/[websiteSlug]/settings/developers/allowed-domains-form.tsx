@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import Icon from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
+import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 
@@ -222,20 +223,23 @@ export function AllowedDomainsForm({
   };
 
   return (
-    <div className="space-y-4">
+    <>
       <Form {...form}>
         <form className="space-y-6" onSubmit={form.handleSubmit(handleSubmit)}>
           <DomainsInput form={form} isSubmitting={isSubmitting} />
-
-          <BaseSubmitButton
-            disabled={!form.formState.isDirty}
-            isSubmitting={isSubmitting}
-            type="submit"
-          >
-            Save allowed domains
-          </BaseSubmitButton>
         </form>
       </Form>
-    </div>
+      <SettingsRowFooter>
+        <BaseSubmitButton
+          disabled={!form.formState.isDirty}
+          isSubmitting={isSubmitting}
+          size="sm"
+          type="submit"
+          variant="default"
+        >
+          Save allowed domains
+        </BaseSubmitButton>
+      </SettingsRowFooter>
+    </>
   );
 }

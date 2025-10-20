@@ -177,7 +177,7 @@ export function CreateApiKeySheet({
   return (
     <Sheet onOpenChange={handleOpenChange} open={isOpen}>
       <SheetTrigger asChild>
-        <Button type="button" variant="default">
+        <Button size="sm" type="button" variant="default">
           New API key
         </Button>
       </SheetTrigger>
