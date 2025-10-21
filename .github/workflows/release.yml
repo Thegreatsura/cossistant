@@ -3,8 +3,7 @@ name: Create Release
 on:
   push:
     tags:
-      - '@cossistant/react@*'
-      - '@cossistant/next@*'
+      - '*'
 
 permissions:
   contents: write
@@ -12,6 +11,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Only run for @cossistant package tags
+    if: startsWith(github.ref, 'refs/tags/@cossistant/')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
