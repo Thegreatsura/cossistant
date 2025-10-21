@@ -8,6 +8,9 @@ import {
 	Text,
 } from "@react-email/components";
 
+// Needed for email templates, don't remove
+import React from "react";
+
 import { LOGO_URL } from "../constants";
 
 type WaitlistConfirmationEmailProps = {
