@@ -54,7 +54,7 @@ export const env = {
         S3_ACCESS_KEY_ID: getEnvVariable("S3_ACCESS_KEY_ID"),
         S3_SECRET_ACCESS_KEY: getEnvVariable("S3_SECRET_ACCESS_KEY"),
         S3_ENDPOINT: getEnvVariable("S3_ENDPOINT", ""),
-        S3_FORCE_PATH_STYLE: getEnvVariable("S3_FORCE_PATH_STYLE", "false"),
+        S3_FORCE_PATH_STYLE: getEnvVariable("S3_FORCE_PATH_STYLE", "false") === "true",
         S3_SIGNED_URL_EXPIRATION_SECONDS: +getEnvVariable(
                 "S3_SIGNED_URL_EXPIRATION_SECONDS",
                 "900"
