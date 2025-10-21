@@ -42,42 +42,19 @@
   "license": "MIT",
   "homepage": "https://cossistant.com",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./primitives": {
-      "types": "./dist/primitives/index.d.ts",
-      "import": "./dist/primitives/index.js"
-    },
-    "./support": {
-      "types": "./dist/support/index.d.ts",
-      "import": "./dist/support/index.js"
-    },
-    "./hooks": {
-      "types": "./dist/hooks/index.d.ts",
-      "import": "./dist/hooks/index.js"
-    },
-    "./hooks/*": {
-      "types": "./dist/hooks/*.d.ts",
-      "import": "./dist/hooks/*.js"
-    },
-    "./realtime": {
-      "types": "./dist/realtime/index.d.ts",
-      "import": "./dist/realtime/index.js"
-    },
-    "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js"
-    },
-    "./utils/*": {
-      "types": "./dist/utils/*.d.ts",
-      "import": "./dist/utils/*.js"
-    }
+    ".": "./src/index.ts",
+    "./primitives": "./src/primitives/index.ts",
+    "./support": "./src/support/index.tsx",
+    "./hooks": "./src/hooks/index.ts",
+    "./hooks/*": "./src/hooks/*",
+    "./support.css": "./src/support/support.css",
+    "./realtime": "./src/realtime/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./utils/*": "./src/utils/*.ts"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "sideEffects": [
     "*.css"
   ],
@@ -85,7 +62,8 @@
     "dist"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "directory": "dist"
   },
   "dependencies": {
     "@cossistant/react": "workspace:*",
@@ -114,7 +92,8 @@
     ]
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && bun run prepare-package",
+    "prepare-package": "bunx tsx ../../scripts/prepare-package.ts",
     "lint": "biome check .",
     "check-types": "tsc --noEmit --project tsconfig.json"
   }

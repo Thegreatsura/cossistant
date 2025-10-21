@@ -1,13 +1,30 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-        // we want to preserve the folders structure together with
-        // 'use client' directives
-        entry: ["src/**/*.{ts,tsx}", "!src/**/*.css"],
-        minify: false,
-        sourcemap: true,
-        clean: true,
-        dts: true,
-        treeshake: true,
-        external: ["@cossistant/react", "next", "react", "react-dom"],
+	entry: [
+		"src/index.ts",
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"!src/**/*.test.ts",
+		"!src/**/*.test.tsx",
+		"!src/**/*.stories.tsx",
+		"!src/**/*.css",
+	],
+	clean: true,
+	dts: true,
+	hash: false,
+	minify: false,
+	sourcemap: true,
+	treeshake: true,
+	unbundle: true,
+	outExtensions: () => ({
+		js: ".js",
+		dts: ".d.ts",
+	}),
+	external: [
+		"@cossistant/react",
+		"next",
+		"react",
+		"react-dom",
+	],
 });

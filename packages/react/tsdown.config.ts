@@ -1,12 +1,26 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-	entry: ["src/**/*.{ts,tsx}", "!src/**/*.css"],
-	minify: false,
-	sourcemap: true,
+	entry: [
+		"src/index.ts",
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"!src/**/*.test.ts",
+		"!src/**/*.test.tsx",
+		"!src/**/*.stories.tsx",
+		"!src/**/*.css",
+	],
 	clean: true,
 	dts: true,
+	hash: false,
+	minify: false,
+	sourcemap: true,
 	treeshake: true,
+	unbundle: true,
+	outExtensions: () => ({
+		js: ".js",
+		dts: ".d.ts",
+	}),
 	external: [
 		"react",
 		"react-dom",

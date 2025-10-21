@@ -35,56 +35,26 @@
   "license": "MIT",
   "homepage": "https://cossistant.com",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./primitives": {
-      "types": "./dist/primitives/index.d.ts",
-      "import": "./dist/primitives/index.js"
-    },
-    "./primitives/*": {
-      "types": "./dist/primitives/*.d.ts",
-      "import": "./dist/primitives/*.js"
-    },
-    "./support": {
-      "types": "./dist/support/index.d.ts",
-      "import": "./dist/support/index.js"
-    },
-    "./hooks": {
-      "types": "./dist/hooks/index.d.ts",
-      "import": "./dist/hooks/index.js"
-    },
-    "./hooks/*": {
-      "types": "./dist/hooks/*.d.ts",
-      "import": "./dist/hooks/*.js"
-    },
-    "./support.css": "./dist/support.css",
-    "./realtime": {
-      "types": "./dist/realtime/index.d.ts",
-      "import": "./dist/realtime/index.js"
-    },
-    "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js"
-    },
-    "./utils/*": {
-      "types": "./dist/utils/*.d.ts",
-      "import": "./dist/utils/*.js"
-    }
+    ".": "./src/index.ts",
+    "./primitives": "./src/primitives/index.ts",
+    "./primitives/*": "./src/primitives/*.ts",
+    "./support": "./src/support/index.tsx",
+    "./hooks": "./src/hooks/index.ts",
+    "./hooks/*": "./src/hooks/*",
+    "./support.css": "./src/support/support.css",
+    "./realtime": "./src/realtime/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./utils/*": "./src/utils/*.ts"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "sideEffects": [
     "*.css"
   ],
   "files": [
     "dist"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
     "@cossistant/core": "workspace:*",
     "@cossistant/types": "workspace:*",
@@ -127,9 +97,14 @@
       "last 1 safari version"
     ]
   },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
   "scripts": {
-    "build": "tsdown && bun run build:css",
+    "build": "tsdown && bun run build:css && bun run prepare-package",
     "build:css": "bunx @tailwindcss/cli -i src/support/support.css -o dist/support.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify",
+    "prepare-package": "bunx tsx ../../scripts/prepare-package.ts",
     "lint": "biome check .",
     "check-types": "tsc --noEmit --project tsconfig.json"
   }
