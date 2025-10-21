@@ -27,7 +27,7 @@ jobs:
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
+
           # Determine package display name
           if [[ "$PACKAGE_NAME" == *"react"* ]]; then
             echo "display_name=React SDK" >> $GITHUB_OUTPUT
@@ -50,7 +50,7 @@ jobs:
           else
             CHANGELOG_CONTENT="Initial release of ${{ steps.package_info.outputs.package_name }}"
           fi
-          
+
           # Save to file to preserve multiline content
           echo "$CHANGELOG_CONTENT" > changelog_content.txt
           echo "content_file=changelog_content.txt" >> $GITHUB_OUTPUT
@@ -65,4 +65,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
