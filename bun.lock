@@ -22,8 +22,8 @@
     "apps/api": {
       "name": "@cossistant/api",
       "dependencies": {
-        "@aws-sdk/client-s3": "^3.744.0",
-        "@aws-sdk/s3-request-presigner": "^3.744.0",
+        "@aws-sdk/client-s3": "^3.913.0",
+        "@aws-sdk/s3-request-presigner": "^3.913.0",
         "@cossistant/transactional": "workspace:*",
         "@cossistant/types": "workspace:*",
         "@hono-rate-limiter/redis": "^0.1.4",
