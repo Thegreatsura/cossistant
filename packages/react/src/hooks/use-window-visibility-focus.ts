@@ -1,20 +1,27 @@
 import { useEffect, useState } from "react";
 
-const defaultIsPageVisible =
-        typeof document !== "undefined" ? !document.hidden : true;
-const defaultHasWindowFocus =
-        typeof document !== "undefined" && typeof document.hasFocus === "function"
-                ? document.hasFocus()
-                : true;
-
 export type WindowVisibilityFocusState = {
         isPageVisible: boolean;
         hasWindowFocus: boolean;
 };
 
+const getVisibilityFocusState = (): WindowVisibilityFocusState => {
+        if (typeof document === "undefined") {
+                return { isPageVisible: true, hasWindowFocus: true };
+        }
+
+        const isPageVisible = !document.hidden;
+        const hasWindowFocus =
+                isPageVisible &&
+                (typeof document.hasFocus === "function" ? document.hasFocus() : true);
+
+        return { isPageVisible, hasWindowFocus };
+};
+
 export function useWindowVisibilityFocus(): WindowVisibilityFocusState {
-        const [isPageVisible, setIsPageVisible] = useState(defaultIsPageVisible);
-        const [hasWindowFocus, setHasWindowFocus] = useState(defaultHasWindowFocus);
+        const [state, setState] = useState<WindowVisibilityFocusState>(
+                () => getVisibilityFocusState()
+        );
 
         useEffect(() => {
                 if (typeof document === "undefined") {
@@ -22,17 +29,11 @@ export function useWindowVisibilityFocus(): WindowVisibilityFocusState {
                 }
 
                 const handleVisibilityChange = () => {
-                        const visible = !document.hidden;
-                        setIsPageVisible(visible);
-                        setHasWindowFocus(
-                                visible &&
-                                        (typeof document.hasFocus === "function"
-                                                ? document.hasFocus()
-                                                : true)
-                        );
+                        setState(getVisibilityFocusState());
                 };
 
                 document.addEventListener("visibilitychange", handleVisibilityChange);
+                handleVisibilityChange();
                 return () => {
                         document.removeEventListener(
                                 "visibilitychange",
@@ -46,11 +47,21 @@ export function useWindowVisibilityFocus(): WindowVisibilityFocusState {
                         return;
                 }
 
-                const handleFocus = () => setHasWindowFocus(true);
-                const handleBlur = () => setHasWindowFocus(false);
+                const syncVisibilityFocus = () => {
+                        setState(getVisibilityFocusState());
+                };
+
+                const handleFocus = () => {
+                        syncVisibilityFocus();
+                };
+                const handleBlur = () => {
+                        syncVisibilityFocus();
+                };
 
                 window.addEventListener("focus", handleFocus);
                 window.addEventListener("blur", handleBlur);
+
+                syncVisibilityFocus();
 
                 return () => {
                         window.removeEventListener("focus", handleFocus);
@@ -58,5 +69,5 @@ export function useWindowVisibilityFocus(): WindowVisibilityFocusState {
                 };
         }, []);
 
-        return { isPageVisible, hasWindowFocus };
+        return state;
 }

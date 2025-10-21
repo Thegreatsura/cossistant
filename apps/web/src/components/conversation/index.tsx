@@ -156,6 +156,19 @@ export function Conversation({
                 const pendingMessageId = lastMessage.id || null;
 
                 markSeenTimeoutRef.current = setTimeout(() => {
+                        const isVisibleNow =
+                                typeof document !== "undefined" ? !document.hidden : true;
+                        const hasFocusNow =
+                                typeof document !== "undefined" &&
+                                typeof document.hasFocus === "function"
+                                        ? document.hasFocus()
+                                        : true;
+
+                        if (!isVisibleNow || !hasFocusNow) {
+                                markSeenTimeoutRef.current = null;
+                                return;
+                        }
+
                         markRead()
                                 .then(() => {
                                         lastMarkedMessageIdRef.current = pendingMessageId;

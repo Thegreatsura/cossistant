@@ -2,6 +2,7 @@ import type { RouterOutputs } from "@api/trpc/types";
 import { TimelineItemGroupReadIndicator } from "@cossistant/next/primitives";
 import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
@@ -47,14 +48,29 @@ export function ReadIndicator({
         lastReadMessageIds,
         messageId,
         currentUserId,
-	firstMessage,
+        firstMessage,
 	teamMembers,
 	availableAIAgents,
 	visitor,
 	messages,
-	isSentByViewer,
+        isSentByViewer,
 }: ReadIndicatorProps) {
-	const visitorName = getVisitorNameWithFallback(visitor);
+        const visitorName = getVisitorNameWithFallback(visitor);
+        const visitorParticipantIds = useMemo(() => {
+                const ids = new Set<string>();
+
+                if (visitor?.id) {
+                        ids.add(visitor.id);
+                }
+
+                for (const item of messages) {
+                        if (item.visitorId) {
+                                ids.add(item.visitorId);
+                        }
+                }
+
+                return ids;
+        }, [messages, visitor?.id]);
 
         return (
                 <TimelineItemGroupReadIndicator
@@ -80,13 +96,14 @@ export function ReadIndicator({
                                                 id !== firstMessage?.visitorId &&
                                                 id !== firstMessage?.aiAgentId
                                 );
+                                const uniqueReaderIds = Array.from(new Set(otherReaders));
 
-                                if (otherReaders.length === 0) {
+                                if (uniqueReaderIds.length === 0) {
                                         return <div aria-hidden className={containerClassName} />;
                                 }
 
                                 // Get names/avatars of people who stopped reading here
-                                const readerInfo = otherReaders
+                                const readerInfo = uniqueReaderIds
                                         .map((id): ReaderInfo | null => {
                                                 const human = teamMembers.find((a) => a.id === id);
                                                 if (human) {
@@ -104,11 +121,7 @@ export function ReadIndicator({
                                                         return { id, name: ai.name, type: "ai" };
                                                 }
 
-                                                const visitorMatches =
-                                                        visitor?.id === id ||
-                                                        messages.some((item) => item.visitorId === id);
-
-                                                if (visitorMatches) {
+                                                if (visitorParticipantIds.has(id)) {
                                                         return {
                                                                 id,
                                                                 name: visitorName,
