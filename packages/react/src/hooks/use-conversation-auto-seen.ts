@@ -1,10 +1,13 @@
 import type { CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
-	hydrateConversationSeen,
-	upsertConversationSeen,
+        hydrateConversationSeen,
+        upsertConversationSeen,
 } from "../realtime/seen-store";
+import { useWindowVisibilityFocus } from "./use-window-visibility-focus";
+
+export const CONVERSATION_AUTO_SEEN_DELAY_MS = 2000;
 
 export type UseConversationAutoSeenOptions = {
 	/**
@@ -70,55 +73,7 @@ export function useConversationAutoSeen(
         const lastSeenItemIdRef = useRef<string | null>(null);
         const markSeenInFlightRef = useRef(false);
         const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-        const [isPageVisible, setIsPageVisible] = useState(
-                typeof document !== "undefined" ? !document.hidden : true
-        );
-        const [hasWindowFocus, setHasWindowFocus] = useState(
-                typeof document !== "undefined" &&
-                        typeof document.hasFocus === "function"
-                        ? document.hasFocus()
-                        : true
-        );
-
-        // Track page visibility
-        useEffect(() => {
-                if (typeof document === "undefined") {
-                        return;
-                }
-
-                const handleVisibilityChange = () => {
-                        setIsPageVisible(!document.hidden);
-                        setHasWindowFocus(
-                                !document.hidden &&
-                                        typeof document.hasFocus === "function"
-                                        ? document.hasFocus()
-                                        : true
-                        );
-                };
-
-                document.addEventListener("visibilitychange", handleVisibilityChange);
-                return () => {
-                        document.removeEventListener("visibilitychange", handleVisibilityChange);
-                };
-        }, []);
-
-        // Track window focus
-        useEffect(() => {
-                if (typeof window === "undefined") {
-                        return;
-                }
-
-                const handleFocus = () => setHasWindowFocus(true);
-                const handleBlur = () => setHasWindowFocus(false);
-
-                window.addEventListener("focus", handleFocus);
-                window.addEventListener("blur", handleBlur);
-
-                return () => {
-                        window.removeEventListener("focus", handleFocus);
-                        window.removeEventListener("blur", handleBlur);
-                };
-        }, []);
+        const { isPageVisible, hasWindowFocus } = useWindowVisibilityFocus();
 
         // Reset seen tracking when conversation changes
         useEffect(() => {
@@ -212,7 +167,7 @@ export function useConversationAutoSeen(
                                         markSeenInFlightRef.current = false;
                                         markSeenTimeoutRef.current = null;
                                 });
-                }, 2000);
+                }, CONVERSATION_AUTO_SEEN_DELAY_MS);
 
                 return () => {
                         if (markSeenTimeoutRef.current) {

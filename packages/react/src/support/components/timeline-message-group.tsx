@@ -79,10 +79,12 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 		return null;
 	}
 
-	return (
-		<PrimitiveTimelineItemGroup
-			items={items}
-			seenByIds={seenByIds}
+        const hasSeenIndicator = seenByIds.length > 0 && seenByNames.length > 0;
+
+        return (
+                <PrimitiveTimelineItemGroup
+                        items={items}
+                        seenByIds={seenByIds}
 			viewerId={currentVisitorId}
 			viewerType={SenderType.VISITOR}
 		>
@@ -142,24 +144,28 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 						))}
 
                                                 {isSentByViewer && (
-                                                        <div className="mb-4 mt-4 w-full">
+                                                        <div
+                                                                className={cn(
+                                                                        "w-full",
+                                                                        hasSeenIndicator && "mb-4 mt-4"
+                                                                )}
+                                                        >
                                                                 <div className="min-h-[1.25rem]">
-                                                                        {seenByIds.length > 0 &&
-                                                                                seenByNames.length > 0 && (
-                                                                                        <motion.div
-                                                                                                key="seen-indicator"
-                                                                                                {...SEEN_ANIMATION}
+                                                                        {hasSeenIndicator && (
+                                                                                <motion.div
+                                                                                        key="seen-indicator"
+                                                                                        {...SEEN_ANIMATION}
+                                                                                >
+                                                                                        <TimelineItemGroupSeenIndicator
+                                                                                                className="px-1 text-muted-foreground text-xs"
+                                                                                                seenByIds={seenByIds}
                                                                                         >
-                                                                                                <TimelineItemGroupSeenIndicator
-                                                                                                        className="px-1 text-muted-foreground text-xs"
-                                                                                                        seenByIds={seenByIds}
-                                                                                                >
-                                                                                                        {() =>
-                                                                                                                `Seen by ${seenByNames.join(", ")}`
-                                                                                                        }
-                                                                                                </TimelineItemGroupSeenIndicator>
-                                                                                        </motion.div>
-                                                                                )}
+                                                                                                {() =>
+                                                                                                        `Seen by ${seenByNames.join(", ")}`
+                                                                                                }
+                                                                                        </TimelineItemGroupSeenIndicator>
+                                                                                </motion.div>
+                                                                        )}
                                                                 </div>
                                                         </div>
                                                 )}

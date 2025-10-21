@@ -3,7 +3,9 @@
 import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
 import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
+import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
 import { useConversationActions } from "@/data/use-conversation-actions";
@@ -92,15 +94,7 @@ export function Conversation({
 
         const lastMarkedMessageIdRef = useRef<string | null>(null);
         const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-        const [isPageVisible, setIsPageVisible] = useState(
-                typeof document !== "undefined" ? !document.hidden : true
-        );
-        const [hasWindowFocus, setHasWindowFocus] = useState(
-                typeof document !== "undefined" &&
-                        typeof document.hasFocus === "function"
-                        ? document.hasFocus()
-                        : true
-        );
+        const { isPageVisible, hasWindowFocus } = useWindowVisibilityFocus();
 
 	const { items, fetchNextPage, hasNextPage } = useConversationTimelineItems({
 		conversationId,
@@ -120,46 +114,6 @@ export function Conversation({
 		() => items.filter((item) => item.type === "message").at(-1) ?? null,
 		[items]
 	);
-
-        useEffect(() => {
-                if (typeof document !== "undefined") {
-                        const handleVisibilityChange = () => {
-                                setIsPageVisible(!document.hidden);
-                                setHasWindowFocus(
-                                        !document.hidden &&
-                                                typeof document.hasFocus === "function"
-                                                ? document.hasFocus()
-                                                : true
-                                );
-                        };
-
-                        document.addEventListener(
-                                "visibilitychange",
-                                handleVisibilityChange
-                        );
-                        return () => {
-                                document.removeEventListener(
-                                        "visibilitychange",
-                                        handleVisibilityChange
-                                );
-                        };
-                }
-        }, []);
-
-        useEffect(() => {
-                if (typeof window !== "undefined") {
-                        const handleFocus = () => setHasWindowFocus(true);
-                        const handleBlur = () => setHasWindowFocus(false);
-
-                        window.addEventListener("focus", handleFocus);
-                        window.addEventListener("blur", handleBlur);
-
-                        return () => {
-                                window.removeEventListener("focus", handleFocus);
-                                window.removeEventListener("blur", handleBlur);
-                        };
-                }
-        }, []);
 
         useEffect(() => {
                 if (markSeenTimeoutRef.current) {
@@ -212,7 +166,7 @@ export function Conversation({
                                 .finally(() => {
                                         markSeenTimeoutRef.current = null;
                                 });
-                }, 2000);
+                }, CONVERSATION_AUTO_SEEN_DELAY_MS);
 
                 return () => {
                         if (markSeenTimeoutRef.current) {
