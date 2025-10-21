@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "../button";
 import Icon from "../icons";
@@ -26,7 +27,7 @@ export const PageHeader = ({
 }) => (
   <div
     className={cn(
-      "absolute inset-x-0 top-0 flex h-14 w-full items-center justify-between gap-4 px-5",
+      "absolute inset-x-0 top-0 z-10 flex h-14 w-full items-center justify-between gap-4 bg-background px-5 dark:bg-background-50",
       className
     )}
   >
@@ -62,15 +63,18 @@ export const Page = ({
 export const PageContent = ({
   children,
   className,
+  ref,
 }: {
   children: React.ReactNode;
   className?: string;
+  ref?: RefObject<HTMLDivElement | null>;
 }) => (
   <div
     className={cn(
       "scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-100 relative flex h-full flex-1 flex-col overflow-y-auto p-4 pt-14",
       className
     )}
+    ref={ref}
   >
     {children}
   </div>
@@ -86,7 +90,7 @@ export const CentralContainer = ({
   <div className="h-[calc(100vh-4rem)] w-full px-2 pb-2">
     <section
       className={cn(
-        "flex h-full max-h-full rounded border border-primary/8 bg-background dark:bg-background-100/50",
+        "flex h-full max-h-full rounded border border-primary/8 bg-background dark:bg-background-50",
         className
       )}
     >

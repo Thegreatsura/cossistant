@@ -195,7 +195,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
         <div className="space-y-6 p-4">
           <Steps>
             <Step completed={keyCreated}>
-              Create a new key
+              Create the key
               {!keyCreated && (
                 <Form {...form}>
                   <form
@@ -253,6 +253,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                           <FormControl>
                             <Input
                               autoComplete="off"
+                              autoFocus
                               data-1p-ignore
                               data-lpignore="true"
                               placeholder={`Eg. Production ${website.name}`}
@@ -325,8 +326,17 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                     secure.
                   </p>
                   <DashboardCodeBlock
-                    className="mt-6"
-                    code={`NEXT_PUBLIC_COSSISTANT_KEY=${lastCreatedKey.key}`}
+                    className="mt-4"
+                    code={{
+                      nextjs: {
+                        code: `NEXT_PUBLIC_COSSISTANT_KEY=${lastCreatedKey.key}`,
+                        comment: "This is the public key for your website.",
+                      },
+                      react: {
+                        code: `COSSISTANT_KEY=${lastCreatedKey.key}`,
+                        comment: "This is the public key for your website.",
+                      },
+                    }}
                     fileName=".env"
                     language="ansi"
                   />

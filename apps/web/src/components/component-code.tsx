@@ -31,9 +31,9 @@ export function ComponentCodeReact({
 }) {
   return (
     <>
-      <CopyButton className="absolute top-2 right-2" value={code} />
+      <CopyButton className="absolute top-1 right-1" value={code} />
       <figure
-        className="pt-6 [&>pre]:max-h-96 [&>pre]:overflow-auto"
+        className="[&>pre]:max-h-96 [&>pre]:overflow-auto"
         data-rehype-pretty-code-figure=""
       >
         <div className="[&_pre]:!bg-transparent dark:[&_pre]:!bg-transparent text-sm [&_pre]:border [&_pre]:border-transparent">
