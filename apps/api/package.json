@@ -10,8 +10,8 @@
   "dependencies": {
     "@cossistant/transactional": "workspace:*",
     "@cossistant/types": "workspace:*",
-    "@aws-sdk/client-s3": "^3.744.0",
-    "@aws-sdk/s3-request-presigner": "^3.744.0",
+    "@aws-sdk/client-s3": "^3.913.0",
+    "@aws-sdk/s3-request-presigner": "^3.913.0",
     "@hono-rate-limiter/redis": "^0.1.4",
     "@hono/node-server": "^1.19.3",
     "@hono/swagger-ui": "^0.5.2",
