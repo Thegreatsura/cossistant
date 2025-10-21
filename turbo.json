@@ -34,6 +34,18 @@
       ]
     },
     "@cossistant/react#build": {
+      "dependsOn": [
+        "@cossistant/core#build",
+        "@cossistant/types#build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "@cossistant/next#build": {
+      "dependsOn": [
+        "@cossistant/react#build"
+      ],
       "outputs": [
         "dist/**"
       ]
@@ -89,7 +101,8 @@
         "^build",
         "@cossistant/core#build",
         "@cossistant/types#build",
-        "@cossistant/react#build"
+        "@cossistant/react#build",
+        "@cossistant/next#build"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",

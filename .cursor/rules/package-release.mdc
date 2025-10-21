@@ -1,0 +1,89 @@
+---
+description: Cursor workflow for preparing and publishing @cossistant/react and @cossistant/next releases
+globs:
+  - packages/react/**/*
+  - packages/next/**/*
+  - apps/web/content/changelog/**/*
+  - docs/package-release.md
+alwaysApply: false
+---
+
+# Cursor Release Automation – React & Next SDKs
+
+Use this rule whenever you are preparing a production release that only targets `@cossistant/react` and `@cossistant/next`.
+
+## ✅ Prep the release notes
+
+1. Fetch tags and inspect the diff since the last published version:
+   ```bash
+   git fetch --tags
+   LAST_TAG=$(git describe --tags --abbrev=0 --match "@cossistant/react@*" 2>/dev/null || git rev-list --max-parents=0 HEAD)
+   git log --oneline "${LAST_TAG}..HEAD" -- packages/react packages/next
+   ```
+2. Split the commits and PRs into two buckets:
+   - **Widget** – user-facing widget & SDK changes.
+   - **Dashboard** – tooling and agent dashboard improvements.
+
+## 📝 Publish the web changelog entry
+
+- Create a new MDX file under `apps/web/content/changelog/` named `<yyyy-mm-dd>-v<semver>.mdx`.
+- Use this frontmatter (all strings):
+  ```mdx
+  ---
+  version: "0.1.0"
+  description: "One-line summary of the release"
+  date: "2025-02-24"
+  author: "Cossistant Team"
+  ---
+  ```
+- Body layout:
+  ```mdx
+  import { Callout } from "fumadocs-ui/components/callout";
+
+  <Callout title="Summary" type="info">
+    Short paragraph that links the version to the npm packages and the git tags.
+  </Callout>
+
+  ## Widget
+  - Bullet list of widget-focused highlights.
+
+  ## Dashboard
+  - Bullet list of dashboard / operator updates (use `No changes this cycle.` if empty).
+  ```
+- Mention the `git log` highlights inside the appropriate section. Link to PRs when possible.
+
+## 🛠️ Versioning & tagging
+
+1. Ensure the build pipeline is clean:
+   ```bash
+   bunx turbo run build --filter=@cossistant/react --filter=@cossistant/next
+   ```
+2. Apply the prepared changeset:
+   ```bash
+   bun run version-packages
+   ```
+3. Tag both packages (replace `0.1.0`):
+   ```bash
+   git tag @cossistant/react@0.1.0
+   git tag @cossistant/next@0.1.0
+   ```
+
+## 🚀 Publish to npm
+
+Run the publish command locally so both packages and the accompanying changelog are released together:
+```bash
+bun run release -- --access public
+```
+
+This command must succeed **after** the MDX changelog, tags, and version bumps are committed.
+
+## 🧾 Commit expectations
+
+- The release commit should include:
+  - The `changeset` file(s) consumed by `bun run version-packages`.
+  - Updated `package.json` versions and changelog fragments.
+  - The new MDX entry in `apps/web/content/changelog/`.
+  - Any generated `dist/` artifacts (never commit build outputs).
+- Push with tags: `git push --follow-tags`.
+
+If any step fails, update `docs/package-release.md` with a fix so the playbook remains accurate.
