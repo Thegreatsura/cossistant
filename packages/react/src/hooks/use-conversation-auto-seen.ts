@@ -67,33 +67,68 @@ export function useConversationAutoSeen(
 		enabled = true,
 	} = options;
 
-	const lastSeenItemIdRef = useRef<string | null>(null);
-	const markSeenInFlightRef = useRef(false);
-	const [isPageVisible, setIsPageVisible] = useState(
-		typeof document !== "undefined" ? !document.hidden : true
-	);
+        const lastSeenItemIdRef = useRef<string | null>(null);
+        const markSeenInFlightRef = useRef(false);
+        const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const [isPageVisible, setIsPageVisible] = useState(
+                typeof document !== "undefined" ? !document.hidden : true
+        );
+        const [hasWindowFocus, setHasWindowFocus] = useState(
+                typeof document !== "undefined" &&
+                        typeof document.hasFocus === "function"
+                        ? document.hasFocus()
+                        : true
+        );
 
-	// Track page visibility
-	useEffect(() => {
-		if (typeof document === "undefined") {
-			return;
-		}
+        // Track page visibility
+        useEffect(() => {
+                if (typeof document === "undefined") {
+                        return;
+                }
 
-		const handleVisibilityChange = () => {
-			setIsPageVisible(!document.hidden);
-		};
+                const handleVisibilityChange = () => {
+                        setIsPageVisible(!document.hidden);
+                        setHasWindowFocus(
+                                !document.hidden &&
+                                        typeof document.hasFocus === "function"
+                                        ? document.hasFocus()
+                                        : true
+                        );
+                };
 
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-		return () => {
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-		};
-	}, []);
+                document.addEventListener("visibilitychange", handleVisibilityChange);
+                return () => {
+                        document.removeEventListener("visibilitychange", handleVisibilityChange);
+                };
+        }, []);
 
-	// Reset seen tracking when conversation changes
-	useEffect(() => {
-		lastSeenItemIdRef.current = null;
-		markSeenInFlightRef.current = false;
-	}, [conversationId]);
+        // Track window focus
+        useEffect(() => {
+                if (typeof window === "undefined") {
+                        return;
+                }
+
+                const handleFocus = () => setHasWindowFocus(true);
+                const handleBlur = () => setHasWindowFocus(false);
+
+                window.addEventListener("focus", handleFocus);
+                window.addEventListener("blur", handleBlur);
+
+                return () => {
+                        window.removeEventListener("focus", handleFocus);
+                        window.removeEventListener("blur", handleBlur);
+                };
+        }, []);
+
+        // Reset seen tracking when conversation changes
+        useEffect(() => {
+                lastSeenItemIdRef.current = null;
+                markSeenInFlightRef.current = false;
+                if (markSeenTimeoutRef.current) {
+                        clearTimeout(markSeenTimeoutRef.current);
+                        markSeenTimeoutRef.current = null;
+                }
+        }, [conversationId]);
 
 	// Fetch and hydrate initial seen data when conversation loads
 	useEffect(() => {
@@ -111,63 +146,87 @@ export function useConversationAutoSeen(
 		}
 	}, [enabled, client, conversationId]);
 
-	// Auto-mark timeline items as seen
-	useEffect(() => {
-		const shouldMark =
-			enabled &&
-			client &&
-			conversationId &&
-			visitorId &&
-			lastTimelineItem &&
-			isPageVisible;
+        // Auto-mark timeline items as seen
+        useEffect(() => {
+                if (markSeenTimeoutRef.current) {
+                        clearTimeout(markSeenTimeoutRef.current);
+                        markSeenTimeoutRef.current = null;
+                }
 
-		if (!shouldMark) {
-			return;
-		}
+                const shouldMark =
+                        enabled &&
+                        client &&
+                        conversationId &&
+                        visitorId &&
+                        lastTimelineItem &&
+                        isPageVisible &&
+                        hasWindowFocus;
 
-		// Don't mark our own timeline items as seen via API (we already know we saw them)
-		if (lastTimelineItem.visitorId === visitorId) {
-			lastSeenItemIdRef.current = lastTimelineItem.id || null;
-			return;
-		}
+                if (!shouldMark) {
+                        return;
+                }
 
-		// Already marked this item
-		if (lastSeenItemIdRef.current === lastTimelineItem.id) {
-			return;
-		}
+                // Don't mark our own timeline items as seen via API (we already know we saw them)
+                if (lastTimelineItem.visitorId === visitorId) {
+                        lastSeenItemIdRef.current = lastTimelineItem.id || null;
+                        return;
+                }
 
-		// Already in flight
-		if (markSeenInFlightRef.current) {
-			return;
-		}
+                // Already marked this item
+                if (lastSeenItemIdRef.current === lastTimelineItem.id) {
+                        return;
+                }
 
-		markSeenInFlightRef.current = true;
+                // Already in flight
+                if (markSeenInFlightRef.current) {
+                        return;
+                }
 
-		client
-			.markConversationSeen({ conversationId })
-			.then((response) => {
-				lastSeenItemIdRef.current = lastTimelineItem.id || null;
+                const pendingItemId = lastTimelineItem.id || null;
 
-				// Optimistically update local seen store
-				upsertConversationSeen({
-					conversationId,
-					actorType: "visitor",
-					actorId: visitorId,
-					lastSeenAt: new Date(response.lastSeenAt),
-				});
-			})
-			.catch((err) => {
-				console.error("Failed to mark conversation as seen:", err);
-			})
-			.finally(() => {
-				markSeenInFlightRef.current = false;
-			});
-	}, [
-		enabled,
-		client,
-		conversationId,
-		visitorId,
-		lastTimelineItem,
-		isPageVisible,
-	]);
+                markSeenTimeoutRef.current = setTimeout(() => {
+                        if (!client || !conversationId) {
+                                markSeenTimeoutRef.current = null;
+                                return;
+                        }
+
+                        markSeenInFlightRef.current = true;
+
+                        client
+                                .markConversationSeen({ conversationId })
+                                .then((response) => {
+                                        lastSeenItemIdRef.current = pendingItemId;
+
+                                        // Optimistically update local seen store
+                                        upsertConversationSeen({
+                                                conversationId,
+                                                actorType: "visitor",
+                                                actorId: visitorId,
+                                                lastSeenAt: new Date(response.lastSeenAt),
+                                        });
+                                })
+                                .catch((err) => {
+                                        console.error("Failed to mark conversation as seen:", err);
+                                })
+                                .finally(() => {
+                                        markSeenInFlightRef.current = false;
+                                        markSeenTimeoutRef.current = null;
+                                });
+                }, 2000);
+
+                return () => {
+                        if (markSeenTimeoutRef.current) {
+                                clearTimeout(markSeenTimeoutRef.current);
+                                markSeenTimeoutRef.current = null;
+                        }
+                };
+        }, [
+                enabled,
+                client,
+                conversationId,
+                visitorId,
+                lastTimelineItem,
+                isPageVisible,
+                hasWindowFocus,
+        ]);
 }
