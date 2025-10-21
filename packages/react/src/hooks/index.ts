@@ -19,3 +19,4 @@ export * from "./use-message-composer";
 export * from "./use-realtime-support";
 export * from "./use-send-message";
 export * from "./use-visitor";
+export * from "./use-window-visibility-focus";

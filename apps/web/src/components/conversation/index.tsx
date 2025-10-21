@@ -4,6 +4,8 @@ import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimod
 import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useMemo, useRef } from "react";
+import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
+import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
 import { useConversationActions } from "@/data/use-conversation-actions";
@@ -90,7 +92,9 @@ export function Conversation({
 		visitorId,
 	});
 
-	const lastMarkedMessageIdRef = useRef<string | null>(null);
+        const lastMarkedMessageIdRef = useRef<string | null>(null);
+        const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const { isPageVisible, hasWindowFocus } = useWindowVisibilityFocus();
 
 	const { items, fetchNextPage, hasNextPage } = useConversationTimelineItems({
 		conversationId,
@@ -111,49 +115,87 @@ export function Conversation({
 		[items]
 	);
 
-	useEffect(() => {
-		if (!lastMessage) {
-			return;
-		}
+        useEffect(() => {
+                if (markSeenTimeoutRef.current) {
+                        clearTimeout(markSeenTimeoutRef.current);
+                        markSeenTimeoutRef.current = null;
+                }
 
-		if (!selectedConversation || selectedConversation.id !== conversationId) {
-			lastMarkedMessageIdRef.current = null;
-			return;
-		}
+                if (!lastMessage) {
+                        return;
+                }
 
-		if (lastMessage.userId === currentUserId) {
-			lastMarkedMessageIdRef.current = lastMessage.id || null;
-			return;
-		}
+                if (!selectedConversation || selectedConversation.id !== conversationId) {
+                        lastMarkedMessageIdRef.current = null;
+                        return;
+                }
 
-		const lastMessageCreatedAt = new Date(lastMessage.createdAt);
-		const lastSeenAt = selectedConversation.lastSeenAt
-			? new Date(selectedConversation.lastSeenAt)
-			: null;
+                if (!isPageVisible || !hasWindowFocus) {
+                        return;
+                }
 
-		if (lastSeenAt && lastSeenAt >= lastMessageCreatedAt) {
-			lastMarkedMessageIdRef.current = lastMessage.id || null;
-			return;
-		}
+                if (lastMessage.userId === currentUserId) {
+                        lastMarkedMessageIdRef.current = lastMessage.id || null;
+                        return;
+                }
 
-		if (lastMarkedMessageIdRef.current === (lastMessage.id || null)) {
-			return;
-		}
+                const lastMessageCreatedAt = new Date(lastMessage.createdAt);
+                const lastSeenAt = selectedConversation.lastSeenAt
+                        ? new Date(selectedConversation.lastSeenAt)
+                        : null;
 
-		markRead()
-			.then(() => {
-				lastMarkedMessageIdRef.current = lastMessage.id || null;
-			})
-			.catch(() => {
-				// no-op: we'll retry on next render if needed
-			});
-	}, [
-		conversationId,
-		currentUserId,
-		lastMessage,
-		markRead,
-		selectedConversation,
-	]);
+                if (lastSeenAt && lastSeenAt >= lastMessageCreatedAt) {
+                        lastMarkedMessageIdRef.current = lastMessage.id || null;
+                        return;
+                }
+
+                if (lastMarkedMessageIdRef.current === (lastMessage.id || null)) {
+                        return;
+                }
+
+                const pendingMessageId = lastMessage.id || null;
+
+                markSeenTimeoutRef.current = setTimeout(() => {
+                        const isVisibleNow =
+                                typeof document !== "undefined" ? !document.hidden : true;
+                        const hasFocusNow =
+                                typeof document !== "undefined" &&
+                                typeof document.hasFocus === "function"
+                                        ? document.hasFocus()
+                                        : true;
+
+                        if (!isVisibleNow || !hasFocusNow) {
+                                markSeenTimeoutRef.current = null;
+                                return;
+                        }
+
+                        markRead()
+                                .then(() => {
+                                        lastMarkedMessageIdRef.current = pendingMessageId;
+                                })
+                                .catch(() => {
+                                        // no-op: we'll retry on next render if needed
+                                })
+                                .finally(() => {
+                                        markSeenTimeoutRef.current = null;
+                                });
+                }, CONVERSATION_AUTO_SEEN_DELAY_MS);
+
+                return () => {
+                        if (markSeenTimeoutRef.current) {
+                                clearTimeout(markSeenTimeoutRef.current);
+                                markSeenTimeoutRef.current = null;
+                        }
+                };
+        }, [
+                conversationId,
+                currentUserId,
+                hasWindowFocus,
+                isPageVisible,
+                lastMessage,
+                markRead,
+                selectedConversation,
+        ]);
 
 	const onFetchMoreIfNeeded = async () => {
 		if (hasNextPage) {

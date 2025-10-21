@@ -27,12 +27,12 @@ const MESSAGE_ANIMATION = {
 } as const;
 
 const SEEN_ANIMATION = {
-	initial: { opacity: 0 },
-	animate: { opacity: 1 },
-	transition: {
-		duration: 0.15,
-		ease: "easeOut" as const,
-	},
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        transition: {
+                duration: 0.1,
+                ease: "easeOut" as const,
+        },
 } as const;
 
 export type TimelineMessageGroupProps = {
@@ -79,10 +79,12 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 		return null;
 	}
 
-	return (
-		<PrimitiveTimelineItemGroup
-			items={items}
-			seenByIds={seenByIds}
+        const hasSeenIndicator = seenByIds.length > 0 && seenByNames.length > 0;
+
+        return (
+                <PrimitiveTimelineItemGroup
+                        items={items}
+                        seenByIds={seenByIds}
 			viewerId={currentVisitorId}
 			viewerType={SenderType.VISITOR}
 		>
@@ -141,21 +143,35 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 							</motion.div>
 						))}
 
-						{isSentByViewer &&
-							seenByIds.length > 0 &&
-							seenByNames.length > 0 && (
-								<motion.div key="seen-indicator" {...SEEN_ANIMATION}>
-									<TimelineItemGroupSeenIndicator
-										className="my-4 px-1 text-muted-foreground text-xs"
-										seenByIds={seenByIds}
-									>
-										{() => `Seen by ${seenByNames.join(", ")}`}
-									</TimelineItemGroupSeenIndicator>
-								</motion.div>
-							)}
-					</TimelineItemGroupContent>
-				</div>
-			)}
-		</PrimitiveTimelineItemGroup>
-	);
+                                                {isSentByViewer && (
+                                                        <div
+                                                                className={cn(
+                                                                        "w-full",
+                                                                        hasSeenIndicator && "mb-4 mt-4"
+                                                                )}
+                                                        >
+                                                                <div className="min-h-[1.25rem]">
+                                                                        {hasSeenIndicator && (
+                                                                                <motion.div
+                                                                                        key="seen-indicator"
+                                                                                        {...SEEN_ANIMATION}
+                                                                                >
+                                                                                        <TimelineItemGroupSeenIndicator
+                                                                                                className="px-1 text-muted-foreground text-xs"
+                                                                                                seenByIds={seenByIds}
+                                                                                        >
+                                                                                                {() =>
+                                                                                                        `Seen by ${seenByNames.join(", ")}`
+                                                                                                }
+                                                                                        </TimelineItemGroupSeenIndicator>
+                                                                                </motion.div>
+                                                                        )}
+                                                                </div>
+                                                        </div>
+                                                )}
+                                        </TimelineItemGroupContent>
+                                </div>
+                        )}
+                </PrimitiveTimelineItemGroup>
+        );
 };
