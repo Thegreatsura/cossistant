@@ -1,22 +1,120 @@
 "use client";
 
+import * as React from "react";
 import { useShikiHighlighter } from "react-shiki/web";
+
 import { SHARED_SHIKI_TRANSFORMERS } from "@/lib/highlight-code";
 import { cn } from "@/lib/utils";
+
 import { ComponentCodeReact } from "./component-code";
+import { NextJsIcon, ReactIcon } from "./framework-picker";
+import { Button } from "./ui/button";
+
+type SupportedFramework = "react" | "nextjs";
+
+type FrameworkCodeExample = {
+  code: string;
+  comment?: string | React.ReactNode;
+  commentClassName?: string;
+};
+
+type DashboardCodeBlockProps = React.ComponentProps<"div"> & {
+  code: string | Partial<Record<SupportedFramework, FrameworkCodeExample>>;
+  language?: string;
+  fileName: string;
+};
+
+const FRAMEWORK_META: Record<
+  SupportedFramework,
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
+> = {
+  react: {
+    label: "React",
+    icon: ReactIcon,
+  },
+  nextjs: {
+    label: "Next.js",
+    icon: NextJsIcon,
+  },
+};
 
 export function DashboardCodeBlock({
   fileName,
   code,
   language = "tsx",
   className,
-}: React.ComponentProps<"div"> & {
-  code: string;
-  language: string;
-  fileName: string;
-}) {
+}: DashboardCodeBlockProps) {
+  const frameworkExamples = React.useMemo(() => {
+    if (typeof code === "string") {
+      return null;
+    }
+
+    const entries = (
+      Object.entries(code) as [
+        SupportedFramework,
+        FrameworkCodeExample | undefined,
+      ][]
+    ) // type-safe iteration
+      .filter(([, value]) => Boolean(value?.code))
+      .map(([framework, value]) => ({
+        framework,
+        code: value?.code ?? "",
+        comment: value?.comment,
+        commentClassName: value?.commentClassName,
+      }));
+
+    if (!entries.length) {
+      return null;
+    }
+
+    const order: SupportedFramework[] = ["nextjs", "react"];
+    entries.sort(
+      (a, b) => order.indexOf(a.framework) - order.indexOf(b.framework)
+    );
+
+    return entries;
+  }, [code]);
+
+  const [selectedFramework, setSelectedFramework] =
+    React.useState<SupportedFramework | null>(
+      frameworkExamples?.[0]?.framework ?? null
+    );
+
+  React.useEffect(() => {
+    if (frameworkExamples?.length) {
+      setSelectedFramework(frameworkExamples[0]?.framework ?? null);
+      return;
+    }
+
+    setSelectedFramework(null);
+  }, [frameworkExamples]);
+
+  const activeExample = React.useMemo(() => {
+    if (!frameworkExamples?.length) {
+      return null;
+    }
+
+    const currentFramework =
+      selectedFramework ?? frameworkExamples[0]?.framework ?? null;
+    return (
+      frameworkExamples.find(
+        (example) => example.framework === currentFramework
+      ) ?? frameworkExamples[0]
+    );
+  }, [frameworkExamples, selectedFramework]);
+
+  const activeCode =
+    typeof code === "string" ? code : (activeExample?.code ?? "");
+  const activeComment =
+    typeof code === "string" ? undefined : activeExample?.comment;
+  const activeCommentClassName =
+    typeof code === "string" ? undefined : activeExample?.commentClassName;
+
   const highlighted = useShikiHighlighter(
-    code,
+    activeCode,
     language,
     {
       light: "github-light",
@@ -29,17 +127,59 @@ export function DashboardCodeBlock({
     }
   );
 
+  const showFrameworkSwitcher = Boolean(
+    frameworkExamples && frameworkExamples.length > 1
+  );
+
   return (
-    <div
-      className={cn(
-        "scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-background-100 relative overflow-clip rounded-md border border-primary/10 bg-background-200",
-        className
-      )}
-    >
-      <span className="absolute top-2 left-6 text-muted-foreground text-sm">
-        {fileName}
-      </span>
-      <ComponentCodeReact code={code}>{highlighted}</ComponentCodeReact>
+    <div className="flex flex-col">
+      <div
+        className={cn(
+          "relative overflow-clip rounded border border-primary/10 bg-background-200 pt-6",
+          className
+        )}
+      >
+        {showFrameworkSwitcher ? (
+          <div className="absolute top-0 left-0 flex items-center gap-0">
+            {frameworkExamples?.map(({ framework }) => {
+              const meta = FRAMEWORK_META[framework];
+
+              return (
+                <Button
+                  className={cn(
+                    "h-9 gap-3 rounded-none border-0 border-transparent border-b-1 has-[>svg]:px-3",
+                    selectedFramework === framework
+                      ? "border-primary/20 text-primary"
+                      : "border-transparent opacity-70 hover:opacity-100"
+                  )}
+                  key={framework}
+                  onClick={() => setSelectedFramework(framework)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <meta.icon className="size-3.5 fill-primary" />
+                  {meta.label}
+                </Button>
+              );
+            })}
+          </div>
+        ) : null}
+        <div className="absolute top-0 right-6 flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+          <span className="text-muted-foreground text-sm">{fileName}</span>
+        </div>
+        <ComponentCodeReact code={activeCode}>{highlighted}</ComponentCodeReact>
+      </div>
+      {activeComment ? (
+        <div
+          className={cn(
+            "border-primary/10 py-2 text-muted-foreground text-sm",
+            activeCommentClassName
+          )}
+        >
+          {activeComment}
+        </div>
+      ) : null}
     </div>
   );
 }

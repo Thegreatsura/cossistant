@@ -175,7 +175,7 @@ export const mdxComponents = {
   figure: ({ className, ...props }: React.ComponentProps<"figure">) => (
     <figure
       className={cn(
-        "border border-primary/10 border-dashed bg-background-100/50 dark:bg-background-100",
+        "border border-primary/10 border-dashed bg-background-50 dark:bg-background-100",
         className
       )}
       {...props}
