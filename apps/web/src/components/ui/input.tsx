@@ -6,6 +6,7 @@ interface InputProps extends React.ComponentProps<"input"> {
   prepend?: React.ReactNode;
   append?: React.ReactNode;
   variant?: "sm" | "md" | "lg";
+  containerClassName?: string;
 }
 
 function Input({
@@ -14,10 +15,13 @@ function Input({
   prepend,
   append,
   variant = "md",
+  containerClassName,
   ...props
 }: InputProps) {
   return (
-    <div className="relative flex w-full items-center">
+    <div
+      className={cn("relative flex w-full items-center", containerClassName)}
+    >
       {prepend && (
         <div className="pointer-events-none absolute left-3 flex items-center">
           {prepend}

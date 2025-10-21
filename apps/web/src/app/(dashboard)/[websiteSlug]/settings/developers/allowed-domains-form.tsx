@@ -7,6 +7,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
 import { BaseSubmitButton } from "@/components/ui/base-submit-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,7 +58,7 @@ const allowedDomainsSchema = z.object({
               code: z.ZodIssueCode.custom,
               message:
                 error instanceof Error
-                  ? error.message
+                  ? "Invalid domain."
                   : "Enter a valid URL including http:// or https://.",
             });
           }
@@ -81,58 +82,64 @@ function DomainsInput({ form, isSubmitting }: DomainsInputProps) {
   });
 
   return (
-    <>
-      <div className="space-y-4">
-        {fields.map((fieldItem, index) => (
-          <FormField
-            control={form.control}
-            key={fieldItem.id}
-            name={`domains.${index}` as const}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center justify-between">
-                  <span>Domain {index + 1}</span>
-                  {fields.length > 1 ? (
-                    <Button
-                      disabled={isSubmitting}
-                      onClick={() => remove(index)}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Icon className="size-4" name="x" />
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  ) : null}
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://example.com"
-                    {...field}
-                    className={cn({ "pr-12": fields.length > 1 })}
-                    onBlur={(event) => {
-                      field.onChange(event.target.value.trim());
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ))}
-      </div>
-
-      <div>
-        <Button
-          disabled={isSubmitting}
-          onClick={() => append("")}
-          type="button"
-          variant="outline"
-        >
-          Add domain
-        </Button>
-      </div>
-    </>
+    <div className="space-y-2 px-1.5 py-4">
+      {fields.map((fieldItem, index) => (
+        <FormField
+          control={form.control}
+          key={fieldItem.id}
+          name={`domains.${index}` as const}
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center">
+              <FormLabel className="flex items-center justify-between">
+                <span />
+              </FormLabel>
+              <FormControl className="flex items-center">
+                <Input
+                  placeholder="https://example.com"
+                  {...field}
+                  append={
+                    field.value.includes("http://") && (
+                      <Badge className="text-xs" variant="outline">
+                        Test
+                      </Badge>
+                    )
+                  }
+                  className={cn({ "pr-12": fields.length > 1 })}
+                  containerClassName="max-w-[400px]"
+                  onBlur={(event) => {
+                    field.onChange(event.target.value.trim());
+                  }}
+                />
+              </FormControl>
+              {fields.length > 1 ? (
+                <Button
+                  disabled={isSubmitting}
+                  onClick={() => remove(index)}
+                  size="icon-small"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Icon className="size-4" name="x" />
+                  <span className="sr-only">Remove</span>
+                </Button>
+              ) : null}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ))}
+      <Button
+        className="ml-2"
+        disabled={isSubmitting}
+        onClick={() => append("")}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        <Icon className="size-3" name="plus" />
+        <span>Add domain</span>
+      </Button>
+    </div>
   );
 }
 
