@@ -3,8 +3,8 @@ name: Create Release
 on:
   push:
     tags:
-      - "@cossistant/react@*"
-      - "@cossistant/next@*"
+      - '@cossistant/react@*'
+      - '@cossistant/next@*'
 
 permissions:
   contents: write
