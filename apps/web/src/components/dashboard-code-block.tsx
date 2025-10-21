@@ -14,7 +14,8 @@ type SupportedFramework = "react" | "nextjs";
 
 type FrameworkCodeExample = {
   code: string;
-  comment?: string;
+  comment?: string | React.ReactNode;
+  commentClassName?: string;
 };
 
 type DashboardCodeBlockProps = React.ComponentProps<"div"> & {
@@ -62,6 +63,7 @@ export function DashboardCodeBlock({
         framework,
         code: value?.code ?? "",
         comment: value?.comment,
+        commentClassName: value?.commentClassName,
       }));
 
     if (!entries.length) {
@@ -108,6 +110,8 @@ export function DashboardCodeBlock({
     typeof code === "string" ? code : (activeExample?.code ?? "");
   const activeComment =
     typeof code === "string" ? undefined : activeExample?.comment;
+  const activeCommentClassName =
+    typeof code === "string" ? undefined : activeExample?.commentClassName;
 
   const highlighted = useShikiHighlighter(
     activeCode,
@@ -167,7 +171,12 @@ export function DashboardCodeBlock({
         <ComponentCodeReact code={activeCode}>{highlighted}</ComponentCodeReact>
       </div>
       {activeComment ? (
-        <div className="border-primary/10 py-2 text-muted-foreground text-sm">
+        <div
+          className={cn(
+            "border-primary/10 py-2 text-muted-foreground text-sm",
+            activeCommentClassName
+          )}
+        >
           {activeComment}
         </div>
       ) : null}

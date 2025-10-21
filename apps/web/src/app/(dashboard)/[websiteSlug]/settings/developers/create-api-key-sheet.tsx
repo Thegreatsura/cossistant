@@ -306,11 +306,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
                       )}
                     />
 
-                    <BaseSubmitButton
-                      className="w-full"
-                      isSubmitting={isCreating}
-                      type="submit"
-                    >
+                    <BaseSubmitButton isSubmitting={isCreating} type="submit">
                       Generate API key
                     </BaseSubmitButton>
                   </form>
@@ -322,21 +318,39 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
               {keyCreated && lastCreatedKey && (
                 <div className="flex flex-col gap-2">
                   <p className="text-muted-foreground text-sm">
-                    Please add this code to your environment file and keep it
+                    Please add this to your environment variables and keep it
                     secure.
                   </p>
                   <DashboardCodeBlock
                     className="mt-4"
-                    code={{
-                      nextjs: {
-                        code: `NEXT_PUBLIC_COSSISTANT_KEY=${lastCreatedKey.key}`,
-                        comment: "This is the public key for your website.",
-                      },
-                      react: {
-                        code: `COSSISTANT_KEY=${lastCreatedKey.key}`,
-                        comment: "This is the public key for your website.",
-                      },
-                    }}
+                    code={
+                      lastCreatedKey.keyType === APIKeyType.PUBLIC
+                        ? {
+                            nextjs: {
+                              code: `NEXT_PUBLIC_COSSISTANT_KEY=${lastCreatedKey.key}`,
+                              comment:
+                                "This is the public key for your website.",
+                            },
+                            react: {
+                              code: `COSSISTANT_KEY=${lastCreatedKey.key}`,
+                              comment:
+                                "This is the public key for your website.",
+                            },
+                          }
+                        : {
+                            nextjs: {
+                              code: `COSSISTANT_PRIVATE_KEY=${lastCreatedKey.key}`,
+                              comment:
+                                "This is the private key to use in server-to-server communication, never expose it to the client side.",
+                            },
+                            react: {
+                              code: `COSSISTANT_PRIVATE_KEY=${lastCreatedKey.key}`,
+                              comment:
+                                "Please note: NEVER expose this key to the client side, this is a private key to access the API.",
+                              commentClassName: "text-destructive",
+                            },
+                          }
+                    }
                     fileName=".env"
                     language="ansi"
                   />
