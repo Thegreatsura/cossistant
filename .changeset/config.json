@@ -22,7 +22,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "api",
-    "web"
+    "@cossistant/api",
+    "@cossistant/web"
   ]
 }
