@@ -7,3 +7,4 @@ export * from "./timeline-item";
 export * from "./user";
 export * from "./visitor";
 export * from "./website";
+export * from "./upload";
