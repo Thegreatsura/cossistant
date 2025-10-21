@@ -1,5 +1,18 @@
 # @cossistant/next
 
+## 0.0.3
+
+### Patch Changes
+
+- Test release v0.0.3 to verify automated GitHub release workflow
+- cb3b12b: Test release to verify automated release workflow
+
+  This is a test release to confirm the automated GitHub release workflow is working correctly.
+
+- Updated dependencies
+- Updated dependencies [cb3b12b]
+  - @cossistant/react@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes

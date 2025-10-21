@@ -1,6 +1,6 @@
 {
   "name": "@cossistant/react",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "author": "Cossistant team",
   "description": "Headless React SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
