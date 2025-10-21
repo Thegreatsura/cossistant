@@ -110,13 +110,20 @@ export async function generateUploadUrl(
 		ContentType: options.contentType,
 	});
 
-	const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
+	try {
+		const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
 
-	return {
-		uploadUrl,
-		key: objectKey,
-		bucket: env.S3_BUCKET_NAME,
-		expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-		contentType: options.contentType,
-	};
+		return {
+			uploadUrl,
+			key: objectKey,
+			bucket: env.S3_BUCKET_NAME,
+			expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+			contentType: options.contentType,
+		};
+	} catch (error) {
+		throw new Error(
+			`Failed to generate signed upload URL: ${error instanceof Error ? error.message : "Unknown error"}`,
+			{ cause: error }
+		);
+	}
 }
