@@ -63,9 +63,14 @@ Use this rule whenever you are preparing a production release that only targets 
    bun run version-packages
    ```
 3. Tag both packages (replace `0.1.0`):
+  ```bash
+  git tag @cossistant/react@0.1.0
+  git tag @cossistant/next@0.1.0
+  ```
+
+4. Push the tags. The `Create Release` GitHub workflow listens for `@cossistant/*` tags and will publish the matching release notes automatically:
    ```bash
-   git tag @cossistant/react@0.1.0
-   git tag @cossistant/next@0.1.0
+   git push --follow-tags
    ```
 
 ## 🚀 Publish to npm
@@ -84,6 +89,6 @@ This command must succeed **after** the MDX changelog, tags, and version bumps a
   - Updated `package.json` versions and changelog fragments.
   - The new MDX entry in `apps/web/content/changelog/`.
   - Any generated `dist/` artifacts (never commit build outputs).
-- Push with tags: `git push --follow-tags`.
+- The GitHub release workflow is triggered by pushing the tags above. No manual GitHub release drafting is required.
 
 If any step fails, update `docs/package-release.md` with a fix so the playbook remains accurate.

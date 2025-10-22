@@ -61,6 +61,8 @@ git tag @cossistant/next@0.1.0
 
 Push the tags after verifying the release branch is ready: `git push --follow-tags`.
 
+This push triggers the `Create Release` GitHub Actions workflow, which generates release notes for each scoped tag.
+
 ## 5. Publish the Web Changelog Entry
 
 Create an MDX file under `apps/web/content/changelog/` with frontmatter matching the schema in `apps/web/source.config.ts`. Use the widget vs. dashboard breakdown gathered earlier. Follow the template enforced by the Cursor release rule (`.cursor/rules/package-release.mdc`).
@@ -87,7 +89,7 @@ Verify the packages appear on npm with the new version.
 
 1. Push the release branch and open a PR summarising the changes and linking to the MDX changelog entry.
 2. Once merged, push the tags if you have not already (`git push origin @cossistant/react@0.1.0 @cossistant/next@0.1.0`).
-3. Create a GitHub release for each tag. Copy the Changeset summary and link to the website changelog entry for reference.
+3. Confirm that the automated GitHub workflow has produced releases for each tag. The body is sourced from the package `CHANGELOG.md`; edit the release on GitHub only if corrections are required.
 
 ## Troubleshooting
 
