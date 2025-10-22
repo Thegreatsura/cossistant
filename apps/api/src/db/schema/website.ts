@@ -43,7 +43,8 @@ export const website = pgTable(
 		id: ulidPrimaryKey("id"),
 		name: text("name").notNull(),
 		slug: text("slug").notNull().unique(),
-		domain: text("domain").notNull(),
+                domain: text("domain").notNull(),
+                contactEmail: text("contact_email"),
 		isDomainOwnershipVerified: boolean("is_domain_ownership_verified")
 			.default(false)
 			.notNull(),

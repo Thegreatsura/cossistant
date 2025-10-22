@@ -29,7 +29,7 @@ import {
   websiteSummarySchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
@@ -92,6 +92,9 @@ export const websiteRouter = createTRPCRouter({
           id: true,
           slug: true,
           name: true,
+          domain: true,
+          contactEmail: true,
+          logoUrl: true,
           organizationId: true,
           whitelistedDomains: true,
         },
@@ -127,6 +130,9 @@ export const websiteRouter = createTRPCRouter({
           id: site.id,
           slug: site.slug,
           name: site.name,
+          domain: site.domain,
+          contactEmail: site.contactEmail ?? null,
+          logoUrl: site.logoUrl ?? null,
           organizationId: site.organizationId,
           whitelistedDomains: site.whitelistedDomains,
         },
@@ -315,9 +321,15 @@ export const websiteRouter = createTRPCRouter({
     .input(checkWebsiteDomainRequestSchema)
     .output(z.boolean())
     .query(async ({ ctx: { db }, input }) => {
+      const normalizedDomain = input.domain
+        .trim()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/.*$/, "")
+        .toLowerCase();
+
       const existingWebsite = await db.query.website.findFirst({
         where: and(
-          eq(website.domain, input.domain),
+          eq(website.domain, normalizedDomain),
           eq(website.isDomainOwnershipVerified, true)
         ),
       });
@@ -338,6 +350,9 @@ export const websiteRouter = createTRPCRouter({
           id: true,
           slug: true,
           name: true,
+          domain: true,
+          contactEmail: true,
+          logoUrl: true,
           organizationId: true,
           whitelistedDomains: true,
         },
@@ -362,10 +377,62 @@ export const websiteRouter = createTRPCRouter({
         });
       }
 
+      const updateData = { ...input.data };
+
+      if (updateData.name) {
+        const trimmedName = updateData.name.trim();
+
+        if (!trimmedName) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Website name cannot be empty.",
+          });
+        }
+
+        updateData.name = trimmedName;
+      }
+
+      if (updateData.domain) {
+        const normalizedDomain = updateData.domain
+          .trim()
+          .replace(/^https?:\/\//, "")
+          .replace(/\/.*$/, "")
+          .toLowerCase();
+
+        if (normalizedDomain !== site.domain) {
+          const existingDomain = await ctx.db.query.website.findFirst({
+            where: and(
+              eq(website.domain, normalizedDomain),
+              eq(website.isDomainOwnershipVerified, true),
+              ne(website.id, site.id)
+            ),
+          });
+
+          if (existingDomain) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Domain already in use by another website",
+            });
+          }
+        }
+
+        updateData.domain = normalizedDomain;
+      }
+
+      if (updateData.contactEmail !== undefined) {
+        const trimmedEmail = updateData.contactEmail
+          ? updateData.contactEmail.trim().toLowerCase()
+          : null;
+
+        updateData.contactEmail = trimmedEmail && trimmedEmail.length > 0
+          ? trimmedEmail
+          : null;
+      }
+
       const updatedSite = await updateWebsite(ctx.db, {
         orgId: input.organizationId,
         websiteId: input.websiteId,
-        data: input.data,
+        data: updateData,
       });
 
       if (!updatedSite) {
@@ -379,6 +446,9 @@ export const websiteRouter = createTRPCRouter({
         id: updatedSite.id,
         slug: updatedSite.slug,
         name: updatedSite.name,
+        domain: updatedSite.domain,
+        contactEmail: updatedSite.contactEmail ?? null,
+        logoUrl: updatedSite.logoUrl ?? null,
         organizationId: updatedSite.organizationId,
         whitelistedDomains: updatedSite.whitelistedDomains,
       };
