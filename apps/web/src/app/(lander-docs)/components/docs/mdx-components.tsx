@@ -1,14 +1,15 @@
+import type { ImageProps } from "fumadocs-core/framework";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import Image from "next/image";
 import Link from "next/link";
-
+import type { ImgHTMLAttributes, JSX } from "react";
+import type { UncontrolledProps } from "react-medium-image-zoom";
 import { CodeBlockCommand } from "@/components/code-block-command";
 import { CodeBlockWrapper } from "@/components/code-block-wrapper";
 import { CodeCollapsibleWrapper } from "@/components/code-collapsible-wrapper";
 import { CodeTabs } from "@/components/code-tabs";
 import { ComponentPreview } from "@/components/component-preview";
 import { ComponentSource } from "@/components/component-source";
-
 import { CopyButton } from "@/components/copy-button";
 import { TypeTable } from "@/components/type-table";
 import {
@@ -22,6 +23,7 @@ import { getIconForLanguageExtension } from "@/components/ui/logos";
 import { Step, Steps } from "@/components/ui/steps";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { ImageZoom } from "./image-zoom";
 import StyleTokenCascade from "./style-token-cascade";
 
 export const mdxComponents = {
@@ -116,12 +118,6 @@ export const mdxComponents = {
       className={cn("mt-6 border-l-2 pl-6 italic", className)}
       {...props}
     />
-  ),
-  img: ({ className, alt, ...props }: React.ComponentProps<"img">) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    // biome-ignore lint/performance/noImgElement: ok here
-    // biome-ignore lint/nursery/useImageSize: ok
-    <img alt={alt} className={cn("rounded", className)} {...props} />
   ),
   hr: ({ ...props }: React.ComponentProps<"hr">) => (
     <hr className="my-4 md:my-8" {...props} />
@@ -274,6 +270,13 @@ export const mdxComponents = {
       {...props}
     />
   ),
+  img: (
+    props: JSX.IntrinsicAttributes &
+      ImageProps & {
+        zoomInProps?: ImgHTMLAttributes<HTMLImageElement>;
+        rmiz?: UncontrolledProps;
+      }
+  ) => <ImageZoom {...props} />,
   Tabs: ({ className, ...props }: React.ComponentProps<typeof Tabs>) => (
     <Tabs className={cn("relative mt-6 w-full", className)} {...props} />
   ),
