@@ -74,6 +74,19 @@ export function useConversationAutoSeen(
         const markSeenInFlightRef = useRef(false);
         const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
         const { isPageVisible, hasWindowFocus } = useWindowVisibilityFocus();
+        const latestStateRef = useRef({
+                enabled,
+                isPageVisible,
+                hasWindowFocus,
+        });
+
+        useEffect(() => {
+                latestStateRef.current = {
+                        enabled,
+                        isPageVisible,
+                        hasWindowFocus,
+                };
+        }, [enabled, hasWindowFocus, isPageVisible]);
 
         // Reset seen tracking when conversation changes
         useEffect(() => {
@@ -140,7 +153,20 @@ export function useConversationAutoSeen(
                 const pendingItemId = lastTimelineItem.id || null;
 
                 markSeenTimeoutRef.current = setTimeout(() => {
-                        if (!client || !conversationId) {
+                        const {
+                                enabled: latestEnabled,
+                                isPageVisible: latestPageVisible,
+                                hasWindowFocus: latestHasFocus,
+                        } = latestStateRef.current;
+
+                        if (
+                                !client ||
+                                !conversationId ||
+                                !latestEnabled ||
+                                !latestPageVisible ||
+                                !latestHasFocus
+                        ) {
+                                markSeenInFlightRef.current = false;
                                 markSeenTimeoutRef.current = null;
                                 return;
                         }
