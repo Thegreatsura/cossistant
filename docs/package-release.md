@@ -59,9 +59,7 @@ git tag @cossistant/react@0.1.0
 git tag @cossistant/next@0.1.0
 ```
 
-Push the tags after verifying the release branch is ready: `git push --follow-tags`.
-
-This push triggers the `Create Release` GitHub Actions workflow, which generates release notes for each scoped tag.
+Keep these tags local until the release branch is merged (see Step 7).
 
 ## 5. Publish the Web Changelog Entry
 
@@ -88,8 +86,8 @@ Verify the packages appear on npm with the new version.
 ## 7. Finalise on GitHub
 
 1. Push the release branch and open a PR summarising the changes and linking to the MDX changelog entry.
-2. Once merged, push the tags if you have not already (`git push origin @cossistant/react@0.1.0 @cossistant/next@0.1.0`).
-3. Confirm that the automated GitHub workflow has produced releases for each tag. The body is sourced from the package `CHANGELOG.md`; edit the release on GitHub only if corrections are required.
+2. Once merged, push the tags (`git push origin @cossistant/react@0.1.0 @cossistant/next@0.1.0`).
+3. This push triggers the `Create Release` GitHub Actions workflow, which generates release notes for each scoped tag. Confirm that the automated release exists for each tag. The body is sourced from the package `CHANGELOG.md`; edit the release on GitHub only if corrections are required.
 
 ## Troubleshooting
 
