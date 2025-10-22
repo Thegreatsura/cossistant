@@ -43,6 +43,12 @@ export const userResponseSchema = z.object({
 
 export const updateUserProfileRequestSchema = z
         .object({
+                userId: z
+                        .ulid({ message: "Missing user identifier." })
+                        .openapi({
+                                description: "The identifier of the user that should be updated.",
+                                example: "01JG000000000000000000000",
+                        }),
                 name: z
                         .string({ message: "Enter your name." })
                         .trim()

@@ -152,11 +152,12 @@ export function UserProfileForm({
                         }
 
                         await updateProfile({
+                                userId,
                                 name,
                                 image: imageUrl,
                         });
                 },
-                [updateProfile]
+                [updateProfile, userId]
         );
 
         const nameValue = form.watch("name");
@@ -221,7 +222,7 @@ export function UserProfileForm({
                                                                                 }
                                                                                 ref={field.ref}
                                                                                 value={field.value}
-                                                                                placeholder="Upload a square image at least 256×256px. SVG files will be stored without cropping."
+                                                                                placeholder="Upload a square image at least 256×256px. SVG uploads are disabled by default for security."
                                                                         />
                                                                 </FormControl>
                                                                 <FormMessage />

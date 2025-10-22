@@ -18,18 +18,16 @@ export const userRouter = createTRPCRouter({
                 .input(updateUserProfileRequestSchema)
                 .output(userResponseSchema)
                 .mutation(async ({ ctx: { db, user }, input }) => {
-                        const trimmedName = input.name.trim();
-
-                        if (!trimmedName) {
+                        if (input.userId !== user.id) {
                                 throw new TRPCError({
-                                        code: "BAD_REQUEST",
-                                        message: "Name cannot be empty.",
+                                        code: "FORBIDDEN",
+                                        message: "You can only update your own profile.",
                                 });
                         }
 
                         const updatedUser = await updateUserProfile(db, {
                                 userId: user.id,
-                                name: trimmedName,
+                                name: input.name,
                                 imageUrl: input.image ?? null,
                         });
 
