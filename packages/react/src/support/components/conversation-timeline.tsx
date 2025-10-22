@@ -111,12 +111,12 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 										event={
 											eventPart
 										}
-										key={
-											item
-												.item
-												.id ||
-											`timeline-event-${index}`
-										}
+                                                                                key={
+                                                                                        item
+                                                                                                .item
+                                                                                                .id ??
+                                                                                        `timeline-event-${item.item.createdAt}`
+                                                                                }
 									/>
 								);
 							}
@@ -134,10 +134,13 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 									: [];
 
 							// Use first timeline item ID as stable key
-							const groupKey =
-								item.items?.[0]
-									?.id ||
-								`group-${index}`;
+                                                        const groupKey =
+                                                                item.lastMessageId ??
+                                                                item.items?.[0]?.id ??
+                                                                `group-${
+                                                                        item.items?.[0]?.createdAt ??
+                                                                        index
+                                                                }`;
 
 							return (
 								<TimelineMessageGroup

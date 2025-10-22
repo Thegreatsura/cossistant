@@ -3,14 +3,15 @@ import { useMemo } from "react";
 
 import { SenderType } from "@cossistant/types";
 
+import {
+        mapTypingEntriesToParticipants,
+        type TimelineTypingParticipant,
+} from "./private/typing";
 import { useDebouncedConversationSeen } from "./use-conversation-seen";
 import { useConversationTyping } from "./use-conversation-typing";
 import { useGroupedMessages } from "./private/use-grouped-messages";
 
-export type ConversationTimelineTypingParticipant = {
-	id: string;
-	type: "team_member" | "ai";
-};
+export type ConversationTimelineTypingParticipant = TimelineTypingParticipant;
 
 export type UseConversationTimelineOptions = {
 	conversationId: string;
@@ -64,42 +65,10 @@ export function useConversationTimeline({
 		return -1;
 	}, [groupedMessages.items, currentVisitorId]);
 
-	const typingParticipants = useMemo(
-		() =>
-			typingEntries
-				.map<ConversationTimelineTypingParticipant | null>(
-					(entry) => {
-						if (
-							entry.actorType ===
-							"user"
-						) {
-							return {
-								id: entry.actorId,
-								type: "team_member",
-							};
-						}
-
-						if (
-							entry.actorType ===
-							"ai_agent"
-						) {
-							return {
-								id: entry.actorId,
-								type: "ai",
-							};
-						}
-
-						return null;
-					},
-				)
-				.filter(
-					(
-						participant,
-					): participant is ConversationTimelineTypingParticipant =>
-						participant !== null,
-				),
-		[typingEntries],
-	);
+        const typingParticipants = useMemo(
+                () => mapTypingEntriesToParticipants(typingEntries),
+                [typingEntries],
+        );
 
 	return {
 		groupedMessages,

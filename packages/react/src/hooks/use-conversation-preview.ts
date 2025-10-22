@@ -5,6 +5,10 @@ import { useMemo } from "react";
 import { useSupport } from "../provider";
 import { useSupportText } from "../support/text";
 import { formatTimeAgo } from "../support/utils/time";
+import {
+        mapTypingEntriesToPreviewParticipants,
+        type PreviewTypingParticipant,
+} from "./private/typing";
 import { useConversationTimelineItems } from "./use-conversation-timeline-items";
 import { useConversationTyping } from "./use-conversation-typing";
 
@@ -22,12 +26,7 @@ export type ConversationPreviewAssignedAgent = {
 	type: "human" | "ai" | "fallback";
 };
 
-export type ConversationPreviewTypingParticipant = {
-	id: string;
-	type: "team_member" | "ai";
-	name: string;
-	image: string | null;
-};
+export type ConversationPreviewTypingParticipant = PreviewTypingParticipant;
 
 export type ConversationPreviewTypingState = {
 	participants: ConversationPreviewTypingParticipant[];
@@ -94,8 +93,8 @@ export function useConversationPreview(
 		initialTimelineItems = [],
 		typing,
 	} = options;
-	const { availableHumanAgents, availableAIAgents, website, visitor } =
-		useSupport();
+        const { availableHumanAgents, availableAIAgents, visitor } =
+                useSupport();
 	const text = useSupportText();
 
 	const timeline = useConversationTimelineItems(conversation.id, {
@@ -168,15 +167,12 @@ export function useConversationPreview(
 						"common.fallbacks.supportTeam",
 					);
 				}
-			} else if (
-				lastTimelineMessage.aiAgentId &&
-				website?.availableAIAgents
-			) {
-				const aiAgent = website.availableAIAgents.find(
-					(agent) =>
-						agent.id ===
-						lastTimelineMessage.aiAgentId,
-				);
+                        } else if (lastTimelineMessage.aiAgentId) {
+                                const aiAgent = availableAIAgents.find(
+                                        (agent) =>
+                                                agent.id ===
+                                                lastTimelineMessage.aiAgentId,
+                                );
 				if (aiAgent) {
 					senderName = aiAgent.name;
 					senderImage = aiAgent.image;
@@ -203,9 +199,9 @@ export function useConversationPreview(
 		}, [
 			lastTimelineMessage,
 			availableHumanAgents,
-			website?.availableAIAgents,
-			text,
-		]);
+                        availableAIAgents,
+                        text,
+                ]);
 
 	const assignedAgent = useMemo<ConversationPreviewAssignedAgent>(() => {
 		const supportFallbackName = text(
@@ -293,74 +289,15 @@ export function useConversationPreview(
 		excludeAiAgentId: typing?.excludeAiAgentId ?? null,
 	});
 
-	const typingParticipants = useMemo(
-		() =>
-			typingEntries
-				.map<ConversationPreviewTypingParticipant | null>(
-					(entry) => {
-						if (
-							entry.actorType ===
-							"user"
-						) {
-							const human =
-								availableHumanAgents.find(
-									(
-										agent,
-									) =>
-										agent.id ===
-										entry.actorId,
-								);
-							return {
-								id: entry.actorId,
-								type: "team_member" as const,
-								name:
-									human?.name ||
-									text(
-										"common.fallbacks.supportTeam",
-									),
-								image:
-									human?.image ??
-									null,
-							};
-						}
-
-						if (
-							entry.actorType ===
-							"ai_agent"
-						) {
-							const ai =
-								availableAIAgents.find(
-									(
-										agent,
-									) =>
-										agent.id ===
-										entry.actorId,
-								);
-							return {
-								id: entry.actorId,
-								type: "ai" as const,
-								name:
-									ai?.name ||
-									text(
-										"common.fallbacks.aiAssistant",
-									),
-								image:
-									ai?.image ??
-									null,
-							};
-						}
-
-						return null;
-					},
-				)
-				.filter(
-					(
-						participant,
-					): participant is ConversationPreviewTypingParticipant =>
-						participant !== null,
-				),
-		[typingEntries, availableHumanAgents, availableAIAgents, text],
-	);
+        const typingParticipants = useMemo(
+                () =>
+                        mapTypingEntriesToPreviewParticipants(typingEntries, {
+                                availableHumanAgents,
+                                availableAIAgents,
+                                text,
+                        }),
+                [typingEntries, availableHumanAgents, availableAIAgents, text],
+        );
 
 	const primaryTypingParticipant = typingParticipants[0] ?? null;
 
