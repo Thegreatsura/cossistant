@@ -1,9 +1,11 @@
+import { PageContent } from "@/components/ui/layout";
 import {
   SettingsHeader,
   SettingsPage,
   SettingsRow,
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
+import { UserProfileForm } from "./user-profile-form";
 
 type GeneralSettingsPageProps = {
   params: Promise<{
@@ -15,32 +17,24 @@ export default async function GeneralSettingsPage({
   params,
 }: GeneralSettingsPageProps) {
   const { websiteSlug } = await params;
-  await ensureWebsiteAccess(websiteSlug);
+  const { user, website } = await ensureWebsiteAccess(websiteSlug);
 
   return (
     <SettingsPage>
       <SettingsHeader>General</SettingsHeader>
-
-      <SettingsRow
-        description="Update your website logo, slug, email and basic information."
-        title="Website profile"
-      >
-        <ul className="list-inside list-disc text-primary/60 text-sm">
-          <li>- display and copy organisation id</li>
-          <li>- display and copy organisation slug</li>
-        </ul>
-      </SettingsRow>
-      <SettingsRow
-        description="Update your website logo, slug, email and basic information."
-        title="Website profile"
-      >
-        <ul className="list-inside list-disc text-primary/60 text-sm">
-          <li>- display and copy website id</li>
-          <li>- display and copy website slug</li>
-          <li>- update the website logo</li>
-          <li>- update the website name and support email</li>
-        </ul>
-      </SettingsRow>
+      <PageContent className="py-30">
+        <SettingsRow
+          description="Control how your name and avatar appear to teammates across Cossistant."
+          title="Your profile"
+        >
+          <UserProfileForm
+            initialAvatarUrl={user.image}
+            initialName={user.name ?? ""}
+            organizationId={website.organizationId}
+            userId={user.id}
+          />
+        </SettingsRow>
+      </PageContent>
     </SettingsPage>
   );
 }
