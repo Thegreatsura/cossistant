@@ -55,13 +55,13 @@ export function ConversationItem({
                 RouterOutputs["conversation"]["getVisitorById"] | undefined
         >(() => {
                 if (!header.visitorId) {
-                        return headerVisitor ?? undefined;
+                        return headerVisitor;
                 }
 
                 return (
                         queryNormalizer.getObjectById<
                                 RouterOutputs["conversation"]["getVisitorById"]
-                        >(header.visitorId) ?? headerVisitor ?? undefined
+                        >(header.visitorId) ?? headerVisitor
                 );
         }, [header.visitorId, headerVisitor, queryNormalizer]);
 

@@ -23,7 +23,7 @@ export function useVisitor({
                         return undefined;
                 }
 
-                return queryNormalizer.getObjectById<VisitorResponse>(visitorId) ?? undefined;
+                return queryNormalizer.getObjectById<VisitorResponse>(visitorId);
         }, [queryNormalizer, visitorId]);
 
         const {

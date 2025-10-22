@@ -115,10 +115,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
                         return undefined;
                 }
 
-                return (
-                        queryNormalizer.getObjectById<ContactDetail>(selectedContactId) ??
-                        undefined
-                );
+                return queryNormalizer.getObjectById<ContactDetail>(selectedContactId);
         }, [queryNormalizer, selectedContactId]);
 
         const contactDetailQuery = useQuery({
