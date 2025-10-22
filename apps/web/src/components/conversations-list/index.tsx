@@ -1,10 +1,7 @@
 "use client";
 
 import type { ConversationStatus } from "@cossistant/types";
-import { useEffect } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
-import { useConversationFocusStore } from "@/contexts/inboxes/conversation-focus-store";
-import { useSidebar } from "@/hooks/use-sidebars";
 import { Button } from "../ui/button";
 import Icon from "../ui/icons";
 import { Page, PageContent, PageHeader, PageHeaderTitle } from "../ui/layout";
@@ -16,6 +13,8 @@ type Props = {
   selectedConversationStatus: ConversationStatus | "archived" | null;
   conversations: ConversationHeader[];
   websiteSlug: string;
+  isLeftSidebarOpen: boolean;
+  onToggleLeftSidebar: () => void;
 };
 
 export function ConversationsList({
@@ -23,16 +22,9 @@ export function ConversationsList({
   selectedConversationStatus,
   conversations,
   websiteSlug,
+  isLeftSidebarOpen,
+  onToggleLeftSidebar,
 }: Props) {
-  const clearFocus = useConversationFocusStore((state) => state.clearFocus);
-  const { open: isLeftSidebarOpen, toggle: toggleLeftSidebar } = useSidebar({
-    position: "left",
-  });
-
-  useEffect(() => {
-    clearFocus();
-  }, [selectedConversationStatus, clearFocus]);
-
   return (
     <Page className="px-0">
       <PageHeader className="px-4">
@@ -45,7 +37,7 @@ export function ConversationsList({
             >
               <Button
                 className="ml-0.5"
-                onClick={toggleLeftSidebar}
+                onClick={onToggleLeftSidebar}
                 size="icon-small"
                 variant="ghost"
               >

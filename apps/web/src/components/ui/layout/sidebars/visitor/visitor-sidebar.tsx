@@ -11,9 +11,9 @@ import { VisitorSidebarPlaceholder } from "./placeholder";
 import { ValueDisplay } from "./value-display";
 import { ValueGroup } from "./value-group";
 
-type VisitorSidebarProps = {
-	visitor: RouterOutputs["conversation"]["getVisitorById"];
-	isLoading: boolean;
+export type VisitorSidebarProps = {
+        visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
+        isLoading: boolean;
 };
 
 export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
