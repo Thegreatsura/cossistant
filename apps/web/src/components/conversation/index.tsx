@@ -1,245 +1,36 @@
 "use client";
 
-import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
-import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
-import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { useEffect, useMemo, useRef } from "react";
-import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
-import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
-import { useInboxes } from "@/contexts/inboxes";
-import { useWebsiteMembers } from "@/contexts/website";
-import { useConversationActions } from "@/data/use-conversation-actions";
-import { useConversationTimelineItems } from "@/data/use-conversation-timeline-items";
-import { useVisitor } from "@/data/use-visitor";
-import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
-import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
+import type { ComponentProps } from "react";
 import { Page } from "../ui/layout";
-import { VisitorSidebar } from "../ui/layout/sidebars/visitor/visitor-sidebar";
-import { ConversationHeader } from "./header";
+import {
+        VisitorSidebar,
+        type VisitorSidebarProps,
+} from "../ui/layout/sidebars/visitor/visitor-sidebar";
+import { ConversationHeader, type ConversationHeaderProps } from "./header";
 import { ConversationTimelineList } from "./messages/conversation-timeline";
-import { MultimodalInput } from "./multimodal-input";
+import { MultimodalInput, type MultimodalInputProps } from "./multimodal-input";
 
-type ConversationProps = {
-	conversationId: string;
-	visitorId: string;
-	websiteSlug: string;
-	currentUserId: string;
+type ConversationTimelineProps = ComponentProps<typeof ConversationTimelineList>;
+
+export type ConversationProps = {
+        header: ConversationHeaderProps;
+        timeline: ConversationTimelineProps;
+        input: MultimodalInputProps;
+        visitorSidebar: VisitorSidebarProps;
 };
 
-const MESSAGES_PAGE_LIMIT = 50;
-
-export function Conversation({
-	conversationId,
-	visitorId,
-	currentUserId,
-	websiteSlug,
-}: ConversationProps) {
-	const { submit: submitConversationMessage } = useSendConversationMessage({
-		conversationId,
-		websiteSlug,
-		currentUserId,
-		pageLimit: MESSAGES_PAGE_LIMIT,
-	});
-
-	const {
-		handleInputChange: handleTypingChange,
-		handleSubmit: handleTypingSubmit,
-		stop: stopTyping,
-	} = useAgentTypingReporter({
-		conversationId,
-		websiteSlug,
-	});
-
-	const {
-		message,
-		files,
-		isSubmitting,
-		error,
-		setMessage,
-		addFiles,
-		removeFile,
-		clearFiles,
-		submit,
-		reset,
-		isValid,
-		canSubmit,
-	} = useMultimodalInput({
-		onSubmit: async (payload) => {
-			handleTypingSubmit();
-			await submitConversationMessage(payload);
-		},
-		onError: (submitError) => {
-			console.error("Failed to send message", submitError);
-		},
-	});
-
-	const handleMessageChange = (value: string) => {
-		setMessage(value);
-		handleTypingChange(value);
-	};
-
-	useEffect(
-		() => () => {
-			stopTyping();
-		},
-		[stopTyping]
-	);
-
-	const members = useWebsiteMembers();
-	const { selectedConversation } = useInboxes();
-	const { markRead } = useConversationActions({
-		conversationId,
-		visitorId,
-	});
-
-        const lastMarkedMessageIdRef = useRef<string | null>(null);
-        const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-        const { isPageVisible, hasWindowFocus } = useWindowVisibilityFocus();
-
-	const { items, fetchNextPage, hasNextPage } = useConversationTimelineItems({
-		conversationId,
-		websiteSlug,
-		options: { limit: MESSAGES_PAGE_LIMIT },
-	});
-
-	const { visitor, isLoading } = useVisitor({ visitorId, websiteSlug });
-
-	// Hydrate and subscribe to seen data from the store
-	const seenData = useConversationSeen(conversationId, {
-		initialData: selectedConversation?.seenData ?? [],
-	});
-
-	// Get last message from timeline items (filter for message type)
-	const lastMessage = useMemo(
-		() => items.filter((item) => item.type === "message").at(-1) ?? null,
-		[items]
-	);
-
-        useEffect(() => {
-                if (markSeenTimeoutRef.current) {
-                        clearTimeout(markSeenTimeoutRef.current);
-                        markSeenTimeoutRef.current = null;
-                }
-
-                if (!lastMessage) {
-                        return;
-                }
-
-                if (!selectedConversation || selectedConversation.id !== conversationId) {
-                        lastMarkedMessageIdRef.current = null;
-                        return;
-                }
-
-                if (!isPageVisible || !hasWindowFocus) {
-                        return;
-                }
-
-                if (lastMessage.userId === currentUserId) {
-                        lastMarkedMessageIdRef.current = lastMessage.id || null;
-                        return;
-                }
-
-                const lastMessageCreatedAt = new Date(lastMessage.createdAt);
-                const lastSeenAt = selectedConversation.lastSeenAt
-                        ? new Date(selectedConversation.lastSeenAt)
-                        : null;
-
-                if (lastSeenAt && lastSeenAt >= lastMessageCreatedAt) {
-                        lastMarkedMessageIdRef.current = lastMessage.id || null;
-                        return;
-                }
-
-                if (lastMarkedMessageIdRef.current === (lastMessage.id || null)) {
-                        return;
-                }
-
-                const pendingMessageId = lastMessage.id || null;
-
-                markSeenTimeoutRef.current = setTimeout(() => {
-                        const isVisibleNow =
-                                typeof document !== "undefined" ? !document.hidden : true;
-                        const hasFocusNow =
-                                typeof document !== "undefined" &&
-                                typeof document.hasFocus === "function"
-                                        ? document.hasFocus()
-                                        : true;
-
-                        if (!isVisibleNow || !hasFocusNow) {
-                                markSeenTimeoutRef.current = null;
-                                return;
-                        }
-
-                        markRead()
-                                .then(() => {
-                                        lastMarkedMessageIdRef.current = pendingMessageId;
-                                })
-                                .catch(() => {
-                                        // no-op: we'll retry on next render if needed
-                                })
-                                .finally(() => {
-                                        markSeenTimeoutRef.current = null;
-                                });
-                }, CONVERSATION_AUTO_SEEN_DELAY_MS);
-
-                return () => {
-                        if (markSeenTimeoutRef.current) {
-                                clearTimeout(markSeenTimeoutRef.current);
-                                markSeenTimeoutRef.current = null;
-                        }
-                };
-        }, [
-                conversationId,
-                currentUserId,
-                hasWindowFocus,
-                isPageVisible,
-                lastMessage,
-                markRead,
-                selectedConversation,
-        ]);
-
-	const onFetchMoreIfNeeded = async () => {
-		if (hasNextPage) {
-			await fetchNextPage();
-		}
-	};
-
-	if (!visitor) {
-		return null;
-	}
-
-	return (
-		<>
-			<Page className="relative py-0 pr-0.5 pl-0">
-				<div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-14 bg-gradient-to-b from-co-background/50 to-transparent dark:from-co-background-100/80" />
-				<ConversationHeader />
-				<ConversationTimelineList
-					availableAIAgents={[]}
-					conversationId={conversationId}
-					currentUserId={currentUserId}
-					items={items as TimelineItem[]}
-					onFetchMoreIfNeeded={onFetchMoreIfNeeded}
-					seenData={seenData}
-					teamMembers={members}
-					visitor={visitor}
-				/>
-				<MultimodalInput
-					allowedFileTypes={["image/*", "application/pdf", "text/*"]}
-					error={error}
-					files={files}
-					isSubmitting={isSubmitting}
-					maxFileSize={10 * 1024 * 1024}
-					maxFiles={2}
-					onChange={handleMessageChange}
-					onFileSelect={addFiles}
-					onRemoveFile={removeFile}
-					onSubmit={submit}
-					placeholder="Type your message..."
-					value={message}
-				/>
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-30 bg-gradient-to-t from-co-background to-transparent dark:from-co-background-100/90" />
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-co-background/50 via-co-background to-transparent dark:from-co-background-100/90 dark:via-co-background-100" />
-			</Page>
-			<VisitorSidebar isLoading={isLoading} visitor={visitor} />
-		</>
-	);
+export function Conversation({ header, timeline, input, visitorSidebar }: ConversationProps) {
+        return (
+                <>
+                        <Page className="relative py-0 pr-0.5 pl-0">
+                                <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-14 bg-gradient-to-b from-co-background/50 to-transparent dark:from-co-background-100/80" />
+                                <ConversationHeader {...header} />
+                                <ConversationTimelineList {...timeline} />
+                                <MultimodalInput {...input} />
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-30 bg-gradient-to-t from-co-background to-transparent dark:from-co-background-100/90" />
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-co-background/50 via-co-background to-transparent dark:from-co-background-100/90 dark:via-co-background-100" />
+                        </Page>
+                        <VisitorSidebar {...visitorSidebar} />
+                </>
+        );
 }

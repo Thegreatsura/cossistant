@@ -1,101 +1,98 @@
 "use client";
 
+import type { ConversationStatus } from "@cossistant/types";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
-import { useInboxes } from "@/contexts/inboxes";
-import { useUserSession } from "@/contexts/website";
-import { useSidebar } from "@/hooks/use-sidebars";
 import { PageHeader } from "../../ui/layout";
 import { ConversationBasicActions } from "../actions/basic";
 import { MoreConversationActions } from "../actions/more";
-import { ConversationHeaderNavigation } from "./navigation";
+import {
+        ConversationHeaderNavigation,
+        type ConversationHeaderNavigationProps,
+} from "./navigation";
 
-export function ConversationHeader() {
-	const { selectedConversationId, selectedVisitorId, selectedConversation } =
-		useInboxes();
-	const { user } = useUserSession();
+export type ConversationHeaderProps = {
+        isLeftSidebarOpen: boolean;
+        isRightSidebarOpen: boolean;
+        onToggleLeftSidebar: () => void;
+        onToggleRightSidebar: () => void;
+        navigation: ConversationHeaderNavigationProps;
+        conversationId: string;
+        visitorId?: string | null;
+        status?: ConversationStatus;
+        deletedAt?: string | null;
+        hasUnreadMessage: boolean;
+        visitorIsBlocked?: boolean | null;
+};
 
-	const { open: isRightSidebarOpen, toggle: toggleRightSidebar } = useSidebar({
-		position: "right",
-	});
-	const { open: isLeftSidebarOpen, toggle: toggleLeftSidebar } = useSidebar({
-		position: "left",
-	});
-
-	if (!selectedConversationId) {
-		return null;
-	}
-
-	const lastTimelineItem = selectedConversation?.lastTimelineItem ?? null;
-	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
-		? new Date(lastTimelineItem.createdAt)
-		: null;
-	const lastSeenAt = selectedConversation?.lastSeenAt
-		? new Date(selectedConversation.lastSeenAt)
-		: null;
-
-	const hasUnreadMessage = Boolean(
-		lastTimelineItem &&
-			lastTimelineItem.userId !== user.id &&
-			lastTimelineItemCreatedAt &&
-			(!lastSeenAt || lastTimelineItemCreatedAt > lastSeenAt)
-	);
-
-	return (
-		<PageHeader className="z-10 border-primary/10 border-b bg-background pl-3.5 2xl:border-transparent 2xl:bg-transparent dark:bg-background-100 2xl:dark:bg-transparent">
-			<div className="flex items-center gap-2">
-				{!isLeftSidebarOpen && (
-					<TooltipOnHover
-						align="end"
-						content="Click to open sidebar"
-						shortcuts={["["]}
-					>
-						<Button
-							className="ml-0.5"
-							onClick={toggleLeftSidebar}
-							size="icon-small"
-							variant="ghost"
-						>
-							<Icon filledOnHover name="sidebar-collapse" />
-						</Button>
-					</TooltipOnHover>
-				)}
-				<ConversationHeaderNavigation />
-			</div>
-			<div className="flex items-center gap-3">
-				<ConversationBasicActions
-					className="gap-3 pr-0"
-					conversationId={selectedConversationId}
-					deletedAt={selectedConversation?.deletedAt ?? null}
-					status={selectedConversation?.status}
-					visitorId={selectedVisitorId}
-				/>
-				<MoreConversationActions
-					conversationId={selectedConversationId}
-					deletedAt={selectedConversation?.deletedAt ?? null}
-					hasUnreadMessage={hasUnreadMessage}
-					status={selectedConversation?.status}
-					visitorId={selectedVisitorId}
-					visitorIsBlocked={selectedConversation?.visitor.isBlocked ?? null}
-				/>
-				{!isRightSidebarOpen && (
-					<TooltipOnHover
-						align="end"
-						content="Click to open sidebar"
-						shortcuts={["]"]}
-					>
-						<Button
-							className="rotate-180"
-							onClick={toggleRightSidebar}
-							size="icon-small"
-							variant="ghost"
-						>
-							<Icon filledOnHover name="sidebar-collapse" />
-						</Button>
-					</TooltipOnHover>
-				)}
-			</div>
-		</PageHeader>
-	);
+export function ConversationHeader({
+        isLeftSidebarOpen,
+        isRightSidebarOpen,
+        onToggleLeftSidebar,
+        onToggleRightSidebar,
+        navigation,
+        conversationId,
+        visitorId,
+        status,
+        deletedAt,
+        hasUnreadMessage,
+        visitorIsBlocked,
+}: ConversationHeaderProps) {
+        return (
+                <PageHeader className="z-10 border-primary/10 border-b bg-background pl-3.5 2xl:border-transparent 2xl:bg-transparent dark:bg-background-100 2xl:dark:bg-transparent">
+                        <div className="flex items-center gap-2">
+                                {!isLeftSidebarOpen && (
+                                        <TooltipOnHover
+                                                align="end"
+                                                content="Click to open sidebar"
+                                                shortcuts={["["]}
+                                        >
+                                                <Button
+                                                        className="ml-0.5"
+                                                        onClick={onToggleLeftSidebar}
+                                                        size="icon-small"
+                                                        variant="ghost"
+                                                >
+                                                        <Icon filledOnHover name="sidebar-collapse" />
+                                                </Button>
+                                        </TooltipOnHover>
+                                )}
+                                <ConversationHeaderNavigation {...navigation} />
+                        </div>
+                        <div className="flex items-center gap-3">
+                                <ConversationBasicActions
+                                        className="gap-3 pr-0"
+                                        conversationId={conversationId}
+                                        deletedAt={deletedAt ?? null}
+                                        status={status}
+                                        visitorId={visitorId}
+                                />
+                                <MoreConversationActions
+                                        conversationId={conversationId}
+                                        deletedAt={deletedAt ?? null}
+                                        hasUnreadMessage={hasUnreadMessage}
+                                        status={status}
+                                        visitorId={visitorId}
+                                        visitorIsBlocked={visitorIsBlocked ?? null}
+                                />
+                                {!isRightSidebarOpen && (
+                                        <TooltipOnHover
+                                                align="end"
+                                                content="Click to open sidebar"
+                                                shortcuts={["]"]}
+                                        >
+                                                <Button
+                                                        className="rotate-180"
+                                                        onClick={onToggleRightSidebar}
+                                                        size="icon-small"
+                                                        variant="ghost"
+                                                >
+                                                        <Icon filledOnHover name="sidebar-collapse" />
+                                                </Button>
+                                        </TooltipOnHover>
+                                )}
+                        </div>
+                </PageHeader>
+        );
 }
