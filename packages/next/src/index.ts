@@ -7,3 +7,4 @@ export * from "./provider";
 export * from "./realtime";
 export * from "./support";
 export * from "./support-config";
+export * from "./utils";

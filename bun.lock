@@ -196,6 +196,9 @@
         "@cossistant/react": "workspace:*",
         "tailwindcss": "^4.1.13",
       },
+      "devDependencies": {
+        "@cossistant/typescript-config": "workspace:*",
+      },
       "peerDependencies": {
         "next": ">=13.5.2 || ^14.0.0 || ^15.0.0",
         "react": ">=18 <20",
