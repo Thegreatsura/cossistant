@@ -47,6 +47,8 @@
         "nanoid": "^5.1.6",
         "pg": "^8.16.3",
         "rate-limit-redis": "^4.2.2",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
         "resend": "^6.1.0",
         "superjson": "^2.2.2",
         "trpc-to-openapi": "^3.0.1",
@@ -56,6 +58,7 @@
       "devDependencies": {
         "@types/bun": "^1.2.22",
         "@types/pg": "^8.15.5",
+        "@types/react": "^19.0.0",
         "concurrently": "^9.2.1",
         "drizzle-kit": "^0.31.4",
         "react-email": "4.2.11",

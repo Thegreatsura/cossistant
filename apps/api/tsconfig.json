@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "react",
+    "jsx": "react",
     "moduleResolution": "bundler",
     "module": "ESNext",
     "target": "ESNext",
