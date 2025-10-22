@@ -1,7 +1,6 @@
 import type { CossistantClient } from "@cossistant/core";
 import { normalizeLocale } from "@cossistant/core";
 import type { DefaultMessage, PublicWebsiteResponse } from "@cossistant/types";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
 import { useWebsiteStore } from "./hooks/private/store/use-website-store";
 import { useClient } from "./hooks/private/use-rest-client";
@@ -19,7 +18,6 @@ export type SupportProviderProps = {
 	onWsConnect?: () => void;
 	onWsDisconnect?: () => void;
 	onWsError?: (error: Error) => void;
-	queryClient?: QueryClient;
 };
 
 export type CossistantProviderProps = SupportProviderProps;
@@ -44,12 +42,8 @@ type VisitorWithLocale = WebsiteData["visitor"] extends null | undefined
 	: NonNullable<WebsiteData["visitor"]> & { locale: string | null };
 
 export type UseSupportValue = CossistantContextValue & {
-	availableHumanAgents:
-		| NonNullable<WebsiteData["availableHumanAgents"]>
-		| [];
-	availableAIAgents:
-		| NonNullable<WebsiteData["availableAIAgents"]>
-		| [];
+	availableHumanAgents: NonNullable<WebsiteData["availableHumanAgents"]> | [];
+	availableAIAgents: NonNullable<WebsiteData["availableAIAgents"]> | [];
 	visitor?: VisitorWithLocale;
 };
 
@@ -58,8 +52,8 @@ const SupportContext = React.createContext<CossistantContextValue | undefined>(
 );
 
 /**
- * Internal implementation that wires the React Query cache, REST client and
- * websocket provider together before exposing the combined context.
+ * Internal implementation that wires the REST client and websocket provider
+ * together before exposing the combined context.
  */
 function SupportProviderInner({
 	children,
@@ -188,39 +182,21 @@ export function SupportProvider({
 	onWsConnect,
 	onWsDisconnect,
 	onWsError,
-	queryClient,
 }: SupportProviderProps): React.ReactElement {
-	// Create a default QueryClient if none provided
-	const [defaultQueryClient] = React.useState(
-		() =>
-			new QueryClient({
-				defaultOptions: {
-					queries: {
-						staleTime: 5 * 60 * 1000, // 5 minutes
-						gcTime: 10 * 60 * 1000, // 10 minutes
-					},
-				},
-			})
-	);
-
-	const activeQueryClient = queryClient || defaultQueryClient;
-
 	return (
-		<QueryClientProvider client={activeQueryClient}>
-			<SupportProviderInner
-				apiUrl={apiUrl}
-				autoConnect={autoConnect}
-				defaultMessages={defaultMessages}
-				onWsConnect={onWsConnect}
-				onWsDisconnect={onWsDisconnect}
-				onWsError={onWsError}
-				publicKey={publicKey}
-				quickOptions={quickOptions}
-				wsUrl={wsUrl}
-			>
-				{children}
-			</SupportProviderInner>
-		</QueryClientProvider>
+		<SupportProviderInner
+			apiUrl={apiUrl}
+			autoConnect={autoConnect}
+			defaultMessages={defaultMessages}
+			onWsConnect={onWsConnect}
+			onWsDisconnect={onWsDisconnect}
+			onWsError={onWsError}
+			publicKey={publicKey}
+			quickOptions={quickOptions}
+			wsUrl={wsUrl}
+		>
+			{children}
+		</SupportProviderInner>
 	);
 }
 
