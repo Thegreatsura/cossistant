@@ -5,7 +5,7 @@ import { AvatarStack } from "../components/avatar-stack";
 import { ConversationTimelineList } from "../components/conversation-timeline";
 import { Header } from "../components/header";
 import { MultimodalInput } from "../components/multimodal-input";
-import { useSupportNavigation } from "../store";
+import { useSupportConfig, useSupportNavigation } from "../store";
 import { Text, useSupportText } from "../text";
 
 type ConversationPageProps = {
@@ -36,17 +36,19 @@ export const ConversationPage = ({
 	initialMessage,
 	items: passedItems = [],
 }: ConversationPageProps) => {
-	const { website, availableAIAgents, availableHumanAgents, visitor } =
-		useSupport();
-	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+        const { website, availableAIAgents, availableHumanAgents, visitor } =
+                useSupport();
+        const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+        const { isOpen } = useSupportConfig();
 	const text = useSupportText();
 
 	// Main conversation hook - handles all logic
-	const conversation = useConversationPage({
-		conversationId: initialConversationId,
-		items: passedItems,
-		initialMessage,
-		onConversationIdChange: (newConversationId) => {
+        const conversation = useConversationPage({
+                conversationId: initialConversationId,
+                items: passedItems,
+                initialMessage,
+                autoSeenEnabled: isOpen,
+                onConversationIdChange: (newConversationId) => {
 			// Update navigation when conversation is created
 			replace({
 				page: "CONVERSATION",
