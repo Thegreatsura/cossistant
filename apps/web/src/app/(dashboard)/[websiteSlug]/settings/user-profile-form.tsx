@@ -1,0 +1,250 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import {
+        AvatarInput,
+        type AvatarInputValue,
+        uploadToPresignedUrl,
+} from "@/components/ui/avatar-input";
+import { BaseSubmitButton } from "@/components/ui/base-submit-button";
+import {
+        Form,
+        FormControl,
+        FormField,
+        FormItem,
+        FormLabel,
+        FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
+import { useTRPC } from "@/lib/trpc/client";
+import { z } from "zod";
+
+const avatarValueSchema = z
+        .union([
+                z.string().min(1),
+                z.object({
+                        previewUrl: z.string().min(1),
+                        url: z.string().optional(),
+                        mimeType: z.string().optional(),
+                        name: z.string().optional(),
+                        size: z.number().optional(),
+                }),
+        ])
+        .nullable();
+
+const userProfileFormSchema = z.object({
+        name: z
+                .string({ required_error: "Enter your name." })
+                .trim()
+                .min(1, { message: "Enter your name." })
+                .max(120, { message: "Name must be 120 characters or fewer." }),
+        avatar: avatarValueSchema,
+});
+
+type UserProfileFormValues = z.infer<typeof userProfileFormSchema>;
+
+type UserProfileFormProps = {
+        initialName: string;
+        initialAvatarUrl?: string | null;
+        organizationId: string;
+        userId: string;
+};
+
+export function UserProfileForm({
+        initialName,
+        initialAvatarUrl,
+        organizationId,
+        userId,
+}: UserProfileFormProps) {
+        const trpc = useTRPC();
+        const queryClient = useQueryClient();
+        const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+        const form = useForm<UserProfileFormValues>({
+                resolver: zodResolver(userProfileFormSchema),
+                mode: "onChange",
+                defaultValues: {
+                        name: initialName,
+                        avatar: initialAvatarUrl ?? null,
+                },
+        });
+
+        const { mutateAsync: updateProfile, isPending } = useMutation(
+                trpc.user.updateProfile.mutationOptions({
+                        onSuccess: async (updatedUser) => {
+                                await queryClient.invalidateQueries({
+                                        queryKey: trpc.user.me.queryKey(),
+                                });
+                                form.reset({
+                                        name: updatedUser.name ?? "",
+                                        avatar: updatedUser.image ?? null,
+                                });
+                                toast.success("Profile updated.");
+                        },
+                        onError: () => {
+                                toast.error(
+                                        "Failed to update your profile. Please try again."
+                                );
+                        },
+                })
+        );
+
+        const { mutateAsync: createSignedUrl } = useMutation(
+                trpc.upload.createSignedUrl.mutationOptions()
+        );
+
+        const handleAvatarUpload = useCallback(
+                async (file: File): Promise<Partial<AvatarInputValue>> => {
+                        try {
+                                const uploadDetails = await createSignedUrl({
+                                        organizationId,
+                                        contentType: file.type,
+                                        fileName: file.name,
+                                        basePath: ["users", userId, "avatars"],
+                                });
+
+                                await uploadToPresignedUrl({
+                                        file,
+                                        url: uploadDetails.uploadUrl,
+                                        headers: { "Content-Type": file.type },
+                                });
+
+                                const publicUrl = uploadDetails.uploadUrl.split("?")[0];
+
+                                return {
+                                        url: publicUrl,
+                                        mimeType: file.type,
+                                        name: file.name,
+                                };
+                        } catch (error) {
+                                throw new Error(
+                                        error instanceof Error
+                                                ? error.message
+                                                : "Failed to upload avatar. Please try again."
+                                );
+                        }
+                },
+                [createSignedUrl, organizationId, userId]
+        );
+
+        const onSubmit = useCallback(
+                async (values: UserProfileFormValues) => {
+                        const name = values.name.trim();
+                        const avatarValue = values.avatar;
+
+                        let imageUrl: string | null = null;
+
+                        if (typeof avatarValue === "string") {
+                                imageUrl = avatarValue;
+                        } else if (avatarValue && typeof avatarValue === "object") {
+                                if (!avatarValue.url) {
+                                        toast.error(
+                                                "Please wait for the avatar upload to finish before saving."
+                                        );
+                                        return;
+                                }
+                                imageUrl = avatarValue.url;
+                        }
+
+                        await updateProfile({
+                                userId,
+                                name,
+                                image: imageUrl,
+                        });
+                },
+                [updateProfile, userId]
+        );
+
+        const nameValue = form.watch("name");
+        const fallbackInitials = useMemo(() => {
+                const trimmed = nameValue?.trim();
+                if (!trimmed) {
+                        return undefined;
+                }
+
+                const [first] = trimmed;
+                return first ? first.toUpperCase() : undefined;
+        }, [nameValue]);
+
+        const isSubmitting = isPending || isUploadingAvatar;
+
+        return (
+                <Form {...form}>
+                        <form
+                                className="flex flex-col"
+                                onSubmit={form.handleSubmit(onSubmit)}
+                        >
+                                <div className="space-y-6 px-4 py-6">
+                                        <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                        <FormItem>
+                                                                <FormLabel>Name</FormLabel>
+                                                                <FormControl>
+                                                                        <Input
+                                                                                autoComplete="name"
+                                                                                placeholder="Ada Lovelace"
+                                                                                {...field}
+                                                                        />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                        </FormItem>
+                                                )}
+                                        />
+                                        <FormField
+                                                control={form.control}
+                                                name="avatar"
+                                                render={({ field }) => (
+                                                        <FormItem className="flex flex-col gap-2">
+                                                                <FormLabel>Profile picture</FormLabel>
+                                                                <FormControl>
+                                                                        <AvatarInput
+                                                                                fallbackInitials={fallbackInitials}
+                                                                                name={field.name}
+                                                                                onBlur={field.onBlur}
+                                                                                onChange={field.onChange}
+                                                                                onError={(error) => {
+                                                                                        toast.error(error.message);
+                                                                                        setIsUploadingAvatar(false);
+                                                                                }}
+                                                                                onUpload={handleAvatarUpload}
+                                                                                onUploadComplete={() =>
+                                                                                        setIsUploadingAvatar(false)
+                                                                                }
+                                                                                onUploadStart={() =>
+                                                                                        setIsUploadingAvatar(true)
+                                                                                }
+                                                                                ref={field.ref}
+                                                                                value={field.value}
+                                                                                placeholder="Upload a square image at least 256×256px. SVG uploads are disabled by default for security."
+                                                                        />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                        </FormItem>
+                                                )}
+                                        />
+                                </div>
+                                <SettingsRowFooter className="flex items-center justify-end gap-2">
+                                        <BaseSubmitButton
+                                                disabled={
+                                                        !form.formState.isDirty ||
+                                                        !form.formState.isValid ||
+                                                        isSubmitting
+                                                }
+                                                isSubmitting={isSubmitting}
+                                                size="sm"
+                                                type="submit"
+                                        >
+                                                Save profile
+                                        </BaseSubmitButton>
+                                </SettingsRowFooter>
+                        </form>
+                </Form>
+        );
+}

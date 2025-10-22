@@ -46,7 +46,7 @@
     "@types/mdx": "^2.0.13",
     "@vercel/analytics": "^1.5.0",
     "ai": "^5.0.54",
-    "better-auth": "^1.3.18",
+    "better-auth": "^1.3.28",
     "boring-avatars": "^2.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
