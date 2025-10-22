@@ -60,7 +60,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.package_info.outputs.tag_name }}
-          name: "${{ steps.package_info.outputs.package_name }} v${{ steps.package_info.outputs.version }}"
+          name: "${{ steps.package_info.outputs.display_name }} v${{ steps.package_info.outputs.version }}"
           body_path: ${{ steps.changelog.outputs.content_file }}
           draft: false
           prerelease: false
