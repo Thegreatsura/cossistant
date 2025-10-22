@@ -78,10 +78,29 @@ uploadRouter.openapi(
 			);
 		}
 
-		const basePathSegments = [organization.id];
+		if (body.scope.organizationId !== organization.id) {
+			return c.json(
+				validateResponse(
+					{
+						error:
+							"Scope organization does not match the API key organization context",
+					},
+					z.object({ error: z.string() })
+				),
+				400
+			);
+		}
 
-		if (apiKey.website) {
-			basePathSegments.push(apiKey.website.id);
+		if (apiKey.website && body.scope.websiteId !== apiKey.website.id) {
+			return c.json(
+				validateResponse(
+					{
+						error: "Scope website does not match the API key website context",
+					},
+					z.object({ error: z.string() })
+				),
+				400
+			);
 		}
 
 		const result = await generateUploadUrl({
@@ -89,8 +108,9 @@ uploadRouter.openapi(
 			fileName: body.fileName,
 			fileExtension: body.fileExtension,
 			path: body.path,
+			scope: body.scope,
+			useCdn: body.useCdn,
 			expiresInSeconds: body.expiresInSeconds,
-			basePathSegments,
 		});
 
 		return c.json(validateResponse(result, generateUploadUrlResponseSchema));
