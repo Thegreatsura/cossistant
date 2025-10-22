@@ -12,8 +12,8 @@ import { ValueDisplay } from "./value-display";
 import { ValueGroup } from "./value-group";
 
 export type VisitorSidebarProps = {
-        visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
-        isLoading: boolean;
+	visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
+	isLoading: boolean;
 };
 
 export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {

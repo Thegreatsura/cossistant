@@ -22,7 +22,7 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 	}
 
 	const eventPart = item.parts.find(
-		(part): part is TimelinePartEvent => part.type === "event",
+		(part): part is TimelinePartEvent => part.type === "event"
 	);
 
 	return eventPart || null;
@@ -52,12 +52,10 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 	});
 
 	const typingIndicatorParticipants =
-		timeline.typingParticipants.map<TypingParticipant>(
-			(participant) => ({
-				id: participant.id,
-				type: participant.type,
-			}),
-		);
+		timeline.typingParticipants.map<TypingParticipant>((participant) => ({
+			id: participant.id,
+			type: participant.type,
+		}));
 
 	return (
 		<PrimitiveConversationTimeline
@@ -66,122 +64,67 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 				"overflow-y-auto scroll-smooth px-3 py-6",
 				"scrollbar-thin scrollbar-thumb-co-background-300 scrollbar-track-transparent",
 				"h-full w-full",
-				className,
+				className
 			)}
 			id="conversation-timeline"
 			items={timelineItems}
 		>
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
-				<AnimatePresence
-					initial={false}
-					mode="popLayout"
-				>
-					{timeline.groupedMessages.items.map(
-						(item, index) => {
-							if (
-								item.type ===
-								"timeline_event"
-							) {
-								// Extract event data from parts
-								const eventPart =
-									extractEventPart(
-										item.item,
-									);
+				<AnimatePresence initial={false} mode="popLayout">
+					{timeline.groupedMessages.items.map((item, index) => {
+						if (item.type === "timeline_event") {
+							// Extract event data from parts
+							const eventPart = extractEventPart(item.item);
 
-								// Only render if we have valid event data
-								if (
-									!eventPart
-								) {
-									return null;
-								}
-
-								return (
-									<ConversationEventComponent
-										availableAIAgents={
-											availableAIAgents
-										}
-										availableHumanAgents={
-											availableHumanAgents
-										}
-										createdAt={
-											item
-												.item
-												.createdAt
-										}
-										event={
-											eventPart
-										}
-                                                                                key={
-                                                                                        item
-                                                                                                .item
-                                                                                                .id ??
-                                                                                        `timeline-event-${item.item.createdAt}`
-                                                                                }
-									/>
-								);
+							// Only render if we have valid event data
+							if (!eventPart) {
+								return null;
 							}
-
-							// Only show seen indicator on the LAST message group sent by the visitor
-							const isLastVisitorGroup =
-								index ===
-								timeline.lastVisitorMessageGroupIndex;
-							const seenByIds =
-								isLastVisitorGroup &&
-								item.lastMessageId
-									? timeline.groupedMessages.getMessageSeenBy(
-											item.lastMessageId,
-										)
-									: [];
-
-							// Use first timeline item ID as stable key
-                                                        const groupKey =
-                                                                item.lastMessageId ??
-                                                                item.items?.[0]?.id ??
-                                                                `group-${
-                                                                        item.items?.[0]?.createdAt ??
-                                                                        index
-                                                                }`;
 
 							return (
-								<TimelineMessageGroup
-									availableAIAgents={
-										availableAIAgents
-									}
-									availableHumanAgents={
-										availableHumanAgents
-									}
-									currentVisitorId={
-										currentVisitorId
-									}
-									items={
-										item.items ||
-										[]
-									}
-									key={
-										groupKey
-									}
-									seenByIds={
-										seenByIds
-									}
+								<ConversationEventComponent
+									availableAIAgents={availableAIAgents}
+									availableHumanAgents={availableHumanAgents}
+									createdAt={item.item.createdAt}
+									event={eventPart}
+									key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
 								/>
 							);
-						},
-					)}
+						}
+
+						// Only show seen indicator on the LAST message group sent by the visitor
+						const isLastVisitorGroup =
+							index === timeline.lastVisitorMessageGroupIndex;
+						const seenByIds =
+							isLastVisitorGroup && item.lastMessageId
+								? timeline.groupedMessages.getMessageSeenBy(item.lastMessageId)
+								: [];
+
+						// Use first timeline item ID as stable key
+						const groupKey =
+							item.lastMessageId ??
+							item.items?.[0]?.id ??
+							`group-${item.items?.[0]?.createdAt ?? index}`;
+
+						return (
+							<TimelineMessageGroup
+								availableAIAgents={availableAIAgents}
+								availableHumanAgents={availableHumanAgents}
+								currentVisitorId={currentVisitorId}
+								items={item.items || []}
+								key={groupKey}
+								seenByIds={seenByIds}
+							/>
+						);
+					})}
 				</AnimatePresence>
 				<div className="h-6 w-full">
-					{typingIndicatorParticipants.length >
-					0 ? (
+					{typingIndicatorParticipants.length > 0 ? (
 						<TypingIndicator
-							availableAIAgents={
-								availableAIAgents
-							}
-							availableHumanAgents={
-								availableHumanAgents
-							}
+							availableAIAgents={availableAIAgents}
+							availableHumanAgents={availableHumanAgents}
 							className="mt-2"
-							participants={
-								typingIndicatorParticipants
-							}
+							participants={typingIndicatorParticipants}
 						/>
 					) : null}
 				</div>

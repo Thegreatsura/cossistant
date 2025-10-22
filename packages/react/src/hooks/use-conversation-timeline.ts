@@ -1,15 +1,14 @@
+import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useMemo } from "react";
 
-import { SenderType } from "@cossistant/types";
-
 import {
-        mapTypingEntriesToParticipants,
-        type TimelineTypingParticipant,
+	mapTypingEntriesToParticipants,
+	type TimelineTypingParticipant,
 } from "./private/typing";
+import { useGroupedMessages } from "./private/use-grouped-messages";
 import { useDebouncedConversationSeen } from "./use-conversation-seen";
 import { useConversationTyping } from "./use-conversation-typing";
-import { useGroupedMessages } from "./private/use-grouped-messages";
 
 export type ConversationTimelineTypingParticipant = TimelineTypingParticipant;
 
@@ -45,11 +44,7 @@ export function useConversationTimeline({
 	});
 
 	const lastVisitorMessageGroupIndex = useMemo(() => {
-		for (
-			let index = groupedMessages.items.length - 1;
-			index >= 0;
-			index--
-		) {
+		for (let index = groupedMessages.items.length - 1; index >= 0; index--) {
 			const item = groupedMessages.items[index];
 
 			if (!item || item.type !== "message_group") {
@@ -65,10 +60,10 @@ export function useConversationTimeline({
 		return -1;
 	}, [groupedMessages.items, currentVisitorId]);
 
-        const typingParticipants = useMemo(
-                () => mapTypingEntriesToParticipants(typingEntries),
-                [typingEntries],
-        );
+	const typingParticipants = useMemo(
+		() => mapTypingEntriesToParticipants(typingEntries),
+		[typingEntries]
+	);
 
 	return {
 		groupedMessages,

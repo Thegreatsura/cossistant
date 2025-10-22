@@ -15,7 +15,7 @@ export type ConversationButtonLinkProps = {
 	className?: string | ((state: ConversationButtonLinkState) => string);
 	render?: (
 		props: React.HTMLProps<HTMLButtonElement>,
-		state: ConversationButtonLinkState,
+		state: ConversationButtonLinkState
 	) => React.ReactElement;
 };
 
@@ -65,7 +65,7 @@ export function ConversationButtonLink({
 				"relative gap-3 border-0 border-co-border/50 border-b text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0",
 				typeof props.className === "function"
 					? props.className(state)
-					: props.className,
+					: props.className
 			),
 			children: (
 				<>
@@ -82,9 +82,7 @@ export function ConversationButtonLink({
 							<>
 								<div className="flex max-w-[90%] items-center justify-between gap-2">
 									<h3 className="truncate font-medium text-co-primary text-sm">
-										{
-											conversationTitle
-										}
+										{conversationTitle}
 									</h3>
 								</div>
 
@@ -96,7 +94,7 @@ export function ConversationButtonLink({
 													"component.conversationButtonLink.lastMessage.visitor",
 													{
 														time: lastMessage.time,
-													},
+													}
 												)}
 											</span>
 										) : (
@@ -106,11 +104,9 @@ export function ConversationButtonLink({
 													{
 														name:
 															lastMessage.senderName ||
-															text(
-																"common.fallbacks.supportTeam",
-															),
+															text("common.fallbacks.supportTeam"),
 														time: lastMessage.time,
-													},
+													}
 												)}
 											</span>
 										)}
@@ -122,13 +118,11 @@ export function ConversationButtonLink({
 					<div
 						className={cn(
 							"mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
-							conversation.status ===
-								ConversationStatus.OPEN
+							conversation.status === ConversationStatus.OPEN
 								? "bg-co-success/20 text-co-success-foreground"
-								: conversation.status ===
-									  ConversationStatus.RESOLVED
+								: conversation.status === ConversationStatus.RESOLVED
 									? "bg-co-neutral/20 text-co-neutral-foreground"
-									: "bg-co-warning/20 text-co-warning-foreground",
+									: "bg-co-warning/20 text-co-warning-foreground"
 						)}
 					>
 						{conversation.status}

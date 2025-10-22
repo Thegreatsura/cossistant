@@ -68,8 +68,8 @@ type ContactSortField =
 	| "visitorCount";
 
 export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
-        const trpc = useTRPC();
-        const queryNormalizer = useQueryNormalizer();
+	const trpc = useTRPC();
+	const queryNormalizer = useQueryNormalizer();
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(25);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -110,22 +110,22 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		}
 	}, [page, totalPages]);
 
-        const contactPlaceholder = useMemo<ContactDetail | undefined>(() => {
-                if (!selectedContactId) {
-                        return undefined;
-                }
+	const contactPlaceholder = useMemo<ContactDetail | undefined>(() => {
+		if (!selectedContactId) {
+			return;
+		}
 
-                return queryNormalizer.getObjectById<ContactDetail>(selectedContactId);
-        }, [queryNormalizer, selectedContactId]);
+		return queryNormalizer.getObjectById<ContactDetail>(selectedContactId);
+	}, [queryNormalizer, selectedContactId]);
 
-        const contactDetailQuery = useQuery({
-                ...trpc.contact.get.queryOptions({
-                        websiteSlug,
-                        contactId: selectedContactId ?? "",
-                }),
-                enabled: sheetOpen && Boolean(selectedContactId),
-                placeholderData: contactPlaceholder,
-        });
+	const contactDetailQuery = useQuery({
+		...trpc.contact.get.queryOptions({
+			websiteSlug,
+			contactId: selectedContactId ?? "",
+		}),
+		enabled: sheetOpen && Boolean(selectedContactId),
+		placeholderData: contactPlaceholder,
+	});
 
 	const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
 		setSorting((prev) => {

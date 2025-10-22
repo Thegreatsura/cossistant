@@ -20,19 +20,19 @@ export default function InboxClientRouter({ websiteSlug }: InboxClientProps) {
 		selectedVisitorId,
 	} = useInboxes();
 
-        return selectedConversationId && selectedVisitorId ? (
-                <ConversationPane
-                        conversationId={selectedConversationId}
-                        currentUserId={user.id}
-                        visitorId={selectedVisitorId}
-                        websiteSlug={websiteSlug}
-                />
-        ) : (
-                <ConversationsListPane
-                        basePath={basePath}
-                        conversations={conversations}
-                        selectedConversationStatus={selectedConversationStatus}
-                        websiteSlug={websiteSlug}
-                />
-        );
+	return selectedConversationId && selectedVisitorId ? (
+		<ConversationPane
+			conversationId={selectedConversationId}
+			currentUserId={user.id}
+			visitorId={selectedVisitorId}
+			websiteSlug={websiteSlug}
+		/>
+	) : (
+		<ConversationsListPane
+			basePath={basePath}
+			conversations={conversations}
+			selectedConversationStatus={selectedConversationStatus}
+			websiteSlug={websiteSlug}
+		/>
+	);
 }

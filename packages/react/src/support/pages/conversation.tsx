@@ -36,19 +36,19 @@ export const ConversationPage = ({
 	initialMessage,
 	items: passedItems = [],
 }: ConversationPageProps) => {
-        const { website, availableAIAgents, availableHumanAgents, visitor } =
-                useSupport();
-        const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
-        const { isOpen } = useSupportConfig();
+	const { website, availableAIAgents, availableHumanAgents, visitor } =
+		useSupport();
+	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+	const { isOpen } = useSupportConfig();
 	const text = useSupportText();
 
 	// Main conversation hook - handles all logic
-        const conversation = useConversationPage({
-                conversationId: initialConversationId,
-                items: passedItems,
-                initialMessage,
-                autoSeenEnabled: isOpen,
-                onConversationIdChange: (newConversationId) => {
+	const conversation = useConversationPage({
+		conversationId: initialConversationId,
+		items: passedItems,
+		initialMessage,
+		autoSeenEnabled: isOpen,
+		onConversationIdChange: (newConversationId) => {
 			// Update navigation when conversation is created
 			replace({
 				page: "CONVERSATION",

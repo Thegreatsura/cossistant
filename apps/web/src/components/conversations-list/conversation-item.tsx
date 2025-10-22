@@ -1,11 +1,11 @@
 "use client";
 
+import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo } from "react";
-import type { RouterOutputs } from "@api/trpc/types";
 import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
@@ -28,54 +28,54 @@ type Props = {
 };
 
 export function ConversationItem({
-        href,
-        header,
-        websiteSlug,
-        focused = false,
-        setFocused,
+	href,
+	header,
+	websiteSlug,
+	focused = false,
+	setFocused,
 }: Props) {
-        const queryNormalizer = useQueryNormalizer();
-        const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
-                header;
-        const { prefetchConversation } = usePrefetchConversationData();
-        const { user } = useUserSession();
-        const trpc = useTRPC();
-        const presence = useVisitorPresenceById(header.visitorId);
+	const queryNormalizer = useQueryNormalizer();
+	const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
+		header;
+	const { prefetchConversation } = usePrefetchConversationData();
+	const { user } = useUserSession();
+	const trpc = useTRPC();
+	const presence = useVisitorPresenceById(header.visitorId);
 
-        const visitorQueryOptions = useMemo(
-                () =>
-                        trpc.conversation.getVisitorById.queryOptions({
-                                websiteSlug,
-                                visitorId: header.visitorId,
-                        }),
-                [header.visitorId, trpc, websiteSlug]
-        );
+	const visitorQueryOptions = useMemo(
+		() =>
+			trpc.conversation.getVisitorById.queryOptions({
+				websiteSlug,
+				visitorId: header.visitorId,
+			}),
+		[header.visitorId, trpc, websiteSlug]
+	);
 
-        const visitorPlaceholder = useMemo<
-                RouterOutputs["conversation"]["getVisitorById"] | undefined
-        >(() => {
-                if (!header.visitorId) {
-                        return headerVisitor;
-                }
+	const visitorPlaceholder = useMemo<
+		RouterOutputs["conversation"]["getVisitorById"] | undefined
+	>(() => {
+		if (!header.visitorId) {
+			return headerVisitor;
+		}
 
-                return (
-                        queryNormalizer.getObjectById<
-                                RouterOutputs["conversation"]["getVisitorById"]
-                        >(header.visitorId) ?? headerVisitor
-                );
-        }, [header.visitorId, headerVisitor, queryNormalizer]);
+		return (
+			queryNormalizer.getObjectById<
+				RouterOutputs["conversation"]["getVisitorById"]
+			>(header.visitorId) ?? headerVisitor
+		);
+	}, [header.visitorId, headerVisitor, queryNormalizer]);
 
-        const visitorQuery = useQuery({
-                ...visitorQueryOptions,
-                enabled: Boolean(header.visitorId) && !headerVisitor,
-                staleTime: Number.POSITIVE_INFINITY,
-                refetchOnWindowFocus: false,
-                refetchOnReconnect: false,
-                placeholderData: visitorPlaceholder,
-        });
+	const visitorQuery = useQuery({
+		...visitorQueryOptions,
+		enabled: Boolean(header.visitorId) && !headerVisitor,
+		staleTime: Number.POSITIVE_INFINITY,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
+		placeholderData: visitorPlaceholder,
+	});
 
-        const visitor = useMemo(() => {
-                const normalizedVisitor = visitorQuery.data ?? null;
+	const visitor = useMemo(() => {
+		const normalizedVisitor = visitorQuery.data ?? null;
 
 		// Prefer normalized visitor data when available as it's more complete
 		return normalizedVisitor ?? headerVisitor;

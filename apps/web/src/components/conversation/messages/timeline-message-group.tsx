@@ -1,9 +1,9 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import {
-  TimelineItemGroup as PrimitiveTimelineItemGroup,
-  TimelineItemGroupAvatar,
-  TimelineItemGroupContent,
-  TimelineItemGroupHeader,
+	TimelineItemGroup as PrimitiveTimelineItemGroup,
+	TimelineItemGroupAvatar,
+	TimelineItemGroupContent,
+	TimelineItemGroupHeader,
 } from "@cossistant/next/primitives";
 import type { AvailableAIAgent } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
@@ -21,165 +21,165 @@ import { ReadIndicator } from "./read-indicator";
 import { TimelineMessageItem } from "./timeline-message-item";
 
 const MESSAGE_ANIMATION = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0 },
-  transition: {
-    duration: 0.1,
-    ease: [0.25, 0.46, 0.45, 0.94] as const, // easeOutCubic
-  },
+	initial: { opacity: 0, y: 6 },
+	animate: { opacity: 1, y: 0 },
+	exit: { opacity: 0 },
+	transition: {
+		duration: 0.1,
+		ease: [0.25, 0.46, 0.45, 0.94] as const, // easeOutCubic
+	},
 } as const;
 
 type TimelineMessageGroupProps = {
-  items: TimelineItem[];
-  availableAIAgents: AvailableAIAgent[];
-  teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
-  lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
-  currentUserId?: string;
-  visitor: ConversationHeader["visitor"];
+	items: TimelineItem[];
+	availableAIAgents: AvailableAIAgent[];
+	teamMembers: RouterOutputs["user"]["getWebsiteMembers"];
+	lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
+	currentUserId?: string;
+	visitor: ConversationHeader["visitor"];
 };
 
 export function TimelineMessageGroup({
-  items,
-  availableAIAgents,
-  teamMembers,
-  lastReadMessageIds,
-  currentUserId,
-  visitor,
+	items,
+	availableAIAgents,
+	teamMembers,
+	lastReadMessageIds,
+	currentUserId,
+	visitor,
 }: TimelineMessageGroupProps) {
-  // Get agent info for the sender
-  const firstItem = items[0];
-  const humanAgent = teamMembers.find(
-    (agent) => agent.id === firstItem?.userId
-  );
-  const aiAgent = availableAIAgents.find(
-    (agent) => agent.id === firstItem?.aiAgentId
-  );
-  const visitorName = getVisitorNameWithFallback(visitor);
-  const visitorPresence = useVisitorPresenceById(visitor?.id);
+	// Get agent info for the sender
+	const firstItem = items[0];
+	const humanAgent = teamMembers.find(
+		(agent) => agent.id === firstItem?.userId
+	);
+	const aiAgent = availableAIAgents.find(
+		(agent) => agent.id === firstItem?.aiAgentId
+	);
+	const visitorName = getVisitorNameWithFallback(visitor);
+	const visitorPresence = useVisitorPresenceById(visitor?.id);
 
-  // Extract who has read the last timeline item in this group (equal check).
-  const readByIds: string[] = useMemo(() => {
-    if (!lastReadMessageIds || items.length === 0) {
-      return [];
-    }
+	// Extract who has read the last timeline item in this group (equal check).
+	const readByIds: string[] = useMemo(() => {
+		if (!lastReadMessageIds || items.length === 0) {
+			return [];
+		}
 
-    const lastId = items.at(-1)?.id;
-    if (!lastId) {
-      return [];
-    }
+		const lastId = items.at(-1)?.id;
+		if (!lastId) {
+			return [];
+		}
 
-    const userIds: string[] = [];
-    for (const [userId, itemId] of lastReadMessageIds.entries()) {
-      if (itemId === lastId) {
-        userIds.push(userId);
-      }
-    }
-    return userIds;
-  }, [lastReadMessageIds, items]);
+		const userIds: string[] = [];
+		for (const [userId, itemId] of lastReadMessageIds.entries()) {
+			if (itemId === lastId) {
+				userIds.push(userId);
+			}
+		}
+		return userIds;
+	}, [lastReadMessageIds, items]);
 
-  if (items.length === 0) {
-    return null;
-  }
+	if (items.length === 0) {
+		return null;
+	}
 
-  return (
-    <PrimitiveTimelineItemGroup
-      items={items}
-      lastReadItemIds={lastReadMessageIds}
-      seenByIds={readByIds}
-      viewerId={currentUserId}
-      viewerType={SenderType.TEAM_MEMBER}
-    >
-      {({
-        isSentByViewer,
-        isReceivedByViewer,
-        isVisitor,
-        isAI,
-        isTeamMember,
-      }) => (
-        <div
-          className={cn(
-            "flex w-full gap-2",
-            // From dashboard POV: visitor messages are received (left side)
-            // Team member/AI messages sent by viewer are on right side
-            isSentByViewer && "flex-row-reverse",
-            isReceivedByViewer && "flex-row"
-          )}
-        >
-          {/* Avatar - only show for received messages */}
-          {isReceivedByViewer && (
-            <TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
-              {isVisitor ? (
-                <Avatar
-                  className="size-7"
-                  fallbackName={visitorName}
-                  lastOnlineAt={
-                    visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt
-                  }
-                  status={visitorPresence?.status}
-                  url={visitor?.contact?.image}
-                  withBoringAvatar
-                />
-              ) : isAI ? (
-                <div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
-                  <Logo className="h-5 w-5 text-primary" />
-                </div>
-              ) : (
-                <Avatar
-                  className="size-7"
-                  fallbackName={humanAgent?.name || "Team"}
-                  lastOnlineAt={humanAgent?.lastSeenAt}
-                  url={humanAgent?.image}
-                />
-              )}
-            </TimelineItemGroupAvatar>
-          )}
+	return (
+		<PrimitiveTimelineItemGroup
+			items={items}
+			lastReadItemIds={lastReadMessageIds}
+			seenByIds={readByIds}
+			viewerId={currentUserId}
+			viewerType={SenderType.TEAM_MEMBER}
+		>
+			{({
+				isSentByViewer,
+				isReceivedByViewer,
+				isVisitor,
+				isAI,
+				isTeamMember,
+			}) => (
+				<div
+					className={cn(
+						"flex w-full gap-2",
+						// From dashboard POV: visitor messages are received (left side)
+						// Team member/AI messages sent by viewer are on right side
+						isSentByViewer && "flex-row-reverse",
+						isReceivedByViewer && "flex-row"
+					)}
+				>
+					{/* Avatar - only show for received messages */}
+					{isReceivedByViewer && (
+						<TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
+							{isVisitor ? (
+								<Avatar
+									className="size-7"
+									fallbackName={visitorName}
+									lastOnlineAt={
+										visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt
+									}
+									status={visitorPresence?.status}
+									url={visitor?.contact?.image}
+									withBoringAvatar
+								/>
+							) : isAI ? (
+								<div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
+									<Logo className="h-5 w-5 text-primary" />
+								</div>
+							) : (
+								<Avatar
+									className="size-7"
+									fallbackName={humanAgent?.name || "Team"}
+									lastOnlineAt={humanAgent?.lastSeenAt}
+									url={humanAgent?.image}
+								/>
+							)}
+						</TimelineItemGroupAvatar>
+					)}
 
-          <TimelineItemGroupContent
-            className={cn("flex flex-col gap-0", isSentByViewer && "items-end")}
-          >
-            {/* Header - show sender name for received messages */}
-            {isReceivedByViewer && (
-              <TimelineItemGroupHeader className="mb-2 px-1 text-muted-foreground text-xs">
-                {isVisitor
-                  ? visitorName
-                  : isAI
-                    ? aiAgent?.name || "AI Assistant"
-                    : humanAgent?.name ||
-                      humanAgent?.email?.split("@")[0] ||
-                      "Unknown member"}
-              </TimelineItemGroupHeader>
-            )}
+					<TimelineItemGroupContent
+						className={cn("flex flex-col gap-0", isSentByViewer && "items-end")}
+					>
+						{/* Header - show sender name for received messages */}
+						{isReceivedByViewer && (
+							<TimelineItemGroupHeader className="mb-2 px-1 text-muted-foreground text-xs">
+								{isVisitor
+									? visitorName
+									: isAI
+										? aiAgent?.name || "AI Assistant"
+										: humanAgent?.name ||
+											humanAgent?.email?.split("@")[0] ||
+											"Unknown member"}
+							</TimelineItemGroupHeader>
+						)}
 
-            {/* Timeline items with read indicators */}
-            {items.map((item, index) => (
-              <motion.div
-                className="relative"
-                key={item.id}
-                {...MESSAGE_ANIMATION}
-              >
-                <TimelineMessageItem
-                  isLast={index === items.length - 1}
-                  isSentByViewer={isSentByViewer}
-                  item={item}
-                />
-                {/* Show read indicator where users stopped reading */}
-                <ReadIndicator
-                  availableAIAgents={availableAIAgents}
-                  currentUserId={currentUserId}
-                  firstMessage={firstItem}
-                  isSentByViewer={isSentByViewer}
-                  lastReadMessageIds={lastReadMessageIds}
-                  messageId={item.id || ""}
-                  messages={items}
-                  teamMembers={teamMembers}
-                  visitor={visitor}
-                />
-              </motion.div>
-            ))}
-          </TimelineItemGroupContent>
-        </div>
-      )}
-    </PrimitiveTimelineItemGroup>
-  );
+						{/* Timeline items with read indicators */}
+						{items.map((item, index) => (
+							<motion.div
+								className="relative"
+								key={item.id}
+								{...MESSAGE_ANIMATION}
+							>
+								<TimelineMessageItem
+									isLast={index === items.length - 1}
+									isSentByViewer={isSentByViewer}
+									item={item}
+								/>
+								{/* Show read indicator where users stopped reading */}
+								<ReadIndicator
+									availableAIAgents={availableAIAgents}
+									currentUserId={currentUserId}
+									firstMessage={firstItem}
+									isSentByViewer={isSentByViewer}
+									lastReadMessageIds={lastReadMessageIds}
+									messageId={item.id || ""}
+									messages={items}
+									teamMembers={teamMembers}
+									visitor={visitor}
+								/>
+							</motion.div>
+						))}
+					</TimelineItemGroupContent>
+				</div>
+			)}
+		</PrimitiveTimelineItemGroup>
+	);
 }

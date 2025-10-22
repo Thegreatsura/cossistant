@@ -4,7 +4,7 @@ export * from "./contact";
 export * from "./conversation";
 export * from "./organization";
 export * from "./timeline-item";
+export * from "./upload";
 export * from "./user";
 export * from "./visitor";
 export * from "./website";
-export * from "./upload";

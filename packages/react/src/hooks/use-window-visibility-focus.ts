@@ -1,73 +1,70 @@
 import { useEffect, useState } from "react";
 
 export type WindowVisibilityFocusState = {
-        isPageVisible: boolean;
-        hasWindowFocus: boolean;
+	isPageVisible: boolean;
+	hasWindowFocus: boolean;
 };
 
 const getVisibilityFocusState = (): WindowVisibilityFocusState => {
-        if (typeof document === "undefined") {
-                return { isPageVisible: true, hasWindowFocus: true };
-        }
+	if (typeof document === "undefined") {
+		return { isPageVisible: true, hasWindowFocus: true };
+	}
 
-        const isPageVisible = !document.hidden;
-        const hasWindowFocus =
-                isPageVisible &&
-                (typeof document.hasFocus === "function" ? document.hasFocus() : true);
+	const isPageVisible = !document.hidden;
+	const hasWindowFocus =
+		isPageVisible &&
+		(typeof document.hasFocus === "function" ? document.hasFocus() : true);
 
-        return { isPageVisible, hasWindowFocus };
+	return { isPageVisible, hasWindowFocus };
 };
 
 export function useWindowVisibilityFocus(): WindowVisibilityFocusState {
-        const [state, setState] = useState<WindowVisibilityFocusState>(
-                () => getVisibilityFocusState()
-        );
+	const [state, setState] = useState<WindowVisibilityFocusState>(() =>
+		getVisibilityFocusState()
+	);
 
-        useEffect(() => {
-                if (typeof document === "undefined") {
-                        return;
-                }
+	useEffect(() => {
+		if (typeof document === "undefined") {
+			return;
+		}
 
-                const handleVisibilityChange = () => {
-                        setState(getVisibilityFocusState());
-                };
+		const handleVisibilityChange = () => {
+			setState(getVisibilityFocusState());
+		};
 
-                document.addEventListener("visibilitychange", handleVisibilityChange);
-                handleVisibilityChange();
-                return () => {
-                        document.removeEventListener(
-                                "visibilitychange",
-                                handleVisibilityChange
-                        );
-                };
-        }, []);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		handleVisibilityChange();
+		return () => {
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+		};
+	}, []);
 
-        useEffect(() => {
-                if (typeof window === "undefined") {
-                        return;
-                }
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
 
-                const syncVisibilityFocus = () => {
-                        setState(getVisibilityFocusState());
-                };
+		const syncVisibilityFocus = () => {
+			setState(getVisibilityFocusState());
+		};
 
-                const handleFocus = () => {
-                        syncVisibilityFocus();
-                };
-                const handleBlur = () => {
-                        syncVisibilityFocus();
-                };
+		const handleFocus = () => {
+			syncVisibilityFocus();
+		};
+		const handleBlur = () => {
+			syncVisibilityFocus();
+		};
 
-                window.addEventListener("focus", handleFocus);
-                window.addEventListener("blur", handleBlur);
+		window.addEventListener("focus", handleFocus);
+		window.addEventListener("blur", handleBlur);
 
-                syncVisibilityFocus();
+		syncVisibilityFocus();
 
-                return () => {
-                        window.removeEventListener("focus", handleFocus);
-                        window.removeEventListener("blur", handleBlur);
-                };
-        }, []);
+		return () => {
+			window.removeEventListener("focus", handleFocus);
+			window.removeEventListener("blur", handleBlur);
+		};
+	}, []);
 
-        return state;
+	return state;
 }

@@ -16,8 +16,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@cossistant/api",
-    "@cossistant/web"
-  ]
+  "ignore": ["@cossistant/api", "@cossistant/web"]
 }
