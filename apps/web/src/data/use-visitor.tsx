@@ -1,7 +1,12 @@
 "use client";
 
+import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import type { RouterOutputs } from "@api/trpc/types";
 import { useTRPC } from "@/lib/trpc/client";
+
+type VisitorResponse = RouterOutputs["conversation"]["getVisitorById"];
 
 export function useVisitor({
 	websiteSlug,
@@ -10,26 +15,36 @@ export function useVisitor({
 	websiteSlug: string;
 	visitorId: string;
 }) {
-	const trpc = useTRPC();
+        const trpc = useTRPC();
+        const queryNormalizer = useQueryNormalizer();
 
-	const {
-		data: visitor,
+        const placeholderVisitor = useMemo<VisitorResponse | undefined>(() => {
+                if (!visitorId) {
+                        return undefined;
+                }
+
+                return queryNormalizer.getObjectById<VisitorResponse>(visitorId);
+        }, [queryNormalizer, visitorId]);
+
+        const {
+                data: visitor,
 		isFetching,
 		isLoading,
 		error,
 		isError,
 		refetch,
-	} = useQuery({
-		...trpc.conversation.getVisitorById.queryOptions({
-			websiteSlug,
-			visitorId,
-		}),
-		staleTime: 0,
-		refetchOnMount: "always",
-	});
+        } = useQuery({
+                ...trpc.conversation.getVisitorById.queryOptions({
+                        websiteSlug,
+                        visitorId,
+                }),
+                placeholderData: placeholderVisitor,
+                staleTime: 0,
+                refetchOnMount: "always",
+        });
 
-	return {
-		visitor: visitor ?? null,
+        return {
+                visitor: visitor ?? null,
 		isLoading,
 		isFetching,
 		isError,
