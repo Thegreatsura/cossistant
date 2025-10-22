@@ -1,3 +1,5 @@
+import type { ReactElement } from "react";
+
 import {
 	AvatarFallback,
 	AvatarImage,
@@ -5,15 +7,13 @@ import {
 } from "../../primitives/avatar";
 import { cn } from "../utils";
 
-export function Avatar({
-	className,
-	image,
-	name,
-}: {
+type AvatarProps = {
 	className?: string;
 	image?: string | null;
 	name: string;
-}) {
+};
+
+export function Avatar({ className, image, name }: AvatarProps): ReactElement {
 	return (
 		<AvatarPrimitive
 			className={cn(

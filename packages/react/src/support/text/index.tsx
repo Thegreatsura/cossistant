@@ -35,7 +35,7 @@ export function SupportTextProvider<Locale extends string = SupportLocale>({
 	children,
 	locale,
 	content,
-}: SupportTextProviderProps<Locale>) {
+}: SupportTextProviderProps<Locale>): React.ReactElement {
 	const { website, availableHumanAgents, availableAIAgents, visitor } =
 		useSupport();
 	const [isHydrated, setIsHydrated] = React.useState(false);

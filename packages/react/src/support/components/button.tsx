@@ -41,7 +41,7 @@ export function Button({
 	variant,
 	size,
 	...props
-}: CossistantButtonProps) {
+}: CossistantButtonProps): React.ReactElement {
 	return (
 		<ButtonPrimitive
 			className={cn(coButtonVariants({ variant, size, className }))}

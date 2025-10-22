@@ -37,6 +37,22 @@ export type CossistantContextValue = {
 	client: CossistantClient;
 };
 
+type WebsiteData = NonNullable<CossistantContextValue["website"]>;
+
+type VisitorWithLocale = WebsiteData["visitor"] extends null | undefined
+	? undefined
+	: NonNullable<WebsiteData["visitor"]> & { locale: string | null };
+
+export type UseSupportValue = CossistantContextValue & {
+	availableHumanAgents:
+		| NonNullable<WebsiteData["availableHumanAgents"]>
+		| [];
+	availableAIAgents:
+		| NonNullable<WebsiteData["availableAIAgents"]>
+		| [];
+	visitor?: VisitorWithLocale;
+};
+
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
 	undefined
 );
@@ -173,7 +189,7 @@ export function SupportProvider({
 	onWsDisconnect,
 	onWsError,
 	queryClient,
-}: SupportProviderProps) {
+}: SupportProviderProps): React.ReactElement {
 	// Create a default QueryClient if none provided
 	const [defaultQueryClient] = React.useState(
 		() =>
@@ -212,7 +228,7 @@ export function SupportProvider({
  * Convenience hook that exposes the aggregated support context. Throws when it
  * is consumed outside of `SupportProvider` to catch integration mistakes.
  */
-export function useSupport() {
+export function useSupport(): UseSupportValue {
 	const context = React.useContext(SupportContext);
 	if (!context) {
 		throw new Error(

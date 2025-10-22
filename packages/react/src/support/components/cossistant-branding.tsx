@@ -1,10 +1,12 @@
+import type { ReactElement } from "react";
+
 import { cn } from "../utils";
 
 type CossistantLogoProps = {
 	className?: string;
 };
 
-export function CossistantLogo({ className }: CossistantLogoProps) {
+export function CossistantLogo({ className }: CossistantLogoProps): ReactElement {
 	return (
 		<svg
 			className={cn("h-5 w-5", className)}

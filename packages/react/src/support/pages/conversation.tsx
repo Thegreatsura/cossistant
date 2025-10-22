@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
@@ -31,7 +32,9 @@ type ConversationPageProps = {
  * All conversation logic is handled by the useConversationPage hook,
  * making this component focused purely on rendering and user interaction.
  */
-export const ConversationPage = ({
+type ConversationPageComponent = (props: ConversationPageProps) => ReactElement;
+
+export const ConversationPage: ConversationPageComponent = ({
 	conversationId: initialConversationId,
 	initialMessage,
 	items: passedItems = [],

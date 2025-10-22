@@ -1,9 +1,11 @@
+import type { ReactElement } from "react";
+
 import { useSupportNavigation } from "../store";
 import { Text } from "../text";
 import { Button } from "./button";
 import Icon from "./icons";
 
-export function NavigationTab() {
+export function NavigationTab(): ReactElement {
 	const { current, navigate } = useSupportNavigation();
 
 	return (

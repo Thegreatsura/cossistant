@@ -1,5 +1,7 @@
 import "./support.css";
 
+import type { ReactElement } from "react";
+
 import type { DefaultMessage } from "@cossistant/types";
 import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
@@ -38,7 +40,7 @@ export function Support<Locale extends string = SupportLocale>({
 	defaultOpen,
 	locale,
 	content,
-}: SupportProps<Locale>) {
+}: SupportProps<Locale>): ReactElement | null {
 	const { website } = useSupport();
 
 	if (!website) {
