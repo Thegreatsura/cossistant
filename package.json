@@ -10,8 +10,7 @@
     "check-types": "turbo run check-types",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "changeset publish",
-    "postinstall": "node scripts/patch-build-tooling.mjs"
+    "release": "changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.6",
