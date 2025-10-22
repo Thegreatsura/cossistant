@@ -6,308 +6,308 @@ import { useSupport } from "../provider";
 import { useSupportText } from "../support/text";
 import { formatTimeAgo } from "../support/utils/time";
 import {
-  mapTypingEntriesToPreviewParticipants,
-  type PreviewTypingParticipant,
+	mapTypingEntriesToPreviewParticipants,
+	type PreviewTypingParticipant,
 } from "./private/typing";
 import { useConversationTimelineItems } from "./use-conversation-timeline-items";
 import { useConversationTyping } from "./use-conversation-typing";
 
 export type ConversationPreviewLastMessage = {
-  content: string;
-  time: string;
-  isFromVisitor: boolean;
-  senderName?: string;
-  senderImage?: string | null;
+	content: string;
+	time: string;
+	isFromVisitor: boolean;
+	senderName?: string;
+	senderImage?: string | null;
 };
 
 export type ConversationPreviewAssignedAgent = {
-  name: string;
-  image: string | null;
-  type: "human" | "ai" | "fallback";
+	name: string;
+	image: string | null;
+	type: "human" | "ai" | "fallback";
 };
 
 export type ConversationPreviewTypingParticipant = PreviewTypingParticipant;
 
 export type ConversationPreviewTypingState = {
-  participants: ConversationPreviewTypingParticipant[];
-  primaryParticipant: ConversationPreviewTypingParticipant | null;
-  label: string | null;
-  isTyping: boolean;
+	participants: ConversationPreviewTypingParticipant[];
+	primaryParticipant: ConversationPreviewTypingParticipant | null;
+	label: string | null;
+	isTyping: boolean;
 };
 
 export type UseConversationPreviewOptions = {
-  conversation: Conversation;
-  /**
-   * Whether the hook should fetch timeline items for the conversation.
-   * Enabled by default.
-   */
-  includeTimelineItems?: boolean;
-  /**
-   * Optional timeline items to merge with the live ones (e.g. optimistic items).
-   */
-  initialTimelineItems?: TimelineItem[];
-  /**
-   * Typing state configuration (mainly exclusions for the current visitor).
-   */
-  typing?: {
-    excludeVisitorId?: string | null;
-    excludeUserId?: string | null;
-    excludeAiAgentId?: string | null;
-  };
+	conversation: Conversation;
+	/**
+	 * Whether the hook should fetch timeline items for the conversation.
+	 * Enabled by default.
+	 */
+	includeTimelineItems?: boolean;
+	/**
+	 * Optional timeline items to merge with the live ones (e.g. optimistic items).
+	 */
+	initialTimelineItems?: TimelineItem[];
+	/**
+	 * Typing state configuration (mainly exclusions for the current visitor).
+	 */
+	typing?: {
+		excludeVisitorId?: string | null;
+		excludeUserId?: string | null;
+		excludeAiAgentId?: string | null;
+	};
 };
 
 export type UseConversationPreviewReturn = {
-  conversation: Conversation;
-  title: string;
-  lastMessage: ConversationPreviewLastMessage | null;
-  assignedAgent: ConversationPreviewAssignedAgent;
-  typing: ConversationPreviewTypingState;
-  timeline: ReturnType<typeof useConversationTimelineItems>;
+	conversation: Conversation;
+	title: string;
+	lastMessage: ConversationPreviewLastMessage | null;
+	assignedAgent: ConversationPreviewAssignedAgent;
+	typing: ConversationPreviewTypingState;
+	timeline: ReturnType<typeof useConversationTimelineItems>;
 };
 
 function resolveLastTimelineMessage(
-  items: TimelineItem[],
-  fallback: TimelineItem | null
+	items: TimelineItem[],
+	fallback: TimelineItem | null
 ) {
-  for (let index = items.length - 1; index >= 0; index--) {
-    const item = items[index];
+	for (let index = items.length - 1; index >= 0; index--) {
+		const item = items[index];
 
-    if (item?.type === "message") {
-      return item;
-    }
-  }
+		if (item?.type === "message") {
+			return item;
+		}
+	}
 
-  if (fallback?.type === "message") {
-    return fallback;
-  }
+	if (fallback?.type === "message") {
+		return fallback;
+	}
 
-  return null;
+	return null;
 }
 
 export function useConversationPreview(
-  options: UseConversationPreviewOptions
+	options: UseConversationPreviewOptions
 ): UseConversationPreviewReturn {
-  const {
-    conversation,
-    includeTimelineItems = true,
-    initialTimelineItems = [],
-    typing,
-  } = options;
-  const { availableHumanAgents, availableAIAgents, visitor } = useSupport();
-  const text = useSupportText();
+	const {
+		conversation,
+		includeTimelineItems = true,
+		initialTimelineItems = [],
+		typing,
+	} = options;
+	const { availableHumanAgents, availableAIAgents, visitor } = useSupport();
+	const text = useSupportText();
 
-  const timeline = useConversationTimelineItems(conversation.id, {
-    enabled: includeTimelineItems,
-  });
+	const timeline = useConversationTimelineItems(conversation.id, {
+		enabled: includeTimelineItems,
+	});
 
-  const mergedTimelineItems = useMemo(() => {
-    if (timeline.items.length > 0) {
-      return timeline.items;
-    }
+	const mergedTimelineItems = useMemo(() => {
+		if (timeline.items.length > 0) {
+			return timeline.items;
+		}
 
-    if (initialTimelineItems.length > 0) {
-      return initialTimelineItems;
-    }
+		if (initialTimelineItems.length > 0) {
+			return initialTimelineItems;
+		}
 
-    return [] as TimelineItem[];
-  }, [timeline.items, initialTimelineItems]);
+		return [] as TimelineItem[];
+	}, [timeline.items, initialTimelineItems]);
 
-  const knownTimelineItems = useMemo(() => {
-    const items = [...mergedTimelineItems];
+	const knownTimelineItems = useMemo(() => {
+		const items = [...mergedTimelineItems];
 
-    if (
-      conversation.lastTimelineItem &&
-      !items.some((item) => item.id === conversation.lastTimelineItem?.id)
-    ) {
-      items.push(conversation.lastTimelineItem);
-    }
+		if (
+			conversation.lastTimelineItem &&
+			!items.some((item) => item.id === conversation.lastTimelineItem?.id)
+		) {
+			items.push(conversation.lastTimelineItem);
+		}
 
-    return items;
-  }, [mergedTimelineItems, conversation.lastTimelineItem]);
+		return items;
+	}, [mergedTimelineItems, conversation.lastTimelineItem]);
 
-  const lastTimelineMessage = useMemo(
-    () =>
-      resolveLastTimelineMessage(
-        mergedTimelineItems,
-        conversation.lastTimelineItem ?? null
-      ),
-    [mergedTimelineItems, conversation.lastTimelineItem]
-  );
+	const lastTimelineMessage = useMemo(
+		() =>
+			resolveLastTimelineMessage(
+				mergedTimelineItems,
+				conversation.lastTimelineItem ?? null
+			),
+		[mergedTimelineItems, conversation.lastTimelineItem]
+	);
 
-  const lastMessage = useMemo<ConversationPreviewLastMessage | null>(() => {
-    if (!lastTimelineMessage) {
-      return null;
-    }
+	const lastMessage = useMemo<ConversationPreviewLastMessage | null>(() => {
+		if (!lastTimelineMessage) {
+			return null;
+		}
 
-    const isFromVisitor = lastTimelineMessage.visitorId !== null;
+		const isFromVisitor = lastTimelineMessage.visitorId !== null;
 
-    let senderName = text("common.fallbacks.unknown");
-    let senderImage: string | null = null;
+		let senderName = text("common.fallbacks.unknown");
+		let senderImage: string | null = null;
 
-    if (isFromVisitor) {
-      senderName = text("common.fallbacks.you");
-    } else if (lastTimelineMessage.userId) {
-      const agent = availableHumanAgents.find(
-        (a) => a.id === lastTimelineMessage.userId
-      );
-      if (agent) {
-        senderName = agent.name;
-        senderImage = agent.image;
-      } else {
-        senderName = text("common.fallbacks.supportTeam");
-      }
-    } else if (lastTimelineMessage.aiAgentId) {
-      const aiAgent = availableAIAgents.find(
-        (agent) => agent.id === lastTimelineMessage.aiAgentId
-      );
-      if (aiAgent) {
-        senderName = aiAgent.name;
-        senderImage = aiAgent.image;
-      } else {
-        senderName = text("common.fallbacks.aiAssistant");
-      }
-    } else {
-      senderName = text("common.fallbacks.supportTeam");
-    }
+		if (isFromVisitor) {
+			senderName = text("common.fallbacks.you");
+		} else if (lastTimelineMessage.userId) {
+			const agent = availableHumanAgents.find(
+				(a) => a.id === lastTimelineMessage.userId
+			);
+			if (agent) {
+				senderName = agent.name;
+				senderImage = agent.image;
+			} else {
+				senderName = text("common.fallbacks.supportTeam");
+			}
+		} else if (lastTimelineMessage.aiAgentId) {
+			const aiAgent = availableAIAgents.find(
+				(agent) => agent.id === lastTimelineMessage.aiAgentId
+			);
+			if (aiAgent) {
+				senderName = aiAgent.name;
+				senderImage = aiAgent.image;
+			} else {
+				senderName = text("common.fallbacks.aiAssistant");
+			}
+		} else {
+			senderName = text("common.fallbacks.supportTeam");
+		}
 
-    return {
-      content: lastTimelineMessage.text || "",
-      time: formatTimeAgo(lastTimelineMessage.createdAt),
-      isFromVisitor,
-      senderName,
-      senderImage,
-    };
-  }, [lastTimelineMessage, availableHumanAgents, availableAIAgents, text]);
+		return {
+			content: lastTimelineMessage.text || "",
+			time: formatTimeAgo(lastTimelineMessage.createdAt),
+			isFromVisitor,
+			senderName,
+			senderImage,
+		};
+	}, [lastTimelineMessage, availableHumanAgents, availableAIAgents, text]);
 
-  const assignedAgent = useMemo<ConversationPreviewAssignedAgent>(() => {
-    const supportFallbackName = text("common.fallbacks.supportTeam");
-    const aiFallbackName = text("common.fallbacks.aiAssistant");
+	const assignedAgent = useMemo<ConversationPreviewAssignedAgent>(() => {
+		const supportFallbackName = text("common.fallbacks.supportTeam");
+		const aiFallbackName = text("common.fallbacks.aiAssistant");
 
-    const lastAgentItem = [...knownTimelineItems]
-      .reverse()
-      .find((item) => item.userId !== null || item.aiAgentId !== null);
+		const lastAgentItem = [...knownTimelineItems]
+			.reverse()
+			.find((item) => item.userId !== null || item.aiAgentId !== null);
 
-    if (lastAgentItem?.userId) {
-      const human = availableHumanAgents.find(
-        (agent) => agent.id === lastAgentItem.userId
-      );
+		if (lastAgentItem?.userId) {
+			const human = availableHumanAgents.find(
+				(agent) => agent.id === lastAgentItem.userId
+			);
 
-      if (human) {
-        return {
-          type: "human" as const,
-          name: human.name,
-          image: human.image ?? null,
-        };
-      }
+			if (human) {
+				return {
+					type: "human" as const,
+					name: human.name,
+					image: human.image ?? null,
+				};
+			}
 
-      return {
-        type: "human" as const,
-        name: supportFallbackName,
-        image: null,
-      };
-    }
+			return {
+				type: "human" as const,
+				name: supportFallbackName,
+				image: null,
+			};
+		}
 
-    if (lastAgentItem?.aiAgentId) {
-      const ai = availableAIAgents.find(
-        (agent) => agent.id === lastAgentItem.aiAgentId
-      );
+		if (lastAgentItem?.aiAgentId) {
+			const ai = availableAIAgents.find(
+				(agent) => agent.id === lastAgentItem.aiAgentId
+			);
 
-      if (ai) {
-        return {
-          type: "ai" as const,
-          name: ai.name,
-          image: ai.image ?? null,
-        };
-      }
+			if (ai) {
+				return {
+					type: "ai" as const,
+					name: ai.name,
+					image: ai.image ?? null,
+				};
+			}
 
-      return {
-        type: "ai" as const,
-        name: aiFallbackName,
-        image: null,
-      };
-    }
+			return {
+				type: "ai" as const,
+				name: aiFallbackName,
+				image: null,
+			};
+		}
 
-    const fallbackHuman = availableHumanAgents[0];
-    if (fallbackHuman) {
-      return {
-        type: "human" as const,
-        name: fallbackHuman.name,
-        image: fallbackHuman.image ?? null,
-      };
-    }
+		const fallbackHuman = availableHumanAgents[0];
+		if (fallbackHuman) {
+			return {
+				type: "human" as const,
+				name: fallbackHuman.name,
+				image: fallbackHuman.image ?? null,
+			};
+		}
 
-    const fallbackAi = availableAIAgents[0];
-    if (fallbackAi) {
-      return {
-        type: "ai" as const,
-        name: fallbackAi.name,
-        image: fallbackAi.image ?? null,
-      };
-    }
+		const fallbackAi = availableAIAgents[0];
+		if (fallbackAi) {
+			return {
+				type: "ai" as const,
+				name: fallbackAi.name,
+				image: fallbackAi.image ?? null,
+			};
+		}
 
-    return {
-      type: "fallback" as const,
-      name: supportFallbackName,
-      image: null,
-    };
-  }, [knownTimelineItems, availableHumanAgents, availableAIAgents, text]);
+		return {
+			type: "fallback" as const,
+			name: supportFallbackName,
+			image: null,
+		};
+	}, [knownTimelineItems, availableHumanAgents, availableAIAgents, text]);
 
-  const typingEntries = useConversationTyping(conversation.id, {
-    excludeVisitorId: typing?.excludeVisitorId ?? visitor?.id ?? null,
-    excludeUserId: typing?.excludeUserId ?? null,
-    excludeAiAgentId: typing?.excludeAiAgentId ?? null,
-  });
+	const typingEntries = useConversationTyping(conversation.id, {
+		excludeVisitorId: typing?.excludeVisitorId ?? visitor?.id ?? null,
+		excludeUserId: typing?.excludeUserId ?? null,
+		excludeAiAgentId: typing?.excludeAiAgentId ?? null,
+	});
 
-  const typingParticipants = useMemo(
-    () =>
-      mapTypingEntriesToPreviewParticipants(typingEntries, {
-        availableHumanAgents,
-        availableAIAgents,
-        text,
-      }),
-    [typingEntries, availableHumanAgents, availableAIAgents, text]
-  );
+	const typingParticipants = useMemo(
+		() =>
+			mapTypingEntriesToPreviewParticipants(typingEntries, {
+				availableHumanAgents,
+				availableAIAgents,
+				text,
+			}),
+		[typingEntries, availableHumanAgents, availableAIAgents, text]
+	);
 
-  const primaryTypingParticipant = typingParticipants[0] ?? null;
+	const primaryTypingParticipant = typingParticipants[0] ?? null;
 
-  const typingLabel = useMemo(() => {
-    if (!primaryTypingParticipant) {
-      return null;
-    }
+	const typingLabel = useMemo(() => {
+		if (!primaryTypingParticipant) {
+			return null;
+		}
 
-    return text("component.conversationButtonLink.typing", {
-      name: primaryTypingParticipant.name,
-    });
-  }, [primaryTypingParticipant, text]);
+		return text("component.conversationButtonLink.typing", {
+			name: primaryTypingParticipant.name,
+		});
+	}, [primaryTypingParticipant, text]);
 
-  const typingState: ConversationPreviewTypingState = useMemo(
-    () => ({
-      participants: typingParticipants,
-      primaryParticipant: primaryTypingParticipant,
-      label: typingLabel,
-      isTyping: typingParticipants.length > 0,
-    }),
-    [typingParticipants, primaryTypingParticipant, typingLabel]
-  );
+	const typingState: ConversationPreviewTypingState = useMemo(
+		() => ({
+			participants: typingParticipants,
+			primaryParticipant: primaryTypingParticipant,
+			label: typingLabel,
+			isTyping: typingParticipants.length > 0,
+		}),
+		[typingParticipants, primaryTypingParticipant, typingLabel]
+	);
 
-  const title = useMemo(() => {
-    if (conversation.title) {
-      return conversation.title;
-    }
+	const title = useMemo(() => {
+		if (conversation.title) {
+			return conversation.title;
+		}
 
-    if (lastMessage?.content) {
-      return lastMessage.content;
-    }
+		if (lastMessage?.content) {
+			return lastMessage.content;
+		}
 
-    return text("component.conversationButtonLink.fallbackTitle");
-  }, [conversation.title, lastMessage?.content, text]);
+		return text("component.conversationButtonLink.fallbackTitle");
+	}, [conversation.title, lastMessage?.content, text]);
 
-  return {
-    conversation,
-    title,
-    lastMessage,
-    assignedAgent,
-    typing: typingState,
-    timeline,
-  };
+	return {
+		conversation,
+		title,
+		lastMessage,
+		assignedAgent,
+		typing: typingState,
+		timeline,
+	};
 }
