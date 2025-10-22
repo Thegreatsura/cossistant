@@ -15,6 +15,7 @@ import { website } from "@api/db/schema";
 import polarClient from "@api/lib/polar";
 import { isOrganizationAdminOrOwner } from "@api/utils/access-control";
 import { generateULID } from "@api/utils/db/ids";
+import { normalizeDomain } from "@api/utils/domain";
 import { domainToSlug } from "@api/utils/domain-slug";
 import {
   APIKeyType,
@@ -146,9 +147,11 @@ export const websiteRouter = createTRPCRouter({
     .output(createWebsiteResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       // Check if website with same verified domain already exists
+      const normalizedDomain = normalizeDomain(input.domain);
+
       const existingDomainWebsite = await db.query.website.findFirst({
         where: and(
-          eq(website.domain, input.domain),
+          eq(website.domain, normalizedDomain),
           eq(website.isDomainOwnershipVerified, true)
         ),
       });
@@ -160,21 +163,21 @@ export const websiteRouter = createTRPCRouter({
         });
       }
 
-      const userEmailDomain = user.email.split("@")[1];
-      const isDomainOwnershipVerified = userEmailDomain === input.domain;
+      const userEmailDomain = user.email.split("@")[1]?.toLowerCase();
+      const isDomainOwnershipVerified = userEmailDomain === normalizedDomain;
 
       // Generate a unique slug by always adding a random suffix
-      const slug = domainToSlug(input.domain);
+      const slug = domainToSlug(normalizedDomain);
 
       const createdWebsite = await createWebsite(db, {
         organizationId: input.organizationId,
         data: {
           name: input.name,
           installationTarget: input.installationTarget,
-          domain: input.domain,
+          domain: normalizedDomain,
           isDomainOwnershipVerified,
           whitelistedDomains: [
-            `https://${input.domain}`,
+            `https://${normalizedDomain}`,
             "http://localhost:3000",
           ],
           slug,
@@ -321,11 +324,7 @@ export const websiteRouter = createTRPCRouter({
     .input(checkWebsiteDomainRequestSchema)
     .output(z.boolean())
     .query(async ({ ctx: { db }, input }) => {
-      const normalizedDomain = input.domain
-        .trim()
-        .replace(/^https?:\/\//, "")
-        .replace(/\/.*$/, "")
-        .toLowerCase();
+      const normalizedDomain = normalizeDomain(input.domain);
 
       const existingWebsite = await db.query.website.findFirst({
         where: and(
@@ -393,11 +392,7 @@ export const websiteRouter = createTRPCRouter({
       }
 
       if (updateData.domain) {
-        const normalizedDomain = updateData.domain
-          .trim()
-          .replace(/^https?:\/\//, "")
-          .replace(/\/.*$/, "")
-          .toLowerCase();
+        const normalizedDomain = normalizeDomain(updateData.domain);
 
         if (normalizedDomain !== site.domain) {
           const existingDomain = await ctx.db.query.website.findFirst({

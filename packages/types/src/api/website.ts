@@ -217,7 +217,9 @@ const websiteUpdateDataSchema = z
                 description: z.string().nullable().optional(),
                 logoUrl: z.string().url().nullable().optional(),
                 whitelistedDomains: z.array(z.url()).optional(),
-                installationTarget: z.enum(WebsiteInstallationTarget).optional(),
+                installationTarget: z
+                        .nativeEnum(WebsiteInstallationTarget)
+                        .optional(),
                 status: z.enum(WEBSITE_STATUS_VALUES).optional(),
                 teamId: z.string().nullable().optional(),
         })
