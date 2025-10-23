@@ -35,11 +35,12 @@ import {
 } from "./visitor-tracker";
 
 export class CossistantRestClient {
-	private config: CossistantConfig;
-	private baseHeaders: Record<string, string>;
-	private publicKey: string;
-	private websiteId: string | null = null;
-	private visitorId: string | null = null;
+        private config: CossistantConfig;
+        private baseHeaders: Record<string, string>;
+        private publicKey: string;
+        private websiteId: string | null = null;
+        private visitorId: string | null = null;
+        private visitorBlocked = false;
 
 	constructor(config: CossistantConfig) {
 		this.config = config;
@@ -150,14 +151,22 @@ export class CossistantRestClient {
 		}
 	}
 
-	private async request<T>(
-		path: string,
-		options: RequestInit = {}
-	): Promise<T> {
-		const url = `${this.config.apiUrl}${path}`;
+        private async request<T>(
+                path: string,
+                options: RequestInit = {}
+        ): Promise<T> {
+                if (this.visitorBlocked && !path.startsWith("/websites")) {
+                        throw new CossistantAPIError({
+                                code: "VISITOR_BLOCKED",
+                                message: "Visitor is blocked and cannot perform this action.",
+                                details: { path },
+                        });
+                }
 
-		const response = await fetch(url, {
-			...options,
+                const url = `${this.config.apiUrl}${path}`;
+
+                const response = await fetch(url, {
+                        ...options,
 			headers: {
 				...this.baseHeaders,
 				...options.headers,
@@ -214,23 +223,35 @@ export class CossistantRestClient {
 		this.websiteId = response.id;
 
 		// Store the visitor ID if we got one
-		if (response.visitor?.id) {
-			this.visitorId = response.visitor.id;
-			setVisitorId(response.id, response.visitor.id);
-			this.syncVisitorSnapshot(response.visitor.id);
-		}
+                this.visitorBlocked = response.visitor?.isBlocked ?? false;
 
-		return response;
-	}
+                if (response.visitor?.id) {
+                        if (this.visitorBlocked) {
+                                this.visitorId = response.visitor.id;
+                                setVisitorId(response.id, response.visitor.id);
+                                return response;
+                        }
 
-	// Manually prime website and visitor context when the caller already has it
-	setWebsiteContext(websiteId: string, visitorId?: string): void {
-		this.websiteId = websiteId;
-		if (visitorId) {
-			this.visitorId = visitorId;
-			setVisitorId(websiteId, visitorId);
-		}
-	}
+                        this.visitorId = response.visitor.id;
+                        setVisitorId(response.id, response.visitor.id);
+                        this.syncVisitorSnapshot(response.visitor.id);
+                }
+
+                return response;
+        }
+
+        // Manually prime website and visitor context when the caller already has it
+        setWebsiteContext(websiteId: string, visitorId?: string): void {
+                this.websiteId = websiteId;
+                if (visitorId) {
+                        this.visitorId = visitorId;
+                        setVisitorId(websiteId, visitorId);
+                }
+        }
+
+        setVisitorBlocked(isBlocked: boolean): void {
+                this.visitorBlocked = isBlocked;
+        }
 
 	getCurrentWebsiteId(): string | null {
 		return this.websiteId;
