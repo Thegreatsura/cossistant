@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/correctness/useExhaustiveDependencies: wanted here */
-import { useEffect, type ReactElement } from "react";
+import { type ReactElement, useEffect } from "react";
 import { useVisitor } from "./hooks";
 
 export type IdentifySupportVisitorProps = {

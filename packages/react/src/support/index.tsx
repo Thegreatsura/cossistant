@@ -1,8 +1,7 @@
 import "./support.css";
 
-import React, { type ReactElement } from "react";
-
 import type { DefaultMessage } from "@cossistant/types";
+import React, { type ReactElement } from "react";
 import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportConfig } from "../support-config";
@@ -12,16 +11,16 @@ import type { SupportLocale, SupportTextContentOverrides } from "./text";
 import { SupportTextProvider } from "./text";
 
 export type SupportProps<Locale extends string = SupportLocale> = {
-  className?: string;
-  position?: "top" | "bottom";
-  align?: "right" | "left";
-  // Display the support widget in a floating window or in responsive mode (takes the full width / height of the parent)
-  mode?: "floating" | "responsive";
-  quickOptions?: string[];
-  defaultMessages?: DefaultMessage[];
-  defaultOpen?: boolean;
-  locale?: Locale;
-  content?: SupportTextContentOverrides<Locale>;
+	className?: string;
+	position?: "top" | "bottom";
+	align?: "right" | "left";
+	// Display the support widget in a floating window or in responsive mode (takes the full width / height of the parent)
+	mode?: "floating" | "responsive";
+	quickOptions?: string[];
+	defaultMessages?: DefaultMessage[];
+	defaultOpen?: boolean;
+	locale?: Locale;
+	content?: SupportTextContentOverrides<Locale>;
 };
 
 // Internal component that needs the conversation context
@@ -31,42 +30,42 @@ export type SupportProps<Locale extends string = SupportLocale> = {
  * flashing incomplete UI.
  */
 export function Support<Locale extends string = SupportLocale>({
-  className,
-  position = "bottom",
-  align = "right",
-  mode = "floating",
-  quickOptions,
-  defaultMessages,
-  defaultOpen,
-  locale,
-  content,
+	className,
+	position = "bottom",
+	align = "right",
+	mode = "floating",
+	quickOptions,
+	defaultMessages,
+	defaultOpen,
+	locale,
+	content,
 }: SupportProps<Locale>): ReactElement | null {
-  const { website } = useSupport();
+	const { website } = useSupport();
 
-  if (!website) {
-    return null;
-  }
+	if (!website) {
+		return null;
+	}
 
-  return (
-    <>
-      <SupportRealtimeProvider>
-        <SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
-          <SupportTextProvider content={content} locale={locale}>
-            <SupportContent
-              align={align}
-              className={className}
-              mode={mode}
-              position={position}
-            />
-          </SupportTextProvider>
-        </SupportConfigProvider>
-      </SupportRealtimeProvider>
-      <SupportConfig
-        defaultMessages={defaultMessages}
-        quickOptions={quickOptions}
-      />
-    </>
-  );
+	return (
+		<>
+			<SupportRealtimeProvider>
+				<SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
+					<SupportTextProvider content={content} locale={locale}>
+						<SupportContent
+							align={align}
+							className={className}
+							mode={mode}
+							position={position}
+						/>
+					</SupportTextProvider>
+				</SupportConfigProvider>
+			</SupportRealtimeProvider>
+			<SupportConfig
+				defaultMessages={defaultMessages}
+				quickOptions={quickOptions}
+			/>
+		</>
+	);
 }
 
 export default Support;

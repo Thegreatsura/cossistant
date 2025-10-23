@@ -1,5 +1,5 @@
-import type { ReactElement } from "react";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { ReactElement } from "react";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
 import { AvatarStack } from "../components/avatar-stack";

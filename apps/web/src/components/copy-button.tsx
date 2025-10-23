@@ -38,7 +38,7 @@ export function CopyButton({
 		<TooltipOnHover content={hasCopied ? "Copied" : "Copy to Clipboard"}>
 			<Button
 				className={cn(
-					"absolute top-3 right-1 z-10 size-7 hover:opacity-100 focus-visible:opacity-100",
+					"test absolute top-3 right-1 z-10 size-7 hover:opacity-100 focus-visible:opacity-100",
 					className
 				)}
 				data-slot="copy-button"

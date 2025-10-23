@@ -1,6 +1,5 @@
-import type { ReactElement } from "react";
-
 import { motion } from "motion/react";
+import type { ReactElement } from "react";
 import { useHomePage } from "../../hooks/use-home-page";
 import { useSupport } from "../../provider";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
