@@ -100,10 +100,11 @@ function SupportProviderInner({
 
 	// Prime REST client with website/visitor context so headers are sent reliably
         React.useEffect(() => {
-                if (website) {
-                        // @ts-expect-error internal priming: safe in our library context
-                        client.restClient?.setWebsiteContext?.(website.id, website.visitor?.id);
+                if (!website) {
+                        return;
                 }
+
+                client.setWebsiteContext(website.id, website.visitor?.id ?? undefined);
         }, [client, website]);
 
         React.useEffect(() => {
@@ -152,9 +153,21 @@ function SupportProviderInner({
 		]
 	);
 
-	return (
-		<SupportContext.Provider value={value}>
+        const webSocketKey = React.useMemo(() => {
+                if (!website) {
+                        return "no-website";
+                }
+
+                const visitorKey = website.visitor?.id ?? "anonymous";
+                const blockedState = isVisitorBlocked ? "blocked" : "active";
+
+                return `${website.id}:${visitorKey}:${blockedState}`;
+        }, [isVisitorBlocked, website]);
+
+        return (
+                <SupportContext.Provider value={value}>
                         <WebSocketProvider
+                                key={webSocketKey}
                                 autoConnect={autoConnect && !isVisitorBlocked}
                                 onConnect={onWsConnect}
                                 onDisconnect={onWsDisconnect}
@@ -163,11 +176,11 @@ function SupportProviderInner({
                                 visitorId={isVisitorBlocked ? undefined : website?.visitor?.id}
                                 websiteId={website?.id}
                                 wsUrl={wsUrl}
-			>
-				{children}
-			</WebSocketProvider>
-		</SupportContext.Provider>
-	);
+                        >
+                                {children}
+                        </WebSocketProvider>
+                </SupportContext.Provider>
+        );
 }
 
 /**

@@ -121,9 +121,6 @@ export class CossistantClient {
                 const request = this.restClient
                         .getWebsite()
                         .then((website) => {
-                                this.restClient.setVisitorBlocked(
-                                        website.visitor?.isBlocked ?? false
-                                );
                                 this.websiteStore.setWebsite(website);
                                 return website;
                         })
