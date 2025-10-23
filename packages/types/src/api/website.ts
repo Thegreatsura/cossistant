@@ -101,10 +101,30 @@ export const websiteSummarySchema = z
 			description: "The website's slug.",
 			example: "dub-co",
 		}),
-		name: z.string().openapi({
-			description: "The website's name.",
-			example: "Dub",
-		}),
+                name: z.string().openapi({
+                        description: "The website's name.",
+                        example: "Dub",
+                }),
+                domain: z.string().openapi({
+                        description: "The website's domain.",
+                        example: "dub.co",
+                }),
+                contactEmail: z
+                        .string()
+                        .email()
+                        .nullable()
+                        .openapi({
+                                description: "The primary email visitors can use to reach you.",
+                                example: "support@dub.co",
+                        }),
+                logoUrl: z
+                        .string()
+                        .url()
+                        .nullable()
+                        .openapi({
+                                description: "Public URL to the website's logo.",
+                                example: "https://cdn.example.com/logo.png",
+                        }),
 		organizationId: z.ulid().openapi({
 			description: "The owning organization's unique identifier.",
 			example: "01JG000000000000000000000",
@@ -189,17 +209,20 @@ export type RevokeWebsiteApiKeyRequest = z.infer<
 >;
 
 const websiteUpdateDataSchema = z
-	.object({
-		name: z.string().min(1).max(120).optional(),
-		slug: z.string().min(1).optional(),
-		domain: z.string().min(1).optional(),
-		description: z.string().nullable().optional(),
-		logoUrl: z.string().url().nullable().optional(),
-		whitelistedDomains: z.array(z.url()).optional(),
-		installationTarget: z.enum(WebsiteInstallationTarget).optional(),
-		status: z.enum(WEBSITE_STATUS_VALUES).optional(),
-		teamId: z.string().nullable().optional(),
-	})
+        .object({
+                name: z.string().min(1).max(120).optional(),
+                slug: z.string().min(1).optional(),
+                domain: z.string().min(1).optional(),
+                contactEmail: z.string().email().nullable().optional(),
+                description: z.string().nullable().optional(),
+                logoUrl: z.string().url().nullable().optional(),
+                whitelistedDomains: z.array(z.url()).optional(),
+                installationTarget: z
+                        .nativeEnum(WebsiteInstallationTarget)
+                        .optional(),
+                status: z.enum(WEBSITE_STATUS_VALUES).optional(),
+                teamId: z.string().nullable().optional(),
+        })
 	.refine((value) => Object.keys(value).length > 0, {
 		message: "Provide at least one field to update.",
 	});

@@ -9,7 +9,7 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "emitDecoratorMetadata": false,
     "skipLibCheck": true,
     "strict": true,
@@ -25,6 +25,7 @@
     }
   },
   "include": ["src/**/*", "src/**/*.d.ts"],
+  "types": ["react", "react-dom"],
   "exclude": [
     "**/.*/",
     "**/build",
