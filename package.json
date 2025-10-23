@@ -6,11 +6,12 @@
     "dev": "docker compose up -d && turbo run dev",
     "lint": "turbo run lint",
     "check": "npx ultracite@latest check",
-    "fix": "npx ultracite@latest fix",
+    "fix": "bunx ultracite fix",
     "check-types": "turbo run check-types",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.6",
@@ -19,6 +20,7 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "tsdown": "^0.15.2",
     "tsx": "4.20.5",
