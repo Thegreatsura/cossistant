@@ -1,6 +1,8 @@
 "use client";
 
+import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -32,6 +34,7 @@ export function ConversationItem({
 	focused = false,
 	setFocused,
 }: Props) {
+	const queryNormalizer = useQueryNormalizer();
 	const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
 		header;
 	const { prefetchConversation } = usePrefetchConversationData();
@@ -48,12 +51,27 @@ export function ConversationItem({
 		[header.visitorId, trpc, websiteSlug]
 	);
 
+	const visitorPlaceholder = useMemo<
+		RouterOutputs["conversation"]["getVisitorById"] | undefined
+	>(() => {
+		if (!header.visitorId) {
+			return headerVisitor;
+		}
+
+		return (
+			queryNormalizer.getObjectById<
+				RouterOutputs["conversation"]["getVisitorById"]
+			>(header.visitorId) ?? headerVisitor
+		);
+	}, [header.visitorId, headerVisitor, queryNormalizer]);
+
 	const visitorQuery = useQuery({
 		...visitorQueryOptions,
 		enabled: Boolean(header.visitorId) && !headerVisitor,
 		staleTime: Number.POSITIVE_INFINITY,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
+		placeholderData: visitorPlaceholder,
 	});
 
 	const visitor = useMemo(() => {

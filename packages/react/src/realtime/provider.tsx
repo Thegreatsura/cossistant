@@ -374,7 +374,7 @@ export function RealtimeProvider({
 	onConnect,
 	onDisconnect,
 	onError,
-}: RealtimeProviderProps) {
+}: RealtimeProviderProps): React.ReactElement {
 	const normalizedAuth = normalizeAuth(auth);
 
 	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);

@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
@@ -31,24 +32,26 @@ type ConversationPageProps = {
  * All conversation logic is handled by the useConversationPage hook,
  * making this component focused purely on rendering and user interaction.
  */
-export const ConversationPage = ({
+type ConversationPageComponent = (props: ConversationPageProps) => ReactElement;
+
+export const ConversationPage: ConversationPageComponent = ({
 	conversationId: initialConversationId,
 	initialMessage,
 	items: passedItems = [],
 }: ConversationPageProps) => {
-        const { website, availableAIAgents, availableHumanAgents, visitor } =
-                useSupport();
-        const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
-        const { isOpen } = useSupportConfig();
+	const { website, availableAIAgents, availableHumanAgents, visitor } =
+		useSupport();
+	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+	const { isOpen } = useSupportConfig();
 	const text = useSupportText();
 
 	// Main conversation hook - handles all logic
-        const conversation = useConversationPage({
-                conversationId: initialConversationId,
-                items: passedItems,
-                initialMessage,
-                autoSeenEnabled: isOpen,
-                onConversationIdChange: (newConversationId) => {
+	const conversation = useConversationPage({
+		conversationId: initialConversationId,
+		items: passedItems,
+		initialMessage,
+		autoSeenEnabled: isOpen,
+		onConversationIdChange: (newConversationId) => {
 			// Update navigation when conversation is created
 			replace({
 				page: "CONVERSATION",

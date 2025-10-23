@@ -1,4 +1,5 @@
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
+import type { ReactElement, ReactNode } from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
@@ -26,13 +27,13 @@ export const AvatarStackItem = ({
 	gapWidth = 2,
 	className,
 }: {
-	children: React.ReactNode;
+	children: ReactNode;
 	index: number;
 	size?: number;
 	spacing?: number;
 	gapWidth?: number;
 	className?: string;
-}) => {
+}): ReactElement => {
 	const isFirst = index === 0;
 
 	// Calculate the circle radius for the mask cutout
@@ -75,7 +76,7 @@ export function AvatarStack({
 	size = 44,
 	spacing = 28,
 	gapWidth = 3,
-}: AvatarStackProps) {
+}: AvatarStackProps): ReactElement {
 	const displayedHumanAgents = humanAgents.slice(0, 2);
 	const remainingHumanAgentsCount = Math.max(0, humanAgents.length - 2);
 

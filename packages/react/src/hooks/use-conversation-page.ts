@@ -8,11 +8,11 @@ import { useConversationTimelineItems } from "./use-conversation-timeline-items"
 import { useMessageComposer } from "./use-message-composer";
 
 export type UseConversationPageOptions = {
-        /**
-         * Initial conversation ID (from URL params, navigation state, etc.)
-         * Can be PENDING_CONVERSATION_ID or a real ID.
-         */
-        conversationId: string;
+	/**
+	 * Initial conversation ID (from URL params, navigation state, etc.)
+	 * Can be PENDING_CONVERSATION_ID or a real ID.
+	 */
+	conversationId: string;
 
 	/**
 	 * Optional initial message to send when the conversation opens.
@@ -25,17 +25,17 @@ export type UseConversationPageOptions = {
 	 */
 	onConversationIdChange?: (conversationId: string) => void;
 
-        /**
-         * Optional timeline items to pass through (e.g., optimistic updates).
-         */
-        items?: TimelineItem[];
+	/**
+	 * Optional timeline items to pass through (e.g., optimistic updates).
+	 */
+	items?: TimelineItem[];
 
-        /**
-         * Whether automatic "seen" tracking should be enabled.
-         * Set to false when the conversation isn't visible (e.g. widget closed).
-         * Default: true
-         */
-        autoSeenEnabled?: boolean;
+	/**
+	 * Whether automatic "seen" tracking should be enabled.
+	 * Set to false when the conversation isn't visible (e.g. widget closed).
+	 * Default: true
+	 */
+	autoSeenEnabled?: boolean;
 };
 
 export type UseConversationPageReturn = {
@@ -100,15 +100,15 @@ export type UseConversationPageReturn = {
  * ```
  */
 export function useConversationPage(
-        options: UseConversationPageOptions
+	options: UseConversationPageOptions
 ): UseConversationPageReturn {
-        const {
-                conversationId: initialConversationId,
-                initialMessage,
-                onConversationIdChange,
-                items: passedItems = [],
-                autoSeenEnabled = true,
-        } = options;
+	const {
+		conversationId: initialConversationId,
+		initialMessage,
+		onConversationIdChange,
+		items: passedItems = [],
+		autoSeenEnabled = true,
+	} = options;
 
 	const { client, visitor } = useSupport();
 
@@ -225,13 +225,13 @@ export function useConversationPage(
 	]);
 
 	// 6. Auto-mark messages as seen
-        useConversationAutoSeen({
-                client,
-                conversationId: lifecycle.realConversationId,
-                visitorId: visitor?.id,
-                lastTimelineItem,
-                enabled: autoSeenEnabled,
-        });
+	useConversationAutoSeen({
+		client,
+		conversationId: lifecycle.realConversationId,
+		visitorId: visitor?.id,
+		lastTimelineItem,
+		enabled: autoSeenEnabled,
+	});
 
 	return {
 		conversationId: lifecycle.conversationId,

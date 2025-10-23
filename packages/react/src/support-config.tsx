@@ -15,7 +15,7 @@ export type SupportConfigProps = {
 export const SupportConfig = ({
 	defaultMessages,
 	quickOptions,
-}: SupportConfigProps) => {
+}: SupportConfigProps): React.ReactElement | null => {
 	const { setDefaultMessages, setQuickOptions } = useSupport();
 
 	// Only update when the arrays actually change content

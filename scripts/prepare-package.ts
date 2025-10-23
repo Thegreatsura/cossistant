@@ -1,5 +1,7 @@
-import { mkdir, readFile, writeFile, copyFile } from "node:fs/promises";
-import path from "node:path";
+/** biome-ignore-all lint/performance/useTopLevelRegex: ok */
+/** biome-ignore-all lint/performance/noDelete: ok */
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import * as path from "node:path";
 
 const stripSrcPrefix = (value: string) => value.replace(/^\.\/src\//, "./");
 
@@ -45,7 +47,10 @@ const main = async () => {
 	await mkdir(distDir, { recursive: true });
 
 	const distExports = Object.fromEntries(
-		Object.entries(pkg.exports ?? {}).map(([key, value]) => [key, toDistExport(value)])
+		Object.entries(pkg.exports ?? {}).map(([key, value]) => [
+			key,
+			toDistExport(value),
+		])
 	);
 
 	const publishConfig = { ...(pkg.publishConfig ?? {}) };
@@ -58,7 +63,9 @@ const main = async () => {
 		module: "./index.js",
 		types: "./index.d.ts",
 		exports: distExports,
-		publishConfig: Object.keys(publishConfig).length ? publishConfig : undefined,
+		publishConfig: Object.keys(publishConfig).length
+			? publishConfig
+			: undefined,
 	} as Record<string, unknown>;
 
 	if (distPkg.publishConfig === undefined) {
@@ -81,7 +88,9 @@ const main = async () => {
 		}
 	}
 
-	console.log(`[prepare-package] wrote ${path.relative(process.cwd(), distPkgPath)}`);
+	console.log(
+		`[prepare-package] wrote ${path.relative(process.cwd(), distPkgPath)}`
+	);
 };
 
 main().catch((error) => {

@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/correctness/useExhaustiveDependencies: wanted here */
-import { useEffect } from "react";
+import { useEffect, type ReactElement } from "react";
 import { useVisitor } from "./hooks";
 
 export type IdentifySupportVisitorProps = {
@@ -13,7 +13,7 @@ export type IdentifySupportVisitorProps = {
 export const IdentifySupportVisitor = ({
 	externalId,
 	email,
-}: IdentifySupportVisitorProps) => {
+}: IdentifySupportVisitorProps): ReactElement | null => {
 	const { visitor, identify } = useVisitor();
 
 	// Only update when the arrays actually change content

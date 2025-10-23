@@ -58,6 +58,8 @@
   "dependencies": {
     "@cossistant/core": "workspace:*",
     "@cossistant/types": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "nanoid": "^5.1.5",
     "react-markdown": "^10.1.0",
     "react-use-websocket": "^4.13.0",
@@ -68,7 +70,8 @@
     "@tailwindcss/postcss": "^4.1.13",
     "postcss": "^8.5.6",
     "@cossistant/typescript-config": "workspace:*",
-    "autoprefixer": "^10.4.21"
+    "autoprefixer": "^10.4.21",
+    "tailwindcss": "^4.1.13"
   },
   "peerDependencies": {
     "react": ">=18 <20",

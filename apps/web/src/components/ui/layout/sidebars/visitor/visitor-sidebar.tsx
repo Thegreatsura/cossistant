@@ -11,8 +11,8 @@ import { VisitorSidebarPlaceholder } from "./placeholder";
 import { ValueDisplay } from "./value-display";
 import { ValueGroup } from "./value-group";
 
-type VisitorSidebarProps = {
-	visitor: RouterOutputs["conversation"]["getVisitorById"];
+export type VisitorSidebarProps = {
+	visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
 	isLoading: boolean;
 };
 

@@ -226,7 +226,7 @@ export function TextEffect({
 	containerTransition,
 	segmentTransition,
 	style,
-}: TextEffectProps) {
+}: TextEffectProps): React.ReactElement {
 	const segments = splitText(
 		Array.isArray(children) ? children.join("") : children,
 		per

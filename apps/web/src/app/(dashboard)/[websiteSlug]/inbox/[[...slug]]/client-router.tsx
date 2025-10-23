@@ -1,9 +1,9 @@
 "use client";
 
-import { Conversation } from "@/components/conversation";
-import { ConversationsList } from "@/components/conversations-list";
 import { useInboxes } from "@/contexts/inboxes";
 import { useUserSession } from "@/contexts/website";
+import { ConversationPane } from "./conversation-pane";
+import { ConversationsListPane } from "./conversations-list-pane";
 
 type InboxClientProps = {
 	websiteSlug: string;
@@ -21,14 +21,14 @@ export default function InboxClientRouter({ websiteSlug }: InboxClientProps) {
 	} = useInboxes();
 
 	return selectedConversationId && selectedVisitorId ? (
-		<Conversation
+		<ConversationPane
 			conversationId={selectedConversationId}
 			currentUserId={user.id}
 			visitorId={selectedVisitorId}
 			websiteSlug={websiteSlug}
 		/>
 	) : (
-		<ConversationsList
+		<ConversationsListPane
 			basePath={basePath}
 			conversations={conversations}
 			selectedConversationStatus={selectedConversationStatus}

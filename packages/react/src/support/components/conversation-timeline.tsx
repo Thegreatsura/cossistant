@@ -1,17 +1,11 @@
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
-import { SenderType } from "@cossistant/types";
 import type {
 	TimelineItem,
 	TimelinePartEvent,
 } from "@cossistant/types/api/timeline-item";
 import { AnimatePresence } from "motion/react";
 import type React from "react";
-import { useMemo } from "react";
-import {
-	useConversationTyping,
-	useDebouncedConversationSeen,
-} from "../../hooks";
-import { useGroupedMessages } from "../../hooks/private/use-grouped-messages";
+import { useConversationTimeline } from "../../hooks/use-conversation-timeline";
 import {
 	ConversationTimelineContainer,
 	ConversationTimeline as PrimitiveConversationTimeline,
@@ -51,61 +45,17 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 	availableHumanAgents = [],
 	currentVisitorId,
 }) => {
-	const seenData = useDebouncedConversationSeen(conversationId);
-	const typingEntries = useConversationTyping(conversationId, {
-		excludeVisitorId: currentVisitorId ?? null,
-	});
-
-	const { items, getMessageSeenBy } = useGroupedMessages({
+	const timeline = useConversationTimeline({
+		conversationId,
 		items: timelineItems,
-		seenData,
-		currentViewerId: currentVisitorId,
-		viewerType: SenderType.VISITOR,
+		currentVisitorId,
 	});
 
-	// Find the last message group sent by the current visitor
-	const lastVisitorMessageGroupIndex = useMemo(() => {
-		for (let i = items.length - 1; i >= 0; i--) {
-			const item = items[i];
-			if (!item) {
-				continue;
-			}
-			if (item.type === "message_group") {
-				const firstItem = item.items?.[0];
-				if (firstItem?.visitorId === currentVisitorId) {
-					return i;
-				}
-			}
-		}
-		return -1;
-	}, [items, currentVisitorId]);
-
-	const typingParticipants = useMemo(
-		() =>
-			typingEntries
-				.map((entry): TypingParticipant | null => {
-					if (entry.actorType === "user") {
-						return {
-							id: entry.actorId,
-							type: "team_member" as const,
-						};
-					}
-
-					if (entry.actorType === "ai_agent") {
-						return {
-							id: entry.actorId,
-							type: "ai" as const,
-						};
-					}
-
-					return null;
-				})
-				.filter(
-					(participant): participant is TypingParticipant =>
-						participant !== null
-				),
-		[typingEntries]
-	);
+	const typingIndicatorParticipants =
+		timeline.typingParticipants.map<TypingParticipant>((participant) => ({
+			id: participant.id,
+			type: participant.type,
+		}));
 
 	return (
 		<PrimitiveConversationTimeline
@@ -121,7 +71,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 		>
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
 				<AnimatePresence initial={false} mode="popLayout">
-					{items.map((item, index) => {
+					{timeline.groupedMessages.items.map((item, index) => {
 						if (item.type === "timeline_event") {
 							// Extract event data from parts
 							const eventPart = extractEventPart(item.item);
@@ -137,20 +87,24 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 									availableHumanAgents={availableHumanAgents}
 									createdAt={item.item.createdAt}
 									event={eventPart}
-									key={item.item.id || `timeline-event-${index}`}
+									key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
 								/>
 							);
 						}
 
 						// Only show seen indicator on the LAST message group sent by the visitor
-						const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
+						const isLastVisitorGroup =
+							index === timeline.lastVisitorMessageGroupIndex;
 						const seenByIds =
 							isLastVisitorGroup && item.lastMessageId
-								? getMessageSeenBy(item.lastMessageId)
+								? timeline.groupedMessages.getMessageSeenBy(item.lastMessageId)
 								: [];
 
 						// Use first timeline item ID as stable key
-						const groupKey = item.items?.[0]?.id || `group-${index}`;
+						const groupKey =
+							item.lastMessageId ??
+							item.items?.[0]?.id ??
+							`group-${item.items?.[0]?.createdAt ?? index}`;
 
 						return (
 							<TimelineMessageGroup
@@ -165,12 +119,12 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 					})}
 				</AnimatePresence>
 				<div className="h-6 w-full">
-					{typingParticipants.length > 0 ? (
+					{typingIndicatorParticipants.length > 0 ? (
 						<TypingIndicator
 							availableAIAgents={availableAIAgents}
 							availableHumanAgents={availableHumanAgents}
 							className="mt-2"
-							participants={typingParticipants}
+							participants={typingIndicatorParticipants}
 						/>
 					) : null}
 				</div>

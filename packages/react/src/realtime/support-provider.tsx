@@ -26,7 +26,7 @@ type SupportRealtimeProviderProps = {
  */
 export function SupportRealtimeProvider({
 	children,
-}: SupportRealtimeProviderProps) {
+}: SupportRealtimeProviderProps): React.ReactElement {
 	const { website, client, visitor } = useSupport();
 
 	const realtimeContext = useMemo<SupportRealtimeContext>(

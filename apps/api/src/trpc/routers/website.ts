@@ -396,9 +396,28 @@ export const websiteRouter = createTRPCRouter({
         });
       }
 
-      const updateData: Partial<Omit<WebsiteInsert, "organizationId">> = {
-        ...input.data,
-      };
+      const updateData: Partial<Omit<WebsiteInsert, "organizationId">> = {};
+
+      // Copy over non-null values from input data
+      if (input.data.name !== undefined) updateData.name = input.data.name;
+      if (input.data.slug !== undefined) updateData.slug = input.data.slug;
+      if (input.data.domain !== undefined)
+        updateData.domain = input.data.domain;
+      if (input.data.contactEmail !== undefined)
+        updateData.contactEmail = input.data.contactEmail;
+      if (input.data.description !== undefined)
+        updateData.description = input.data.description;
+      if (input.data.logoUrl !== undefined)
+        updateData.logoUrl = input.data.logoUrl;
+      if (input.data.whitelistedDomains !== undefined)
+        updateData.whitelistedDomains = input.data.whitelistedDomains;
+      if (input.data.installationTarget !== undefined)
+        updateData.installationTarget = input.data.installationTarget;
+      if (input.data.status !== undefined)
+        updateData.status = input.data.status;
+      if (input.data.teamId !== undefined && input.data.teamId !== null) {
+        updateData.teamId = input.data.teamId;
+      }
 
       if (updateData.name) {
         const trimmedName = updateData.name.trim();
@@ -454,9 +473,8 @@ export const websiteRouter = createTRPCRouter({
           ? updateData.contactEmail.trim().toLowerCase()
           : null;
 
-        updateData.contactEmail = trimmedEmail && trimmedEmail.length > 0
-          ? trimmedEmail
-          : null;
+        updateData.contactEmail =
+          trimmedEmail && trimmedEmail.length > 0 ? trimmedEmail : null;
       }
 
       const updatedSite = await updateWebsite(ctx.db, {

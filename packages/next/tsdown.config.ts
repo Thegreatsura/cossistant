@@ -21,10 +21,5 @@ export default defineConfig({
 		js: ".js",
 		dts: ".d.ts",
 	}),
-	external: [
-		"@cossistant/react",
-		"next",
-		"react",
-		"react-dom",
-	],
+	external: ["@cossistant/react", "next", "react", "react-dom"],
 });

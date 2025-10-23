@@ -1,13 +1,15 @@
+/** biome-ignore-all lint/performance/useTopLevelRegex: ok */
 "use client";
 
-import React, {
-        forwardRef,
-        useCallback,
-        useEffect,
-        useImperativeHandle,
-        useMemo,
-        useRef,
-        useState,
+import type React from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
 } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
@@ -51,14 +53,16 @@ export type AvatarInputValue = {
 export type AvatarInputOnUpload = (
 	file: File
 ) => Promise<
-	void | string | Partial<Omit<AvatarInputValue, "file" | "previewUrl">>
+	string | Partial<Omit<AvatarInputValue, "file" | "previewUrl">> | undefined
 >;
 
 export interface AvatarInputProps
-        extends React.ComponentPropsWithoutRef<"div"> {
-        value?: AvatarInputValue | string | null;
-        onChange?: (value: AvatarInputValue | null) => void;
-        /** Optional description rendered under the controls. */
+	extends Omit<React.ComponentPropsWithoutRef<"div">, "onChange" | "onError"> {
+	value?: AvatarInputValue | string | null;
+	onChange?: (value: AvatarInputValue | null) => void;
+	/** Whether the component is disabled. */
+	disabled?: boolean;
+	/** Optional description rendered under the controls. */
 	description?: React.ReactNode;
 	/** Aspect ratio used for the cropper (default: 1 / 1). */
 	aspectRatio?: number;
@@ -74,16 +78,16 @@ export interface AvatarInputProps
 	presignedUrl?: string;
 	/** Custom headers used when uploading to the pre-signed URL. */
 	uploadHeaders?: HeadersInit;
-        /** Custom upload handler, useful for integrating with mutations or APIs. */
-        onUpload?: AvatarInputOnUpload;
-        /** Whether removing the avatar is allowed (default true). */
-        allowRemove?: boolean;
-        /** Whether SVG uploads are permitted. Disabled by default for security. */
-        allowSvgUploads?: boolean;
-        /** Text shown on the upload button (default: "Upload"/"Change"). */
-        uploadLabel?: string;
-        /** Placeholder text shown next to the preview. */
-        placeholder?: React.ReactNode;
+	/** Custom upload handler, useful for integrating with mutations or APIs. */
+	onUpload?: AvatarInputOnUpload;
+	/** Whether removing the avatar is allowed (default true). */
+	allowRemove?: boolean;
+	/** Whether SVG uploads are permitted. Disabled by default for security. */
+	allowSvgUploads?: boolean;
+	/** Text shown on the upload button (default: "Upload"/"Change"). */
+	uploadLabel?: string;
+	/** Placeholder text shown next to the preview. */
+	placeholder?: React.ReactNode;
 	/** Display initials in the fallback avatar. */
 	fallbackInitials?: string;
 	/** Optional className applied to the preview container. */
@@ -106,9 +110,13 @@ type CommitFileOptions = {
 };
 
 function getFileExtension(name?: string) {
-	if (!name) return "";
+	if (!name) {
+		return "";
+	}
 	const lastDot = name.lastIndexOf(".");
-	if (lastDot === -1) return "";
+	if (lastDot === -1) {
+		return "";
+	}
 	return name.slice(lastDot);
 }
 
@@ -117,113 +125,111 @@ async function readFileAsObjectUrl(file: File) {
 }
 
 async function loadImage(src: string): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-                const image = new Image();
-                image.onload = () => resolve(image);
-                image.onerror = () => reject(new Error("Failed to load image"));
-                image.src = src;
-        });
+	return new Promise((resolve, reject) => {
+		const image = new Image();
+		image.onload = () => resolve(image);
+		image.onerror = () => reject(new Error("Failed to load image"));
+		image.src = src;
+	});
 }
 
 type CanvasImageSourceLike = ImageBitmap | HTMLImageElement;
 
 function getImageDimensions(image: CanvasImageSourceLike) {
-        if ("naturalWidth" in image && image.naturalWidth) {
-                return {
-                        width: image.naturalWidth,
-                        height: image.naturalHeight,
-                };
-        }
+	if ("naturalWidth" in image && image.naturalWidth) {
+		return {
+			width: image.naturalWidth,
+			height: image.naturalHeight,
+		};
+	}
 
-        return {
-                width: image.width,
-                height: image.height,
-        };
+	return {
+		width: image.width,
+		height: image.height,
+	};
 }
 
 async function loadImageWithOrientation(
-        file: File,
-        source: string
+	file: File,
+	source: string
 ): Promise<CanvasImageSourceLike> {
-        if (typeof createImageBitmap === "function") {
-                try {
-                        return await createImageBitmap(
-                                file,
-                                {
-                                        imageOrientation: "from-image",
-                                } as ImageBitmapOptions & { imageOrientation?: "from-image" }
-                        );
-                } catch (error) {
-                        console.warn(
-                                "AvatarInput: falling back to Image() for orientation handling",
-                                error
-                        );
-                }
-        }
+	if (typeof createImageBitmap === "function") {
+		try {
+			return await createImageBitmap(file, {
+				imageOrientation: "from-image",
+			} as ImageBitmapOptions & { imageOrientation?: "from-image" });
+		} catch (error) {
+			console.warn(
+				"AvatarInput: falling back to Image() for orientation handling",
+				error
+			);
+		}
+	}
 
-        return loadImage(source);
+	return loadImage(source);
 }
 
 async function cropImage({
-        file,
-        cropArea,
-        source,
+	file,
+	cropArea,
+	source,
 }: {
 	file: File;
 	cropArea: Area;
 	source: string;
 }): Promise<File> {
-        const image = await loadImageWithOrientation(file, source);
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
+	const image = await loadImageWithOrientation(file, source);
+	const canvas = document.createElement("canvas");
+	const ctx = canvas.getContext("2d");
 
-        if (!ctx) {
-                throw new Error("Failed to acquire 2D context for cropping");
-        }
+	if (!ctx) {
+		throw new Error("Failed to acquire 2D context for cropping");
+	}
 
-        const { width: imageWidth, height: imageHeight } = getImageDimensions(image);
-        const sourceX = Math.min(
-                Math.max(0, Math.round(cropArea.x)),
-                Math.max(0, imageWidth - 1)
-        );
-        const sourceY = Math.min(
-                Math.max(0, Math.round(cropArea.y)),
-                Math.max(0, imageHeight - 1)
-        );
-        const maxWidth = Math.max(1, imageWidth - sourceX);
-        const maxHeight = Math.max(1, imageHeight - sourceY);
-        const sourceWidth = Math.min(
-                Math.max(1, Math.round(cropArea.width)),
-                maxWidth
-        );
-        const sourceHeight = Math.min(
-                Math.max(1, Math.round(cropArea.height)),
-                maxHeight
-        );
-        const targetWidth = sourceWidth;
-        const targetHeight = sourceHeight;
-        const pixelRatio = typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1;
+	const { width: imageWidth, height: imageHeight } = getImageDimensions(image);
+	const sourceX = Math.min(
+		Math.max(0, Math.round(cropArea.x)),
+		Math.max(0, imageWidth - 1)
+	);
+	const sourceY = Math.min(
+		Math.max(0, Math.round(cropArea.y)),
+		Math.max(0, imageHeight - 1)
+	);
+	const maxWidth = Math.max(1, imageWidth - sourceX);
+	const maxHeight = Math.max(1, imageHeight - sourceY);
+	const sourceWidth = Math.min(
+		Math.max(1, Math.round(cropArea.width)),
+		maxWidth
+	);
+	const sourceHeight = Math.min(
+		Math.max(1, Math.round(cropArea.height)),
+		maxHeight
+	);
+	const targetWidth = sourceWidth;
+	const targetHeight = sourceHeight;
+	const pixelRatio =
+		typeof window !== "undefined" ? (window.devicePixelRatio ?? 1) : 1;
 
-        canvas.width = Math.max(1, Math.round(targetWidth * pixelRatio));
-        canvas.height = Math.max(1, Math.round(targetHeight * pixelRatio));
+	canvas.width = Math.max(1, Math.round(targetWidth * pixelRatio));
+	canvas.height = Math.max(1, Math.round(targetHeight * pixelRatio));
 
-        ctx.scale(pixelRatio, pixelRatio);
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(
-                image,
-                sourceX,
-                sourceY,
-                sourceWidth,
-                sourceHeight,
-                0,
-                0,
-                targetWidth,
-                targetHeight
-        );
+	ctx.scale(pixelRatio, pixelRatio);
+	ctx.imageSmoothingQuality = "high";
+	ctx.drawImage(
+		image,
+		sourceX,
+		sourceY,
+		sourceWidth,
+		sourceHeight,
+		0,
+		0,
+		targetWidth,
+		targetHeight
+	);
 
-        if ("close" in image && typeof image.close === "function") {
-                image.close();
-        }
+	if ("close" in image && typeof image.close === "function") {
+		image.close();
+	}
 
 	const outputType =
 		file.type && file.type !== "image/svg+xml" ? file.type : "image/png";
@@ -334,7 +340,7 @@ export async function uploadToPresignedUrl({
 
 export const AvatarInput =
 	/*#__PURE__*/
-	forwardRef<HTMLInputElement, AvatarInputProps>(function AvatarInput(
+	forwardRef<HTMLInputElement, AvatarInputProps>(function AvatarInputComponent(
 		{
 			value,
 			onChange,
@@ -343,16 +349,16 @@ export const AvatarInput =
 			accept = DEFAULT_ACCEPT,
 			onUploadStart,
 			onUploadComplete,
-                        onUpload,
-                        onError,
-                        presignedUrl,
-                        uploadHeaders,
-                        allowRemove = true,
-                        allowSvgUploads = false,
-                        uploadLabel,
-                        placeholder,
-                        fallbackInitials,
-                        previewClassName,
+			onUpload,
+			onError,
+			presignedUrl,
+			uploadHeaders,
+			allowRemove = true,
+			allowSvgUploads = false,
+			uploadLabel,
+			placeholder,
+			fallbackInitials,
+			previewClassName,
 			disabled,
 			name,
 			onBlur,
@@ -395,63 +401,61 @@ export const AvatarInput =
 		const resolvedPreviewUrl =
 			localPreviewUrl ?? resolvedValue?.previewUrl ?? resolvedValue?.url;
 
-		useEffect(() => {
-			return () => {
+		useEffect(
+			() => () => {
 				setLocalPreviewUrl((previous) => {
 					if (previous) {
 						URL.revokeObjectURL(previous);
 					}
 					return null;
 				});
-			};
+			},
+			[]
+		);
+
+		useEffect(() => {
+			if (!value) {
+				setLocalPreviewUrl((previous) => {
+					if (previous) {
+						URL.revokeObjectURL(previous);
+					}
+					return null;
+				});
+			}
+		}, [value]);
+
+		const sanitizedAccept = useMemo(() => {
+			if (!accept) {
+				return;
+			}
+
+			if (allowSvgUploads) {
+				return accept;
+			}
+
+			const filtered = accept
+				.split(",")
+				.map((entry) => entry.trim())
+				.filter((entry) => entry && entry.toLowerCase() !== SVG_MIME_TYPE);
+
+			return filtered.length > 0 ? filtered.join(",") : undefined;
+		}, [accept, allowSvgUploads]);
+
+		const emitInputEvents = useCallback(() => {
+			const target = hiddenInputRef.current;
+			if (!target) {
+				return;
+			}
+
+			target.dispatchEvent(new Event("input", { bubbles: true }));
+			target.dispatchEvent(new Event("change", { bubbles: true }));
 		}, []);
 
-                useEffect(() => {
-                        if (!value) {
-                                setLocalPreviewUrl((previous) => {
-                                        if (previous) {
-                                                URL.revokeObjectURL(previous);
-                                        }
-                                        return null;
-                                });
-                        }
-                }, [value]);
-
-                const sanitizedAccept = useMemo(() => {
-                        if (!accept) {
-                                return undefined;
-                        }
-
-                        if (allowSvgUploads) {
-                                return accept;
-                        }
-
-                        const filtered = accept
-                                .split(",")
-                                .map((entry) => entry.trim())
-                                .filter(
-                                        (entry) =>
-                                                entry && entry.toLowerCase() !== SVG_MIME_TYPE
-                                );
-
-                        return filtered.length > 0 ? filtered.join(",") : undefined;
-                }, [accept, allowSvgUploads]);
-
-                const emitInputEvents = useCallback(() => {
-                        const target = hiddenInputRef.current;
-                        if (!target) {
-                                return;
-                        }
-
-                        target.dispatchEvent(new Event("input", { bubbles: true }));
-                        target.dispatchEvent(new Event("change", { bubbles: true }));
-                }, []);
-
-                const commitFile = useCallback(
-                        async (
-                                file: File,
-                                { skipUpload, objectUrlOverride }: CommitFileOptions = {}
-                        ) => {
+		const commitFile = useCallback(
+			async (
+				file: File,
+				{ skipUpload, objectUrlOverride }: CommitFileOptions = {}
+			) => {
 				const nextPreviewUrl =
 					objectUrlOverride ?? (await readFileAsObjectUrl(file));
 
@@ -470,58 +474,52 @@ export const AvatarInput =
 					size: file.size,
 				};
 
-                                try {
-                                        onUploadStart?.(file);
+				try {
+					onUploadStart?.(file);
 
-                                        const shouldUpload =
-                                                !skipUpload && (onUpload || presignedUrl);
-                                        const shouldUseOnUpload = Boolean(onUpload) && shouldUpload;
-                                        const shouldUsePresigned =
-                                                Boolean(presignedUrl) && shouldUpload && !shouldUseOnUpload;
+					const shouldUpload = !skipUpload && (onUpload || presignedUrl);
+					const shouldUseOnUpload = Boolean(onUpload) && shouldUpload;
+					const shouldUsePresigned =
+						Boolean(presignedUrl) && shouldUpload && !shouldUseOnUpload;
 
-                                        if (shouldUseOnUpload && presignedUrl) {
-                                                console.warn(
-                                                        "AvatarInput: presignedUrl is ignored because onUpload is provided."
-                                                );
-                                        }
+					if (shouldUseOnUpload && presignedUrl) {
+						console.warn(
+							"AvatarInput: presignedUrl is ignored because onUpload is provided."
+						);
+					}
 
-                                        if (shouldUseOnUpload || shouldUsePresigned) {
-                                                setIsUploading(true);
-                                                try {
-                                                        if (shouldUseOnUpload && onUpload) {
-                                                                const result = await onUpload(file);
+					if (shouldUseOnUpload || shouldUsePresigned) {
+						setIsUploading(true);
+						try {
+							if (shouldUseOnUpload && onUpload) {
+								const result = await onUpload(file);
 
-                                                                if (typeof result === "string") {
-                                                                        payload.url = result;
-                                                                } else if (
-                                                                        result &&
-                                                                        typeof result === "object"
-                                                                ) {
-                                                                        Object.assign(payload, result);
-                                                                }
-                                                        } else if (shouldUsePresigned && presignedUrl) {
-                                                                await uploadToPresignedUrl({
-                                                                        file,
-                                                                        url: presignedUrl,
-                                                                        headers: uploadHeaders,
-                                                                });
-                                                                payload.url =
-                                                                        presignedUrl.split("?")[0] ??
-                                                                        presignedUrl;
-                                                        }
-                                                } finally {
-                                                        setIsUploading(false);
-                                                }
-                                        }
+								if (typeof result === "string") {
+									payload.url = result;
+								} else if (result && typeof result === "object") {
+									Object.assign(payload, result);
+								}
+							} else if (shouldUsePresigned && presignedUrl) {
+								await uploadToPresignedUrl({
+									file,
+									url: presignedUrl,
+									headers: uploadHeaders,
+								});
+								payload.url = presignedUrl.split("?")[0] ?? presignedUrl;
+							}
+						} finally {
+							setIsUploading(false);
+						}
+					}
 
-                                        onChange?.(payload);
-                                        onUploadComplete?.(payload);
-                                        emitInputEvents();
-                                } catch (error) {
-                                        const message =
-                                                error instanceof Error
-                                                        ? error
-                                                        : new Error("Unexpected error while uploading avatar");
+					onChange?.(payload);
+					onUploadComplete?.(payload);
+					emitInputEvents();
+				} catch (error) {
+					const message =
+						error instanceof Error
+							? error
+							: new Error("Unexpected error while uploading avatar");
 					onError?.(message);
 					setLocalPreviewUrl((previous) => {
 						if (previous) {
@@ -530,48 +528,48 @@ export const AvatarInput =
 						return resolvedValue?.previewUrl ?? resolvedValue?.url ?? null;
 					});
 					throw message;
-                                }
-                        },
-                        [
-                                onUploadStart,
-                                onUpload,
-                                presignedUrl,
-                                uploadHeaders,
-                                onChange,
-                                onUploadComplete,
-                                onError,
-                                resolvedValue?.previewUrl,
-                                resolvedValue?.url,
-                                emitInputEvents,
-                        ]
-                );
+				}
+			},
+			[
+				onUploadStart,
+				onUpload,
+				presignedUrl,
+				uploadHeaders,
+				onChange,
+				onUploadComplete,
+				onError,
+				resolvedValue?.previewUrl,
+				resolvedValue?.url,
+				emitInputEvents,
+			]
+		);
 
-                const handleFileSelection = useCallback(
-                        async (event: React.ChangeEvent<HTMLInputElement>) => {
-                                const file = event.target.files?.[0];
-                                event.target.value = "";
+		const handleFileSelection = useCallback(
+			async (event: React.ChangeEvent<HTMLInputElement>) => {
+				const file = event.target.files?.[0];
+				event.target.value = "";
 
-                                if (!file) {
-                                        return;
-                                }
+				if (!file) {
+					return;
+				}
 
-                                const mimeType = file.type.toLowerCase();
-                                const isSvg = mimeType === SVG_MIME_TYPE;
+				const mimeType = file.type.toLowerCase();
+				const isSvg = mimeType === SVG_MIME_TYPE;
 
-                                try {
-                                        if (isSvg && !allowSvgUploads) {
-                                                const error = new Error(
-                                                        "SVG uploads are disabled. Enable them explicitly to proceed."
-                                                );
-                                                onError?.(error);
-                                                return;
-                                        }
+				try {
+					if (isSvg && !allowSvgUploads) {
+						const error = new Error(
+							"SVG uploads are disabled. Enable them explicitly to proceed."
+						);
+						onError?.(error);
+						return;
+					}
 
-                                        if (isSvg) {
-                                                const objectUrl = await readFileAsObjectUrl(file);
-                                                await commitFile(file, { objectUrlOverride: objectUrl });
-                                                return;
-                                        }
+					if (isSvg) {
+						const objectUrl = await readFileAsObjectUrl(file);
+						await commitFile(file, { objectUrlOverride: objectUrl });
+						return;
+					}
 
 					const objectUrl = await readFileAsObjectUrl(file);
 					setCropState({
@@ -589,8 +587,8 @@ export const AvatarInput =
 					onError?.(message);
 				}
 			},
-                        [allowSvgUploads, commitFile, onError]
-                );
+			[allowSvgUploads, commitFile, onError]
+		);
 
 		const onCropComplete = useCallback((_: Area, croppedAreaPixels: Area) => {
 			setCroppedArea(croppedAreaPixels);
@@ -607,7 +605,7 @@ export const AvatarInput =
 		}, []);
 
 		const applyCrop = useCallback(async () => {
-			if (!cropState || !croppedArea) {
+			if (!(cropState && croppedArea)) {
 				closeCropper();
 				return;
 			}
@@ -630,16 +628,16 @@ export const AvatarInput =
 			}
 		}, [commitFile, cropState, croppedArea, closeCropper, onError]);
 
-                const removeAvatar = useCallback(() => {
-                        setLocalPreviewUrl((previous) => {
-                                if (previous) {
-                                        URL.revokeObjectURL(previous);
-                                }
-                                return null;
-                        });
-                        onChange?.(null);
-                        emitInputEvents();
-                }, [emitInputEvents, onChange]);
+		const removeAvatar = useCallback(() => {
+			setLocalPreviewUrl((previous) => {
+				if (previous) {
+					URL.revokeObjectURL(previous);
+				}
+				return null;
+			});
+			onChange?.(null);
+			emitInputEvents();
+		}, [emitInputEvents, onChange]);
 
 		const uploadButtonLabel =
 			uploadLabel ?? (resolvedPreviewUrl ? "Change" : "Upload");
@@ -649,6 +647,9 @@ export const AvatarInput =
 		return (
 			<div className={cn("flex flex-col gap-3", className)} {...rest}>
 				<input
+					id={id}
+					name={name}
+					onBlur={onBlur}
 					ref={(node) => {
 						hiddenInputRef.current = node;
 						if (typeof forwardedRef === "function") {
@@ -660,16 +661,13 @@ export const AvatarInput =
 						}
 					}}
 					type="hidden"
-					id={id}
-					name={name}
-					onBlur={onBlur}
 					value={typeof value === "string" ? value : (value?.url ?? "")}
 				/>
 				<div className="flex items-start gap-4">
 					<div className={cn("relative", previewClassName)}>
 						<AvatarContainer
 							className={cn(
-								"size-24 rounded-md border border-dashed border-border/70 bg-muted/40",
+								"size-24 rounded-md border border-border/70 border-dashed bg-muted/40",
 								disabled && "opacity-70"
 							)}
 						>
@@ -698,12 +696,12 @@ export const AvatarInput =
 						)}
 						<div className="flex flex-wrap items-center gap-2">
 							<label>
-                                                                <input
-                                                                        accept={sanitizedAccept}
-                                                                        className="sr-only"
-                                                                        disabled={disabled || isUploading}
-                                                                        onChange={handleFileSelection}
-                                                                        type="file"
+								<input
+									accept={sanitizedAccept}
+									className="sr-only"
+									disabled={disabled || isUploading}
+									onChange={handleFileSelection}
+									type="file"
 								/>
 								<Button
 									disabled={disabled || isUploading}
@@ -734,8 +732,8 @@ export const AvatarInput =
 					</div>
 				</div>
 				<Dialog
-					open={Boolean(cropState)}
 					onOpenChange={(open) => !open && closeCropper()}
+					open={Boolean(cropState)}
 				>
 					<DialogContent className="sm:max-w-[480px]">
 						<DialogHeader>
@@ -755,14 +753,14 @@ export const AvatarInput =
 										onCropChange={setCrop}
 										onCropComplete={onCropComplete}
 										onZoomChange={setZoom}
+										showGrid={false}
 										zoom={zoom}
 										zoomSpeed={0.5}
-										showGrid={false}
 									/>
 								)}
 							</div>
 							<div className="flex items-center gap-3">
-								<span className="text-xs text-muted-foreground">Zoom</span>
+								<span className="text-muted-foreground text-xs">Zoom</span>
 								<input
 									className="w-full"
 									max={3}

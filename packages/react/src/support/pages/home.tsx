@@ -1,3 +1,5 @@
+import type { ReactElement } from "react";
+
 import { motion } from "motion/react";
 import { useHomePage } from "../../hooks/use-home-page";
 import { useSupport } from "../../provider";
@@ -24,7 +26,7 @@ import { Text, useSupportText } from "../text";
  *
  * All logic is handled by the useHomePage hook.
  */
-export const HomePage = () => {
+export const HomePage = (): ReactElement => {
 	const { website, availableHumanAgents, visitor, quickOptions } = useSupport();
 	const { navigate } = useSupportNavigation();
 	const text = useSupportText();

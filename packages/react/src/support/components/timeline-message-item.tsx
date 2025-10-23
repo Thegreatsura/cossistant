@@ -18,7 +18,7 @@ export function TimelineMessageItem({
 	item,
 	isLast = false,
 	isSentByViewer,
-}: TimelineMessageItemProps) {
+}: TimelineMessageItemProps): React.ReactElement {
 	const text = useSupportText();
 	return (
 		<PrimitiveTimelineItem item={item}>
