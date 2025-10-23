@@ -11,7 +11,7 @@ import {
   getWebsiteBySlugWithAccess,
   updateWebsite,
 } from "@api/db/queries/website";
-import { website } from "@api/db/schema";
+import { type WebsiteInsert, website } from "@api/db/schema";
 import polarClient from "@api/lib/polar";
 import { isOrganizationAdminOrOwner } from "@api/utils/access-control";
 import { generateULID } from "@api/utils/db/ids";
@@ -147,7 +147,17 @@ export const websiteRouter = createTRPCRouter({
     .output(createWebsiteResponseSchema)
     .mutation(async ({ ctx: { db, user }, input }) => {
       // Check if website with same verified domain already exists
-      const normalizedDomain = normalizeDomain(input.domain);
+      let normalizedDomain: string;
+
+      try {
+        normalizedDomain = normalizeDomain(input.domain);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid domain provided.",
+          cause: error,
+        });
+      }
 
       const existingDomainWebsite = await db.query.website.findFirst({
         where: and(
@@ -324,7 +334,17 @@ export const websiteRouter = createTRPCRouter({
     .input(checkWebsiteDomainRequestSchema)
     .output(z.boolean())
     .query(async ({ ctx: { db }, input }) => {
-      const normalizedDomain = normalizeDomain(input.domain);
+      let normalizedDomain: string;
+
+      try {
+        normalizedDomain = normalizeDomain(input.domain);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid domain provided.",
+          cause: error,
+        });
+      }
 
       const existingWebsite = await db.query.website.findFirst({
         where: and(
@@ -376,7 +396,9 @@ export const websiteRouter = createTRPCRouter({
         });
       }
 
-      const updateData = { ...input.data };
+      const updateData: Partial<Omit<WebsiteInsert, "organizationId">> = {
+        ...input.data,
+      };
 
       if (updateData.name) {
         const trimmedName = updateData.name.trim();
@@ -392,7 +414,17 @@ export const websiteRouter = createTRPCRouter({
       }
 
       if (updateData.domain) {
-        const normalizedDomain = normalizeDomain(updateData.domain);
+        let normalizedDomain: string;
+
+        try {
+          normalizedDomain = normalizeDomain(updateData.domain);
+        } catch (error) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid domain provided.",
+            cause: error,
+          });
+        }
 
         if (normalizedDomain !== site.domain) {
           const existingDomain = await ctx.db.query.website.findFirst({
@@ -409,6 +441,9 @@ export const websiteRouter = createTRPCRouter({
               message: "Domain already in use by another website",
             });
           }
+
+          updateData.isDomainOwnershipVerified = false;
+          updateData.whitelistedDomains = [`https://${normalizedDomain}`];
         }
 
         updateData.domain = normalizedDomain;
