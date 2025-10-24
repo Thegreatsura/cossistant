@@ -1,3 +1,5 @@
+"use client";
+
 /** biome-ignore-all lint/correctness/useExhaustiveDependencies: ok */
 import { ConversationStatus } from "@cossistant/types";
 import type React from "react";
@@ -37,10 +39,13 @@ export function ConversationBasicActions({
 	});
 
 	const isResolved = status === ConversationStatus.RESOLVED;
-	const resolveLabel = useMemo(
-		() => (isResolved ? "Mark unresolved" : "Mark resolved"),
-		[isResolved]
-	);
+        const resolveLabel = useMemo(
+                () =>
+                        isResolved
+                                ? "Mark conversation unresolved"
+                                : "Mark conversation resolved",
+                [isResolved]
+        );
 	const resolveSuccessMessage = useMemo(
 		() =>
 			isResolved
@@ -52,10 +57,13 @@ export function ConversationBasicActions({
 	const resolveIcon = isResolved ? "cancel" : "check";
 
 	const isArchived = deletedAt !== null;
-	const archiveLabel = useMemo(
-		() => (isArchived ? "Unarchive" : "Archive"),
-		[isArchived]
-	);
+        const archiveLabel = useMemo(
+                () =>
+                        isArchived
+                                ? "Unarchive conversation"
+                                : "Archive conversation",
+                [isArchived]
+        );
 	const archiveSuccessMessage = useMemo(
 		() => (isArchived ? "Conversation unarchived" : "Conversation archived"),
 		[isArchived]
@@ -164,13 +172,15 @@ export function ConversationBasicActions({
                         {!isArchived && (
                                 <TooltipOnHover content={resolveLabel} shortcuts={["R"]}>
                                         <Button
-						disabled={resolvePending}
-						onClick={handleResolve}
-						size="icon-small"
-						variant="ghost"
-					>
-						<Icon filledOnHover name={resolveIcon} />
-					</Button>
+                                                disabled={resolvePending}
+                                                onClick={handleResolve}
+                                                aria-label={resolveLabel}
+                                                size="icon-small"
+                                                variant="ghost"
+                                                type="button"
+                                        >
+                                                <Icon filledOnHover name={resolveIcon} />
+                                        </Button>
                                 </TooltipOnHover>
                         )}
                         <TooltipOnHover
@@ -180,11 +190,13 @@ export function ConversationBasicActions({
                                 <Button
                                         disabled={archivePending}
                                         onClick={handleArchive}
+                                        aria-label={archiveLabel}
                                         size="icon-small"
                                         variant="ghost"
+                                        type="button"
                                 >
                                         <Icon filledOnHover name={archiveIcon} />
-				</Button>
+                                </Button>
 			</TooltipOnHover>
 		</div>
 	);
