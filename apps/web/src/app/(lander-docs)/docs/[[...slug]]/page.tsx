@@ -1,6 +1,7 @@
 import { findNeighbour } from "fumadocs-core/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ComponentPreview } from "@/components/component-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
@@ -85,9 +86,11 @@ export default async function Page(props: {
 	// @ts-expect-error - revisit fumadocs types.
 	const links = doc.links;
 
+	const isMainPage = page.slugs.length === 0;
+
 	return (
 		<div
-			className="flex items-stretch py-30 text-[1.05rem] sm:text-[15px] xl:w-full"
+			className="flex items-stretch pt-20 text-[1.05rem] sm:text-[15px] xl:w-full"
 			data-slot="docs"
 		>
 			<div className="flex min-w-0 flex-1 flex-col">

@@ -35,10 +35,10 @@ export function TopBar({
 					{/* Navigation */}
 					<div className="hidden items-center space-x-4 md:flex">
 						<TopbarButton className="text-foreground" href="/docs">
-							docs
+							Docs
 						</TopbarButton>
 						<TopbarButton href={DISCORD_INVITE} icon={<DiscordIcon />}>
-							discord
+							Discord
 						</TopbarButton>
 					</div>
 

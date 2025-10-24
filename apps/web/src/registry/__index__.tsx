@@ -13,7 +13,15 @@ export const Index: Record<
 	support: {
 		name: "support",
 		component: React.lazy(() => import("@/components/support")),
-		demoComponent: React.lazy(() => import("@/components/support/demo")),
+		demoComponent: React.lazy(
+			() => import("@/components/support/demo-landing")
+		),
 		path: "src/components/support/index.tsx",
+	},
+	"support-doc": {
+		name: "support-doc",
+		component: React.lazy(() => import("@/components/support/demo-doc")),
+		demoComponent: React.lazy(() => import("@/components/support/demo-doc")),
+		path: "src/components/support/demo-doc/index.tsx",
 	},
 };

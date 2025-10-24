@@ -42,7 +42,7 @@ export function TopbarButton({
 		<TooltipOnHover content={tooltip} shortcuts={shortcuts}>
 			<Link
 				className={cn(
-					"group flex items-center gap-1 font-mono text-foreground/70 text-sm transition-colors hover:text-foreground",
+					"group flex items-center gap-1 font-medium text-foreground text-sm transition-colors hover:text-foreground",
 					className
 				)}
 				href={href}
