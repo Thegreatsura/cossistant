@@ -249,56 +249,56 @@ export function ConversationPane({
 		}
 	}, [fetchNextPage, hasNextPage]);
 
-        const hasUnreadMessage = useMemo(() => {
-                const lastTimelineItem = selectedConversation?.lastTimelineItem ?? null;
+	const hasUnreadMessage = useMemo(() => {
+		const lastTimelineItem = selectedConversation?.lastTimelineItem ?? null;
 
-                if (!lastTimelineItem) {
-                        return false;
-                }
+		if (!lastTimelineItem) {
+			return false;
+		}
 
-                if (lastTimelineItem.userId === currentUserId) {
-                        return false;
-                }
+		if (lastTimelineItem.userId === currentUserId) {
+			return false;
+		}
 
-                const lastTimelineItemCreatedAt = lastTimelineItem.createdAt
-                        ? new Date(lastTimelineItem.createdAt)
-                        : null;
-                const lastSeenAt = selectedConversation?.lastSeenAt
-                        ? new Date(selectedConversation.lastSeenAt)
-                        : null;
+		const lastTimelineItemCreatedAt = lastTimelineItem.createdAt
+			? new Date(lastTimelineItem.createdAt)
+			: null;
+		const lastSeenAt = selectedConversation?.lastSeenAt
+			? new Date(selectedConversation.lastSeenAt)
+			: null;
 
-                if (!lastTimelineItemCreatedAt) {
-                        return false;
-                }
+		if (!lastTimelineItemCreatedAt) {
+			return false;
+		}
 
-                if (!lastSeenAt) {
-                        return true;
-                }
+		if (!lastSeenAt) {
+			return true;
+		}
 
-                return lastTimelineItemCreatedAt > lastSeenAt;
-        }, [currentUserId, selectedConversation]);
+		return lastTimelineItemCreatedAt > lastSeenAt;
+	}, [currentUserId, selectedConversation]);
 
-        if (!visitor) {
-                return null;
-        }
+	if (!visitor) {
+		return null;
+	}
 
-        if (!selectedConversation) {
-                return null;
-        }
+	if (!selectedConversation) {
+		return null;
+	}
 
-        const navigationProps: ConversationHeaderNavigationProps = {
-                onGoBack: goBack,
-                onNavigateToPrevious: navigateToPreviousConversation,
-                onNavigateToNext: navigateToNextConversation,
-                hasPreviousConversation: Boolean(previousConversation),
-                hasNextConversation: Boolean(nextConversation),
+	const navigationProps: ConversationHeaderNavigationProps = {
+		onGoBack: goBack,
+		onNavigateToPrevious: navigateToPreviousConversation,
+		onNavigateToNext: navigateToNextConversation,
+		hasPreviousConversation: Boolean(previousConversation),
+		hasNextConversation: Boolean(nextConversation),
 		selectedConversationIndex,
 		totalOpenConversations: statusCounts.open,
 	};
 
-        const conversationProps: ConversationProps = {
-                header: {
-                        isLeftSidebarOpen,
+	const conversationProps: ConversationProps = {
+		header: {
+			isLeftSidebarOpen,
 			isRightSidebarOpen,
 			onToggleLeftSidebar: toggleLeftSidebar,
 			onToggleRightSidebar: toggleRightSidebar,
