@@ -249,55 +249,56 @@ export function ConversationPane({
 		}
 	}, [fetchNextPage, hasNextPage]);
 
-	if (!visitor) {
-		return null;
-	}
+        const hasUnreadMessage = useMemo(() => {
+                const lastTimelineItem = selectedConversation?.lastTimelineItem ?? null;
 
-	if (!selectedConversation) {
-		return null;
-	}
+                if (!lastTimelineItem) {
+                        return false;
+                }
 
-	const navigationProps: ConversationHeaderNavigationProps = {
-		onGoBack: goBack,
-		onNavigateToPrevious: navigateToPreviousConversation,
-		onNavigateToNext: navigateToNextConversation,
-		hasPreviousConversation: Boolean(previousConversation),
-		hasNextConversation: Boolean(nextConversation),
+                if (lastTimelineItem.userId === currentUserId) {
+                        return false;
+                }
+
+                const lastTimelineItemCreatedAt = lastTimelineItem.createdAt
+                        ? new Date(lastTimelineItem.createdAt)
+                        : null;
+                const lastSeenAt = selectedConversation?.lastSeenAt
+                        ? new Date(selectedConversation.lastSeenAt)
+                        : null;
+
+                if (!lastTimelineItemCreatedAt) {
+                        return false;
+                }
+
+                if (!lastSeenAt) {
+                        return true;
+                }
+
+                return lastTimelineItemCreatedAt > lastSeenAt;
+        }, [currentUserId, selectedConversation]);
+
+        if (!visitor) {
+                return null;
+        }
+
+        if (!selectedConversation) {
+                return null;
+        }
+
+        const navigationProps: ConversationHeaderNavigationProps = {
+                onGoBack: goBack,
+                onNavigateToPrevious: navigateToPreviousConversation,
+                onNavigateToNext: navigateToNextConversation,
+                hasPreviousConversation: Boolean(previousConversation),
+                hasNextConversation: Boolean(nextConversation),
 		selectedConversationIndex,
 		totalOpenConversations: statusCounts.open,
 	};
 
-	const hasUnreadMessage = useMemo(() => {
-		const lastTimelineItem = selectedConversation.lastTimelineItem ?? null;
-		if (!lastTimelineItem) {
-			return false;
-		}
-
-		if (lastTimelineItem.userId === currentUserId) {
-			return false;
-		}
-
-		const lastTimelineItemCreatedAt = lastTimelineItem.createdAt
-			? new Date(lastTimelineItem.createdAt)
-			: null;
-		const lastSeenAt = selectedConversation.lastSeenAt
-			? new Date(selectedConversation.lastSeenAt)
-			: null;
-
-		if (!lastTimelineItemCreatedAt) {
-			return false;
-		}
-
-		if (!lastSeenAt) {
-			return true;
-		}
-
-		return lastTimelineItemCreatedAt > lastSeenAt;
-	}, [currentUserId, selectedConversation]);
-
-	const conversationProps: ConversationProps = {
-		header: {
-			isLeftSidebarOpen,
+        const conversationProps: ConversationProps = {
+                header: {
+                        isLeftSidebarOpen,
 			isRightSidebarOpen,
 			onToggleLeftSidebar: toggleLeftSidebar,
 			onToggleRightSidebar: toggleRightSidebar,
