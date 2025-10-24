@@ -12,8 +12,9 @@ const resolveConsole = (): Console | null => {
 	return globalThis.console ?? null;
 };
 
-const createLoggerMethod = (level: LogLevel): LogMethod => {
-	return (message, ...details) => {
+const createLoggerMethod =
+	(level: LogLevel): LogMethod =>
+	(message, ...details) => {
 		const target = resolveConsole();
 		if (!target) {
 			return;
@@ -22,7 +23,6 @@ const createLoggerMethod = (level: LogLevel): LogMethod => {
 		const consoleMethod = (target[level] ?? target.log)?.bind(target);
 		consoleMethod?.(LOG_PREFIX, message, ...details);
 	};
-};
 
 export const logger = {
 	debug: createLoggerMethod("debug"),

@@ -40,12 +40,12 @@ export function Support<Locale extends string = SupportLocale>({
 	locale,
 	content,
 }: SupportProps<Locale>): ReactElement | null {
-        const { website } = useSupport();
-        const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
+	const { website } = useSupport();
+	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 
-        if (!website || isVisitorBlocked) {
-                return null;
-        }
+	if (!website || isVisitorBlocked) {
+		return null;
+	}
 
 	return (
 		<>

@@ -18,6 +18,7 @@ import type {
 	SendTimelineItemRequest,
 	SendTimelineItemResponse,
 } from "@cossistant/types/api/timeline-item";
+import { logger } from "./logger";
 import {
 	CossistantAPIError,
 	type CossistantConfig,
@@ -27,7 +28,6 @@ import {
 	type VisitorResponse,
 } from "./types";
 import { generateConversationId } from "./utils";
-import { logger } from "./logger";
 import { collectVisitorData } from "./visitor-data";
 import {
 	getExistingVisitorId,
@@ -163,8 +163,7 @@ export class CossistantRestClient {
 			if (!(isWebsitesRoot && isSafeMethod)) {
 				throw new CossistantAPIError({
 					code: "VISITOR_BLOCKED",
-					message:
-						"Visitor is blocked and cannot perform this action.",
+					message: "Visitor is blocked and cannot perform this action.",
 					details: { path, method },
 				});
 			}
