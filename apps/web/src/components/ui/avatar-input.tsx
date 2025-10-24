@@ -13,7 +13,7 @@ import {
 } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
-import { ImageIcon, UploadIcon, XIcon } from "lucide-react";
+import { ImageIcon, XIcon } from "lucide-react";
 
 import {
 	AvatarContainer,
@@ -369,6 +369,7 @@ export const AvatarInput =
 		forwardedRef
 	) {
 		const hiddenInputRef = useRef<HTMLInputElement | null>(null);
+		const fileInputRef = useRef<HTMLInputElement | null>(null);
 		useImperativeHandle(
 			forwardedRef,
 			() => hiddenInputRef.current as HTMLInputElement,
@@ -639,10 +640,23 @@ export const AvatarInput =
 			emitInputEvents();
 		}, [emitInputEvents, onChange]);
 
-		const uploadButtonLabel =
-			uploadLabel ?? (resolvedPreviewUrl ? "Change" : "Upload");
+		const uploadAriaLabel =
+			uploadLabel ?? (resolvedPreviewUrl ? "Change image" : "Upload image");
+		const uploadInstruction = uploadLabel
+			? `Click the preview to ${uploadLabel.toLowerCase()}.`
+			: resolvedPreviewUrl
+				? "Click the preview to change the image."
+				: "Click the preview to upload an image.";
 
 		const showPlaceholder = !resolvedPreviewUrl && placeholder;
+
+		const openFileDialog = useCallback(() => {
+			if (disabled || isUploading) {
+				return;
+			}
+
+			fileInputRef.current?.click();
+		}, [disabled, isUploading]);
 
 		return (
 			<div className={cn("flex flex-col gap-3", className)} {...rest}>
@@ -663,56 +677,54 @@ export const AvatarInput =
 					type="hidden"
 					value={typeof value === "string" ? value : (value?.url ?? "")}
 				/>
+				<input
+					accept={sanitizedAccept}
+					className="sr-only"
+					disabled={disabled || isUploading}
+					onChange={handleFileSelection}
+					ref={fileInputRef}
+					type="file"
+				/>
 				<div className="flex items-start gap-4">
 					<div className={cn("relative", previewClassName)}>
-						<AvatarContainer
+						<button
+							aria-label={uploadAriaLabel}
 							className={cn(
-								"size-24 rounded-md border border-border/70 border-dashed bg-muted/40",
-								disabled && "opacity-70"
+								"relative block size-24 rounded-md border border-border/70 border-dashed bg-muted/40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+								(disabled || isUploading) && "cursor-not-allowed opacity-70",
+								!(disabled || isUploading) && "cursor-pointer"
 							)}
+							disabled={disabled || isUploading}
+							onClick={openFileDialog}
+							type="button"
 						>
-							{resolvedPreviewUrl ? (
-								<AvatarImage alt="Avatar preview" src={resolvedPreviewUrl} />
-							) : (
-								<div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
-									<ImageIcon className="size-5" />
-									<span className="text-xs">Preview</span>
+							<AvatarContainer className="size-full">
+								{resolvedPreviewUrl ? (
+									<AvatarImage alt="Avatar preview" src={resolvedPreviewUrl} />
+								) : (
+									<div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
+										<ImageIcon className="size-5" />
+										<span className="text-xs">Preview</span>
+									</div>
+								)}
+								<AvatarFallback className="text-base">
+									{fallbackInitials ??
+										(resolvedValue?.name ? resolvedValue.name[0] : "")}
+								</AvatarFallback>
+							</AvatarContainer>
+							{isUploading && (
+								<div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/70">
+									<Spinner className="text-primary" />
 								</div>
 							)}
-							<AvatarFallback className="text-base">
-								{fallbackInitials ??
-									(resolvedValue?.name ? resolvedValue.name[0] : "")}
-							</AvatarFallback>
-						</AvatarContainer>
-						{isUploading && (
-							<div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/70">
-								<Spinner className="text-primary" />
-							</div>
-						)}
+						</button>
 					</div>
 					<div className="flex flex-1 flex-col gap-2 text-sm">
 						{showPlaceholder && (
 							<p className="text-muted-foreground text-sm">{placeholder}</p>
 						)}
-						<div className="flex flex-wrap items-center gap-2">
-							<label>
-								<input
-									accept={sanitizedAccept}
-									className="sr-only"
-									disabled={disabled || isUploading}
-									onChange={handleFileSelection}
-									type="file"
-								/>
-								<Button
-									disabled={disabled || isUploading}
-									size="sm"
-									type="button"
-									variant="outline"
-								>
-									<UploadIcon className="size-4" />
-									{isUploading ? "Uploading" : uploadButtonLabel}
-								</Button>
-							</label>
+						<div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
+							<span>{isUploading ? "Uploading…" : uploadInstruction}</span>
 							{allowRemove && (resolvedPreviewUrl || resolvedValue) && (
 								<Button
 									disabled={disabled || isUploading}

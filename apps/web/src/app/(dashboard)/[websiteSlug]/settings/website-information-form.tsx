@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -25,6 +25,7 @@ import Icon from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
 import { Spinner } from "@/components/ui/spinner";
+import { authClient } from "@/lib/auth/client";
 import { useTRPC } from "@/lib/trpc/client";
 import { isValidDomain } from "@/lib/utils";
 
@@ -46,6 +47,17 @@ const logoValueSchema = z
 	])
 	.nullable();
 
+const contactEmailSchema = z
+	.string()
+	.trim()
+	.max(320, {
+		message: "Email address must be 320 characters or fewer.",
+	})
+	.email({ message: "Enter a valid email address." })
+	.or(z.literal(""))
+	.optional()
+	.default("");
+
 const websiteInformationFormSchema = z.object({
 	name: z
 		.string({ message: "Enter your website name." })
@@ -54,14 +66,7 @@ const websiteInformationFormSchema = z.object({
 		.max(120, {
 			message: "Name must be 120 characters or fewer.",
 		}),
-	contactEmail: z
-		.string()
-		.trim()
-		.email({ message: "Enter a valid email address." })
-		.max(320, {
-			message: "Email address must be 320 characters or fewer.",
-		})
-		.default(""),
+	contactEmail: contactEmailSchema,
 	domain: z
 		.string({ message: "Enter your domain." })
 		.trim()
@@ -149,6 +154,8 @@ export function WebsiteInformationForm({
 		enabled: shouldCheckDomain,
 	});
 
+        const logoUploadToastId = `website-logo-upload-${websiteId}`;
+
 	const { mutateAsync: updateWebsite, isPending: isUpdatingWebsite } =
 		useMutation(
 			trpc.website.update.mutationOptions({
@@ -164,6 +171,9 @@ export function WebsiteInformationForm({
 								slug: websiteSlug,
 							}),
 						}),
+						queryClient.invalidateQueries({
+							queryKey: trpc.user.me.queryKey(),
+						}),
 					]);
 
 					form.reset({
@@ -176,6 +186,7 @@ export function WebsiteInformationForm({
 					setDomainBaseline(updatedWebsite.domain.trim().toLowerCase());
 
 					toast.success("Website information updated.");
+					authClient.$store.notify("$sessionSignal");
 				},
 				onError: (error) => {
 					toast.error(
@@ -194,6 +205,8 @@ export function WebsiteInformationForm({
 	const handleLogoUpload = useCallback(
 		async (file: File): Promise<Partial<AvatarInputValue>> => {
 			try {
+				toast.loading("Uploading logo…", { id: logoUploadToastId });
+
 				const uploadDetails = await createSignedUrl({
 					contentType: file.type,
 					fileName: file.name,
@@ -203,15 +216,24 @@ export function WebsiteInformationForm({
 						organizationId,
 						websiteId,
 					},
+					useCdn: true,
 				});
 
 				await uploadToPresignedUrl({
 					file,
 					url: uploadDetails.uploadUrl,
 					headers: { "Content-Type": file.type },
+					onProgress: (progress) => {
+						const percentage = Math.round(progress * 100);
+						toast.loading(`Uploading logo… ${percentage}%`, {
+							id: logoUploadToastId,
+						});
+					},
 				});
 
 				const publicUrl = uploadDetails.uploadUrl.split("?")[0];
+
+				toast.success("Logo uploaded.", { id: logoUploadToastId });
 
 				return {
 					url: publicUrl,
@@ -219,11 +241,15 @@ export function WebsiteInformationForm({
 					name: file.name,
 				};
 			} catch (error) {
-				throw new Error(
+				const uploadError =
 					error instanceof Error
-						? error.message
-						: "Failed to upload logo. Please try again."
-				);
+						? error
+						: new Error("Failed to upload logo. Please try again.");
+
+				toast.error(uploadError.message, { id: logoUploadToastId });
+				(uploadError as Error & { handledByToast?: boolean }).handledByToast =
+					true;
+				throw uploadError;
 			}
 		},
 		[createSignedUrl, organizationId, websiteId]
@@ -244,7 +270,7 @@ export function WebsiteInformationForm({
 				.replace(PATH_REGEX, "")
 				.toLowerCase();
 
-			const contactEmailValue = values.contactEmail.trim();
+			const contactEmailValue = values.contactEmail?.trim?.() ?? "";
 			const contactEmail = contactEmailValue
 				? contactEmailValue.toLowerCase()
 				: null;
@@ -308,7 +334,7 @@ export function WebsiteInformationForm({
 						name="contactEmail"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Contact email</FormLabel>
+								<FormLabel>Contact email (optional)</FormLabel>
 								<FormControl>
 									<Input
 										autoComplete="email"
@@ -319,7 +345,8 @@ export function WebsiteInformationForm({
 									/>
 								</FormControl>
 								<FormDescription>
-									We use this email when visitors request human support.
+									Provide an email if visitors should be able to reach a human
+									directly.
 								</FormDescription>
 								<FormMessage />
 							</FormItem>
@@ -395,7 +422,15 @@ export function WebsiteInformationForm({
 										onBlur={field.onBlur}
 										onChange={field.onChange}
 										onError={(error) => {
-											toast.error(error.message);
+											if (
+												!(
+													error as Error & {
+														handledByToast?: boolean;
+													}
+												)?.handledByToast
+											) {
+												toast.error(error.message);
+											}
 											setIsUploadingLogo(false);
 										}}
 										onUpload={handleLogoUpload}
