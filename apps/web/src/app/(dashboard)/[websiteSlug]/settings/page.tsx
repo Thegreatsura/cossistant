@@ -47,6 +47,7 @@ export default async function GeneralSettingsPage({
 						initialName={user.name ?? ""}
 						organizationId={website.organizationId}
 						userId={user.id}
+						websiteId={website.id}
 					/>
 				</SettingsRow>
 			</PageContent>

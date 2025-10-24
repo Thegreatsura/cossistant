@@ -38,7 +38,12 @@ export const userRouter = createTRPCRouter({
 				throw new TRPCError({ code: "NOT_FOUND" });
 			}
 
-			return updatedUser;
+			return {
+				...updatedUser,
+				createdAt: updatedUser.createdAt.toISOString(),
+				updatedAt: updatedUser.updatedAt.toISOString(),
+				lastSeenAt: updatedUser.lastSeenAt?.toISOString() ?? null,
+			};
 		}),
 	getWebsiteMembers: protectedProcedure
 		.input(

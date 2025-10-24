@@ -1,3 +1,5 @@
+import { db } from "@api/db";
+import { getWebsiteByIdWithAccess } from "@api/db/queries/website";
 import { generateUploadUrl } from "@api/services/upload";
 import {
 	generateUploadUrlRequestSchema,
@@ -11,29 +13,16 @@ export const uploadRouter = createTRPCRouter({
 		.input(generateUploadUrlRequestSchema)
 		.output(generateUploadUrlResponseSchema)
 		.mutation(async ({ ctx, input }) => {
-			const sessionOrganizationId =
-				(
-					ctx.session as unknown as {
-						activeOrganizationId?: string | null;
-						organizationId?: string | null;
-					}
-				)?.activeOrganizationId ??
-				(
-					ctx.session as unknown as {
-						organizationId?: string | null;
-					}
-				)?.organizationId ??
-				null;
+			const websiteData = await getWebsiteByIdWithAccess(db, {
+				userId: ctx.user.id,
+				websiteId: input.websiteId,
+			});
 
-			if (!sessionOrganizationId) {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message:
-						"An organization context is required to generate an upload URL.",
-				});
+			if (!websiteData) {
+				throw new TRPCError({ code: "NOT_FOUND" });
 			}
 
-			if (input.scope.organizationId !== sessionOrganizationId) {
+			if (input.scope.organizationId !== websiteData.organizationId) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
 					message:

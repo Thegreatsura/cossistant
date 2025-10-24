@@ -127,6 +127,7 @@ export const generateUploadUrlRequestSchema = z
 			description: "MIME type of the file to upload.",
 			example: "image/png",
 		}),
+		websiteId: z.string(),
 		scope: uploadScopeSchema,
 		path: uploadPathSchema.optional(),
 		fileName: uploadFileNameSchema.optional(),

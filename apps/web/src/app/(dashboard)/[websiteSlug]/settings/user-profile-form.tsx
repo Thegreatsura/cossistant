@@ -54,6 +54,7 @@ type UserProfileFormProps = {
 	initialAvatarUrl?: string | null;
 	organizationId: string;
 	userId: string;
+	websiteId: string;
 };
 
 export function UserProfileForm({
@@ -61,6 +62,7 @@ export function UserProfileForm({
 	initialAvatarUrl,
 	organizationId,
 	userId,
+	websiteId,
 }: UserProfileFormProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
@@ -121,12 +123,13 @@ export function UserProfileForm({
 				const uploadDetails = await createSignedUrl({
 					contentType: file.type,
 					fileName: file.name,
+					websiteId,
 					path: `users/${userId}/avatars`,
 					scope: {
 						type: "user",
 						userId,
 						organizationId,
-						websiteId: "", // This will be set by the backend
+						websiteId,
 					},
 					useCdn: true,
 				});
@@ -176,7 +179,7 @@ export function UserProfileForm({
 				throw uploadError;
 			}
 		},
-		[createSignedUrl, organizationId, userId]
+		[createSignedUrl, organizationId, userId, websiteId]
 	);
 
 	const onSubmit = useCallback(
