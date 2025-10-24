@@ -8,9 +8,10 @@ import { PageContent } from "../ui/layout";
 import { useConversationKeyboardNavigation } from "./use-conversation-keyboard-navigation";
 
 type ConversationsListProps = {
-	basePath: string;
-	conversations: ConversationHeader[];
-	websiteSlug: string;
+        basePath: string;
+        conversations: ConversationHeader[];
+        showWaitingForReplyPill: boolean;
+        websiteSlug: string;
 };
 
 const ITEM_HEIGHT = 52;
@@ -20,32 +21,36 @@ const VirtualConversationItem = memo(
 		conversation,
 		href,
 		websiteSlug,
-		focused,
-		onMouseEnter,
-	}: {
-		conversation: ConversationHeader;
-		href: string;
-		websiteSlug: string;
-		focused: boolean;
-		onMouseEnter: () => void;
-	}) => (
-		<ConversationItem
-			focused={focused}
-			header={conversation}
-			href={href}
-			key={conversation.id}
-			setFocused={onMouseEnter}
-			websiteSlug={websiteSlug}
-		/>
-	)
+                focused,
+                showWaitingForReplyPill,
+                onMouseEnter,
+        }: {
+                conversation: ConversationHeader;
+                href: string;
+                websiteSlug: string;
+                focused: boolean;
+                showWaitingForReplyPill: boolean;
+                onMouseEnter: () => void;
+        }) => (
+                <ConversationItem
+                        focused={focused}
+                        header={conversation}
+                        href={href}
+                        showWaitingForReplyPill={showWaitingForReplyPill}
+                        key={conversation.id}
+                        setFocused={onMouseEnter}
+                        websiteSlug={websiteSlug}
+                />
+        )
 );
 
 VirtualConversationItem.displayName = "VirtualConversationItem";
 
 export function VirtualizedConversations({
-	basePath,
-	conversations,
-	websiteSlug,
+        basePath,
+        conversations,
+        showWaitingForReplyPill,
+        websiteSlug,
 }: ConversationsListProps) {
 	const parentRef = useRef<HTMLDivElement>(null);
 
@@ -96,15 +101,16 @@ export function VirtualizedConversations({
 								transform: `translateY(${virtualItem.start}px)`,
 							}}
 						>
-							<VirtualConversationItem
-								conversation={conversation}
-								focused={focusedIndex === virtualItem.index}
-								href={href}
-								onMouseEnter={() => handleMouseEnter(virtualItem.index)}
-								websiteSlug={websiteSlug}
-							/>
-						</div>
-					);
+                                                        <VirtualConversationItem
+                                                                conversation={conversation}
+                                                                focused={focusedIndex === virtualItem.index}
+                                                                href={href}
+                                                                showWaitingForReplyPill={showWaitingForReplyPill}
+                                                                onMouseEnter={() => handleMouseEnter(virtualItem.index)}
+                                                                websiteSlug={websiteSlug}
+                                                        />
+                                                </div>
+                                        );
 				})}
 			</div>
 		</PageContent>

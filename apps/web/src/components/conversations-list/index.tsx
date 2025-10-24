@@ -18,15 +18,17 @@ type Props = {
 };
 
 export function ConversationsList({
-	basePath,
-	selectedConversationStatus,
-	conversations,
-	websiteSlug,
-	isLeftSidebarOpen,
-	onToggleLeftSidebar,
+        basePath,
+        selectedConversationStatus,
+        conversations,
+        websiteSlug,
+        isLeftSidebarOpen,
+        onToggleLeftSidebar,
 }: Props) {
-	return (
-		<Page className="px-0">
+        const showWaitingForReplyPill = selectedConversationStatus === null;
+
+        return (
+                <Page className="px-0">
 			<PageHeader className="px-4">
 				<div className="flex items-center gap-2">
 					{!isLeftSidebarOpen && (
@@ -59,12 +61,13 @@ export function ConversationsList({
 					</div>
 				</PageContent>
 			) : (
-				<VirtualizedConversations
-					basePath={basePath}
-					conversations={conversations}
-					websiteSlug={websiteSlug}
-				/>
-			)}
-		</Page>
-	);
+                                <VirtualizedConversations
+                                        basePath={basePath}
+                                        conversations={conversations}
+                                        showWaitingForReplyPill={showWaitingForReplyPill}
+                                        websiteSlug={websiteSlug}
+                                />
+                        )}
+                </Page>
+        );
 }

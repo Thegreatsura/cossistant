@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@api/trpc/types";
-import { ConversationStatus } from "@cossistant/types";
+import { ConversationStatus, ConversationTimelineType } from "@cossistant/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { useWebsite } from "@/contexts/website";
@@ -88,19 +88,36 @@ function matchesStatusFilter(
  * 3. Create lookup maps for O(1) access
  */
 function filterAndProcessConversations(
-	conversations: ConversationHeader[],
-	selectedStatus: ConversationStatusFilter,
-	selectedViewId: string | null
+        conversations: ConversationHeader[],
+        selectedStatus: ConversationStatusFilter,
+        selectedViewId: string | null
 ): FilterResult {
-	const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
-	const filteredConversations: ConversationHeader[] = [];
-	const conversationMap = new Map<string, ConversationHeader>();
-	const indexMap = new Map<string, number>();
+        const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
+        const filteredConversations: ConversationHeader[] = [];
+        const conversationMap = new Map<string, ConversationHeader>();
+        const indexMap = new Map<string, number>();
+        const sortMetadata = new Map<
+                string,
+                {
+                        lastInboundAt: number;
+                        lastActivityAt: number;
+                }
+        >();
 
-	// Single pass through conversations
-	for (const conversation of conversations) {
-		// Count by status (always count, regardless of filters)
-		countStatus(conversation, statusCounts);
+        const toTimestamp = (value: string | null | undefined): number => {
+                if (!value) {
+                        return Number.NEGATIVE_INFINITY;
+                }
+
+                const parsed = Date.parse(value);
+
+                return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+        };
+
+        // Single pass through conversations
+        for (const conversation of conversations) {
+                // Count by status (always count, regardless of filters)
+                countStatus(conversation, statusCounts);
 
 		// Check if conversation matches current filters
 		const matchesStatus = matchesStatusFilter(conversation, selectedStatus);
@@ -110,14 +127,56 @@ function filterAndProcessConversations(
 		// Add to filtered list if matches all filters
 		if (matchesStatus && matchesViewFilter) {
 			filteredConversations.push(conversation);
+
+			const lastActivityFromMessage = toTimestamp(conversation.lastMessageAt);
+			const lastActivityAt =
+				lastActivityFromMessage > Number.NEGATIVE_INFINITY
+					? lastActivityFromMessage
+					: toTimestamp(conversation.updatedAt);
+
+			const lastTimelineItem = conversation.lastTimelineItem;
+			const lastInboundAt =
+				lastTimelineItem &&
+				lastTimelineItem.type === ConversationTimelineType.MESSAGE &&
+				lastTimelineItem.visitorId &&
+				!lastTimelineItem.userId &&
+				!lastTimelineItem.aiAgentId
+					? toTimestamp(lastTimelineItem.createdAt)
+					: Number.NEGATIVE_INFINITY;
+
+			sortMetadata.set(conversation.id, {
+				lastInboundAt,
+				lastActivityAt,
+			});
 		}
 	}
 
 	// Sort by lastMessageAt (most recent first) - in-place for efficiency
 	filteredConversations.sort((a, b) => {
-		const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-		const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-		return bTime - aTime;
+		const aMeta = sortMetadata.get(a.id);
+		const bMeta = sortMetadata.get(b.id);
+		const aInbound = aMeta?.lastInboundAt ?? Number.NEGATIVE_INFINITY;
+		const bInbound = bMeta?.lastInboundAt ?? Number.NEGATIVE_INFINITY;
+		const aActivity = aMeta?.lastActivityAt ?? Number.NEGATIVE_INFINITY;
+		const bActivity = bMeta?.lastActivityAt ?? Number.NEGATIVE_INFINITY;
+
+		if (aInbound < bInbound) {
+			return 1;
+		}
+
+		if (aInbound > bInbound) {
+			return -1;
+		}
+
+		if (aActivity < bActivity) {
+			return 1;
+		}
+
+		if (aActivity > bActivity) {
+			return -1;
+		}
+
+		return b.id.localeCompare(a.id);
 	});
 
 	// Build maps after sorting for correct indexes
