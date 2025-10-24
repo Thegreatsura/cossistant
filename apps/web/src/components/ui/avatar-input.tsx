@@ -3,13 +3,14 @@
 
 import type React from "react";
 import {
-	forwardRef,
-	useCallback,
-	useEffect,
-	useImperativeHandle,
-	useMemo,
-	useRef,
-	useState,
+        forwardRef,
+        useCallback,
+        useEffect,
+        useId,
+        useImperativeHandle,
+        useMemo,
+        useRef,
+        useState,
 } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
@@ -382,6 +383,7 @@ export const AvatarInput =
 		const [crop, setCrop] = useState({ x: 0, y: 0 });
 		const [zoom, setZoom] = useState(1.2);
 		const [croppedArea, setCroppedArea] = useState<Area | null>(null);
+		const lastPreviewUrlRef = useRef<string | null>(null);
 
 		const resolvedValue: AvatarInputValue | null = useMemo(() => {
 			if (!value) {
@@ -402,17 +404,21 @@ export const AvatarInput =
 		const resolvedPreviewUrl =
 			localPreviewUrl ?? resolvedValue?.previewUrl ?? resolvedValue?.url;
 
-		useEffect(
-			() => () => {
-				setLocalPreviewUrl((previous) => {
-					if (previous) {
-						URL.revokeObjectURL(previous);
-					}
-					return null;
-				});
-			},
-			[]
-		);
+		useEffect(() => {
+		        const previous = lastPreviewUrlRef.current;
+		        if (previous && previous !== localPreviewUrl) {
+		                URL.revokeObjectURL(previous);
+		        }
+
+		        lastPreviewUrlRef.current = localPreviewUrl;
+
+		        return () => {
+		                if (lastPreviewUrlRef.current) {
+		                        URL.revokeObjectURL(lastPreviewUrlRef.current);
+		                        lastPreviewUrlRef.current = null;
+		                }
+		        };
+		}, [localPreviewUrl]);
 
 		useEffect(() => {
 			if (!value) {
@@ -476,23 +482,22 @@ export const AvatarInput =
 				};
 
 				try {
-					onUploadStart?.(file);
+		                        const shouldUpload = !skipUpload && (onUpload || presignedUrl);
+		                        const shouldUseOnUpload = Boolean(onUpload) && shouldUpload;
+		                        const shouldUsePresigned =
+		                                Boolean(presignedUrl) && shouldUpload && !shouldUseOnUpload;
 
-					const shouldUpload = !skipUpload && (onUpload || presignedUrl);
-					const shouldUseOnUpload = Boolean(onUpload) && shouldUpload;
-					const shouldUsePresigned =
-						Boolean(presignedUrl) && shouldUpload && !shouldUseOnUpload;
+		                        if (shouldUseOnUpload && presignedUrl) {
+		                                console.warn(
+		                                        "AvatarInput: presignedUrl is ignored because onUpload is provided."
+		                                );
+		                        }
 
-					if (shouldUseOnUpload && presignedUrl) {
-						console.warn(
-							"AvatarInput: presignedUrl is ignored because onUpload is provided."
-						);
-					}
-
-					if (shouldUseOnUpload || shouldUsePresigned) {
-						setIsUploading(true);
-						try {
-							if (shouldUseOnUpload && onUpload) {
+		                        if (shouldUseOnUpload || shouldUsePresigned) {
+		                                onUploadStart?.(file);
+		                                setIsUploading(true);
+		                                try {
+		                                        if (shouldUseOnUpload && onUpload) {
 								const result = await onUpload(file);
 
 								if (typeof result === "string") {
@@ -640,8 +645,10 @@ export const AvatarInput =
 			emitInputEvents();
 		}, [emitInputEvents, onChange]);
 
+		const instructionsId = useId();
+
 		const uploadAriaLabel =
-			uploadLabel ?? (resolvedPreviewUrl ? "Change image" : "Upload image");
+		        uploadLabel ?? (resolvedPreviewUrl ? "Change image" : "Upload image");
 		const uploadInstruction = uploadLabel
 			? `Click the preview to ${uploadLabel.toLowerCase()}.`
 			: resolvedPreviewUrl
@@ -687,9 +694,10 @@ export const AvatarInput =
 				/>
 				<div className="flex items-start gap-4">
 					<div className={cn("relative", previewClassName)}>
-						<button
-							aria-label={uploadAriaLabel}
-							className={cn(
+		                                <button
+		                                        aria-label={uploadAriaLabel}
+		                                        aria-describedby={instructionsId}
+		                                        className={cn(
 								"relative block size-24 rounded-md border border-border/70 border-dashed bg-muted/40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
 								(disabled || isUploading) && "cursor-not-allowed opacity-70",
 								!(disabled || isUploading) && "cursor-pointer"
@@ -699,14 +707,14 @@ export const AvatarInput =
 							type="button"
 						>
 							<AvatarContainer className="size-full">
-								{resolvedPreviewUrl ? (
-									<AvatarImage alt="Avatar preview" src={resolvedPreviewUrl} />
-								) : (
-									<div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
-										<ImageIcon className="size-5" />
-										<span className="text-xs">Preview</span>
-									</div>
-								)}
+		                                                {resolvedPreviewUrl ? (
+		                                                        <AvatarImage alt="Avatar preview" src={resolvedPreviewUrl} />
+		                                                ) : (
+		                                                        <div className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
+		                                                                <ImageIcon aria-hidden="true" className="size-5" />
+		                                                                <span className="text-xs">Preview</span>
+		                                                        </div>
+		                                                )}
 								<AvatarFallback className="text-base">
 									{fallbackInitials ??
 										(resolvedValue?.name ? resolvedValue.name[0] : "")}
@@ -724,19 +732,21 @@ export const AvatarInput =
 							<p className="text-muted-foreground text-sm">{placeholder}</p>
 						)}
 						<div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-							<span>{isUploading ? "Uploading…" : uploadInstruction}</span>
-							{allowRemove && (resolvedPreviewUrl || resolvedValue) && (
-								<Button
-									disabled={disabled || isUploading}
-									onClick={removeAvatar}
-									size="sm"
-									type="button"
-									variant="ghost"
-								>
-									<XIcon className="size-4" />
-									Remove
-								</Button>
-							)}
+		                                        <span id={instructionsId}>
+		                                                {isUploading ? "Uploading…" : uploadInstruction}
+		                                        </span>
+		                                        {allowRemove && (resolvedPreviewUrl || resolvedValue) && (
+		                                                <Button
+		                                                        disabled={disabled || isUploading}
+		                                                        onClick={removeAvatar}
+		                                                        size="sm"
+		                                                        type="button"
+		                                                        variant="ghost"
+		                                                >
+		                                                        <XIcon aria-hidden="true" className="size-4" />
+		                                                        Remove
+		                                                </Button>
+		                                        )}
 						</div>
 						{description && (
 							<p className="text-muted-foreground text-xs">{description}</p>

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -103,8 +103,9 @@ export function WebsiteInformationForm({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+	const logoProgressToastAtRef = useRef(0);
 
-	const form = useForm({
+	const form = useForm<WebsiteInformationFormValues>({
 		resolver: zodResolver(websiteInformationFormSchema),
 		mode: "onChange",
 		defaultValues: {
@@ -113,7 +114,7 @@ export function WebsiteInformationForm({
 			contactEmail: initialContactEmail ?? "",
 			logo: initialLogoUrl ?? null,
 		},
-	}) as ReturnType<typeof useForm<WebsiteInformationFormValues>>;
+	});
 
 	const domainValue = form.watch("domain");
 
@@ -154,7 +155,7 @@ export function WebsiteInformationForm({
 		enabled: shouldCheckDomain,
 	});
 
-        const logoUploadToastId = `website-logo-upload-${websiteId}`;
+	const logoUploadToastId = `website-logo-upload-${websiteId}`;
 
 	const { mutateAsync: updateWebsite, isPending: isUpdatingWebsite } =
 		useMutation(
@@ -206,6 +207,7 @@ export function WebsiteInformationForm({
 		async (file: File): Promise<Partial<AvatarInputValue>> => {
 			try {
 				toast.loading("Uploading logo…", { id: logoUploadToastId });
+				logoProgressToastAtRef.current = Date.now();
 
 				const uploadDetails = await createSignedUrl({
 					contentType: file.type,
@@ -224,10 +226,14 @@ export function WebsiteInformationForm({
 					url: uploadDetails.uploadUrl,
 					headers: { "Content-Type": file.type },
 					onProgress: (progress) => {
-						const percentage = Math.round(progress * 100);
-						toast.loading(`Uploading logo… ${percentage}%`, {
-							id: logoUploadToastId,
-						});
+						const now = Date.now();
+						if (progress >= 1 || now - logoProgressToastAtRef.current >= 150) {
+							logoProgressToastAtRef.current = now;
+							const percentage = Math.round(progress * 100);
+							toast.loading(`Uploading logo… ${percentage}%`, {
+								id: logoUploadToastId,
+							});
+						}
 					},
 				});
 

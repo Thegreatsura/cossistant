@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -65,6 +65,7 @@ export function UserProfileForm({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+	const avatarProgressToastAtRef = useRef(0);
 
 	const form = useForm<UserProfileFormValues>({
 		resolver: zodResolver(userProfileFormSchema),
@@ -110,64 +111,72 @@ export function UserProfileForm({
 	);
 
 	const handleAvatarUpload = useCallback(
-		async (file: File): Promise<Partial<AvatarInputValue>> => {
-			try {
-				toast.loading("Uploading profile picture…", {
-					id: avatarUploadToastId,
-				});
+	        async (file: File): Promise<Partial<AvatarInputValue>> => {
+	                try {
+	                        toast.loading("Uploading profile picture…", {
+	                                id: avatarUploadToastId,
+	                        });
+	                        avatarProgressToastAtRef.current = Date.now();
 
-				const uploadDetails = await createSignedUrl({
-					contentType: file.type,
-					fileName: file.name,
-					path: `users/${userId}/avatars`,
-					scope: {
-						type: "user",
-						userId,
-						organizationId,
-						websiteId: "", // This will be set by the backend
-					},
-					useCdn: true,
-				});
+	                        const uploadDetails = await createSignedUrl({
+	                                contentType: file.type,
+	                                fileName: file.name,
+	                                path: `users/${userId}/avatars`,
+	                                scope: {
+	                                        type: "user",
+	                                        userId,
+	                                        organizationId,
+	                                        websiteId: "", // This will be set by the backend
+	                                },
+	                                useCdn: true,
+	                        });
 
-				await uploadToPresignedUrl({
-					file,
-					url: uploadDetails.uploadUrl,
-					headers: { "Content-Type": file.type },
-					onProgress: (progress) => {
-						const percentage = Math.round(progress * 100);
-						toast.loading(`Uploading profile picture… ${percentage}%`, {
-							id: avatarUploadToastId,
-						});
-					},
-				});
+	                        await uploadToPresignedUrl({
+	                                file,
+	                                url: uploadDetails.uploadUrl,
+	                                headers: { "Content-Type": file.type },
+	                                onProgress: (progress) => {
+	                                        const now = Date.now();
+	                                        if (
+	                                                progress >= 1 ||
+	                                                now - avatarProgressToastAtRef.current >= 150
+	                                        ) {
+	                                                avatarProgressToastAtRef.current = now;
+	                                                const percentage = Math.round(progress * 100);
+	                                                toast.loading(`Uploading profile picture… ${percentage}%`, {
+	                                                        id: avatarUploadToastId,
+	                                                });
+	                                        }
+	                                },
+	                        });
 
-				const publicUrl = uploadDetails.uploadUrl.split("?")[0];
+	                        const publicUrl = uploadDetails.uploadUrl.split("?")[0];
 
-				toast.success("Profile picture uploaded.", {
-					id: avatarUploadToastId,
-				});
+	                        toast.success("Profile picture uploaded.", {
+	                                id: avatarUploadToastId,
+	                        });
 
-				return {
-					url: publicUrl,
-					mimeType: file.type,
-					name: file.name,
-					size: file.size,
-				};
-			} catch (error) {
-				const uploadError =
-					error instanceof Error
-						? error
-						: new Error("Failed to upload avatar. Please try again.");
+	                        return {
+	                                url: publicUrl,
+	                                mimeType: file.type,
+	                                name: file.name,
+	                                size: file.size,
+	                        };
+	                } catch (error) {
+	                        const uploadError =
+	                                error instanceof Error
+	                                        ? error
+	                                        : new Error("Failed to upload avatar. Please try again.");
 
-				toast.error(uploadError.message, {
-					id: avatarUploadToastId,
-				});
-				(uploadError as Error & { handledByToast?: boolean }).handledByToast =
-					true;
-				throw uploadError;
-			}
-		},
-		[createSignedUrl, organizationId, userId]
+	                        toast.error(uploadError.message, {
+	                                id: avatarUploadToastId,
+	                        });
+	                        (uploadError as Error & { handledByToast?: boolean }).handledByToast =
+	                                true;
+	                        throw uploadError;
+	                }
+	        },
+	        [createSignedUrl, organizationId, userId]
 	);
 
 	const onSubmit = useCallback(
