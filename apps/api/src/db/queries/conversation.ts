@@ -12,7 +12,10 @@ import {
 } from "@api/db/schema";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 
-import { ConversationStatus } from "@cossistant/types";
+import {
+        ConversationStatus,
+        type TimelineItemVisibility as TimelineItemVisibilityEnum,
+} from "@cossistant/types";
 import type { TimelineItemParts } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import type { ConversationHeader } from "@cossistant/types/trpc/conversation";
@@ -721,19 +724,35 @@ export async function getConversationSeenData(
 export async function getConversationTimelineItems(
 	db: Database,
 	params: {
+		organizationId: string;
 		conversationId: string;
 		websiteId: string;
 		limit?: number;
 		cursor?: string | Date | null;
+		visibility?: TimelineItemVisibilityEnum[];
 	}
 ) {
 	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 
 	// Build where clause scoped to the conversation
 	const whereConditions = [
+		eq(conversationTimelineItem.organizationId, params.organizationId),
 		eq(conversationTimelineItem.conversationId, params.conversationId),
 		isNull(conversationTimelineItem.deletedAt),
 	];
+
+        const visibilities = params.visibility;
+        if (visibilities?.length) {
+                if (visibilities.length === 1) {
+                        whereConditions.push(
+                                eq(conversationTimelineItem.visibility, visibilities[0]!)
+                        );
+                } else {
+                        whereConditions.push(
+                                inArray(conversationTimelineItem.visibility, visibilities)
+                        );
+                }
+        }
 
 	// When paginating fetch timeline items older than the current batch.
 	if (params.cursor) {
