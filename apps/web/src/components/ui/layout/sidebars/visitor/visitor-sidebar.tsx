@@ -2,7 +2,11 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import { resolveCountryDetails } from "@cossistant/location/country-utils";
 import { formatInTimeZone } from "date-fns-tz";
+import { useCallback } from "react";
+import { useConversationActionRunner } from "@/components/conversation/actions/use-conversation-action-runner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { SidebarContainer } from "../container";
@@ -12,17 +16,39 @@ import { ValueDisplay } from "./value-display";
 import { ValueGroup } from "./value-group";
 
 export type VisitorSidebarProps = {
-	visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
-	isLoading: boolean;
+        conversationId: string;
+        visitorId: string | null;
+        visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
+        isLoading: boolean;
 };
 
-export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
-	const fullName = visitor ? getVisitorNameWithFallback(visitor) : "";
-	const presence = useVisitorPresenceById(visitor?.id);
+export function VisitorSidebar({
+        visitor,
+        isLoading,
+        conversationId,
+        visitorId,
+}: VisitorSidebarProps) {
+        const fullName = visitor ? getVisitorNameWithFallback(visitor) : "";
+        const presence = useVisitorPresenceById(visitor?.id);
+        const {
+                unblockVisitor,
+                pendingAction,
+                runAction,
+        } = useConversationActionRunner({
+                conversationId,
+                visitorId: visitorId ?? visitor?.id ?? null,
+        });
 
-	if (isLoading || !visitor) {
-		return <VisitorSidebarPlaceholder />;
-	}
+        const handleUnblock = useCallback(() => {
+                void runAction(() => unblockVisitor(), {
+                        successMessage: "Visitor unblocked",
+                        errorMessage: "Failed to unblock visitor",
+                });
+        }, [runAction, unblockVisitor]);
+
+        if (isLoading || !visitor) {
+                return <VisitorSidebarPlaceholder />;
+        }
 
 	const countryDetails = resolveCountryDetails({
 		country: visitor.country,
@@ -38,11 +64,11 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
 		? `Timezone: ${visitor.timezone}`
 		: undefined;
 
-	return (
-		<ResizableSidebar className="hidden lg:flex" position="right">
-			<SidebarContainer>
-				<div className="flex h-10 w-full items-center justify-between px-2">
-					<div className="flex items-center gap-3">
+        return (
+                <ResizableSidebar className="hidden lg:flex" position="right">
+                        <SidebarContainer>
+                                <div className="flex h-10 w-full items-center justify-between px-2">
+                                        <div className="flex items-center gap-3">
 						<Avatar
 							fallbackName={fullName}
 							lastOnlineAt={presence?.lastSeenAt ?? visitor.lastSeenAt}
@@ -61,14 +87,34 @@ export function VisitorSidebar({ visitor, isLoading }: VisitorSidebarProps) {
 									Not identified yet
 								</p>
 							)}
-						</div>
-					</div>
-				</div>
-				<div className="mt-4 flex flex-col gap-4">
-					<ValueGroup>
-						<ValueDisplay
-							placeholder="Unknown"
-							title="Country"
+                                                </div>
+                                        </div>
+                                </div>
+                                {visitor.isBlocked ? (
+                                        <Alert className="mx-2 mt-3" variant="destructive">
+                                                <AlertTitle>Visitor blocked</AlertTitle>
+                                                <AlertDescription>
+                                                        <div className="mt-2 flex items-center justify-between gap-3">
+                                                                <span>This visitor can't send new messages.</span>
+                                                                <Button
+                                                                        disabled={pendingAction.unblockVisitor}
+                                                                        onClick={handleUnblock}
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                >
+                                                                        {pendingAction.unblockVisitor
+                                                                                ? "Unblocking..."
+                                                                                : "Unblock"}
+                                                                </Button>
+                                                        </div>
+                                                </AlertDescription>
+                                        </Alert>
+                                ) : null}
+                                <div className="mt-4 flex flex-col gap-4">
+                                        <ValueGroup>
+                                                <ValueDisplay
+                                                        placeholder="Unknown"
+                                                        title="Country"
 							value={
 								countryLabel ? (
 									<span className="ml-auto inline-flex items-center gap-2">

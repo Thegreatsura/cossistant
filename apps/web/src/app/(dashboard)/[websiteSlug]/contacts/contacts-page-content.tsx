@@ -570,28 +570,52 @@ function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
 					</p>
 				) : (
 					<div className="space-y-3">
-						{visitors.map((visitor) => (
-							<div
-								className="rounded-md border border-primary/10 bg-background/80 p-3"
-								key={visitor.id}
-							>
-								<div className="flex flex-col gap-1">
-									<span className="font-medium text-sm">
-										Visitor {visitor.id}
-									</span>
-									<span className="text-muted-foreground text-xs">
-										Last seen:{" "}
-										{visitor.lastSeenAt
-											? formatDistanceToNow(new Date(visitor.lastSeenAt), {
-													addSuffix: true,
-												})
-											: "Unknown"}
-									</span>
-								</div>
-								<div className="mt-2 grid grid-cols-1 gap-1 text-muted-foreground text-xs">
-									{visitor.country || visitor.city ? (
-										<span>
-											{visitor.city ? `${visitor.city}, ` : ""}
+                                                {visitors.map((visitor) => (
+                                                        <div
+                                                                className="rounded-md border border-primary/10 bg-background/80 p-3"
+                                                                key={visitor.id}
+                                                        >
+                                                                <div className="flex flex-col gap-1">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                                <span className="font-medium text-sm">
+                                                                                        Visitor {visitor.id}
+                                                                                </span>
+                                                                                <Badge
+                                                                                        variant={
+                                                                                                visitor.isBlocked
+                                                                                                        ? "destructive"
+                                                                                                        : "secondary"
+                                                                                        }
+                                                                                >
+                                                                                        {visitor.isBlocked
+                                                                                                ? "Blocked"
+                                                                                                : "Active"}
+                                                                                </Badge>
+                                                                        </div>
+                                                                        <span className="text-muted-foreground text-xs">
+                                                                                Last seen:{" "}
+                                                                                {visitor.lastSeenAt
+                                                                                        ? formatDistanceToNow(new Date(visitor.lastSeenAt), {
+                                                                                                        addSuffix: true,
+                                                                                                })
+                                                                                        : "Unknown"}
+                                                                        </span>
+                                                                        {visitor.isBlocked && visitor.blockedAt ? (
+                                                                                <span className="text-destructive text-xs">
+                                                                                        Blocked {" "}
+                                                                                        {formatDistanceToNow(
+                                                                                                new Date(visitor.blockedAt),
+                                                                                                {
+                                                                                                        addSuffix: true,
+                                                                                                }
+                                                                                        )}
+                                                                                </span>
+                                                                        ) : null}
+                                                                </div>
+                                                                <div className="mt-2 grid grid-cols-1 gap-1 text-muted-foreground text-xs">
+                                                                        {visitor.country || visitor.city ? (
+                                                                                <span>
+                                                                                        {visitor.city ? `${visitor.city}, ` : ""}
 											{visitor.country ?? "Unknown country"}
 										</span>
 									) : null}

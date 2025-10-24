@@ -36,17 +36,19 @@ export type ConversationTimelineType =
 	(typeof ConversationTimelineType)[keyof typeof ConversationTimelineType];
 
 export const ConversationEventType = {
-	ASSIGNED: "assigned",
-	UNASSIGNED: "unassigned",
-	PARTICIPANT_REQUESTED: "participant_requested",
-	PARTICIPANT_JOINED: "participant_joined",
-	PARTICIPANT_LEFT: "participant_left",
-	STATUS_CHANGED: "status_changed",
-	PRIORITY_CHANGED: "priority_changed",
-	TAG_ADDED: "tag_added",
-	TAG_REMOVED: "tag_removed",
-	RESOLVED: "resolved",
-	REOPENED: "reopened",
+        ASSIGNED: "assigned",
+        UNASSIGNED: "unassigned",
+        PARTICIPANT_REQUESTED: "participant_requested",
+        PARTICIPANT_JOINED: "participant_joined",
+        PARTICIPANT_LEFT: "participant_left",
+        STATUS_CHANGED: "status_changed",
+        PRIORITY_CHANGED: "priority_changed",
+        TAG_ADDED: "tag_added",
+        TAG_REMOVED: "tag_removed",
+        RESOLVED: "resolved",
+        REOPENED: "reopened",
+        VISITOR_BLOCKED: "visitor_blocked",
+        VISITOR_UNBLOCKED: "visitor_unblocked",
 } as const;
 
 export const ConversationParticipationStatus = {

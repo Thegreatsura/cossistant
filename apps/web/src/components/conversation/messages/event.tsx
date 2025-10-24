@@ -55,14 +55,18 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 				return `${actorName} added a tag`;
 			case "tag_removed":
 				return `${actorName} removed a tag`;
-			case "resolved":
-				return `${actorName} resolved the conversation`;
-			case "reopened":
-				return `${actorName} reopened the conversation`;
-			default:
-				return `${actorName} performed an action`;
-		}
-	};
+                        case "resolved":
+                                return `${actorName} resolved the conversation`;
+                        case "reopened":
+                                return `${actorName} reopened the conversation`;
+                        case "visitor_blocked":
+                                return `${actorName} blocked the visitor`;
+                        case "visitor_unblocked":
+                                return `${actorName} unblocked the visitor`;
+                        default:
+                                return `${actorName} performed an action`;
+                }
+        };
 
 	return (
 		<motion.div
