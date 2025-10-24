@@ -61,22 +61,22 @@ const timelinePartEventSchema = z.object({
 	type: z.literal("event").openapi({
 		description: "Type of timeline part - always 'event' for event parts",
 	}),
-        eventType: z
-                .enum([
-                        ConversationEventType.ASSIGNED,
-                        ConversationEventType.UNASSIGNED,
-                        ConversationEventType.PARTICIPANT_REQUESTED,
-                        ConversationEventType.PARTICIPANT_JOINED,
-                        ConversationEventType.PARTICIPANT_LEFT,
-                        ConversationEventType.STATUS_CHANGED,
-                        ConversationEventType.PRIORITY_CHANGED,
-                        ConversationEventType.TAG_ADDED,
-                        ConversationEventType.TAG_REMOVED,
-                        ConversationEventType.RESOLVED,
-                        ConversationEventType.REOPENED,
-                        ConversationEventType.VISITOR_BLOCKED,
-                        ConversationEventType.VISITOR_UNBLOCKED,
-                ])
+	eventType: z
+		.enum([
+			ConversationEventType.ASSIGNED,
+			ConversationEventType.UNASSIGNED,
+			ConversationEventType.PARTICIPANT_REQUESTED,
+			ConversationEventType.PARTICIPANT_JOINED,
+			ConversationEventType.PARTICIPANT_LEFT,
+			ConversationEventType.STATUS_CHANGED,
+			ConversationEventType.PRIORITY_CHANGED,
+			ConversationEventType.TAG_ADDED,
+			ConversationEventType.TAG_REMOVED,
+			ConversationEventType.RESOLVED,
+			ConversationEventType.REOPENED,
+			ConversationEventType.VISITOR_BLOCKED,
+			ConversationEventType.VISITOR_UNBLOCKED,
+		])
 		.openapi({
 			description: "Type of event that occurred",
 		}),

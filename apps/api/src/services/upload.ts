@@ -13,10 +13,14 @@ import { ulid } from "ulid";
 
 const LEADING_DOT_PATTERN = /^\./;
 const CDN_PREFIX = "cdn";
+const TRAILING_SLASHES_PATTERN = /\/+$/;
+const LEADING_SLASHES_PATTERN = /^\/+/;
 
 const endpoint =
 	env.S3_ENDPOINT.trim().length > 0 ? env.S3_ENDPOINT : undefined;
 const forcePathStyle = env.S3_FORCE_PATH_STYLE;
+const cdnBaseUrl = env.S3_CDN_BASE_URL.trim();
+const publicBaseUrl = env.S3_PUBLIC_BASE_URL.trim();
 
 export const s3Client = new S3Client({
 	region: env.S3_REGION,
@@ -88,6 +92,7 @@ export type GenerateUploadUrlResult = {
 	bucket: string;
 	expiresAt: string;
 	contentType: string;
+	publicUrl: string;
 };
 
 function sanitizeSingleSegment(input: string): string {
@@ -98,6 +103,50 @@ function sanitizeSingleSegment(input: string): string {
 	}
 
 	return sanitized;
+}
+
+function joinUrl(baseUrl: string, suffix: string): string {
+	const normalizedBase = baseUrl.replace(TRAILING_SLASHES_PATTERN, "");
+	const normalizedSuffix = suffix.replace(LEADING_SLASHES_PATTERN, "");
+
+	return `${normalizedBase}/${normalizedSuffix}`;
+}
+
+function removeCdnPrefix(key: string): string {
+	const cdnPrefixWithSlash = `${CDN_PREFIX}/`;
+
+	return key.startsWith(cdnPrefixWithSlash)
+		? key.slice(cdnPrefixWithSlash.length)
+		: key;
+}
+
+function stripQueryFromUrl(url: string): string {
+	try {
+		const parsed = new URL(url);
+		parsed.search = "";
+		parsed.hash = "";
+
+		return parsed.toString();
+	} catch (error) {
+		const [base] = url.split("?");
+		return base;
+	}
+}
+
+function buildPublicReadUrl(
+	key: string,
+	uploadUrl: string,
+	useCdn: boolean
+): string {
+	if (useCdn && cdnBaseUrl.length > 0) {
+		return joinUrl(cdnBaseUrl, removeCdnPrefix(key));
+	}
+
+	if (publicBaseUrl.length > 0) {
+		return joinUrl(publicBaseUrl, key);
+	}
+
+	return stripQueryFromUrl(uploadUrl);
 }
 
 function buildScopeBaseSegments(scope: UploadScope, useCdn: boolean): string[] {
@@ -139,10 +188,8 @@ function buildScopeBaseSegments(scope: UploadScope, useCdn: boolean): string[] {
 export async function generateUploadUrl(
 	options: GenerateUploadUrlOptions
 ): Promise<GenerateUploadUrlResult> {
-	const baseSegments = buildScopeBaseSegments(
-		options.scope,
-		Boolean(options.useCdn)
-	);
+	const useCdn = Boolean(options.useCdn);
+	const baseSegments = buildScopeBaseSegments(options.scope, useCdn);
 	const normalizedPathSegments = sanitizeSegmentsFromInput(options.path);
 
 	const allSegments = [...baseSegments, ...normalizedPathSegments];
@@ -176,6 +223,7 @@ export async function generateUploadUrl(
 			bucket: env.S3_BUCKET_NAME,
 			expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
 			contentType: options.contentType,
+			publicUrl: buildPublicReadUrl(objectKey, uploadUrl, useCdn),
 		};
 	} catch (error) {
 		throw new Error(

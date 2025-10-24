@@ -237,7 +237,7 @@ export function WebsiteInformationForm({
 					},
 				});
 
-				const publicUrl = uploadDetails.uploadUrl.split("?")[0];
+				const publicUrl = uploadDetails.publicUrl;
 
 				toast.success("Logo uploaded.", { id: logoUploadToastId });
 

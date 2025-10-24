@@ -68,15 +68,15 @@ const es: SupportLocaleMessages = {
 		`${variables.actorName} resolvió la conversación`,
 	"component.conversationEvent.statusChanged": ({ variables }) =>
 		`${variables.actorName} cambió el estado`,
-        "component.conversationEvent.tagAdded": ({ variables }) =>
-                `${variables.actorName} agregó una etiqueta`,
-        "component.conversationEvent.tagRemoved": ({ variables }) =>
-                `${variables.actorName} quitó una etiqueta`,
-        "component.conversationEvent.visitorBlocked": ({ variables }) =>
-                `${variables.actorName} bloqueó al visitante`,
-        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
-                `${variables.actorName} desbloqueó al visitante`,
-        "component.multimodalInput.placeholder": "Escribe tu mensaje...",
+	"component.conversationEvent.tagAdded": ({ variables }) =>
+		`${variables.actorName} agregó una etiqueta`,
+	"component.conversationEvent.tagRemoved": ({ variables }) =>
+		`${variables.actorName} quitó una etiqueta`,
+	"component.conversationEvent.visitorBlocked": ({ variables }) =>
+		`${variables.actorName} bloqueó al visitante`,
+	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
+		`${variables.actorName} desbloqueó al visitante`,
+	"component.multimodalInput.placeholder": "Escribe tu mensaje...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Eliminar ${variables.fileName}`,
 	"component.navigation.articles": "Artículos",

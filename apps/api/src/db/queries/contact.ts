@@ -532,37 +532,37 @@ export async function getContactWithVisitors(
 		return null;
 	}
 
-        const visitorsList = await db
-                .select({
-                        id: visitor.id,
-                        lastSeenAt: visitor.lastSeenAt,
-                        createdAt: visitor.createdAt,
-                        browser: visitor.browser,
-                        device: visitor.device,
-                        country: visitor.country,
-                        city: visitor.city,
-                        language: visitor.language,
-                        blockedAt: visitor.blockedAt,
-                        blockedByUserId: visitor.blockedByUserId,
-                })
-                .from(visitor)
-                .where(
-                        and(
-                                eq(visitor.contactId, contactRecord.id),
+	const visitorsList = await db
+		.select({
+			id: visitor.id,
+			lastSeenAt: visitor.lastSeenAt,
+			createdAt: visitor.createdAt,
+			browser: visitor.browser,
+			device: visitor.device,
+			country: visitor.country,
+			city: visitor.city,
+			language: visitor.language,
+			blockedAt: visitor.blockedAt,
+			blockedByUserId: visitor.blockedByUserId,
+		})
+		.from(visitor)
+		.where(
+			and(
+				eq(visitor.contactId, contactRecord.id),
 				eq(visitor.websiteId, params.websiteId),
 				eq(visitor.organizationId, params.organizationId),
 				isNull(visitor.deletedAt)
 			)
 		)
-                .orderBy(desc(visitor.lastSeenAt), desc(visitor.createdAt));
+		.orderBy(desc(visitor.lastSeenAt), desc(visitor.createdAt));
 
-        return {
-                contact: contactRecord,
-                visitors: visitorsList.map((visitorRecord) => ({
-                        ...visitorRecord,
-                        isBlocked: visitorRecord.blockedAt !== null,
-                })),
-        };
+	return {
+		contact: contactRecord,
+		visitors: visitorsList.map((visitorRecord) => ({
+			...visitorRecord,
+			isBlocked: visitorRecord.blockedAt !== null,
+		})),
+	};
 }
 
 // Contact Organisation queries

@@ -70,15 +70,15 @@ const en: SupportLocaleMessages = {
 		`${variables.actorName} resolved the conversation`,
 	"component.conversationEvent.statusChanged": ({ variables }) =>
 		`${variables.actorName} changed the status`,
-        "component.conversationEvent.tagAdded": ({ variables }) =>
-                `${variables.actorName} added a tag`,
-        "component.conversationEvent.tagRemoved": ({ variables }) =>
-                `${variables.actorName} removed a tag`,
-        "component.conversationEvent.visitorBlocked": ({ variables }) =>
-                `${variables.actorName} blocked the visitor`,
-        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
-                `${variables.actorName} unblocked the visitor`,
-        "component.multimodalInput.placeholder": "Type your message...",
+	"component.conversationEvent.tagAdded": ({ variables }) =>
+		`${variables.actorName} added a tag`,
+	"component.conversationEvent.tagRemoved": ({ variables }) =>
+		`${variables.actorName} removed a tag`,
+	"component.conversationEvent.visitorBlocked": ({ variables }) =>
+		`${variables.actorName} blocked the visitor`,
+	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
+		`${variables.actorName} unblocked the visitor`,
+	"component.multimodalInput.placeholder": "Type your message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Remove ${variables.fileName}`,
 	"component.navigation.articles": "Articles",

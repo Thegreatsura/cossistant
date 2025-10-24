@@ -181,6 +181,11 @@ export const generateUploadUrlResponseSchema = z
 			description: "MIME type that should be used when uploading the file.",
 			example: "image/png",
 		}),
+		publicUrl: z.string().url().openapi({
+			description:
+				"Publicly accessible URL (or CDN URL when requested) that can be used to read the uploaded file.",
+			example: "https://cdn.example.com/org-id/file.png",
+		}),
 	})
 	.openapi({
 		description: "Response payload containing the signed upload URL.",

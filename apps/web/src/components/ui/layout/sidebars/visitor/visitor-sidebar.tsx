@@ -16,39 +16,36 @@ import { ValueDisplay } from "./value-display";
 import { ValueGroup } from "./value-group";
 
 export type VisitorSidebarProps = {
-        conversationId: string;
-        visitorId: string | null;
-        visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
-        isLoading: boolean;
+	conversationId: string;
+	visitorId: string | null;
+	visitor: RouterOutputs["conversation"]["getVisitorById"] | null;
+	isLoading: boolean;
 };
 
 export function VisitorSidebar({
-        visitor,
-        isLoading,
-        conversationId,
-        visitorId,
+	visitor,
+	isLoading,
+	conversationId,
+	visitorId,
 }: VisitorSidebarProps) {
-        const fullName = visitor ? getVisitorNameWithFallback(visitor) : "";
-        const presence = useVisitorPresenceById(visitor?.id);
-        const {
-                unblockVisitor,
-                pendingAction,
-                runAction,
-        } = useConversationActionRunner({
-                conversationId,
-                visitorId: visitorId ?? visitor?.id ?? null,
-        });
+	const fullName = visitor ? getVisitorNameWithFallback(visitor) : "";
+	const presence = useVisitorPresenceById(visitor?.id);
+	const { unblockVisitor, pendingAction, runAction } =
+		useConversationActionRunner({
+			conversationId,
+			visitorId: visitorId ?? visitor?.id ?? null,
+		});
 
-        const handleUnblock = useCallback(() => {
-                void runAction(() => unblockVisitor(), {
-                        successMessage: "Visitor unblocked",
-                        errorMessage: "Failed to unblock visitor",
-                });
-        }, [runAction, unblockVisitor]);
+	const handleUnblock = useCallback(() => {
+		void runAction(() => unblockVisitor(), {
+			successMessage: "Visitor unblocked",
+			errorMessage: "Failed to unblock visitor",
+		});
+	}, [runAction, unblockVisitor]);
 
-        if (isLoading || !visitor) {
-                return <VisitorSidebarPlaceholder />;
-        }
+	if (isLoading || !visitor) {
+		return <VisitorSidebarPlaceholder />;
+	}
 
 	const countryDetails = resolveCountryDetails({
 		country: visitor.country,
@@ -64,11 +61,11 @@ export function VisitorSidebar({
 		? `Timezone: ${visitor.timezone}`
 		: undefined;
 
-        return (
-                <ResizableSidebar className="hidden lg:flex" position="right">
-                        <SidebarContainer>
-                                <div className="flex h-10 w-full items-center justify-between px-2">
-                                        <div className="flex items-center gap-3">
+	return (
+		<ResizableSidebar className="hidden lg:flex" position="right">
+			<SidebarContainer>
+				<div className="flex h-10 w-full items-center justify-between px-2">
+					<div className="flex items-center gap-3">
 						<Avatar
 							fallbackName={fullName}
 							lastOnlineAt={presence?.lastSeenAt ?? visitor.lastSeenAt}
@@ -87,34 +84,32 @@ export function VisitorSidebar({
 									Not identified yet
 								</p>
 							)}
-                                                </div>
-                                        </div>
-                                </div>
-                                {visitor.isBlocked ? (
-                                        <Alert className="mx-2 mt-3" variant="destructive">
-                                                <AlertTitle>Visitor blocked</AlertTitle>
-                                                <AlertDescription>
-                                                        <div className="mt-2 flex items-center justify-between gap-3">
-                                                                <span>This visitor can't send new messages.</span>
-                                                                <Button
-                                                                        disabled={pendingAction.unblockVisitor}
-                                                                        onClick={handleUnblock}
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                >
-                                                                        {pendingAction.unblockVisitor
-                                                                                ? "Unblocking..."
-                                                                                : "Unblock"}
-                                                                </Button>
-                                                        </div>
-                                                </AlertDescription>
-                                        </Alert>
-                                ) : null}
-                                <div className="mt-4 flex flex-col gap-4">
-                                        <ValueGroup>
-                                                <ValueDisplay
-                                                        placeholder="Unknown"
-                                                        title="Country"
+						</div>
+					</div>
+				</div>
+				{visitor.isBlocked ? (
+					<Alert className="mx-2 mt-3" variant="destructive">
+						<AlertTitle>Visitor blocked</AlertTitle>
+						<AlertDescription>
+							<div className="mt-2 flex items-center justify-between gap-3">
+								<span>This visitor can't send new messages.</span>
+								<Button
+									disabled={pendingAction.unblockVisitor}
+									onClick={handleUnblock}
+									size="sm"
+									variant="outline"
+								>
+									{pendingAction.unblockVisitor ? "Unblocking..." : "Unblock"}
+								</Button>
+							</div>
+						</AlertDescription>
+					</Alert>
+				) : null}
+				<div className="mt-4 flex flex-col gap-4">
+					<ValueGroup>
+						<ValueDisplay
+							placeholder="Unknown"
+							title="Country"
 							value={
 								countryLabel ? (
 									<span className="ml-auto inline-flex items-center gap-2">

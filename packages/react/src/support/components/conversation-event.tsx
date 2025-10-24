@@ -75,27 +75,27 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 				return text("component.conversationEvent.tagRemoved", {
 					actorName,
 				});
-                        case "resolved":
-                                return text("component.conversationEvent.resolved", {
-                                        actorName,
-                                });
-                        case "reopened":
-                                return text("component.conversationEvent.reopened", {
-                                        actorName,
-                                });
-                        case "visitor_blocked":
-                                return text("component.conversationEvent.visitorBlocked", {
-                                        actorName,
-                                });
-                        case "visitor_unblocked":
-                                return text("component.conversationEvent.visitorUnblocked", {
-                                        actorName,
-                                });
-                        default:
-                                return text("component.conversationEvent.default", {
-                                        actorName,
-                                });
-                }
+			case "resolved":
+				return text("component.conversationEvent.resolved", {
+					actorName,
+				});
+			case "reopened":
+				return text("component.conversationEvent.reopened", {
+					actorName,
+				});
+			case "visitor_blocked":
+				return text("component.conversationEvent.visitorBlocked", {
+					actorName,
+				});
+			case "visitor_unblocked":
+				return text("component.conversationEvent.visitorUnblocked", {
+					actorName,
+				});
+			default:
+				return text("component.conversationEvent.default", {
+					actorName,
+				});
+		}
 	};
 
 	return (

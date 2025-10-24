@@ -60,4 +60,6 @@ export const env = {
 		"S3_SIGNED_URL_EXPIRATION_SECONDS",
 		"900"
 	),
+	S3_PUBLIC_BASE_URL: getEnvVariable("S3_PUBLIC_BASE_URL", ""),
+	S3_CDN_BASE_URL: getEnvVariable("S3_CDN_BASE_URL", ""),
 };
