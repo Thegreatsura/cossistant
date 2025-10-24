@@ -88,7 +88,8 @@ function SupportProviderInner({
 	}, [quickOptions]);
 
 	const { client } = useClient(publicKey, apiUrl, wsUrl);
-	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
+        const { website, isLoading, error: websiteError } = useWebsiteStore(client);
+        const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 
 	// Prefetch conversations
 	// useConversations(client, {
@@ -98,12 +99,17 @@ function SupportProviderInner({
 	const error = websiteError;
 
 	// Prime REST client with website/visitor context so headers are sent reliably
-	React.useEffect(() => {
-		if (website) {
-			// @ts-expect-error internal priming: safe in our library context
-			client.restClient?.setWebsiteContext?.(website.id, website.visitor?.id);
-		}
-	}, [client, website]);
+        React.useEffect(() => {
+                if (!website) {
+                        return;
+                }
+
+                client.setWebsiteContext(website.id, website.visitor?.id ?? undefined);
+        }, [client, website]);
+
+        React.useEffect(() => {
+                client.setVisitorBlocked(isVisitorBlocked);
+        }, [client, isVisitorBlocked]);
 
 	const setDefaultMessages = React.useCallback(
 		(messages: DefaultMessage[]) => _setDefaultMessages(messages),
@@ -147,22 +153,34 @@ function SupportProviderInner({
 		]
 	);
 
-	return (
-		<SupportContext.Provider value={value}>
-			<WebSocketProvider
-				autoConnect={autoConnect}
-				onConnect={onWsConnect}
-				onDisconnect={onWsDisconnect}
-				onError={onWsError}
-				publicKey={publicKey}
-				visitorId={website?.visitor?.id}
-				websiteId={website?.id}
-				wsUrl={wsUrl}
-			>
-				{children}
-			</WebSocketProvider>
-		</SupportContext.Provider>
-	);
+        const webSocketKey = React.useMemo(() => {
+                if (!website) {
+                        return "no-website";
+                }
+
+                const visitorKey = website.visitor?.id ?? "anonymous";
+                const blockedState = isVisitorBlocked ? "blocked" : "active";
+
+                return `${website.id}:${visitorKey}:${blockedState}`;
+        }, [isVisitorBlocked, website]);
+
+        return (
+                <SupportContext.Provider value={value}>
+                        <WebSocketProvider
+                                key={webSocketKey}
+                                autoConnect={autoConnect && !isVisitorBlocked}
+                                onConnect={onWsConnect}
+                                onDisconnect={onWsDisconnect}
+                                onError={onWsError}
+                                publicKey={publicKey}
+                                visitorId={isVisitorBlocked ? undefined : website?.visitor?.id}
+                                websiteId={website?.id}
+                                wsUrl={wsUrl}
+                        >
+                                {children}
+                        </WebSocketProvider>
+                </SupportContext.Provider>
+        );
 }
 
 /**

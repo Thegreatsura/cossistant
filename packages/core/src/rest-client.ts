@@ -27,6 +27,7 @@ import {
 	type VisitorResponse,
 } from "./types";
 import { generateConversationId } from "./utils";
+import { logger } from "./logger";
 import { collectVisitorData } from "./visitor-data";
 import {
 	getExistingVisitorId,
@@ -40,6 +41,7 @@ export class CossistantRestClient {
 	private publicKey: string;
 	private websiteId: string | null = null;
 	private visitorId: string | null = null;
+	private visitorBlocked = false;
 
 	constructor(config: CossistantConfig) {
 		this.config = config;
@@ -141,12 +143,7 @@ export class CossistantRestClient {
 				},
 			});
 		} catch (error) {
-			if (
-				typeof console !== "undefined" &&
-				typeof console.warn === "function"
-			) {
-				console.warn("Failed to sync visitor data", error);
-			}
+			logger.warn("Failed to sync visitor data", error);
 		}
 	}
 
@@ -154,6 +151,25 @@ export class CossistantRestClient {
 		path: string,
 		options: RequestInit = {}
 	): Promise<T> {
+		if (this.visitorBlocked) {
+			const method = (options.method ?? "GET").toUpperCase();
+			const [rawPath] = path.split("?");
+			const normalizedPath = rawPath.endsWith("/")
+				? rawPath.slice(0, -1)
+				: rawPath;
+			const isWebsitesRoot = normalizedPath === "/websites";
+			const isSafeMethod = method === "GET" || method === "HEAD";
+
+			if (!(isWebsitesRoot && isSafeMethod)) {
+				throw new CossistantAPIError({
+					code: "VISITOR_BLOCKED",
+					message:
+						"Visitor is blocked and cannot perform this action.",
+					details: { path, method },
+				});
+			}
+		}
+
 		const url = `${this.config.apiUrl}${path}`;
 
 		const response = await fetch(url, {
@@ -166,11 +182,14 @@ export class CossistantRestClient {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			console.log(errorData);
 
-			console.error(
+			logger.error(
 				"Your Cossistant public API key is invalid, expired, missing or not authorized to access this resource.",
-				errorData.details
+				{
+					details: errorData.details,
+					path,
+					status: response.status,
+				}
 			);
 
 			throw new CossistantAPIError({
@@ -214,7 +233,15 @@ export class CossistantRestClient {
 		this.websiteId = response.id;
 
 		// Store the visitor ID if we got one
+		this.visitorBlocked = response.visitor?.isBlocked ?? false;
+
 		if (response.visitor?.id) {
+			if (this.visitorBlocked) {
+				this.visitorId = response.visitor.id;
+				setVisitorId(response.id, response.visitor.id);
+				return response;
+			}
+
 			this.visitorId = response.visitor.id;
 			setVisitorId(response.id, response.visitor.id);
 			this.syncVisitorSnapshot(response.visitor.id);
@@ -230,6 +257,10 @@ export class CossistantRestClient {
 			this.visitorId = visitorId;
 			setVisitorId(websiteId, visitorId);
 		}
+	}
+
+	setVisitorBlocked(isBlocked: boolean): void {
+		this.visitorBlocked = isBlocked;
 	}
 
 	getCurrentWebsiteId(): string | null {

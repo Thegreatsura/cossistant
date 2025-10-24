@@ -118,12 +118,12 @@ export class CossistantClient {
 
 		this.websiteStore.setLoading();
 
-		const request = this.restClient
-			.getWebsite()
-			.then((website) => {
-				this.websiteStore.setWebsite(website);
-				return website;
-			})
+                const request = this.restClient
+                        .getWebsite()
+                        .then((website) => {
+                                this.websiteStore.setWebsite(website);
+                                return website;
+                        })
 			.catch((error) => {
 				this.websiteStore.setError(error);
 				throw error;
@@ -143,9 +143,13 @@ export class CossistantClient {
 		return this.fetchWebsite({ force: true });
 	}
 
-	setWebsiteContext(websiteId: string, visitorId?: string): void {
-		this.restClient.setWebsiteContext(websiteId, visitorId);
-	}
+        setWebsiteContext(websiteId: string, visitorId?: string): void {
+                this.restClient.setWebsiteContext(websiteId, visitorId);
+        }
+
+        setVisitorBlocked(isBlocked: boolean): void {
+                this.restClient.setVisitorBlocked(isBlocked);
+        }
 
 	async updateVisitorMetadata(
 		metadata: VisitorMetadata
