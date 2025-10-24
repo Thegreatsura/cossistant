@@ -85,12 +85,11 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 						<Avatar
 							className="size-5 shrink-0 overflow-clip"
 							fallbackName={humanAgent?.name ?? "Someone"}
-							lastOnlineAt={humanAgent?.lastSeenAt}
 							url={humanAgent?.image}
 						/>
 					)}
 				</div>
-				<span className="px-2">{getEventText()}</span>
+				<span className="px-1">{getEventText()}</span>
 				{createdAt && (
 					<time className="text-[10px]">
 						{new Date(createdAt).toLocaleTimeString([], {

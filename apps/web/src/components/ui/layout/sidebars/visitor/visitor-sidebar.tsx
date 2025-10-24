@@ -76,7 +76,7 @@ export function VisitorSidebar({
 						<div className="flex flex-col gap-0.5">
 							<p className="font-medium text-sm">{fullName}</p>
 							{visitor.contact ? (
-								<p className="text-muted-foreground text-sm">
+								<p className="text-[15px] text-muted-foreground">
 									{visitor.contact?.email}
 								</p>
 							) : (
@@ -88,16 +88,18 @@ export function VisitorSidebar({
 					</div>
 				</div>
 				{visitor.isBlocked ? (
-					<Alert className="mx-2 mt-3" variant="destructive">
+					<Alert className="my-6" variant="destructive">
 						<AlertTitle>Visitor blocked</AlertTitle>
 						<AlertDescription>
-							<div className="mt-2 flex items-center justify-between gap-3">
-								<span>This visitor can't send new messages.</span>
+							<div className="flex flex-col gap-3">
+								<span>This visitor can't see or send messages.</span>
 								<Button
+									className="mt-4"
 									disabled={pendingAction.unblockVisitor}
 									onClick={handleUnblock}
 									size="sm"
-									variant="outline"
+									type="button"
+									variant="destructive"
 								>
 									{pendingAction.unblockVisitor ? "Unblocking..." : "Unblock"}
 								</Button>
