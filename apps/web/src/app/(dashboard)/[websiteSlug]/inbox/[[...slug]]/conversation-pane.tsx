@@ -334,11 +334,13 @@ export function ConversationPane({
 			placeholder: "Type your message...",
 			value: message,
 		},
-		visitorSidebar: {
-			isLoading: isVisitorLoading,
-			visitor,
-		},
-	};
+                visitorSidebar: {
+                        conversationId,
+                        visitorId,
+                        isLoading: isVisitorLoading,
+                        visitor,
+                },
+        };
 
 	return <Conversation {...conversationProps} />;
 }

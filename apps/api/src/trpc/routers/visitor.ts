@@ -1,11 +1,13 @@
 import { blockVisitor, unblockVisitor } from "@api/db/mutations/visitor";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { createConversationEvent } from "@api/utils/conversation-event";
 import { listOnlineVisitors } from "@api/services/presence";
 import {
-	blockVisitorResponseSchema,
-	type ContactMetadata,
-	listVisitorPresenceResponseSchema,
+        blockVisitorResponseSchema,
+        type ContactMetadata,
+        listVisitorPresenceResponseSchema,
+        ConversationEventType,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -69,23 +71,37 @@ export const visitorRouter = createTRPCRouter({
 				});
 			}
 
-			const updatedVisitor = await blockVisitor(db, {
-				visitor: visitorRecord,
-				actorUserId: user.id,
-			});
+                        const updatedVisitor = await blockVisitor(db, {
+                                visitor: visitorRecord,
+                                actorUserId: user.id,
+                        });
 
-			if (!updatedVisitor) {
+                        if (!updatedVisitor) {
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
 					message: "Unable to block visitor",
 				});
 			}
 
-			return {
-				conversation,
-				visitor: {
-					...updatedVisitor,
-					contact: visitorRecord.contact
+                        await createConversationEvent({
+                                db,
+                                context: {
+                                        conversationId: conversation.id,
+                                        organizationId: conversation.organizationId,
+                                        websiteId: conversation.websiteId,
+                                        visitorId: conversation.visitorId,
+                                },
+                                event: {
+                                        type: ConversationEventType.VISITOR_BLOCKED,
+                                        actorUserId: user.id,
+                                },
+                        });
+
+                        return {
+                                conversation,
+                                visitor: {
+                                        ...updatedVisitor,
+                                        contact: visitorRecord.contact
 						? {
 								...visitorRecord.contact,
 								metadata: visitorRecord.contact.metadata as ContactMetadata,
@@ -125,22 +141,36 @@ export const visitorRouter = createTRPCRouter({
 				});
 			}
 
-			const updatedVisitor = await unblockVisitor(db, {
-				visitor: visitorRecord,
-				actorUserId: user.id,
-			});
+                        const updatedVisitor = await unblockVisitor(db, {
+                                visitor: visitorRecord,
+                                actorUserId: user.id,
+                        });
 
-			if (!updatedVisitor) {
+                        if (!updatedVisitor) {
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
 					message: "Unable to unblock visitor",
 				});
 			}
 
-			return {
-				conversation,
-				visitor: {
-					...updatedVisitor,
+                        await createConversationEvent({
+                                db,
+                                context: {
+                                        conversationId: conversation.id,
+                                        organizationId: conversation.organizationId,
+                                        websiteId: conversation.websiteId,
+                                        visitorId: conversation.visitorId,
+                                },
+                                event: {
+                                        type: ConversationEventType.VISITOR_UNBLOCKED,
+                                        actorUserId: user.id,
+                                },
+                        });
+
+                        return {
+                                conversation,
+                                visitor: {
+                                        ...updatedVisitor,
 					contact: visitorRecord.contact
 						? {
 								...visitorRecord.contact,

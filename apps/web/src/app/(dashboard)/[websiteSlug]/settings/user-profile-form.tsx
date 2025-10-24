@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
+import { authClient } from "@/lib/auth/client";
 import { useTRPC } from "@/lib/trpc/client";
 
 const avatarValueSchema = z
@@ -64,6 +65,7 @@ export function UserProfileForm({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+	const avatarProgressToastAtRef = useRef(0);
 
 	const form = useForm<UserProfileFormValues>({
 		resolver: zodResolver(userProfileFormSchema),
@@ -80,6 +82,11 @@ export function UserProfileForm({
 		},
 	});
 
+	const avatarUploadToastId = useMemo(
+		() => `profile-avatar-upload-${userId}`,
+		[userId]
+	);
+
 	const { mutateAsync: updateProfile, isPending } = useMutation(
 		trpc.user.updateProfile.mutationOptions({
 			onSuccess: async (updatedUser) => {
@@ -91,6 +98,7 @@ export function UserProfileForm({
 					avatar: updatedUser.image ?? null,
 				});
 				toast.success("Profile updated.");
+				authClient.$store.notify("$sessionSignal");
 			},
 			onError: () => {
 				toast.error("Failed to update your profile. Please try again.");
@@ -103,43 +111,72 @@ export function UserProfileForm({
 	);
 
 	const handleAvatarUpload = useCallback(
-		async (file: File): Promise<Partial<AvatarInputValue>> => {
-			try {
-				const uploadDetails = await createSignedUrl({
-					contentType: file.type,
-					fileName: file.name,
-					path: `users/${userId}/avatars`,
-					scope: {
-						type: "user",
-						userId,
-						organizationId,
-						websiteId: "", // This will be set by the backend
-					},
-				});
+	        async (file: File): Promise<Partial<AvatarInputValue>> => {
+	                try {
+	                        toast.loading("Uploading profile picture…", {
+	                                id: avatarUploadToastId,
+	                        });
+	                        avatarProgressToastAtRef.current = Date.now();
 
-				await uploadToPresignedUrl({
-					file,
-					url: uploadDetails.uploadUrl,
-					headers: { "Content-Type": file.type },
-				});
+	                        const uploadDetails = await createSignedUrl({
+	                                contentType: file.type,
+	                                fileName: file.name,
+	                                path: `users/${userId}/avatars`,
+	                                scope: {
+	                                        type: "user",
+	                                        userId,
+	                                        organizationId,
+	                                        websiteId: "", // This will be set by the backend
+	                                },
+	                                useCdn: true,
+	                        });
 
-				const publicUrl = uploadDetails.uploadUrl.split("?")[0];
+	                        await uploadToPresignedUrl({
+	                                file,
+	                                url: uploadDetails.uploadUrl,
+	                                headers: { "Content-Type": file.type },
+	                                onProgress: (progress) => {
+	                                        const now = Date.now();
+	                                        if (
+	                                                progress >= 1 ||
+	                                                now - avatarProgressToastAtRef.current >= 150
+	                                        ) {
+	                                                avatarProgressToastAtRef.current = now;
+	                                                const percentage = Math.round(progress * 100);
+	                                                toast.loading(`Uploading profile picture… ${percentage}%`, {
+	                                                        id: avatarUploadToastId,
+	                                                });
+	                                        }
+	                                },
+	                        });
 
-				return {
-					url: publicUrl,
-					mimeType: file.type,
-					name: file.name,
-					size: file.size,
-				};
-			} catch (error) {
-				throw new Error(
-					error instanceof Error
-						? error.message
-						: "Failed to upload avatar. Please try again."
-				);
-			}
-		},
-		[createSignedUrl, organizationId, userId]
+	                        const publicUrl = uploadDetails.uploadUrl.split("?")[0];
+
+	                        toast.success("Profile picture uploaded.", {
+	                                id: avatarUploadToastId,
+	                        });
+
+	                        return {
+	                                url: publicUrl,
+	                                mimeType: file.type,
+	                                name: file.name,
+	                                size: file.size,
+	                        };
+	                } catch (error) {
+	                        const uploadError =
+	                                error instanceof Error
+	                                        ? error
+	                                        : new Error("Failed to upload avatar. Please try again.");
+
+	                        toast.error(uploadError.message, {
+	                                id: avatarUploadToastId,
+	                        });
+	                        (uploadError as Error & { handledByToast?: boolean }).handledByToast =
+	                                true;
+	                        throw uploadError;
+	                }
+	        },
+	        [createSignedUrl, organizationId, userId]
 	);
 
 	const onSubmit = useCallback(
@@ -217,7 +254,15 @@ export function UserProfileForm({
 										onBlur={field.onBlur}
 										onChange={field.onChange}
 										onError={(error) => {
-											toast.error(error.message);
+											if (
+												!(
+													error as Error & {
+														handledByToast?: boolean;
+													}
+												)?.handledByToast
+											) {
+												toast.error(error.message);
+											}
 											setIsUploadingAvatar(false);
 										}}
 										onUpload={handleAvatarUpload}
