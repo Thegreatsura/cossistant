@@ -103,12 +103,18 @@ export const supportTextDefinitions = {
 	"component.conversationEvent.statusChanged": {
 		variables: { actorName: "" as string },
 	},
-	"component.conversationEvent.tagAdded": {
-		variables: { actorName: "" as string },
-	},
-	"component.conversationEvent.tagRemoved": {
-		variables: { actorName: "" as string },
-	},
+        "component.conversationEvent.tagAdded": {
+                variables: { actorName: "" as string },
+        },
+        "component.conversationEvent.tagRemoved": {
+                variables: { actorName: "" as string },
+        },
+        "component.conversationEvent.visitorBlocked": {
+                variables: { actorName: "" as string },
+        },
+        "component.conversationEvent.visitorUnblocked": {
+                variables: { actorName: "" as string },
+        },
 	"component.multimodalInput.placeholder": {
 		variables: undefined,
 	},
