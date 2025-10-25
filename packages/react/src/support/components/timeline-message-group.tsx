@@ -39,12 +39,12 @@ export type TimelineMessageGroupProps = {
         availableAIAgents: AvailableAIAgent[];
         availableHumanAgents: AvailableHumanAgent[];
         currentVisitorId?: string;
-        seenByIds?: string[];
-        seenByNames?: string[];
+        seenByIds?: ReadonlyArray<string>;
+        seenByNames?: ReadonlyArray<string>;
 };
 
-const EMPTY_SEEN_BY_IDS: string[] = Object.freeze([]) as string[];
-const EMPTY_SEEN_BY_NAMES: string[] = Object.freeze([]) as string[];
+const EMPTY_SEEN_BY_IDS: ReadonlyArray<string> = Object.freeze([]);
+const EMPTY_SEEN_BY_NAMES: ReadonlyArray<string> = Object.freeze([]);
 
 export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
         items,

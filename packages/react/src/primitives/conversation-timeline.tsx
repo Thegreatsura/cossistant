@@ -31,6 +31,7 @@ export type ConversationTimelineProps = Omit<
 };
 
 const BOTTOM_THRESHOLD_PX = 12;
+const TOP_THRESHOLD_PX = 2;
 
 function getLastItemKey(items: TimelineItemType[]): string | number | null {
         if (items.length === 0) {
@@ -87,6 +88,7 @@ export const ConversationTimeline = (() => {
                                 getLastItemKey(items)
                         );
                         const isPinnedToBottom = React.useRef(true);
+                        const isAtTop = React.useRef(true);
 
 			const renderProps: ConversationTimelineRenderProps = {
 				itemCount: items.length,
@@ -122,14 +124,16 @@ export const ConversationTimeline = (() => {
                                         lastItemKey !== null &&
                                         lastItemKey !== previousLastItemKey.current;
 
-                                if (
+                                const shouldSnapToBottom =
                                         isInitialRender.current ||
-                                        itemsRemoved ||
+                                        (itemsRemoved && isPinnedToBottom.current) ||
                                         (appendedNewItem && isPinnedToBottom.current) ||
-                                        (replacedLastItem && isPinnedToBottom.current)
-                                ) {
+                                        (replacedLastItem && isPinnedToBottom.current);
+
+                                if (shouldSnapToBottom) {
                                         element.scrollTop = element.scrollHeight;
                                         isPinnedToBottom.current = true;
+                                        isAtTop.current = false;
                                 }
 
                                 previousItemCount.current = items.length;
@@ -143,23 +147,19 @@ export const ConversationTimeline = (() => {
                                         const element = e.currentTarget;
                                         const { scrollTop, scrollHeight, clientHeight } = element;
 
-                                        const distanceFromBottom = Math.abs(
-                                                scrollHeight - scrollTop - clientHeight
-                                        );
-                                        isPinnedToBottom.current = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
-
-                                        // Check if scrolled to top
-                                        if (scrollTop === 0 && onScrollStart) {
-                                                onScrollStart();
+                                        const distanceFromBottom =
+                                                scrollHeight - scrollTop - clientHeight;
+                                        const pinnedNow = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
+                                        if (pinnedNow && !isPinnedToBottom.current) {
+                                                onScrollEnd?.();
                                         }
+                                        isPinnedToBottom.current = pinnedNow;
 
-                                        // Check if scrolled to bottom
-                                        if (
-                                                distanceFromBottom <= BOTTOM_THRESHOLD_PX &&
-                                                onScrollEnd
-                                        ) {
-                                                onScrollEnd();
+                                        const atTop = scrollTop <= TOP_THRESHOLD_PX;
+                                        if (atTop && !isAtTop.current) {
+                                                onScrollStart?.();
                                         }
+                                        isAtTop.current = atTop;
                                 },
                                 [onScrollStart, onScrollEnd]
                         );

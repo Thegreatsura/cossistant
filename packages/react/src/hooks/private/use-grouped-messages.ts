@@ -74,7 +74,7 @@ const getSenderIdAndTypeFromTimelineItem = (
 	};
 };
 
-const EMPTY_STRING_ARRAY: string[] = Object.freeze([]) as string[];
+const EMPTY_STRING_ARRAY: ReadonlyArray<string> = Object.freeze([]);
 
 // Helper function to group timeline items (messages only, events stay separate)
 const groupTimelineItems = (
@@ -244,7 +244,7 @@ export const useGroupedMessages = ({
                         buildTimelineReadReceiptData(seenData, items);
 
                 // Cache for turning seen sets into stable arrays across renders
-                const seenByArrayCache = new Map<string, string[]>();
+                const seenByArrayCache = new Map<string, ReadonlyArray<string>>();
 
                 return {
                         items: groupedItems,
@@ -260,7 +260,7 @@ export const useGroupedMessages = ({
 				return seenBy ? seenBy.has(currentViewerId) : false;
 			},
 
-                        getMessageSeenBy: (messageId: string): string[] => {
+                        getMessageSeenBy: (messageId: string): ReadonlyArray<string> => {
                                 if (seenByArrayCache.has(messageId)) {
                                         return seenByArrayCache.get(messageId) ?? EMPTY_STRING_ARRAY;
                                 }
@@ -271,7 +271,9 @@ export const useGroupedMessages = ({
                                         return EMPTY_STRING_ARRAY;
                                 }
 
-                                const result = Array.from(seenBy);
+                                const result = Object.freeze(
+                                        Array.from(seenBy)
+                                ) as ReadonlyArray<string>;
                                 seenByArrayCache.set(messageId, result);
                                 return result;
                         },

@@ -29,7 +29,7 @@ export type TimelineItemGroupRenderProps = {
 
 	// Seen status
 	hasBeenSeenByViewer?: boolean;
-	seenByIds?: string[]; // IDs of users who have seen the last item in group
+        seenByIds?: ReadonlyArray<string>; // IDs of users who have seen the last item in group
 };
 
 export type TimelineItemGroupProps = Omit<
@@ -48,7 +48,7 @@ export type TimelineItemGroupProps = Omit<
 	viewerType?: SenderType; // Type of the current viewer
 
 	// Seen data
-	seenByIds?: string[]; // IDs of users who have seen these timeline items
+        seenByIds?: ReadonlyArray<string>; // IDs of users who have seen these timeline items
 	lastReadItemIds?: Map<string, string>; // Map of userId -> lastItemId they read
 };
 
@@ -65,9 +65,9 @@ export const TimelineItemGroup = (() => {
 				children,
 				className,
 				asChild = false,
-				items = [],
-				viewerId,
-				seenByIds = [],
+                                items = [],
+                                viewerId,
+                                seenByIds = [] as ReadonlyArray<string>,
 				lastReadItemIds,
 				...restProps
 			},
@@ -117,9 +117,9 @@ export const TimelineItemGroup = (() => {
 			const isTeamMember = senderType === "team_member";
 
 			// Check if viewer has seen these timeline items
-			const hasBeenSeenByViewer = viewerId
-				? seenByIds.includes(viewerId)
-				: undefined;
+                        const hasBeenSeenByViewer = viewerId
+                                ? seenByIds.includes(viewerId)
+                                : undefined;
 
 			const renderProps: TimelineItemGroupRenderProps = {
 				senderType,
@@ -313,13 +313,13 @@ export type TimelineItemGroupSeenIndicatorProps = Omit<
 > & {
 	children?:
 		| React.ReactNode
-		| ((props: {
-				seenByIds: string[];
-				hasBeenSeen: boolean;
-		  }) => React.ReactNode);
-	asChild?: boolean;
-	className?: string;
-	seenByIds?: string[];
+                | ((props: {
+                                seenByIds: ReadonlyArray<string>;
+                                hasBeenSeen: boolean;
+                  }) => React.ReactNode);
+        asChild?: boolean;
+        className?: string;
+        seenByIds?: ReadonlyArray<string>;
 };
 
 /**
@@ -333,10 +333,16 @@ export const TimelineItemGroupSeenIndicator = (() => {
 		TimelineItemGroupSeenIndicatorProps
 	>(
 		(
-			{ children, className, asChild = false, seenByIds = [], ...props },
-			ref
-		) => {
-			const hasBeenSeen = seenByIds.length > 0;
+                        {
+                                children,
+                                className,
+                                asChild = false,
+                                seenByIds = [] as ReadonlyArray<string>,
+                                ...props
+                        },
+                        ref
+                ) => {
+                        const hasBeenSeen = seenByIds.length > 0;
 			const content =
 				typeof children === "function"
 					? children({ seenByIds, hasBeenSeen })

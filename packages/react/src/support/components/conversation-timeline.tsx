@@ -4,7 +4,7 @@ import type {
 	TimelinePartEvent,
 } from "@cossistant/types/api/timeline-item";
 import type React from "react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useConversationTimeline } from "../../hooks/use-conversation-timeline";
 import {
 	ConversationTimelineContainer,
@@ -81,30 +81,33 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
                 return map;
         }, [availableHumanAgents, availableAIAgents]);
 
-        const getSeenByNames = (ids: string[] = EMPTY_SEEN_BY_IDS): string[] => {
-                if (ids.length === 0 || seenNameLookup.size === 0) {
-                        return EMPTY_SEEN_BY_NAMES;
-                }
-
-                const uniqueNames = new Set<string>();
-                const names: string[] = [];
-
-                for (const id of ids) {
-                        const name = seenNameLookup.get(id);
-                        if (!name || uniqueNames.has(name)) {
-                                continue;
+        const getSeenByNames = useCallback(
+                (ids: string[] = EMPTY_SEEN_BY_IDS): string[] => {
+                        if (ids.length === 0 || seenNameLookup.size === 0) {
+                                return EMPTY_SEEN_BY_NAMES;
                         }
 
-                        uniqueNames.add(name);
-                        names.push(name);
-                }
+                        const uniqueNames = new Set<string>();
+                        const names: string[] = [];
 
-                if (names.length === 0) {
-                        return EMPTY_SEEN_BY_NAMES;
-                }
+                        for (const id of ids) {
+                                const name = seenNameLookup.get(id);
+                                if (!name || uniqueNames.has(name)) {
+                                        continue;
+                                }
 
-                return names;
-        };
+                                uniqueNames.add(name);
+                                names.push(name);
+                        }
+
+                        if (names.length === 0) {
+                                return EMPTY_SEEN_BY_NAMES;
+                        }
+
+                        return names;
+                },
+                [seenNameLookup]
+        );
 
 	return (
 		<PrimitiveConversationTimeline
@@ -149,7 +152,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
                                                         : EMPTY_SEEN_BY_IDS;
                                         const seenByNames =
                                                 seenByIds.length > 0
-                                                        ? getSeenByNames(seenByIds)
+                                                        ? getSeenByNames(seenByIds as string[])
                                                         : EMPTY_SEEN_BY_NAMES;
 
                                         // Use first timeline item ID as stable key
