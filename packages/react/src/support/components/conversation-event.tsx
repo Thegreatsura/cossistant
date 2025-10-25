@@ -5,6 +5,7 @@ import type {
 } from "@cossistant/types";
 import { motion } from "motion/react";
 import type React from "react";
+import { memo } from "react";
 import { useSupportText } from "../text";
 import { Avatar } from "./avatar";
 import { CossistantLogo } from "./cossistant-branding";
@@ -16,11 +17,11 @@ export type ConversationEventProps = {
 	createdAt?: string;
 };
 
-export const ConversationEvent: React.FC<ConversationEventProps> = ({
-	event,
-	availableAIAgents,
-	createdAt,
-	availableHumanAgents,
+const ConversationEventComponent: React.FC<ConversationEventProps> = ({
+        event,
+        availableAIAgents,
+        createdAt,
+        availableHumanAgents,
 }) => {
 	const text = useSupportText();
 	const isAI = event.actorAiAgentId !== null;
@@ -132,3 +133,77 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		</motion.div>
 	);
 };
+
+const areAgentsEqual = <T extends { id: string; name?: string | null; image?: string | null }>(
+        previous: T[],
+        next: T[]
+): boolean => {
+        if (previous === next) {
+                return true;
+        }
+
+        if (previous.length !== next.length) {
+                return false;
+        }
+
+        for (let index = 0; index < previous.length; index++) {
+                const prevAgent = previous[index];
+                const nextAgent = next[index];
+
+                if (
+                        prevAgent.id !== nextAgent.id ||
+                        (prevAgent.name ?? null) !== (nextAgent.name ?? null) ||
+                        (prevAgent.image ?? null) !== (nextAgent.image ?? null)
+                ) {
+                        return false;
+                }
+        }
+
+        return true;
+};
+
+const areEventsEqual = (previous: TimelinePartEvent, next: TimelinePartEvent) => {
+        if (previous === next) {
+                return true;
+        }
+
+        return (
+                previous.type === next.type &&
+                previous.eventType === next.eventType &&
+                (previous.actorAiAgentId ?? null) === (next.actorAiAgentId ?? null) &&
+                (previous.actorUserId ?? null) === (next.actorUserId ?? null) &&
+                (previous.targetAiAgentId ?? null) === (next.targetAiAgentId ?? null) &&
+                (previous.targetUserId ?? null) === (next.targetUserId ?? null) &&
+                (previous.message ?? null) === (next.message ?? null)
+        );
+};
+
+const areConversationEventPropsEqual = (
+        previous: ConversationEventProps,
+        next: ConversationEventProps
+) => {
+        if (!areEventsEqual(previous.event, next.event)) {
+                return false;
+        }
+
+        if (!areAgentsEqual(previous.availableAIAgents, next.availableAIAgents)) {
+                return false;
+        }
+
+        if (!areAgentsEqual(previous.availableHumanAgents, next.availableHumanAgents)) {
+                return false;
+        }
+
+        if ((previous.createdAt ?? null) !== (next.createdAt ?? null)) {
+                return false;
+        }
+
+        return true;
+};
+
+export const ConversationEvent = memo(
+        ConversationEventComponent,
+        areConversationEventPropsEqual
+);
+
+ConversationEvent.displayName = "ConversationEvent";

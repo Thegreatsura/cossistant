@@ -74,9 +74,11 @@ const getSenderIdAndTypeFromTimelineItem = (
 	};
 };
 
+const EMPTY_STRING_ARRAY: string[] = Object.freeze([]) as string[];
+
 // Helper function to group timeline items (messages only, events stay separate)
 const groupTimelineItems = (
-	items: TimelineItem[]
+        items: TimelineItem[]
 ): Array<GroupedMessage | TimelineEventItem> => {
 	const result: Array<GroupedMessage | TimelineEventItem> = [];
 	let currentGroup: GroupedMessage | null = null;
@@ -229,22 +231,25 @@ const buildTimelineReadReceiptData = (
  * indicators.
  */
 export const useGroupedMessages = ({
-	items,
-	seenData = [],
-	currentViewerId,
-	viewerType,
+        items,
+        seenData = [],
+        currentViewerId,
+        viewerType,
 }: UseGroupedMessagesOptions) => {
-	return useMemo(() => {
-		const groupedItems = groupTimelineItems(items);
+        return useMemo(() => {
+                const groupedItems = groupTimelineItems(items);
 
-		// Build read receipt data
-		const { seenByMap, lastReadMessageMap, unreadCountMap } =
-			buildTimelineReadReceiptData(seenData, items);
+                // Build read receipt data
+                const { seenByMap, lastReadMessageMap, unreadCountMap } =
+                        buildTimelineReadReceiptData(seenData, items);
 
-		return {
-			items: groupedItems,
-			seenByMap,
-			lastReadMessageMap,
+                // Cache for turning seen sets into stable arrays across renders
+                const seenByArrayCache = new Map<string, string[]>();
+
+                return {
+                        items: groupedItems,
+                        seenByMap,
+                        lastReadMessageMap,
 			unreadCountMap,
 
 			isMessageSeenByViewer: (messageId: string): boolean => {
@@ -255,13 +260,24 @@ export const useGroupedMessages = ({
 				return seenBy ? seenBy.has(currentViewerId) : false;
 			},
 
-			getMessageSeenBy: (messageId: string): string[] => {
-				const seenBy = seenByMap.get(messageId);
-				return seenBy ? Array.from(seenBy) : [];
-			},
+                        getMessageSeenBy: (messageId: string): string[] => {
+                                if (seenByArrayCache.has(messageId)) {
+                                        return seenByArrayCache.get(messageId) ?? EMPTY_STRING_ARRAY;
+                                }
 
-			getLastReadMessageId: (userId: string): string | undefined =>
-				lastReadMessageMap.get(userId),
+                                const seenBy = seenByMap.get(messageId);
+                                if (!seenBy || seenBy.size === 0) {
+                                        seenByArrayCache.set(messageId, EMPTY_STRING_ARRAY);
+                                        return EMPTY_STRING_ARRAY;
+                                }
+
+                                const result = Array.from(seenBy);
+                                seenByArrayCache.set(messageId, result);
+                                return result;
+                        },
+
+                        getLastReadMessageId: (userId: string): string | undefined =>
+                                lastReadMessageMap.get(userId),
 
 			isLastReadMessage: (messageId: string, userId: string): boolean =>
 				lastReadMessageMap.get(userId) === messageId,
