@@ -13,7 +13,7 @@ import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useUserSession } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
-import { formatTimeAgo } from "@/lib/date";
+import { formatTimeAgo, getWaitingSinceLabel } from "@/lib/date";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
@@ -139,40 +139,7 @@ export function ConversationItem({
                         return null;
                 }
 
-                const now = Date.now();
-                const diffMs = Math.max(0, now - lastTimelineItemCreatedAtMs);
-                const minute = 60 * 1_000;
-                const hour = 60 * minute;
-                const day = 24 * hour;
-                const week = 7 * day;
-                const month = 30 * day;
-                const year = 365 * day;
-
-                if (diffMs < minute) {
-                        return "<1m";
-                }
-
-                if (diffMs < hour) {
-                        return `${Math.floor(diffMs / minute)}m`;
-                }
-
-                if (diffMs < day) {
-                        return `${Math.floor(diffMs / hour)}h`;
-                }
-
-                if (diffMs < week) {
-                        return `${Math.floor(diffMs / day)}d`;
-                }
-
-                if (diffMs < month) {
-                        return `${Math.floor(diffMs / week)}w`;
-                }
-
-                if (diffMs < year) {
-                        return `${Math.floor(diffMs / month)}mo`;
-                }
-
-                return `${Math.floor(diffMs / year)}y`;
+                return getWaitingSinceLabel(new Date(lastTimelineItemCreatedAtMs));
         }, [isWaitingForResponse, lastTimelineItemCreatedAtMs]);
 
         const headerLastSeenAt = header.lastSeenAt
