@@ -220,7 +220,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 					onSortingChange={handleSortingChange}
 					sorting={sorting}
 				/>
-				<div className="flex flex-col items-center justify-between gap-3 rounded-md border border-primary/10 bg-background/60 px-4 py-3 sm:flex-row">
+				<div className="flex flex-col items-center justify-between gap-3 px-5 py-3 sm:flex-row">
 					<div className="text-muted-foreground text-sm">
 						{totalCount === 0
 							? "No contacts to display"
@@ -353,13 +353,13 @@ function ContactsTable({
 	const showSkeleton = isLoading && data.length === 0;
 
 	return (
-		<div className="overflow-hidden rounded-md border border-primary/10">
+		<div className="overflow-hidden">
 			<Table>
-				<TableHeader className="bg-muted/40">
+				<TableHeader className="bg-background">
 					{table.getHeaderGroups().map((headerGroup) => (
 						<TableRow className="hover:bg-muted/40" key={headerGroup.id}>
 							{headerGroup.headers.map((header) => (
-								<TableHead className="px-4 py-3" key={header.id}>
+								<TableHead className="px-5 py-3" key={header.id}>
 									{header.isPlaceholder
 										? null
 										: flexRender(
@@ -375,7 +375,7 @@ function ContactsTable({
 					{showSkeleton ? (
 						Array.from({ length: 5 }).map((_, index) => (
 							<TableRow key={`skeleton-${index}`}>
-								<TableCell className="px-4 py-4" colSpan={4}>
+								<TableCell className="px-5 py-4" colSpan={4}>
 									<Skeleton className="h-6 w-full" />
 								</TableCell>
 							</TableRow>
@@ -396,7 +396,7 @@ function ContactsTable({
 								tabIndex={0}
 							>
 								{row.getVisibleCells().map((cell) => (
-									<TableCell className="px-4 py-3" key={cell.id}>
+									<TableCell className="px-5 py-3" key={cell.id}>
 										{flexRender(cell.column.columnDef.cell, cell.getContext())}
 									</TableCell>
 								))}
@@ -487,7 +487,7 @@ function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
 
 	return (
 		<div className="flex h-full flex-col gap-5 overflow-y-auto pr-1 pb-6">
-			<div className="flex items-center gap-3 rounded-md border border-primary/10 bg-background/80 p-4">
+			<div className="flex items-center gap-3 p-4">
 				<Avatar
 					fallbackName={contact.name ?? contact.email ?? "Contact"}
 					lastOnlineAt={null}
@@ -505,7 +505,7 @@ function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
 					) : null}
 				</div>
 			</div>
-			<section className="space-y-3 rounded-md border border-primary/10 bg-background/60 p-4">
+			<section className="space-y-3 p-4">
 				<h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
 					Contact details
 				</h3>
@@ -533,7 +533,7 @@ function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
 					) : null}
 				</dl>
 			</section>
-			<section className="space-y-3 rounded-md border border-primary/10 bg-background/60 p-4">
+			<section className="space-y-3 p-4">
 				<h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
 					Metadata
 				</h3>
@@ -557,7 +557,7 @@ function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
 					</p>
 				)}
 			</section>
-			<section className="space-y-3 rounded-md border border-primary/10 bg-background/60 p-4">
+			<section className="space-y-3 p-4">
 				<div className="flex items-center justify-between">
 					<h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
 						Associated visitors

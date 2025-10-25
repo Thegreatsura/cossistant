@@ -205,20 +205,17 @@ function ConversationTimelineListComponent({
 const areConversationTimelinePropsEqual = (
 	prev: ConversationTimelineListProps,
 	next: ConversationTimelineListProps
-) => {
-	return (
-		prev.ref === next.ref &&
-		prev.items === next.items &&
-		prev.teamMembers === next.teamMembers &&
-		prev.availableAIAgents === next.availableAIAgents &&
-		prev.seenData === next.seenData &&
-		prev.currentUserId === next.currentUserId &&
-		prev.conversationId === next.conversationId &&
-		prev.className === next.className &&
-		prev.onFetchMoreIfNeeded === next.onFetchMoreIfNeeded &&
-		prev.visitor === next.visitor
-	);
-};
+) =>
+	prev.ref === next.ref &&
+	prev.items === next.items &&
+	prev.teamMembers === next.teamMembers &&
+	prev.availableAIAgents === next.availableAIAgents &&
+	prev.seenData === next.seenData &&
+	prev.currentUserId === next.currentUserId &&
+	prev.conversationId === next.conversationId &&
+	prev.className === next.className &&
+	prev.onFetchMoreIfNeeded === next.onFetchMoreIfNeeded &&
+	prev.visitor === next.visitor;
 
 export const ConversationTimelineList = memo(
 	ConversationTimelineListComponent,

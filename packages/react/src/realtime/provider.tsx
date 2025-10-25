@@ -380,6 +380,7 @@ export function RealtimeProvider({
 	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
 	const lastHeartbeatRef = useRef<number>(Date.now());
+	const hasOpenedRef = useRef(false);
 	const [connectionError, setConnectionError] = useState<Error | null>(null);
 	const [lastEvent, setLastEvent] = useState<AnyRealtimeEvent | null>(null);
 	const [connectionId, setConnectionId] = useState<string | null>(null);
@@ -389,6 +390,10 @@ export function RealtimeProvider({
 
 	const canConnect = Boolean(autoConnect && socketUrl);
 	const connectionUrl = canConnect ? socketUrl : null;
+
+	useEffect(() => {
+		hasOpenedRef.current = false;
+	}, [connectionUrl]);
 
 	const {
 		sendMessage,
@@ -423,6 +428,7 @@ export function RealtimeProvider({
 			},
 			retryOnError: false,
 			onOpen: () => {
+				hasOpenedRef.current = true;
 				setConnectionError(null);
 				lastHeartbeatRef.current = Date.now();
 				onConnect?.();
@@ -432,6 +438,26 @@ export function RealtimeProvider({
 				onDisconnect?.();
 			},
 			onError: (event) => {
+				if (!canConnect) {
+					return;
+				}
+
+				if (!hasOpenedRef.current) {
+					const socketLike = event.target;
+					const isBrowserSocket =
+						typeof WebSocket !== "undefined" && socketLike instanceof WebSocket;
+					const socketState = isBrowserSocket
+						? socketLike.readyState
+						: undefined;
+
+					if (
+						socketState === WebSocket.CLOSING ||
+						socketState === WebSocket.CLOSED
+					) {
+						return;
+					}
+				}
+
 				const err = new Error(`WebSocket error: ${event.type}`);
 				setConnectionError(err);
 				onError?.(err);

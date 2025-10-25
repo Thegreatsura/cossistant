@@ -33,7 +33,7 @@ export function TopbarItem({
 		"hover:bg-background-100 hover:bg-background-300 hover:text-primary",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 		{
-			"bg-background-200 text-primary dark:bg-background-300": active,
+			"bg-background-300 text-primary dark:bg-background-300": active,
 			"px-1 md:px-2": hideLabelOnMobile,
 		},
 		className
