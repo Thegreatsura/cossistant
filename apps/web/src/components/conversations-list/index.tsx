@@ -25,6 +25,8 @@ export function ConversationsList({
 	isLeftSidebarOpen,
 	onToggleLeftSidebar,
 }: Props) {
+	const showWaitingForReplyPill = selectedConversationStatus === null;
+
 	return (
 		<Page className="px-0">
 			<PageHeader className="px-4">
@@ -62,6 +64,7 @@ export function ConversationsList({
 				<VirtualizedConversations
 					basePath={basePath}
 					conversations={conversations}
+					showWaitingForReplyPill={showWaitingForReplyPill}
 					websiteSlug={websiteSlug}
 				/>
 			)}

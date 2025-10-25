@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { useWebsite } from "@/contexts/website";
 import { useConversationHeaders } from "@/data/use-conversation-headers";
+import { isInboundVisitorMessage } from "@/lib/conversation-messages";
 
 type ConversationStatusFilter = ConversationStatus | "archived" | null;
 
@@ -96,6 +97,23 @@ function filterAndProcessConversations(
 	const filteredConversations: ConversationHeader[] = [];
 	const conversationMap = new Map<string, ConversationHeader>();
 	const indexMap = new Map<string, number>();
+	const sortMetadata = new Map<
+		string,
+		{
+			lastInboundAt: number;
+			lastActivityAt: number;
+		}
+	>();
+
+	const toTimestamp = (value: string | null | undefined): number => {
+		if (!value) {
+			return Number.NEGATIVE_INFINITY;
+		}
+
+		const parsed = Date.parse(value);
+
+		return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+	};
 
 	// Single pass through conversations
 	for (const conversation of conversations) {
@@ -110,14 +128,51 @@ function filterAndProcessConversations(
 		// Add to filtered list if matches all filters
 		if (matchesStatus && matchesViewFilter) {
 			filteredConversations.push(conversation);
+
+			const lastActivityFromMessage = toTimestamp(conversation.lastMessageAt);
+			const lastActivityAt =
+				lastActivityFromMessage > Number.NEGATIVE_INFINITY
+					? lastActivityFromMessage
+					: toTimestamp(conversation.updatedAt);
+
+			const lastTimelineItem = conversation.lastTimelineItem;
+			const lastInboundAt = isInboundVisitorMessage(lastTimelineItem)
+				? toTimestamp(lastTimelineItem.createdAt)
+				: Number.NEGATIVE_INFINITY;
+
+			sortMetadata.set(conversation.id, {
+				lastInboundAt,
+				lastActivityAt,
+			});
 		}
 	}
 
 	// Sort by lastMessageAt (most recent first) - in-place for efficiency
 	filteredConversations.sort((a, b) => {
-		const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-		const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-		return bTime - aTime;
+		const aMeta = sortMetadata.get(a.id);
+		const bMeta = sortMetadata.get(b.id);
+		const aInbound = aMeta?.lastInboundAt ?? Number.NEGATIVE_INFINITY;
+		const bInbound = bMeta?.lastInboundAt ?? Number.NEGATIVE_INFINITY;
+		const aActivity = aMeta?.lastActivityAt ?? Number.NEGATIVE_INFINITY;
+		const bActivity = bMeta?.lastActivityAt ?? Number.NEGATIVE_INFINITY;
+
+		if (aInbound < bInbound) {
+			return 1;
+		}
+
+		if (aInbound > bInbound) {
+			return -1;
+		}
+
+		if (aActivity < bActivity) {
+			return 1;
+		}
+
+		if (aActivity > bActivity) {
+			return -1;
+		}
+
+		return b.id.localeCompare(a.id);
 	});
 
 	// Build maps after sorting for correct indexes

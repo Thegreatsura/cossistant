@@ -10,6 +10,7 @@ import { useConversationKeyboardNavigation } from "./use-conversation-keyboard-n
 type ConversationsListProps = {
 	basePath: string;
 	conversations: ConversationHeader[];
+	showWaitingForReplyPill: boolean;
 	websiteSlug: string;
 };
 
@@ -21,12 +22,14 @@ const VirtualConversationItem = memo(
 		href,
 		websiteSlug,
 		focused,
+		showWaitingForReplyPill,
 		onMouseEnter,
 	}: {
 		conversation: ConversationHeader;
 		href: string;
 		websiteSlug: string;
 		focused: boolean;
+		showWaitingForReplyPill: boolean;
 		onMouseEnter: () => void;
 	}) => (
 		<ConversationItem
@@ -35,6 +38,7 @@ const VirtualConversationItem = memo(
 			href={href}
 			key={conversation.id}
 			setFocused={onMouseEnter}
+			showWaitingForReplyPill={showWaitingForReplyPill}
 			websiteSlug={websiteSlug}
 		/>
 	)
@@ -45,6 +49,7 @@ VirtualConversationItem.displayName = "VirtualConversationItem";
 export function VirtualizedConversations({
 	basePath,
 	conversations,
+	showWaitingForReplyPill,
 	websiteSlug,
 }: ConversationsListProps) {
 	const parentRef = useRef<HTMLDivElement>(null);
@@ -101,6 +106,7 @@ export function VirtualizedConversations({
 								focused={focusedIndex === virtualItem.index}
 								href={href}
 								onMouseEnter={() => handleMouseEnter(virtualItem.index)}
+								showWaitingForReplyPill={showWaitingForReplyPill}
 								websiteSlug={websiteSlug}
 							/>
 						</div>

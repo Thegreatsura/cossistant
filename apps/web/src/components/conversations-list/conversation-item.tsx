@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import { ConversationStatus } from "@cossistant/types";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -12,7 +13,8 @@ import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useUserSession } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
-import { formatTimeAgo } from "@/lib/date";
+import { isInboundVisitorMessage } from "@/lib/conversation-messages";
+import { formatTimeAgo, getWaitingSinceLabel } from "@/lib/date";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
@@ -25,6 +27,7 @@ type Props = {
 	websiteSlug: string;
 	focused?: boolean;
 	setFocused?: () => void;
+	showWaitingForReplyPill?: boolean;
 };
 
 export function ConversationItem({
@@ -33,6 +36,7 @@ export function ConversationItem({
 	websiteSlug,
 	focused = false,
 	setFocused,
+	showWaitingForReplyPill = false,
 }: Props) {
 	const queryNormalizer = useQueryNormalizer();
 	const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
@@ -55,19 +59,17 @@ export function ConversationItem({
 		RouterOutputs["conversation"]["getVisitorById"] | undefined
 	>(() => {
 		if (!header.visitorId) {
-			return headerVisitor;
+			return;
 		}
 
-		return (
-			queryNormalizer.getObjectById<
-				RouterOutputs["conversation"]["getVisitorById"]
-			>(header.visitorId) ?? headerVisitor
-		);
-	}, [header.visitorId, headerVisitor, queryNormalizer]);
+		return queryNormalizer.getObjectById<
+			RouterOutputs["conversation"]["getVisitorById"]
+		>(header.visitorId);
+	}, [header.visitorId, queryNormalizer]);
 
 	const visitorQuery = useQuery({
 		...visitorQueryOptions,
-		enabled: Boolean(header.visitorId) && !headerVisitor,
+		enabled: Boolean(header.visitorId),
 		staleTime: Number.POSITIVE_INFINITY,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
@@ -113,6 +115,26 @@ export function ConversationItem({
 	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
 		? new Date(lastTimelineItem.createdAt)
 		: null;
+	const shouldDisplayWaitingPill =
+		showWaitingForReplyPill &&
+		header.status === ConversationStatus.OPEN &&
+		!header.deletedAt;
+
+	const inboundWaitingTimelineItem = useMemo(() => {
+		if (!shouldDisplayWaitingPill) {
+			return null;
+		}
+
+		return isInboundVisitorMessage(lastTimelineItem) ? lastTimelineItem : null;
+	}, [lastTimelineItem, shouldDisplayWaitingPill]);
+
+	const waitingSinceLabel = useMemo(() => {
+		if (!inboundWaitingTimelineItem) {
+			return null;
+		}
+
+		return getWaitingSinceLabel(new Date(inboundWaitingTimelineItem.createdAt));
+	}, [inboundWaitingTimelineItem?.createdAt]);
 
 	const headerLastSeenAt = header.lastSeenAt
 		? new Date(header.lastSeenAt)
@@ -182,6 +204,10 @@ export function ConversationItem({
 						status={header.status}
 						visitorId={header.visitorId}
 					/>
+				) : waitingSinceLabel ? (
+					<span className="shrink-0 rounded-full bg-cossistant-orange/10 px-2 py-0.5 font-medium text-[11px] text-cossistant-orange uppercase leading-none">
+						Waiting {waitingSinceLabel}
+					</span>
 				) : lastTimelineItemCreatedAt ? (
 					<span className="shrink-0 pr-2 text-primary/40 text-xs">
 						{formatTimeAgo(lastTimelineItemCreatedAt)}
