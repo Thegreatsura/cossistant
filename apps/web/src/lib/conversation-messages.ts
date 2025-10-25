@@ -2,11 +2,13 @@ import { ConversationTimelineType, type TimelineItem } from "@cossistant/types";
 
 export function isInboundVisitorMessage(
         timelineItem: TimelineItem | null | undefined
-): timelineItem is TimelineItem {
+): timelineItem is TimelineItem & {
+        type: ConversationTimelineType.MESSAGE;
+} {
         return (
-                Boolean(timelineItem) &&
+                timelineItem != null &&
                 timelineItem.type === ConversationTimelineType.MESSAGE &&
-                Boolean(timelineItem.visitorId) &&
+                !!timelineItem.visitorId &&
                 !timelineItem.userId &&
                 !timelineItem.aiAgentId
         );

@@ -117,13 +117,9 @@ export function ConversationItem({
         const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
                 ? new Date(lastTimelineItem.createdAt)
                 : null;
-        const lastTimelineItemCreatedAtMs =
-                lastTimelineItemCreatedAt?.getTime() ?? null;
-
         const shouldDisplayWaitingPill =
                 showWaitingForReplyPill &&
                 header.status === ConversationStatus.OPEN &&
-                header.status !== ConversationStatus.SPAM &&
                 !header.deletedAt;
 
         const inboundWaitingTimelineItem = useMemo(() => {
@@ -135,8 +131,6 @@ export function ConversationItem({
                         ? lastTimelineItem
                         : null;
         }, [lastTimelineItem, shouldDisplayWaitingPill]);
-
-        const isWaitingForResponse = inboundWaitingTimelineItem !== null;
 
         const waitingSinceLabel = useMemo(() => {
                 if (!inboundWaitingTimelineItem) {

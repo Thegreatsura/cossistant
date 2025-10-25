@@ -6,8 +6,6 @@ import {
         differenceInYears,
         format,
         isAfter,
-        isToday,
-        isYesterday,
 } from "date-fns";
 
 export function formatTimeAgo(date: Date): string {
@@ -28,11 +26,7 @@ export function formatTimeAgo(date: Date): string {
 		// Format the time based on user's locale preference
 		const timeFormat = uses12HourFormat ? "h:mm a" : "HH:mm";
 
-		if (isToday(date)) {
-			return format(date, timeFormat);
-		}
-
-		return format(date, timeFormat);
+                return format(date, timeFormat);
 	}
 
 	if (diffDays < 7) {
