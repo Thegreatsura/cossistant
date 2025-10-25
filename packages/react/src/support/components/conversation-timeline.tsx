@@ -28,8 +28,8 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
         return eventPart || null;
 }
 
-const EMPTY_SEEN_BY_IDS: string[] = Object.freeze([]) as string[];
-const EMPTY_SEEN_BY_NAMES: string[] = Object.freeze([]) as string[];
+const EMPTY_SEEN_BY_IDS: ReadonlyArray<string> = Object.freeze([]);
+const EMPTY_SEEN_BY_NAMES: ReadonlyArray<string> = Object.freeze([]);
 
 export type ConversationTimelineProps = {
         conversationId: string;
@@ -82,7 +82,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
         }, [availableHumanAgents, availableAIAgents]);
 
         const getSeenByNames = useCallback(
-                (ids: string[] = EMPTY_SEEN_BY_IDS): string[] => {
+                (ids: ReadonlyArray<string> = EMPTY_SEEN_BY_IDS): ReadonlyArray<string> => {
                         if (ids.length === 0 || seenNameLookup.size === 0) {
                                 return EMPTY_SEEN_BY_NAMES;
                         }
@@ -104,7 +104,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
                                 return EMPTY_SEEN_BY_NAMES;
                         }
 
-                        return names;
+                        return Object.freeze(names);
                 },
                 [seenNameLookup]
         );
@@ -152,7 +152,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
                                                         : EMPTY_SEEN_BY_IDS;
                                         const seenByNames =
                                                 seenByIds.length > 0
-                                                        ? getSeenByNames(seenByIds as string[])
+                                                        ? getSeenByNames(seenByIds)
                                                         : EMPTY_SEEN_BY_NAMES;
 
                                         // Use first timeline item ID as stable key
