@@ -35,37 +35,37 @@ const SEEN_ANIMATION = {
 } as const;
 
 export type TimelineMessageGroupProps = {
-        items: TimelineItem[];
-        availableAIAgents: AvailableAIAgent[];
-        availableHumanAgents: AvailableHumanAgent[];
-        currentVisitorId?: string;
-        seenByIds?: ReadonlyArray<string>;
-        seenByNames?: ReadonlyArray<string>;
+	items: TimelineItem[];
+	availableAIAgents: AvailableAIAgent[];
+	availableHumanAgents: AvailableHumanAgent[];
+	currentVisitorId?: string;
+	seenByIds?: readonly string[];
+	seenByNames?: readonly string[];
 };
 
-const EMPTY_SEEN_BY_IDS: ReadonlyArray<string> = Object.freeze([]);
-const EMPTY_SEEN_BY_NAMES: ReadonlyArray<string> = Object.freeze([]);
+const EMPTY_SEEN_BY_IDS: readonly string[] = Object.freeze([]);
+const EMPTY_SEEN_BY_NAMES: readonly string[] = Object.freeze([]);
 
 export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
-        items,
-        availableAIAgents,
-        availableHumanAgents,
-        currentVisitorId,
-        seenByIds = EMPTY_SEEN_BY_IDS,
-        seenByNames = EMPTY_SEEN_BY_NAMES,
+	items,
+	availableAIAgents,
+	availableHumanAgents,
+	currentVisitorId,
+	seenByIds = EMPTY_SEEN_BY_IDS,
+	seenByNames = EMPTY_SEEN_BY_NAMES,
 }) => {
-        // Get agent info for the sender
-        const firstItem = items[0];
-        const humanAgent = availableHumanAgents.find(
-                (agent) => agent.id === firstItem?.userId
-        );
-        const aiAgent = availableAIAgents.find(
-                (agent) => agent.id === firstItem?.aiAgentId
-        );
+	// Get agent info for the sender
+	const firstItem = items[0];
+	const humanAgent = availableHumanAgents.find(
+		(agent) => agent.id === firstItem?.userId
+	);
+	const aiAgent = availableAIAgents.find(
+		(agent) => agent.id === firstItem?.aiAgentId
+	);
 
-        if (items.length === 0) {
-                return null;
-        }
+	if (items.length === 0) {
+		return null;
+	}
 
 	const hasSeenIndicator = seenByIds.length > 0 && seenByNames.length > 0;
 

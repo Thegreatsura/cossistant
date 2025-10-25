@@ -117,7 +117,7 @@ function reconcileOptimisticTimelineItemInInfiniteData(
 			const candidateTime = new Date(candidate.createdAt).getTime();
 			const itemTime = new Date(item.createdAt).getTime();
 
-			if (!Number.isFinite(candidateTime) || !Number.isFinite(itemTime)) {
+			if (!(Number.isFinite(candidateTime) && Number.isFinite(itemTime))) {
 				return false;
 			}
 

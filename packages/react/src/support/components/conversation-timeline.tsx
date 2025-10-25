@@ -25,89 +25,89 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 		(part): part is TimelinePartEvent => part.type === "event"
 	);
 
-        return eventPart || null;
+	return eventPart || null;
 }
 
-const EMPTY_SEEN_BY_IDS: ReadonlyArray<string> = Object.freeze([]);
-const EMPTY_SEEN_BY_NAMES: ReadonlyArray<string> = Object.freeze([]);
+const EMPTY_SEEN_BY_IDS: readonly string[] = Object.freeze([]);
+const EMPTY_SEEN_BY_NAMES: readonly string[] = Object.freeze([]);
 
 export type ConversationTimelineProps = {
-        conversationId: string;
-        items: TimelineItem[];
-        className?: string;
-        availableAIAgents: AvailableAIAgent[];
+	conversationId: string;
+	items: TimelineItem[];
+	className?: string;
+	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	currentVisitorId?: string;
 };
 
 export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
-        conversationId,
-        items: timelineItems,
-        className,
-        availableAIAgents = [],
-        availableHumanAgents = [],
-        currentVisitorId,
+	conversationId,
+	items: timelineItems,
+	className,
+	availableAIAgents = [],
+	availableHumanAgents = [],
+	currentVisitorId,
 }) => {
-        const timeline = useConversationTimeline({
-                conversationId,
-                items: timelineItems,
-                currentVisitorId,
-        });
+	const timeline = useConversationTimeline({
+		conversationId,
+		items: timelineItems,
+		currentVisitorId,
+	});
 
-        const typingIndicatorParticipants = useMemo(
-                () =>
-                        timeline.typingParticipants.map<TypingParticipant>((participant) => ({
-                                id: participant.id,
-                                type: participant.type,
-                        })),
-                [timeline.typingParticipants]
-        );
+	const typingIndicatorParticipants = useMemo(
+		() =>
+			timeline.typingParticipants.map<TypingParticipant>((participant) => ({
+				id: participant.id,
+				type: participant.type,
+			})),
+		[timeline.typingParticipants]
+	);
 
-        const seenNameLookup = useMemo(() => {
-                const map = new Map<string, string>();
+	const seenNameLookup = useMemo(() => {
+		const map = new Map<string, string>();
 
-                for (const agent of availableHumanAgents) {
-                        if (agent.name) {
-                                map.set(agent.id, agent.name);
-                        }
-                }
+		for (const agent of availableHumanAgents) {
+			if (agent.name) {
+				map.set(agent.id, agent.name);
+			}
+		}
 
-                for (const agent of availableAIAgents) {
-                        if (agent.name) {
-                                map.set(agent.id, agent.name);
-                        }
-                }
+		for (const agent of availableAIAgents) {
+			if (agent.name) {
+				map.set(agent.id, agent.name);
+			}
+		}
 
-                return map;
-        }, [availableHumanAgents, availableAIAgents]);
+		return map;
+	}, [availableHumanAgents, availableAIAgents]);
 
-        const getSeenByNames = useCallback(
-                (ids: ReadonlyArray<string> = EMPTY_SEEN_BY_IDS): ReadonlyArray<string> => {
-                        if (ids.length === 0 || seenNameLookup.size === 0) {
-                                return EMPTY_SEEN_BY_NAMES;
-                        }
+	const getSeenByNames = useCallback(
+		(ids: readonly string[] = EMPTY_SEEN_BY_IDS): readonly string[] => {
+			if (ids.length === 0 || seenNameLookup.size === 0) {
+				return EMPTY_SEEN_BY_NAMES;
+			}
 
-                        const uniqueNames = new Set<string>();
-                        const names: string[] = [];
+			const uniqueNames = new Set<string>();
+			const names: string[] = [];
 
-                        for (const id of ids) {
-                                const name = seenNameLookup.get(id);
-                                if (!name || uniqueNames.has(name)) {
-                                        continue;
-                                }
+			for (const id of ids) {
+				const name = seenNameLookup.get(id);
+				if (!name || uniqueNames.has(name)) {
+					continue;
+				}
 
-                                uniqueNames.add(name);
-                                names.push(name);
-                        }
+				uniqueNames.add(name);
+				names.push(name);
+			}
 
-                        if (names.length === 0) {
-                                return EMPTY_SEEN_BY_NAMES;
-                        }
+			if (names.length === 0) {
+				return EMPTY_SEEN_BY_NAMES;
+			}
 
-                        return Object.freeze(names);
-                },
-                [seenNameLookup]
-        );
+			return Object.freeze(names);
+		},
+		[seenNameLookup]
+	);
 
 	return (
 		<PrimitiveConversationTimeline
@@ -122,57 +122,57 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 			items={timelineItems}
 		>
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
-                                {timeline.groupedMessages.items.map((item, index) => {
-                                        if (item.type === "timeline_event") {
-                                                // Extract event data from parts
-                                                const eventPart = extractEventPart(item.item);
+				{timeline.groupedMessages.items.map((item, index) => {
+					if (item.type === "timeline_event") {
+						// Extract event data from parts
+						const eventPart = extractEventPart(item.item);
 
-                                                // Only render if we have valid event data
-                                                if (!eventPart) {
-                                                        return null;
-                                                }
+						// Only render if we have valid event data
+						if (!eventPart) {
+							return null;
+						}
 
-                                                return (
-                                                        <ConversationEvent
-                                                                availableAIAgents={availableAIAgents}
-                                                                availableHumanAgents={availableHumanAgents}
-                                                                createdAt={item.item.createdAt}
-                                                                event={eventPart}
-                                                                key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
-                                                        />
-                                                );
-                                        }
+						return (
+							<ConversationEvent
+								availableAIAgents={availableAIAgents}
+								availableHumanAgents={availableHumanAgents}
+								createdAt={item.item.createdAt}
+								event={eventPart}
+								key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
+							/>
+						);
+					}
 
-                                        // Only show seen indicator on the LAST message group sent by the visitor
-                                        const isLastVisitorGroup =
-                                                index === timeline.lastVisitorMessageGroupIndex;
-                                        const seenByIds =
-                                                isLastVisitorGroup && item.lastMessageId
-                                                        ? timeline.groupedMessages.getMessageSeenBy(item.lastMessageId)
-                                                        : EMPTY_SEEN_BY_IDS;
-                                        const seenByNames =
-                                                seenByIds.length > 0
-                                                        ? getSeenByNames(seenByIds)
-                                                        : EMPTY_SEEN_BY_NAMES;
+					// Only show seen indicator on the LAST message group sent by the visitor
+					const isLastVisitorGroup =
+						index === timeline.lastVisitorMessageGroupIndex;
+					const seenByIds =
+						isLastVisitorGroup && item.lastMessageId
+							? timeline.groupedMessages.getMessageSeenBy(item.lastMessageId)
+							: EMPTY_SEEN_BY_IDS;
+					const seenByNames =
+						seenByIds.length > 0
+							? getSeenByNames(seenByIds)
+							: EMPTY_SEEN_BY_NAMES;
 
-                                        // Use first timeline item ID as stable key
-                                        const groupKey =
-                                                item.lastMessageId ??
-                                                item.items?.[0]?.id ??
-                                                `group-${item.items?.[0]?.createdAt ?? index}`;
+					// Use first timeline item ID as stable key
+					const groupKey =
+						item.lastMessageId ??
+						item.items?.[0]?.id ??
+						`group-${item.items?.[0]?.createdAt ?? index}`;
 
-                                        return (
-                                                        <TimelineMessageGroup
-                                                                availableAIAgents={availableAIAgents}
-                                                                availableHumanAgents={availableHumanAgents}
-                                                                currentVisitorId={currentVisitorId}
-                                                                items={item.items || []}
-                                                                key={groupKey}
-                                                                seenByIds={seenByIds}
-                                                                seenByNames={seenByNames}
-                                                        />
-                                        );
-                                })}
+					return (
+						<TimelineMessageGroup
+							availableAIAgents={availableAIAgents}
+							availableHumanAgents={availableHumanAgents}
+							currentVisitorId={currentVisitorId}
+							items={item.items || []}
+							key={groupKey}
+							seenByIds={seenByIds}
+							seenByNames={seenByNames}
+						/>
+					);
+				})}
 				<div className="h-6 w-full">
 					{typingIndicatorParticipants.length > 0 ? (
 						<TypingIndicator
