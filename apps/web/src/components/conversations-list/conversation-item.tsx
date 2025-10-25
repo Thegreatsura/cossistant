@@ -2,7 +2,7 @@
 
 import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
-import { ConversationStatus, ConversationTimelineType } from "@cossistant/types";
+import { ConversationStatus } from "@cossistant/types";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { useUserSession } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { formatTimeAgo, getWaitingSinceLabel } from "@/lib/date";
+import { isInboundVisitorMessage } from "@/lib/conversation-messages";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
@@ -125,22 +126,27 @@ export function ConversationItem({
                 header.status !== ConversationStatus.SPAM &&
                 !header.deletedAt;
 
-        const isWaitingForResponse = Boolean(
-                shouldDisplayWaitingPill &&
-                        lastTimelineItem &&
-                        lastTimelineItem.type === ConversationTimelineType.MESSAGE &&
-                        lastTimelineItem.visitorId &&
-                        !lastTimelineItem.userId &&
-                        !lastTimelineItem.aiAgentId
-        );
-
-        const waitingSinceLabel = useMemo(() => {
-                if (!isWaitingForResponse || lastTimelineItemCreatedAtMs === null) {
+        const inboundWaitingTimelineItem = useMemo(() => {
+                if (!shouldDisplayWaitingPill) {
                         return null;
                 }
 
-                return getWaitingSinceLabel(new Date(lastTimelineItemCreatedAtMs));
-        }, [isWaitingForResponse, lastTimelineItemCreatedAtMs]);
+                return isInboundVisitorMessage(lastTimelineItem)
+                        ? lastTimelineItem
+                        : null;
+        }, [lastTimelineItem, shouldDisplayWaitingPill]);
+
+        const isWaitingForResponse = inboundWaitingTimelineItem !== null;
+
+        const waitingSinceLabel = useMemo(() => {
+                if (!inboundWaitingTimelineItem) {
+                        return null;
+                }
+
+                return getWaitingSinceLabel(
+                        new Date(inboundWaitingTimelineItem.createdAt)
+                );
+        }, [inboundWaitingTimelineItem?.createdAt]);
 
         const headerLastSeenAt = header.lastSeenAt
                 ? new Date(header.lastSeenAt)

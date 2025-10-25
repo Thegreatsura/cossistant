@@ -1,9 +1,10 @@
 import type { RouterOutputs } from "@api/trpc/types";
-import { ConversationStatus, ConversationTimelineType } from "@cossistant/types";
+import { ConversationStatus } from "@cossistant/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { useWebsite } from "@/contexts/website";
 import { useConversationHeaders } from "@/data/use-conversation-headers";
+import { isInboundVisitorMessage } from "@/lib/conversation-messages";
 
 type ConversationStatusFilter = ConversationStatus | "archived" | null;
 
@@ -134,15 +135,10 @@ function filterAndProcessConversations(
 					? lastActivityFromMessage
 					: toTimestamp(conversation.updatedAt);
 
-			const lastTimelineItem = conversation.lastTimelineItem;
-			const lastInboundAt =
-				lastTimelineItem &&
-				lastTimelineItem.type === ConversationTimelineType.MESSAGE &&
-				lastTimelineItem.visitorId &&
-				!lastTimelineItem.userId &&
-				!lastTimelineItem.aiAgentId
-					? toTimestamp(lastTimelineItem.createdAt)
-					: Number.NEGATIVE_INFINITY;
+                        const lastTimelineItem = conversation.lastTimelineItem;
+                        const lastInboundAt = isInboundVisitorMessage(lastTimelineItem)
+                                ? toTimestamp(lastTimelineItem.createdAt)
+                                : Number.NEGATIVE_INFINITY;
 
 			sortMetadata.set(conversation.id, {
 				lastInboundAt,
