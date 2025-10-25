@@ -1,6 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { useTRPC } from "@/lib/trpc/client";
 
 type UseConversationTimelineItemsOptions = {
@@ -53,13 +54,20 @@ export function useConversationTimelineItems({
 		staleTime: STALE_TIME,
 	});
 
-	const items =
-		query.data?.pages
+	const pages = query.data?.pages;
+
+	const items = useMemo(() => {
+		if (!pages) {
+			return [];
+		}
+
+		return pages
 			.flatMap((page) => page.items)
 			.sort(
 				(a, b) =>
 					new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-			) ?? [];
+			);
+	}, [pages]);
 
 	return {
 		items,

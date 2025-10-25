@@ -5,6 +5,7 @@ import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimod
 import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
 import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
 import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
+import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -21,6 +22,12 @@ import { useSendConversationMessage } from "@/hooks/use-send-conversation-messag
 import { useSidebar } from "@/hooks/use-sidebars";
 
 const MESSAGES_PAGE_LIMIT = 50;
+const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
+const MULTIMODAL_ALLOWED_FILE_TYPES: string[] = [
+	"image/*",
+	"application/pdf",
+	"text/*",
+];
 
 type ConversationPaneProps = {
 	conversationId: string;
@@ -128,10 +135,15 @@ export function ConversationPane({
 		initialData: selectedConversation?.seenData ?? [],
 	});
 
-	const lastMessage = useMemo(
-		() => items.filter((item) => item.type === "message").at(-1) ?? null,
-		[items]
-	);
+	const lastMessage = useMemo(() => {
+		for (let index = items.length - 1; index >= 0; index -= 1) {
+			const candidate = items[index];
+			if (candidate.type === "message") {
+				return candidate;
+			}
+		}
+		return null;
+	}, [items]);
 
 	useEffect(() => {
 		if (markSeenTimeoutRef.current) {
@@ -311,7 +323,7 @@ export function ConversationPane({
 			visitorIsBlocked: selectedConversation?.visitor.isBlocked ?? null,
 		},
 		timeline: {
-			availableAIAgents: [],
+			availableAIAgents: EMPTY_AVAILABLE_AI_AGENTS,
 			conversationId,
 			currentUserId,
 			items: items as TimelineItem[],
@@ -321,7 +333,7 @@ export function ConversationPane({
 			visitor,
 		},
 		input: {
-			allowedFileTypes: ["image/*", "application/pdf", "text/*"],
+			allowedFileTypes: MULTIMODAL_ALLOWED_FILE_TYPES,
 			error,
 			files,
 			isSubmitting,
