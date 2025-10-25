@@ -164,6 +164,7 @@ messagesRouter.openapi(
 			conversationId: body.conversationId,
 			conversationOwnerVisitorId: visitorId,
 			item: {
+				id: body.item.id,
 				type: body.item.type ?? ConversationTimelineType.MESSAGE,
 				text: body.item.text,
 				parts: body.item.parts ?? [{ type: "text", text: body.item.text }],

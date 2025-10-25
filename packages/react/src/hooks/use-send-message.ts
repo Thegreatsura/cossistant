@@ -12,6 +12,11 @@ export type SendMessageOptions = {
 	files?: File[];
 	defaultTimelineItems?: TimelineItem[];
 	visitorId?: string;
+	/**
+	 * Optional message ID to use for the optimistic update and API request.
+	 * When not provided, a ULID will be generated on the client.
+	 */
+	messageId?: string;
 	onSuccess?: (conversationId: string, messageId: string) => void;
 	onError?: (error: Error) => void;
 };
@@ -52,12 +57,14 @@ function toError(error: unknown): Error {
 function buildTimelineItemPayload(
 	body: string,
 	conversationId: string,
-	visitorId?: string | null
+	visitorId: string | null,
+	messageId?: string
 ): TimelineItem {
 	const nowIso = new Date().toISOString();
+	const id = messageId ?? generateMessageId();
 
 	return {
-		id: generateMessageId(),
+		id,
 		conversationId,
 		organizationId: "", // Will be set by backend
 		type: "message" as const,
@@ -88,6 +95,7 @@ export function useSendMessage(
 				message,
 				defaultTimelineItems = [],
 				visitorId,
+				messageId: providedMessageId,
 				onSuccess,
 				onError,
 			} = payload;
@@ -122,7 +130,8 @@ export function useSendMessage(
 				const timelineItemPayload = buildTimelineItemPayload(
 					message,
 					conversationId,
-					visitorId ?? null
+					visitorId ?? null,
+					providedMessageId
 				);
 
 				const response = await client.sendMessage({

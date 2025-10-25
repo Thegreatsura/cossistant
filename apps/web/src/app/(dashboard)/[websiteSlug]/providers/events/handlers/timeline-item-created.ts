@@ -7,6 +7,7 @@ import {
 } from "@/data/conversation-header-cache";
 import {
 	type ConversationTimelineItem,
+	reconcileOptimisticConversationTimelineItemInCache,
 	upsertConversationTimelineItemInCache,
 } from "@/data/conversation-message-cache";
 import type { DashboardRealtimeContext } from "../types";
@@ -91,6 +92,12 @@ export const handleMessageCreated = ({
 		if (input.websiteSlug !== website.slug) {
 			continue;
 		}
+
+		reconcileOptimisticConversationTimelineItemInCache(
+			queryClient,
+			queryKey,
+			item as ConversationTimelineItem
+		);
 
 		upsertConversationTimelineItemInCache(queryClient, queryKey, item);
 	}

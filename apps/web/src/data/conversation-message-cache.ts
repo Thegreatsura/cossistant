@@ -6,6 +6,10 @@ export type ConversationTimelineItemsPage =
 export type ConversationTimelineItem =
 	ConversationTimelineItemsPage["items"][number];
 
+export const OPTIMISTIC_TIMELINE_ITEM_ID_PREFIX = "optimistic-";
+
+const OPTIMISTIC_RECONCILIATION_WINDOW_MS = 15_000;
+
 function sortTimelineItemsByCreatedAt(
 	items: ConversationTimelineItem[]
 ): ConversationTimelineItem[] {
@@ -72,6 +76,82 @@ function upsertTimelineItemInInfiniteData(
 	};
 }
 
+function reconcileOptimisticTimelineItemInInfiniteData(
+	existing: InfiniteData<ConversationTimelineItemsPage> | undefined,
+	item: ConversationTimelineItem
+): InfiniteData<ConversationTimelineItemsPage> | undefined {
+	if (!existing) {
+		return existing;
+	}
+
+	let replaced = false;
+
+	const pages = existing.pages.map((page) => {
+		if (replaced) {
+			return page;
+		}
+
+		const maybeIndex = page.items.findIndex((candidate) => {
+			if (!candidate.id?.startsWith(OPTIMISTIC_TIMELINE_ITEM_ID_PREFIX)) {
+				return false;
+			}
+
+			if (candidate.conversationId !== item.conversationId) {
+				return false;
+			}
+
+			if (
+				candidate.userId !== item.userId ||
+				candidate.aiAgentId !== item.aiAgentId ||
+				candidate.visitorId !== item.visitorId
+			) {
+				return false;
+			}
+
+			const candidateText = candidate.text?.trim() ?? "";
+			const itemText = item.text?.trim() ?? "";
+			if (candidateText !== itemText) {
+				return false;
+			}
+
+			const candidateTime = new Date(candidate.createdAt).getTime();
+			const itemTime = new Date(item.createdAt).getTime();
+
+			if (!Number.isFinite(candidateTime) || !Number.isFinite(itemTime)) {
+				return false;
+			}
+
+			return (
+				Math.abs(candidateTime - itemTime) <=
+				OPTIMISTIC_RECONCILIATION_WINDOW_MS
+			);
+		});
+
+		if (maybeIndex === -1) {
+			return page;
+		}
+
+		replaced = true;
+
+		const updatedItems = [...page.items];
+		updatedItems[maybeIndex] = item;
+
+		return {
+			...page,
+			items: sortTimelineItemsByCreatedAt(updatedItems),
+		};
+	});
+
+	if (!replaced) {
+		return existing;
+	}
+
+	return {
+		pages,
+		pageParams: [...existing.pageParams],
+	};
+}
+
 function removeTimelineItemFromInfiniteData(
 	existing: InfiniteData<ConversationTimelineItemsPage> | undefined,
 	itemId: string
@@ -119,6 +199,18 @@ export function upsertConversationTimelineItemInCache(
 	queryClient.setQueryData<InfiniteData<ConversationTimelineItemsPage>>(
 		queryKey,
 		(existing) => upsertTimelineItemInInfiniteData(existing, item)
+	);
+}
+
+export function reconcileOptimisticConversationTimelineItemInCache(
+	queryClient: QueryClient,
+	queryKey: readonly unknown[],
+	item: ConversationTimelineItem
+) {
+	queryClient.setQueryData<
+		InfiniteData<ConversationTimelineItemsPage> | undefined
+	>(queryKey, (existing) =>
+		reconcileOptimisticTimelineItemInInfiniteData(existing, item)
 	);
 }
 

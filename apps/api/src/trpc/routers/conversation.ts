@@ -147,6 +147,7 @@ export const conversationRouter = createTRPCRouter({
 				websiteSlug: z.string(),
 				text: z.string().min(1),
 				visibility: z.enum(["public", "private"]).default("public"),
+				timelineItemId: z.ulid().optional(),
 			})
 		)
 		.mutation(async ({ ctx: { db, user }, input }) => {
@@ -181,6 +182,7 @@ export const conversationRouter = createTRPCRouter({
 				conversationId: input.conversationId,
 				conversationOwnerVisitorId: conversation.visitorId,
 				item: {
+					id: input.timelineItemId,
 					type: "message",
 					text: input.text,
 					parts: [{ type: "text", text: input.text }],

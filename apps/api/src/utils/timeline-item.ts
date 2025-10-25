@@ -17,6 +17,7 @@ export type CreateTimelineItemOptions = {
 	conversationId: string;
 	conversationOwnerVisitorId?: string | null;
 	item: {
+		id?: string;
 		type:
 			| typeof ConversationTimelineType.MESSAGE
 			| typeof ConversationTimelineType.EVENT;
@@ -90,7 +91,7 @@ export async function createTimelineItem(
 ): Promise<TimelineItem> {
 	const { db, organizationId, websiteId, conversationId, item } = options;
 
-	const itemId = generateULID();
+	const timelineItemId = item.id ?? generateULID();
 	const createdAt = item.createdAt
 		? item.createdAt.toISOString()
 		: new Date().toISOString();
@@ -98,7 +99,7 @@ export async function createTimelineItem(
 	const [createdItem] = await db
 		.insert(conversationTimelineItem)
 		.values({
-			id: itemId,
+			id: timelineItemId,
 			conversationId,
 			organizationId,
 			visibility: item.visibility ?? TimelineItemVisibility.PUBLIC,
