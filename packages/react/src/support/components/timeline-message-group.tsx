@@ -3,7 +3,6 @@ import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
 import type React from "react";
-import { memo, useMemo } from "react";
 import {
 	TimelineItemGroup as PrimitiveTimelineItemGroup,
 	TimelineItemGroupAvatar,
@@ -41,45 +40,32 @@ export type TimelineMessageGroupProps = {
         availableHumanAgents: AvailableHumanAgent[];
         currentVisitorId?: string;
         seenByIds?: string[];
+        seenByNames?: string[];
 };
 
 const EMPTY_SEEN_BY_IDS: string[] = Object.freeze([]) as string[];
+const EMPTY_SEEN_BY_NAMES: string[] = Object.freeze([]) as string[];
 
-const TimelineMessageGroupComponent: React.FC<TimelineMessageGroupProps> = ({
+export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
         items,
         availableAIAgents,
         availableHumanAgents,
         currentVisitorId,
         seenByIds = EMPTY_SEEN_BY_IDS,
+        seenByNames = EMPTY_SEEN_BY_NAMES,
 }) => {
         // Get agent info for the sender
         const firstItem = items[0];
         const humanAgent = availableHumanAgents.find(
                 (agent) => agent.id === firstItem?.userId
-	);
-	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === firstItem?.aiAgentId
-	);
+        );
+        const aiAgent = availableAIAgents.find(
+                (agent) => agent.id === firstItem?.aiAgentId
+        );
 
-	const seenByNames = useMemo(() => {
-		const deduped = new Set<string>();
-		for (const id of seenByIds) {
-			const human = availableHumanAgents.find((agent) => agent.id === id);
-			if (human?.name) {
-				deduped.add(human.name);
-				continue;
-			}
-			const ai = availableAIAgents.find((agent) => agent.id === id);
-			if (ai?.name) {
-				deduped.add(ai.name);
-			}
-		}
-		return Array.from(deduped);
-	}, [seenByIds, availableHumanAgents, availableAIAgents]);
-
-	if (items.length === 0) {
-		return null;
-	}
+        if (items.length === 0) {
+                return null;
+        }
 
 	const hasSeenIndicator = seenByIds.length > 0 && seenByNames.length > 0;
 
@@ -167,117 +153,5 @@ const TimelineMessageGroupComponent: React.FC<TimelineMessageGroupProps> = ({
 		</PrimitiveTimelineItemGroup>
 	);
 };
-
-const areStringArraysEqual = (a: string[] = EMPTY_SEEN_BY_IDS, b: string[] = EMPTY_SEEN_BY_IDS) => {
-        if (a === b) {
-                return true;
-        }
-
-        if (a.length !== b.length) {
-                return false;
-        }
-
-        for (let index = 0; index < a.length; index++) {
-                if (a[index] !== b[index]) {
-                        return false;
-                }
-        }
-
-        return true;
-};
-
-const areTimelineItemsEqual = (a: TimelineItem[], b: TimelineItem[]): boolean => {
-        if (a === b) {
-                return true;
-        }
-
-        if (a.length !== b.length) {
-                return false;
-        }
-
-        for (let index = 0; index < a.length; index++) {
-                const previous = a[index];
-                const next = b[index];
-
-                if (previous === next) {
-                        continue;
-                }
-
-                if (
-                        previous?.id !== next?.id ||
-                        previous?.type !== next?.type ||
-                        previous?.text !== next?.text ||
-                        previous?.createdAt !== next?.createdAt ||
-                        previous?.deletedAt !== next?.deletedAt ||
-                        previous?.visitorId !== next?.visitorId ||
-                        previous?.userId !== next?.userId ||
-                        previous?.aiAgentId !== next?.aiAgentId
-                ) {
-                        return false;
-                }
-        }
-
-        return true;
-};
-
-const areAgentsEqual = <T extends { id: string; name?: string | null; image?: string | null }>(
-        previous: T[],
-        next: T[]
-): boolean => {
-        if (previous === next) {
-                return true;
-        }
-
-        if (previous.length !== next.length) {
-                return false;
-        }
-
-        for (let index = 0; index < previous.length; index++) {
-                const prevAgent = previous[index];
-                const nextAgent = next[index];
-
-                if (
-                        prevAgent.id !== nextAgent.id ||
-                        (prevAgent.name ?? null) !== (nextAgent.name ?? null) ||
-                        (prevAgent.image ?? null) !== (nextAgent.image ?? null)
-                ) {
-                        return false;
-                }
-        }
-
-        return true;
-};
-
-const areTimelineMessageGroupPropsEqual = (
-        previous: TimelineMessageGroupProps,
-        next: TimelineMessageGroupProps
-) => {
-        if (previous.currentVisitorId !== next.currentVisitorId) {
-                return false;
-        }
-
-        if (!areAgentsEqual(previous.availableAIAgents, next.availableAIAgents)) {
-                return false;
-        }
-
-        if (!areAgentsEqual(previous.availableHumanAgents, next.availableHumanAgents)) {
-                return false;
-        }
-
-        if (!areTimelineItemsEqual(previous.items, next.items)) {
-                return false;
-        }
-
-        if (!areStringArraysEqual(previous.seenByIds, next.seenByIds)) {
-                return false;
-        }
-
-        return true;
-};
-
-export const TimelineMessageGroup = memo(
-        TimelineMessageGroupComponent,
-        areTimelineMessageGroupPropsEqual
-);
 
 TimelineMessageGroup.displayName = "TimelineMessageGroup";
