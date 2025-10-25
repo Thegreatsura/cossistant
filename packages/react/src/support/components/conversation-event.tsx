@@ -17,10 +17,10 @@ export type ConversationEventProps = {
 };
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
-	event,
-	availableAIAgents,
-	createdAt,
-	availableHumanAgents,
+        event,
+        availableAIAgents,
+        createdAt,
+        availableHumanAgents,
 }) => {
 	const text = useSupportText();
 	const isAI = event.actorAiAgentId !== null;
@@ -98,37 +98,39 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		}
 	};
 
-	return (
-		<motion.div
-			animate={{ opacity: 1, scale: 1 }}
-			className="flex items-center justify-center py-4"
-			initial={{ opacity: 0, scale: 0.95 }}
-			transition={{ duration: 0.3, ease: "easeOut" }}
-		>
-			<div className="flex items-center gap-2 text-muted-foreground text-xs">
-				<div className="flex flex-col justify-end">
-					{isAI ? (
-						<div className="flex size-5 items-center justify-center rounded-full bg-primary/10">
-							<CossistantLogo className="h-3 w-3 text-primary" />
-						</div>
-					) : (
-						<Avatar
-							className="size-5 flex-shrink-0 overflow-clip rounded-full"
-							image={humanAgent?.image}
-							name={humanAgent?.name || text("common.fallbacks.someone")}
-						/>
-					)}
-				</div>
-				<span className="px-2">{getEventText()}</span>
-				{createdAt && (
-					<time className="text-[10px]">
-						{new Date(createdAt).toLocaleTimeString([], {
-							hour: "2-digit",
-							minute: "2-digit",
-						})}
-					</time>
-				)}
-			</div>
-		</motion.div>
-	);
+        return (
+                <motion.div
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center justify-center py-4"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                                <div className="flex flex-col justify-end">
+                                        {isAI ? (
+                                                <div className="flex size-5 items-center justify-center rounded-full bg-primary/10">
+                                                        <CossistantLogo className="h-3 w-3 text-primary" />
+                                                </div>
+                                        ) : (
+                                                <Avatar
+                                                        className="size-5 flex-shrink-0 overflow-clip rounded-full"
+                                                        image={humanAgent?.image}
+                                                        name={humanAgent?.name || text("common.fallbacks.someone")}
+                                                />
+                                        )}
+                                </div>
+                                <span className="px-2">{getEventText()}</span>
+                                {createdAt && (
+                                        <time className="text-[10px]">
+                                                {new Date(createdAt).toLocaleTimeString([], {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                })}
+                                        </time>
+                                )}
+                        </div>
+                </motion.div>
+        );
 };
+
+ConversationEvent.displayName = "ConversationEvent";

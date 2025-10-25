@@ -3,7 +3,6 @@ import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
 import type React from "react";
-import { useMemo } from "react";
 import {
 	TimelineItemGroup as PrimitiveTimelineItemGroup,
 	TimelineItemGroupAvatar,
@@ -36,48 +35,37 @@ const SEEN_ANIMATION = {
 } as const;
 
 export type TimelineMessageGroupProps = {
-	items: TimelineItem[];
-	availableAIAgents: AvailableAIAgent[];
-	availableHumanAgents: AvailableHumanAgent[];
-	currentVisitorId?: string;
-	seenByIds?: string[];
+        items: TimelineItem[];
+        availableAIAgents: AvailableAIAgent[];
+        availableHumanAgents: AvailableHumanAgent[];
+        currentVisitorId?: string;
+        seenByIds?: ReadonlyArray<string>;
+        seenByNames?: ReadonlyArray<string>;
 };
 
+const EMPTY_SEEN_BY_IDS: ReadonlyArray<string> = Object.freeze([]);
+const EMPTY_SEEN_BY_NAMES: ReadonlyArray<string> = Object.freeze([]);
+
 export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
-	items,
-	availableAIAgents,
-	availableHumanAgents,
-	currentVisitorId,
-	seenByIds = [],
+        items,
+        availableAIAgents,
+        availableHumanAgents,
+        currentVisitorId,
+        seenByIds = EMPTY_SEEN_BY_IDS,
+        seenByNames = EMPTY_SEEN_BY_NAMES,
 }) => {
-	// Get agent info for the sender
-	const firstItem = items[0];
-	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === firstItem?.userId
-	);
-	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === firstItem?.aiAgentId
-	);
+        // Get agent info for the sender
+        const firstItem = items[0];
+        const humanAgent = availableHumanAgents.find(
+                (agent) => agent.id === firstItem?.userId
+        );
+        const aiAgent = availableAIAgents.find(
+                (agent) => agent.id === firstItem?.aiAgentId
+        );
 
-	const seenByNames = useMemo(() => {
-		const deduped = new Set<string>();
-		for (const id of seenByIds) {
-			const human = availableHumanAgents.find((agent) => agent.id === id);
-			if (human?.name) {
-				deduped.add(human.name);
-				continue;
-			}
-			const ai = availableAIAgents.find((agent) => agent.id === id);
-			if (ai?.name) {
-				deduped.add(ai.name);
-			}
-		}
-		return Array.from(deduped);
-	}, [seenByIds, availableHumanAgents, availableAIAgents]);
-
-	if (items.length === 0) {
-		return null;
-	}
+        if (items.length === 0) {
+                return null;
+        }
 
 	const hasSeenIndicator = seenByIds.length > 0 && seenByNames.length > 0;
 
@@ -165,3 +153,5 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 		</PrimitiveTimelineItemGroup>
 	);
 };
+
+TimelineMessageGroup.displayName = "TimelineMessageGroup";

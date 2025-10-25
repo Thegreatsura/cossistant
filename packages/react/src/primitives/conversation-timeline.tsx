@@ -14,8 +14,8 @@ export type ConversationTimelineRenderProps = {
 };
 
 export type ConversationTimelineProps = Omit<
-	React.HTMLAttributes<HTMLDivElement>,
-	"children"
+        React.HTMLAttributes<HTMLDivElement>,
+        "children"
 > & {
 	children?:
 		| React.ReactNode
@@ -27,8 +27,25 @@ export type ConversationTimelineProps = Omit<
 	hasMore?: boolean;
 	autoScroll?: boolean;
 	onScrollEnd?: () => void;
-	onScrollStart?: () => void;
+        onScrollStart?: () => void;
 };
+
+const BOTTOM_THRESHOLD_PX = 12;
+const TOP_THRESHOLD_PX = 2;
+
+function getLastItemKey(items: TimelineItemType[]): string | number | null {
+        if (items.length === 0) {
+                return null;
+        }
+
+        const lastItem = items[items.length - 1];
+
+        if (lastItem.id) {
+                return lastItem.id;
+        }
+
+        return lastItem.createdAt ?? null;
+}
 
 /**
  * Scrollable conversation timeline that wires auto-scroll behaviour, live-region semantics and
@@ -65,8 +82,13 @@ export const ConversationTimeline = (() => {
 				[ref]
 			);
 
-			const isInitialRender = React.useRef(true);
-			const previousItemCount = React.useRef(items.length);
+                        const isInitialRender = React.useRef(true);
+                        const previousItemCount = React.useRef(items.length);
+                        const previousLastItemKey = React.useRef<string | number | null>(
+                                getLastItemKey(items)
+                        );
+                        const isPinnedToBottom = React.useRef(true);
+                        const isAtTop = React.useRef(true);
 
 			const renderProps: ConversationTimelineRenderProps = {
 				itemCount: items.length,
@@ -78,40 +100,69 @@ export const ConversationTimeline = (() => {
 			const content =
 				typeof children === "function" ? children(renderProps) : children;
 
-			// Auto-scroll to bottom when new timeline items are added
-			React.useEffect(() => {
-				if (autoScroll && internalRef.current) {
-					const hasNewItems = items.length > previousItemCount.current;
+                        const lastItemKey = getLastItemKey(items);
 
-					// Only scroll if there are new items or it's the first render
-					if (hasNewItems || isInitialRender.current) {
-						internalRef.current.scrollTop = internalRef.current.scrollHeight;
-					}
+                        // Auto-scroll to bottom when new timeline items are added
+                        React.useEffect(() => {
+                                const element = internalRef.current;
 
-					// Update refs for next render
-					previousItemCount.current = items.length;
-					isInitialRender.current = false;
-				}
-			}, [items.length, autoScroll]);
+                                if (!element || !autoScroll) {
+                                        previousItemCount.current = items.length;
+                                        previousLastItemKey.current = lastItemKey;
+                                        isInitialRender.current = false;
+                                        return;
+                                }
 
-			// Handle scroll events for infinite scrolling
-			const handleScroll = React.useCallback(
-				(e: React.UIEvent<HTMLDivElement>) => {
-					const element = e.currentTarget;
-					const { scrollTop, scrollHeight, clientHeight } = element;
+                                const hasNewItems = items.length > previousItemCount.current;
+                                const itemsRemoved = items.length < previousItemCount.current;
+                                const appendedNewItem =
+                                        hasNewItems &&
+                                        lastItemKey !== null &&
+                                        lastItemKey !== previousLastItemKey.current;
+                                const replacedLastItem =
+                                        !hasNewItems &&
+                                        lastItemKey !== null &&
+                                        lastItemKey !== previousLastItemKey.current;
 
-					// Check if scrolled to top
-					if (scrollTop === 0 && onScrollStart) {
-						onScrollStart();
-					}
+                                const shouldSnapToBottom =
+                                        isInitialRender.current ||
+                                        (itemsRemoved && isPinnedToBottom.current) ||
+                                        (appendedNewItem && isPinnedToBottom.current) ||
+                                        (replacedLastItem && isPinnedToBottom.current);
 
-					// Check if scrolled to bottom
-					if (scrollTop + clientHeight >= scrollHeight - 10 && onScrollEnd) {
-						onScrollEnd();
-					}
-				},
-				[onScrollStart, onScrollEnd]
-			);
+                                if (shouldSnapToBottom) {
+                                        element.scrollTop = element.scrollHeight;
+                                        isPinnedToBottom.current = true;
+                                        isAtTop.current = false;
+                                }
+
+                                previousItemCount.current = items.length;
+                                previousLastItemKey.current = lastItemKey;
+                                isInitialRender.current = false;
+                        }, [autoScroll, items.length, lastItemKey]);
+
+                        // Handle scroll events for infinite scrolling
+                        const handleScroll = React.useCallback(
+                                (e: React.UIEvent<HTMLDivElement>) => {
+                                        const element = e.currentTarget;
+                                        const { scrollTop, scrollHeight, clientHeight } = element;
+
+                                        const distanceFromBottom =
+                                                scrollHeight - scrollTop - clientHeight;
+                                        const pinnedNow = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
+                                        if (pinnedNow && !isPinnedToBottom.current) {
+                                                onScrollEnd?.();
+                                        }
+                                        isPinnedToBottom.current = pinnedNow;
+
+                                        const atTop = scrollTop <= TOP_THRESHOLD_PX;
+                                        if (atTop && !isAtTop.current) {
+                                                onScrollStart?.();
+                                        }
+                                        isAtTop.current = atTop;
+                                },
+                                [onScrollStart, onScrollEnd]
+                        );
 
 			// Static fade effect on top and bottom
 			const fadeStyle = React.useMemo(() => {
