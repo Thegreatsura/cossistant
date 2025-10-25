@@ -43,8 +43,8 @@ export const conversationRouter = createTRPCRouter({
 		.input(
 			z.object({
 				websiteSlug: z.string(),
-						limit: z.number().int().min(1).max(500).optional(),
-						cursor: z.string().nullable().optional(),
+				limit: z.number().int().min(1).max(500).optional(),
+				cursor: z.string().nullable().optional(),
 			})
 		)
 		.output(listConversationHeadersResponseSchema)
@@ -52,7 +52,7 @@ export const conversationRouter = createTRPCRouter({
 			const websiteData = await getWebsiteBySlugWithAccess(db, {
 				userId: user.id,
 				websiteSlug: input.websiteSlug,
-					});
+			});
 
 			if (!websiteData) {
 				throw new TRPCError({
@@ -63,12 +63,12 @@ export const conversationRouter = createTRPCRouter({
 
 			// Fetch conversations for the website
 			const result = await listConversationsHeaders(db, {
-						organizationId: websiteData.organizationId,
-						websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
 				userId: user.id,
-						limit: input.limit,
-						cursor: input.cursor,
-					});
+				limit: input.limit,
+				cursor: input.cursor,
+			});
 
 			return {
 				items: result.items,
@@ -79,10 +79,10 @@ export const conversationRouter = createTRPCRouter({
 	getConversationTimelineItems: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
-						limit: z.number().int().min(1).max(100).optional().default(50),
-						cursor: z.union([z.string(), z.date()]).nullable().optional(),
+				limit: z.number().int().min(1).max(100).optional().default(50),
+				cursor: z.union([z.string(), z.date()]).nullable().optional(),
 			})
 		)
 		.query(async ({ ctx: { db, user }, input }) => {
@@ -143,7 +143,7 @@ export const conversationRouter = createTRPCRouter({
 	sendMessage: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 				text: z.string().min(1),
 				visibility: z.enum(["public", "private"]).default("public"),
@@ -176,9 +176,9 @@ export const conversationRouter = createTRPCRouter({
 
 			const createdTimelineItem = await createTimelineItem({
 				db,
-						organizationId: websiteData.organizationId,
-						websiteId: websiteData.id,
-						conversationId: input.conversationId,
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				conversationId: input.conversationId,
 				conversationOwnerVisitorId: conversation.visitorId,
 				item: {
 					type: "message",
@@ -189,19 +189,19 @@ export const conversationRouter = createTRPCRouter({
 					visitorId: null,
 					aiAgentId: null,
 				},
-					});
+			});
 
 			// Mark conversation as read by user after sending timeline item
 			const { lastSeenAt } = await markConversationAsRead(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			await emitConversationSeenEvent({
 				conversation,
 				actor: { type: "user", userId: user.id },
 				lastSeenAt,
-					});
+			});
 
 			return { item: createdTimelineItem };
 		}),
@@ -209,7 +209,7 @@ export const conversationRouter = createTRPCRouter({
 	markResolved: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -223,7 +223,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await resolveConversation(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			if (!updatedConversation) {
 				throw new TRPCError({
@@ -238,7 +238,7 @@ export const conversationRouter = createTRPCRouter({
 	markOpen: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -252,7 +252,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await reopenConversation(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			if (!updatedConversation) {
 				throw new TRPCError({
@@ -267,7 +267,7 @@ export const conversationRouter = createTRPCRouter({
 	markSpam: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -281,7 +281,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await markConversationAsSpam(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			if (!updatedConversation) {
 				throw new TRPCError({
@@ -296,7 +296,7 @@ export const conversationRouter = createTRPCRouter({
 	markNotSpam: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -310,7 +310,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await markConversationAsNotSpam(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			if (!updatedConversation) {
 				throw new TRPCError({
@@ -325,7 +325,7 @@ export const conversationRouter = createTRPCRouter({
 	markArchived: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -339,7 +339,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await archiveConversation(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			if (!updatedConversation) {
 				throw new TRPCError({
@@ -354,7 +354,7 @@ export const conversationRouter = createTRPCRouter({
 	markUnarchived: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -368,7 +368,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await unarchiveConversation(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			if (!updatedConversation) {
 				throw new TRPCError({
@@ -383,7 +383,7 @@ export const conversationRouter = createTRPCRouter({
 	markRead: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -404,7 +404,7 @@ export const conversationRouter = createTRPCRouter({
 				conversation: updatedConversation,
 				actor: { type: "user", userId: user.id },
 				lastSeenAt,
-					});
+			});
 
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
@@ -412,7 +412,7 @@ export const conversationRouter = createTRPCRouter({
 	markUnread: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 			})
 		)
@@ -426,7 +426,7 @@ export const conversationRouter = createTRPCRouter({
 			const updatedConversation = await markConversationAsUnread(db, {
 				conversation,
 				actorUserId: user.id,
-					});
+			});
 
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
@@ -434,7 +434,7 @@ export const conversationRouter = createTRPCRouter({
 	setTyping: protectedProcedure
 		.input(
 			z.object({
-						conversationId: z.string(),
+				conversationId: z.string(),
 				websiteSlug: z.string(),
 				isTyping: z.boolean(),
 			})
@@ -447,14 +447,14 @@ export const conversationRouter = createTRPCRouter({
 		.mutation(async ({ ctx: { db, user }, input }) => {
 			const { conversation } = await loadConversationContext(db, user.id, {
 				websiteSlug: input.websiteSlug,
-						conversationId: input.conversationId,
-					});
+				conversationId: input.conversationId,
+			});
 
 			await emitConversationTypingEvent({
 				conversation,
 				actor: { type: "user", userId: user.id },
 				isTyping: input.isTyping,
-					});
+			});
 
 			return { success: true } as const;
 		}),

@@ -3,9 +3,9 @@ import { conversation, conversationSeen } from "@api/db/schema";
 import { createConversationEvent } from "@api/utils/conversation-event";
 import { generateULID } from "@api/utils/db/ids";
 import {
-        ConversationEventType,
-        ConversationStatus,
-        TimelineItemVisibility,
+	ConversationEventType,
+	ConversationStatus,
+	TimelineItemVisibility,
 } from "@cossistant/types";
 import type { InferSelectModel } from "drizzle-orm";
 import { and, eq } from "drizzle-orm";
@@ -168,17 +168,17 @@ export async function markConversationAsSpam(
 			websiteId: params.conversation.websiteId,
 			visitorId: params.conversation.visitorId,
 		},
-                event: {
-                        type: ConversationEventType.STATUS_CHANGED,
-                        actorUserId: params.actorUserId,
-                        metadata: {
-                                previousStatus: params.conversation.status,
-                                newStatus: ConversationStatus.SPAM,
-                        },
-                        createdAt: updatedAt,
-                        visibility: TimelineItemVisibility.PRIVATE,
-                },
-        });
+		event: {
+			type: ConversationEventType.STATUS_CHANGED,
+			actorUserId: params.actorUserId,
+			metadata: {
+				previousStatus: params.conversation.status,
+				newStatus: ConversationStatus.SPAM,
+			},
+			createdAt: updatedAt,
+			visibility: TimelineItemVisibility.PRIVATE,
+		},
+	});
 
 	return updated;
 }
@@ -224,17 +224,17 @@ export async function markConversationAsNotSpam(
 			websiteId: params.conversation.websiteId,
 			visitorId: params.conversation.visitorId,
 		},
-                event: {
-                        type: ConversationEventType.STATUS_CHANGED,
-                        actorUserId: params.actorUserId,
-                        metadata: {
-                                previousStatus: params.conversation.status,
-                                newStatus: ConversationStatus.OPEN,
-                        },
-                        createdAt: updatedAt,
-                        visibility: TimelineItemVisibility.PRIVATE,
-                },
-        });
+		event: {
+			type: ConversationEventType.STATUS_CHANGED,
+			actorUserId: params.actorUserId,
+			metadata: {
+				previousStatus: params.conversation.status,
+				newStatus: ConversationStatus.OPEN,
+			},
+			createdAt: updatedAt,
+			visibility: TimelineItemVisibility.PRIVATE,
+		},
+	});
 
 	return updated;
 }

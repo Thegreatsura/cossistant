@@ -2,6 +2,7 @@
 "use client";
 
 import type { RouterOutputs } from "@cossistant/api/types";
+import { IdentifySupportVisitor } from "@cossistant/react/identify-visitor";
 import { useQuery } from "@tanstack/react-query";
 import type { TRPCClientErrorBase } from "@trpc/client";
 import type { DefaultErrorShape } from "@trpc/server/unstable-core-do-not-import";
@@ -116,6 +117,10 @@ export function WebsiteProvider({
 			}}
 		>
 			{children}
+			<IdentifySupportVisitor
+				email={sessionData?.user?.email}
+				externalId={sessionData?.user?.id}
+			/>
 		</WebsiteContext.Provider>
 	);
 }

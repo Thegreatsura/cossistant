@@ -12,17 +12,17 @@ type ConversationContext = {
 };
 
 type CreateConversationEventPayload = {
-        type: ConversationEventType;
-        actorUserId?: string | null;
-        actorAiAgentId?: string | null;
-        targetUserId?: string | null;
-        targetAiAgentId?: string | null;
-        metadata?: Record<string, unknown> | null;
-        message?: string | null;
-        createdAt?: Date;
-        visibility?:
-                | typeof TimelineItemVisibility.PUBLIC
-                | typeof TimelineItemVisibility.PRIVATE;
+	type: ConversationEventType;
+	actorUserId?: string | null;
+	actorAiAgentId?: string | null;
+	targetUserId?: string | null;
+	targetAiAgentId?: string | null;
+	metadata?: Record<string, unknown> | null;
+	message?: string | null;
+	createdAt?: Date;
+	visibility?:
+		| typeof TimelineItemVisibility.PUBLIC
+		| typeof TimelineItemVisibility.PRIVATE;
 };
 
 export type CreateConversationEventOptions = {
@@ -47,20 +47,20 @@ export async function createConversationEvent({
 		item: {
 			type: "event",
 			text: event.message ?? null,
-                        parts: [
-                                {
-                                        type: "event",
-                                        eventType: event.type,
-                                        actorUserId: event.actorUserId ?? null,
-                                        actorAiAgentId: event.actorAiAgentId ?? null,
-                                        targetUserId: event.targetUserId ?? null,
-                                        targetAiAgentId: event.targetAiAgentId ?? null,
-                                        message: event.message ?? null,
-                                },
-                        ],
-                        visibility: event.visibility ?? TimelineItemVisibility.PUBLIC,
-                        userId: event.actorUserId ?? null,
-                        aiAgentId: event.actorAiAgentId ?? null,
+			parts: [
+				{
+					type: "event",
+					eventType: event.type,
+					actorUserId: event.actorUserId ?? null,
+					actorAiAgentId: event.actorAiAgentId ?? null,
+					targetUserId: event.targetUserId ?? null,
+					targetAiAgentId: event.targetAiAgentId ?? null,
+					message: event.message ?? null,
+				},
+			],
+			visibility: event.visibility ?? TimelineItemVisibility.PUBLIC,
+			userId: event.actorUserId ?? null,
+			aiAgentId: event.actorAiAgentId ?? null,
 			visitorId: null,
 			createdAt,
 		},

@@ -116,11 +116,11 @@ export const conversationTimelineItem = pgTable(
 		deletedAt: timestamp("deleted_at"),
 	},
 	(table) => [
-                index("conversation_timeline_item_org_conv_visibility_idx").on(
-                        table.organizationId,
-                        table.conversationId,
-                        table.visibility
-                ),
+		index("conversation_timeline_item_org_conv_visibility_idx").on(
+			table.organizationId,
+			table.conversationId,
+			table.visibility
+		),
 		index("conversation_timeline_item_conv_created_idx").on(
 			table.conversationId,
 			table.createdAt,

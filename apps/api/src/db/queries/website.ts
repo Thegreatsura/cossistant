@@ -179,8 +179,7 @@ export async function checkUserWebsiteAccess(
 		.select()
 		.from(website)
 		.where(and(eq(website.slug, params.websiteSlug), isNull(website.deletedAt)))
-		.limit(1)
-		.$withCache({ tag: "website-slug" });
+		.limit(1);
 
 	if (!site) {
 		return { hasAccess: false, website: null };
@@ -197,8 +196,7 @@ export async function checkUserWebsiteAccess(
 				inArray(member.role, ["owner", "admin"])
 			)
 		)
-		.limit(1)
-		.$withCache({ tag: "org-membership" });
+		.limit(1);
 
 	if (orgMembership) {
 		return { hasAccess: true, website: site };
@@ -215,8 +213,7 @@ export async function checkUserWebsiteAccess(
 					eq(teamMember.teamId, site.teamId)
 				)
 			)
-			.limit(1)
-			.$withCache({ tag: "team-membership" });
+			.limit(1);
 
 		if (teamMembership) {
 			return { hasAccess: true, website: site };

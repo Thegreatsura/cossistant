@@ -73,7 +73,7 @@ export function VisitorSidebar({
 							url={visitor.contact?.image}
 							withBoringAvatar
 						/>
-						<div className="flex flex-col gap-0.5">
+						<div className="flex flex-col gap-0">
 							<p className="font-medium text-sm">{fullName}</p>
 							{visitor.contact ? (
 								<p className="text-[15px] text-muted-foreground">

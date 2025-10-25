@@ -174,15 +174,15 @@ export function ConversationItem({
 				)}
 			</div>
 			<div className="flex items-center gap-1">
-                                {focused ? (
-                                        <ConversationBasicActions
-                                                conversationId={header.id}
-                                                deletedAt={header.deletedAt}
-                                                enableKeyboardShortcuts
-                                                status={header.status}
-                                                visitorId={header.visitorId}
-                                        />
-                                ) : lastTimelineItemCreatedAt ? (
+				{focused ? (
+					<ConversationBasicActions
+						conversationId={header.id}
+						deletedAt={header.deletedAt}
+						enableKeyboardShortcuts
+						status={header.status}
+						visitorId={header.visitorId}
+					/>
+				) : lastTimelineItemCreatedAt ? (
 					<span className="shrink-0 pr-2 text-primary/40 text-xs">
 						{formatTimeAgo(lastTimelineItemCreatedAt)}
 					</span>

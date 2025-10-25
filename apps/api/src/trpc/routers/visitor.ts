@@ -4,11 +4,11 @@ import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { listOnlineVisitors } from "@api/services/presence";
 import { createConversationEvent } from "@api/utils/conversation-event";
 import {
-        blockVisitorResponseSchema,
-        type ContactMetadata,
-        ConversationEventType,
-        listVisitorPresenceResponseSchema,
-        TimelineItemVisibility,
+	blockVisitorResponseSchema,
+	type ContactMetadata,
+	ConversationEventType,
+	listVisitorPresenceResponseSchema,
+	TimelineItemVisibility,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -92,12 +92,12 @@ export const visitorRouter = createTRPCRouter({
 					websiteId: conversation.websiteId,
 					visitorId: conversation.visitorId,
 				},
-                                event: {
-                                        type: ConversationEventType.VISITOR_BLOCKED,
-                                        actorUserId: user.id,
-                                        visibility: TimelineItemVisibility.PRIVATE,
-                                },
-                        });
+				event: {
+					type: ConversationEventType.VISITOR_BLOCKED,
+					actorUserId: user.id,
+					visibility: TimelineItemVisibility.PRIVATE,
+				},
+			});
 
 			return {
 				conversation,
@@ -163,12 +163,12 @@ export const visitorRouter = createTRPCRouter({
 					websiteId: conversation.websiteId,
 					visitorId: conversation.visitorId,
 				},
-                                event: {
-                                        type: ConversationEventType.VISITOR_UNBLOCKED,
-                                        actorUserId: user.id,
-                                        visibility: TimelineItemVisibility.PRIVATE,
-                                },
-                        });
+				event: {
+					type: ConversationEventType.VISITOR_UNBLOCKED,
+					actorUserId: user.id,
+					visibility: TimelineItemVisibility.PRIVATE,
+				},
+			});
 
 			return {
 				conversation,

@@ -13,8 +13,8 @@ import {
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 
 import {
-        ConversationStatus,
-        type TimelineItemVisibility as TimelineItemVisibilityEnum,
+	ConversationStatus,
+	type TimelineItemVisibility as TimelineItemVisibilityEnum,
 } from "@cossistant/types";
 import type { TimelineItemParts } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
@@ -741,18 +741,18 @@ export async function getConversationTimelineItems(
 		isNull(conversationTimelineItem.deletedAt),
 	];
 
-        const visibilities = params.visibility;
-        if (visibilities?.length) {
-                if (visibilities.length === 1) {
-                        whereConditions.push(
-                                eq(conversationTimelineItem.visibility, visibilities[0]!)
-                        );
-                } else {
-                        whereConditions.push(
-                                inArray(conversationTimelineItem.visibility, visibilities)
-                        );
-                }
-        }
+	const visibilities = params.visibility;
+	if (visibilities?.length) {
+		if (visibilities.length === 1) {
+			whereConditions.push(
+				eq(conversationTimelineItem.visibility, visibilities[0]!)
+			);
+		} else {
+			whereConditions.push(
+				inArray(conversationTimelineItem.visibility, visibilities)
+			);
+		}
+	}
 
 	// When paginating fetch timeline items older than the current batch.
 	if (params.cursor) {

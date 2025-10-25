@@ -20,6 +20,7 @@ import {
 	safelyExtractRequestQuery,
 	validateResponse,
 } from "@api/utils/validate";
+import { APIKeyType, TimelineItemVisibility } from "@cossistant/types";
 import {
 	createConversationRequestSchema,
 	createConversationResponseSchema,
@@ -33,11 +34,10 @@ import {
 	setConversationTypingResponseSchema,
 } from "@cossistant/types/api/conversation";
 import {
-        getConversationTimelineItemsRequestSchema,
-        getConversationTimelineItemsResponseSchema,
-        type TimelineItem,
+	getConversationTimelineItemsRequestSchema,
+	getConversationTimelineItemsResponseSchema,
+	type TimelineItem,
 } from "@cossistant/types/api/timeline-item";
-import { APIKeyType, TimelineItemVisibility } from "@cossistant/types";
 import { conversationSeenSchema } from "@cossistant/types/schemas";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
@@ -912,11 +912,11 @@ conversationRouter.openapi(
 		],
 	},
 	async (c) => {
-                const { db, website, organization, query, apiKey } =
-                        await safelyExtractRequestQuery(
-                                c,
-                                getConversationTimelineItemsRequestSchema
-                        );
+		const { db, website, organization, query, apiKey } =
+			await safelyExtractRequestQuery(
+				c,
+				getConversationTimelineItemsRequestSchema
+			);
 
 		const params = getConversationRequestSchema.parse({
 			conversationId: c.req.param("conversationId"),
@@ -937,21 +937,21 @@ conversationRouter.openapi(
 			);
 		}
 
-                const visibilityFilter =
-                        apiKey?.keyType === APIKeyType.PUBLIC
-                                ? [TimelineItemVisibility.PUBLIC]
-                                : undefined;
+		const visibilityFilter =
+			apiKey?.keyType === APIKeyType.PUBLIC
+				? [TimelineItemVisibility.PUBLIC]
+				: undefined;
 
-			const result = await getConversationTimelineItems(db, {
-				organizationId: organization.id,
-				conversationId: params.conversationId,
-				websiteId: website.id,
-				limit: query.limit,
-				cursor: query.cursor,
-				visibility: visibilityFilter,
-			});
+		const result = await getConversationTimelineItems(db, {
+			organizationId: organization.id,
+			conversationId: params.conversationId,
+			websiteId: website.id,
+			limit: query.limit,
+			cursor: query.cursor,
+			visibility: visibilityFilter,
+		});
 
-                return c.json(
+		return c.json(
 			{
 				items: result.items as TimelineItem[],
 				nextCursor: result.nextCursor ?? null,

@@ -26,7 +26,7 @@ export const ResizableSidebar = ({
 	return (
 		<aside
 			className={cn(
-				"relative flex border-border p-0 transition-all duration-200 ease-in-out",
+				"relative flex border-primary/10 p-0 transition-all duration-200 ease-in-out dark:border-primary/5",
 				className,
 				{
 					"ml-[0px] p-0": !open,

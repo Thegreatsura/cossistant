@@ -1,3 +1,4 @@
+import { Support } from "@cossistant/next/support";
 import { Providers } from "./providers";
 
 export default function Layout({
@@ -5,5 +6,10 @@ export default function Layout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	return <Providers>{children}</Providers>;
+	return (
+		<Providers>
+			{children}
+			<Support />
+		</Providers>
+	);
 }
