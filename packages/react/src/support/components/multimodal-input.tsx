@@ -148,7 +148,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 					<div className="flex items-center gap-0.5">
 						{/* File attachment button */}
-						{onFileSelect && (
+						{/* {onFileSelect && (
 							<>
 								<button
 									aria-label={text("common.actions.attachFiles")}
@@ -175,7 +175,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 									ref={fileInputRef}
 								/>
 							</>
-						)}
+						)} */}
 
 						{/* Send button */}
 						<SendButton disabled={!canSubmit} />

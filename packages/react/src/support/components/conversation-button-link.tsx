@@ -37,7 +37,7 @@ export function ConversationButtonLink({
 	conversation,
 	onClick,
 	...props
-}: ConversationButtonLinkProps): React.ReactElement {
+}: ConversationButtonLinkProps): React.ReactElement | null {
 	const preview = useConversationPreview({ conversation });
 	const text = useSupportText();
 	const { lastMessage, assignedAgent, typing } = preview;

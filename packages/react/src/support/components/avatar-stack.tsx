@@ -33,7 +33,7 @@ export const AvatarStackItem = ({
 	spacing?: number;
 	gapWidth?: number;
 	className?: string;
-}): ReactElement => {
+}): ReactElement | null => {
 	const isFirst = index === 0;
 
 	// Calculate the circle radius for the mask cutout
@@ -76,7 +76,7 @@ export function AvatarStack({
 	size = 44,
 	spacing = 28,
 	gapWidth = 3,
-}: AvatarStackProps): ReactElement {
+}: AvatarStackProps): ReactElement | null {
 	const displayedHumanAgents = humanAgents.slice(0, 2);
 	const remainingHumanAgentsCount = Math.max(0, humanAgents.length - 2);
 

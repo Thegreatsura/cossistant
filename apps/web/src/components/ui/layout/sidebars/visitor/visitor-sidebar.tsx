@@ -94,11 +94,11 @@ export function VisitorSidebar({
 						<div className="flex flex-col gap-0">
 							<p className="font-medium text-sm">{fullName}</p>
 							{visitor.contact ? (
-								<p className="text-[15px] text-muted-foreground">
+								<p className="text-muted-foreground text-xs">
 									{visitor.contact?.email}
 								</p>
 							) : (
-								<p className="text-primary/50 text-sm decoration-dashed underline-offset-2">
+								<p className="text-primary/50 text-xs decoration-dashed underline-offset-2">
 									Not identified yet
 								</p>
 							)}

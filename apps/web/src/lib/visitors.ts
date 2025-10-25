@@ -259,7 +259,7 @@ export function getVisitorNameWithFallback(visitor: {
 }) {
 	return (
 		visitor?.contact?.name ||
-		visitor?.contact?.email ||
+		visitor?.contact?.email?.split("@")[0] ||
 		generateVisitorName(visitor.id)
 	);
 }

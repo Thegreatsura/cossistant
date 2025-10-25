@@ -142,7 +142,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 					<div className="flex items-center justify-end py-2 pr-1 pl-3">
 						<div className="flex items-center gap-0.5">
 							{/* File attachment button */}
-							{onFileSelect && (
+							{/* {onFileSelect && (
 								<>
 									<TooltipOnHover content="Attach files">
 										<Button
@@ -169,7 +169,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 										ref={fileInputRef}
 									/>
 								</>
-							)}
+							)} */}
 
 							<TooltipOnHover
 								content="Send message"
