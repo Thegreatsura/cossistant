@@ -135,8 +135,9 @@ export type UpdateContactMetadataRequest = z.infer<
  * This is used to create or update a contact and link it to a visitor
  */
 export const identifyContactRequestSchema = z.object({
-	id: z.ulid().openapi({
-		description: "The contact's unique identifier (ULID).",
+	id: z.ulid().optional().openapi({
+		description:
+			"Optional contact ID to update when linking the visitor to an existing contact.",
 		example: "01JG000000000000000000000",
 	}),
 	visitorId: z.ulid().openapi({

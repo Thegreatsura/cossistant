@@ -113,6 +113,28 @@ export const ConversationTimeline = (() => {
 				[onScrollStart, onScrollEnd]
 			);
 
+			// Static fade effect on top and bottom
+			const fadeStyle = React.useMemo(() => {
+				const maskHeight = "32px";
+				const scrollbarWidth = "8px";
+
+				const maskImage = `linear-gradient(to bottom, transparent, black ${maskHeight}, black calc(100% - ${maskHeight}), transparent), linear-gradient(black, black)`;
+				const maskSize = `calc(100% - ${scrollbarWidth}) 100%, ${scrollbarWidth} 100%`;
+				const maskPosition = "0 0, 100% 0";
+				const maskRepeat = "no-repeat, no-repeat";
+
+				return {
+					maskImage,
+					maskSize,
+					maskPosition,
+					maskRepeat,
+					WebkitMaskImage: maskImage,
+					WebkitMaskSize: maskSize,
+					WebkitMaskPosition: maskPosition,
+					WebkitMaskRepeat: maskRepeat,
+				};
+			}, []);
+
 			return useRenderElement(
 				"div",
 				{
@@ -128,6 +150,7 @@ export const ConversationTimeline = (() => {
 						"aria-live": "polite",
 						"aria-relevant": "additions",
 						onScroll: handleScroll,
+						style: fadeStyle,
 						...props,
 						children: content,
 					},

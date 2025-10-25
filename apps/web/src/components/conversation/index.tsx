@@ -30,12 +30,9 @@ export function Conversation({
 	return (
 		<>
 			<Page className="relative py-0 pr-0.5 pl-0">
-				<div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-14 bg-gradient-to-b from-co-background/50 to-transparent dark:from-co-background-100/80" />
 				<ConversationHeader {...header} />
 				<ConversationTimelineList {...timeline} />
 				<MultimodalInput {...input} />
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-30 bg-gradient-to-t from-co-background to-transparent dark:from-co-background-100/90" />
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-co-background/50 via-co-background to-transparent dark:from-co-background-100/90 dark:via-co-background-100" />
 			</Page>
 			<VisitorSidebar {...visitorSidebar} />
 		</>

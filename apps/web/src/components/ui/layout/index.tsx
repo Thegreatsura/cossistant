@@ -1,8 +1,9 @@
 import Link from "next/link";
-import type { RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "../button";
 import Icon from "../icons";
+
+export { PageContent } from "./page-content";
 
 export const PageHeaderTitle = ({
 	children,
@@ -55,26 +56,6 @@ export const Page = ({
 			"relative flex h-full flex-1 flex-col overflow-hidden",
 			className
 		)}
-	>
-		{children}
-	</div>
-);
-
-export const PageContent = ({
-	children,
-	className,
-	ref,
-}: {
-	children: React.ReactNode;
-	className?: string;
-	ref?: RefObject<HTMLDivElement | null>;
-}) => (
-	<div
-		className={cn(
-			"scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-background-100 relative flex h-full flex-1 flex-col overflow-y-auto p-4 pt-14",
-			className
-		)}
-		ref={ref}
 	>
 		{children}
 	</div>
