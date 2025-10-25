@@ -22,46 +22,27 @@ export function usePrefetchConversationData() {
 	}: PrefetchConversationDataOptions) => {
 		const prefetchPromises: Promise<void>[] = [];
 
-		// Prefetch conversation events
-		const eventsQueryOptions =
-			trpc.conversation.getConversationEvents.queryOptions({
+		// Prefetch conversation timeline items
+		const timelineItemsQueryOptions =
+			trpc.conversation.getConversationTimelineItems.queryOptions({
 				websiteSlug,
 				conversationId,
 				limit,
 				cursor: null,
 			});
 
-		// Check if events data is already cached
-		const eventsCachedData = queryClient.getQueryData(
-			eventsQueryOptions.queryKey
+		// Check if timeline items data is already cached
+		const timelineItemsCachedData = queryClient.getQueryData(
+			timelineItemsQueryOptions.queryKey
 		);
 
-		if (!eventsCachedData) {
+		if (!timelineItemsCachedData) {
 			prefetchPromises.push(
-				queryClient.prefetchQuery(eventsQueryOptions).catch((error) => {
-					console.warn("Failed to prefetch conversation events:", error);
-				})
-			);
-		}
-
-		// Prefetch conversation messages
-		const messagesQueryOptions =
-			trpc.conversation.getConversationMessages.queryOptions({
-				websiteSlug,
-				conversationId,
-				limit,
-				cursor: null,
-			});
-
-		// Check if messages data is already cached
-		const messagesCachedData = queryClient.getQueryData(
-			messagesQueryOptions.queryKey
-		);
-
-		if (!messagesCachedData) {
-			prefetchPromises.push(
-				queryClient.prefetchQuery(messagesQueryOptions).catch((error) => {
-					console.warn("Failed to prefetch conversation messages:", error);
+				queryClient.prefetchQuery(timelineItemsQueryOptions).catch((error) => {
+					console.warn(
+						"Failed to prefetch conversation timeline items:",
+						error
+					);
 				})
 			);
 		}

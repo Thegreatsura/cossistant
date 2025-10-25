@@ -40,7 +40,7 @@ export function ConversationHeader({
 	visitorIsBlocked,
 }: ConversationHeaderProps) {
 	return (
-		<PageHeader className="z-10 border-primary/10 border-b bg-background pl-3.5 2xl:border-transparent 2xl:bg-transparent dark:bg-background-100 2xl:dark:bg-transparent">
+		<PageHeader className="z-10 border-primary/10 border-b bg-background pl-3.5 2xl:border-transparent 2xl:bg-transparent dark:border-primary/5 dark:bg-background-50 dark:2xl:border-transparent 2xl:dark:bg-transparent">
 			<div className="flex items-center gap-2">
 				{!isLeftSidebarOpen && (
 					<TooltipOnHover

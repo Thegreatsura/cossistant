@@ -195,31 +195,34 @@ export function ConversationItem({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-1">
-				{focused ? (
-					<ConversationBasicActions
-						conversationId={header.id}
-						deletedAt={header.deletedAt}
-						enableKeyboardShortcuts
-						status={header.status}
-						visitorId={header.visitorId}
+			<div className="flex items-center gap-3">
+				{waitingSinceLabel && (
+					<span className="shrink-0 rounded border border-cossistant-orange/10 bg-cossistant-orange/5 px-2 py-1 font-medium text-[11px] text-cossistant-orange leading-none">
+						Waiting for {waitingSinceLabel}
+					</span>
+				)}
+				<div className="flex min-w-[70px] items-center justify-end gap-1">
+					{focused ? (
+						<ConversationBasicActions
+							conversationId={header.id}
+							deletedAt={header.deletedAt}
+							enableKeyboardShortcuts
+							status={header.status}
+							visitorId={header.visitorId}
+						/>
+					) : lastTimelineItemCreatedAt ? (
+						<span className="shrink-0 pr-2 text-primary/40 text-xs">
+							{formatTimeAgo(lastTimelineItemCreatedAt)}
+						</span>
+					) : null}
+					<span
+						aria-hidden="true"
+						className={cn(
+							"inline-block size-1.5 rounded-full bg-cossistant-orange opacity-0",
+							hasUnreadMessage && "opacity-100"
+						)}
 					/>
-				) : waitingSinceLabel ? (
-					<span className="shrink-0 rounded-full bg-cossistant-orange/10 px-2 py-0.5 font-medium text-[11px] text-cossistant-orange uppercase leading-none">
-						Waiting {waitingSinceLabel}
-					</span>
-				) : lastTimelineItemCreatedAt ? (
-					<span className="shrink-0 pr-2 text-primary/40 text-xs">
-						{formatTimeAgo(lastTimelineItemCreatedAt)}
-					</span>
-				) : null}
-				<span
-					aria-hidden="true"
-					className={cn(
-						"inline-block size-1.5 rounded-full bg-cossistant-orange opacity-0",
-						hasUnreadMessage && "opacity-100"
-					)}
-				/>
+				</div>
 			</div>
 		</Link>
 	);
