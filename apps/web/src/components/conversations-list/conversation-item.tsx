@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import { ConversationStatus } from "@cossistant/types";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -12,7 +13,8 @@ import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useUserSession } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
-import { formatTimeAgo } from "@/lib/date";
+import { formatTimeAgo, getWaitingSinceLabel } from "@/lib/date";
+import { isInboundVisitorMessage } from "@/lib/conversation-messages";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
@@ -21,18 +23,20 @@ import { BouncingDots } from "../conversation/messages/typing-indicator";
 
 type Props = {
 	href: string;
-	header: ConversationHeader;
-	websiteSlug: string;
-	focused?: boolean;
-	setFocused?: () => void;
+        header: ConversationHeader;
+        websiteSlug: string;
+        focused?: boolean;
+        setFocused?: () => void;
+        showWaitingForReplyPill?: boolean;
 };
 
 export function ConversationItem({
-	href,
-	header,
-	websiteSlug,
-	focused = false,
-	setFocused,
+        href,
+        header,
+        websiteSlug,
+        focused = false,
+        setFocused,
+        showWaitingForReplyPill = false,
 }: Props) {
 	const queryNormalizer = useQueryNormalizer();
 	const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
@@ -102,21 +106,45 @@ export function ConversationItem({
 		return null;
 	}, [typingEntries, visitor]);
 
-	const cachedLastTimelineItem = useLatestConversationMessage({
-		conversationId: header.id,
-		websiteSlug,
-	});
+        const cachedLastTimelineItem = useLatestConversationMessage({
+                conversationId: header.id,
+                websiteSlug,
+        });
 
-	const lastTimelineItem =
-		cachedLastTimelineItem ?? headerLastTimelineItem ?? null;
+        const lastTimelineItem =
+                cachedLastTimelineItem ?? headerLastTimelineItem ?? null;
 
-	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
-		? new Date(lastTimelineItem.createdAt)
-		: null;
+        const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
+                ? new Date(lastTimelineItem.createdAt)
+                : null;
+        const shouldDisplayWaitingPill =
+                showWaitingForReplyPill &&
+                header.status === ConversationStatus.OPEN &&
+                !header.deletedAt;
 
-	const headerLastSeenAt = header.lastSeenAt
-		? new Date(header.lastSeenAt)
-		: null;
+        const inboundWaitingTimelineItem = useMemo(() => {
+                if (!shouldDisplayWaitingPill) {
+                        return null;
+                }
+
+                return isInboundVisitorMessage(lastTimelineItem)
+                        ? lastTimelineItem
+                        : null;
+        }, [lastTimelineItem, shouldDisplayWaitingPill]);
+
+        const waitingSinceLabel = useMemo(() => {
+                if (!inboundWaitingTimelineItem) {
+                        return null;
+                }
+
+                return getWaitingSinceLabel(
+                        new Date(inboundWaitingTimelineItem.createdAt)
+                );
+        }, [inboundWaitingTimelineItem?.createdAt]);
+
+        const headerLastSeenAt = header.lastSeenAt
+                ? new Date(header.lastSeenAt)
+                : null;
 
 	const isLastTimelineItemFromCurrentUser =
 		lastTimelineItem?.userId === user.id;
@@ -130,8 +158,8 @@ export function ConversationItem({
 
 	const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
 
-	return (
-		<Link
+        return (
+                <Link
 			className={cn(
 				"group/conversation-item relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm",
 				"focus-visible:outline-none focus-visible:ring-0",
@@ -173,7 +201,7 @@ export function ConversationItem({
 					</p>
 				)}
 			</div>
-			<div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
                                 {focused ? (
                                         <ConversationBasicActions
                                                 conversationId={header.id}
@@ -182,11 +210,17 @@ export function ConversationItem({
                                                 status={header.status}
                                                 visitorId={header.visitorId}
                                         />
+                                ) : waitingSinceLabel ? (
+                                        <span
+                                                className="shrink-0 rounded-full bg-cossistant-orange/10 px-2 py-0.5 text-[11px] font-medium uppercase leading-none text-[color:var(--cossistant-orange)]"
+                                        >
+                                                Waiting {waitingSinceLabel}
+                                        </span>
                                 ) : lastTimelineItemCreatedAt ? (
-					<span className="shrink-0 pr-2 text-primary/40 text-xs">
-						{formatTimeAgo(lastTimelineItemCreatedAt)}
-					</span>
-				) : null}
+                                        <span className="shrink-0 pr-2 text-primary/40 text-xs">
+                                                {formatTimeAgo(lastTimelineItemCreatedAt)}
+                                        </span>
+                                ) : null}
 				<span
 					aria-hidden="true"
 					className={cn(
