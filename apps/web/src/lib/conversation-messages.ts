@@ -3,7 +3,7 @@ import { ConversationTimelineType, type TimelineItem } from "@cossistant/types";
 export function isInboundVisitorMessage(
 	timelineItem: TimelineItem | null | undefined
 ): timelineItem is TimelineItem & {
-	type: ConversationTimelineType.MESSAGE;
+	type: typeof ConversationTimelineType.MESSAGE;
 } {
 	return (
 		timelineItem != null &&

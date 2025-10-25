@@ -5,6 +5,7 @@ import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-
 import { ConversationStatus } from "@cossistant/types";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
+import { differenceInHours } from "date-fns";
 import Link from "next/link";
 import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -115,6 +116,7 @@ export function ConversationItem({
 	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
 		? new Date(lastTimelineItem.createdAt)
 		: null;
+
 	const shouldDisplayWaitingPill =
 		showWaitingForReplyPill &&
 		header.status === ConversationStatus.OPEN &&
@@ -133,7 +135,16 @@ export function ConversationItem({
 			return null;
 		}
 
-		return getWaitingSinceLabel(new Date(inboundWaitingTimelineItem.createdAt));
+		const messageDate = new Date(inboundWaitingTimelineItem.createdAt);
+		const now = new Date();
+		const hoursAgo = differenceInHours(now, messageDate);
+
+		// Only show waiting label if message is older than 8 hours
+		if (hoursAgo < 8) {
+			return null;
+		}
+
+		return getWaitingSinceLabel(messageDate);
 	}, [inboundWaitingTimelineItem?.createdAt]);
 
 	const headerLastSeenAt = header.lastSeenAt
