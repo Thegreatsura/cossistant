@@ -15,7 +15,7 @@ import type {
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { AnimatePresence } from "motion/react";
 import type { RefObject } from "react";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
@@ -35,6 +35,11 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 	return eventPart || null;
 }
 
+const EMPTY_TIMELINE_ITEMS: TimelineItem[] = [];
+const EMPTY_TEAM_MEMBERS: RouterOutputs["user"]["getWebsiteMembers"] = [];
+const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
+const EMPTY_SEEN_DATA: ConversationSeen[] = [];
+
 type ConversationTimelineListProps = {
 	ref?: React.RefObject<HTMLDivElement | null>;
 	items: TimelineItem[];
@@ -48,12 +53,12 @@ type ConversationTimelineListProps = {
 	onFetchMoreIfNeeded?: () => void;
 };
 
-export function ConversationTimelineList({
+function ConversationTimelineListComponent({
 	ref,
-	items: timelineItems,
-	teamMembers = [],
-	availableAIAgents = [],
-	seenData = [],
+	items: timelineItems = EMPTY_TIMELINE_ITEMS,
+	teamMembers = EMPTY_TEAM_MEMBERS,
+	availableAIAgents = EMPTY_AVAILABLE_AI_AGENTS,
+	seenData = EMPTY_SEEN_DATA,
 	currentUserId,
 	conversationId,
 	className,
@@ -196,3 +201,28 @@ export function ConversationTimelineList({
 		</PrimitiveConversationTimeline>
 	);
 }
+
+const areConversationTimelinePropsEqual = (
+	prev: ConversationTimelineListProps,
+	next: ConversationTimelineListProps
+) => {
+	return (
+		prev.ref === next.ref &&
+		prev.items === next.items &&
+		prev.teamMembers === next.teamMembers &&
+		prev.availableAIAgents === next.availableAIAgents &&
+		prev.seenData === next.seenData &&
+		prev.currentUserId === next.currentUserId &&
+		prev.conversationId === next.conversationId &&
+		prev.className === next.className &&
+		prev.onFetchMoreIfNeeded === next.onFetchMoreIfNeeded &&
+		prev.visitor === next.visitor
+	);
+};
+
+export const ConversationTimelineList = memo(
+	ConversationTimelineListComponent,
+	areConversationTimelinePropsEqual
+);
+
+ConversationTimelineList.displayName = "ConversationTimelineList";
