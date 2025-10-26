@@ -1,8 +1,6 @@
 import * as React from "react";
 import { useRenderElement } from "../utils/use-render-element";
 
-export type ConversationButtonStatusTone = "success" | "neutral" | "warning";
-
 export type ConversationButtonAssignedAgent = {
         name?: string | null;
         image?: string | null;
@@ -15,7 +13,6 @@ export type ConversationButtonStateBase = {
         assignedAgent?: ConversationButtonAssignedAgent;
         isTyping: boolean;
         status?: React.ReactNode;
-        statusTone: ConversationButtonStatusTone;
 };
 
 export type ConversationButtonState<
@@ -28,8 +25,6 @@ export type ConversationButtonRenderProps<
         state: ConversationButtonState<Extra>;
         showTypingIndicator: boolean;
         typingIndicator?: React.ReactNode;
-        trailingIcon?: React.ReactNode;
-        statusBadge?: React.ReactNode;
         avatar?: React.ReactNode;
 };
 
@@ -45,12 +40,9 @@ export type ConversationButtonProps<
         title?: React.ReactNode;
         lastMessage?: React.ReactNode;
         status?: React.ReactNode;
-        statusTone?: ConversationButtonStatusTone;
         assignedAgent?: ConversationButtonAssignedAgent;
         isTyping?: boolean;
         typingIndicator?: React.ReactNode;
-        trailingIcon?: React.ReactNode;
-        statusBadge?: React.ReactNode;
         avatar?: React.ReactNode;
         className?: string | ((state: ConversationButtonState<Extra>) => string);
         render?: (
@@ -69,12 +61,9 @@ function ConversationButtonInner<
                 title,
                 lastMessage,
                 status,
-                statusTone = "neutral",
                 assignedAgent,
                 isTyping = false,
                 typingIndicator,
-                trailingIcon,
-                statusBadge,
                 avatar,
                 className,
                 render,
@@ -92,7 +81,6 @@ function ConversationButtonInner<
                 assignedAgent,
                 isTyping,
                 status,
-                statusTone,
         };
 
         const mergedState = {
@@ -105,8 +93,6 @@ function ConversationButtonInner<
                 state: mergedState,
                 showTypingIndicator,
                 typingIndicator,
-                trailingIcon,
-                statusBadge,
                 avatar,
         };
 

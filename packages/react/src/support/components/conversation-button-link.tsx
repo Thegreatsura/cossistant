@@ -4,7 +4,6 @@ import { useConversationPreview } from "../../hooks/use-conversation-preview";
 import {
         ConversationButton,
         type ConversationButtonState,
-        type ConversationButtonStatusTone,
 } from "../../primitives/conversation-button";
 import { useSupportText } from "../text";
 import { cn } from "../utils";
@@ -32,19 +31,17 @@ export type ConversationButtonLinkState = ConversationButtonState<{
         lastMessage: ConversationPreviewData["lastMessage"];
         typing: ConversationPreviewData["typing"];
         timeline: ConversationPreviewData["timeline"];
+        statusKey: ConversationStatus;
+        statusBadgeClassName: string;
 }>;
 
-const STATUS_BADGE_CLASSNAMES: Record<ConversationButtonStatusTone, string> = {
-        success: "bg-co-success/20 text-co-success-foreground",
-        neutral: "bg-co-neutral/20 text-co-neutral-foreground",
-        warning: "bg-co-warning/20 text-co-warning-foreground",
+const STATUS_BADGE_CLASSNAMES: Record<ConversationStatus, string> = {
+        [ConversationStatus.OPEN]: "bg-co-success/20 text-co-success-foreground",
+        [ConversationStatus.RESOLVED]: "bg-co-neutral/20 text-co-neutral-foreground",
+        [ConversationStatus.SPAM]: "bg-co-warning/20 text-co-warning-foreground",
 };
 
-const STATUS_TONE_MAP: Record<ConversationStatus, ConversationButtonStatusTone> = {
-        [ConversationStatus.OPEN]: "success",
-        [ConversationStatus.RESOLVED]: "neutral",
-        [ConversationStatus.SPAM]: "warning",
-};
+const DEFAULT_STATUS_BADGE_CLASSNAME = "bg-co-neutral/20 text-co-neutral-foreground";
 
 export function ConversationButtonLink({
         conversation,
@@ -57,7 +54,8 @@ export function ConversationButtonLink({
         const { lastMessage, assignedAgent, typing } = preview;
         const conversationTitle = preview.title;
 
-        const statusTone = STATUS_TONE_MAP[conversation.status] ?? "neutral";
+        const statusBadgeClassName =
+                STATUS_BADGE_CLASSNAMES[conversation.status] ?? DEFAULT_STATUS_BADGE_CLASSNAME;
 
         const lastMessageContent = lastMessage
                 ? lastMessage.isFromVisitor
@@ -90,7 +88,8 @@ export function ConversationButtonLink({
                 timeline: preview.timeline,
                 isTyping: typing.isTyping,
                 status: conversation.status,
-                statusTone,
+                statusKey: conversation.status,
+                statusBadgeClassName,
         };
 
         const baseClassName = cn(
@@ -116,7 +115,6 @@ export function ConversationButtonLink({
                         render={render}
                         state={state}
                         status={conversation.status}
-                        statusTone={statusTone}
                         title={conversationTitle}
                         className={resolvedClassName}
                         typingIndicator={<BouncingDots />}
@@ -154,7 +152,7 @@ export function ConversationButtonLink({
                                         <div
                                                 className={cn(
                                                         "mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
-                                                        STATUS_BADGE_CLASSNAMES[buttonState.statusTone],
+                                                        buttonState.statusBadgeClassName,
                                                 )}
                                         >
                                                 {buttonState.status}

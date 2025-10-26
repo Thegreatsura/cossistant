@@ -14,7 +14,6 @@ export {
         type ConversationButtonRenderProps,
         type ConversationButtonProps,
         type ConversationButtonState,
-        type ConversationButtonStatusTone,
 } from "./conversation-button";
 export { Button } from "./button";
 export {
