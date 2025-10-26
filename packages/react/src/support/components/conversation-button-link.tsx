@@ -5,7 +5,7 @@ import {
         ConversationButton,
         type ConversationButtonState,
 } from "../../primitives/conversation-button";
-import { useSupportText } from "../text";
+import { type SupportTextKey, useSupportText } from "../text";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
 import { coButtonVariants } from "./button";
@@ -33,7 +33,7 @@ export type ConversationButtonLinkState = ConversationButtonState<{
         timeline: ConversationPreviewData["timeline"];
         statusKey: ConversationStatus;
         statusBadgeClassName: string;
-}>;
+}>; 
 
 const STATUS_BADGE_CLASSNAMES: Record<ConversationStatus, string> = {
         [ConversationStatus.OPEN]: "bg-co-success/20 text-co-success-foreground",
@@ -42,6 +42,12 @@ const STATUS_BADGE_CLASSNAMES: Record<ConversationStatus, string> = {
 };
 
 const DEFAULT_STATUS_BADGE_CLASSNAME = "bg-co-neutral/20 text-co-neutral-foreground";
+
+const STATUS_TEXT_KEYS: Record<ConversationStatus, SupportTextKey> = {
+        [ConversationStatus.OPEN]: "component.conversationButtonLink.status.open",
+        [ConversationStatus.RESOLVED]: "component.conversationButtonLink.status.resolved",
+        [ConversationStatus.SPAM]: "component.conversationButtonLink.status.spam",
+};
 
 export function ConversationButtonLink({
         conversation,
@@ -56,6 +62,8 @@ export function ConversationButtonLink({
 
         const statusBadgeClassName =
                 STATUS_BADGE_CLASSNAMES[conversation.status] ?? DEFAULT_STATUS_BADGE_CLASSNAME;
+        const statusTextKey = STATUS_TEXT_KEYS[conversation.status];
+        const statusText = statusTextKey ? text(statusTextKey) : text("common.fallbacks.unknown");
 
         const lastMessageContent = lastMessage
                 ? lastMessage.isFromVisitor
@@ -87,7 +95,7 @@ export function ConversationButtonLink({
                 typing,
                 timeline: preview.timeline,
                 isTyping: typing.isTyping,
-                status: conversation.status,
+                status: statusText,
                 statusKey: conversation.status,
                 statusBadgeClassName,
         };
@@ -114,7 +122,7 @@ export function ConversationButtonLink({
                         onClick={onClick}
                         render={render}
                         state={state}
-                        status={conversation.status}
+                        status={statusText}
                         title={conversationTitle}
                         className={resolvedClassName}
                 >
