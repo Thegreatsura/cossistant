@@ -23,9 +23,6 @@ export type ConversationButtonRenderProps<
         Extra extends Record<string, unknown> = Record<string, never>,
 > = {
         state: ConversationButtonState<Extra>;
-        showTypingIndicator: boolean;
-        typingIndicator?: React.ReactNode;
-        avatar?: React.ReactNode;
 };
 
 export type ConversationButtonChildren<
@@ -42,8 +39,6 @@ export type ConversationButtonProps<
         status?: React.ReactNode;
         assignedAgent?: ConversationButtonAssignedAgent;
         isTyping?: boolean;
-        typingIndicator?: React.ReactNode;
-        avatar?: React.ReactNode;
         className?: string | ((state: ConversationButtonState<Extra>) => string);
         render?: (
                 props: React.HTMLProps<HTMLButtonElement>,
@@ -63,8 +58,6 @@ function ConversationButtonInner<
                 status,
                 assignedAgent,
                 isTyping = false,
-                typingIndicator,
-                avatar,
                 className,
                 render,
                 asChild = false,
@@ -88,12 +81,8 @@ function ConversationButtonInner<
                 ...(providedState as Partial<ConversationButtonState<Extra>> | undefined),
         } as ConversationButtonState<Extra>;
 
-        const showTypingIndicator = Boolean(isTyping && typingIndicator);
         const renderProps: ConversationButtonRenderProps<Extra> = {
                 state: mergedState,
-                showTypingIndicator,
-                typingIndicator,
-                avatar,
         };
 
         const content =

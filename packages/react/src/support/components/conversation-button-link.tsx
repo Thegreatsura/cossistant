@@ -117,9 +117,8 @@ export function ConversationButtonLink({
                         status={conversation.status}
                         title={conversationTitle}
                         className={resolvedClassName}
-                        typingIndicator={<BouncingDots />}
                 >
-                        {({ state: buttonState, showTypingIndicator }) => (
+                        {({ state: buttonState }) => (
                                 <>
                                         <Avatar
                                                 className="flex size-8 flex-shrink-0 items-center justify-center overflow-clip rounded-full bg-co-background-200 dark:bg-co-background-500"
@@ -131,7 +130,7 @@ export function ConversationButtonLink({
                                         />
 
                                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                                                {showTypingIndicator ? (
+                                                {buttonState.isTyping ? (
                                                         <BouncingDots />
                                                 ) : (
                                                         <>
