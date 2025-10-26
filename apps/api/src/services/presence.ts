@@ -66,6 +66,7 @@ export type VisitorPresenceEntry = {
 	country: string | null;
 	latitude: number | null;
 	longitude: number | null;
+	contactId: string | null;
 };
 
 export type VisitorPresenceResponse = {
@@ -87,6 +88,7 @@ type CachedVisitorProfile = {
 	latitude?: string;
 	longitude?: string;
 	profileHydrated?: string;
+	contactId?: string;
 };
 
 function parseNumber(value: string | undefined): number | null {
@@ -117,6 +119,10 @@ function cachedProfileToEntry(
 			profile.country && profile.country.length > 0 ? profile.country : null,
 		latitude: parseNumber(profile.latitude),
 		longitude: parseNumber(profile.longitude),
+		contactId:
+			profile.contactId && profile.contactId.length > 0
+				? profile.contactId
+				: null,
 	};
 }
 
@@ -166,6 +172,7 @@ async function hydrateVisitorProfiles(
 					? ""
 					: String(row.longitude),
 			profileHydrated: "1",
+			contactId: row.contactId ?? "",
 		};
 
 		const key = visitorProfileKey(websiteId, row.id);
@@ -179,6 +186,7 @@ async function hydrateVisitorProfiles(
 			country: profile.country ?? "",
 			latitude: profile.latitude ?? "",
 			longitude: profile.longitude ?? "",
+			contactId: profile.contactId ?? "",
 		};
 
 		if (profile.lastSeenAt) {

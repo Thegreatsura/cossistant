@@ -14,22 +14,14 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	Sheet,
 	SheetContent,
@@ -40,15 +32,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
 } from "@/components/ui/table";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useTRPC } from "@/lib/trpc/client";
+import {
+        type ContactSortField,
+        useContactsTableControls,
+} from "@/contexts/contacts-table-controls";
+import { useVisitorPresence } from "@/contexts/visitor-presence";
 
 type ContactsPageContentProps = {
 	websiteSlug: string;
@@ -58,33 +54,22 @@ type ContactRow = RouterOutputs["contact"]["list"]["items"][number];
 
 type ContactDetail = RouterOutputs["contact"]["get"];
 
-const PAGE_SIZE_OPTIONS = ["10", "25", "50"] as const;
-
-type ContactSortField =
-	| "name"
-	| "email"
-	| "createdAt"
-	| "updatedAt"
-	| "visitorCount";
-
 export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const trpc = useTRPC();
 	const queryNormalizer = useQueryNormalizer();
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(25);
-	const [searchTerm, setSearchTerm] = useState("");
-	const debouncedSearch = useDebouncedValue(searchTerm.trim(), 300);
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: "updatedAt", desc: true },
-	]);
+	const {
+		page,
+		setPage,
+		pageSize,
+		debouncedSearchTerm,
+		sorting,
+		setSorting,
+		visitorStatus,
+	} = useContactsTableControls();
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [selectedContactId, setSelectedContactId] = useState<string | null>(
 		null
 	);
-
-	useEffect(() => {
-		setPage(1);
-	}, [debouncedSearch]);
 
 	const activeSort = sorting[0];
 	const sortBy = activeSort?.id as ContactSortField | undefined;
@@ -95,9 +80,10 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 			websiteSlug,
 			page,
 			limit: pageSize,
-			search: debouncedSearch || undefined,
+			search: debouncedSearchTerm || undefined,
 			sortBy,
 			sortOrder,
+			visitorStatus,
 		}),
 	});
 
@@ -128,11 +114,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	});
 
 	const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
-		setSorting((prev) => {
-			const next = typeof updater === "function" ? updater(prev) : updater;
-			return next.length > 0 ? next : [{ id: "updatedAt", desc: true }];
-		});
-		setPage(1);
+		setSorting(updater);
 	};
 
 	const handleRowClick = (contactId: string) => {
@@ -155,12 +137,6 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		setPage(cappedPage);
 	};
 
-	const handlePageSizeChange = (value: string) => {
-		const nextSize = Number.parseInt(value, 10);
-		setPageSize(nextSize);
-		setPage(1);
-	};
-
 	const pageStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
@@ -169,41 +145,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 			<PageHeader className="bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 				<PageHeaderTitle>Contacts</PageHeaderTitle>
 			</PageHeader>
-			<div className="mt-2 flex flex-col gap-5">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="w-full max-w-md">
-						<Input
-							append={
-								listQuery.isFetching ? (
-									<Spinner className="h-4 w-4" />
-								) : undefined
-							}
-							aria-label="Search contacts"
-							onChange={(event) => setSearchTerm(event.target.value)}
-							placeholder="Search by name or email"
-							prepend={<Search className="h-4 w-4 text-muted-foreground" />}
-							value={searchTerm}
-						/>
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="text-muted-foreground text-sm">Rows per page</span>
-						<Select
-							onValueChange={handlePageSizeChange}
-							value={String(pageSize)}
-						>
-							<SelectTrigger className="w-[90px]">
-								<SelectValue placeholder={pageSize} />
-							</SelectTrigger>
-							<SelectContent align="end">
-								{PAGE_SIZE_OPTIONS.map((option) => (
-									<SelectItem key={option} value={option}>
-										{option}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
+<div className="mt-2 flex flex-col gap-5">
 				{listQuery.error ? (
 					<Alert variant="destructive">
 						<AlertTitle>Unable to load contacts</AlertTitle>
@@ -269,12 +211,14 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 }
 
 type ContactsTableProps = {
-	data: ContactRow[];
-	isLoading: boolean;
-	sorting: SortingState;
-	onSortingChange: OnChangeFn<SortingState>;
-	onRowClick: (contactId: string) => void;
+        data: ContactRow[];
+        isLoading: boolean;
+        sorting: SortingState;
+        onSortingChange: OnChangeFn<SortingState>;
+        onRowClick: (contactId: string) => void;
 };
+
+const LOADING_ROW_COUNT = 5;
 
 function ContactsTable({
 	data,
@@ -283,21 +227,96 @@ function ContactsTable({
 	onSortingChange,
 	onRowClick,
 }: ContactsTableProps) {
+	const { visitors: presenceVisitors } = useVisitorPresence();
+
+        const presenceByContactId = useMemo(() => {
+                const map = new Map<
+                        string,
+                        {
+                                status: "online" | "away";
+                                lastSeenAt: string;
+                                image: string | null;
+                        }
+                >();
+                const timestamps = new Map<string, number>();
+
+                for (const visitor of presenceVisitors) {
+                        const contactId = visitor.contactId;
+
+                        if (!contactId) {
+                                continue;
+                        }
+
+                        if (!visitor.lastSeenAt) {
+                                continue;
+                        }
+
+                        const parsedLastSeen = Date.parse(visitor.lastSeenAt);
+
+                        if (Number.isNaN(parsedLastSeen)) {
+                                continue;
+                        }
+
+                        const existing = map.get(contactId);
+                        const existingTimestamp = timestamps.get(contactId);
+                        const candidate = {
+                                status: visitor.status,
+                                lastSeenAt: visitor.lastSeenAt,
+                                image: visitor.image ?? null,
+                        };
+
+                        if (!existing) {
+                                map.set(contactId, candidate);
+                                timestamps.set(contactId, parsedLastSeen);
+                                continue;
+                        }
+
+                        if (candidate.status === "online" && existing.status !== "online") {
+                                map.set(contactId, candidate);
+                                timestamps.set(contactId, parsedLastSeen);
+                                continue;
+                        }
+
+                        if (existing.status === "online" && candidate.status !== "online") {
+                                continue;
+                        }
+
+                        if (existingTimestamp === undefined || parsedLastSeen > existingTimestamp) {
+                                map.set(contactId, candidate);
+                                timestamps.set(contactId, parsedLastSeen);
+                        }
+                }
+
+                return map;
+        }, [presenceVisitors]);
+
 	const columns = useMemo<ColumnDef<ContactRow>[]>(
 		() => [
 			{
 				accessorKey: "name",
 				header: ({ column }) => <SortableHeader column={column} title="Name" />,
 				cell: ({ row }) => {
-					const { name, email } = row.original;
+					const { id, name, email, image } = row.original;
+					const displayName = name ?? email ?? "Unknown contact";
+					const presence = presenceByContactId.get(id);
+					const avatarUrl = image ?? presence?.image ?? null;
+
 					return (
-						<div className="flex flex-col">
-							<span className="font-medium text-sm">
-								{name ?? email ?? "Unknown contact"}
-							</span>
-							{name && email ? (
-								<span className="text-muted-foreground text-xs">{email}</span>
-							) : null}
+						<div className="flex items-center gap-3">
+							<Avatar
+								className="size-9"
+								fallbackName={displayName}
+								lastOnlineAt={presence?.lastSeenAt ?? null}
+								status={presence?.status}
+								url={avatarUrl}
+								withBoringAvatar
+							/>
+							<div className="flex flex-col">
+								<span className="font-medium text-sm">{displayName}</span>
+								{name && email ? (
+									<span className="text-muted-foreground text-xs">{email}</span>
+								) : null}
+							</div>
 						</div>
 					);
 				},
@@ -338,89 +357,135 @@ function ContactsTable({
 				),
 			},
 		],
-		[]
+		[presenceByContactId]
 	);
 
-	const table = useReactTable({
-		data,
-		columns,
-		state: { sorting },
-		onSortingChange,
-		manualSorting: true,
-		getCoreRowModel: getCoreRowModel(),
-	});
+        const table = useReactTable({
+                data,
+                columns,
+                state: { sorting },
+                onSortingChange,
+                manualSorting: true,
+                getCoreRowModel: getCoreRowModel(),
+        });
 
-	const showSkeleton = isLoading && data.length === 0;
+        const headerGroups = table.getHeaderGroups();
+        const rows = table.getRowModel().rows;
 
-	return (
-		<div className="overflow-hidden">
-			<Table>
-				<TableHeader className="bg-background">
-					{table.getHeaderGroups().map((headerGroup) => (
-						<TableRow className="hover:bg-muted/40" key={headerGroup.id}>
-							{headerGroup.headers.map((header) => (
-								<TableHead className="px-5 py-3" key={header.id}>
-									{header.isPlaceholder
-										? null
-										: flexRender(
-												header.column.columnDef.header,
-												header.getContext()
-											)}
-								</TableHead>
-							))}
-						</TableRow>
-					))}
-				</TableHeader>
-				<TableBody>
-					{showSkeleton ? (
-						Array.from({ length: 5 }).map((_, index) => (
-							<TableRow key={`skeleton-${index}`}>
-								<TableCell className="px-5 py-4" colSpan={4}>
-									<Skeleton className="h-6 w-full" />
-								</TableCell>
-							</TableRow>
-						))
-					) : table.getRowModel().rows.length > 0 ? (
-						table.getRowModel().rows.map((row) => (
-							<TableRow
-								aria-label={`View contact ${row.original.name ?? row.original.email ?? row.original.id}`}
-								className="cursor-pointer"
-								key={row.id}
-								onClick={() => onRowClick(row.original.id)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault();
-										onRowClick(row.original.id);
-									}
-								}}
-								tabIndex={0}
-							>
-								{row.getVisibleCells().map((cell) => (
-									<TableCell className="px-5 py-3" key={cell.id}>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
-									</TableCell>
-								))}
-							</TableRow>
-						))
-					) : (
-						<TableRow>
-							<TableCell
-								className="px-4 py-6 text-center text-muted-foreground text-sm"
-								colSpan={4}
-							>
-								No contacts found.
-							</TableCell>
-						</TableRow>
-					)}
-				</TableBody>
-			</Table>
-		</div>
-	);
+        if (isLoading) {
+                return (
+                        <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/80 shadow-sm">
+                                <Table>
+                                        <TableHeader>
+                                                {headerGroups.map((headerGroup) => (
+                                                        <TableRow key={headerGroup.id}>
+                                                                {headerGroup.headers.map((header) => (
+                                                                        <TableHead key={header.id}>
+                                                                                {header.isPlaceholder
+                                                                                        ? null
+                                                                                        : flexRender(
+                                                                                                  header.column.columnDef
+                                                                                                          .header,
+                                                                                                  header.getContext()
+                                                                                          )}
+                                                                        </TableHead>
+                                                                ))}
+                                                        </TableRow>
+                                                ))}
+                                        </TableHeader>
+                                        <TableBody>
+                                                {Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
+                                                        <TableRow key={index}>
+                                                                <TableCell colSpan={columns.length}>
+                                                                        <Skeleton className="h-12 w-full" />
+                                                                </TableCell>
+                                                        </TableRow>
+                                                ))}
+                                        </TableBody>
+                                </Table>
+                        </div>
+                );
+        }
+
+        if (!rows.length) {
+                return (
+                        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-primary/20 bg-background/60 px-10 py-16 text-center">
+                                <div className="space-y-1">
+                                        <h3 className="font-semibold text-base">No contacts match your filters</h3>
+                                        <p className="text-muted-foreground text-sm">
+                                                Try adjusting your search, filters, or sorting to find different contacts.
+                                        </p>
+                                </div>
+                        </div>
+                );
+        }
+
+        return (
+                <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/80 shadow-sm">
+                        <Table>
+                                <TableHeader>
+                                        {headerGroups.map((headerGroup) => (
+                                                <TableRow key={headerGroup.id}>
+                                                        {headerGroup.headers.map((header) => {
+                                                                const sorted = header.column.getIsSorted();
+
+                                                                return (
+                                                                        <TableHead
+                                                                                key={header.id}
+                                                                                aria-sort={
+                                                                                        sorted === "desc"
+                                                                                                ? "descending"
+                                                                                                : sorted === "asc"
+                                                                                                        ? "ascending"
+                                                                                                        : "none"
+                                                                                }
+                                                                        >
+                                                                                {header.isPlaceholder
+                                                                                        ? null
+                                                                                        : flexRender(
+                                                                                                  header.column.columnDef
+                                                                                                          .header,
+                                                                                                  header.getContext()
+                                                                                          )}
+                                                                        </TableHead>
+                                                                );
+                                                        })}
+                                                </TableRow>
+                                        ))}
+                                </TableHeader>
+                                <TableBody>
+                                        {rows.map((row) => (
+                                                <TableRow
+                                                        key={row.id}
+                                                        className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/50"
+                                                        onClick={() => onRowClick(row.original.id)}
+                                                        onKeyDown={(event) => {
+                                                                if (event.key === "Enter" || event.key === " ") {
+                                                                        event.preventDefault();
+                                                                        onRowClick(row.original.id);
+                                                                }
+                                                        }}
+                                                        tabIndex={0}
+                                                >
+                                                        {row.getVisibleCells().map((cell) => (
+                                                                <TableCell key={cell.id}>
+                                                                        {flexRender(
+                                                                                cell.column.columnDef.cell,
+                                                                                cell.getContext()
+                                                                        )}
+                                                                </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                        ))}
+                                </TableBody>
+                        </Table>
+                </div>
+        );
 }
 
 type SortableHeaderProps<TData> = {
-	column: Column<TData, unknown>;
-	title: string;
+        column: Column<TData, unknown>;
+        title: string;
 };
 
 function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
@@ -433,15 +498,21 @@ function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
 			type="button"
 		>
 			<span>{title}</span>
-			{sorted === "asc" ? (
-				<ArrowUp className="h-3.5 w-3.5" />
-			) : sorted === "desc" ? (
-				<ArrowDown className="h-3.5 w-3.5" />
-			) : (
-				<ArrowUpDown className="h-3.5 w-3.5" />
-			)}
-		</button>
-	);
+                        {sorted === "asc" ? (
+                                <ArrowUp aria-hidden="true" className="h-3.5 w-3.5">
+                                        <title>Sorted ascending</title>
+                                </ArrowUp>
+                        ) : sorted === "desc" ? (
+                                <ArrowDown aria-hidden="true" className="h-3.5 w-3.5">
+                                        <title>Sorted descending</title>
+                                </ArrowDown>
+                        ) : (
+                                <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5">
+                                        <title>Sortable column</title>
+                                </ArrowUpDown>
+                        )}
+                </button>
+        );
 }
 
 type ContactDetailsProps = {
