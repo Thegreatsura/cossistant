@@ -10,6 +10,8 @@ export { SupportBubble as Bubble } from "./bubble";
 export {
         ConversationButton,
         type ConversationButtonAssignedAgent,
+        type ConversationButtonChildren,
+        type ConversationButtonRenderProps,
         type ConversationButtonProps,
         type ConversationButtonState,
         type ConversationButtonStatusTone,

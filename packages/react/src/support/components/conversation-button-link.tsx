@@ -7,6 +7,9 @@ import {
         type ConversationButtonStatusTone,
 } from "../../primitives/conversation-button";
 import { useSupportText } from "../text";
+import { cn } from "../utils";
+import { Avatar } from "./avatar";
+import { coButtonVariants } from "./button";
 import Icon from "./icons";
 import { BouncingDots } from "./typing-indicator";
 
@@ -30,6 +33,12 @@ export type ConversationButtonLinkState = ConversationButtonState<{
         typing: ConversationPreviewData["typing"];
         timeline: ConversationPreviewData["timeline"];
 }>;
+
+const STATUS_BADGE_CLASSNAMES: Record<ConversationButtonStatusTone, string> = {
+        success: "bg-co-success/20 text-co-success-foreground",
+        neutral: "bg-co-neutral/20 text-co-neutral-foreground",
+        warning: "bg-co-warning/20 text-co-warning-foreground",
+};
 
 const STATUS_TONE_MAP: Record<ConversationStatus, ConversationButtonStatusTone> = {
         [ConversationStatus.OPEN]: "success",
@@ -84,10 +93,23 @@ export function ConversationButtonLink({
                 statusTone,
         };
 
+        const baseClassName = cn(
+                coButtonVariants({
+                        variant: "secondary",
+                        size: "large",
+                }),
+                "group/btn relative gap-3 border-0 border-co-border/50 border-b text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0",
+        );
+
+        const resolvedClassName =
+                typeof className === "function"
+                        ? (buttonState: ConversationButtonLinkState) =>
+                                  cn(baseClassName, className(buttonState))
+                        : cn(baseClassName, className);
+
         return (
                 <ConversationButton<ConversationButtonLinkState>
                         assignedAgent={assignedAgent}
-                        className={className}
                         isTyping={typing.isTyping}
                         lastMessage={lastMessageContent}
                         onClick={onClick}
@@ -96,14 +118,55 @@ export function ConversationButtonLink({
                         status={conversation.status}
                         statusTone={statusTone}
                         title={conversationTitle}
-                        trailingIcon={
-                                <Icon
-                                        className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
-                                        name="arrow-right"
-                                        variant="default"
-                                />
-                        }
+                        className={resolvedClassName}
                         typingIndicator={<BouncingDots />}
+                >
+                        {({ state: buttonState, showTypingIndicator }) => (
+                                <>
+                                        <Avatar
+                                                className="flex size-8 flex-shrink-0 items-center justify-center overflow-clip rounded-full bg-co-background-200 dark:bg-co-background-500"
+                                                image={buttonState.assignedAgent?.image}
+                                                name={
+                                                        buttonState.assignedAgent?.name ??
+                                                        text("common.fallbacks.supportTeam")
+                                                }
+                                        />
+
+                                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                                {showTypingIndicator ? (
+                                                        <BouncingDots />
+                                                ) : (
+                                                        <>
+                                                                <div className="flex max-w-[90%] items-center justify-between gap-2">
+                                                                        <h3 className="truncate font-medium text-co-primary text-sm">
+                                                                                {buttonState.title}
+                                                                        </h3>
+                                                                </div>
+                                                                {buttonState.lastMessageText ? (
+                                                                        <p className="text-co-primary/60 text-xs">
+                                                                                {buttonState.lastMessageText}
+                                                                        </p>
+                                                                ) : null}
+                                                        </>
+                                                )}
+                                        </div>
+
+                                        <div
+                                                className={cn(
+                                                        "mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
+                                                        STATUS_BADGE_CLASSNAMES[buttonState.statusTone],
+                                                )}
+                                        >
+                                                {buttonState.status}
+                                        </div>
+
+                                        <Icon
+                                                className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"
+                                                name="arrow-right"
+                                                variant="default"
+                                        />
+                                </>
+                        )}
                 />
         );
 }
