@@ -53,9 +53,9 @@ const STATUS_TEXT_KEYS: Record<ConversationStatus, SupportTextKey> = {
  * details, last message snippets and typing indicators.
  */
 export function ConversationButtonLink({
-        conversation,
-        onClick,
-        className,
+	conversation,
+	onClick,
+	className,
 }: ConversationButtonLinkProps): React.ReactElement | null {
 	const preview = useConversationPreview({ conversation });
 	const text = useSupportText();

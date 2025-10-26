@@ -33,8 +33,8 @@ export type UseConversationResult = {
  * @param options Additional react-query style controls for the request.
  */
 export function useConversation(
-        conversationId: string | null,
-        options: UseConversationOptions = {}
+	conversationId: string | null,
+	options: UseConversationOptions = {}
 ): UseConversationResult {
 	const { client } = useSupport();
 	const store = client.conversationsStore;

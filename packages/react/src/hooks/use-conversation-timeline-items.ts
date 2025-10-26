@@ -43,8 +43,8 @@ export type UseConversationTimelineItemsResult =
  * with pagination helpers.
  */
 export function useConversationTimelineItems(
-        conversationId: string | null | undefined,
-        options: UseConversationTimelineItemsOptions = {}
+	conversationId: string | null | undefined,
+	options: UseConversationTimelineItemsOptions = {}
 ): UseConversationTimelineItemsResult {
 	const { client } = useSupport();
 	const store = client.timelineItemsStore;

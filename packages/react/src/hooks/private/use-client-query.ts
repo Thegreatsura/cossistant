@@ -41,7 +41,7 @@ const EMPTY_DEPENDENCIES: readonly unknown[] = [];
  * focus refetching and exposes a typed refetch helper.
  */
 export function useClientQuery<TData, TArgs = void>(
-        options: UseClientQueryOptions<TData, TArgs>
+	options: UseClientQueryOptions<TData, TArgs>
 ): UseClientQueryResult<TData, TArgs> {
 	const {
 		client,

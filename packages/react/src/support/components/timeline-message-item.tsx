@@ -19,9 +19,9 @@ export type TimelineMessageItemProps = {
  * or an agent sent the message.
  */
 export function TimelineMessageItem({
-        item,
-        isLast = false,
-        isSentByViewer,
+	item,
+	isLast = false,
+	isSentByViewer,
 }: TimelineMessageItemProps): React.ReactElement {
 	const text = useSupportText();
 	return (

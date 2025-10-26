@@ -429,7 +429,9 @@ export async function listContacts(
 			ilike(contact.email, likeTerm),
 			ilike(contact.name, likeTerm)
 		);
-		whereConditions.push(searchCondition);
+		if (searchCondition) {
+			whereConditions.push(searchCondition);
+		}
 	}
 
 	const visitorCounts = db

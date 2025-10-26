@@ -12,9 +12,9 @@ type BasicStore<TState> = {
  * memoizing selector results and resubscribing when dependencies change.
  */
 export function useStoreSelector<TState, TSelected>(
-        store: BasicStore<TState>,
-        selector: (state: TState) => TSelected,
-        isEqual: (previous: TSelected, next: TSelected) => boolean = Object.is
+	store: BasicStore<TState>,
+	selector: (state: TState) => TSelected,
+	isEqual: (previous: TSelected, next: TSelected) => boolean = Object.is
 ): TSelected {
 	const selectionRef = useRef<TSelected>(undefined);
 

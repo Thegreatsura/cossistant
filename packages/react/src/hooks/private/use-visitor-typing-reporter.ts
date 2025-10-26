@@ -24,8 +24,8 @@ type UseVisitorTypingReporterResult = {
  * `stop` event is emitted when the component unmounts.
  */
 export function useVisitorTypingReporter({
-        client,
-        conversationId,
+	client,
+	conversationId,
 }: UseVisitorTypingReporterOptions): UseVisitorTypingReporterResult {
 	const typingActiveRef = useRef(false);
 	const lastSentAtRef = useRef(0);

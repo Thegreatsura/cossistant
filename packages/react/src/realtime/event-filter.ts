@@ -23,9 +23,9 @@ function getTargetVisitorId(event: AnyRealtimeEvent): string | null {
  * visitor identifiers.
  */
 export function shouldDeliverEvent(
-        event: AnyRealtimeEvent,
-        websiteId: string | null,
-        visitorId: string | null
+	event: AnyRealtimeEvent,
+	websiteId: string | null,
+	visitorId: string | null
 ): boolean {
 	if (websiteId && event.payload.websiteId !== websiteId) {
 		return false;

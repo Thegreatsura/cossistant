@@ -76,7 +76,7 @@ export function useConversationsStore(): ConversationSelection {
  * the identifier is missing or the entity has not been fetched yet.
  */
 export function useConversationById(
-        conversationId: string | null
+	conversationId: string | null
 ): Conversation | null {
 	const { client } = useSupport();
 

@@ -51,10 +51,10 @@ function useSelector<TSelected>(
  * Hook wrapper for the typing Zustand store used by realtime helpers.
  */
 export function useTypingStore<TSelected>(
-        selector: Selector<TSelected>,
-        isEqual?: EqualityChecker<TSelected>
+	selector: Selector<TSelected>,
+	isEqual?: EqualityChecker<TSelected>
 ): TSelected {
-        return useSelector(selector, isEqual);
+	return useSelector(selector, isEqual);
 }
 
 /**
@@ -62,25 +62,25 @@ export function useTypingStore<TSelected>(
  * local input changes.
  */
 export function setTypingState(options: {
-        conversationId: string;
-        actorType: TypingActorType;
-        actorId: string;
-        isTyping: boolean;
-        preview?: string | null;
-        ttlMs?: number;
+	conversationId: string;
+	actorType: TypingActorType;
+	actorId: string;
+	isTyping: boolean;
+	preview?: string | null;
+	ttlMs?: number;
 }) {
-        setState(store, options);
+	setState(store, options);
 }
 
 /**
  * Removes typing state entries for a participant.
  */
 export function clearTypingState(options: {
-        conversationId: string;
-        actorType: TypingActorType;
-        actorId: string;
+	conversationId: string;
+	actorType: TypingActorType;
+	actorId: string;
 }) {
-        clearState(store, options);
+	clearState(store, options);
 }
 
 /**
@@ -88,15 +88,15 @@ export function clearTypingState(options: {
  * the current visitor or agents.
  */
 export function applyConversationTypingEvent(
-        event: RealtimeEvent<"conversationTyping">,
-        options?: {
-                ignoreVisitorId?: string | null;
-                ignoreUserId?: string | null;
-                ignoreAiAgentId?: string | null;
-                ttlMs?: number;
-        }
+	event: RealtimeEvent<"conversationTyping">,
+	options?: {
+		ignoreVisitorId?: string | null;
+		ignoreUserId?: string | null;
+		ignoreAiAgentId?: string | null;
+		ttlMs?: number;
+	}
 ) {
-        applyEvent(store, event, options);
+	applyEvent(store, event, options);
 }
 
 /**
@@ -104,7 +104,7 @@ export function applyConversationTypingEvent(
  * indicators for the sender.
  */
 export function clearTypingFromTimelineItem(
-        event: RealtimeEvent<"timelineItemCreated">
+	event: RealtimeEvent<"timelineItemCreated">
 ) {
-        clearFromTimelineItem(store, event);
+	clearFromTimelineItem(store, event);
 }

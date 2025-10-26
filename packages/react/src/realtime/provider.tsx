@@ -370,9 +370,9 @@ function buildSocketUrl(
  * Provides websocket connectivity and heartbeating logic for realtime events.
  */
 export function RealtimeProvider({
-        children,
-        wsUrl = DEFAULT_WS_URL,
-        auth,
+	children,
+	wsUrl = DEFAULT_WS_URL,
+	auth,
 	autoConnect = true,
 	onConnect,
 	onDisconnect,

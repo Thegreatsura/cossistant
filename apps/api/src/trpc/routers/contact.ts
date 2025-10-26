@@ -97,13 +97,22 @@ export const contactRouter = createTRPCRouter({
 			const metadata =
 				typeof record.contact.metadata === "object" &&
 				record.contact.metadata !== null
-					? (record.contact.metadata as Record<string, unknown>)
+					? (record.contact.metadata as Record<
+							string,
+							string | number | boolean | null
+						>)
 					: null;
 
 			return {
 				contact: {
 					...record.contact,
 					metadata,
+					email: record.contact.email || null,
+					image: record.contact.image || null,
+					externalId: record.contact.externalId || null,
+					name: record.contact.name || null,
+					contactOrganizationId: record.contact.contactOrganizationId || null,
+					userId: record.contact.userId || null,
 				},
 				visitors: record.visitors,
 			};

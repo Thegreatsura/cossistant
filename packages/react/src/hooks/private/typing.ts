@@ -23,7 +23,7 @@ export type MapTypingEntriesToPreviewParticipantsOptions = {
  * renderer.
  */
 export function mapTypingEntriesToParticipants(
-        entries: TypingEntry[]
+	entries: TypingEntry[]
 ): TimelineTypingParticipant[] {
 	return entries
 		.map<TimelineTypingParticipant | null>((entry) => {

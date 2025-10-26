@@ -31,9 +31,9 @@ export type UseConversationTimelineReturn = {
  * conversation detail view.
  */
 export function useConversationTimeline({
-        conversationId,
-        items: timelineItems,
-        currentVisitorId,
+	conversationId,
+	items: timelineItems,
+	currentVisitorId,
 }: UseConversationTimelineOptions): UseConversationTimelineReturn {
 	const seenData = useDebouncedConversationSeen(conversationId);
 	const typingEntries = useConversationTyping(conversationId, {

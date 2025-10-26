@@ -84,7 +84,7 @@ function buildTimelineItemPayload(
  * exposing react-query-like mutation state.
  */
 export function useSendMessage(
-        options: UseSendMessageOptions = {}
+	options: UseSendMessageOptions = {}
 ): UseSendMessageResult {
 	const { client: contextClient } = useSupport();
 	const client = options.client ?? contextClient;

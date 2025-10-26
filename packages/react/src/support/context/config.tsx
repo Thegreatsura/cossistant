@@ -19,9 +19,9 @@ export const useSupportConfig = useSupportConfigStore;
  * Syncs provider props into the shared support store before rendering children.
  */
 export const SupportConfigProvider: React.FC<{
-        children: React.ReactNode;
-        mode?: "floating" | "responsive";
-        size?: "normal" | "larger";
+	children: React.ReactNode;
+	mode?: "floating" | "responsive";
+	size?: "normal" | "larger";
 	defaultOpen?: boolean;
 }> = ({
 	children,

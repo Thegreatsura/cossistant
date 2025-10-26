@@ -71,7 +71,7 @@ export type UseConversationsResult = {
  * helper.
  */
 export function useConversations(
-        options: UseConversationsOptions = {}
+	options: UseConversationsOptions = {}
 ): UseConversationsResult {
 	const { client } = useSupport();
 

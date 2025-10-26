@@ -41,9 +41,9 @@ export type CossistantButtonProps = React.ComponentProps<"button"> &
  * design tokens.
  */
 export function Button({
-        className,
-        variant,
-        size,
+	className,
+	variant,
+	size,
 	...props
 }: CossistantButtonProps): React.ReactElement {
 	return (

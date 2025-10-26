@@ -44,8 +44,8 @@ function toError(state: WebsiteState, fallback: Error | null): Error | null {
  * convenient loading/error state plus a manual refresh helper.
  */
 export function useWebsiteStore(
-        client: CossistantClient,
-        options: UseWebsiteStoreOptions = {}
+	client: CossistantClient,
+	options: UseWebsiteStoreOptions = {}
 ): UseWebsiteStoreResult {
 	const store =
 		client.websiteStore ??

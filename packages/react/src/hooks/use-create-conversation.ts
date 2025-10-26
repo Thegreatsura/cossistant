@@ -48,7 +48,7 @@ function toError(error: unknown): Error {
  * integration with forms or buttons.
  */
 export function useCreateConversation(
-        options: UseCreateConversationOptions = {}
+	options: UseCreateConversationOptions = {}
 ): UseCreateConversationResult {
 	const { client: contextClient } = useSupport();
 	const { client: overrideClient, onError, onSuccess } = options;

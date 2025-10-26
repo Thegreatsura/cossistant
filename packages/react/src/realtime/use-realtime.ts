@@ -50,9 +50,9 @@ type UseRealtimeOptions<
  * filtering by website/visitor ids.
  */
 export function useRealtime<
-        TContext = void,
-        THandlers extends
-                RealtimeEventHandlersMap<TContext> = RealtimeEventHandlersMap<TContext>,
+	TContext = void,
+	THandlers extends
+		RealtimeEventHandlersMap<TContext> = RealtimeEventHandlersMap<TContext>,
 >({
 	events,
 	websiteId,
