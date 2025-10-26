@@ -67,12 +67,21 @@ export const supportTextDefinitions = {
 	"component.conversationButtonLink.lastMessage.agent": {
 		variables: { name: "" as string, time: "" as string },
 	},
-	"component.conversationButtonLink.lastMessage.visitor": {
-		variables: { time: "" as string },
-	},
-	"component.conversationButtonLink.typing": {
-		variables: { name: "" as string },
-	},
+        "component.conversationButtonLink.lastMessage.visitor": {
+                variables: { time: "" as string },
+        },
+        "component.conversationButtonLink.typing": {
+                variables: { name: "" as string },
+        },
+        "component.conversationButtonLink.status.open": {
+                variables: undefined,
+        },
+        "component.conversationButtonLink.status.resolved": {
+                variables: undefined,
+        },
+        "component.conversationButtonLink.status.spam": {
+                variables: undefined,
+        },
 	"component.conversationEvent.assigned": {
 		variables: { actorName: "" as string },
 	},
