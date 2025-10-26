@@ -2,15 +2,26 @@ import { z } from "zod";
 import { contactResponseSchema } from "../api/contact";
 
 export const contactListItemSchema = z.object({
-	id: z.ulid(),
-	name: z.string().nullable(),
-	email: z.string().nullable(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	visitorCount: z.number(),
+id: z.ulid(),
+name: z.string().nullable(),
+email: z.string().nullable(),
+image: z.string().nullable(),
+createdAt: z.string(),
+updatedAt: z.string(),
+visitorCount: z.number(),
 });
 
 export type ContactListItem = z.infer<typeof contactListItemSchema>;
+
+export const contactListVisitorStatusSchema = z.enum([
+"all",
+"withVisitors",
+"withoutVisitors",
+]);
+
+export type ContactListVisitorStatus = z.infer<
+typeof contactListVisitorStatusSchema
+>;
 
 export const listContactsResponseSchema = z.object({
 	items: z.array(contactListItemSchema),

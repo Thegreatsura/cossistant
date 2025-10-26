@@ -14,22 +14,14 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	Sheet,
 	SheetContent,
@@ -40,15 +32,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
 } from "@/components/ui/table";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useTRPC } from "@/lib/trpc/client";
+import {
+        type ContactSortField,
+        useContactsTableControls,
+} from "@/contexts/contacts-table-controls";
+import { useVisitorPresence } from "@/contexts/visitor-presence";
 
 type ContactsPageContentProps = {
 	websiteSlug: string;
@@ -58,33 +54,22 @@ type ContactRow = RouterOutputs["contact"]["list"]["items"][number];
 
 type ContactDetail = RouterOutputs["contact"]["get"];
 
-const PAGE_SIZE_OPTIONS = ["10", "25", "50"] as const;
-
-type ContactSortField =
-	| "name"
-	| "email"
-	| "createdAt"
-	| "updatedAt"
-	| "visitorCount";
-
 export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const trpc = useTRPC();
 	const queryNormalizer = useQueryNormalizer();
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(25);
-	const [searchTerm, setSearchTerm] = useState("");
-	const debouncedSearch = useDebouncedValue(searchTerm.trim(), 300);
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: "updatedAt", desc: true },
-	]);
+	const {
+		page,
+		setPage,
+		pageSize,
+		debouncedSearchTerm,
+		sorting,
+		setSorting,
+		visitorStatus,
+	} = useContactsTableControls();
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [selectedContactId, setSelectedContactId] = useState<string | null>(
 		null
 	);
-
-	useEffect(() => {
-		setPage(1);
-	}, [debouncedSearch]);
 
 	const activeSort = sorting[0];
 	const sortBy = activeSort?.id as ContactSortField | undefined;
@@ -95,9 +80,10 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 			websiteSlug,
 			page,
 			limit: pageSize,
-			search: debouncedSearch || undefined,
+			search: debouncedSearchTerm || undefined,
 			sortBy,
 			sortOrder,
+			visitorStatus,
 		}),
 	});
 
@@ -128,11 +114,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	});
 
 	const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
-		setSorting((prev) => {
-			const next = typeof updater === "function" ? updater(prev) : updater;
-			return next.length > 0 ? next : [{ id: "updatedAt", desc: true }];
-		});
-		setPage(1);
+		setSorting(updater);
 	};
 
 	const handleRowClick = (contactId: string) => {
@@ -155,12 +137,6 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		setPage(cappedPage);
 	};
 
-	const handlePageSizeChange = (value: string) => {
-		const nextSize = Number.parseInt(value, 10);
-		setPageSize(nextSize);
-		setPage(1);
-	};
-
 	const pageStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
@@ -169,41 +145,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 			<PageHeader className="bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 				<PageHeaderTitle>Contacts</PageHeaderTitle>
 			</PageHeader>
-			<div className="mt-2 flex flex-col gap-5">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="w-full max-w-md">
-						<Input
-							append={
-								listQuery.isFetching ? (
-									<Spinner className="h-4 w-4" />
-								) : undefined
-							}
-							aria-label="Search contacts"
-							onChange={(event) => setSearchTerm(event.target.value)}
-							placeholder="Search by name or email"
-							prepend={<Search className="h-4 w-4 text-muted-foreground" />}
-							value={searchTerm}
-						/>
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="text-muted-foreground text-sm">Rows per page</span>
-						<Select
-							onValueChange={handlePageSizeChange}
-							value={String(pageSize)}
-						>
-							<SelectTrigger className="w-[90px]">
-								<SelectValue placeholder={pageSize} />
-							</SelectTrigger>
-							<SelectContent align="end">
-								{PAGE_SIZE_OPTIONS.map((option) => (
-									<SelectItem key={option} value={option}>
-										{option}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
+<div className="mt-2 flex flex-col gap-5">
 				{listQuery.error ? (
 					<Alert variant="destructive">
 						<AlertTitle>Unable to load contacts</AlertTitle>
@@ -283,21 +225,84 @@ function ContactsTable({
 	onSortingChange,
 	onRowClick,
 }: ContactsTableProps) {
+	const { visitors: presenceVisitors } = useVisitorPresence();
+
+	const presenceByContactId = useMemo(() => {
+		const map = new Map<
+			string,
+			{ status: "online" | "away"; lastSeenAt: string; image: string | null }
+		>();
+
+		for (const visitor of presenceVisitors) {
+			const contactId = visitor.contactId;
+
+			if (!contactId) {
+				continue;
+			}
+
+			const existing = map.get(contactId);
+			const visitorTime = new Date(visitor.lastSeenAt).getTime();
+			const candidate = {
+				status: visitor.status,
+				lastSeenAt: visitor.lastSeenAt,
+				image: visitor.image ?? null,
+			};
+
+			if (!existing) {
+				map.set(contactId, candidate);
+				continue;
+			}
+
+			const existingTime = new Date(existing.lastSeenAt).getTime();
+
+			if (candidate.status === "online" && existing.status !== "online") {
+				map.set(contactId, candidate);
+				continue;
+			}
+
+			if (existing.status === "online" && candidate.status !== "online") {
+				continue;
+			}
+
+			if (Number.isNaN(visitorTime)) {
+				continue;
+			}
+
+			if (Number.isNaN(existingTime) || visitorTime > existingTime) {
+				map.set(contactId, candidate);
+			}
+		}
+
+		return map;
+	}, [presenceVisitors]);
+
 	const columns = useMemo<ColumnDef<ContactRow>[]>(
 		() => [
 			{
 				accessorKey: "name",
 				header: ({ column }) => <SortableHeader column={column} title="Name" />,
 				cell: ({ row }) => {
-					const { name, email } = row.original;
+					const { id, name, email, image } = row.original;
+					const displayName = name ?? email ?? "Unknown contact";
+					const presence = presenceByContactId.get(id);
+					const avatarUrl = image ?? presence?.image ?? null;
+
 					return (
-						<div className="flex flex-col">
-							<span className="font-medium text-sm">
-								{name ?? email ?? "Unknown contact"}
-							</span>
-							{name && email ? (
-								<span className="text-muted-foreground text-xs">{email}</span>
-							) : null}
+						<div className="flex items-center gap-3">
+							<Avatar
+								className="size-9"
+								fallbackName={displayName}
+								lastOnlineAt={presence?.lastSeenAt ?? null}
+								status={presence?.status}
+								url={avatarUrl}
+								withBoringAvatar
+							/>
+							<div className="flex flex-col">
+								<span className="font-medium text-sm">{displayName}</span>
+								{name && email ? (
+									<span className="text-muted-foreground text-xs">{email}</span>
+								) : null}
+							</div>
 						</div>
 					);
 				},
@@ -338,7 +343,7 @@ function ContactsTable({
 				),
 			},
 		],
-		[]
+		[presenceByContactId]
 	);
 
 	const table = useReactTable({
@@ -349,75 +354,6 @@ function ContactsTable({
 		manualSorting: true,
 		getCoreRowModel: getCoreRowModel(),
 	});
-
-	const showSkeleton = isLoading && data.length === 0;
-
-	return (
-		<div className="overflow-hidden">
-			<Table>
-				<TableHeader className="bg-background">
-					{table.getHeaderGroups().map((headerGroup) => (
-						<TableRow className="hover:bg-muted/40" key={headerGroup.id}>
-							{headerGroup.headers.map((header) => (
-								<TableHead className="px-5 py-3" key={header.id}>
-									{header.isPlaceholder
-										? null
-										: flexRender(
-												header.column.columnDef.header,
-												header.getContext()
-											)}
-								</TableHead>
-							))}
-						</TableRow>
-					))}
-				</TableHeader>
-				<TableBody>
-					{showSkeleton ? (
-						Array.from({ length: 5 }).map((_, index) => (
-							<TableRow key={`skeleton-${index}`}>
-								<TableCell className="px-5 py-4" colSpan={4}>
-									<Skeleton className="h-6 w-full" />
-								</TableCell>
-							</TableRow>
-						))
-					) : table.getRowModel().rows.length > 0 ? (
-						table.getRowModel().rows.map((row) => (
-							<TableRow
-								aria-label={`View contact ${row.original.name ?? row.original.email ?? row.original.id}`}
-								className="cursor-pointer"
-								key={row.id}
-								onClick={() => onRowClick(row.original.id)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										e.preventDefault();
-										onRowClick(row.original.id);
-									}
-								}}
-								tabIndex={0}
-							>
-								{row.getVisibleCells().map((cell) => (
-									<TableCell className="px-5 py-3" key={cell.id}>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
-									</TableCell>
-								))}
-							</TableRow>
-						))
-					) : (
-						<TableRow>
-							<TableCell
-								className="px-4 py-6 text-center text-muted-foreground text-sm"
-								colSpan={4}
-							>
-								No contacts found.
-							</TableCell>
-						</TableRow>
-					)}
-				</TableBody>
-			</Table>
-		</div>
-	);
-}
-
 type SortableHeaderProps<TData> = {
 	column: Column<TData, unknown>;
 	title: string;

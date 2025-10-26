@@ -189,6 +189,7 @@ export type VisitorPresenceProfile = {
 	country: string | null;
 	latitude: number | null;
 	longitude: number | null;
+	contactId: string | null;
 	contactName: string | null;
 	contactEmail: string | null;
 	contactImage: string | null;
@@ -212,7 +213,7 @@ export async function getVisitorPresenceProfiles(
 		return [];
 	}
 
-	const rows = await db
+		const rows = await db
 		.select({
 			id: visitor.id,
 			lastSeenAt: visitor.lastSeenAt,
@@ -221,6 +222,7 @@ export async function getVisitorPresenceProfiles(
 			country: visitor.country,
 			latitude: visitor.latitude,
 			longitude: visitor.longitude,
+			contactId: visitor.contactId,
 			contactName: contact.name,
 			contactEmail: contact.email,
 			contactImage: contact.image,
