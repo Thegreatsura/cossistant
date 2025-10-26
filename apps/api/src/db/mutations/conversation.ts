@@ -71,6 +71,7 @@ export async function resolveConversation(
 			type: ConversationEventType.RESOLVED,
 			actorUserId: params.actorUserId,
 			createdAt: resolvedAt,
+			visibility: TimelineItemVisibility.PRIVATE,
 		},
 	});
 
@@ -122,6 +123,7 @@ export async function reopenConversation(
 			type: ConversationEventType.REOPENED,
 			actorUserId: params.actorUserId,
 			createdAt: reopenedAt,
+			visibility: TimelineItemVisibility.PRIVATE,
 		},
 	});
 
@@ -283,6 +285,7 @@ export async function archiveConversation(
 				archived: true,
 			},
 			createdAt: archivedAt,
+			visibility: TimelineItemVisibility.PRIVATE,
 		},
 	});
 
@@ -333,6 +336,7 @@ export async function unarchiveConversation(
 				archived: false,
 			},
 			createdAt: unarchivedAt,
+			visibility: TimelineItemVisibility.PRIVATE,
 		},
 	});
 
