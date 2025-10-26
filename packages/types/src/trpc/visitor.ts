@@ -10,18 +10,18 @@ export const blockVisitorResponseSchema = z.object({
 export type BlockVisitorResponse = z.infer<typeof blockVisitorResponseSchema>;
 
 export const visitorPresenceEntrySchema = z.object({
-        id: z.ulid(),
-        status: z.enum(["online", "away"]),
-        lastSeenAt: z.string().datetime().nullable(),
-        name: z.string().nullable(),
-        email: z.string().nullable(),
-        image: z.string().nullable(),
-        city: z.string().nullable(),
-        region: z.string().nullable(),
-        country: z.string().nullable(),
-        latitude: z.number().nullable(),
-        longitude: z.number().nullable(),
-        contactId: z.ulid().nullable(),
+	id: z.ulid(),
+	status: z.enum(["online", "away"]),
+	lastSeenAt: z.string().datetime().nullable(),
+	name: z.string().nullable(),
+	email: z.string().nullable(),
+	image: z.string().nullable(),
+	city: z.string().nullable(),
+	region: z.string().nullable(),
+	country: z.string().nullable(),
+	latitude: z.number().nullable(),
+	longitude: z.number().nullable(),
+	contactId: z.ulid().nullable(),
 });
 
 export const listVisitorPresenceResponseSchema = z.object({

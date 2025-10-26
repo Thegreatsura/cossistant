@@ -1,9 +1,9 @@
 import { getContactWithVisitors, listContacts } from "@api/db/queries/contact";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import {
-contactDetailResponseSchema,
-contactListVisitorStatusSchema,
-listContactsResponseSchema,
+	contactDetailResponseSchema,
+	contactListVisitorStatusSchema,
+	listContactsResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -22,20 +22,18 @@ const sortOrderSchema = z.enum(["asc", "desc"]);
 export const contactRouter = createTRPCRouter({
 	list: protectedProcedure
 		.input(
-z.object({
-websiteSlug: z.string(),
-page: z.number().int().min(1).optional(),
-limit: z.number().int().min(1).max(100).optional(),
-search: z.string().optional(),
-sortBy: sortBySchema.optional(),
-sortOrder: sortOrderSchema.optional(),
-visitorStatus: contactListVisitorStatusSchema
-.optional()
-.default("all"),
-})
-)
-.output(listContactsResponseSchema)
-.query(async ({ ctx: { db, user }, input }) => {
+			z.object({
+				websiteSlug: z.string(),
+				page: z.number().int().min(1).optional(),
+				limit: z.number().int().min(1).max(100).optional(),
+				search: z.string().optional(),
+				sortBy: sortBySchema.optional(),
+				sortOrder: sortOrderSchema.optional(),
+				visitorStatus: contactListVisitorStatusSchema.optional().default("all"),
+			})
+		)
+		.output(listContactsResponseSchema)
+		.query(async ({ ctx: { db, user }, input }) => {
 			const websiteData = await getWebsiteBySlugWithAccess(db, {
 				userId: user.id,
 				websiteSlug: input.websiteSlug,
@@ -51,16 +49,14 @@ visitorStatus: contactListVisitorStatusSchema
 			const result = await listContacts(db, {
 				websiteId: websiteData.id,
 				organizationId: websiteData.organizationId,
-page: input.page,
-limit: input.limit,
-search: input.search?.trim() || undefined,
-sortBy: input.sortBy,
-sortOrder: input.sortOrder,
-visitorStatus:
-input.visitorStatus === "all"
-? undefined
-: input.visitorStatus,
-});
+				page: input.page,
+				limit: input.limit,
+				search: input.search?.trim() || undefined,
+				sortBy: input.sortBy,
+				sortOrder: input.sortOrder,
+				visitorStatus:
+					input.visitorStatus === "all" ? undefined : input.visitorStatus,
+			});
 
 			return result;
 		}),

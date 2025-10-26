@@ -46,13 +46,13 @@ const en: SupportLocaleMessages = {
 	"component.conversationButtonLink.fallbackTitle": "Untitled conversation",
 	"component.conversationButtonLink.lastMessage.agent": ({ variables }) =>
 		`${variables.name} - ${variables.time}`,
-        "component.conversationButtonLink.lastMessage.visitor": ({ variables }) =>
-                `You - ${variables.time}`,
-        "component.conversationButtonLink.typing": ({ variables }) =>
-                `${variables.name} is typing...`,
-        "component.conversationButtonLink.status.open": "Open",
-        "component.conversationButtonLink.status.resolved": "Resolved",
-        "component.conversationButtonLink.status.spam": "Spam",
+	"component.conversationButtonLink.lastMessage.visitor": ({ variables }) =>
+		`You - ${variables.time}`,
+	"component.conversationButtonLink.typing": ({ variables }) =>
+		`${variables.name} is typing...`,
+	"component.conversationButtonLink.status.open": "Open",
+	"component.conversationButtonLink.status.resolved": "Resolved",
+	"component.conversationButtonLink.status.spam": "Spam",
 	"component.conversationEvent.assigned": ({ variables }) =>
 		`${variables.actorName} assigned the conversation`,
 	"component.conversationEvent.unassigned": ({ variables }) =>

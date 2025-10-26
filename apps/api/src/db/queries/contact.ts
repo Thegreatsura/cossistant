@@ -400,44 +400,44 @@ export async function identifyContact(
 }
 
 export async function listContacts(
-db: Database,
-params: {
-websiteId: string;
-organizationId: string;
-page?: number;
-limit?: number;
-search?: string | null;
-sortBy?: "name" | "email" | "createdAt" | "updatedAt" | "visitorCount";
-sortOrder?: "asc" | "desc";
-visitorStatus?: "withVisitors" | "withoutVisitors";
-}
+	db: Database,
+	params: {
+		websiteId: string;
+		organizationId: string;
+		page?: number;
+		limit?: number;
+		search?: string | null;
+		sortBy?: "name" | "email" | "createdAt" | "updatedAt" | "visitorCount";
+		sortOrder?: "asc" | "desc";
+		visitorStatus?: "withVisitors" | "withoutVisitors";
+	}
 ) {
 	const page = Math.max(params.page ?? 1, 1);
 	const limit = Math.min(params.limit ?? DEFAULT_PAGE_LIMIT, 100);
 	const offset = (page - 1) * limit;
 
-        const whereConditions = [
-                eq(contact.websiteId, params.websiteId),
-                eq(contact.organizationId, params.organizationId),
-                isNull(contact.deletedAt),
-        ];
+	const whereConditions = [
+		eq(contact.websiteId, params.websiteId),
+		eq(contact.organizationId, params.organizationId),
+		isNull(contact.deletedAt),
+	];
 
-        const searchTerm = params.search?.trim();
-        if (searchTerm) {
-                const likeTerm = `%${searchTerm}%`;
-                const searchCondition = or(
-                        ilike(contact.email, likeTerm),
-                        ilike(contact.name, likeTerm)
-                );
-                whereConditions.push(searchCondition);
-        }
+	const searchTerm = params.search?.trim();
+	if (searchTerm) {
+		const likeTerm = `%${searchTerm}%`;
+		const searchCondition = or(
+			ilike(contact.email, likeTerm),
+			ilike(contact.name, likeTerm)
+		);
+		whereConditions.push(searchCondition);
+	}
 
-        const visitorCounts = db
-                .select({
-                        contactId: visitor.contactId,
-                        total: count().as("total"),
-                })
-                .from(visitor)
+	const visitorCounts = db
+		.select({
+			contactId: visitor.contactId,
+			total: count().as("total"),
+		})
+		.from(visitor)
 		.where(
 			and(
 				eq(visitor.websiteId, params.websiteId),
@@ -445,33 +445,33 @@ visitorStatus?: "withVisitors" | "withoutVisitors";
 				isNull(visitor.deletedAt),
 				isNotNull(visitor.contactId)
 			)
-                )
-                .groupBy(visitor.contactId)
-                .as("visitor_counts");
+		)
+		.groupBy(visitor.contactId)
+		.as("visitor_counts");
 
-        const baseWhereClause = and(...whereConditions);
+	const baseWhereClause = and(...whereConditions);
 
-        const visitorFilter = (() => {
-                if (params.visitorStatus === "withVisitors") {
-                        return isNotNull(visitorCounts.contactId);
-                }
+	const visitorFilter = (() => {
+		if (params.visitorStatus === "withVisitors") {
+			return isNotNull(visitorCounts.contactId);
+		}
 
-                if (params.visitorStatus === "withoutVisitors") {
-                        return isNull(visitorCounts.contactId);
-                }
+		if (params.visitorStatus === "withoutVisitors") {
+			return isNull(visitorCounts.contactId);
+		}
 
-                return null;
-        })();
+		return null;
+	})();
 
-        const whereClause = visitorFilter
-                ? and(baseWhereClause, visitorFilter)
-                : baseWhereClause;
+	const whereClause = visitorFilter
+		? and(baseWhereClause, visitorFilter)
+		: baseWhereClause;
 
-        const [{ totalCount }] = await db
-                .select({ totalCount: count() })
-                .from(contact)
-                .leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
-                .where(whereClause);
+	const [{ totalCount }] = await db
+		.select({ totalCount: count() })
+		.from(contact)
+		.leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
+		.where(whereClause);
 
 	const sortBy = params.sortBy ?? "updatedAt";
 	const sortOrder = params.sortOrder ?? "desc";
@@ -494,19 +494,19 @@ visitorStatus?: "withVisitors" | "withoutVisitors";
 		}
 	})();
 
-        const rows = await db
-                .select({
-                        id: contact.id,
-                        name: contact.name,
-                        email: contact.email,
-                        image: contact.image,
-                        createdAt: contact.createdAt,
-                        updatedAt: contact.updatedAt,
-                        visitorCount: visitorCountColumn,
-                })
-                .from(contact)
-                .leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
-                .where(whereClause)
+	const rows = await db
+		.select({
+			id: contact.id,
+			name: contact.name,
+			email: contact.email,
+			image: contact.image,
+			createdAt: contact.createdAt,
+			updatedAt: contact.updatedAt,
+			visitorCount: visitorCountColumn,
+		})
+		.from(contact)
+		.leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
+		.where(whereClause)
 		.orderBy(orderFn(orderColumn), desc(contact.id))
 		.limit(limit)
 		.offset(offset);

@@ -58,21 +58,32 @@ function isPageSizeOption(value: number): value is PageSizeOption {
 	return CONTACTS_PAGE_SIZE_OPTIONS.includes(value as PageSizeOption);
 }
 
-function isSortField(value: string | null | undefined): value is ContactSortField {
+function isSortField(
+	value: string | null | undefined
+): value is ContactSortField {
 	return value ? SORT_FIELDS.includes(value as ContactSortField) : false;
 }
 
-function isSortOrder(value: string | null | undefined): value is "asc" | "desc" {
-	return value ? SORT_ORDERS.includes(value as (typeof SORT_ORDERS)[number]) : false;
+function isSortOrder(
+	value: string | null | undefined
+): value is "asc" | "desc" {
+	return value
+		? SORT_ORDERS.includes(value as (typeof SORT_ORDERS)[number])
+		: false;
 }
 
 function isVisitorStatus(
 	value: string | null | undefined
 ): value is ContactListVisitorStatus {
-	return value ? VISITOR_STATUSES.includes(value as ContactListVisitorStatus) : false;
+	return value
+		? VISITOR_STATUSES.includes(value as ContactListVisitorStatus)
+		: false;
 }
 
-function normalizePositiveInteger(value: number | null | undefined, fallback: number) {
+function normalizePositiveInteger(
+	value: number | null | undefined,
+	fallback: number
+) {
 	if (!Number.isFinite(value)) {
 		return fallback;
 	}
@@ -92,7 +103,9 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 		"limit",
 		parseAsInteger.withDefault(DEFAULT_PAGE_SIZE)
 	);
-	const pageSize = isPageSizeOption(pageSizeParam) ? pageSizeParam : DEFAULT_PAGE_SIZE;
+	const pageSize = isPageSizeOption(pageSizeParam)
+		? pageSizeParam
+		: DEFAULT_PAGE_SIZE;
 
 	const [searchParam, setSearchParam] = useQueryState(
 		"search",
@@ -107,7 +120,9 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 		"sortBy",
 		parseAsString.withDefault(defaultSortField)
 	);
-	const sortField = isSortField(sortFieldParam) ? sortFieldParam : defaultSortField;
+	const sortField = isSortField(sortFieldParam)
+		? sortFieldParam
+		: defaultSortField;
 
 	const [sortOrderParam, setSortOrderParam] = useQueryState(
 		"sortOrder",
@@ -162,8 +177,7 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 
 	const setSorting = useCallback(
 		(updater: SortingUpdater) => {
-			const next =
-				typeof updater === "function" ? updater(sorting) : updater;
+			const next = typeof updater === "function" ? updater(sorting) : updater;
 			const normalized = next.length > 0 ? next : DEFAULT_SORTING;
 			const [primary] = normalized;
 
@@ -172,9 +186,7 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 				: defaultSortField;
 			const nextOrder = primary.desc ? "desc" : "asc";
 
-			void setSortFieldParam(
-				nextField === defaultSortField ? null : nextField
-			);
+			void setSortFieldParam(nextField === defaultSortField ? null : nextField);
 			void setSortOrderParam(nextOrder === "desc" ? null : nextOrder);
 			void setPageParam(null);
 		},

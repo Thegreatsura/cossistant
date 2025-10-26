@@ -213,7 +213,7 @@ export async function getVisitorPresenceProfiles(
 		return [];
 	}
 
-		const rows = await db
+	const rows = await db
 		.select({
 			id: visitor.id,
 			lastSeenAt: visitor.lastSeenAt,
