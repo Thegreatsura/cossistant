@@ -58,8 +58,20 @@ export type UseConversationsResult = {
 	) => Promise<ListConversationsResponse | undefined>;
 };
 
+/**
+ * Fetches and subscribes to the authenticated visitor's conversation list.
+ *
+ * The hook keeps the store in sync with the REST client and exposes
+ * pagination metadata plus a refetch helper for manual refreshes. The
+ * `options` mirror the public API filters so the UI can request slices of the
+ * inbox without duplicating data-fetching logic.
+ *
+ * @param options Filtering and lifecycle controls for the query.
+ * @returns Conversations, pagination data, loading state, and a refetch
+ * helper.
+ */
 export function useConversations(
-	options: UseConversationsOptions = {}
+        options: UseConversationsOptions = {}
 ): UseConversationsResult {
 	const { client } = useSupport();
 

@@ -21,9 +21,20 @@ export type UseConversationResult = {
 	) => Promise<GetConversationResponse | undefined>;
 };
 
+/**
+ * Loads and caches a single conversation identified by `conversationId`.
+ *
+ * The hook keeps the conversations store hydrated, exposes a derived loading
+ * state that respects cached data and provides a `refetch` helper to manually
+ * refresh the thread.
+ *
+ * @param conversationId The conversation to retrieve; when `null` the hook
+ * skips requests and returns `null` data.
+ * @param options Additional react-query style controls for the request.
+ */
 export function useConversation(
-	conversationId: string | null,
-	options: UseConversationOptions = {}
+        conversationId: string | null,
+        options: UseConversationOptions = {}
 ): UseConversationResult {
 	const { client } = useSupport();
 	const store = client.conversationsStore;

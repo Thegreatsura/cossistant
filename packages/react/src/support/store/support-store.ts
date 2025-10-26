@@ -57,6 +57,11 @@ export type UseSupportStoreResult = SupportStoreState &
 		| "reset"
 	>;
 
+/**
+ * React hook wrapper around the shared support widget store. Exposes both the
+ * raw state and imperative actions so UI components can drive navigation or
+ * change configuration without importing the store singleton directly.
+ */
 export function useSupportStore(): UseSupportStoreResult {
 	const state = useSelector((current) => current);
 
@@ -76,6 +81,10 @@ export function useSupportStore(): UseSupportStoreResult {
 	);
 }
 
+/**
+ * Shortcut hook that returns the persisted widget configuration along with
+ * open/close/toggle helpers for common UI bindings.
+ */
 export const useSupportConfig = () => {
 	const config = useSelector((state) => state.config);
 
@@ -90,6 +99,10 @@ export const useSupportConfig = () => {
 	);
 };
 
+/**
+ * Provides the current navigation entry, the stack history and helpers to
+ * transition between screens inside the support widget.
+ */
 export const useSupportNavigation = () => {
 	const navigation = useSelector((state) => state.navigation);
 	const { current, previousPages } = navigation;
@@ -109,6 +122,11 @@ export const useSupportNavigation = () => {
 	);
 };
 
+/**
+ * Applies initial configuration derived from provider props or server state to
+ * the singleton support store. Call this once during bootstrapping so that the
+ * UI renders with the expected mode/open state.
+ */
 export const initializeSupportStore = (props: {
 	mode?: SupportConfig["mode"];
 	size?: SupportConfig["size"];

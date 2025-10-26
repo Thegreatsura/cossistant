@@ -17,9 +17,15 @@ type UseVisitorTypingReporterResult = {
 	stop: () => void;
 };
 
+/**
+ * Tracks visitor composer activity and reports typing previews to the backend.
+ *
+ * Handles throttling, keep-alive pings, inactivity fallbacks and ensures a
+ * `stop` event is emitted when the component unmounts.
+ */
 export function useVisitorTypingReporter({
-	client,
-	conversationId,
+        client,
+        conversationId,
 }: UseVisitorTypingReporterOptions): UseVisitorTypingReporterResult {
 	const typingActiveRef = useRef(false);
 	const lastSentAtRef = useRef(0);

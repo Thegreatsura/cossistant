@@ -48,10 +48,14 @@ const STATUS_TEXT_KEYS: Record<ConversationStatus, SupportTextKey> = {
 	[ConversationStatus.SPAM]: "component.conversationButtonLink.status.spam",
 };
 
+/**
+ * Renders a navigable preview card for a conversation including assigned agent
+ * details, last message snippets and typing indicators.
+ */
 export function ConversationButtonLink({
-	conversation,
-	onClick,
-	className,
+        conversation,
+        onClick,
+        className,
 }: ConversationButtonLinkProps): React.ReactElement | null {
 	const preview = useConversationPreview({ conversation });
 	const text = useSupportText();

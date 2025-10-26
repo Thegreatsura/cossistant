@@ -158,6 +158,10 @@ const WebSocketBridge: React.FC<WebSocketBridgeProps> = ({
 	);
 };
 
+/**
+ * Support-specific realtime provider that authenticates visitors and keeps the
+ * connection alive with presence pings.
+ */
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 	children,
 	publicKey,
@@ -185,6 +189,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 	);
 };
 
+/**
+ * Accessor for the support websocket context.
+ */
 export const useWebSocket = (): WebSocketContextValue => {
 	const context = useContext(WebSocketContext);
 	if (!context) {

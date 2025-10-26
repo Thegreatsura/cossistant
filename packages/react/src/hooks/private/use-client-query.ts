@@ -35,8 +35,13 @@ function toError(error: unknown): Error {
 
 const EMPTY_DEPENDENCIES: readonly unknown[] = [];
 
+/**
+ * Lightweight data-fetching abstraction that plugs into the SDK client instead
+ * of React Query. It tracks loading/error state, supports polling, window
+ * focus refetching and exposes a typed refetch helper.
+ */
 export function useClientQuery<TData, TArgs = void>(
-	options: UseClientQueryOptions<TData, TArgs>
+        options: UseClientQueryOptions<TData, TArgs>
 ): UseClientQueryResult<TData, TArgs> {
 	const {
 		client,

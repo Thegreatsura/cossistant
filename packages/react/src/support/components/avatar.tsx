@@ -13,6 +13,10 @@ type AvatarProps = {
 	name: string;
 };
 
+/**
+ * Renders a circular avatar with graceful fallbacks when no image is
+ * available.
+ */
 export function Avatar({ className, image, name }: AvatarProps): ReactElement {
 	return (
 		<AvatarPrimitive

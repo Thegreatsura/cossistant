@@ -14,10 +14,14 @@ export type TimelineMessageItemProps = {
 	isSentByViewer?: boolean;
 };
 
+/**
+ * Message bubble renderer that adapts layout depending on whether the visitor
+ * or an agent sent the message.
+ */
 export function TimelineMessageItem({
-	item,
-	isLast = false,
-	isSentByViewer,
+        item,
+        isLast = false,
+        isSentByViewer,
 }: TimelineMessageItemProps): React.ReactElement {
 	const text = useSupportText();
 	return (

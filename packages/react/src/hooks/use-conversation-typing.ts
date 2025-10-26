@@ -29,9 +29,13 @@ function shouldExclude(
 	return false;
 }
 
+/**
+ * Selects typing participants for a conversation while letting consumers omit
+ * their own identities.
+ */
 export function useConversationTyping(
-	conversationId: string | null | undefined,
-	options: UseConversationTypingOptions = {}
+        conversationId: string | null | undefined,
+        options: UseConversationTypingOptions = {}
 ): ConversationTypingParticipant[] {
 	const conversationTyping = useTypingStore((state) =>
 		conversationId ? (state.conversations[conversationId] ?? null) : null

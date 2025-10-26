@@ -38,9 +38,13 @@ export type UseConversationTimelineItemsResult =
 		>;
 	};
 
+/**
+ * Fetches timeline items for a conversation and keeps the local store in sync
+ * with pagination helpers.
+ */
 export function useConversationTimelineItems(
-	conversationId: string | null | undefined,
-	options: UseConversationTimelineItemsOptions = {}
+        conversationId: string | null | undefined,
+        options: UseConversationTimelineItemsOptions = {}
 ): UseConversationTimelineItemsResult {
 	const { client } = useSupport();
 	const store = client.timelineItemsStore;

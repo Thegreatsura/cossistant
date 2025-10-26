@@ -67,6 +67,10 @@ export const AvatarStackItem = ({
 	);
 };
 
+/**
+ * Displays a compact row of agent avatars with optional branding and overflow
+ * counts.
+ */
 export function AvatarStack({
 	humanAgents,
 	aiAgents,

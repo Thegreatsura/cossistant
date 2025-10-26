@@ -43,6 +43,10 @@ function areSelectionsEqual(
 	return true;
 }
 
+/**
+ * Selector hook that exposes the normalized conversations list from the
+ * internal store alongside pagination metadata.
+ */
 export function useConversationsStore(): ConversationSelection {
 	const { client } = useSupport();
 
@@ -67,8 +71,12 @@ export function useConversationsStore(): ConversationSelection {
 	);
 }
 
+/**
+ * Picks a single conversation entity from the store by id. Returns `null` when
+ * the identifier is missing or the entity has not been fetched yet.
+ */
 export function useConversationById(
-	conversationId: string | null
+        conversationId: string | null
 ): Conversation | null {
 	const { client } = useSupport();
 

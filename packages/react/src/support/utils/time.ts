@@ -1,3 +1,6 @@
+/**
+ * Friendly relative time formatter used throughout the support widget.
+ */
 export function formatTimeAgo(date: Date | string): string {
 	const now = new Date();
 	const messageDate = typeof date === "string" ? new Date(date) : date;

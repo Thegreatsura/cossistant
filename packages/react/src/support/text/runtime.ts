@@ -75,6 +75,11 @@ function buildDayPeriodLabels(
 	}
 }
 
+/**
+ * Builds formatting helpers tailored for the visitor locale. The utilities are
+ * memoized by callers and include number formatting, pluralization, title
+ * casing and dynamic time-of-day descriptions.
+ */
 export function createTextUtils(
 	locale: string,
 	isHydrated = false
@@ -137,6 +142,10 @@ function normalizeLocaleString(locale: string): string {
 	return base || locale.toLowerCase();
 }
 
+/**
+ * Derives the locale preference order from visitor/provider hints while
+ * guaranteeing an English fallback.
+ */
 export function buildLocaleChain(
 	preferences: Array<string | null | undefined>
 ): string[] {
@@ -167,6 +176,10 @@ export function buildLocaleChain(
 	return chain;
 }
 
+/**
+ * Canonicalizes text override definitions into a lookup map that can be
+ * consumed efficiently at runtime.
+ */
 export function normalizeOverrides(
 	overrides?: SupportTextContentOverrides<string>
 ): NormalizedOverrides {
@@ -207,6 +220,10 @@ export function normalizeOverrides(
 	return map;
 }
 
+/**
+ * Finds the best matching localized string for a key, consulting overrides
+ * before bundled locale dictionaries.
+ */
 export function resolveMessage<K extends SupportTextKey>(
 	key: K,
 	localeChain: string[],
@@ -234,6 +251,10 @@ export function resolveMessage<K extends SupportTextKey>(
 	return BUILTIN_LOCALES.en[key];
 }
 
+/**
+ * Produces the final rendered string by executing function overrides or
+ * interpolating variables into template literals.
+ */
 export function evaluateMessage<K extends SupportTextKey>(
 	key: K,
 	message: SupportLocaleMessages[K],
