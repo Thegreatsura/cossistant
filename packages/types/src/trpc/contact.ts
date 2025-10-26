@@ -2,13 +2,13 @@ import { z } from "zod";
 import { contactResponseSchema } from "../api/contact";
 
 export const contactListItemSchema = z.object({
-id: z.ulid(),
-name: z.string().nullable(),
-email: z.string().nullable(),
-image: z.string().nullable(),
-createdAt: z.string(),
-updatedAt: z.string(),
-visitorCount: z.number(),
+        id: z.ulid(),
+        name: z.string().nullable(),
+        email: z.string().nullable(),
+        image: z.string().nullable(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+        visitorCount: z.number().int().min(0),
 });
 
 export type ContactListItem = z.infer<typeof contactListItemSchema>;
@@ -33,17 +33,17 @@ export const listContactsResponseSchema = z.object({
 export type ListContactsResponse = z.infer<typeof listContactsResponseSchema>;
 
 export const contactVisitorSummarySchema = z.object({
-	id: z.ulid(),
-	lastSeenAt: z.string().nullable(),
-	createdAt: z.string(),
-	browser: z.string().nullable(),
-	device: z.string().nullable(),
-	country: z.string().nullable(),
-	city: z.string().nullable(),
-	language: z.string().nullable(),
-	blockedAt: z.string().nullable(),
-	blockedByUserId: z.string().nullable(),
-	isBlocked: z.boolean(),
+        id: z.ulid(),
+        lastSeenAt: z.string().datetime().nullable(),
+        createdAt: z.string().datetime(),
+        browser: z.string().nullable(),
+        device: z.string().nullable(),
+        country: z.string().nullable(),
+        city: z.string().nullable(),
+        language: z.string().nullable(),
+        blockedAt: z.string().datetime().nullable(),
+        blockedByUserId: z.string().nullable(),
+        isBlocked: z.boolean(),
 });
 
 export type ContactVisitorSummary = z.infer<typeof contactVisitorSummarySchema>;

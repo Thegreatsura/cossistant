@@ -6,17 +6,18 @@ import { Filter, ListFilter, Search, SortAsc, SortDesc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-Select,
-SelectContent,
-SelectItem,
-SelectTrigger,
-SelectValue,
+        Select,
+        SelectContent,
+        SelectItem,
+        SelectTrigger,
+        SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarContainer } from "@/components/ui/layout/sidebars/container";
 import { ResizableSidebar } from "@/components/ui/layout/sidebars/resizable-sidebar";
 import { SidebarItem } from "@/components/ui/layout/sidebars/sidebar-item";
+import type { ContactListVisitorStatus } from "@cossistant/types";
 import {
         CONTACTS_PAGE_SIZE_OPTIONS,
         type ContactSortField,
@@ -25,23 +26,29 @@ import {
 import { useWebsite } from "@/contexts/website";
 import { UserDropdown } from "../../../../user-dropdown";
 
-const VISITOR_FILTER_OPTIONS = [
-{
-value: "all",
-title: "All contacts",
-description: "Include every contact",
-},
-{
-value: "withVisitors",
-title: "Linked visitors",
-description: "Contacts with at least one visitor",
-},
-{
-value: "withoutVisitors",
-title: "No visitors",
-description: "Contacts without any visitor",
-},
-] as const;
+const VISITOR_FILTER_OPTIONS: ReadonlyArray<{
+        value: ContactListVisitorStatus;
+        title: string;
+        description: string;
+}> = [
+        {
+                value: "all",
+                title: "All contacts",
+                description: "Include every contact",
+        },
+        {
+                value: "withVisitors",
+                title: "Linked visitors",
+                description: "Contacts with at least one visitor",
+        },
+        {
+                value: "withoutVisitors",
+                title: "No visitors",
+                description: "Contacts without any visitor",
+        },
+];
+
+const DEFAULT_VISITOR_STATUS: ContactListVisitorStatus = "all";
 
 const SORT_FIELD_OPTIONS: Array<{ value: ContactSortField; label: string }> = [
 { value: "updatedAt", label: "Last updated" },
@@ -149,11 +156,11 @@ value={String(pageSize)}
 <Filter className="h-3.5 w-3.5" />
 <span>Filters</span>
 </div>
-<Button
-className="h-auto px-2 py-1 text-xs"
-onClick={() => setVisitorStatus("all")}
-variant="ghost"
->
+                                <Button
+                                        className="h-auto px-2 py-1 text-xs"
+                                        onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
+                                        variant="ghost"
+                                >
 Reset
 </Button>
 </div>

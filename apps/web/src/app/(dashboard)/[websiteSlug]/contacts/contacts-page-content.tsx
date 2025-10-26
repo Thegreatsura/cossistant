@@ -211,12 +211,14 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 }
 
 type ContactsTableProps = {
-	data: ContactRow[];
-	isLoading: boolean;
-	sorting: SortingState;
-	onSortingChange: OnChangeFn<SortingState>;
-	onRowClick: (contactId: string) => void;
+        data: ContactRow[];
+        isLoading: boolean;
+        sorting: SortingState;
+        onSortingChange: OnChangeFn<SortingState>;
+        onRowClick: (contactId: string) => void;
 };
+
+const LOADING_ROW_COUNT = 5;
 
 function ContactsTable({
 	data,
@@ -227,54 +229,66 @@ function ContactsTable({
 }: ContactsTableProps) {
 	const { visitors: presenceVisitors } = useVisitorPresence();
 
-	const presenceByContactId = useMemo(() => {
-		const map = new Map<
-			string,
-			{ status: "online" | "away"; lastSeenAt: string; image: string | null }
-		>();
+        const presenceByContactId = useMemo(() => {
+                const map = new Map<
+                        string,
+                        {
+                                status: "online" | "away";
+                                lastSeenAt: string;
+                                image: string | null;
+                        }
+                >();
+                const timestamps = new Map<string, number>();
 
-		for (const visitor of presenceVisitors) {
-			const contactId = visitor.contactId;
+                for (const visitor of presenceVisitors) {
+                        const contactId = visitor.contactId;
 
-			if (!contactId) {
-				continue;
-			}
+                        if (!contactId) {
+                                continue;
+                        }
 
-			const existing = map.get(contactId);
-			const visitorTime = new Date(visitor.lastSeenAt).getTime();
-			const candidate = {
-				status: visitor.status,
-				lastSeenAt: visitor.lastSeenAt,
-				image: visitor.image ?? null,
-			};
+                        if (!visitor.lastSeenAt) {
+                                continue;
+                        }
 
-			if (!existing) {
-				map.set(contactId, candidate);
-				continue;
-			}
+                        const parsedLastSeen = Date.parse(visitor.lastSeenAt);
 
-			const existingTime = new Date(existing.lastSeenAt).getTime();
+                        if (Number.isNaN(parsedLastSeen)) {
+                                continue;
+                        }
 
-			if (candidate.status === "online" && existing.status !== "online") {
-				map.set(contactId, candidate);
-				continue;
-			}
+                        const existing = map.get(contactId);
+                        const existingTimestamp = timestamps.get(contactId);
+                        const candidate = {
+                                status: visitor.status,
+                                lastSeenAt: visitor.lastSeenAt,
+                                image: visitor.image ?? null,
+                        };
 
-			if (existing.status === "online" && candidate.status !== "online") {
-				continue;
-			}
+                        if (!existing) {
+                                map.set(contactId, candidate);
+                                timestamps.set(contactId, parsedLastSeen);
+                                continue;
+                        }
 
-			if (Number.isNaN(visitorTime)) {
-				continue;
-			}
+                        if (candidate.status === "online" && existing.status !== "online") {
+                                map.set(contactId, candidate);
+                                timestamps.set(contactId, parsedLastSeen);
+                                continue;
+                        }
 
-			if (Number.isNaN(existingTime) || visitorTime > existingTime) {
-				map.set(contactId, candidate);
-			}
-		}
+                        if (existing.status === "online" && candidate.status !== "online") {
+                                continue;
+                        }
 
-		return map;
-	}, [presenceVisitors]);
+                        if (existingTimestamp === undefined || parsedLastSeen > existingTimestamp) {
+                                map.set(contactId, candidate);
+                                timestamps.set(contactId, parsedLastSeen);
+                        }
+                }
+
+                return map;
+        }, [presenceVisitors]);
 
 	const columns = useMemo<ColumnDef<ContactRow>[]>(
 		() => [
@@ -346,17 +360,132 @@ function ContactsTable({
 		[presenceByContactId]
 	);
 
-	const table = useReactTable({
-		data,
-		columns,
-		state: { sorting },
-		onSortingChange,
-		manualSorting: true,
-		getCoreRowModel: getCoreRowModel(),
-	});
+        const table = useReactTable({
+                data,
+                columns,
+                state: { sorting },
+                onSortingChange,
+                manualSorting: true,
+                getCoreRowModel: getCoreRowModel(),
+        });
+
+        const headerGroups = table.getHeaderGroups();
+        const rows = table.getRowModel().rows;
+
+        if (isLoading) {
+                return (
+                        <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/80 shadow-sm">
+                                <Table>
+                                        <TableHeader>
+                                                {headerGroups.map((headerGroup) => (
+                                                        <TableRow key={headerGroup.id}>
+                                                                {headerGroup.headers.map((header) => (
+                                                                        <TableHead key={header.id}>
+                                                                                {header.isPlaceholder
+                                                                                        ? null
+                                                                                        : flexRender(
+                                                                                                  header.column.columnDef
+                                                                                                          .header,
+                                                                                                  header.getContext()
+                                                                                          )}
+                                                                        </TableHead>
+                                                                ))}
+                                                        </TableRow>
+                                                ))}
+                                        </TableHeader>
+                                        <TableBody>
+                                                {Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
+                                                        <TableRow key={index}>
+                                                                <TableCell colSpan={columns.length}>
+                                                                        <Skeleton className="h-12 w-full" />
+                                                                </TableCell>
+                                                        </TableRow>
+                                                ))}
+                                        </TableBody>
+                                </Table>
+                        </div>
+                );
+        }
+
+        if (!rows.length) {
+                return (
+                        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-primary/20 bg-background/60 px-10 py-16 text-center">
+                                <div className="space-y-1">
+                                        <h3 className="font-semibold text-base">No contacts match your filters</h3>
+                                        <p className="text-muted-foreground text-sm">
+                                                Try adjusting your search, filters, or sorting to find different contacts.
+                                        </p>
+                                </div>
+                        </div>
+                );
+        }
+
+        return (
+                <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/80 shadow-sm">
+                        <Table>
+                                <TableHeader>
+                                        {headerGroups.map((headerGroup) => (
+                                                <TableRow key={headerGroup.id}>
+                                                        {headerGroup.headers.map((header) => {
+                                                                const sorted = header.column.getIsSorted();
+
+                                                                return (
+                                                                        <TableHead
+                                                                                key={header.id}
+                                                                                aria-sort={
+                                                                                        sorted === "desc"
+                                                                                                ? "descending"
+                                                                                                : sorted === "asc"
+                                                                                                        ? "ascending"
+                                                                                                        : "none"
+                                                                                }
+                                                                        >
+                                                                                {header.isPlaceholder
+                                                                                        ? null
+                                                                                        : flexRender(
+                                                                                                  header.column.columnDef
+                                                                                                          .header,
+                                                                                                  header.getContext()
+                                                                                          )}
+                                                                        </TableHead>
+                                                                );
+                                                        })}
+                                                </TableRow>
+                                        ))}
+                                </TableHeader>
+                                <TableBody>
+                                        {rows.map((row) => (
+                                                <TableRow
+                                                        key={row.id}
+                                                        className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/50"
+                                                        onClick={() => onRowClick(row.original.id)}
+                                                        onKeyDown={(event) => {
+                                                                if (event.key === "Enter" || event.key === " ") {
+                                                                        event.preventDefault();
+                                                                        onRowClick(row.original.id);
+                                                                }
+                                                        }}
+                                                        tabIndex={0}
+                                                >
+                                                        {row.getVisibleCells().map((cell) => (
+                                                                <TableCell key={cell.id}>
+                                                                        {flexRender(
+                                                                                cell.column.columnDef.cell,
+                                                                                cell.getContext()
+                                                                        )}
+                                                                </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                        ))}
+                                </TableBody>
+                        </Table>
+                </div>
+        );
+}
+
 type SortableHeaderProps<TData> = {
-	column: Column<TData, unknown>;
-	title: string;
+        column: Column<TData, unknown>;
+        title: string;
 };
 
 function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
@@ -369,15 +498,21 @@ function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
 			type="button"
 		>
 			<span>{title}</span>
-			{sorted === "asc" ? (
-				<ArrowUp className="h-3.5 w-3.5" />
-			) : sorted === "desc" ? (
-				<ArrowDown className="h-3.5 w-3.5" />
-			) : (
-				<ArrowUpDown className="h-3.5 w-3.5" />
-			)}
-		</button>
-	);
+                        {sorted === "asc" ? (
+                                <ArrowUp aria-hidden="true" className="h-3.5 w-3.5">
+                                        <title>Sorted ascending</title>
+                                </ArrowUp>
+                        ) : sorted === "desc" ? (
+                                <ArrowDown aria-hidden="true" className="h-3.5 w-3.5">
+                                        <title>Sorted descending</title>
+                                </ArrowDown>
+                        ) : (
+                                <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5">
+                                        <title>Sortable column</title>
+                                </ArrowUpDown>
+                        )}
+                </button>
+        );
 }
 
 type ContactDetailsProps = {

@@ -429,9 +429,7 @@ visitorStatus?: "withVisitors" | "withoutVisitors";
                         ilike(contact.email, likeTerm),
                         ilike(contact.name, likeTerm)
                 );
-                if (searchCondition) {
-                        whereConditions.push(searchCondition);
-                }
+                whereConditions.push(searchCondition);
         }
 
         const visitorCounts = db
