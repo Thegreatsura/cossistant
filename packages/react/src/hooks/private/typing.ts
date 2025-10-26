@@ -18,8 +18,12 @@ export type MapTypingEntriesToPreviewParticipantsOptions = {
 	text: SupportTextResolvedFormatter;
 };
 
+/**
+ * Converts raw typing events into participants understood by the timeline
+ * renderer.
+ */
 export function mapTypingEntriesToParticipants(
-	entries: TypingEntry[]
+        entries: TypingEntry[]
 ): TimelineTypingParticipant[] {
 	return entries
 		.map<TimelineTypingParticipant | null>((entry) => {
@@ -45,6 +49,10 @@ export function mapTypingEntriesToParticipants(
 		);
 }
 
+/**
+ * Resolves typing events into fully hydrated preview participants with display
+ * names and avatars ready for UI consumption.
+ */
 export function mapTypingEntriesToPreviewParticipants(
 	entries: TypingEntry[],
 	{

@@ -46,25 +46,34 @@ function useSelector<TSelected>(
 	return selectionRef.current as TSelected;
 }
 
+/**
+ * Public hook for subscribing to slices of the shared "seen" store.
+ */
 export function useSeenStore<TSelected>(
-	selector: Selector<TSelected>,
-	isEqual?: EqualityChecker<TSelected>
+        selector: Selector<TSelected>,
+        isEqual?: EqualityChecker<TSelected>
 ): TSelected {
-	return useSelector(selector, isEqual);
+        return useSelector(selector, isEqual);
 }
 
+/**
+ * Seeds the seen store with initial data, typically from the REST API or SSR.
+ */
 export function hydrateConversationSeen(
-	conversationId: string,
-	entries: ConversationSeen[]
+        conversationId: string,
+        entries: ConversationSeen[]
 ) {
-	hydrateStore(store, conversationId, entries);
+        hydrateStore(store, conversationId, entries);
 }
 
+/**
+ * Inserts or updates a seen entry for the provided actor.
+ */
 export function upsertConversationSeen(options: {
-	conversationId: string;
-	actorType: SeenActorType;
-	actorId: string;
-	lastSeenAt: Date;
+        conversationId: string;
+        actorType: SeenActorType;
+        actorId: string;
+        lastSeenAt: Date;
 }) {
 	upsertStore(store, {
 		...options,
@@ -72,11 +81,15 @@ export function upsertConversationSeen(options: {
 	});
 }
 
+/**
+ * Applies realtime `conversationSeen` events to the store while optionally
+ * ignoring the local visitor/user.
+ */
 export function applyConversationSeenEvent(
-	event: RealtimeEvent<"conversationSeen">,
-	options?: {
-		ignoreVisitorId?: string | null;
-		ignoreUserId?: string | null;
+        event: RealtimeEvent<"conversationSeen">,
+        options?: {
+                ignoreVisitorId?: string | null;
+                ignoreUserId?: string | null;
 		ignoreAiAgentId?: string | null;
 	}
 ) {

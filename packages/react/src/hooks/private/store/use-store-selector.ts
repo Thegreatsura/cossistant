@@ -7,10 +7,14 @@ type BasicStore<TState> = {
 	subscribe(listener: Subscription<TState>): () => void;
 };
 
+/**
+ * React hook that bridges Zustand-like stores with React components by
+ * memoizing selector results and resubscribing when dependencies change.
+ */
 export function useStoreSelector<TState, TSelected>(
-	store: BasicStore<TState>,
-	selector: (state: TState) => TSelected,
-	isEqual: (previous: TSelected, next: TSelected) => boolean = Object.is
+        store: BasicStore<TState>,
+        selector: (state: TState) => TSelected,
+        isEqual: (previous: TSelected, next: TSelected) => boolean = Object.is
 ): TSelected {
 	const selectionRef = useRef<TSelected>(undefined);
 

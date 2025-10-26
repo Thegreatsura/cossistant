@@ -14,9 +14,13 @@ function buildSeenId(
 	return `${conversationId}-${actorType}-${actorId}`;
 }
 
+/**
+ * Reads the conversation seen store and optionally hydrates it with SSR
+ * payloads.
+ */
 export function useConversationSeen(
-	conversationId: string | null | undefined,
-	options: UseConversationSeenOptions = {}
+        conversationId: string | null | undefined,
+        options: UseConversationSeenOptions = {}
 ): ConversationSeen[] {
 	const { initialData } = options;
 	const hydratedKeyRef = useRef<string | null>(null);

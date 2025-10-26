@@ -6,8 +6,11 @@ type CossistantLogoProps = {
 	className?: string;
 };
 
+/**
+ * Inline SVG of the Cossistant logomark.
+ */
 export function CossistantLogo({
-	className,
+        className,
 }: CossistantLogoProps): ReactElement {
 	return (
 		<svg

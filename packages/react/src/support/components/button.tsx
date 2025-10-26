@@ -36,10 +36,14 @@ export const coButtonVariants = cva(
 export type CossistantButtonProps = React.ComponentProps<"button"> &
 	VariantProps<typeof coButtonVariants>;
 
+/**
+ * Styled button primitive that forwards variant and size props to the shared
+ * design tokens.
+ */
 export function Button({
-	className,
-	variant,
-	size,
+        className,
+        variant,
+        size,
 	...props
 }: CossistantButtonProps): React.ReactElement {
 	return (

@@ -366,10 +366,13 @@ function buildSocketUrl(
 	}
 }
 
+/**
+ * Provides websocket connectivity and heartbeating logic for realtime events.
+ */
 export function RealtimeProvider({
-	children,
-	wsUrl = DEFAULT_WS_URL,
-	auth,
+        children,
+        wsUrl = DEFAULT_WS_URL,
+        auth,
 	autoConnect = true,
 	onConnect,
 	onDisconnect,
@@ -643,6 +646,9 @@ export function RealtimeProvider({
 	);
 }
 
+/**
+ * Returns the realtime connection context.
+ */
 export function useRealtimeConnection(): RealtimeContextValue {
 	const context = useContext(RealtimeContext);
 	if (!context) {

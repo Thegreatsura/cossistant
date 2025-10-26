@@ -5,6 +5,10 @@ import { Text } from "../text";
 import { Button } from "./button";
 import Icon from "./icons";
 
+/**
+ * Tab bar used inside the widget header to switch between home and knowledge
+ * base views.
+ */
 export function NavigationTab(): ReactElement {
 	const { current, navigate } = useSupportNavigation();
 

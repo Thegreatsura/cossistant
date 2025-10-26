@@ -26,10 +26,14 @@ export type UseConversationTimelineReturn = {
 	lastVisitorMessageGroupIndex: number;
 };
 
+/**
+ * Produces grouped timeline items, seen data and typing state suitable for the
+ * conversation detail view.
+ */
 export function useConversationTimeline({
-	conversationId,
-	items: timelineItems,
-	currentVisitorId,
+        conversationId,
+        items: timelineItems,
+        currentVisitorId,
 }: UseConversationTimelineOptions): UseConversationTimelineReturn {
 	const seenData = useDebouncedConversationSeen(conversationId);
 	const typingEntries = useConversationTyping(conversationId, {

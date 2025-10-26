@@ -31,6 +31,11 @@ type SupportTextProviderProps<Locale extends string = SupportLocale> = {
 const SupportTextRuntimeContext =
 	React.createContext<SupportTextProviderValue | null>(null);
 
+/**
+ * Supplies localized copy and formatting helpers for the support widget. The
+ * provider merges bundled locale strings with optional runtime overrides and
+ * exposes a formatter that understands visitor/website context.
+ */
 export function SupportTextProvider<Locale extends string = SupportLocale>({
 	children,
 	locale,
@@ -104,6 +109,10 @@ export function SupportTextProvider<Locale extends string = SupportLocale>({
 	);
 }
 
+/**
+ * Returns the active text formatter for the support widget. Throws if used
+ * outside of `SupportTextProvider` to help catch integration mistakes.
+ */
 export function useSupportText(): SupportTextResolvedFormatter {
 	const context = React.useContext(SupportTextRuntimeContext);
 	if (!context) {
@@ -153,6 +162,11 @@ function TextInner<
 	});
 }
 
+/**
+ * Convenience component that renders localized support copy via the
+ * `SupportTextProvider` context while still allowing callers to customize the
+ * rendered HTML element.
+ */
 export const Text = React.forwardRef(TextInner) as <
 	K extends SupportTextKey,
 	As extends keyof React.JSX.IntrinsicElements = "span",

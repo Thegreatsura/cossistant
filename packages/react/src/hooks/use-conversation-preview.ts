@@ -84,8 +84,12 @@ function resolveLastTimelineMessage(
 	return null;
 }
 
+/**
+ * Composes conversation metadata including derived titles, last message
+ * snippets and typing state for use in lists.
+ */
 export function useConversationPreview(
-	options: UseConversationPreviewOptions
+        options: UseConversationPreviewOptions
 ): UseConversationPreviewReturn {
 	const {
 		conversation,

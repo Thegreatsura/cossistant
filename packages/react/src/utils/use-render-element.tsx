@@ -41,9 +41,12 @@ function Slot({
 	} as any);
 }
 
+/**
+ * Utility hook to support slot-style component overrides.
+ */
 export function useRenderElement<
-	State extends Record<string, any>,
-	Tag extends IntrinsicTag,
+        State extends Record<string, any>,
+        Tag extends IntrinsicTag,
 >(
 	tag: Tag,
 	componentProps: RenderProps<State, Tag>,

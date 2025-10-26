@@ -42,8 +42,13 @@ function toError(error: unknown): Error {
 	return new Error("Unknown error");
 }
 
+/**
+ * Imperative helper for bootstrapping a new conversation locally before the
+ * backend persists it. Mirrors react-query's mutate API to simplify
+ * integration with forms or buttons.
+ */
 export function useCreateConversation(
-	options: UseCreateConversationOptions = {}
+        options: UseCreateConversationOptions = {}
 ): UseCreateConversationResult {
 	const { client: contextClient } = useSupport();
 	const { client: overrideClient, onError, onSuccess } = options;

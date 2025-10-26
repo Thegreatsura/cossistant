@@ -18,6 +18,10 @@ const getVisibilityFocusState = (): WindowVisibilityFocusState => {
 	return { isPageVisible, hasWindowFocus };
 };
 
+/**
+ * Tracks document visibility and window focus so hooks can defer updates while
+ * the user is away from the page.
+ */
 export function useWindowVisibilityFocus(): WindowVisibilityFocusState {
 	const [state, setState] = useState<WindowVisibilityFocusState>(() =>
 		getVisibilityFocusState()

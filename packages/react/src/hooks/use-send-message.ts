@@ -79,8 +79,12 @@ function buildTimelineItemPayload(
 	} satisfies TimelineItem;
 }
 
+/**
+ * Sends visitor messages while handling optimistic pending conversations and
+ * exposing react-query-like mutation state.
+ */
 export function useSendMessage(
-	options: UseSendMessageOptions = {}
+        options: UseSendMessageOptions = {}
 ): UseSendMessageResult {
 	const { client: contextClient } = useSupport();
 	const client = options.client ?? contextClient;

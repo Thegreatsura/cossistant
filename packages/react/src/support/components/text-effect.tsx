@@ -209,6 +209,10 @@ const createVariantsWithTransition = (
 	};
 };
 
+/**
+ * Animated typography helper that reveals text word-by-word or letter-by-letter
+ * with configurable motion presets.
+ */
 export function TextEffect({
 	children,
 	per = "word",
