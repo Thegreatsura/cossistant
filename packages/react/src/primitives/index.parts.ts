@@ -1,16 +1,23 @@
 export {
-	TypingIndicator,
-	type TypingIndicatorProps,
-	type TypingParticipant,
-	type TypingParticipantType,
+        TypingIndicator,
+        type TypingIndicatorProps,
+        type TypingParticipant,
+        type TypingParticipantType,
 } from "../support/components/typing-indicator";
 export { SupportConfig as Config } from "../support-config";
 export { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 export { SupportBubble as Bubble } from "./bubble";
+export {
+        ConversationButton,
+        type ConversationButtonAssignedAgent,
+        type ConversationButtonProps,
+        type ConversationButtonState,
+        type ConversationButtonStatusTone,
+} from "./conversation-button";
 export { Button } from "./button";
 export {
-	ConversationTimeline,
-	ConversationTimelineContainer,
+        ConversationTimeline,
+        ConversationTimelineContainer,
 	ConversationTimelineEmpty,
 	ConversationTimelineLoading,
 } from "./conversation-timeline";
