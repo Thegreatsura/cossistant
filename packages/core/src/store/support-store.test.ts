@@ -43,7 +43,6 @@ describe("support store", () => {
 					previousPages: [{ page: "HOME" }],
 				},
 				config: {
-					mode: "responsive",
 					size: "larger",
 					isOpen: true,
 				},
@@ -54,7 +53,7 @@ describe("support store", () => {
 		store = createSupportStore({ storage });
 
 		expect(store.getState().config.isOpen).toBe(true);
-		expect(store.getState().config.mode).toBe("responsive");
+		expect(store.getState().config.size).toBe("larger");
 		expect(store.getState().navigation.current.page).toBe("ARTICLES");
 		expect(store.getState().navigation.previousPages).toHaveLength(1);
 	});
@@ -80,14 +79,14 @@ describe("support store", () => {
 
 	it("updates config and persists", () => {
 		store.open();
-		store.updateConfig({ mode: "responsive" });
+		store.updateConfig({ size: "larger" });
 
 		const persisted = JSON.parse(
 			storage.getItem("cossistant-support-store") ?? "{}"
 		);
 
 		expect(persisted.config.isOpen).toBe(true);
-		expect(persisted.config.mode).toBe("responsive");
+		expect(persisted.config.size).toBe("larger");
 	});
 
 	it("resets to defaults", () => {

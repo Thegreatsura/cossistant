@@ -9,7 +9,6 @@ import { cn } from "../utils";
 export type ContainerProps = {
 	className?: string;
 	children: React.ReactNode;
-	mode?: "floating" | "responsive";
 	position?: "top" | "bottom";
 	align?: "right" | "left";
 };
@@ -17,7 +16,6 @@ export type ContainerProps = {
 export const Container: React.FC<ContainerProps> = ({
 	className,
 	children,
-	mode = "floating",
 	position = "bottom",
 	align = "right",
 }) => {
@@ -84,24 +82,14 @@ export const Container: React.FC<ContainerProps> = ({
 				animate="visible"
 				className={cn(
 					// Common base styles
-					"flex flex-col overflow-hidden overscroll-none bg-co-background",
-
-					mode === "floating"
-						? "max-md:fixed max-md:inset-0"
-						: "max-md:relative max-md:h-full max-md:w-full",
+					"flex flex-col overflow-hidden overscroll-none bg-co-background max-md:fixed max-md:inset-0",
 
 					// Desktop floating mode
-					mode === "floating" && [
-						"z-[9999] md:absolute md:z-[9900] md:aspect-[9/18] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-lg md:border md:border-co-border md:shadow-xl md:dark:shadow-co-background-600/50",
-						position === "bottom" && "md:bottom-16",
-						position === "top" && "md:top-16",
-						align === "right" && "md:right-0",
-						align === "left" && "md:left-0",
-					],
-
-					// Desktop responsive mode
-					mode === "responsive" &&
-						"md:relative md:h-full md:w-full md:rounded-none md:border-0 md:shadow-none",
+					"z-[9999] md:absolute md:z-[9900] md:aspect-[9/18] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-lg md:border md:border-co-border md:shadow-xl md:dark:shadow-co-background-600/50",
+					position === "bottom" && "md:bottom-16",
+					position === "top" && "md:top-16",
+					align === "right" && "md:right-0",
+					align === "left" && "md:left-0",
 
 					className
 				)}

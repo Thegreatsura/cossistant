@@ -1,5 +1,6 @@
 "use client";
 
+import { useSupport } from "@cossistant/next";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -23,6 +24,7 @@ export function UserDropdown({ websiteSlug }: UserDropdownProps) {
 	const router = useRouter();
 	const { data: session } = authClient.useSession();
 	const { setTheme, resolvedTheme } = useTheme();
+	const { open } = useSupport();
 
 	const user = session?.user ?? null;
 	const userEmail = user?.email ?? "";
@@ -72,9 +74,7 @@ export function UserDropdown({ websiteSlug }: UserDropdownProps) {
 				sideOffset={4}
 			>
 				<DropdownMenuGroup>
-					<DropdownMenuItem
-						onSelect={() => router.push(`/${websiteSlug}/help`)}
-					>
+					<DropdownMenuItem onSelect={() => open()}>
 						<Icon className="mx-1 size-4" filledOnHover name="help" />
 						Help
 					</DropdownMenuItem>

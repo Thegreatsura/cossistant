@@ -138,7 +138,7 @@ export function ConversationPane({
 	const lastMessage = useMemo(() => {
 		for (let index = items.length - 1; index >= 0; index -= 1) {
 			const candidate = items[index];
-			if (candidate.type === "message") {
+			if (candidate?.type === "message") {
 				return candidate;
 			}
 		}

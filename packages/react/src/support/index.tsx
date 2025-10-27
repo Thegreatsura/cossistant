@@ -6,7 +6,6 @@ import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportConfig } from "../support-config";
 import { SupportContent } from "./components/support-content";
-import { SupportConfigProvider } from "./context/config";
 import type { SupportLocale, SupportTextContentOverrides } from "./text";
 import { SupportTextProvider } from "./text";
 
@@ -14,18 +13,15 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
-	// Display the support widget in a floating window or in responsive mode (takes the full width / height of the parent)
-	mode?: "floating" | "responsive";
 	quickOptions?: string[];
 	defaultMessages?: DefaultMessage[];
-	defaultOpen?: boolean;
 	locale?: Locale;
 	content?: SupportTextContentOverrides<Locale>;
 };
 
 // Internal component that needs the conversation context
 /**
- * Orchestrates the end-user support experience by nesting realtime, config and
+ * Orchestrates the end-user support experience by nesting realtime and
  * content providers. Renders nothing until website data is available to avoid
  * flashing incomplete UI.
  */
@@ -33,10 +29,8 @@ export function Support<Locale extends string = SupportLocale>({
 	className,
 	position = "bottom",
 	align = "right",
-	mode = "floating",
 	quickOptions,
 	defaultMessages,
-	defaultOpen,
 	locale,
 	content,
 }: SupportProps<Locale>): ReactElement | null {
@@ -50,16 +44,13 @@ export function Support<Locale extends string = SupportLocale>({
 	return (
 		<>
 			<SupportRealtimeProvider>
-				<SupportConfigProvider defaultOpen={defaultOpen} mode={mode}>
-					<SupportTextProvider content={content} locale={locale}>
-						<SupportContent
-							align={align}
-							className={className}
-							mode={mode}
-							position={position}
-						/>
-					</SupportTextProvider>
-				</SupportConfigProvider>
+				<SupportTextProvider content={content} locale={locale}>
+					<SupportContent
+						align={align}
+						className={className}
+						position={position}
+					/>
+				</SupportTextProvider>
 			</SupportRealtimeProvider>
 			<SupportConfig
 				defaultMessages={defaultMessages}
@@ -71,10 +62,13 @@ export function Support<Locale extends string = SupportLocale>({
 
 export default Support;
 
-export { useSupportConfig } from "./context/config";
 export type { WebSocketContextValue } from "./context/websocket";
 export { useWebSocket, WebSocketProvider } from "./context/websocket";
 // Export the store for direct access if needed
-export { useSupportStore } from "./store";
+export {
+	useSupportConfig,
+	useSupportNavigation,
+	useSupportStore,
+} from "./store";
 export type { SupportLocale, SupportTextContentOverrides } from "./text";
 export { Text, useSupportText } from "./text";

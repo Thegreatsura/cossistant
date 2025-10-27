@@ -17,7 +17,6 @@ export type SupportNavigation = {
 };
 
 export type SupportConfig = {
-	mode: "floating" | "responsive";
 	size: "normal" | "larger";
 	isOpen: boolean;
 	content: {
@@ -60,7 +59,7 @@ export type SupportStore = Store<SupportStoreState> & SupportStoreActions;
 
 const STORAGE_KEY = "cossistant-support-store";
 
-type PersistedConfig = Pick<SupportConfig, "mode" | "size" | "isOpen">;
+type PersistedConfig = Pick<SupportConfig, "size" | "isOpen">;
 
 type PersistedState = {
 	navigation?: SupportNavigation;
@@ -77,7 +76,6 @@ function createDefaultNavigation(): SupportNavigation {
 function createDefaultConfig(): SupportConfig {
 	return {
 		size: "normal",
-		mode: "floating",
 		content: {},
 		isOpen: false,
 	};
@@ -167,7 +165,6 @@ function persistState(
 			previousPages: [...state.navigation.previousPages],
 		},
 		config: {
-			mode: state.config.mode,
 			size: state.config.size,
 			isOpen: state.config.isOpen,
 		},

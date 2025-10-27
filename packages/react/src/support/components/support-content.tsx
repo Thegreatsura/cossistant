@@ -12,7 +12,6 @@ type SupportContentProps = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
-	mode?: "floating" | "responsive";
 };
 
 /**
@@ -28,19 +27,14 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 	className,
 	position = "bottom",
 	align = "right",
-	mode = "floating",
 }) => {
 	const containerClasses = cn(
-		"cossistant",
+		"cossistant fixed z-[9999]",
 		{
-			// Floating mode positioning
-			"fixed z-[9999]": mode === "floating",
-			"bottom-4": mode === "floating" && position === "bottom",
-			"top-4": mode === "floating" && position === "top",
-			"right-4": mode === "floating" && align === "right",
-			"left-4": mode === "floating" && align === "left",
-			// Responsive mode
-			"relative h-full w-full": mode === "responsive",
+			"bottom-4": position === "bottom",
+			"top-4": position === "top",
+			"right-4": align === "right",
+			"left-4": align === "left",
 		},
 		className
 	);
@@ -56,8 +50,8 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 				layout: { duration: 0.3 },
 			}}
 		>
-			{mode === "floating" && <Bubble className="z-[1000] md:z-[9999]" />}
-			<Container align={align} mode={mode} position={position}>
+			<Bubble className="z-[1000] md:z-[9999]" />
+			<Container align={align} position={position}>
 				<SupportRouter />
 			</Container>
 		</motion.div>

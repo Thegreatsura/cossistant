@@ -5,6 +5,10 @@ import React from "react";
 import { useWebsiteStore } from "./hooks/private/store/use-website-store";
 import { useClient } from "./hooks/private/use-rest-client";
 import { WebSocketProvider } from "./support";
+import {
+	initializeSupportStore,
+	useSupportStore,
+} from "./support/store/support-store";
 
 export type SupportProviderProps = {
 	children: React.ReactNode;
@@ -18,6 +22,7 @@ export type SupportProviderProps = {
 	onWsConnect?: () => void;
 	onWsDisconnect?: () => void;
 	onWsError?: (error: Error) => void;
+	size?: "normal" | "larger";
 };
 
 export type CossistantProviderProps = SupportProviderProps;
@@ -33,6 +38,10 @@ export type CossistantContextValue = {
 	isLoading: boolean;
 	error: Error | null;
 	client: CossistantClient;
+	isOpen: boolean;
+	open: () => void;
+	close: () => void;
+	toggle: () => void;
 };
 
 type WebsiteData = NonNullable<CossistantContextValue["website"]>;
@@ -45,6 +54,7 @@ export type UseSupportValue = CossistantContextValue & {
 	availableHumanAgents: NonNullable<WebsiteData["availableHumanAgents"]> | [];
 	availableAIAgents: NonNullable<WebsiteData["availableAIAgents"]> | [];
 	visitor?: VisitorWithLocale;
+	size: "normal" | "larger";
 };
 
 const SupportContext = React.createContext<CossistantContextValue | undefined>(
@@ -66,6 +76,8 @@ function SupportProviderInner({
 	onWsConnect,
 	onWsDisconnect,
 	onWsError,
+	size = "normal",
+	defaultOpen = false,
 }: SupportProviderProps) {
 	const [unreadCount, setUnreadCount] = React.useState(0);
 	const [_defaultMessages, _setDefaultMessages] = React.useState<
@@ -74,6 +86,15 @@ function SupportProviderInner({
 	const [_quickOptions, _setQuickOptions] = React.useState<string[]>(
 		quickOptions || []
 	);
+
+	// Initialize support store with configuration
+	React.useEffect(() => {
+		initializeSupportStore({ size, defaultOpen });
+	}, [size, defaultOpen]);
+
+	// Get support store state and actions
+	const { config, open, close, toggle } = useSupportStore();
+
 	// Update state when props change (for initial values from provider)
 	React.useEffect(() => {
 		if (defaultMessages && defaultMessages.length > 0) {
@@ -138,6 +159,10 @@ function SupportProviderInner({
 			setDefaultMessages,
 			quickOptions: _quickOptions,
 			setQuickOptions,
+			isOpen: config.isOpen,
+			open,
+			close,
+			toggle,
 		}),
 		[
 			website,
@@ -150,6 +175,10 @@ function SupportProviderInner({
 			setDefaultMessages,
 			setQuickOptions,
 			setUnreadCountStable,
+			config.isOpen,
+			open,
+			close,
+			toggle,
 		]
 	);
 
@@ -200,17 +229,21 @@ export function SupportProvider({
 	onWsConnect,
 	onWsDisconnect,
 	onWsError,
+	size = "normal",
+	defaultOpen = false,
 }: SupportProviderProps): React.ReactElement {
 	return (
 		<SupportProviderInner
 			apiUrl={apiUrl}
 			autoConnect={autoConnect}
 			defaultMessages={defaultMessages}
+			defaultOpen={defaultOpen}
 			onWsConnect={onWsConnect}
 			onWsDisconnect={onWsDisconnect}
 			onWsError={onWsError}
 			publicKey={publicKey}
 			quickOptions={quickOptions}
+			size={size}
 			wsUrl={wsUrl}
 		>
 			{children}
@@ -234,6 +267,9 @@ export function useSupport(): UseSupportValue {
 	const availableAIAgents = context.website?.availableAIAgents || [];
 	const visitorLanguage = context.website?.visitor?.language || null;
 
+	// Get additional config from support store
+	const { config } = useSupportStore();
+
 	// Create visitor object with normalized locale
 	const visitor = context.website?.visitor
 		? {
@@ -247,5 +283,6 @@ export function useSupport(): UseSupportValue {
 		availableHumanAgents,
 		availableAIAgents,
 		visitor,
+		size: config.size,
 	};
 }

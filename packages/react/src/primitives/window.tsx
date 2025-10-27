@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useSupportConfig } from "../support/context/config";
+import { useSupportConfig } from "../support/store/support-store";
 import { useRenderElement } from "../utils/use-render-element";
 
 export type WindowRenderProps = {
@@ -20,7 +20,7 @@ export type WindowProps = Omit<
 };
 
 /**
- * Host container for the support experience. Handles responsive mode, escape
+ * Host container for the support experience. Handles escape
  * key dismissal and propagates render props so callers can take over the
  * layout.
  */
@@ -39,12 +39,9 @@ export const SupportWindow = (() => {
 			},
 			ref
 		) => {
-			const { isOpen, close, mode } = useSupportConfig();
+			const { isOpen, close } = useSupportConfig();
 
-			// In responsive mode, window is always open
-			// Otherwise use normal open/close logic
-			const open =
-				mode === "responsive" ? true : (isOpenProp ?? isOpen ?? false);
+			const open = isOpenProp ?? isOpen ?? false;
 
 			const closeFn = React.useCallback(() => {
 				if (onOpenChange) {

@@ -125,18 +125,13 @@ export const useSupportNavigation = () => {
 /**
  * Applies initial configuration derived from provider props or server state to
  * the singleton support store. Call this once during bootstrapping so that the
- * UI renders with the expected mode/open state.
+ * UI renders with the expected open state.
  */
 export const initializeSupportStore = (props: {
-	mode?: SupportConfig["mode"];
 	size?: SupportConfig["size"];
 	defaultOpen?: boolean;
 }) => {
 	const patch: Partial<SupportConfig> = {};
-
-	if (props.mode !== undefined) {
-		patch.mode = props.mode;
-	}
 
 	if (props.size !== undefined) {
 		patch.size = props.size;
