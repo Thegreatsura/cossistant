@@ -1,0 +1,59 @@
+name: Release - Beta
+
+on:
+  pull_request:
+    types:
+      - labeled
+
+permissions:
+  contents: read
+
+jobs:
+  beta:
+    if: >
+      github.repository_owner == 'cossistantcom' &&
+      github.event.label.name == '🚀 autorelease' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set beta version
+        id: beta_version
+        run: node .github/version-script-beta.js
+
+      - name: Update lockfile
+        run: bun install
+
+      - name: Publish beta packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          for pkg in react next; do
+            echo "Publishing @cossistant/${pkg}@${{ steps.beta_version.outputs.version }}"
+            (cd packages/${pkg} && bun run pub:beta)
+          done
+
+      - name: Upload React beta artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-react@${{ steps.beta_version.outputs.version }}-pr-${{ github.event.pull_request.number }}
+          path: packages/react/dist
+
+      - name: Upload Next beta artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-next@${{ steps.beta_version.outputs.version }}-pr-${{ github.event.pull_request.number }}
+          path: packages/next/dist

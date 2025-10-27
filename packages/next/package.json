@@ -96,6 +96,9 @@
   },
   "scripts": {
     "build": "tsdown && bun run prepare-package",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
     "prepare-package": "bunx tsx ../../scripts/prepare-package.ts",
     "lint": "biome check .",
     "check-types": "tsc --noEmit --project tsconfig.json"

@@ -1,68 +1,98 @@
-name: Create Release
+name: Release
 
 on:
   push:
-    tags:
-      - "*"
+    branches:
+      - main
+  workflow_dispatch: {}
 
 permissions:
   contents: write
 
 jobs:
   release:
+    if: >
+      github.repository_owner == 'cossistantcom' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'push' &&
+          contains(github.event.head_commit.message, 'chore(release): version packages')
+        )
+      )
     runs-on: ubuntu-latest
-    # Only run for @cossistant package tags
-    if: startsWith(github.ref, 'refs/tags/@cossistant/')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract package info
-        id: package_info
-        run: |
-          TAG_NAME="${{ github.ref_name }}"
-          PACKAGE_NAME=$(echo "$TAG_NAME" | sed 's/@\([^@]*\)$//')
-          VERSION=$(echo "$TAG_NAME" | sed 's/.*@//')
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-          # Determine package display name
-          if [[ "$PACKAGE_NAME" == *"react"* ]]; then
-            echo "display_name=React SDK" >> $GITHUB_OUTPUT
-          elif [[ "$PACKAGE_NAME" == *"next"* ]]; then
-            echo "display_name=Next.js SDK" >> $GITHUB_OUTPUT
-          else
-            echo "display_name=Package" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get changelog content
-        id: changelog
-        run: |
-          PACKAGE_DIR="packages/$(echo "${{ steps.package_info.outputs.package_name }}" | sed 's/@cossistant\///')"
-          if [ -f "$PACKAGE_DIR/CHANGELOG.md" ]; then
-            # Extract the content for this version from CHANGELOG.md
-            CHANGELOG_CONTENT=$(awk '/^## / {if (p) exit; if ($0 ~ /${{ steps.package_info.outputs.version }}/) p=1} p' "$PACKAGE_DIR/CHANGELOG.md")
-            if [ -z "$CHANGELOG_CONTENT" ]; then
-              CHANGELOG_CONTENT="See [CHANGELOG.md]($PACKAGE_DIR/CHANGELOG.md) for details."
-            fi
-          else
-            CHANGELOG_CONTENT="Initial release of ${{ steps.package_info.outputs.package_name }}"
-          fi
-
-          # Save to file to preserve multiline content
-          echo "$CHANGELOG_CONTENT" > changelog_content.txt
-          echo "content_file=changelog_content.txt" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          tag_name: ${{ steps.package_info.outputs.tag_name }}
-          name: "${{ steps.package_info.outputs.display_name }} v${{ steps.package_info.outputs.version }}"
-          body_path: ${{ steps.changelog.outputs.content_file }}
-          draft: false
-          prerelease: false
+          bun-version: 1.2.22
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build packages
+        run: bunx --bun turbo run build --filter=@cossistant/react --filter=@cossistant/next
+
+      - name: Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: node .github/changeset-version.js
+          publish: bun run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+
+      - name: Create GitHub releases
+        if: steps.changesets.outputs.published == 'true'
+        uses: actions/github-script@v7
+        env:
+          PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        with:
+          script: |
+            const packages = JSON.parse(process.env.PACKAGES ?? "[]");
+            if (!packages.length) {
+              core.notice("No packages published, skipping release creation.");
+              return;
+            }
+
+            const { execSync } = require("child_process");
+
+            for (const pkg of packages) {
+              const tag = `${pkg.name}@${pkg.version}`;
+              let body = "";
+
+              try {
+                body = execSync(`node .github/generate-release-notes.js ${tag}`, {
+                  cwd: process.env.GITHUB_WORKSPACE,
+                  stdio: ["ignore", "pipe", "inherit"],
+                }).toString();
+              } catch (error) {
+                core.warning(`Failed to generate release notes for ${tag}: ${error.message}`);
+                body = `${tag} published via Changesets.`;
+              }
+
+              try {
+                await github.rest.repos.createRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag_name: tag,
+                  name: `${pkg.name} v${pkg.version}`,
+                  body,
+                  draft: false,
+                  prerelease: false,
+                });
+                core.info(`Created release for ${tag}`);
+              } catch (error) {
+                if (error.status === 422) {
+                  core.warning(`Release for ${tag} already exists. Skipping.`);
+                } else {
+                  throw error;
+                }
+              }
+            }

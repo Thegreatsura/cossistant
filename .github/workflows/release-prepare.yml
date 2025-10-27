@@ -1,0 +1,47 @@
+name: Release - Prepare
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    if: github.repository_owner == 'cossistantcom'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for pending changesets
+        id: pending
+        run: |
+          if ls .changeset/*.md >/dev/null 2>&1; then
+            echo "has=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+        if: steps.pending.outputs.has == 'true'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        if: steps.pending.outputs.has == 'true'
+
+      - name: Create or update release PR
+        uses: changesets/action@v1
+        with:
+          version: node .github/changeset-version.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: steps.pending.outputs.has == 'true'

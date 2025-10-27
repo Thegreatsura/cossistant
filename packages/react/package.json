@@ -109,6 +109,9 @@
     "build": "tsdown && bun run build:css && bun run prepare-package",
     "build:css": "bunx @tailwindcss/cli -i src/support/support.css -o dist/support.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify",
     "prepare-package": "bunx tsx ../../scripts/prepare-package.ts",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
     "lint": "biome check .",
     "check-types": "tsc --noEmit --project tsconfig.json"
   }
