@@ -15,7 +15,7 @@ import {
 	sendTimelineItemResponseSchema,
 	type TimelineItem,
 } from "@cossistant/types/api/timeline-item";
-import { ConversationTimelineType } from "@cossistant/types/enums";
+import { ConversationStatus, ConversationTimelineType } from "@cossistant/types/enums";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
 import type { RestContext } from "../types";
@@ -132,22 +132,40 @@ messagesRouter.openapi(
 		// With a public key,
 		const isPublic = apiKey?.keyType === "public";
 
-		// Visitor must own the conversation when using the public key
-		if (isPublic && conversation.visitorId !== visitorId) {
-			return c.json(
-				validateResponse(
-					{ error: "Forbidden: visitor does not own the conversation" },
-					z.object({ error: z.string() })
-				),
-				403
-			);
-		}
+                // Visitor must own the conversation when using the public key
+                if (isPublic && conversation.visitorId !== visitorId) {
+                        return c.json(
+                                validateResponse(
+                                        { error: "Forbidden: visitor does not own the conversation" },
+                                        z.object({ error: z.string() })
+                                ),
+                                403
+                        );
+                }
 
-		// Disallow setting user/ai actor via public key
-		if (isPublic && (body.item.userId || body.item.aiAgentId)) {
-			return c.json(
-				validateResponse(
-					{
+                const conversationIsClosed =
+                        conversation.status === ConversationStatus.RESOLVED ||
+                        conversation.status === ConversationStatus.SPAM ||
+                        Boolean(conversation.deletedAt);
+
+                if (isPublic && conversationIsClosed) {
+                        return c.json(
+                                validateResponse(
+                                        {
+                                                error:
+                                                        "Forbidden: this conversation is closed and cannot receive new messages",
+                                        },
+                                        z.object({ error: z.string() })
+                                ),
+                                403
+                        );
+                }
+
+                // Disallow setting user/ai actor via public key
+                if (isPublic && (body.item.userId || body.item.aiAgentId)) {
+                        return c.json(
+                                validateResponse(
+                                        {
 						error:
 							"Forbidden: cannot set userId/aiAgentId with a public API key",
 					},

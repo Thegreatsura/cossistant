@@ -121,12 +121,15 @@ export const supportTextDefinitions = {
 	"component.conversationEvent.visitorBlocked": {
 		variables: { actorName: "" as string },
 	},
-	"component.conversationEvent.visitorUnblocked": {
-		variables: { actorName: "" as string },
-	},
-	"component.multimodalInput.placeholder": {
-		variables: undefined,
-	},
+        "component.conversationEvent.visitorUnblocked": {
+                variables: { actorName: "" as string },
+        },
+        "component.conversationPage.closedMessage": {
+                variables: undefined,
+        },
+        "component.multimodalInput.placeholder": {
+                variables: undefined,
+        },
 	"component.multimodalInput.remove": {
 		variables: { fileName: "" as string },
 	},

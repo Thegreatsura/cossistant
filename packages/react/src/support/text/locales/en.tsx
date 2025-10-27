@@ -79,9 +79,11 @@ const en: SupportLocaleMessages = {
 		`${variables.actorName} removed a tag`,
 	"component.conversationEvent.visitorBlocked": ({ variables }) =>
 		`${variables.actorName} blocked the visitor`,
-	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
-		`${variables.actorName} unblocked the visitor`,
-	"component.multimodalInput.placeholder": "Type your message...",
+        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
+                `${variables.actorName} unblocked the visitor`,
+        "component.conversationPage.closedMessage":
+                "This conversation is closed, start a new one to talk with us",
+        "component.multimodalInput.placeholder": "Type your message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Remove ${variables.fileName}`,
 	"component.navigation.articles": "Articles",

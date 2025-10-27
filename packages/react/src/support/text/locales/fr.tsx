@@ -75,11 +75,13 @@ const fr: SupportLocaleMessages = {
 		`${variables.actorName} a ajouté une étiquette`,
 	"component.conversationEvent.tagRemoved": ({ variables }) =>
 		`${variables.actorName} a retiré une étiquette`,
-	"component.conversationEvent.visitorBlocked": ({ variables }) =>
-		`${variables.actorName} a bloqué le visiteur`,
-	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
-		`${variables.actorName} a débloqué le visiteur`,
-	"component.multimodalInput.placeholder": "Écrivez votre message...",
+        "component.conversationEvent.visitorBlocked": ({ variables }) =>
+                `${variables.actorName} a bloqué le visiteur`,
+        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
+                `${variables.actorName} a débloqué le visiteur`,
+        "component.conversationPage.closedMessage":
+                "Cette conversation est close, commencez-en une nouvelle pour discuter avec nous",
+        "component.multimodalInput.placeholder": "Écrivez votre message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Supprimer ${variables.fileName}`,
 	"component.navigation.articles": "Articles",
