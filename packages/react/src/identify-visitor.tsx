@@ -14,7 +14,7 @@ export type IdentifySupportVisitorProps = {
 };
 
 /**
- * Component exposed by Cossistant allowing you to identify a visitor whenever rendered with either an `externalId` or `email`.
+ * Component exposed by Cossistant allowing you to identify a visitor whenever rendered with either an `externalId` or `email`. Once identified, the visitor will be associated with a contact and any subsequent metadata updates will be attached to this contact.
  */
 export const IdentifySupportVisitor = ({
 	externalId,

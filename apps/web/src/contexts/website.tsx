@@ -120,6 +120,11 @@ export function WebsiteProvider({
 			<IdentifySupportVisitor
 				email={sessionData?.user?.email}
 				externalId={sessionData?.user?.id}
+				image={sessionData?.user?.image}
+				metadata={{
+					test: "Best test ever",
+				}}
+				name={sessionData?.user?.name}
 			/>
 		</WebsiteContext.Provider>
 	);
