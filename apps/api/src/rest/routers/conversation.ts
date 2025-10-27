@@ -200,20 +200,21 @@ conversationRouter.openapi(
 			});
 		}
 
-		return c.json({
-			initialTimelineItems: createdItems,
-			conversation: {
-				id: conversation.id,
-				title: conversation.title ?? undefined,
-				createdAt: conversation.createdAt,
-				updatedAt: conversation.updatedAt,
-				visitorId: conversation.visitorId,
-				websiteId: conversation.websiteId,
-				status: conversation.status,
-				lastTimelineItem,
-			},
-		});
-	}
+                return c.json({
+                        initialTimelineItems: createdItems,
+                        conversation: {
+                                id: conversation.id,
+                                title: conversation.title ?? undefined,
+                                createdAt: conversation.createdAt,
+                                updatedAt: conversation.updatedAt,
+                                visitorId: conversation.visitorId,
+                                websiteId: conversation.websiteId,
+                                status: conversation.status,
+                                deletedAt: conversation.deletedAt,
+                                lastTimelineItem,
+                        },
+                });
+        }
 );
 
 conversationRouter.openapi(
@@ -319,20 +320,21 @@ conversationRouter.openapi(
 			order: query.order,
 		});
 
-		return c.json({
-			conversations: result.conversations.map((conv) => ({
-				id: conv.id,
-				title: conv.title ?? undefined,
-				createdAt: conv.createdAt,
-				updatedAt: conv.updatedAt,
-				visitorId: conv.visitorId,
-				websiteId: conv.websiteId,
-				status: conv.status,
-				lastTimelineItem: conv.lastTimelineItem,
-			})),
-			pagination: result.pagination,
-		});
-	}
+                return c.json({
+                        conversations: result.conversations.map((conv) => ({
+                                id: conv.id,
+                                title: conv.title ?? undefined,
+                                createdAt: conv.createdAt,
+                                updatedAt: conv.updatedAt,
+                                visitorId: conv.visitorId,
+                                websiteId: conv.websiteId,
+                                status: conv.status,
+                                deletedAt: conv.deletedAt,
+                                lastTimelineItem: conv.lastTimelineItem,
+                        })),
+                        pagination: result.pagination,
+                });
+        }
 );
 
 conversationRouter.openapi(
@@ -441,19 +443,20 @@ conversationRouter.openapi(
 			);
 		}
 
-		return c.json({
-			conversation: {
-				id: conversation.id,
-				title: conversation.title ?? undefined,
-				createdAt: conversation.createdAt,
-				updatedAt: conversation.updatedAt,
-				visitorId: conversation.visitorId,
-				websiteId: conversation.websiteId,
-				status: conversation.status,
-				lastTimelineItem: conversation.lastTimelineItem,
-			},
-		});
-	}
+                return c.json({
+                        conversation: {
+                                id: conversation.id,
+                                title: conversation.title ?? undefined,
+                                createdAt: conversation.createdAt,
+                                updatedAt: conversation.updatedAt,
+                                visitorId: conversation.visitorId,
+                                websiteId: conversation.websiteId,
+                                status: conversation.status,
+                                deletedAt: conversation.deletedAt,
+                                lastTimelineItem: conversation.lastTimelineItem,
+                        },
+                });
+        }
 );
 
 conversationRouter.openapi(

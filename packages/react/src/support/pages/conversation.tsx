@@ -1,5 +1,7 @@
+import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { ReactElement } from "react";
+import { useConversation } from "../../hooks/use-conversation";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
 import { AvatarStack } from "../components/avatar-stack";
@@ -46,24 +48,36 @@ export const ConversationPage: ConversationPageComponent = ({
 	const text = useSupportText();
 
 	// Main conversation hook - handles all logic
-	const conversation = useConversationPage({
-		conversationId: initialConversationId,
-		items: passedItems,
-		initialMessage,
-		autoSeenEnabled: isOpen,
+        const conversation = useConversationPage({
+                conversationId: initialConversationId,
+                items: passedItems,
+                initialMessage,
+                autoSeenEnabled: isOpen,
 		onConversationIdChange: (newConversationId) => {
 			// Update navigation when conversation is created
 			replace({
 				page: "CONVERSATION",
 				params: { conversationId: newConversationId },
 			});
-		},
-	});
+                },
+        });
 
-	const handleGoBack = () => {
-		if (canGoBack) {
-			goBack();
-		} else {
+        const { conversation: activeConversation } = useConversation(
+                conversation.isPending ? null : conversation.conversationId,
+                { enabled: !conversation.isPending }
+        );
+
+        const isConversationClosed = Boolean(
+                activeConversation &&
+                        (activeConversation.status === ConversationStatus.RESOLVED ||
+                                activeConversation.status === ConversationStatus.SPAM ||
+                                activeConversation.deletedAt)
+        );
+
+        const handleGoBack = () => {
+                if (canGoBack) {
+                        goBack();
+                } else {
 			navigate({ page: "HOME" });
 		}
 	};
@@ -90,29 +104,38 @@ export const ConversationPage: ConversationPageComponent = ({
 				</div>
 			</Header>
 
-			<ConversationTimelineList
-				availableAIAgents={availableAIAgents}
-				availableHumanAgents={availableHumanAgents}
-				className="min-h-0 flex-1 px-4"
-				conversationId={conversation.conversationId}
-				currentVisitorId={visitor?.id}
-				items={conversation.items}
-			/>
+                        <ConversationTimelineList
+                                availableAIAgents={availableAIAgents}
+                                availableHumanAgents={availableHumanAgents}
+                                className="min-h-0 flex-1 px-4"
+                                conversationId={conversation.conversationId}
+                                currentVisitorId={visitor?.id}
+                                items={conversation.items}
+                        />
 
-			<div className="flex-shrink-0 p-1">
-				<MultimodalInput
-					disabled={conversation.composer.isSubmitting}
-					error={conversation.error}
-					files={conversation.composer.files}
-					isSubmitting={conversation.composer.isSubmitting}
-					onChange={conversation.composer.setMessage}
-					onFileSelect={conversation.composer.addFiles}
-					onRemoveFile={conversation.composer.removeFile}
-					onSubmit={conversation.composer.submit}
-					placeholder={text("component.multimodalInput.placeholder")}
-					value={conversation.composer.message}
-				/>
-			</div>
-		</div>
-	);
+                        {isConversationClosed ? (
+                                <div className="flex-shrink-0 px-4 pb-4 pt-3 text-center text-sm text-muted-foreground">
+                                        <Text
+                                                as="p"
+                                                textKey="component.conversationPage.closedMessage"
+                                        />
+                                </div>
+                        ) : (
+                                <div className="flex-shrink-0 p-1">
+                                        <MultimodalInput
+                                                disabled={conversation.composer.isSubmitting}
+                                                error={conversation.error}
+                                                files={conversation.composer.files}
+                                                isSubmitting={conversation.composer.isSubmitting}
+                                                onChange={conversation.composer.setMessage}
+                                                onFileSelect={conversation.composer.addFiles}
+                                                onRemoveFile={conversation.composer.removeFile}
+                                                onSubmit={conversation.composer.submit}
+                                                placeholder={text("component.multimodalInput.placeholder")}
+                                                value={conversation.composer.message}
+                                        />
+                                </div>
+                        )}
+                </div>
+        );
 };

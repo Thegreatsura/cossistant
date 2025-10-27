@@ -11,16 +11,17 @@ import {
 function createMockConversation(
 	overrides: Partial<Conversation> = {}
 ): Conversation {
-	const base: Conversation = {
-		id: "conv-1",
-		title: "Support conversation",
-		createdAt: "2024-01-01T00:00:00.000Z",
-		updatedAt: "2024-01-01T00:00:00.000Z",
-		visitorId: "visitor-1",
-		websiteId: "site-1",
-		status: "open",
-		lastTimelineItem: undefined,
-	};
+        const base: Conversation = {
+                id: "conv-1",
+                title: "Support conversation",
+                createdAt: "2024-01-01T00:00:00.000Z",
+                updatedAt: "2024-01-01T00:00:00.000Z",
+                visitorId: "visitor-1",
+                websiteId: "site-1",
+                status: "open",
+                deletedAt: null,
+                lastTimelineItem: undefined,
+        };
 
 	const conversation: Conversation = { ...base, ...overrides };
 	const defaultLastTimelineItem: Conversation["lastTimelineItem"] = {

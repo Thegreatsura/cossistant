@@ -77,9 +77,11 @@ const es: SupportLocaleMessages = {
 		`${variables.actorName} quitó una etiqueta`,
 	"component.conversationEvent.visitorBlocked": ({ variables }) =>
 		`${variables.actorName} bloqueó al visitante`,
-	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
-		`${variables.actorName} desbloqueó al visitante`,
-	"component.multimodalInput.placeholder": "Escribe tu mensaje...",
+        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
+                `${variables.actorName} desbloqueó al visitante`,
+        "component.conversationPage.closedMessage":
+                "Esta conversación está cerrada, inicia una nueva para hablar con nosotros",
+        "component.multimodalInput.placeholder": "Escribe tu mensaje...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Eliminar ${variables.fileName}`,
 	"component.navigation.articles": "Artículos",
