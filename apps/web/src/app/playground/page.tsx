@@ -2,6 +2,7 @@
 
 import { useRealtimeSupport } from "@cossistant/next/hooks";
 import { Support, useSupportConfig } from "@cossistant/next/support";
+import { useSupport } from "@cossistant/react/index";
 import { type DefaultMessage, SenderType } from "@cossistant/types";
 import { motion } from "motion/react";
 import Image from "next/image";
@@ -38,7 +39,7 @@ const QUICK_OPTIONS = ["How to install Cossistant?", "Pricing"];
 
 export default function Playground() {
 	const { isConnected } = useRealtimeSupport();
-	const { mode, size, isOpen } = useSupportConfig();
+	const { size, isOpen } = useSupport();
 
 	return (
 		<div className="relative flex min-h-screen items-center bg-background p-20">
@@ -59,7 +60,6 @@ export default function Playground() {
 						value={isConnected.toString()}
 					/>
 					<PlaygroundPropDisplay name="Opened" value={isOpen.toString()} />
-					<PlaygroundPropDisplay name="Mode" value={mode} />
 					<PlaygroundPropDisplay name="Size" value={size} />
 				</div>
 			</div>

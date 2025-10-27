@@ -6,6 +6,7 @@ import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportConfig } from "../support-config";
 import { SupportContent } from "./components/support-content";
+import { initializeSupportStore } from "./store/support-store";
 import type { SupportLocale, SupportTextContentOverrides } from "./text";
 import { SupportTextProvider } from "./text";
 
@@ -15,6 +16,7 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	align?: "right" | "left";
 	quickOptions?: string[];
 	defaultMessages?: DefaultMessage[];
+	defaultOpen?: boolean;
 	locale?: Locale;
 	content?: SupportTextContentOverrides<Locale>;
 };
@@ -31,11 +33,19 @@ export function Support<Locale extends string = SupportLocale>({
 	align = "right",
 	quickOptions,
 	defaultMessages,
+	defaultOpen,
 	locale,
 	content,
 }: SupportProps<Locale>): ReactElement | null {
 	const { website } = useSupport();
 	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
+
+	// Initialize support store with defaultOpen when component mounts or prop changes
+	React.useEffect(() => {
+		if (defaultOpen !== undefined) {
+			initializeSupportStore({ defaultOpen });
+		}
+	}, [defaultOpen]);
 
 	if (!website || isVisitorBlocked) {
 		return null;
