@@ -28,15 +28,20 @@ function isSameDate(a: Date | string, b: Date | string): boolean {
 }
 
 function isSameConversation(a: Conversation, b: Conversation): boolean {
-	// Check basic fields
-	const basicMatch =
-		a.id === b.id &&
-		a.title === b.title &&
-		a.status === b.status &&
-		a.visitorId === b.visitorId &&
-		a.websiteId === b.websiteId &&
-		isSameDate(a.createdAt, b.createdAt) &&
-		isSameDate(a.updatedAt, b.updatedAt);
+        // Check basic fields
+        const deletedAtMatch =
+                (!a.deletedAt && !b.deletedAt) ||
+                (a.deletedAt && b.deletedAt && isSameDate(a.deletedAt, b.deletedAt));
+
+        const basicMatch =
+                a.id === b.id &&
+                a.title === b.title &&
+                a.status === b.status &&
+                a.visitorId === b.visitorId &&
+                a.websiteId === b.websiteId &&
+                isSameDate(a.createdAt, b.createdAt) &&
+                isSameDate(a.updatedAt, b.updatedAt) &&
+                deletedAtMatch;
 
 	if (!basicMatch) {
 		return false;
