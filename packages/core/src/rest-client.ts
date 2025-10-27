@@ -389,16 +389,16 @@ export class CossistantRestClient {
 		);
 
 		// Convert date strings to Date objects
-                return {
-                        conversation: {
-                                ...response.conversation,
-                                createdAt: response.conversation.createdAt,
-                                updatedAt: response.conversation.updatedAt,
-                                deletedAt: response.conversation.deletedAt ?? null,
-                                lastTimelineItem: response.conversation.lastTimelineItem,
-                        },
-                        initialTimelineItems: response.initialTimelineItems,
-                };
+		return {
+			conversation: {
+				...response.conversation,
+				createdAt: response.conversation.createdAt,
+				updatedAt: response.conversation.updatedAt,
+				deletedAt: response.conversation.deletedAt ?? null,
+				lastTimelineItem: response.conversation.lastTimelineItem,
+			},
+			initialTimelineItems: response.initialTimelineItems,
+		};
 	}
 
 	async updateConfiguration(config: Partial<CossistantConfig>): Promise<void> {
@@ -478,17 +478,17 @@ export class CossistantRestClient {
 		);
 
 		// Convert date strings to Date objects
-                return {
-                        conversations: response.conversations.map((conv) => ({
-                                ...conv,
-                                createdAt: conv.createdAt,
-                                updatedAt: conv.updatedAt,
-                                deletedAt: conv.deletedAt ?? null,
-                                lastTimelineItem: conv.lastTimelineItem,
-                        })),
-                        pagination: response.pagination,
-                };
-        }
+		return {
+			conversations: response.conversations.map((conv) => ({
+				...conv,
+				createdAt: conv.createdAt,
+				updatedAt: conv.updatedAt,
+				deletedAt: conv.deletedAt ?? null,
+				lastTimelineItem: conv.lastTimelineItem,
+			})),
+			pagination: response.pagination,
+		};
+	}
 
 	async getConversation(
 		params: GetConversationRequest
@@ -510,16 +510,16 @@ export class CossistantRestClient {
 		);
 
 		// Convert date strings to Date objects
-                return {
-                        conversation: {
-                                ...response.conversation,
-                                createdAt: response.conversation.createdAt,
-                                updatedAt: response.conversation.updatedAt,
-                                deletedAt: response.conversation.deletedAt ?? null,
-                                lastTimelineItem: response.conversation.lastTimelineItem,
-                        },
-                };
-        }
+		return {
+			conversation: {
+				...response.conversation,
+				createdAt: response.conversation.createdAt,
+				updatedAt: response.conversation.updatedAt,
+				deletedAt: response.conversation.deletedAt ?? null,
+				lastTimelineItem: response.conversation.lastTimelineItem,
+			},
+		};
+	}
 
 	async markConversationSeen(
 		params: {

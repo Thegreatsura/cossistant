@@ -197,17 +197,17 @@ export class CossistantClient {
 					updatedAt: now,
 					lastTimelineItem: timelineItems.at(-1) ?? existing.lastTimelineItem,
 				}
-                        : {
-                                        id: conversationId,
-                                        title: params.title,
-                                        createdAt: now,
-                                        updatedAt: now,
-                                        visitorId: baseVisitorId,
-                                        websiteId: baseWebsiteId,
-                                        status: params.status ?? ConversationStatus.OPEN,
-                                        deletedAt: null,
-                                        lastTimelineItem: timelineItems.at(-1),
-                                };
+			: {
+					id: conversationId,
+					title: params.title,
+					createdAt: now,
+					updatedAt: now,
+					visitorId: baseVisitorId,
+					websiteId: baseWebsiteId,
+					status: params.status ?? ConversationStatus.OPEN,
+					deletedAt: null,
+					lastTimelineItem: timelineItems.at(-1),
+				};
 
 		this.conversationsStore.ingestConversation(conversation);
 

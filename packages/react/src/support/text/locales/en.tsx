@@ -53,6 +53,7 @@ const en: SupportLocaleMessages = {
   "component.conversationButtonLink.status.open": "Open",
   "component.conversationButtonLink.status.resolved": "Resolved",
   "component.conversationButtonLink.status.spam": "Spam",
+  "component.conversationButtonLink.status.closed": "closed",
   "component.conversationEvent.assigned": ({ variables }) =>
     `${variables.actorName} assigned the conversation`,
   "component.conversationEvent.unassigned": ({ variables }) =>

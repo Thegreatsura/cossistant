@@ -81,7 +81,7 @@ export const HomePage = (): ReactElement => {
               size={44}
               spacing={32}
             />
-            <h2 className="max-w-xs text-balance font-co-sans text-2xl leading-normal">
+            <h2 className="max-w-xs text-balance font-co-sans text-3xl leading-normal">
               {text("page.home.greeting", {
                 visitorName: visitor?.contact?.name?.split(" ")[0] ?? undefined,
               })}
@@ -95,7 +95,7 @@ export const HomePage = (): ReactElement => {
               exit="exit"
               initial="hidden"
               transition={{
-                delay: 1.3,
+                delay: 0.1,
               }}
               variants={{
                 hidden: { opacity: 0, y: 20, filter: "blur(12px)" },

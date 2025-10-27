@@ -17,21 +17,21 @@ export const viewSchema = z.object({
 export type InboxView = z.infer<typeof viewSchema>;
 
 export const conversationSchema = z.object({
-        id: z.string(),
-        title: z.string().optional(),
-        createdAt: z.string(),
-        updatedAt: z.string(),
-        visitorId: z.string(),
-        websiteId: z.string(),
-        status: z
-                .enum([
-                        ConversationStatus.OPEN,
-                        ConversationStatus.RESOLVED,
-                        ConversationStatus.SPAM,
-                ])
-                .default(ConversationStatus.OPEN),
-        deletedAt: z.string().nullable().default(null),
-        lastTimelineItem: timelineItemSchema.optional(),
+	id: z.string(),
+	title: z.string().optional(),
+	createdAt: z.string(),
+	updatedAt: z.string(),
+	visitorId: z.string(),
+	websiteId: z.string(),
+	status: z
+		.enum([
+			ConversationStatus.OPEN,
+			ConversationStatus.RESOLVED,
+			ConversationStatus.SPAM,
+		])
+		.default(ConversationStatus.OPEN),
+	deletedAt: z.string().nullable().default(null),
+	lastTimelineItem: timelineItemSchema.optional(),
 });
 
 export type Conversation = z.infer<typeof conversationSchema>;

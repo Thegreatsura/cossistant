@@ -1,16 +1,16 @@
 import { markConversationAsSeenByVisitor } from "@api/db/mutations/conversation";
 import { getVisitor } from "@api/db/queries";
 import {
-        getConversationByIdWithLastMessage,
-        getConversationHeader,
-        getConversationSeenData,
-        getConversationTimelineItems,
-        listConversations,
-        upsertConversation,
+	getConversationByIdWithLastMessage,
+	getConversationHeader,
+	getConversationSeenData,
+	getConversationTimelineItems,
+	listConversations,
+	upsertConversation,
 } from "@api/db/queries/conversation";
-import {
-        conversation,
-        conversationTimelineItem,
+import type {
+	conversation,
+	conversationTimelineItem,
 } from "@api/db/schema/conversation";
 import { markVisitorPresence } from "@api/services/presence";
 import {
@@ -20,14 +20,14 @@ import {
 } from "@api/utils/conversation-realtime";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
-        safelyExtractRequestData,
-        safelyExtractRequestQuery,
-        validateResponse,
+	safelyExtractRequestData,
+	safelyExtractRequestQuery,
+	validateResponse,
 } from "@api/utils/validate";
 import { APIKeyType, TimelineItemVisibility } from "@cossistant/types";
 import {
-        createConversationRequestSchema,
-        createConversationResponseSchema,
+	createConversationRequestSchema,
+	createConversationResponseSchema,
 	getConversationRequestSchema,
 	getConversationResponseSchema,
 	listConversationsRequestSchema,
@@ -38,59 +38,63 @@ import {
 	setConversationTypingResponseSchema,
 } from "@cossistant/types/api/conversation";
 import {
-        getConversationTimelineItemsRequestSchema,
-        getConversationTimelineItemsResponseSchema,
-        timelineItemSchema,
-        type TimelineItem,
+	getConversationTimelineItemsRequestSchema,
+	getConversationTimelineItemsResponseSchema,
+	type TimelineItem,
+	timelineItemSchema,
 } from "@cossistant/types/api/timeline-item";
-import { conversationSchema, conversationSeenSchema } from "@cossistant/types/schemas";
+import {
+	conversationSchema,
+	conversationSeenSchema,
+} from "@cossistant/types/schemas";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
 import type { RestContext } from "../types";
+
 type ConversationRow = typeof conversation.$inferSelect;
 type ConversationTimelineItemRow = typeof conversationTimelineItem.$inferSelect;
 
 const serializeTimelineItemForResponse = (
-        item: (ConversationTimelineItemRow & { parts: unknown }) | TimelineItem
+	item: (ConversationTimelineItemRow & { parts: unknown }) | TimelineItem
 ) =>
-        timelineItemSchema.parse({
-                id: item.id,
-                conversationId: item.conversationId,
-                organizationId: item.organizationId,
-                visibility: item.visibility,
-                type: item.type,
-                text: "text" in item ? item.text ?? null : null,
-                parts: Array.isArray(item.parts) ? item.parts : (item.parts as unknown[]),
-                userId: "userId" in item ? item.userId ?? null : null,
-                aiAgentId: "aiAgentId" in item ? item.aiAgentId ?? null : null,
-                visitorId: "visitorId" in item ? item.visitorId ?? null : null,
-                createdAt: item.createdAt,
-                deletedAt: "deletedAt" in item ? item.deletedAt ?? null : null,
-        });
+	timelineItemSchema.parse({
+		id: item.id,
+		conversationId: item.conversationId,
+		organizationId: item.organizationId,
+		visibility: item.visibility,
+		type: item.type,
+		text: "text" in item ? (item.text ?? null) : null,
+		parts: Array.isArray(item.parts) ? item.parts : (item.parts as unknown[]),
+		userId: "userId" in item ? (item.userId ?? null) : null,
+		aiAgentId: "aiAgentId" in item ? (item.aiAgentId ?? null) : null,
+		visitorId: "visitorId" in item ? (item.visitorId ?? null) : null,
+		createdAt: item.createdAt,
+		deletedAt: "deletedAt" in item ? (item.deletedAt ?? null) : null,
+	});
 
 const serializeConversationForResponse = (
-        record: ConversationRow & {
-                lastTimelineItem?:
-                        | (ConversationTimelineItemRow & { parts: unknown })
-                        | TimelineItem
-                        | undefined;
-        }
+	record: ConversationRow & {
+		lastTimelineItem?:
+			| (ConversationTimelineItemRow & { parts: unknown })
+			| TimelineItem
+			| undefined;
+	}
 ) => {
-        const serializedConversation = conversationSchema.parse({
-                id: record.id,
-                title: record.title ?? undefined,
-                createdAt: record.createdAt,
-                updatedAt: record.updatedAt,
-                visitorId: record.visitorId,
-                websiteId: record.websiteId,
-                status: record.status,
-                deletedAt: record.deletedAt ?? null,
-                lastTimelineItem: record.lastTimelineItem
-                        ? serializeTimelineItemForResponse(record.lastTimelineItem)
-                        : undefined,
-        });
+	const serializedConversation = conversationSchema.parse({
+		id: record.id,
+		title: record.title ?? undefined,
+		createdAt: record.createdAt,
+		updatedAt: record.updatedAt,
+		visitorId: record.visitorId,
+		websiteId: record.websiteId,
+		status: record.status,
+		deletedAt: record.deletedAt ?? null,
+		lastTimelineItem: record.lastTimelineItem
+			? serializeTimelineItemForResponse(record.lastTimelineItem)
+			: undefined,
+	});
 
-        return serializedConversation;
+	return serializedConversation;
 };
 
 export const conversationRouter = new OpenAPIHono<RestContext>();
@@ -250,18 +254,16 @@ conversationRouter.openapi(
 			});
 		}
 
-                const response = {
-                        initialTimelineItems: createdItems.map(serializeTimelineItemForResponse),
-                        conversation: serializeConversationForResponse({
-                                ...conversation,
-                                lastTimelineItem,
-                        }),
-                };
+		const response = {
+			initialTimelineItems: createdItems.map(serializeTimelineItemForResponse),
+			conversation: serializeConversationForResponse({
+				...conversation,
+				lastTimelineItem,
+			}),
+		};
 
-                return c.json(
-                        validateResponse(response, createConversationResponseSchema)
-                );
-        }
+		return c.json(validateResponse(response, createConversationResponseSchema));
+	}
 );
 
 conversationRouter.openapi(
@@ -367,17 +369,15 @@ conversationRouter.openapi(
 			order: query.order,
 		});
 
-                const response = {
-                        conversations: result.conversations.map((conv) =>
-                                serializeConversationForResponse(conv)
-                        ),
-                        pagination: result.pagination,
-                };
+		const response = {
+			conversations: result.conversations.map((conv) =>
+				serializeConversationForResponse(conv)
+			),
+			pagination: result.pagination,
+		};
 
-                return c.json(
-                        validateResponse(response, listConversationsResponseSchema)
-                );
-        }
+		return c.json(validateResponse(response, listConversationsResponseSchema));
+	}
 );
 
 conversationRouter.openapi(
@@ -486,31 +486,29 @@ conversationRouter.openapi(
 			);
 		}
 
-                try {
-                        const response = {
-                                conversation: serializeConversationForResponse(conversation),
-                        };
+		try {
+			const response = {
+				conversation: serializeConversationForResponse(conversation),
+			};
 
-                        return c.json(
-                                validateResponse(response, getConversationResponseSchema)
-                        );
-                } catch (error) {
-                        console.error(
-                                "[GET_CONVERSATION] Failed to serialize conversation response",
-                                {
-                                        error,
-                                        conversationId: params.conversationId,
-                                        organizationId: organization.id,
-                                        websiteId: website.id,
-                                }
-                        );
+			return c.json(validateResponse(response, getConversationResponseSchema));
+		} catch (error) {
+			console.error(
+				"[GET_CONVERSATION] Failed to serialize conversation response",
+				{
+					error,
+					conversationId: params.conversationId,
+					organizationId: organization.id,
+					websiteId: website.id,
+				}
+			);
 
-                        return c.json(
-                                { error: "Failed to serialize conversation response" },
-                                500
-                        );
-                }
-        }
+			return c.json(
+				{ error: "Failed to serialize conversation response" },
+				500
+			);
+		}
+	}
 );
 
 conversationRouter.openapi(
