@@ -1,0 +1,39 @@
+---
+version: "0.0.4"
+description: "Performance optimizations and conversation timeline stability"
+date: "2025-10-27"
+author: "Cossistant Team"
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+<Callout title="Release 0.0.4" type="info">
+  This release delivers significant performance improvements and stability fixes
+  for the support widget's conversation timeline. Both `@cossistant/react@0.0.4`
+  and `@cossistant/next@0.0.4` are now available on npm. See the [git
+  tags](https://github.com/cossistantcom/origami-monorepo/tags) for the full
+  commit history.
+</Callout>
+
+## Widget
+
+- **Conversation Timeline Stability**: Fixed auto-scroll behavior, timeline item jumping, and improved seen message caching for a smoother conversation experience.
+- **Conversation Button Primitive**: Refactored conversation button components into a headless primitive pattern for better flexibility and composition.
+- **Localization Improvements**: Added proper localization support for conversation status badges.
+- **Performance Optimizations**: Removed React Query dependency, extracted widget hooks, and centralized typing participant mappers to reduce bundle size and improve rendering performance.
+- **Visitor Blocking**: Added support for blocking banned visitors from accessing the widget.
+- **Next.js Integration**: Fixed export configurations and TypeScript dependency issues in the Next.js package.
+- **Conversation Marking**: Prevented auto-marking conversations as read when the widget is hidden, respecting user intent.
+
+## Dashboard
+
+- **Contact Page Redesign**: Improved visitor sidebar design and overall contact page layout for better usability.
+- **Timeline Animations**: Enhanced timeline item animations and fixed unexpected jumping behavior during updates.
+- **Scroll Indicators**: Added visual cues for scrollable content in the dashboard contact view.
+- **Visitor Blocking UI**: Implemented UI indicators and events for blocked visitors, giving operators clear visibility into visitor status.
+- **Photo Upload**: Fixed issues with contact photo uploads and profile image handling.
+
+## Documentation
+
+- Rewrote React package README with comprehensive examples and usage patterns.
+- Added automated markdown link checking to maintain documentation quality.
