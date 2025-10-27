@@ -6,6 +6,7 @@ const withMDX = createMDX();
 const nextConfig = {
 	/* config options here */
 	reactStrictMode: true,
+	reactCompiler: true,
 	transpilePackages: [
 		"@cossistant/api",
 		"@cossistant/core",
