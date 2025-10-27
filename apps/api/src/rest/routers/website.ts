@@ -3,6 +3,7 @@ import { getContactForVisitor } from "@api/db/queries/contact";
 import { member } from "@api/db/schema/auth";
 import { visitor as visitorTable } from "@api/db/schema/website";
 import { generateULID } from "@api/utils/db/ids";
+import { computeMetadataHash } from "@api/utils/metadata-hash";
 import {
 	safelyExtractRequestData,
 	validateResponse,
@@ -195,6 +196,9 @@ websiteRouter.openapi(
 									name: contact.name,
 									email: contact.email,
 									image: contact.image,
+									metadataHash: computeMetadataHash(
+										contact.metadata as Record<string, unknown> | null
+									),
 								}
 							: null,
 					},

@@ -30,6 +30,11 @@ export const publicContactResponseSchema = z.object({
 		description: "The contact's avatar/profile image URL.",
 		example: "https://example.com/avatar.png",
 	}),
+	metadataHash: z.string().optional().openapi({
+		description:
+			"Hash of the contact's metadata. Used to detect if metadata has changed without comparing full objects.",
+		example: "a1b2c3d4",
+	}),
 });
 
 export type PublicContact = z.infer<typeof publicContactResponseSchema>;
