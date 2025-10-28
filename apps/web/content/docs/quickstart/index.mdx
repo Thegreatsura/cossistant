@@ -1,4 +1,155 @@
 ---
 title: NextJS
-description: This is coming soon 🤝
+description: Setup with NextJS.
 ---
+
+<Steps>
+  <Step>
+  ## Install the package
+  Let's start by adding Cossistant to your NextJS project:
+
+```bash
+npm install @cossistant/next
+```
+
+  </Step>
+  <Step>
+  ## Add your public API key
+
+Add your public API key to the `NEXT_PUBLIC_COSSISTANT_API_KEY` environment variable.
+
+```bash
+NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
+```
+
+<Alert variant="info" className="mt-4">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Where to find your public API key?</AlertTitle>
+  <AlertDescription>
+    You can find your public API key at the end of your onboarding or can access
+    it anytime from the settings page.
+  </AlertDescription>
+</Alert>
+
+  </Step>
+
+  <Step>
+  ## Add Cossistant provider
+
+Add the Cossistant `SupportProvider` to the root layout of your app:
+
+```tsx {1,13} showLineNumbers title="app/layout.tsx"
+import { SupportProvider } from "@cossistant/next";
+
+import "./globals.css";
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body>
+        <SupportProvider>{children}</SupportProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+  </Step>
+
+  <Step>
+  ## Import default support widget styling
+
+Cossistant support widget is styled using Tailwind classes, you can simply import the styles to your app this way:
+
+<Tabs defaultValue="tailwind" className="mt-10">
+  <TabsList>
+    <TabsTrigger value="tailwindv4">Tailwind v4</TabsTrigger>
+    <TabsTrigger value="tailwindconfig">Tailwind config (v3)</TabsTrigger>
+    <TabsTrigger value="css">Using CSS</TabsTrigger>
+  </TabsList>
+  <TabsContent value="tailwindv4">
+    ````css {3,4} showLineNumbers title="app/globals.css"
+@import "tailwindcss";
+
+@import "@cossistant/react/dist/styles.css";
+@source "@cossistant/react/src/support";
+
+````
+  </TabsContent>
+  <TabsContent value="tailwindconfig">
+    ```js {4} showLineNumbers title="tailwind.config.js"
+    module.exports = {
+      content: [
+        "./app/**/*.{tsx,ts,mdx,md}",
+        "./node_modules/@cossistant/react/**/*.{js,ts,jsx,tsx}",
+      ],
+      theme: {
+        extend: {},
+      },
+      plugins: [],
+    };
+```
+
+  </TabsContent>
+  <TabsContent value="css">
+    ```tsx {4} showLineNumbers title="app/layout.tsx"
+import { SupportProvider } from "@cossistant/next";
+
+import "./globals.css";
+import "@cossistant/react/dist/styles.css";
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body>
+        <SupportProvider>{children}</SupportProvider>
+      </body>
+    </html>
+  );
+}
+```
+  </TabsContent>
+</Tabs>
+
+  </Step>
+
+    <Step>
+  ## Use support widget
+
+Add the Cossistant `<Support />` widget to your app:
+
+```tsx {1,8} showLineNumbers title="app/page.tsx"
+import { Support } from "@cossistant/next";
+
+export default function Page() {
+  return (
+    <div>
+      <h1>You're ready to go!</h1>
+      {/* Support widget can be placed anywhere in your app */}
+      <Support />
+    </div>
+  );
+}
+```
+
+  </Step>
+
+  <Step>
+  ## Done!
+
+You're ready to go! You can now start using Cossistant {`<Support />`} widget in your app.
+
+Simple isn't it? You can stop here or move on to the next step and learn how to use and customize your support widget, to make it truly yours.
+
+  </Step>
+
+</Steps>
+````
