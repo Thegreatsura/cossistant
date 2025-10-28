@@ -5,18 +5,18 @@ import { blog as blogPosts, docs } from "@/docs-source/index";
 import { openapi } from "@/lib/openapi";
 
 export const source = loader(
-  multiple({
-    docs: docs.toFumadocsSource(),
-    openapi: await openapiSource(openapi, {
-      baseDir: "openapi/(generated)",
-    }),
-  }),
-  {
-    baseUrl: "/docs",
-    plugins: [openapiPlugin()],
-  }
+	multiple({
+		docs: docs.toFumadocsSource(),
+		openapi: await openapiSource(openapi, {
+			baseDir: "openapi/(generated)",
+		}),
+	}),
+	{
+		baseUrl: "/docs",
+		plugins: [openapiPlugin()],
+	}
 );
 
 export const blog = loader(createMDXSource(blogPosts), {
-  baseUrl: "/blog",
+	baseUrl: "/blog",
 });
