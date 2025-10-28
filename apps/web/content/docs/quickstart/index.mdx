@@ -22,7 +22,7 @@ Add your public API key to the `NEXT_PUBLIC_COSSISTANT_API_KEY` environment vari
 NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
 ```
 
-<Alert variant="info" className="mt-4">
+<Alert variant="info" className="mt-10">
   <Icon name="help" className="size-4" />
   <AlertTitle>Where to find your public API key?</AlertTitle>
   <AlertDescription>
@@ -61,11 +61,11 @@ export default function RootLayout({
   </Step>
 
   <Step>
-  ## Import default support widget styling
+  ## Import support widget styling
 
 Cossistant support widget is styled using Tailwind classes, you can simply import the styles to your app this way:
 
-<Tabs defaultValue="tailwind" className="mt-10">
+<Tabs defaultValue="tailwindv4" className="mt-10">
   <TabsList>
     <TabsTrigger value="tailwindv4">Tailwind v4</TabsTrigger>
     <TabsTrigger value="tailwindconfig">Tailwind config (v3)</TabsTrigger>
@@ -147,7 +147,7 @@ export default function Page() {
 
 You're ready to go! You can now start using Cossistant {`<Support />`} widget in your app.
 
-Simple isn't it? You can stop here or move on to the next step and learn how to use and customize your support widget, to make it truly yours.
+Simple isn't it? You can stop here or move on to the <Link href="/docs/support-component">basic usage guide</Link> to learn how to use and customize your support widget, to make it truly yours.
 
   </Step>
 

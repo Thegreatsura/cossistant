@@ -1,7 +1,22 @@
-import { loader } from "fumadocs-core/source";
-import { docs } from "@/docs-source/index";
+import { loader, multiple } from "fumadocs-core/source";
+import { createMDXSource } from "fumadocs-mdx/runtime/next";
+import { openapiPlugin, openapiSource } from "fumadocs-openapi/server";
+import { blog as blogPosts, docs } from "@/docs-source/index";
+import { openapi } from "@/lib/openapi";
 
-export const source = loader({
-	baseUrl: "/docs",
-	source: docs.toFumadocsSource(),
+export const source = loader(
+  multiple({
+    docs: docs.toFumadocsSource(),
+    openapi: await openapiSource(openapi, {
+      baseDir: "openapi/(generated)",
+    }),
+  }),
+  {
+    baseUrl: "/docs",
+    plugins: [openapiPlugin()],
+  }
+);
+
+export const blog = loader(createMDXSource(blogPosts), {
+  baseUrl: "/blog",
 });
