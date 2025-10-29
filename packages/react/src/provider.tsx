@@ -1,9 +1,13 @@
 import type { CossistantClient } from "@cossistant/core";
 import { normalizeLocale } from "@cossistant/core";
 import type { DefaultMessage, PublicWebsiteResponse } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import { ConversationTimelineType } from "@cossistant/types/enums";
 import React from "react";
+import { useStoreSelector } from "./hooks/private/store/use-store-selector";
 import { useWebsiteStore } from "./hooks/private/store/use-website-store";
 import { useClient } from "./hooks/private/use-rest-client";
+import { useSeenStore } from "./realtime/seen-store";
 import { WebSocketProvider } from "./support";
 import {
 	initializeSupportStore,
@@ -49,6 +53,37 @@ type WebsiteData = NonNullable<CossistantContextValue["website"]>;
 type VisitorWithLocale = WebsiteData["visitor"] extends null | undefined
 	? undefined
 	: NonNullable<WebsiteData["visitor"]> & { locale: string | null };
+
+type ConversationSnapshot = {
+	id: string;
+	lastTimelineItem: TimelineItem | null;
+};
+
+function areConversationSnapshotsEqual(
+	a: ConversationSnapshot[],
+	b: ConversationSnapshot[]
+): boolean {
+	if (a === b) {
+		return true;
+	}
+
+	if (a.length !== b.length) {
+		return false;
+	}
+
+	for (let index = 0; index < a.length; index += 1) {
+		const snapshotA = a[index];
+		const snapshotB = b[index];
+
+		const aLastCreatedAt = snapshotA.lastTimelineItem?.createdAt ?? null;
+		const bLastCreatedAt = snapshotB.lastTimelineItem?.createdAt ?? null;
+		if (snapshotA.id !== snapshotB.id || aLastCreatedAt !== bLastCreatedAt) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 export type UseSupportValue = CossistantContextValue & {
 	availableHumanAgents: NonNullable<WebsiteData["availableHumanAgents"]> | [];
@@ -111,6 +146,96 @@ function SupportProviderInner({
 	const { client } = useClient(publicKey, apiUrl, wsUrl);
 	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
+	const visitorId = website?.visitor?.id ?? null;
+
+	const seenEntriesByConversation = useSeenStore(
+		React.useCallback((state) => state.conversations, [])
+	);
+
+	const conversationSnapshots = useStoreSelector(
+		client.conversationsStore,
+		React.useCallback(
+			(state) =>
+			        state.ids
+			                .map((id) => {
+			                        const conversation = state.byId[id];
+
+			                        if (!conversation) {
+			                                return null;
+			                        }
+
+			                        return {
+			                                id: conversation.id,
+			                                lastTimelineItem:
+			                                        conversation.lastTimelineItem ?? null,
+			                        } satisfies ConversationSnapshot;
+			                })
+			                .filter((snapshot): snapshot is ConversationSnapshot =>
+			                        snapshot !== null
+			                ),
+			[]
+		),
+		areConversationSnapshotsEqual
+	);
+
+	const derivedUnreadCount = React.useMemo(() => {
+		if (!visitorId) {
+			return 0;
+		}
+
+		let count = 0;
+
+		for (const { id: conversationId, lastTimelineItem } of conversationSnapshots) {
+			if (!lastTimelineItem) {
+			        continue;
+			}
+
+			if (lastTimelineItem.type !== ConversationTimelineType.MESSAGE) {
+			        continue;
+			}
+
+			if (
+			        lastTimelineItem.visitorId &&
+			        lastTimelineItem.visitorId === visitorId
+			) {
+			        continue;
+			}
+
+			const createdAtTime = Date.parse(lastTimelineItem.createdAt);
+
+			if (Number.isNaN(createdAtTime)) {
+			        continue;
+			}
+
+			const seenEntries = seenEntriesByConversation[conversationId];
+
+			if (seenEntries) {
+			        const visitorSeenEntry = Object.values(seenEntries).find(
+			                (entry) =>
+			                        entry.actorType === "visitor" &&
+			                        entry.actorId === visitorId
+			        );
+
+			        if (visitorSeenEntry) {
+			                const lastSeenTime = Date.parse(
+			                        visitorSeenEntry.lastSeenAt
+			                );
+
+			                if (!Number.isNaN(lastSeenTime) && createdAtTime <= lastSeenTime) {
+			                        continue;
+			                }
+			        }
+			}
+
+			count += 1;
+		}
+
+		return count;
+	}, [conversationSnapshots, seenEntriesByConversation, visitorId]);
+
+	React.useEffect(() => {
+		setUnreadCount(derivedUnreadCount);
+	}, [derivedUnreadCount, setUnreadCount]);
 
 	// Prefetch conversations
 	// useConversations(client, {
