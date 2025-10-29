@@ -5,6 +5,7 @@ import type React from "react";
 import * as Primitive from "../../primitives";
 import { cn } from "../utils";
 import Icon from "./icons";
+import { BouncingDots } from "./typing-indicator";
 
 export type BubbleProps = {
 	className?: string;
@@ -17,10 +18,10 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 			className
 		)}
 	>
-		{({ isOpen, unreadCount }) => (
-			<>
-				<AnimatePresence mode="wait">
-					{isOpen ? (
+                {({ isOpen, unreadCount, isTyping }) => (
+                        <>
+                                <AnimatePresence mode="wait">
+                                        {isOpen ? (
 						<motion.div
 							animate={{
 								scale: 1,
@@ -59,12 +60,39 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 							key="chat"
 						>
 							<Icon className="h-6 w-6" name="chat" variant="filled" />
-						</motion.div>
-					)}
-				</AnimatePresence>
-				{unreadCount > 0 && (
-					<motion.span
-						animate={{ scale: 1, opacity: 1 }}
+                                                </motion.div>
+                                        )}
+                                </AnimatePresence>
+                                <AnimatePresence>
+                                        {!isOpen && isTyping ? (
+                                                <motion.span
+                                                        animate={{
+                                                                opacity: 1,
+                                                                scale: 1,
+                                                                transition: {
+                                                                        duration: 0.2,
+                                                                        ease: "easeOut",
+                                                                },
+                                                        }}
+                                                        className="pointer-events-none absolute -bottom-3 left-1/2 flex -translate-x-1/2 items-center rounded-full bg-co-background px-2 py-1 shadow-lg"
+                                                        exit={{
+                                                                opacity: 0,
+                                                                scale: 0.9,
+                                                                transition: {
+                                                                        duration: 0.1,
+                                                                        ease: "easeIn",
+                                                                },
+                                                        }}
+                                                        initial={{ opacity: 0, scale: 0.9 }}
+                                                        key="typing-indicator"
+                                                >
+                                                        <BouncingDots />
+                                                </motion.span>
+                                        ) : null}
+                                </AnimatePresence>
+                                {unreadCount > 0 && (
+                                        <motion.span
+                                                animate={{ scale: 1, opacity: 1 }}
 						className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-co-destructive font-medium text-co-destructive-foreground text-xs"
 						exit={{ scale: 0, opacity: 0 }}
 						initial={{ scale: 0, opacity: 0 }}
