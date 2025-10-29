@@ -67,27 +67,28 @@ export function BrowserWithBackground({
       </picture>
 
       {/* Browser Window Container */}
-      <div className="relative z-10 my-auto flex flex-1 items-center justify-center border border-primary/10">
+      <div className="relative z-10 my-auto flex flex-1 items-center justify-center">
         <div
-          className={`w-full max-w-[1400px] scale-90 ${browserClassName}`}
+          className={`w-full max-w-[1450px] scale-90 rounded-lg border border-primary/5 shadow-2xl overflow-clip${browserClassName}`}
           style={{ aspectRatio: "18 / 11" }}
         >
           {/* iOS Browser Chrome */}
-          <div className="flex size-full flex-col overflow-hidden rounded bg-background">
+          <div className="flex size-full flex-col overflow-hidden bg-background">
             {/* Browser Top Bar */}
-            <div className="flex items-center gap-2 border-primary/10 border-b px-4 py-1.5">
+            <div className="flex items-center justify-between gap-2 border-primary/10 border-b px-4 py-1">
               {/* Traffic Lights */}
-              <div className="flex gap-2">
+              <div className="flex w-20 gap-2">
                 <div className="size-2 rounded-full bg-red-500" />
                 <div className="size-2 rounded-full bg-yellow-500" />
                 <div className="size-2 rounded-full bg-green-500" />
               </div>
               {/* URL Bar */}
-              <div className="ml-4 flex flex-1 items-center gap-2 bg-background px-3 py-1.5">
-                <span className="text-primary/60 text-xs">
-                  cossistant.com/shadcn/inbox
+              <div className="ml-4 flex flex-1 items-center justify-center gap-2 bg-background px-3 py-1.5">
+                <span className="rounded-md bg-background-400 px-2 py-1 text-primary/60 text-xs">
+                  https://cossistant.com/shadcn/inbox
                 </span>
               </div>
+              <div className="w-20" />
             </div>
             {/* Browser Content */}
             <div className="flex-1 bg-background">{children}</div>

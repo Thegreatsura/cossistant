@@ -156,23 +156,22 @@ function SupportProviderInner({
 		client.conversationsStore,
 		React.useCallback(
 			(state) =>
-			        state.ids
-			                .map((id) => {
-			                        const conversation = state.byId[id];
+				state.ids
+					.map((id) => {
+						const conversation = state.byId[id];
 
-			                        if (!conversation) {
-			                                return null;
-			                        }
+						if (!conversation) {
+							return null;
+						}
 
-			                        return {
-			                                id: conversation.id,
-			                                lastTimelineItem:
-			                                        conversation.lastTimelineItem ?? null,
-			                        } satisfies ConversationSnapshot;
-			                })
-			                .filter((snapshot): snapshot is ConversationSnapshot =>
-			                        snapshot !== null
-			                ),
+						return {
+							id: conversation.id,
+							lastTimelineItem: conversation.lastTimelineItem ?? null,
+						} satisfies ConversationSnapshot;
+					})
+					.filter(
+						(snapshot): snapshot is ConversationSnapshot => snapshot !== null
+					),
 			[]
 		),
 		areConversationSnapshotsEqual
@@ -185,46 +184,46 @@ function SupportProviderInner({
 
 		let count = 0;
 
-		for (const { id: conversationId, lastTimelineItem } of conversationSnapshots) {
+		for (const {
+			id: conversationId,
+			lastTimelineItem,
+		} of conversationSnapshots) {
 			if (!lastTimelineItem) {
-			        continue;
+				continue;
 			}
 
 			if (lastTimelineItem.type !== ConversationTimelineType.MESSAGE) {
-			        continue;
+				continue;
 			}
 
 			if (
-			        lastTimelineItem.visitorId &&
-			        lastTimelineItem.visitorId === visitorId
+				lastTimelineItem.visitorId &&
+				lastTimelineItem.visitorId === visitorId
 			) {
-			        continue;
+				continue;
 			}
 
 			const createdAtTime = Date.parse(lastTimelineItem.createdAt);
 
 			if (Number.isNaN(createdAtTime)) {
-			        continue;
+				continue;
 			}
 
 			const seenEntries = seenEntriesByConversation[conversationId];
 
 			if (seenEntries) {
-			        const visitorSeenEntry = Object.values(seenEntries).find(
-			                (entry) =>
-			                        entry.actorType === "visitor" &&
-			                        entry.actorId === visitorId
-			        );
+				const visitorSeenEntry = Object.values(seenEntries).find(
+					(entry) =>
+						entry.actorType === "visitor" && entry.actorId === visitorId
+				);
 
-			        if (visitorSeenEntry) {
-			                const lastSeenTime = Date.parse(
-			                        visitorSeenEntry.lastSeenAt
-			                );
+				if (visitorSeenEntry) {
+					const lastSeenTime = Date.parse(visitorSeenEntry.lastSeenAt);
 
-			                if (!Number.isNaN(lastSeenTime) && createdAtTime <= lastSeenTime) {
-			                        continue;
-			                }
-			        }
+					if (!Number.isNaN(lastSeenTime) && createdAtTime <= lastSeenTime) {
+						continue;
+					}
+				}
 			}
 
 			count += 1;
