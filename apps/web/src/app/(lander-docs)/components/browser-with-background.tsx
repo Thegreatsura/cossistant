@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "motion/react";
 import { getImageProps } from "next/image";
 import type { ReactNode } from "react";
 
@@ -67,7 +70,7 @@ export function BrowserWithBackground({
 			</picture>
 
 			{/* Browser Window Container */}
-			<div className="relative z-10 my-auto flex flex-1 items-center justify-center">
+			<div className="relative z-10 flex flex-1 items-center justify-center">
 				<div
 					className={`w-full max-w-[1450px] scale-90 rounded-lg border border-primary/5 shadow-2xl overflow-clip${browserClassName}`}
 					style={{ aspectRatio: "18 / 11" }}

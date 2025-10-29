@@ -25,7 +25,7 @@ export const FakeResizableSidebar = ({
 			"relative flex border-primary/10 p-0 transition-all duration-200 ease-in-out dark:border-primary/5",
 			className,
 			{
-				"ml-[0px] p-0": !open,
+				"ml-0 p-0": !open,
 				"border-r": position === "left",
 				"border-l": position === "right",
 				"border-transparent": !open,

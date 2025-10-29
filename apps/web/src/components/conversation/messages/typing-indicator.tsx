@@ -3,13 +3,16 @@ import {
 	TimelineItemGroupContent,
 	TimelineItemGroupHeader,
 } from "@cossistant/next/primitives";
-import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
+import type {
+	AvailableAIAgent,
+	AvailableHumanAgent,
+	VisitorPresenceEntry,
+} from "@cossistant/types";
 import { motion } from "motion/react";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { TextEffect } from "@/components/ui/text-effect";
 import type { ConversationHeader } from "@/contexts/inboxes";
-import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 
@@ -27,6 +30,7 @@ export type TypingIndicatorProps = React.HTMLAttributes<HTMLDivElement> & {
 	visitor: ConversationHeader["visitor"];
 	availableHumanAgents?: AvailableHumanAgent[];
 	withAvatars?: boolean;
+	visitorPresence?: VisitorPresenceEntry | null;
 };
 
 export const BouncingDots = ({ className }: { className?: string }) => (
@@ -40,21 +44,22 @@ export const BouncingDots = ({ className }: { className?: string }) => (
 export const VisitorTypingPreview = ({
 	visitor,
 	preview,
+	visitorPresence,
 }: {
 	visitor: ConversationHeader["visitor"];
 	preview: string | null;
+	visitorPresence?: VisitorPresenceEntry | null;
 }) => {
 	const visitorName = getVisitorNameWithFallback(visitor);
-	const presence = useVisitorPresenceById(visitor?.id);
 
 	return (
 		<div className={cn("flex w-full gap-2", "flex-row")}>
-			<TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
+			<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-end">
 				<Avatar
 					className="size-7"
 					fallbackName={visitorName}
-					lastOnlineAt={presence?.lastSeenAt ?? visitor?.lastSeenAt}
-					status={presence?.status}
+					lastOnlineAt={visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt}
+					status={visitorPresence?.status}
 					url={visitor?.contact?.image}
 					withBoringAvatar
 				/>
@@ -97,6 +102,7 @@ export const TypingIndicator = React.forwardRef<
 			withAvatars = true,
 			className,
 			visitor,
+			visitorPresence,
 			...props
 		},
 		ref
@@ -151,6 +157,7 @@ export const TypingIndicator = React.forwardRef<
 					<VisitorTypingPreview
 						preview={typingVisitorEntity.preview}
 						visitor={visitor}
+						visitorPresence={visitorPresence}
 					/>
 				)}
 				{/* <div

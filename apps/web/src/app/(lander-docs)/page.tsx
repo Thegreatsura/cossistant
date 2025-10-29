@@ -58,7 +58,7 @@ export default async function Landing() {
 							<WaitingListMessage />
 						</Suspense>
 					</div>
-					<BrowserWithBackground containerClassName="aspect-video w-full border-primary/10 border-y border-dashed">
+					<BrowserWithBackground containerClassName="aspect-[16/10] w-full border-primary/10 border-y border-dashed">
 						<FakeDashboard />
 					</BrowserWithBackground>
 					<div className="mt-10 flex w-full items-center justify-center gap-2 px-6 lg:mt-auto lg:justify-start lg:px-4">

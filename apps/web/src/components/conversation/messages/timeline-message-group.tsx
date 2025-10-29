@@ -5,7 +5,7 @@ import {
 	TimelineItemGroupContent,
 	TimelineItemGroupHeader,
 } from "@cossistant/next/primitives";
-import type { AvailableAIAgent } from "@cossistant/types";
+import type { AvailableAIAgent, VisitorPresenceEntry } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
@@ -14,7 +14,6 @@ import { useMemo } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
-import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ReadIndicator } from "./read-indicator";
@@ -37,6 +36,7 @@ type TimelineMessageGroupProps = {
 	lastReadMessageIds?: Map<string, string>; // Map of userId -> lastMessageId they read
 	currentUserId?: string;
 	visitor: ConversationHeader["visitor"];
+	visitorPresence?: VisitorPresenceEntry | null;
 };
 
 export function TimelineMessageGroup({
@@ -46,6 +46,7 @@ export function TimelineMessageGroup({
 	lastReadMessageIds,
 	currentUserId,
 	visitor,
+	visitorPresence,
 }: TimelineMessageGroupProps) {
 	// Get agent info for the sender
 	const firstItem = items[0];
@@ -56,7 +57,6 @@ export function TimelineMessageGroup({
 		(agent) => agent.id === firstItem?.aiAgentId
 	);
 	const visitorName = getVisitorNameWithFallback(visitor);
-	const visitorPresence = useVisitorPresenceById(visitor?.id);
 
 	// Extract who has read the last timeline item in this group (equal check).
 	const readByIds: string[] = useMemo(() => {
@@ -108,7 +108,7 @@ export function TimelineMessageGroup({
 				>
 					{/* Avatar - only show for received messages */}
 					{isReceivedByViewer && (
-						<TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
+						<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-end">
 							{isVisitor ? (
 								<Avatar
 									className="size-7"

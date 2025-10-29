@@ -17,6 +17,7 @@ import { AnimatePresence } from "motion/react";
 import type { RefObject } from "react";
 import { memo, useEffect, useMemo, useRef } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
+import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
 import { TimelineMessageGroup } from "./timeline-message-group";
@@ -85,6 +86,8 @@ function ConversationTimelineListComponent({
 		excludeUserId: currentUserId,
 	});
 
+	const visitorPresence = useVisitorPresenceById(visitor?.id);
+
 	const availableHumanAgents = useMemo(
 		() =>
 			teamMembers.map((member) => ({
@@ -138,7 +141,7 @@ function ConversationTimelineListComponent({
 			autoScroll={true}
 			className={cn(
 				"overflow-y-auto pt-20 pr-4 pb-48 pl-4",
-				"scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-transparent",
+				"scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-fd-overlay",
 				"h-full w-full",
 				className
 			)}
@@ -183,6 +186,7 @@ function ConversationTimelineListComponent({
 									lastReadMessageIds={lastReadMessageMap}
 									teamMembers={teamMembers}
 									visitor={visitor}
+									visitorPresence={visitorPresence}
 								/>
 							);
 						})}
@@ -194,6 +198,7 @@ function ConversationTimelineListComponent({
 							availableHumanAgents={availableHumanAgents}
 							className="mt-2"
 							visitor={visitor}
+							visitorPresence={visitorPresence}
 						/>
 					)}
 				</ConversationTimelineContainer>
