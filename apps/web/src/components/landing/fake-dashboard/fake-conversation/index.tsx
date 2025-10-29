@@ -6,31 +6,31 @@ import { FakeInboxNavigationSidebar } from "../fake-sidebar/inbox";
 import { FakeVisitorSidebar } from "../fake-sidebar/visitor";
 
 type Props = {
-  typingVisitors: FakeTypingVisitor[];
-  conversation: ConversationHeader;
-  timeline: ConversationTimelineItem[];
-  visitor: FakeVisitor;
+	typingVisitors: FakeTypingVisitor[];
+	conversation: ConversationHeader;
+	timeline: ConversationTimelineItem[];
+	visitor: FakeVisitor;
 };
 
 export function FakeConversation({
-  typingVisitors,
-  conversation,
-  visitor,
+	typingVisitors,
+	conversation,
+	visitor,
 }: Props) {
-  return (
-    <>
-      <FakeInboxNavigationSidebar
-        activeView="inbox"
-        open
-        statusCounts={{ open: 10, resolved: 0, spam: 0, archived: 0 }}
-      />
-      <Page className="relative py-0 pr-0.5 pl-0">
-        {/* <FakeConversationHeader />
+	return (
+		<>
+			<FakeInboxNavigationSidebar
+				activeView="inbox"
+				open
+				statusCounts={{ open: 10, resolved: 0, spam: 0, archived: 0 }}
+			/>
+			<Page className="relative py-0 pr-0.5 pl-0">
+				{/* <FakeConversationHeader />
 				<FakeConversationTimelineList />
 				<FakeMultimodalInput /> */}
-        holla
-      </Page>
-      <FakeVisitorSidebar open={true} visitor={visitor} />
-    </>
-  );
+				holla
+			</Page>
+			<FakeVisitorSidebar open={true} visitor={visitor} />
+		</>
+	);
 }

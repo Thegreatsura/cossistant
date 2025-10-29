@@ -10,51 +10,51 @@ import { FakeCentralContainer } from "./fake-layout";
 import { FakeNavigationTopbar } from "./fake-navigation-topbar";
 
 export function FakeDashboard({ className }: { className?: string }) {
-  const [activeView, setActiveView] = useState<"inbox" | "conversation">(
-    "conversation"
-  );
-  const {
-    conversations,
-    typingVisitors: inboxTypingVisitors,
-    resetDemoData: resetInboxDemoData,
-  } = useFakeInbox();
+	const [activeView, setActiveView] = useState<"inbox" | "conversation">(
+		"conversation"
+	);
+	const {
+		conversations,
+		typingVisitors: inboxTypingVisitors,
+		resetDemoData: resetInboxDemoData,
+	} = useFakeInbox();
 
-  const {
-    conversation,
-    visitor,
-    timelineItems,
-    typingVisitors: conversationTypingVisitors,
-    resetDemoData: resetConversationDemoData,
-  } = useFakeConversation();
+	const {
+		conversation,
+		visitor,
+		timelineItems,
+		typingVisitors: conversationTypingVisitors,
+		resetDemoData: resetConversationDemoData,
+	} = useFakeConversation();
 
-  const resetDemoData = () => {
-    resetInboxDemoData();
-    resetConversationDemoData();
-  };
+	const resetDemoData = () => {
+		resetInboxDemoData();
+		resetConversationDemoData();
+	};
 
-  return (
-    <div
-      className={cn(
-        "@container size-full overflow-hidden bg-background-100 dark:bg-background",
-        className
-      )}
-    >
-      <FakeNavigationTopbar />
-      <FakeCentralContainer>
-        {activeView === "inbox" ? (
-          <FakeInbox
-            conversations={conversations}
-            typingVisitors={inboxTypingVisitors}
-          />
-        ) : (
-          <FakeConversation
-            conversation={conversation}
-            timeline={timelineItems}
-            typingVisitors={conversationTypingVisitors}
-            visitor={visitor}
-          />
-        )}
-      </FakeCentralContainer>
-    </div>
-  );
+	return (
+		<div
+			className={cn(
+				"@container size-full overflow-hidden bg-background-100 dark:bg-background",
+				className
+			)}
+		>
+			<FakeNavigationTopbar />
+			<FakeCentralContainer>
+				{activeView === "inbox" ? (
+					<FakeInbox
+						conversations={conversations}
+						typingVisitors={inboxTypingVisitors}
+					/>
+				) : (
+					<FakeConversation
+						conversation={conversation}
+						timeline={timelineItems}
+						typingVisitors={conversationTypingVisitors}
+						visitor={visitor}
+					/>
+				)}
+			</FakeCentralContainer>
+		</div>
+	);
 }
