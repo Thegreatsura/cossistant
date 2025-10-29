@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useSupport } from "../provider";
+import { useTypingStore } from "../realtime/typing-store";
 import { useSupportConfig } from "../support";
 import { useRenderElement } from "../utils/use-render-element";
 
@@ -10,10 +11,11 @@ export type SupportBubbleProps = Omit<
 	children?:
 		| React.ReactNode
 		| ((props: {
-				isOpen: boolean;
-				unreadCount: number;
-				toggle: () => void;
-		  }) => React.ReactNode);
+                                isOpen: boolean;
+                                unreadCount: number;
+                                isTyping: boolean;
+                                toggle: () => void;
+                  }) => React.ReactNode);
 	asChild?: boolean;
 	className?: string;
 };
@@ -25,10 +27,36 @@ export type SupportBubbleProps = Omit<
 export const SupportBubble = (() => {
 	const Component = React.forwardRef<HTMLButtonElement, SupportBubbleProps>(
 		({ children, className, asChild = false, ...props }, ref) => {
-			const { isOpen, toggle } = useSupportConfig();
-			const { unreadCount } = useSupport();
+                        const { isOpen, toggle } = useSupportConfig();
+                        const { unreadCount, visitor } = useSupport();
+                        const visitorId = visitor?.id ?? null;
 
-			const renderProps = { isOpen, unreadCount, toggle };
+                        const hasTyping = useTypingStore(
+                                React.useCallback(
+                                        (state) =>
+                                                Object.values(state.conversations).some((entries) =>
+                                                        Object.values(entries).some((entry) => {
+                                                                if (
+                                                                        visitorId &&
+                                                                        entry.actorType === "visitor" &&
+                                                                        entry.actorId === visitorId
+                                                                ) {
+                                                                        return false;
+                                                                }
+
+                                                                return true;
+                                                        })
+                                                ),
+                                        [visitorId]
+                                )
+                        );
+
+                        const renderProps = {
+                                isOpen,
+                                unreadCount,
+                                isTyping: hasTyping,
+                                toggle,
+                        };
 
 			const content =
 				typeof children === "function" ? children(renderProps) : children;
