@@ -12,6 +12,12 @@ const daysAgo = (days: number, hours = 0) => {
   return date.toISOString();
 };
 
+const minutesAgo = (minutes: number) => {
+  const date = new Date(now);
+  date.setMinutes(date.getMinutes() - minutes);
+  return date.toISOString();
+};
+
 const fakeVisitors: FakeVisitor[] = [];
 
 const fakeConversations: ConversationHeader[] = [
@@ -23,7 +29,7 @@ const fakeConversations: ConversationHeader[] = [
     visitorId: "01JGVIS11111111111111111",
     visitor: {
       id: "01JGVIS11111111111111111",
-      lastSeenAt: daysAgo(0, 1),
+      lastSeenAt: minutesAgo(2),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -38,15 +44,15 @@ const fakeConversations: ConversationHeader[] = [
     channel: "widget",
     title: "Billing question about annual plan",
     resolutionTime: null,
-    startedAt: daysAgo(1, 3),
-    firstResponseAt: daysAgo(1, 2),
+    startedAt: daysAgo(0, 3),
+    firstResponseAt: daysAgo(0, 2),
     resolvedAt: null,
     resolvedByUserId: null,
     resolvedByAiAgentId: null,
-    createdAt: daysAgo(1, 3),
-    updatedAt: daysAgo(0, 1),
+    createdAt: daysAgo(0, 3),
+    updatedAt: daysAgo(0, 3),
     deletedAt: null,
-    lastMessageAt: daysAgo(0, 1),
+    lastMessageAt: daysAgo(0, 3),
     lastSeenAt: null,
     lastTimelineItem: {
       id: "01JGTIM11111111111111111",
@@ -54,12 +60,17 @@ const fakeConversations: ConversationHeader[] = [
       organizationId: "01JGORG11111111111111111",
       visibility: "public",
       type: "message",
-      text: "Thanks! That clarifies everything.",
-      parts: [{ type: "text", text: "Thanks! That clarifies everything." }],
+      text: "Can I upgrade to the annual plan and get the discount applied retroactively?",
+      parts: [
+        {
+          type: "text",
+          text: "Can I upgrade to the annual plan and get the discount applied retroactively?",
+        },
+      ],
       userId: null,
       visitorId: "01JGVIS11111111111111111",
       aiAgentId: null,
-      createdAt: daysAgo(0, 1),
+      createdAt: daysAgo(0, 3),
       deletedAt: null,
     },
     viewIds: [],
@@ -73,7 +84,7 @@ const fakeConversations: ConversationHeader[] = [
     visitorId: "01JGVIS22222222222222222",
     visitor: {
       id: "01JGVIS22222222222222222",
-      lastSeenAt: daysAgo(0, 2),
+      lastSeenAt: minutesAgo(1),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -128,7 +139,7 @@ const fakeConversations: ConversationHeader[] = [
     visitorId: "01JGVIS33333333333333333",
     visitor: {
       id: "01JGVIS33333333333333333",
-      lastSeenAt: daysAgo(2, 1),
+      lastSeenAt: minutesAgo(45),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -180,7 +191,7 @@ const fakeConversations: ConversationHeader[] = [
     visitorId: "01JGVIS44444444444444444",
     visitor: {
       id: "01JGVIS44444444444444444",
-      lastSeenAt: daysAgo(0, 0.5),
+      lastSeenAt: now.toISOString(),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -195,15 +206,15 @@ const fakeConversations: ConversationHeader[] = [
     channel: "widget",
     title: "Can't access dashboard after payment",
     resolutionTime: null,
-    startedAt: daysAgo(0, 0.5),
+    startedAt: daysAgo(0, 12),
     firstResponseAt: null,
     resolvedAt: null,
     resolvedByUserId: null,
     resolvedByAiAgentId: null,
-    createdAt: daysAgo(0, 0.5),
-    updatedAt: daysAgo(0, 0.5),
+    createdAt: daysAgo(0, 12),
+    updatedAt: daysAgo(0, 12),
     deletedAt: null,
-    lastMessageAt: daysAgo(0, 0.5),
+    lastMessageAt: daysAgo(0, 12),
     lastSeenAt: null,
     lastTimelineItem: {
       id: "01JGTIM44444444444444444",
@@ -221,7 +232,7 @@ const fakeConversations: ConversationHeader[] = [
       userId: null,
       visitorId: "01JGVIS44444444444444444",
       aiAgentId: null,
-      createdAt: daysAgo(0, 0.5),
+      createdAt: daysAgo(0, 12),
       deletedAt: null,
     },
     viewIds: [],
@@ -235,7 +246,7 @@ const fakeConversations: ConversationHeader[] = [
     visitorId: "01JGVIS55555555555555555",
     visitor: {
       id: "01JGVIS55555555555555555",
-      lastSeenAt: daysAgo(1, 6),
+      lastSeenAt: minutesAgo(120),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -290,7 +301,7 @@ const fakeConversations: ConversationHeader[] = [
     visitorId: "01JGVIS66666666666666666",
     visitor: {
       id: "01JGVIS66666666666666666",
-      lastSeenAt: daysAgo(3, 2),
+      lastSeenAt: daysAgo(1),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -343,7 +354,7 @@ const fakeNewConversations: ConversationHeader[] = [
     visitorId: "01JGVIS77777777777777777",
     visitor: {
       id: "01JGVIS77777777777777777",
-      lastSeenAt: daysAgo(0, 0.2),
+      lastSeenAt: minutesAgo(3),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
@@ -398,7 +409,7 @@ const fakeNewConversations: ConversationHeader[] = [
     visitorId: "01JGVIS88888888888888888",
     visitor: {
       id: "01JGVIS88888888888888888",
-      lastSeenAt: daysAgo(0, 0.1),
+      lastSeenAt: minutesAgo(1),
       blockedAt: null,
       blockedByUserId: null,
       isBlocked: false,
