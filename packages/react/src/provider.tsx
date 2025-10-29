@@ -75,10 +75,9 @@ function areConversationSnapshotsEqual(
 		const snapshotA = a[index];
 		const snapshotB = b[index];
 
-		if (
-			snapshotA.id !== snapshotB.id ||
-			snapshotA.lastTimelineItem !== snapshotB.lastTimelineItem
-		) {
+		const aLastCreatedAt = snapshotA.lastTimelineItem?.createdAt ?? null;
+		const bLastCreatedAt = snapshotB.lastTimelineItem?.createdAt ?? null;
+		if (snapshotA.id !== snapshotB.id || aLastCreatedAt !== bLastCreatedAt) {
 			return false;
 		}
 	}
