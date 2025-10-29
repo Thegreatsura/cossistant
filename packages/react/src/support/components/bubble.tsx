@@ -41,6 +41,30 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 						>
 							<Icon className="h-5 w-5" name="chevron-down" />
 						</motion.div>
+					) : isTyping ? (
+						<motion.span
+							animate={{
+								opacity: 1,
+								scale: 1,
+								transition: {
+									duration: 0.2,
+									ease: "easeOut",
+								},
+							}}
+							className="pointer-events-none flex items-center rounded-full text-primary"
+							exit={{
+								opacity: 0,
+								scale: 0.9,
+								transition: {
+									duration: 0.1,
+									ease: "easeIn",
+								},
+							}}
+							initial={{ opacity: 0, scale: 0.9 }}
+							key="typing-indicator"
+						>
+							<BouncingDots className="bg-co-primary-foreground" />
+						</motion.span>
 					) : (
 						<motion.div
 							animate={{
@@ -63,37 +87,11 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 						</motion.div>
 					)}
 				</AnimatePresence>
-				<AnimatePresence>
-					{!isOpen && isTyping ? (
-						<motion.span
-							animate={{
-								opacity: 1,
-								scale: 1,
-								transition: {
-									duration: 0.2,
-									ease: "easeOut",
-								},
-							}}
-							className="-bottom-3 -translate-x-1/2 pointer-events-none absolute left-1/2 flex items-center rounded-full bg-co-background px-2 py-1 shadow-lg"
-							exit={{
-								opacity: 0,
-								scale: 0.9,
-								transition: {
-									duration: 0.1,
-									ease: "easeIn",
-								},
-							}}
-							initial={{ opacity: 0, scale: 0.9 }}
-							key="typing-indicator"
-						>
-							<BouncingDots />
-						</motion.span>
-					) : null}
-				</AnimatePresence>
+
 				{unreadCount > 0 && (
 					<motion.span
 						animate={{ scale: 1, opacity: 1 }}
-						className="-top-1 -right-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-co-destructive font-medium text-co-destructive-foreground text-xs"
+						className="-top-0 -right-0 absolute flex h-3 w-3 items-center justify-center rounded-full bg-co-destructive font-medium text-[10px] text-co-destructive-foreground text-white text-xs"
 						exit={{ scale: 0, opacity: 0 }}
 						initial={{ scale: 0, opacity: 0 }}
 					>

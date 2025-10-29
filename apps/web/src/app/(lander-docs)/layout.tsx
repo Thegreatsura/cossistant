@@ -1,3 +1,4 @@
+import { Support } from "@cossistant/next";
 import { Suspense } from "react";
 import {
 	DashboardButton,
@@ -18,6 +19,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 				<div className="container-wrapper mx-auto">{children}</div>
 			</main>
 			<Footer />
+			<Support />
 		</div>
 	);
 }

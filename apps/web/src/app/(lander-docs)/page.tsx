@@ -1,3 +1,4 @@
+import { SupportConfig } from "@cossistant/react/support-config";
 import Link from "next/link";
 import { Suspense } from "react";
 import { FakeDashboard } from "@/components/landing/fake-dashboard";
@@ -15,6 +16,14 @@ export const dynamic = "force-dynamic";
 export default async function Landing() {
 	return (
 		<>
+			<SupportConfig
+				defaultMessages={[
+					{
+						content: "Hi, liking Cossistant so far? How can I help you today?",
+						senderType: "team_member",
+					},
+				]}
+			/>
 			<div className="flex min-h-screen flex-col gap-8 pt-32 md:flex-row">
 				<div className="flex flex-1 flex-col gap-6">
 					{/* <EscapeIframeAnimation /> */}
