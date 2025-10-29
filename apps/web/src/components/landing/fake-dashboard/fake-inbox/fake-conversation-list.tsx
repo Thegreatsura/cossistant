@@ -1,35 +1,52 @@
 import type { ConversationHeader } from "@cossistant/types";
+import { ConversationItemView } from "@/components/conversations-list/conversation-item";
 import { PageContent } from "@/components/ui/layout";
+import { getVisitorNameWithFallback } from "@/lib/visitors";
 
 type FakeConversationListItemProps = {
-	conversation: ConversationHeader;
+  conversation: ConversationHeader;
 };
 
 export function FakeConversationListItem({
-	conversation,
+  conversation,
 }: FakeConversationListItemProps) {
-	return (
-		<div>
-			<h1>Conversation List Item</h1>
-		</div>
-	);
+  const visitorName = getVisitorNameWithFallback(conversation.visitor);
+  const lastTimelineItem = conversation.lastTimelineItem;
+
+  return (
+    <ConversationItemView
+      focused={false}
+      hasUnreadMessage={false}
+      isTyping={false}
+      lastMessageCreatedAt={
+        lastTimelineItem?.createdAt
+          ? new Date(lastTimelineItem.createdAt)
+          : null
+      }
+      lastMessageText={lastTimelineItem?.text ?? ""}
+      visitorAvatarUrl={conversation.visitor?.contact?.image ?? null}
+      visitorLastSeenAt={conversation.visitor?.lastSeenAt ?? null}
+      visitorName={visitorName}
+      waitingSinceLabel={null}
+    />
+  );
 }
 
 type FakeConversationListProps = {
-	conversations: ConversationHeader[];
+  conversations: ConversationHeader[];
 };
 
 export function FakeConversationList({
-	conversations,
+  conversations,
 }: FakeConversationListProps) {
-	return (
-		<PageContent className="h-full overflow-auto px-2 contain-strict">
-			{conversations.map((conversation) => (
-				<FakeConversationListItem
-					conversation={conversation}
-					key={conversation.id}
-				/>
-			))}
-		</PageContent>
-	);
+  return (
+    <PageContent className="h-full overflow-auto px-2 contain-strict">
+      {conversations.map((conversation) => (
+        <FakeConversationListItem
+          conversation={conversation}
+          key={conversation.id}
+        />
+      ))}
+    </PageContent>
+  );
 }
