@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ComponentPreview } from "@/components/component-preview";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { Logos } from "@/components/ui/logos";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { Benefits } from "./components/benefits";
+import { BrowserWithBackground } from "./components/browser-with-background";
 import { GitHubLink } from "./components/github-link";
 import { WaitingListMessage } from "./components/waiting-list-rank/message";
 
@@ -17,7 +17,7 @@ export default async function Landing() {
       <div className="flex min-h-screen flex-col gap-8 pt-32 md:flex-row">
         <div className="flex flex-1 flex-col gap-6">
           {/* <EscapeIframeAnimation /> */}
-          <div className="flex flex-col items-start gap-4 px-4">
+          <div className="flex flex-col items-start gap-4 px-4 pb-8">
             <h1 className="text-pretty text-center font-f37-stout text-[36px] leading-tight md:text-3xl lg:text-left xl:text-4xl">
               Ship the best customer support for your SaaS.
             </h1>
@@ -37,7 +37,7 @@ export default async function Landing() {
               </Link>
               <GitHubLink
                 className="h-12 w-full justify-between px-4 font-medium text-md lg:w-[280px]"
-                variant="outline"
+                variant="ghost"
               >
                 Star us on GitHub
               </GitHubLink>
@@ -52,6 +52,9 @@ export default async function Landing() {
               <WaitingListMessage />
             </Suspense>
           </div>
+          <BrowserWithBackground containerClassName="aspect-video w-full border-primary/10 border-y border-dashed">
+            {/* Add your dashboard/app screenshot or content here */}
+          </BrowserWithBackground>
           <div className="mt-10 flex w-full items-center justify-center gap-2 px-6 lg:mt-auto lg:justify-start lg:px-4">
             <p className="font-mono text-foreground/60 text-xs">
               Works well with
