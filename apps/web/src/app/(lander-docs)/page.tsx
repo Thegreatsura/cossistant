@@ -58,33 +58,58 @@ export default async function Landing() {
 							<WaitingListMessage />
 						</Suspense>
 					</div>
-					<BrowserWithBackground containerClassName="aspect-[16/10] w-full border-primary/10 border-y border-dashed">
-						<FakeDashboard />
+					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed">
+						<div className="fake-dashboard-container">
+							<FakeDashboard />
+						</div>
 					</BrowserWithBackground>
-					<div className="mt-10 flex w-full items-center justify-center gap-2 px-6 lg:mt-auto lg:justify-start lg:px-4">
-						<p className="font-mono text-foreground/60 text-xs">
-							Works well with
-						</p>
-						<TooltipOnHover content="React">
-							<Link href="https://react.dev" target="_blank">
-								<Logos.react className="size-4" />
-							</Link>
-						</TooltipOnHover>
-						<TooltipOnHover content="Next.js">
-							<Link href="https://nextjs.org" target="_blank">
-								<Logos.nextjs className="size-4" />
-							</Link>
-						</TooltipOnHover>
-						<TooltipOnHover content="Tailwind">
-							<Link href="https://tailwindcss.com" target="_blank">
-								<Logos.tailwind className="size-4" />
-							</Link>
-						</TooltipOnHover>
-						<TooltipOnHover content="Shadcn/UI">
-							<Link href="https://ui.shadcn.com" target="_blank">
-								<Logos.shadcn className="size-4" />
-							</Link>
-						</TooltipOnHover>
+					<div className="mt-10 flex w-full items-center justify-center gap-2 px-6 lg:mt-auto lg:justify-between lg:px-4">
+						<div className="flex items-center gap-2">
+							<p className="font-mono text-foreground/60 text-xs">
+								Works well with
+							</p>
+							<TooltipOnHover content="React">
+								<Link href="https://react.dev" target="_blank">
+									<Logos.react className="size-4" />
+								</Link>
+							</TooltipOnHover>
+							<TooltipOnHover content="Next.js">
+								<Link href="https://nextjs.org" target="_blank">
+									<Logos.nextjs className="size-4" />
+								</Link>
+							</TooltipOnHover>
+							<TooltipOnHover content="Tailwind">
+								<Link href="https://tailwindcss.com" target="_blank">
+									<Logos.tailwind className="size-4" />
+								</Link>
+							</TooltipOnHover>
+							<TooltipOnHover content="Shadcn/UI">
+								<Link href="https://ui.shadcn.com" target="_blank">
+									<Logos.shadcn className="size-4" />
+								</Link>
+							</TooltipOnHover>
+						</div>
+						<div className="flex w-max gap-2">
+							<Button
+								className="border-primary/10 border-dashed bg-background-200 dark:bg-background-400"
+								size="sm"
+								type="button"
+								variant="outline"
+							>
+								Support inbox
+							</Button>
+							<Button size="sm" type="button" variant="secondary">
+								Real-time conversation
+							</Button>
+							<Button
+								className="size-8"
+								size="icon"
+								type="button"
+								variant="secondary"
+							>
+								<Icon className="size-4" filledOnHover name="play" />
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>

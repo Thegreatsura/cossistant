@@ -7,10 +7,10 @@ export const FakeCentralContainer = ({
 	children: React.ReactNode;
 	className?: string;
 }) => (
-	<div className="flex h-[calc(100%-4rem)] w-full px-2 pb-2">
+	<div className="fake-central-container flex min-h-0 w-full flex-1 px-2 pb-2">
 		<section
 			className={cn(
-				"flex flex-1 overflow-clip rounded border border-primary/10 bg-background dark:border-primary/5 dark:bg-background-50",
+				"flex h-full max-h-full min-h-0 flex-1 overflow-clip rounded border border-primary/10 bg-background dark:border-primary/5 dark:bg-background-50",
 				className
 			)}
 		>

@@ -72,11 +72,10 @@ export function BrowserWithBackground({
 			{/* Browser Window Container */}
 			<div className="relative z-10 flex flex-1 items-center justify-center">
 				<div
-					className={`w-full max-w-[1450px] scale-90 rounded-lg border border-primary/5 shadow-2xl overflow-clip${browserClassName}`}
-					style={{ aspectRatio: "18 / 11" }}
+					className={`fake-browser-wrapper w-full max-w-[1450px] scale-90 overflow-hidden rounded-lg border border-primary/5 shadow-2xl ${browserClassName}`}
 				>
 					{/* iOS Browser Chrome */}
-					<div className="flex size-full flex-col overflow-hidden bg-background">
+					<div className="flex h-full w-full flex-col overflow-hidden bg-background">
 						{/* Browser Top Bar */}
 						<div className="flex items-center justify-between gap-2 border-primary/10 border-b px-4 py-1">
 							{/* Traffic Lights */}

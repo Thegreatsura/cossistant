@@ -13,42 +13,68 @@ const benefits = [
 	{
 		children: HumanAiGraphic,
 		className: "lg:col-span-3",
-		title: "Human + AI support",
+		title: (
+			<>
+				<span className="group/title text-cossistant-green">Human + AI</span>{" "}
+				support
+			</>
+		),
 		description:
 			"AI agents don’t just spit answers, they join the conversation like a teammate, talking naturally and handing off smoothly when a human needs to step in.",
 	},
 	{
 		children: AiAgentsGraphic,
 		className: "lg:col-span-3",
-		title: "24/7 autonomous AI agents",
+		title: (
+			<>
+				24/7 autonomous <span className="text-cossistant-green">AI agents</span>
+			</>
+		),
 		description:
 			"Agents handle questions around the clock across time zones, cutting response times to seconds without needing extra staff.",
 	},
 	{
 		children: ContextGraphic,
 		className: "lg:col-span-3",
-		title: "Context-aware replies",
+		title: (
+			<>
+				<span className="text-cossistant-green">Context-aware</span> replies
+			</>
+		),
 		description:
 			"Agents read app logs, errors, user actions, past conversations and knowledge base to deliver precise answers—no generic chatbot fluff.",
 	},
 	{
 		children: SelfLearningGraphic,
 		className: "lg:col-span-3",
-		title: "Self-learning knowledge base",
+		title: (
+			<>
+				<span className="text-cossistant-green">Self-learning</span> knowledge
+				base
+			</>
+		),
 		description:
 			"Cossistant crawls your docs, resources and conversations to auto-build FAQs, improving agents answers as your product and support evolves.",
 	},
 	{
 		children: CustomToolsGraphic,
 		className: "lg:col-span-3",
-		title: "Default & Custom tools",
+		title: (
+			<>
+				Default & <span className="text-cossistant-green">Custom</span> tools
+			</>
+		),
 		description:
 			"Out-of-the-box support for tools like Linear to log tickets, Stripe to check subscriptions, and Cal.com to book calls, plus the freedom to wire up your own APIs for truly custom actions.",
 	},
 	{
 		children: PromptToneGraphic,
 		className: "lg:col-span-3",
-		title: "Control prompt & tone",
+		title: (
+			<>
+				<span className="text-cossistant-green">Control</span> prompt & tone
+			</>
+		),
 		description:
 			"Set the model, prompt, and personality of your agent. Make it formal, funny, or straight to the point — you’re in charge.",
 	},
@@ -70,7 +96,7 @@ export const Benefits = () => (
 						// Add border-bottom for all items except last row (index 0, 1, 2, 3)
 						index < 4 && "border-b"
 					)}
-					key={benefit.title}
+					key={benefit.description}
 				>
 					<div className="relative z-10 h-64 w-full">
 						{benefit.children && <benefit.children />}

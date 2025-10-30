@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { forwardRef, useEffect, useRef, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import { AnimatedBeam } from "../animated-beam";
@@ -13,7 +13,7 @@ const Circle = forwardRef<
 >(({ className, children }, ref) => (
 	<div
 		className={cn(
-			"relative z-10 flex size-12 items-center justify-center rounded border border-primary/10 border-dashed bg-background-200 p-2 dark:bg-background-500",
+			"relative z-10 flex size-12 items-center justify-center rounded border border-primary/10 border-dashed bg-background-200 p-2 dark:bg-background-400",
 			className
 		)}
 		ref={ref}

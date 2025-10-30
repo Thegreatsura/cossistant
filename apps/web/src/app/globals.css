@@ -85,6 +85,15 @@
 	--header-height: 80px;
 	--footer-height: 0px;
 
+	/* Fake Dashboard dimensions */
+	--fake-dashboard-height-mobile: 720px;
+	--fake-dashboard-width-mobile: 1200px;
+	--fake-dashboard-height-sm: 600px;
+	--fake-dashboard-height-md: 700px;
+	--fake-dashboard-height-lg: 800px;
+	--fake-dashboard-height-xl: 900px;
+	--fake-dashboard-height-2xl: 1000px;
+
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(14.5% 0 0);
 	--primary: oklch(20.5% 0 0);

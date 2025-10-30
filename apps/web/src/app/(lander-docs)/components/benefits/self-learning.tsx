@@ -46,7 +46,7 @@ export const SelfLearningGraphic = () => (
 				)}
 				key={card.title}
 			>
-				<div>
+				<div className="text-cossistant-orange">
 					{card.icon}
 					<p className="font-medium text-sm">{card.title}</p>
 				</div>
