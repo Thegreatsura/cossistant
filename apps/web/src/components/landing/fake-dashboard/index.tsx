@@ -15,6 +15,7 @@ import "./fake-dashboard.css";
 export function FakeDashboard({ className }: { className?: string }) {
   const currentView = useLandingAnimationStore((state) => state.currentView);
   const isPlaying = useLandingAnimationStore((state) => state.isPlaying);
+  const isRestarting = useLandingAnimationStore((state) => state.isRestarting);
   const onAnimationComplete = useLandingAnimationStore(
     (state) => state.onAnimationComplete
   );
@@ -75,6 +76,16 @@ export function FakeDashboard({ className }: { className?: string }) {
       currentView === "conversation" ? onAnimationComplete : undefined,
     initialMessages: inboxHook.inboxMessages,
   });
+
+  // Reset animation data when restarting
+  useEffect(() => {
+    if (isRestarting) {
+      // Reset all animation data when restart is triggered
+      inboxHook.resetDemoData();
+      conversationHook.resetDemoData();
+      setShowMouseCursor(false);
+    }
+  }, [isRestarting, inboxHook, conversationHook]);
 
   // Reset animation data when view changes
   useEffect(() => {

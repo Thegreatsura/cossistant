@@ -5,11 +5,13 @@ export type LandingAnimationView = "inbox" | "conversation";
 type LandingAnimationState = {
 	currentView: LandingAnimationView | null;
 	isPlaying: boolean;
+	isRestarting: boolean;
 	play: () => void;
 	pause: () => void;
 	selectView: (view: LandingAnimationView) => void;
 	onAnimationComplete: () => void;
 	reset: () => void;
+	restart: () => void;
 };
 
 /**
@@ -20,9 +22,16 @@ export const useLandingAnimationStore = create<LandingAnimationState>(
 	(set, get) => ({
 		currentView: "inbox",
 		isPlaying: true,
+		isRestarting: false,
 
 		play: () => {
-			set({ isPlaying: true });
+			const { isPlaying, currentView } = get();
+			// If stopped at the end (not playing, on inbox), trigger restart
+			if (!isPlaying && currentView === "inbox") {
+				get().restart();
+			} else {
+				set({ isPlaying: true });
+			}
 		},
 
 		pause: () => {
@@ -41,16 +50,28 @@ export const useLandingAnimationStore = create<LandingAnimationState>(
 				return;
 			}
 
-			// Loop: inbox -> conversation -> inbox -> ...
+			// inbox -> conversation (then stop and reset to beginning)
 			if (currentView === "inbox") {
 				set({ currentView: "conversation", isPlaying: true });
 			} else if (currentView === "conversation") {
-				set({ currentView: "inbox", isPlaying: true });
+				// Animation complete - stop and reset to beginning (inbox)
+				// User can click play to restart from the beginning
+				set({ currentView: "inbox", isPlaying: false });
 			}
 		},
 
 		reset: () => {
 			set({ currentView: "inbox", isPlaying: true });
 		},
+
+	restart: () => {
+		// Set restarting flag and stop playing
+		set({ isRestarting: true, isPlaying: false, currentView: "inbox" });
+
+		// After a 4 second delay, start playing again
+		setTimeout(() => {
+			set({ isRestarting: false, isPlaying: true });
+		}, 4000);
+	},
 	})
 );
