@@ -48,8 +48,10 @@ export function useFakeInbox({
 	}, [schedule]);
 
 	// Reset hasScheduledRef when transitioning from paused to playing
+	// Also reset when isPlaying becomes true (allows restart after reset)
 	useEffect(() => {
 		if (isPlaying) {
+			// Allow rescheduling if we're playing
 			hasScheduledRef.current = false;
 			retryCountRef.current = 0;
 		}

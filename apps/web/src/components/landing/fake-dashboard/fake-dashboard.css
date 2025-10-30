@@ -57,48 +57,100 @@
 	}
 }
 
-/* Mobile scaling: render browser + dashboard at 1200x720 and scale down */
+/* Mobile scaling: render browser + dashboard at 1280x720 and scale down */
 @media (max-width: 767px) {
-	/* Parent container needs to maintain aspect ratio for proper scaling */
-	.fake-dashboard-container {
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-	}
-
-	.fake-dashboard-container::before {
-		content: "";
-		display: block;
-		padding-bottom: calc(
-			(
-				var(--fake-dashboard-height-mobile) /
-				var(--fake-dashboard-width-mobile)
-			) *
-			100%
-		);
-	}
-
-	/* Scale the browser wrapper (browser chrome + dashboard) together */
-	/* The browser wrapper is inside BrowserWithBackground and contains both browser chrome and dashboard */
 	.fake-browser-wrapper {
-		position: absolute !important;
-		top: 0 !important;
-		left: 0 !important;
-		width: var(--fake-dashboard-width-mobile) !important;
-		height: var(--fake-dashboard-height-mobile) !important;
+		width: 1280px !important;
+		height: 720px !important;
+		transform: scale(0.5) !important;
+		transform-origin: center center !important;
 		max-width: none !important;
-		transform: scale(
-			calc(100vw / var(--fake-dashboard-width-mobile))
-		) !important;
-		transform-origin: top left !important;
 	}
 
-	/* Ensure the fake-dashboard-container fills its parent (browser content area) */
-	.fake-dashboard-container {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
+	/* Ensure browser chrome container has full height */
+	.fake-browser-wrapper > div {
+		height: 720px !important;
+		min-height: 720px !important;
+	}
+
+	/* Browser top bar: py-1 (0.5rem) + border (1px ≈ 0.0625rem) + content (~1.75rem) ≈ 2.25rem */
+	/* Browser content area = 720px - browser top bar */
+	/* Dashboard container should fit browser content area */
+	.fake-browser-wrapper .fake-dashboard-container {
+		height: calc(720px - 2.25rem) !important;
+	}
+
+	/* Central container: browser content height - navigation topbar (4rem) - bottom padding (0.5rem) */
+	.fake-browser-wrapper .fake-central-container {
+		height: calc(720px - 2.25rem - 4rem - 0.5rem) !important;
+	}
+}
+
+/* Small tablets: scale down */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.fake-browser-wrapper {
+		width: 1280px !important;
+		height: 720px !important;
+		transform: scale(0.65) !important;
+		transform-origin: center center !important;
+		max-width: none !important;
+	}
+
+	/* Ensure browser chrome container has full height */
+	.fake-browser-wrapper > div {
+		height: 720px !important;
+		min-height: 720px !important;
+	}
+
+	/* Browser top bar: py-1 (0.5rem) + border (1px ≈ 0.0625rem) + content (~1.75rem) ≈ 2.25rem */
+	/* Browser content area = 720px - browser top bar */
+	/* Dashboard container should fit browser content area */
+	.fake-browser-wrapper .fake-dashboard-container {
+		height: calc(720px - 2.25rem) !important;
+	}
+
+	/* Central container: browser content height - navigation topbar (4rem) - bottom padding (0.5rem) */
+	.fake-browser-wrapper .fake-central-container {
+		height: calc(720px - 2.25rem - 4rem - 0.5rem) !important;
+	}
+}
+
+/* Large tablets: scale down slightly */
+@media (min-width: 1024px) and (max-width: 1279px) {
+	.fake-browser-wrapper {
+		width: 1280px !important;
+		height: 720px !important;
+		transform: scale(0.75) !important;
+		transform-origin: center center !important;
+		max-width: none !important;
+	}
+
+	/* Ensure browser chrome container has full height */
+	.fake-browser-wrapper > div {
+		height: 720px !important;
+		min-height: 720px !important;
+	}
+
+	/* Browser top bar: py-1 (0.5rem) + border (1px ≈ 0.0625rem) + content (~1.75rem) ≈ 2.25rem */
+	/* Browser content area = 720px - browser top bar */
+	/* Dashboard container should fit browser content area */
+	.fake-browser-wrapper .fake-dashboard-container {
+		height: calc(720px - 2.25rem) !important;
+	}
+
+	/* Central container: browser content height - navigation topbar (4rem) - bottom padding (0.5rem) */
+	.fake-browser-wrapper .fake-central-container {
+		height: calc(720px - 2.25rem - 4rem - 0.5rem) !important;
+	}
+}
+
+/* Desktop: normal responsive sizing */
+@media (min-width: 1280px) {
+	.fake-browser-wrapper {
+		width: 100% !important;
+		max-width: 1450px !important;
+		height: auto !important;
+		transform: scale(0.9) !important;
+		transform-origin: center !important;
 	}
 }

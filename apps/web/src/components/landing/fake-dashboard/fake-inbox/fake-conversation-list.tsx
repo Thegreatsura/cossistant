@@ -12,12 +12,14 @@ type FakeConversationListItemProps = {
 	itemRef?:
 		| React.RefCallback<HTMLDivElement>
 		| React.RefObject<HTMLDivElement | null>;
+	focused?: boolean;
 };
 
 export function FakeConversationListItem({
 	conversation,
 	isTyping = false,
 	itemRef,
+	focused = false,
 }: FakeConversationListItemProps) {
 	const visitorName = getVisitorNameWithFallback(conversation.visitor);
 	const lastTimelineItem = conversation.lastTimelineItem;
@@ -97,7 +99,7 @@ export function FakeConversationListItem({
 			}}
 		>
 			<ConversationItemView
-				focused={false}
+				focused={focused}
 				hasUnreadMessage={hasUnreadMessage}
 				isTyping={isTyping}
 				lastMessageCreatedAt={lastTimelineItemCreatedAt}
@@ -140,14 +142,17 @@ export function FakeConversationList({
 
 	return (
 		<PageContent className="h-full overflow-auto px-2 contain-strict">
-			{sortedConversations.map((conversation) => {
+			{sortedConversations.map((conversation, index) => {
 				const isTyping = typingVisitors.some(
 					(tv) => tv.conversationId === conversation.id
 				);
 				const isMarcConversation = conversation.id === MARC_CONVERSATION_ID;
+				// First conversation (index 0) should be focused
+				const isFocused = index === 0;
 				return (
 					<FakeConversationListItem
 						conversation={conversation}
+						focused={isFocused}
 						isTyping={isTyping}
 						itemRef={isMarcConversation ? marcConversationRef : undefined}
 						key={conversation.id}
