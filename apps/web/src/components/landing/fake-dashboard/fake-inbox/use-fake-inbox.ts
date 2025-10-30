@@ -1,5 +1,5 @@
 import type { ConversationHeader } from "@cossistant/types";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnimationScheduler } from "@/hooks/use-animation-scheduler";
 import {
 	createMarcConversation,
@@ -57,8 +57,7 @@ export function useFakeInbox({
 		}
 	}, [isPlaying]);
 
-	const resetDemoData = () => {
-		const marcConversationId = "01JGAA2222222222222222222";
+	const resetDemoData = useCallback(() => {
 		// Reset to initial conversations (without Marc's conversation)
 		setConversations(fakeConversations);
 		setTypingVisitors([]);
@@ -66,7 +65,7 @@ export function useFakeInbox({
 		resetScheduler();
 		hasScheduledRef.current = false;
 		retryCountRef.current = 0;
-	};
+	}, [resetScheduler]);
 
 	// Simulate Marc Louvion's conversation with multiple messages
 	useEffect(() => {
@@ -81,14 +80,9 @@ export function useFakeInbox({
 				// Schedule ref not ready yet, retry on next tick (max 10 retries)
 				retryCountRef.current += 1;
 				if (retryCountRef.current > 10) {
-					console.warn(
-						"[FakeInbox] Schedule function not available after retries"
-					);
 					return;
 				}
-				requestAnimationFrame(() => {
-					setTimeout(scheduleTasks, 10);
-				});
+				setTimeout(scheduleTasks, 10);
 				return;
 			}
 

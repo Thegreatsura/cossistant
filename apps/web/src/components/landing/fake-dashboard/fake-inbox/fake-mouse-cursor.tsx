@@ -26,39 +26,82 @@ export function FakeMouseCursor({
 			return;
 		}
 
-		// Use requestAnimationFrame to ensure DOM is ready
+		let timeoutId: NodeJS.Timeout | undefined;
+		let retryCount = 0;
+		const maxRetries = 10;
+
 		const updatePositions = () => {
+			// Clear any existing timeout
+			if (timeoutId) {
+				clearTimeout(timeoutId);
+			}
+
 			if (!targetElementRef.current) {
 				// Retry if element not found yet
-				setTimeout(updatePositions, 50);
+				if (retryCount < maxRetries) {
+					retryCount++;
+					timeoutId = setTimeout(updatePositions, 50);
+				}
 				return;
 			}
 
+			// The ref is attached to a wrapper div, but we want to target the actual
+			// clickable conversation item inside (Link or div with .group/conversation-item)
+			const actualTarget =
+				targetElementRef.current.querySelector(
+					".group\\/conversation-item, [class*='conversation-item']"
+				) || targetElementRef.current;
+
 			// Find the Page component (direct parent container with relative positioning)
-			const pageContainer = targetElementRef.current.closest(".relative");
+			const pageContainer = actualTarget.closest(".relative");
 
 			if (!pageContainer) {
 				// Retry if container not found
-				setTimeout(updatePositions, 50);
+				if (retryCount < maxRetries) {
+					retryCount++;
+					timeoutId = setTimeout(updatePositions, 50);
+				}
 				return;
 			}
+
+			// Find the ScrollArea viewport to get scroll offset
+			const scrollViewport = actualTarget.closest(
+				'[data-slot="scroll-area-viewport"]'
+			);
 
 			const containerRect = (
 				pageContainer as HTMLElement
 			).getBoundingClientRect();
-			const targetRect = targetElementRef.current.getBoundingClientRect();
+			const targetRect = (actualTarget as HTMLElement).getBoundingClientRect();
 
 			// Only proceed if target element has valid dimensions
 			if (targetRect.width === 0 || targetRect.height === 0) {
-				setTimeout(updatePositions, 50);
+				if (retryCount < maxRetries) {
+					retryCount++;
+					timeoutId = setTimeout(updatePositions, 50);
+				}
 				return;
 			}
 
 			// Calculate target position relative to Page container
+			// Account for cursor size (24px = size-6) to center the cursor properly
+			const cursorSize = 24;
 			const targetX =
-				targetRect.left - containerRect.left + targetRect.width / 2;
+				targetRect.left -
+				containerRect.left +
+				targetRect.width / 2 -
+				cursorSize / 2;
 			const targetY =
-				targetRect.top - containerRect.top + targetRect.height / 2;
+				targetRect.top +
+				48 -
+				containerRect.top +
+				targetRect.height / 2 -
+				cursorSize / 2;
+
+			// The cursor renders absolutely positioned within Page, but the target
+			// is inside a scrollable container. getBoundingClientRect gives viewport coords,
+			// which already accounts for scroll. Since we're positioning absolutely in Page,
+			// this should work correctly without additional scroll adjustments.
 
 			// Start from top-right corner (slightly outside viewport)
 			const startX = containerRect.width + 20;
@@ -68,16 +111,16 @@ export function FakeMouseCursor({
 			setTargetPosition({ x: targetX, y: targetY });
 		};
 
-		// Use multiple attempts to ensure layout is stable
+		// Use requestAnimationFrame to ensure DOM is ready
 		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				updatePositions();
-			});
+			requestAnimationFrame(updatePositions);
 		});
 
-		const timeout = setTimeout(updatePositions, 150);
-
-		return () => clearTimeout(timeout);
+		return () => {
+			if (timeoutId) {
+				clearTimeout(timeoutId);
+			}
+		};
 	}, [isVisible, targetElementRef]);
 
 	// Don't render until positions are calculated (prevents flash of cursor in wrong position)
@@ -110,6 +153,7 @@ export function FakeMouseCursor({
 			style={{
 				left: startPosition.x,
 				top: startPosition.y,
+				willChange: "transform",
 			}}
 			transition={{
 				duration: 1.2,

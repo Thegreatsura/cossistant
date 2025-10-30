@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useViewportVisibility } from "@/hooks/use-viewport-visibility";
 import { cn } from "@/lib/utils";
 import { useLandingAnimationStore } from "@/stores/landing-animation-store";
@@ -38,36 +38,38 @@ export function FakeDashboard({ className }: { className?: string }) {
 	}, [isVisible, isPlaying, pause, play, currentView]);
 
 	// Reset and start animation after a short delay to ensure everything is ready
+	// Only run on mount, not on every render
 	useEffect(() => {
 		reset();
 		const timeout = setTimeout(() => {
 			play();
 		}, 500);
 		return () => clearTimeout(timeout);
-	}, [reset, play]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const [showMouseCursor, setShowMouseCursor] = useState(false);
 	const selectView = useLandingAnimationStore((state) => state.selectView);
 
-	const handleMouseClick = () => {
+	const handleMouseClick = useCallback(() => {
 		// Click triggers switch to conversation view
 		setShowMouseCursor(false);
 		// Small delay to ensure cursor animation completes before switching
 		setTimeout(() => {
 			selectView("conversation");
 		}, 100);
-	};
+	}, [selectView]);
+
+	const handleShowMouseCursor = useCallback(() => {
+		setShowMouseCursor(true);
+	}, []);
 
 	const inboxHook = useFakeInbox({
 		isPlaying: isPlaying && currentView === "inbox",
 		// Don't pass onComplete - let the mouse click handle the view switch
 		onComplete: undefined,
 		onShowMouseCursor:
-			currentView === "inbox"
-				? () => {
-						setShowMouseCursor(true);
-					}
-				: undefined,
+			currentView === "inbox" ? handleShowMouseCursor : undefined,
 	});
 
 	const conversationHook = useFakeConversation({
@@ -85,7 +87,9 @@ export function FakeDashboard({ className }: { className?: string }) {
 			conversationHook.resetDemoData();
 			setShowMouseCursor(false);
 		}
-	}, [isRestarting, inboxHook, conversationHook]);
+		// Only depend on isRestarting - hook functions are stable
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isRestarting]);
 
 	// Reset animation data when view changes
 	useEffect(() => {

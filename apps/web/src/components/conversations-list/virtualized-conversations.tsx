@@ -1,10 +1,11 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, RefObject, useRef } from "react";
+import { memo, RefObject, useEffect, useRef } from "react";
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { PageContent } from "../ui/layout";
+import { ScrollArea } from "../ui/scroll-area";
 import { useConversationKeyboardNavigation } from "./use-conversation-keyboard-navigation";
 
 type ConversationsListProps = {
@@ -52,19 +53,39 @@ export function VirtualizedConversations({
 	showWaitingForReplyPill,
 	websiteSlug,
 }: ConversationsListProps) {
-	const parentRef = useRef<HTMLDivElement>(null);
+	const scrollAreaRef = useRef<HTMLDivElement>(null);
+	const viewportRef = useRef<HTMLDivElement>(null);
+
+	// Populate viewportRef with the actual scrollable viewport element
+	useEffect(() => {
+		if (scrollAreaRef.current) {
+			const viewport = scrollAreaRef.current.querySelector(
+				"[data-slot='scroll-area-viewport']"
+			) as HTMLDivElement | null;
+			if (viewport) {
+				viewportRef.current = viewport;
+			}
+		}
+	}, []);
+
+	const getScrollElement = () => {
+		// Get the viewport element from the ScrollArea
+		return scrollAreaRef.current?.querySelector(
+			"[data-slot='scroll-area-viewport']"
+		) as HTMLElement | null;
+	};
 
 	const { focusedIndex, handleMouseEnter } = useConversationKeyboardNavigation({
 		conversations,
 		basePath,
-		parentRef,
+		parentRef: viewportRef,
 		itemHeight: ITEM_HEIGHT,
 		enabled: true,
 	});
 
 	const virtualizer = useVirtualizer({
 		count: conversations.length,
-		getScrollElement: () => parentRef.current,
+		getScrollElement,
 		estimateSize: () => ITEM_HEIGHT,
 		gap: 4,
 		overscan: 4,
@@ -73,46 +94,45 @@ export function VirtualizedConversations({
 	const virtualItems = virtualizer.getVirtualItems();
 
 	return (
-		<PageContent
-			className="h-full overflow-auto px-2 contain-strict"
-			ref={parentRef}
-		>
-			<div
-				style={{
-					height: `${virtualizer.getTotalSize()}px`,
-					width: "100%",
-					position: "relative",
-				}}
-			>
-				{virtualItems.map((virtualItem) => {
-					// biome-ignore lint/style/noNonNullAssertion: should never happen
-					const conversation = conversations[virtualItem.index]!;
-					const href = `${basePath}/${conversation.id}`;
+		<PageContent className="h-full contain-strict">
+			<ScrollArea className="h-full px-2" ref={scrollAreaRef}>
+				<div
+					style={{
+						height: `${virtualizer.getTotalSize()}px`,
+						width: "100%",
+						position: "relative",
+					}}
+				>
+					{virtualItems.map((virtualItem) => {
+						// biome-ignore lint/style/noNonNullAssertion: should never happen
+						const conversation = conversations[virtualItem.index]!;
+						const href = `${basePath}/${conversation.id}`;
 
-					return (
-						<div
-							key={virtualItem.key}
-							style={{
-								position: "absolute",
-								top: 0,
-								left: 0,
-								width: "100%",
-								height: `${virtualItem.size}px`,
-								transform: `translateY(${virtualItem.start}px)`,
-							}}
-						>
-							<VirtualConversationItem
-								conversation={conversation}
-								focused={focusedIndex === virtualItem.index}
-								href={href}
-								onMouseEnter={() => handleMouseEnter(virtualItem.index)}
-								showWaitingForReplyPill={showWaitingForReplyPill}
-								websiteSlug={websiteSlug}
-							/>
-						</div>
-					);
-				})}
-			</div>
+						return (
+							<div
+								key={virtualItem.key}
+								style={{
+									position: "absolute",
+									top: 0,
+									left: 0,
+									width: "100%",
+									height: `${virtualItem.size}px`,
+									transform: `translateY(${virtualItem.start}px)`,
+								}}
+							>
+								<VirtualConversationItem
+									conversation={conversation}
+									focused={focusedIndex === virtualItem.index}
+									href={href}
+									onMouseEnter={() => handleMouseEnter(virtualItem.index)}
+									showWaitingForReplyPill={showWaitingForReplyPill}
+									websiteSlug={websiteSlug}
+								/>
+							</div>
+						);
+					})}
+				</div>
+			</ScrollArea>
 		</PageContent>
 	);
 }

@@ -82,9 +82,9 @@ const benefits = [
 
 export const Benefits = () => (
 	<section className="mt-20 grid gap-6 md:gap-12">
-		<p className="w-full max-w-6xl text-pretty px-4 font-f37-stout text-4xl sm:text-3xl md:text-balance md:text-4xl">
+		<h2 className="w-full max-w-6xl text-pretty px-4 font-f37-stout text-4xl sm:text-3xl md:text-balance md:text-4xl">
 			{HEADLINE}
-		</p>
+		</h2>
 		<div className="isolate grid gap-0 border-primary/10 border-y border-dashed lg:grid-cols-6">
 			{benefits.map((benefit, index) => (
 				<div

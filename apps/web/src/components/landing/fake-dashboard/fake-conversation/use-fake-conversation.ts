@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ConversationTimelineItem } from "@/data/conversation-message-cache";
 import { useAnimationScheduler } from "@/hooks/use-animation-scheduler";
 import {
@@ -86,13 +86,13 @@ export function useFakeConversation({
 		}
 	}, [isPlaying]);
 
-	const resetDemoData = () => {
+	const resetDemoData = useCallback(() => {
 		setTimelineItems([]);
 		setTypingVisitors([]);
 		resetScheduler();
 		hasScheduledRef.current = false;
 		hasInitializedRef.current = false;
-	};
+	}, [resetScheduler]);
 
 	// Simulate the full conversation timeline with messages and events
 	useEffect(() => {
@@ -105,9 +105,7 @@ export function useFakeConversation({
 			const currentSchedule = scheduleRef.current;
 			if (!currentSchedule) {
 				// Schedule ref not ready yet, retry on next tick
-				requestAnimationFrame(() => {
-					setTimeout(scheduleTasks, 10);
-				});
+				setTimeout(scheduleTasks, 10);
 				return;
 			}
 

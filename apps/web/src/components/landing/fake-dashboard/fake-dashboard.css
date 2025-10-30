@@ -154,3 +154,22 @@
 		transform-origin: center !important;
 	}
 }
+
+/* Performance optimizations for animations */
+.fake-central-container {
+	will-change: contents;
+	contain: layout style paint;
+}
+
+/* Optimize scrollable areas */
+.fake-central-container [class*="scroll"] {
+	will-change: scroll-position;
+	contain: strict;
+}
+
+/* Optimize animated items (conversations, messages) */
+.fake-central-container [class*="conversation-item"],
+.fake-central-container [class*="message"] {
+	will-change: transform, opacity;
+	contain: layout style paint;
+}

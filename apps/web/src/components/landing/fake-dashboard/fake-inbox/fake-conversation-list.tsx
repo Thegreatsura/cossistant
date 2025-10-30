@@ -3,6 +3,7 @@ import { differenceInHours } from "date-fns";
 import { useMemo } from "react";
 import { ConversationItemView } from "@/components/conversations-list/conversation-item";
 import { PageContent } from "@/components/ui/layout";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { getWaitingSinceLabel } from "@/lib/date";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 
@@ -141,24 +142,26 @@ export function FakeConversationList({
 	const MARC_CONVERSATION_ID = "01JGAA2222222222222222222";
 
 	return (
-		<PageContent className="h-full overflow-auto px-2 contain-strict">
-			{sortedConversations.map((conversation, index) => {
-				const isTyping = typingVisitors.some(
-					(tv) => tv.conversationId === conversation.id
-				);
-				const isMarcConversation = conversation.id === MARC_CONVERSATION_ID;
-				// First conversation (index 0) should be focused
-				const isFocused = index === 0;
-				return (
-					<FakeConversationListItem
-						conversation={conversation}
-						focused={isFocused}
-						isTyping={isTyping}
-						itemRef={isMarcConversation ? marcConversationRef : undefined}
-						key={conversation.id}
-					/>
-				);
-			})}
+		<PageContent className="h-full contain-strict">
+			<ScrollArea className="h-full px-2">
+				{sortedConversations.map((conversation, index) => {
+					const isTyping = typingVisitors.some(
+						(tv) => tv.conversationId === conversation.id
+					);
+					const isMarcConversation = conversation.id === MARC_CONVERSATION_ID;
+					// First conversation (index 0) should be focused
+					const isFocused = index === 0;
+					return (
+						<FakeConversationListItem
+							conversation={conversation}
+							focused={isFocused}
+							isTyping={isTyping}
+							itemRef={isMarcConversation ? marcConversationRef : undefined}
+							key={conversation.id}
+						/>
+					);
+				})}
+			</ScrollArea>
 		</PageContent>
 	);
 }
