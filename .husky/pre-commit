@@ -1,5 +1,3 @@
 #!/usr/bin/env sh
 
-if bunx turbo run fix; then
-git add --update
-fi
+bunx lint-staged

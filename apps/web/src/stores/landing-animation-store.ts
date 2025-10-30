@@ -64,14 +64,14 @@ export const useLandingAnimationStore = create<LandingAnimationState>(
 			set({ currentView: "inbox", isPlaying: true });
 		},
 
-	restart: () => {
-		// Set restarting flag and stop playing
-		set({ isRestarting: true, isPlaying: false, currentView: "inbox" });
+		restart: () => {
+			// Set restarting flag and stop playing
+			set({ isRestarting: true, isPlaying: false, currentView: "inbox" });
 
-		// After a 4 second delay, start playing again
-		setTimeout(() => {
-			set({ isRestarting: false, isPlaying: true });
-		}, 4000);
-	},
+			// After a 4 second delay, start playing again
+			setTimeout(() => {
+				set({ isRestarting: false, isPlaying: true });
+			}, 4000);
+		},
 	})
 );
