@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLandingAnimationStore } from "@/stores/landing-animation-store";
 import { FakeConversation } from "./fake-conversation";
 import { useFakeConversation } from "./fake-conversation/use-fake-conversation";
 import { FakeInbox } from "./fake-inbox";
@@ -12,67 +12,82 @@ import { FakeNavigationTopbar } from "./fake-navigation-topbar";
 import "./fake-dashboard.css";
 
 export function FakeDashboard({ className }: { className?: string }) {
-	const [activeView, setActiveView] = useState<"inbox" | "conversation">(
-		"conversation"
+	const currentView = useLandingAnimationStore((state) => state.currentView);
+	const isPlaying = useLandingAnimationStore((state) => state.isPlaying);
+	const onAnimationComplete = useLandingAnimationStore(
+		(state) => state.onAnimationComplete
 	);
-	const [isCycling, setIsCycling] = useState(true);
-	const {
-		conversations,
-		typingVisitors: inboxTypingVisitors,
-		resetDemoData: resetInboxDemoData,
-	} = useFakeInbox();
+	const play = useLandingAnimationStore((state) => state.play);
+	const reset = useLandingAnimationStore((state) => state.reset);
+	const previousViewRef = useRef<typeof currentView>(currentView);
 
-	const {
-		conversation,
-		visitor,
-		timelineItems,
-		typingVisitors: conversationTypingVisitors,
-		resetDemoData: resetConversationDemoData,
-	} = useFakeConversation();
-
-	const resetDemoData = useCallback(() => {
-		resetInboxDemoData();
-		resetConversationDemoData();
-	}, [resetInboxDemoData, resetConversationDemoData]);
-
+	// Reset and start animation after a short delay to ensure everything is ready
 	useEffect(() => {
-		if (!isCycling) {
-			return;
+		reset();
+		const timeout = setTimeout(() => {
+			play();
+		}, 500);
+		return () => clearTimeout(timeout);
+	}, [reset, play]);
+
+	const [showMouseCursor, setShowMouseCursor] = useState(false);
+	const selectView = useLandingAnimationStore((state) => state.selectView);
+
+	const handleMouseClick = () => {
+		// Click triggers switch to conversation view
+		setShowMouseCursor(false);
+		// Small delay to ensure cursor animation completes before switching
+		setTimeout(() => {
+			selectView("conversation");
+		}, 100);
+	};
+
+	const inboxHook = useFakeInbox({
+		isPlaying: isPlaying && currentView === "inbox",
+		// Don't pass onComplete - let the mouse click handle the view switch
+		onComplete: undefined,
+		onShowMouseCursor:
+			currentView === "inbox"
+				? () => {
+						setShowMouseCursor(true);
+					}
+				: undefined,
+	});
+
+	const conversationHook = useFakeConversation({
+		isPlaying: isPlaying && currentView === "conversation",
+		onComplete:
+			currentView === "conversation" ? onAnimationComplete : undefined,
+		initialMessages: inboxHook.inboxMessages,
+	});
+
+	// Reset animation data when view changes
+	useEffect(() => {
+		const wasInbox = previousViewRef.current === "inbox";
+		const wasConversation = previousViewRef.current === "conversation";
+		const isInbox = currentView === "inbox";
+		const isConversation = currentView === "conversation";
+
+		// Only reset if we're actually switching views (not on initial mount)
+		if (
+			previousViewRef.current !== null &&
+			previousViewRef.current !== currentView
+		) {
+			if (wasInbox && isConversation) {
+				// Switching from inbox to conversation - reset inbox
+				inboxHook.resetDemoData();
+			} else if (wasConversation && isInbox) {
+				// Switching from conversation to inbox - reset conversation and ensure inbox can restart
+				conversationHook.resetDemoData();
+				// Explicitly reset inbox to ensure it can restart
+				inboxHook.resetDemoData();
+			}
+			// Reset mouse cursor when switching views
+			setShowMouseCursor(false);
 		}
-
-		const interval = window.setInterval(() => {
-			setActiveView((previousView) => {
-				const nextView = previousView === "inbox" ? "conversation" : "inbox";
-
-				resetDemoData();
-
-				return nextView;
-			});
-		}, 8000);
-
-		return () => {
-			window.clearInterval(interval);
-		};
-	}, [isCycling, resetDemoData]);
-
-	const focusInbox = () => {
-		setActiveView("inbox");
-		setIsCycling(false);
-	};
-
-	const focusConversation = () => {
-		setActiveView("conversation");
-		setIsCycling(false);
-	};
-
-	const resumeCycling = () => {
-		if (isCycling) {
-			return;
-		}
-
-		resetDemoData();
-		setIsCycling(true);
-	};
+		previousViewRef.current = currentView;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentView]);
 
 	return (
 		<div
@@ -83,17 +98,19 @@ export function FakeDashboard({ className }: { className?: string }) {
 		>
 			<FakeNavigationTopbar />
 			<FakeCentralContainer>
-				{activeView === "inbox" ? (
+				{currentView === "inbox" ? (
 					<FakeInbox
-						conversations={conversations}
-						typingVisitors={inboxTypingVisitors}
+						conversations={inboxHook.conversations}
+						onMouseClick={handleMouseClick}
+						showMouseCursor={showMouseCursor}
+						typingVisitors={inboxHook.typingVisitors}
 					/>
 				) : (
 					<FakeConversation
-						conversation={conversation}
-						timeline={timelineItems}
-						typingVisitors={conversationTypingVisitors}
-						visitor={visitor}
+						conversation={conversationHook.conversation}
+						timeline={conversationHook.timelineItems}
+						typingVisitors={conversationHook.typingVisitors}
+						visitor={conversationHook.visitor}
 					/>
 				)}
 			</FakeCentralContainer>

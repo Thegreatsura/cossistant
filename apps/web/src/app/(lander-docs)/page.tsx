@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { FakeDashboard } from "@/components/landing/fake-dashboard";
 import { Button } from "@/components/ui/button";
-import Icon from "@/components/ui/icons";
 import { Logos } from "@/components/ui/logos";
 import { TooltipOnHover } from "@/components/ui/tooltip";
+import { AnimationControls } from "./components/animation-controls";
 import { Benefits } from "./components/benefits";
 import { BrowserWithBackground } from "./components/browser-with-background";
 import { GitHubLink } from "./components/github-link";
@@ -89,27 +89,7 @@ export default async function Landing() {
 								</Link>
 							</TooltipOnHover>
 						</div>
-						<div className="flex w-max gap-2">
-							<Button
-								className="border-primary/10 border-dashed bg-background-200 dark:bg-background-400"
-								size="sm"
-								type="button"
-								variant="outline"
-							>
-								Support inbox
-							</Button>
-							<Button size="sm" type="button" variant="secondary">
-								Real-time conversation
-							</Button>
-							<Button
-								className="size-8"
-								size="icon"
-								type="button"
-								variant="secondary"
-							>
-								<Icon className="size-4" filledOnHover name="play" />
-							</Button>
-						</div>
+						<AnimationControls />
 					</div>
 				</div>
 			</div>

@@ -9,11 +9,15 @@ import { getVisitorNameWithFallback } from "@/lib/visitors";
 type FakeConversationListItemProps = {
 	conversation: ConversationHeader;
 	isTyping?: boolean;
+	itemRef?:
+		| React.RefCallback<HTMLDivElement>
+		| React.RefObject<HTMLDivElement | null>;
 };
 
 export function FakeConversationListItem({
 	conversation,
 	isTyping = false,
+	itemRef,
 }: FakeConversationListItemProps) {
 	const visitorName = getVisitorNameWithFallback(conversation.visitor);
 	const lastTimelineItem = conversation.lastTimelineItem;
@@ -80,17 +84,30 @@ export function FakeConversationListItem({
 	}, [lastTimelineItem, lastTimelineItemCreatedAt]);
 
 	return (
-		<ConversationItemView
-			focused={false}
-			hasUnreadMessage={hasUnreadMessage}
-			isTyping={isTyping}
-			lastMessageCreatedAt={lastTimelineItemCreatedAt}
-			lastMessageText={lastTimelineItem?.text ?? ""}
-			visitorAvatarUrl={conversation.visitor?.contact?.image ?? null}
-			visitorLastSeenAt={conversation.visitor?.lastSeenAt ?? null}
-			visitorName={visitorName}
-			waitingSinceLabel={waitingSinceLabel}
-		/>
+		<div
+			ref={(element) => {
+				if (itemRef) {
+					if (typeof itemRef === "function") {
+						itemRef(element);
+					} else if ("current" in itemRef) {
+						(itemRef as React.MutableRefObject<HTMLDivElement | null>).current =
+							element;
+					}
+				}
+			}}
+		>
+			<ConversationItemView
+				focused={false}
+				hasUnreadMessage={hasUnreadMessage}
+				isTyping={isTyping}
+				lastMessageCreatedAt={lastTimelineItemCreatedAt}
+				lastMessageText={lastTimelineItem?.text ?? ""}
+				visitorAvatarUrl={conversation.visitor?.contact?.image ?? null}
+				visitorLastSeenAt={conversation.visitor?.lastSeenAt ?? null}
+				visitorName={visitorName}
+				waitingSinceLabel={waitingSinceLabel}
+			/>
+		</div>
 	);
 }
 
@@ -102,11 +119,13 @@ type TypingVisitor = {
 type FakeConversationListProps = {
 	conversations: ConversationHeader[];
 	typingVisitors?: TypingVisitor[];
+	marcConversationRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 export function FakeConversationList({
 	conversations,
 	typingVisitors = [],
+	marcConversationRef,
 }: FakeConversationListProps) {
 	// Sort conversations by last message received (most recent first)
 	const sortedConversations = useMemo(() => {
@@ -117,16 +136,20 @@ export function FakeConversationList({
 		});
 	}, [conversations]);
 
+	const MARC_CONVERSATION_ID = "01JGAA2222222222222222222";
+
 	return (
 		<PageContent className="h-full overflow-auto px-2 contain-strict">
 			{sortedConversations.map((conversation) => {
 				const isTyping = typingVisitors.some(
 					(tv) => tv.conversationId === conversation.id
 				);
+				const isMarcConversation = conversation.id === MARC_CONVERSATION_ID;
 				return (
 					<FakeConversationListItem
 						conversation={conversation}
 						isTyping={isTyping}
+						itemRef={isMarcConversation ? marcConversationRef : undefined}
 						key={conversation.id}
 					/>
 				);

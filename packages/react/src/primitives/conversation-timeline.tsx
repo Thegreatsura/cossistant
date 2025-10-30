@@ -165,7 +165,7 @@ export const ConversationTimeline = (() => {
 
 			// Static fade effect on top and bottom
 			const fadeStyle = React.useMemo(() => {
-				const maskHeight = "32px";
+				const maskHeight = "90px";
 				const scrollbarWidth = "8px";
 
 				const maskImage = `linear-gradient(to bottom, transparent, black ${maskHeight}, black calc(100% - ${maskHeight}), transparent), linear-gradient(black, black)`;

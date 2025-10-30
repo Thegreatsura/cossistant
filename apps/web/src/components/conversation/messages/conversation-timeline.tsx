@@ -140,7 +140,7 @@ function ConversationTimelineListComponent({
 		<PrimitiveConversationTimeline
 			autoScroll={true}
 			className={cn(
-				"overflow-y-auto pt-20 pr-4 pb-48 pl-4",
+				"overflow-y-scroll pt-20 pb-48",
 				"scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-fd-overlay",
 				"h-full w-full",
 				className
@@ -150,7 +150,7 @@ function ConversationTimelineListComponent({
 			onScrollStart={onFetchMoreIfNeeded}
 			ref={ref ?? messageListRef}
 		>
-			<div className="mx-auto xl:max-w-xl 2xl:max-w-2xl">
+			<div className="mx-auto pr-4 pl-6 xl:max-w-xl 2xl:max-w-2xl">
 				<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
 					<AnimatePresence initial={false} mode="popLayout">
 						{items.map((item, index) => {
