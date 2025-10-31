@@ -150,7 +150,7 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="py-4">
-					<div className="mb-4 rounded-lg border border-primary/10 bg-background-50 p-4 dark:bg-background-900">
+					<div className="mb-4 p-0">
 						<div className="mb-4 flex items-center justify-between">
 							<div>
 								<h3 className="font-semibold text-lg">
