@@ -114,7 +114,8 @@ function SupportProviderInner({
 	size = "normal",
 	defaultOpen = false,
 }: SupportProviderProps) {
-	const [unreadCount, setUnreadCount] = React.useState(0);
+        const [unreadCount, setUnreadCount] = React.useState(0);
+        const prefetchedVisitorRef = React.useRef<string | null>(null);
 	const [_defaultMessages, _setDefaultMessages] = React.useState<
 		DefaultMessage[]
 	>(defaultMessages || []);
@@ -145,8 +146,8 @@ function SupportProviderInner({
 
 	const { client } = useClient(publicKey, apiUrl, wsUrl);
 	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
-	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
-	const visitorId = website?.visitor?.id ?? null;
+        const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
+        const visitorId = website?.visitor?.id ?? null;
 
 	const seenEntriesByConversation = useSeenStore(
 		React.useCallback((state) => state.conversations, [])
@@ -236,10 +237,41 @@ function SupportProviderInner({
 		setUnreadCount(derivedUnreadCount);
 	}, [derivedUnreadCount, setUnreadCount]);
 
-	// Prefetch conversations
-	// useConversations(client, {
-	//   enabled: !!website && !!website.visitor && isClientPrimed,
-	// });
+        React.useEffect(() => {
+                if (isVisitorBlocked) {
+                        prefetchedVisitorRef.current = null;
+                        return;
+                }
+
+                if (!autoConnect) {
+                        return;
+                }
+
+                if (!visitorId) {
+                        return;
+                }
+
+                if (prefetchedVisitorRef.current === visitorId) {
+                        return;
+                }
+
+                const hasExistingConversations =
+                        client.conversationsStore.getState().ids.length > 0;
+
+                prefetchedVisitorRef.current = visitorId;
+
+                if (hasExistingConversations) {
+                        return;
+                }
+
+                void client.listConversations().catch((error) => {
+                        console.error(
+                                "[SupportProvider] Failed to prefetch conversations",
+                                error
+                        );
+                        prefetchedVisitorRef.current = null;
+                });
+        }, [autoConnect, client, isVisitorBlocked, visitorId]);
 
 	const error = websiteError;
 
