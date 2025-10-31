@@ -247,7 +247,7 @@ export function UserProfileForm({
 							</FormItem>
 						)}
 					/>
-					<FormField
+					{/* <FormField
 						control={form.control}
 						name="avatar"
 						render={({ field }) => (
@@ -282,7 +282,7 @@ export function UserProfileForm({
 								<FormMessage />
 							</FormItem>
 						)}
-					/>
+					/> */}
 				</div>
 				<SettingsRowFooter className="flex items-center justify-end gap-2">
 					<BaseSubmitButton

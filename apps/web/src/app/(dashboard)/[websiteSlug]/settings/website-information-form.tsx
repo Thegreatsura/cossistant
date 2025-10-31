@@ -50,17 +50,6 @@ const logoValueSchema = z
 	])
 	.nullable();
 
-const contactEmailSchema = z
-	.string()
-	.trim()
-	.max(320, {
-		message: "Email address must be 320 characters or fewer.",
-	})
-	.email({ message: "Enter a valid email address." })
-	.or(z.literal(""))
-	.optional()
-	.default("");
-
 const websiteInformationFormSchema = z.object({
 	name: z
 		.string({ message: "Enter your website name." })
@@ -69,7 +58,15 @@ const websiteInformationFormSchema = z.object({
 		.max(120, {
 			message: "Name must be 120 characters or fewer.",
 		}),
-	contactEmail: contactEmailSchema,
+	contactEmail: z
+		.string()
+		.trim()
+		.refine((val) => val === "" || val.length <= 320, {
+			message: "Email address must be 320 characters or fewer.",
+		})
+		.refine((val) => val === "" || z.string().email().safeParse(val).success, {
+			message: "Enter a valid email address.",
+		}),
 	domain: z
 		.string({ message: "Enter your domain." })
 		.trim()
@@ -215,6 +212,7 @@ export function WebsiteInformationForm({
 				const uploadDetails = await createSignedUrl({
 					contentType: file.type,
 					fileName: file.name,
+					websiteId,
 					scope: {
 						type: "user",
 						userId: organizationId,
@@ -416,7 +414,7 @@ export function WebsiteInformationForm({
 							</FormItem>
 						)}
 					/>
-					<FormField
+					{/* <FormField
 						control={form.control}
 						name="logo"
 						render={({ field }) => (
@@ -454,7 +452,7 @@ export function WebsiteInformationForm({
 								<FormMessage />
 							</FormItem>
 						)}
-					/>
+					/> */}
 				</div>
 				<SettingsRowFooter className="flex items-center justify-end gap-2">
 					<BaseSubmitButton
