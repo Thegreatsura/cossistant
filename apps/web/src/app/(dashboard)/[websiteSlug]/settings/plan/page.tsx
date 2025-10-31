@@ -67,7 +67,7 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 			>
 				<div className="p- flex items-center justify-between p-2 pl-4">
 					<div className="flex items-center gap-2">
-						<span className="font-semibold text-lg">{plan.displayName}</span>
+						<span className="font-medium text-lg">{plan.displayName}</span>
 						{plan.price && (
 							<span className="text-primary/60 text-sm">
 								${plan.price}/month
