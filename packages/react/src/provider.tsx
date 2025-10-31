@@ -75,6 +75,13 @@ function areConversationSnapshotsEqual(
 		const snapshotA = a[index];
 		const snapshotB = b[index];
 
+		if (!snapshotA) {
+			return false;
+		}
+		if (!snapshotB) {
+			return false;
+		}
+
 		const aLastCreatedAt = snapshotA.lastTimelineItem?.createdAt ?? null;
 		const bLastCreatedAt = snapshotB.lastTimelineItem?.createdAt ?? null;
 		if (snapshotA.id !== snapshotB.id || aLastCreatedAt !== bLastCreatedAt) {
@@ -114,13 +121,13 @@ function SupportProviderInner({
 	size = "normal",
 	defaultOpen = false,
 }: SupportProviderProps) {
-        const [unreadCount, setUnreadCount] = React.useState(0);
-        const prefetchedVisitorRef = React.useRef<string | null>(null);
+	const [unreadCount, setUnreadCount] = React.useState(0);
+	const prefetchedVisitorRef = React.useRef<string | null>(null);
 	const [_defaultMessages, _setDefaultMessages] = React.useState<
 		DefaultMessage[]
-	>(defaultMessages || []);
+	>(defaultMessages ?? []);
 	const [_quickOptions, _setQuickOptions] = React.useState<string[]>(
-		quickOptions || []
+		quickOptions ?? []
 	);
 
 	// Initialize support store with configuration
@@ -133,21 +140,21 @@ function SupportProviderInner({
 
 	// Update state when props change (for initial values from provider)
 	React.useEffect(() => {
-		if (defaultMessages && defaultMessages.length > 0) {
+		if (defaultMessages?.length) {
 			_setDefaultMessages(defaultMessages);
 		}
 	}, [defaultMessages]);
 
 	React.useEffect(() => {
-		if (quickOptions && quickOptions.length > 0) {
+		if (quickOptions?.length) {
 			_setQuickOptions(quickOptions);
 		}
 	}, [quickOptions]);
 
 	const { client } = useClient(publicKey, apiUrl, wsUrl);
 	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
-        const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
-        const visitorId = website?.visitor?.id ?? null;
+	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
+	const visitorId = website?.visitor?.id ?? null;
 
 	const seenEntriesByConversation = useSeenStore(
 		React.useCallback((state) => state.conversations, [])
@@ -233,85 +240,75 @@ function SupportProviderInner({
 		return count;
 	}, [conversationSnapshots, seenEntriesByConversation, visitorId]);
 
-        React.useEffect(() => {
-                setUnreadCount(derivedUnreadCount);
-        }, [derivedUnreadCount, setUnreadCount]);
+	React.useEffect(() => {
+		setUnreadCount(derivedUnreadCount);
+	}, [derivedUnreadCount, setUnreadCount]);
 
-        // Prime REST client with website/visitor context so headers are sent reliably
-        React.useEffect(() => {
-                if (!website) {
-                        return;
-                }
+	// Prime REST client with website/visitor context so headers are sent reliably
+	React.useEffect(() => {
+		if (!website) {
+			return;
+		}
 
-                client.setWebsiteContext(website.id, website.visitor?.id ?? undefined);
-        }, [client, website]);
+		client.setWebsiteContext(website.id, website.visitor?.id ?? undefined);
+	}, [client, website]);
 
-        React.useEffect(() => {
-                if (isVisitorBlocked) {
-                        prefetchedVisitorRef.current = null;
-                        return;
-                }
+	React.useEffect(() => {
+		if (isVisitorBlocked) {
+			prefetchedVisitorRef.current = null;
+			return;
+		}
 
-                if (!autoConnect) {
-                        return;
-                }
+		if (!autoConnect) {
+			return;
+		}
 
-                if (!website) {
-                        return;
-                }
+		if (!website) {
+			return;
+		}
 
-                if (!visitorId) {
-                        return;
-                }
+		if (!visitorId) {
+			return;
+		}
 
-                if (prefetchedVisitorRef.current === visitorId) {
-                        return;
-                }
+		if (prefetchedVisitorRef.current === visitorId) {
+			return;
+		}
 
-                const hasExistingConversations =
-                        client.conversationsStore.getState().ids.length > 0;
+		const hasExistingConversations =
+			client.conversationsStore.getState().ids.length > 0;
 
-                prefetchedVisitorRef.current = visitorId;
+		prefetchedVisitorRef.current = visitorId;
 
-                if (hasExistingConversations) {
-                        return;
-                }
+		if (hasExistingConversations) {
+			return;
+		}
 
-                void client.listConversations().catch((error) => {
-                        console.error(
-                                "[SupportProvider] Failed to prefetch conversations",
-                                error
-                        );
-                        prefetchedVisitorRef.current = null;
-                });
-        }, [autoConnect, client, isVisitorBlocked, visitorId, website]);
+		void client.listConversations().catch((err) => {
+			console.error("[SupportProvider] Failed to prefetch conversations", err);
+			prefetchedVisitorRef.current = null;
+		});
+	}, [autoConnect, client, isVisitorBlocked, visitorId, website]);
 
-        const error = websiteError;
+	const error = websiteError;
 
 	React.useEffect(() => {
 		client.setVisitorBlocked(isVisitorBlocked);
 	}, [client, isVisitorBlocked]);
 
-	const setDefaultMessages = React.useCallback(
-		(messages: DefaultMessage[]) => _setDefaultMessages(messages),
-		[]
-	);
+	const setDefaultMessages = React.useCallback((messages: DefaultMessage[]) => {
+		_setDefaultMessages(messages);
+	}, []);
 
-	const setQuickOptions = React.useCallback(
-		(options: string[]) => _setQuickOptions(options),
-		[]
-	);
-
-	const setUnreadCountStable = React.useCallback(
-		(count: number) => setUnreadCount(count),
-		[]
-	);
+	const setQuickOptions = React.useCallback((options: string[]) => {
+		_setQuickOptions(options);
+	}, []);
 
 	const value = React.useMemo<CossistantContextValue>(
 		() => ({
 			website,
 			unreadCount,
-			setUnreadCount: setUnreadCountStable,
+			setUnreadCount,
 			isLoading,
 			error,
 			client,
@@ -334,7 +331,6 @@ function SupportProviderInner({
 			_quickOptions,
 			setDefaultMessages,
 			setQuickOptions,
-			setUnreadCountStable,
 			config.isOpen,
 			open,
 			close,

@@ -181,20 +181,48 @@ export class CossistantRestClient {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
+			const statusCode = response.status;
+			const errorCode = errorData.code || `HTTP_${statusCode}`;
+			const serverMessage = errorData.message;
 
-			logger.error(
-				"Your Cossistant public API key is invalid, expired, missing or not authorized to access this resource.",
-				{
+			// Determine if this is an authentication/authorization error
+			const isAuthError =
+				statusCode === 401 ||
+				statusCode === 403 ||
+				errorCode === "UNAUTHORIZED" ||
+				errorCode === "FORBIDDEN" ||
+				errorCode === "INVALID_API_KEY" ||
+				errorCode === "API_KEY_EXPIRED" ||
+				errorCode === "API_KEY_MISSING" ||
+				errorCode?.toUpperCase().includes("AUTH") ||
+				errorCode?.toUpperCase().includes("API_KEY");
+
+			// Use appropriate error message based on error type
+			const errorMessage = isAuthError
+				? "Your Cossistant public API key is invalid, expired, missing or not authorized to access this resource."
+				: serverMessage || `Request failed with status ${statusCode}`;
+
+			// Log with appropriate level based on error type
+			if (isAuthError) {
+				logger.error(errorMessage, {
 					details: errorData.details,
 					path,
-					status: response.status,
-				}
-			);
+					status: statusCode,
+					code: errorCode,
+				});
+			} else {
+				logger.error("API request failed", {
+					message: errorMessage,
+					details: errorData.details,
+					path,
+					status: statusCode,
+					code: errorCode,
+				});
+			}
 
 			throw new CossistantAPIError({
-				code: errorData.code || `HTTP_${response.status}`,
-				message:
-					"Your Cossistant public API key is invalid, expired, missing or not authorized to access this resource.",
+				code: errorCode,
+				message: errorMessage,
 				details: errorData.details,
 			});
 		}

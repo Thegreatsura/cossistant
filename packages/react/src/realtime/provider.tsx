@@ -378,15 +378,9 @@ export function RealtimeProvider({
 	onDisconnect,
 	onError,
 }: RealtimeProviderProps): React.ReactElement {
-	// Memoize normalizedAuth to prevent unnecessary recalculations
-	const normalizedAuth = useMemo(() => normalizeAuth(auth), [auth]);
+	const normalizedAuth = normalizeAuth(auth);
 
-	// Memoize socketUrl to prevent unnecessary recalculations
-	const socketUrl = useMemo(
-		() => buildSocketUrl(wsUrl, normalizedAuth),
-		[wsUrl, normalizedAuth]
-	);
-
+	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
 	const lastHeartbeatRef = useRef<number>(Date.now());
 	const hasOpenedRef = useRef(false);
@@ -405,6 +399,7 @@ export function RealtimeProvider({
 	useEffect(() => {
 		if (connectionUrl !== previousUrlRef.current) {
 			previousUrlRef.current = connectionUrl;
+			// Reset hasOpenedRef when URL changes so we know a new connection is starting
 			hasOpenedRef.current = false;
 		}
 	}, [connectionUrl]);
@@ -456,31 +451,43 @@ export function RealtimeProvider({
 					return;
 				}
 
-				if (!hasOpenedRef.current) {
-					const socketLike = event.target;
-					const isBrowserSocket =
-						typeof WebSocket !== "undefined" && socketLike instanceof WebSocket;
-					const socketState = isBrowserSocket
-						? socketLike.readyState
-						: undefined;
+				const socketLike = event.target;
+				const currentSocket = getWebSocket();
+				const isBrowserSocket =
+					typeof WebSocket !== "undefined" && socketLike instanceof WebSocket;
+				const socketState = isBrowserSocket ? socketLike.readyState : undefined;
 
-					// Suppress errors for connections that are closing/closed or being replaced
-					// This handles the case where connectionUrl changes while a connection is still CONNECTING
-					if (
-						socketState === WebSocket.CLOSING ||
-						socketState === WebSocket.CLOSED ||
-						socketState === WebSocket.CONNECTING
-					) {
-						// Check if URL has changed, indicating this connection is being replaced
-						const currentSocket = getWebSocket();
-						if (currentSocket && currentSocket !== socketLike) {
-							// Connection URL changed, this error is expected - suppress it
-							return;
-						}
-						// Connection is in a transitional state and hasn't opened yet
-						// Suppress errors that occur when connection is closed before being established
-						return;
-					}
+				// Only suppress errors for THIS provider's socket, not other nested providers
+				// Check if the errored socket belongs to this provider instance
+				const isThisProvidersSocket = currentSocket === socketLike;
+
+				// Suppress errors if:
+				// 1. This socket was replaced (URL changed while connecting) - only for this provider
+				// 2. Connection URL is null (component unmounting or disabled)
+				// 3. Socket is in CLOSING/CLOSED state and hasn't opened (cleanup/unmount) - only for this provider
+				if (
+					(!isThisProvidersSocket && currentSocket) ||
+					!connectionUrl ||
+					(isThisProvidersSocket &&
+						!hasOpenedRef.current &&
+						(socketState === WebSocket.CLOSING ||
+							socketState === WebSocket.CLOSED))
+				) {
+					// Suppress these expected errors during connection replacement or cleanup
+					// But only if it's THIS provider's socket being replaced
+					return;
+				}
+
+				// For errors that occur during CONNECTING state, check if URL changed
+				// Only suppress if it's this provider's socket
+				if (
+					isThisProvidersSocket &&
+					!hasOpenedRef.current &&
+					socketState === WebSocket.CONNECTING &&
+					connectionUrl !== previousUrlRef.current
+				) {
+					// URL changed while connecting, suppress error
+					return;
 				}
 
 				const err = new Error(`WebSocket error: ${event.type}`);
