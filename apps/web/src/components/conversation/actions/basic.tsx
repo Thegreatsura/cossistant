@@ -1,6 +1,6 @@
+/** biome-ignore-all lint/correctness/useExhaustiveDependencies: ok */
 "use client";
 
-/** biome-ignore-all lint/correctness/useExhaustiveDependencies: ok */
 import { ConversationStatus } from "@cossistant/types";
 import type React from "react";
 import { useCallback, useMemo } from "react";

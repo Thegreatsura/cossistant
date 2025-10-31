@@ -7,6 +7,10 @@ import {
 import { Footer } from "./components/footer";
 import { TopBar } from "./components/topbar";
 
+// Force dynamic rendering to ensure DashboardButton can access user session data
+// via cookies/headers even when child pages are statically generated
+export const dynamic = "force-dynamic";
+
 export default function Layout({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="relative flex min-h-svh flex-col overflow-clip border-grid-x">

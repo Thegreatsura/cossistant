@@ -176,6 +176,12 @@ export const contact = pgTable(
 		),
 		// Index for soft delete queries
 		index("contact_deleted_at_idx").on(table.deletedAt),
+		// Composite index for counting contacts by website, organization, and deleted status
+		index("contact_website_org_deleted_idx").on(
+			table.websiteId,
+			table.organizationId,
+			table.deletedAt
+		),
 	]
 );
 

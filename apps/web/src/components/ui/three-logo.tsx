@@ -111,7 +111,11 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 				// Maintain aspect ratio from viewBox (1355:210)
 				const aspectRatio = 1355 / 210;
 				const height = width / aspectRatio;
-				setDimensions({ width: Math.round(width), height: Math.round(height) });
+				// Ensure dimensions are integers to prevent getImageData errors
+				setDimensions({
+					width: Math.floor(width),
+					height: Math.floor(height),
+				});
 			}
 		};
 
@@ -132,7 +136,7 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 					bgColor="transparent"
 					characters=" .%=*:+-# "
 					fgColor={resolvedTheme === "dark" ? "white" : "black"}
-					resolution={0.2}
+					resolution={0.18}
 				/>
 			</Canvas>
 		</div>

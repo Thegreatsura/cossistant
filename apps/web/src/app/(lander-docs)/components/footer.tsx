@@ -114,7 +114,7 @@ export function Footer() {
 					<ThemeToggle />
 				</div>
 				<div className="container-wrapper mx-auto flex flex-col items-center justify-between gap-6 px-4 pt-4 pb-4 md:flex-row md:items-start md:gap-0">
-					<ThreeLogo className="size-full w-full opacity-10" />
+					<ThreeLogo className="size-full w-full opacity-40" />
 				</div>
 			</div>
 		</footer>

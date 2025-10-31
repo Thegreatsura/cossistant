@@ -201,7 +201,7 @@ conversationRouter.openapi(
 			);
 		}
 
-		const conversation = await upsertConversation(db, {
+		const conversationRecord = await upsertConversation(db, {
 			organizationId: organization.id,
 			websiteId: website.id,
 			visitorId: visitor.id,
@@ -217,8 +217,8 @@ conversationRouter.openapi(
 								db,
 								organizationId: organization.id,
 								websiteId: website.id,
-								conversationId: conversation.id,
-								conversationOwnerVisitorId: conversation.visitorId,
+								conversationId: conversationRecord.id,
+								conversationOwnerVisitorId: conversationRecord.visitorId,
 								item: {
 									type: item.type ?? "message",
 									text: item.text,
@@ -243,13 +243,13 @@ conversationRouter.openapi(
 		const header = await getConversationHeader(db, {
 			organizationId: organization.id,
 			websiteId: website.id,
-			conversationId: conversation.id,
+			conversationId: conversationRecord.id,
 			userId: null,
 		});
 
 		if (header) {
 			await emitConversationCreatedEvent({
-				conversation,
+				conversation: conversationRecord,
 				header,
 			});
 		}
@@ -257,7 +257,7 @@ conversationRouter.openapi(
 		const response = {
 			initialTimelineItems: createdItems.map(serializeTimelineItemForResponse),
 			conversation: serializeConversationForResponse({
-				...conversation,
+				...conversationRecord,
 				lastTimelineItem,
 			}),
 		};
@@ -471,13 +471,13 @@ conversationRouter.openapi(
 			conversationId: c.req.param("conversationId"),
 		});
 
-		const conversation = await getConversationByIdWithLastMessage(db, {
+		const conversationRecord = await getConversationByIdWithLastMessage(db, {
 			organizationId: organization.id,
 			websiteId: website.id,
 			conversationId: params.conversationId,
 		});
 
-		if (!conversation) {
+		if (!conversationRecord) {
 			return c.json(
 				{
 					error: "Conversation not found",
@@ -488,7 +488,7 @@ conversationRouter.openapi(
 
 		try {
 			const response = {
-				conversation: serializeConversationForResponse(conversation),
+				conversation: serializeConversationForResponse(conversationRecord),
 			};
 
 			return c.json(validateResponse(response, getConversationResponseSchema));

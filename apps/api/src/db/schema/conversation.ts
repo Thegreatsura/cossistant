@@ -126,6 +126,12 @@ export const conversationTimelineItem = pgTable(
 			table.createdAt,
 			table.id
 		),
+		// Index for counting messages by organization, type, and deleted status
+		index("conversation_timeline_item_org_type_deleted_idx").on(
+			table.organizationId,
+			table.type,
+			table.deletedAt
+		),
 	]
 );
 
@@ -202,6 +208,12 @@ export const conversation = pgTable(
 		index("conversation_org_first_response_idx").on(
 			table.organizationId,
 			table.firstResponseAt
+		),
+		// Composite index for counting conversations by website and organization
+		index("conversation_website_org_deleted_idx").on(
+			table.websiteId,
+			table.organizationId,
+			table.deletedAt
 		),
 		// Optimized composite index for listConversationsHeaders pagination by updatedAt
 		index("conversation_org_website_updated_idx").on(

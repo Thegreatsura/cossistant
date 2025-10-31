@@ -92,26 +92,25 @@ export function useAnimationScheduler({
 				startTimeRef.current = Date.now();
 				elapsedBeforePauseRef.current = 0;
 			}
-		} else {
+		} else if (startTimeRef.current !== null && pauseTimeRef.current === null) {
 			// Pausing
-			if (startTimeRef.current !== null && pauseTimeRef.current === null) {
-				pauseTimeRef.current = Date.now();
+			pauseTimeRef.current = Date.now();
 
-				// Cancel all active timeouts and store remaining time
-				for (const [id, timeout] of timeoutsRef.current.entries()) {
-					clearTimeout(timeout);
-					const task = tasksRef.current.get(id);
-					if (task) {
-						const now = Date.now();
-						const adjustedStartTime =
-							startTimeRef.current + elapsedBeforePauseRef.current;
-						const elapsed = now - adjustedStartTime;
-						task.pausedAt = now;
-						task.remainingTime = task.scheduledTime - elapsed;
-					}
+			// Cancel all active timeouts and store remaining time
+			for (const [id, timeout] of timeoutsRef.current.entries()) {
+				clearTimeout(timeout);
+				const task = tasksRef.current.get(id);
+				if (!task) {
+					continue;
 				}
-				timeoutsRef.current.clear();
+				const now = Date.now();
+				const adjustedStartTime =
+					startTimeRef.current + elapsedBeforePauseRef.current;
+				const elapsed = now - adjustedStartTime;
+				task.pausedAt = now;
+				task.remainingTime = task.scheduledTime - elapsed;
 			}
+			timeoutsRef.current.clear();
 		}
 	}, [isPlaying, onComplete]);
 
