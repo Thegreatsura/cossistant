@@ -36,18 +36,28 @@ export type UseConversationAutoSeenOptions = {
 	 * Default: true
 	 */
 	enabled?: boolean;
+
+	/**
+	 * Whether the support widget is currently open/visible.
+	 * This is required to ensure we only mark conversations as seen when
+	 * the widget is actually visible to the user.
+	 * Default: true
+	 */
+	isWidgetOpen?: boolean;
 };
 
 /**
  * Automatically marks timeline items as seen when:
  * - A new timeline item arrives from someone else
  * - The page is visible/focused
+ * - The support widget is open/visible
  * - The visitor is the current user
  *
  * Also handles:
  * - Fetching and hydrating initial seen data
  * - Preventing duplicate API calls
  * - Page visibility tracking
+ * - Widget visibility tracking
  *
  * @example
  * ```tsx
@@ -68,6 +78,7 @@ export function useConversationAutoSeen(
 		visitorId,
 		lastTimelineItem,
 		enabled = true,
+		isWidgetOpen = true,
 	} = options;
 
 	const lastSeenItemIdRef = useRef<string | null>(null);
@@ -76,6 +87,7 @@ export function useConversationAutoSeen(
 	const { isPageVisible, hasWindowFocus } = useWindowVisibilityFocus();
 	const latestStateRef = useRef({
 		enabled,
+		isWidgetOpen,
 		isPageVisible,
 		hasWindowFocus,
 	});
@@ -83,10 +95,11 @@ export function useConversationAutoSeen(
 	useEffect(() => {
 		latestStateRef.current = {
 			enabled,
+			isWidgetOpen,
 			isPageVisible,
 			hasWindowFocus,
 		};
-	}, [enabled, hasWindowFocus, isPageVisible]);
+	}, [enabled, isWidgetOpen, hasWindowFocus, isPageVisible]);
 
 	// Reset seen tracking when conversation changes
 	useEffect(() => {
@@ -97,6 +110,15 @@ export function useConversationAutoSeen(
 			markSeenTimeoutRef.current = null;
 		}
 	}, [conversationId]);
+
+	// Clear timeout immediately when widget closes
+	useEffect(() => {
+		if (!isWidgetOpen && markSeenTimeoutRef.current) {
+			clearTimeout(markSeenTimeoutRef.current);
+			markSeenTimeoutRef.current = null;
+			markSeenInFlightRef.current = false;
+		}
+	}, [isWidgetOpen]);
 
 	// Fetch and hydrate initial seen data when conversation loads
 	useEffect(() => {
@@ -123,6 +145,7 @@ export function useConversationAutoSeen(
 
 		const shouldMark =
 			enabled &&
+			isWidgetOpen &&
 			client &&
 			conversationId &&
 			visitorId &&
@@ -155,6 +178,7 @@ export function useConversationAutoSeen(
 		markSeenTimeoutRef.current = setTimeout(() => {
 			const {
 				enabled: latestEnabled,
+				isWidgetOpen: latestIsWidgetOpen,
 				isPageVisible: latestPageVisible,
 				hasWindowFocus: latestHasFocus,
 			} = latestStateRef.current;
@@ -164,6 +188,7 @@ export function useConversationAutoSeen(
 					client &&
 					conversationId &&
 					latestEnabled &&
+					latestIsWidgetOpen &&
 					latestPageVisible &&
 					latestHasFocus
 				)
@@ -205,6 +230,7 @@ export function useConversationAutoSeen(
 		};
 	}, [
 		enabled,
+		isWidgetOpen,
 		client,
 		conversationId,
 		visitorId,

@@ -231,6 +231,7 @@ export function useConversationPage(
 		visitorId: visitor?.id,
 		lastTimelineItem,
 		enabled: autoSeenEnabled,
+		isWidgetOpen: autoSeenEnabled,
 	});
 
 	return {
