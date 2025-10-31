@@ -378,12 +378,19 @@ export function RealtimeProvider({
 	onDisconnect,
 	onError,
 }: RealtimeProviderProps): React.ReactElement {
-	const normalizedAuth = normalizeAuth(auth);
+	// Memoize normalizedAuth to prevent unnecessary recalculations
+	const normalizedAuth = useMemo(() => normalizeAuth(auth), [auth]);
 
-	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);
+	// Memoize socketUrl to prevent unnecessary recalculations
+	const socketUrl = useMemo(
+		() => buildSocketUrl(wsUrl, normalizedAuth),
+		[wsUrl, normalizedAuth]
+	);
+
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
 	const lastHeartbeatRef = useRef<number>(Date.now());
 	const hasOpenedRef = useRef(false);
+	const previousUrlRef = useRef<string | null>(null);
 	const [connectionError, setConnectionError] = useState<Error | null>(null);
 	const [lastEvent, setLastEvent] = useState<AnyRealtimeEvent | null>(null);
 	const [connectionId, setConnectionId] = useState<string | null>(null);
@@ -394,8 +401,12 @@ export function RealtimeProvider({
 	const canConnect = Boolean(autoConnect && socketUrl);
 	const connectionUrl = canConnect ? socketUrl : null;
 
+	// Track URL changes to detect when connection is being replaced
 	useEffect(() => {
-		hasOpenedRef.current = false;
+		if (connectionUrl !== previousUrlRef.current) {
+			previousUrlRef.current = connectionUrl;
+			hasOpenedRef.current = false;
+		}
 	}, [connectionUrl]);
 
 	const {
@@ -453,10 +464,21 @@ export function RealtimeProvider({
 						? socketLike.readyState
 						: undefined;
 
+					// Suppress errors for connections that are closing/closed or being replaced
+					// This handles the case where connectionUrl changes while a connection is still CONNECTING
 					if (
 						socketState === WebSocket.CLOSING ||
-						socketState === WebSocket.CLOSED
+						socketState === WebSocket.CLOSED ||
+						socketState === WebSocket.CONNECTING
 					) {
+						// Check if URL has changed, indicating this connection is being replaced
+						const currentSocket = getWebSocket();
+						if (currentSocket && currentSocket !== socketLike) {
+							// Connection URL changed, this error is expected - suppress it
+							return;
+						}
+						// Connection is in a transitional state and hasn't opened yet
+						// Suppress errors that occur when connection is closed before being established
 						return;
 					}
 				}

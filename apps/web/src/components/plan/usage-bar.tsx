@@ -41,10 +41,9 @@ export function UsageBar({
 			{showBar && limit !== null && (
 				<div className="h-2 w-full overflow-hidden rounded-full bg-background-200 dark:bg-background-800">
 					<div
-						className="h-full bg-cossistant-blue transition-all"
+						className="h-full rounded-r-3xl bg-cossistant-blue transition-all"
 						style={{
 							width: `${barWidth}%`,
-							minWidth: barWidth > 0 ? "5px" : "0px",
 						}}
 					/>
 				</div>

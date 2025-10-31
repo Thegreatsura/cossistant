@@ -1,11 +1,17 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function Page({
+import { useRouter } from "next/navigation";
+import { use, useEffect } from "react";
+
+export default function Page({
 	params,
 }: {
 	params: Promise<{ websiteSlug: string }>;
 }) {
-	const { websiteSlug } = await params;
+	const { websiteSlug } = use(params);
+	const router = useRouter();
 
-	redirect(`/${websiteSlug}/inbox`);
+	useEffect(() => {
+		router.replace(`/${websiteSlug}/inbox`);
+	}, [websiteSlug]);
 }
