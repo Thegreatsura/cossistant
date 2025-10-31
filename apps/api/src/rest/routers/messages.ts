@@ -212,26 +212,35 @@ messagesRouter.openapi(
 			actor = { type: "visitor", visitorId: visitorId ?? "" };
 		}
 
-		// Mark conversation as seen by the actor after sending timeline item
-		const lastSeenAt = await markConversationAsSeen(db, {
-			conversation,
-			actor,
-		});
-
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];
 
-		// Emit conversation seen event for all actor types
-		promises.push(
-			emitConversationSeenEvent({
+		// Only mark conversation as seen for users and AI agents when sending messages.
+		// For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
+		// This prevents conversations from being marked as seen when the widget is closed.
+		let lastSeenAt: string;
+		if (actor.type !== "visitor") {
+			lastSeenAt = await markConversationAsSeen(db, {
 				conversation,
-				actor:
-					actor.type === "aiAgent"
-						? { type: "ai_agent", aiAgentId: actor.aiAgentId }
-						: actor,
-				lastSeenAt,
-			})
-		);
+				actor,
+			});
+
+			// Emit conversation seen event for users and AI agents
+			promises.push(
+				emitConversationSeenEvent({
+					conversation,
+					actor:
+						actor.type === "aiAgent"
+							? { type: "ai_agent", aiAgentId: actor.aiAgentId }
+							: actor,
+					lastSeenAt,
+				})
+			);
+		} else {
+			// For visitors, just create a timestamp for presence tracking
+			// without marking the conversation as seen
+			lastSeenAt = new Date().toISOString();
+		}
 
 		// Mark presence only for visitors and users (not AI agents)
 		if (actor.type === "visitor") {

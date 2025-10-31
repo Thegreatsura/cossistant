@@ -111,12 +111,17 @@ export function useConversationAutoSeen(
 		}
 	}, [conversationId]);
 
-	// Clear timeout immediately when widget closes
+	// Clear timeout immediately when widget closes and reset tracking
 	useEffect(() => {
-		if (!isWidgetOpen && markSeenTimeoutRef.current) {
-			clearTimeout(markSeenTimeoutRef.current);
-			markSeenTimeoutRef.current = null;
+		if (!isWidgetOpen) {
+			if (markSeenTimeoutRef.current) {
+				clearTimeout(markSeenTimeoutRef.current);
+				markSeenTimeoutRef.current = null;
+			}
 			markSeenInFlightRef.current = false;
+			// Reset last seen item ID so we don't skip marking when widget reopens
+			// This ensures we check again when the widget is reopened
+			lastSeenItemIdRef.current = null;
 		}
 	}, [isWidgetOpen]);
 
@@ -138,14 +143,21 @@ export function useConversationAutoSeen(
 
 	// Auto-mark timeline items as seen
 	useEffect(() => {
+		// Early return if widget is closed - don't process any seen updates
+		if (!(isWidgetOpen && enabled)) {
+			if (markSeenTimeoutRef.current) {
+				clearTimeout(markSeenTimeoutRef.current);
+				markSeenTimeoutRef.current = null;
+			}
+			return;
+		}
+
 		if (markSeenTimeoutRef.current) {
 			clearTimeout(markSeenTimeoutRef.current);
 			markSeenTimeoutRef.current = null;
 		}
 
 		const shouldMark =
-			enabled &&
-			isWidgetOpen &&
 			client &&
 			conversationId &&
 			visitorId &&
