@@ -233,9 +233,18 @@ function SupportProviderInner({
 		return count;
 	}, [conversationSnapshots, seenEntriesByConversation, visitorId]);
 
-	React.useEffect(() => {
-		setUnreadCount(derivedUnreadCount);
-	}, [derivedUnreadCount, setUnreadCount]);
+        React.useEffect(() => {
+                setUnreadCount(derivedUnreadCount);
+        }, [derivedUnreadCount, setUnreadCount]);
+
+        // Prime REST client with website/visitor context so headers are sent reliably
+        React.useEffect(() => {
+                if (!website) {
+                        return;
+                }
+
+                client.setWebsiteContext(website.id, website.visitor?.id ?? undefined);
+        }, [client, website]);
 
         React.useEffect(() => {
                 if (isVisitorBlocked) {
@@ -244,6 +253,10 @@ function SupportProviderInner({
                 }
 
                 if (!autoConnect) {
+                        return;
+                }
+
+                if (!website) {
                         return;
                 }
 
@@ -271,18 +284,9 @@ function SupportProviderInner({
                         );
                         prefetchedVisitorRef.current = null;
                 });
-        }, [autoConnect, client, isVisitorBlocked, visitorId]);
+        }, [autoConnect, client, isVisitorBlocked, visitorId, website]);
 
-	const error = websiteError;
-
-	// Prime REST client with website/visitor context so headers are sent reliably
-	React.useEffect(() => {
-		if (!website) {
-			return;
-		}
-
-		client.setWebsiteContext(website.id, website.visitor?.id ?? undefined);
-	}, [client, website]);
+        const error = websiteError;
 
 	React.useEffect(() => {
 		client.setVisitorBlocked(isVisitorBlocked);
