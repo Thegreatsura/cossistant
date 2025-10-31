@@ -1,3 +1,4 @@
+import { UsageBar } from "@/components/plan/usage-bar";
 import {
 	SettingsHeader,
 	SettingsPage,
@@ -5,42 +6,26 @@ import {
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 import { getQueryClient, prefetch, trpc } from "@/lib/trpc/server";
+import { PlanPageClient } from "./plan-page-client";
 import { UpgradeButton } from "./upgrade-button";
 
 type UsageSettingsPageProps = {
 	params: Promise<{
 		websiteSlug: string;
 	}>;
+	searchParams: Promise<{
+		checkout_success?: string;
+		checkout_error?: string;
+	}>;
 };
-
-function formatNumber(num: number | null): string {
-	if (num === null) {
-		return "Unlimited";
-	}
-
-	return num.toLocaleString();
-}
-
-function formatUsage(current: number, limit: number | null): string {
-	if (limit === null) {
-		return `${current.toLocaleString()} / Unlimited`;
-	}
-
-	return `${current.toLocaleString()} / ${limit.toLocaleString()}`;
-}
-
-function getUsagePercentage(current: number, limit: number | null): number {
-	if (limit === null || limit === 0) {
-		return 0;
-	}
-
-	return Math.min(100, Math.round((current / limit) * 100));
-}
 
 export default async function UsageSettingsPage({
 	params,
+	searchParams,
 }: UsageSettingsPageProps) {
 	const { websiteSlug } = await params;
+	const { checkout_success, checkout_error } = await searchParams;
+
 	await ensureWebsiteAccess(websiteSlug);
 
 	// Prefetch plan info
@@ -49,11 +34,18 @@ export default async function UsageSettingsPage({
 	});
 
 	return (
-		<SettingsPage>
-			<SettingsHeader>Plan & Usage</SettingsHeader>
+		<>
+			<PlanPageClient
+				checkoutError={checkout_error === "true"}
+				checkoutSuccess={checkout_success === "true"}
+				websiteSlug={websiteSlug}
+			/>
+			<SettingsPage className="py-30">
+				<SettingsHeader>Plan & Usage</SettingsHeader>
 
-			<PlanInfoContent websiteSlug={websiteSlug} />
-		</SettingsPage>
+				<PlanInfoContent websiteSlug={websiteSlug} />
+			</SettingsPage>
+		</>
 	);
 }
 
@@ -73,7 +65,7 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 				}.`}
 				title="Current Plan"
 			>
-				<div className="flex items-center justify-between">
+				<div className="p- flex items-center justify-between p-2 pl-4">
 					<div className="flex items-center gap-2">
 						<span className="font-semibold text-lg">{plan.displayName}</span>
 						{plan.price && (
@@ -90,110 +82,58 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 				description="Track your usage against plan limits"
 				title="Usage & Limits"
 			>
-				<div className="space-y-6">
+				<div className="space-y-6 p-4">
 					{/* Conversations */}
-					<div>
-						<div className="mb-2 flex items-center justify-between text-sm">
-							<span className="font-medium">Conversations</span>
-							<span className="text-primary/60">
-								{formatUsage(usage.conversations, plan.features.conversations)}
-							</span>
-						</div>
-						{plan.features.conversations !== null && (
-							<div className="h-2 w-full overflow-hidden rounded-full bg-background-200 dark:bg-background-800">
-								<div
-									className="h-full bg-primary transition-all"
-									style={{
-										width: `${getUsagePercentage(
-											usage.conversations,
-											plan.features.conversations
-										)}%`,
-									}}
-								/>
-							</div>
-						)}
-					</div>
+					<UsageBar
+						current={usage.conversations}
+						label="Conversations"
+						limit={plan.features.conversations}
+					/>
 
 					{/* Messages */}
-					<div>
-						<div className="mb-2 flex items-center justify-between text-sm">
-							<span className="font-medium">Messages</span>
-							<span className="text-primary/60">
-								{formatUsage(usage.messages, plan.features.messages)}
-							</span>
-						</div>
-						{plan.features.messages !== null && (
-							<div className="h-2 w-full overflow-hidden rounded-full bg-background-200 dark:bg-background-800">
-								<div
-									className="h-full bg-primary transition-all"
-									style={{
-										width: `${getUsagePercentage(
-											usage.messages,
-											plan.features.messages
-										)}%`,
-									}}
-								/>
-							</div>
-						)}
-					</div>
+					<UsageBar
+						current={usage.messages}
+						label="Messages"
+						limit={plan.features.messages}
+					/>
 
 					{/* Contacts */}
-					<div>
-						<div className="mb-2 flex items-center justify-between text-sm">
-							<span className="font-medium">Contacts</span>
-							<span className="text-primary/60">
-								{formatUsage(usage.contacts, plan.features.contacts)}
-							</span>
-						</div>
-						{plan.features.contacts !== null && (
-							<div className="h-2 w-full overflow-hidden rounded-full bg-background-200 dark:bg-background-800">
-								<div
-									className="h-full bg-primary transition-all"
-									style={{
-										width: `${getUsagePercentage(
-											usage.contacts,
-											plan.features.contacts
-										)}%`,
-									}}
-								/>
-							</div>
-						)}
-					</div>
-
-					{/* Conversation Retention */}
-					<div>
-						<div className="mb-2 flex items-center justify-between text-sm">
-							<span className="font-medium">Conversation Retention</span>
-							<span className="text-primary/60">
-								{plan.features["conversation-retention"] === null
-									? "Unlimited"
-									: `${plan.features["conversation-retention"]} days`}
-							</span>
-						</div>
-					</div>
+					<UsageBar
+						current={usage.contacts}
+						label="Contacts"
+						limit={plan.features.contacts}
+					/>
 
 					{/* Team Members */}
-					<div>
-						<div className="mb-2 flex items-center justify-between text-sm">
-							<span className="font-medium">Team Members</span>
-							<span className="text-primary/60">
-								{formatUsage(usage.teamMembers, plan.features["team-members"])}
-							</span>
-						</div>
-						{plan.features["team-members"] !== null && (
-							<div className="h-2 w-full overflow-hidden rounded-full bg-background-200 dark:bg-background-800">
-								<div
-									className="h-full bg-primary transition-all"
-									style={{
-										width: `${getUsagePercentage(
-											usage.teamMembers,
-											plan.features["team-members"]
-										)}%`,
-									}}
-								/>
-							</div>
-						)}
-					</div>
+					<UsageBar
+						current={Math.max(1, usage.teamMembers)}
+						formatValue={(current, limit) => {
+							const othersCount = Math.max(0, current - 1);
+							const displayText = othersCount === 0 ? "Alone" : othersCount + 1;
+
+							if (limit === null) {
+								return `${displayText} / Unlimited`;
+							}
+
+							return `${displayText} / ${limit.toLocaleString()}`;
+						}}
+						label="Team Members"
+						limit={plan.features["team-members"]}
+					/>
+
+					{/* Conversation Retention - at the bottom */}
+					<UsageBar
+						current={plan.features["conversation-retention"] ?? 0}
+						formatValue={(current, limit) => {
+							if (limit === null && current === 0) {
+								return "Unlimited";
+							}
+							return `Auto delete after ${current} days`;
+						}}
+						label="Data retention"
+						limit={null}
+						showBar={false}
+					/>
 				</div>
 			</SettingsRow>
 		</>

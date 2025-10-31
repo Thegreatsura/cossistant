@@ -1,8 +1,11 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
+import { SidebarUpgradeButton } from "@/components/plan/sidebar-upgrade-button";
 import { Separator } from "@/components/ui/separator";
 import { useWebsite } from "@/contexts/website";
+import { useTRPC } from "@/lib/trpc/client";
 import { UserDropdown } from "../../../../user-dropdown";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
@@ -11,15 +14,31 @@ import { SidebarItem } from "../sidebar-item";
 export function SettingsNavigationSidebar() {
 	const website = useWebsite();
 	const pathname = usePathname();
-	const router = useRouter();
+	const trpc = useTRPC();
 
 	const basePath = `/${website.slug}/settings`;
+
+	// Fetch plan info for upgrade button
+	const { data: planInfo } = useQuery({
+		...trpc.plan.getPlanInfo.queryOptions({
+			websiteSlug: website.slug,
+		}),
+	});
 
 	return (
 		<ResizableSidebar position="left">
 			<SidebarContainer
 				footer={
 					<>
+						{planInfo && (
+							<>
+								<SidebarUpgradeButton
+									planInfo={planInfo}
+									websiteSlug={website.slug}
+								/>
+								<Separator className="opacity-30" />
+							</>
+						)}
 						<SidebarItem href="/docs">Docs</SidebarItem>
 						<Separator className="opacity-30" />
 						<UserDropdown websiteSlug={website.slug} />

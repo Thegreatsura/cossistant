@@ -27,7 +27,7 @@ export function UpgradeButton({
 
 	return (
 		<>
-			<Button onClick={() => setIsModalOpen(true)}>Upgrade Plan</Button>
+			<Button onClick={() => setIsModalOpen(true)}>Upgrade to Hobby</Button>
 			<UpgradeModal
 				currentPlan={currentPlan}
 				onOpenChange={setIsModalOpen}

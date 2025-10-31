@@ -1,0 +1,123 @@
+"use client";
+
+import type { RouterOutputs } from "@cossistant/api/types";
+import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Logo } from "../ui/logo";
+
+type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
+
+type UpgradeSuccessModalProps = {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	plan: PlanInfo["plan"];
+	usage: PlanInfo["usage"];
+};
+
+function formatFeatureValue(value: number | null): string {
+	if (value === null) {
+		return "Unlimited";
+	}
+	return value.toLocaleString();
+}
+
+function LimitRow({
+	label,
+	limit,
+	usage,
+}: {
+	label: string;
+	limit: number | null;
+	usage?: number;
+}) {
+	return (
+		<div className="flex items-center justify-between border-primary/10 border-b py-3 last:border-0">
+			<div className="flex items-center gap-2">
+				<Check className="size-4 text-cossistant-green" />
+				<span className="font-medium text-sm">{label}</span>
+			</div>
+			<div className="text-right">
+				<span className="font-semibold text-sm">
+					{formatFeatureValue(limit)}
+				</span>
+			</div>
+		</div>
+	);
+}
+
+export function UpgradeSuccessModal({
+	open,
+	onOpenChange,
+	plan,
+	usage,
+}: UpgradeSuccessModalProps) {
+	return (
+		<Dialog onOpenChange={onOpenChange} open={open}>
+			<DialogContent className="sm:max-w-[400px]">
+				<DialogHeader>
+					<div className="mb-2 flex justify-center">
+						<div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+							<Logo />
+						</div>
+					</div>
+					<DialogTitle className="text-center text-xl">
+						Successfully Upgraded to {plan.displayName}!
+					</DialogTitle>
+					<DialogDescription className="text-center">
+						Your plan has been upgraded and all new limits are now active.
+					</DialogDescription>
+				</DialogHeader>
+
+				<div className="mt-10 py-4">
+					<div className="mb-4">
+						<h3 className="font-semibold text-lg">{plan.displayName} Plan</h3>
+						{plan.price && (
+							<p className="text-primary/60 text-sm">${plan.price}/month</p>
+						)}
+					</div>
+
+					<div className="space-y-1">
+						<LimitRow
+							label="Contacts"
+							limit={plan.features.contacts}
+							usage={usage.contacts}
+						/>
+						<LimitRow
+							label="Team Members"
+							limit={plan.features["team-members"]}
+							usage={usage.teamMembers}
+						/>
+						<LimitRow
+							label="Conversations"
+							limit={plan.features.conversations}
+							usage={usage.conversations}
+						/>
+						<LimitRow
+							label="Messages"
+							limit={plan.features.messages}
+							usage={usage.messages}
+						/>
+						<LimitRow
+							label="Data Retention"
+							limit={plan.features["conversation-retention"]}
+						/>
+					</div>
+				</div>
+
+				<DialogFooter>
+					<Button onClick={() => onOpenChange(false)} type="button">
+						Got it, thanks!
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}

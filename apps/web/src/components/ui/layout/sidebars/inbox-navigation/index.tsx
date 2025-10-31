@@ -1,9 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { SidebarUpgradeButton } from "@/components/plan/sidebar-upgrade-button";
 import { Separator } from "@/components/ui/separator";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsite } from "@/contexts/website";
+import { useTRPC } from "@/lib/trpc/client";
 import { UserDropdown } from "../../../../user-dropdown";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
@@ -13,8 +16,16 @@ export function InboxNavigationSidebar() {
 	const website = useWebsite();
 	const pathname = usePathname();
 	const { statusCounts } = useInboxes();
+	const trpc = useTRPC();
 
 	const basePath = `/${website.slug}/inbox`;
+
+	// Fetch plan info for upgrade button
+	const { data: planInfo } = useQuery({
+		...trpc.plan.getPlanInfo.queryOptions({
+			websiteSlug: website.slug,
+		}),
+	});
 
 	// Helper to determine if a specific inbox section is active
 	const isInboxActive = (section?: "resolved" | "spam" | "archived") => {
@@ -39,6 +50,15 @@ export function InboxNavigationSidebar() {
 			<SidebarContainer
 				footer={
 					<>
+						{planInfo && (
+							<>
+								<SidebarUpgradeButton
+									planInfo={planInfo}
+									websiteSlug={website.slug}
+								/>
+								<Separator className="opacity-30" />
+							</>
+						)}
 						<SidebarItem href="/docs">Docs</SidebarItem>
 						<SidebarItem href={`/${website.slug}/settings`}>
 							Settings

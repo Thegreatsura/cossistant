@@ -117,10 +117,14 @@ export const planRouter = createTRPCRouter({
 
 			// Create checkout session
 			try {
+				const baseUrl = env.PUBLIC_APP_URL || "http://localhost:3000";
+				const returnPath = `/${input.websiteSlug}/settings/plan`;
+
 				const checkout = await polarClient.checkouts.create({
 					products: [targetPlanConfig.polarProductId],
 					externalCustomerId: websiteData.id,
-					successUrl: `${env.PUBLIC_APP_URL || "http://localhost:3000"}/${input.websiteSlug}/settings/plan?checkout_success=true`,
+					successUrl: `${baseUrl}${returnPath}?checkout_success=true`,
+					failureUrl: `${baseUrl}${returnPath}?checkout_error=true`,
 				});
 
 				return {
