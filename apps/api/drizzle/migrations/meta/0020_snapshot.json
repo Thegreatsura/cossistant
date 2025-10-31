@@ -1,6 +1,6 @@
 {
-  "id": "d9a04b5c-0bf5-410c-8d2e-57d29d942e49",
-  "prevId": "a6850105-a5a7-40c2-b0fe-434704ff138f",
+  "id": "1dbc0a56-3a6b-4b27-846a-954763c98fe9",
+  "prevId": "d9a04b5c-0bf5-410c-8d2e-57d29d942e49",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1845,6 +1845,33 @@
           "method": "btree",
           "with": {}
         },
+        "conversation_website_org_deleted_idx": {
+          "name": "conversation_website_org_deleted_idx",
+          "columns": [
+            {
+              "expression": "website_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deleted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "conversation_org_website_updated_idx": {
           "name": "conversation_org_website_updated_idx",
           "columns": [
@@ -2649,8 +2676,8 @@
         }
       },
       "indexes": {
-        "conversation_timeline_item_org_conv_idx": {
-          "name": "conversation_timeline_item_org_conv_idx",
+        "conversation_timeline_item_org_conv_visibility_idx": {
+          "name": "conversation_timeline_item_org_conv_visibility_idx",
           "columns": [
             {
               "expression": "organization_id",
@@ -2660,6 +2687,12 @@
             },
             {
               "expression": "conversation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "visibility",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2687,6 +2720,33 @@
             },
             {
               "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "conversation_timeline_item_org_type_deleted_idx": {
+          "name": "conversation_timeline_item_org_type_deleted_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deleted_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3250,6 +3310,33 @@
         "contact_deleted_at_idx": {
           "name": "contact_deleted_at_idx",
           "columns": [
+            {
+              "expression": "deleted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contact_website_org_deleted_idx": {
+          "name": "contact_website_org_deleted_idx",
+          "columns": [
+            {
+              "expression": "website_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "deleted_at",
               "isExpression": false,
