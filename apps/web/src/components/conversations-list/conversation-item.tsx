@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { differenceInHours } from "date-fns";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
@@ -56,6 +56,16 @@ export function ConversationItemView({
 	onMouseEnter,
 	href,
 }: ConversationItemViewProps) {
+	const [isMounted, setIsMounted] = useState(false);
+	const [formattedTime, setFormattedTime] = useState<string | null>(null);
+
+	useEffect(() => {
+		setIsMounted(true);
+		if (lastMessageCreatedAt) {
+			setFormattedTime(formatTimeAgo(lastMessageCreatedAt));
+		}
+	}, [lastMessageCreatedAt]);
+
 	const content = (
 		<>
 			<Avatar
@@ -86,9 +96,9 @@ export function ConversationItemView({
 				)}
 				<div className="flex min-w-[70px] items-center justify-end gap-1">
 					{rightContent ||
-						(lastMessageCreatedAt ? (
+						(isMounted && formattedTime ? (
 							<span className="shrink-0 pr-2 text-primary/40 text-xs">
-								{formatTimeAgo(lastMessageCreatedAt)}
+								{formattedTime}
 							</span>
 						) : null)}
 					<span

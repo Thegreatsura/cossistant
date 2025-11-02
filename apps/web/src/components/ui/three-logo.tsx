@@ -1,14 +1,32 @@
 "use client";
 
 import { AsciiRenderer } from "@react-three/drei";
-import { Canvas, useLoader, useThree } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { useTheme } from "next-themes";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 type ThreeLogoProps = {
 	className?: string;
 };
+
+// Component to ensure renderer has integer dimensions before AsciiRenderer runs
+function IntegerSizeEnforcer() {
+	const { gl, size } = useThree();
+
+	// Use useLayoutEffect to ensure this runs synchronously before AsciiRenderer
+	useLayoutEffect(() => {
+		// Force integer dimensions on the renderer
+		// This ensures AsciiRenderer reads integer values from useThree().size
+		const width = Math.max(1, Math.floor(size.width));
+		const height = Math.max(1, Math.floor(size.height));
+		// Always set size to ensure it's an integer, even if it appears to match
+		// This handles floating point precision issues
+		gl.setSize(width, height, false);
+	}, [gl, size.width, size.height]);
+
+	return null;
+}
 
 function LogoPlane() {
 	const meshRef = useRef<THREE.Mesh>(null);
@@ -112,9 +130,12 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 				const aspectRatio = 1355 / 210;
 				const height = width / aspectRatio;
 				// Ensure dimensions are integers to prevent getImageData errors
+				// Also ensure minimum size to prevent zero-width/height issues
+				const intWidth = Math.max(1, Math.floor(width));
+				const intHeight = Math.max(1, Math.floor(height));
 				setDimensions({
-					width: Math.floor(width),
-					height: Math.floor(height),
+					width: intWidth,
+					height: intHeight,
 				});
 			}
 		};
@@ -124,6 +145,26 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 		return () => window.removeEventListener("resize", updateDimensions);
 	}, []);
 
+	// Calculate resolution that ensures integer internal canvas dimensions
+	// AsciiRenderer calculates internal size as: Math.floor(size * resolution)
+	// We need to ensure this always results in an integer >= 1
+	// Use a resolution that divides evenly into common dimension values
+	const baseResolution = 0.18;
+
+	// Calculate safe resolution: ensure (dimension * resolution) is always >= 1 and results in reasonable integer
+	// For small dimensions, we might need a higher resolution
+	const minDimension = Math.min(dimensions.width, dimensions.height);
+	const effectiveMin = minDimension * dpr;
+
+	// Ensure resolution produces at least 1 pixel internally
+	const safeResolution =
+		effectiveMin > 0
+			? Math.max(baseResolution, 1 / effectiveMin)
+			: baseResolution;
+
+	// Round resolution to avoid floating point precision issues
+	const finalResolution = Math.min(1, Math.round(safeResolution * 1000) / 1000);
+
 	return (
 		<div className={className} ref={containerRef} style={{ width: "100%" }}>
 			<Canvas
@@ -131,12 +172,13 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 				dpr={dpr}
 				style={{ width: dimensions.width, height: dimensions.height }}
 			>
+				<IntegerSizeEnforcer />
 				<LogoPlane />
 				<AsciiRenderer
 					bgColor="transparent"
 					characters=" .%=*:+-# "
 					fgColor={resolvedTheme === "dark" ? "white" : "black"}
-					resolution={0.18}
+					resolution={finalResolution}
 				/>
 			</Canvas>
 		</div>

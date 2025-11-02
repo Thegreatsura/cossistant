@@ -8,20 +8,28 @@ import {
 	isAfter,
 } from "date-fns";
 
-export function formatTimeAgo(date: Date): string {
-	const now = new Date();
+export function formatTimeAgo(date: Date, now: Date = new Date()): string {
 	const diffHours = differenceInHours(now, date);
 	const diffDays = differenceInDays(now, date);
 
 	// For times less than 24 hours ago, show the actual time
 	if (diffHours < 24) {
 		// Detect user's locale to determine 12-hour vs 24-hour format
-		const userLocale = navigator.language || "en-US";
+		// Check for navigator existence to handle SSR
+		let userLocale = "en-US";
+		let uses12HourFormat = false;
 
-		// Check if the locale uses 12-hour format (primarily US, Canada, Australia, etc.)
-		const uses12HourFormat = new Intl.DateTimeFormat(userLocale, {
-			hour: "numeric",
-		}).resolvedOptions().hour12;
+		if (typeof navigator !== "undefined" && navigator.language) {
+			userLocale = navigator.language;
+			try {
+				uses12HourFormat = new Intl.DateTimeFormat(userLocale, {
+					hour: "numeric",
+				}).resolvedOptions().hour12;
+			} catch {
+				// Fallback to 24-hour format if locale resolution fails
+				uses12HourFormat = false;
+			}
+		}
 
 		// Format the time based on user's locale preference
 		const timeFormat = uses12HourFormat ? "h:mm a" : "HH:mm";
