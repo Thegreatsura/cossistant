@@ -28,16 +28,27 @@ export async function createWebsite(
 	}
 
 	// Create the website with the team
-	const [newWebsite] = await db
-		.insert(website)
-		.values({
-			...params.data,
-			organizationId: params.organizationId,
-			teamId: teamResponse.id,
-		})
-		.returning();
+	try {
+		const [newWebsite] = await db
+			.insert(website)
+			.values({
+				...params.data,
+				organizationId: params.organizationId,
+				teamId: teamResponse.id,
+			})
+			.returning();
 
-	return newWebsite;
+		return newWebsite;
+	} catch (error) {
+		// Re-throw with more context to help debug
+		if (error instanceof Error) {
+			throw new Error(
+				`Failed to create website: ${error.message}. Data: ${JSON.stringify(params.data)}`,
+				{ cause: error }
+			);
+		}
+		throw error;
+	}
 }
 
 // Get website by ID (with org check)

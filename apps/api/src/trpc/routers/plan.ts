@@ -4,7 +4,7 @@ import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { env } from "@api/env";
 import { getPlanForWebsite } from "@api/lib/plans/access";
 import { getPlanConfig, type PlanName } from "@api/lib/plans/config";
-import { getCustomerByWebsiteId } from "@api/lib/plans/polar";
+import { getCustomerByOrganizationId } from "@api/lib/plans/polar";
 import polarClient from "@api/lib/polar";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -94,25 +94,16 @@ export const planRouter = createTRPCRouter({
 				});
 			}
 
-			// Get or create customer
-			let customer = await getCustomerByWebsiteId(websiteData.id);
+			// Get customer by organization ID (customer should exist from organization creation)
+			const customer = await getCustomerByOrganizationId(
+				websiteData.organizationId
+			);
 
 			if (!customer) {
-				// Create customer if it doesn't exist
-				try {
-					const newCustomer = await polarClient.customers.create({
-						email: ctx.user.email,
-						name: ctx.user.name || undefined,
-						externalId: websiteData.id,
-					});
-					customer = { id: newCustomer.id };
-				} catch (error) {
-					console.error("Error creating customer:", error);
-					throw new TRPCError({
-						code: "INTERNAL_SERVER_ERROR",
-						message: "Failed to create customer",
-					});
-				}
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Customer not found. Please contact support.",
+				});
 			}
 
 			// Create checkout session
@@ -122,7 +113,10 @@ export const planRouter = createTRPCRouter({
 
 				const checkout = await polarClient.checkouts.create({
 					products: [targetPlanConfig.polarProductId],
-					externalCustomerId: websiteData.id,
+					externalCustomerId: websiteData.organizationId,
+					metadata: {
+						websiteId: websiteData.id,
+					},
 					successUrl: `${baseUrl}${returnPath}?checkout_success=true`,
 					failureUrl: `${baseUrl}${returnPath}?checkout_error=true`,
 				});

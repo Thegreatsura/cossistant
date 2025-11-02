@@ -9,6 +9,7 @@ export type CustomerState = {
 		productId: string;
 		productName?: string;
 		status: string;
+		metadata?: Record<string, unknown>;
 	}>;
 	grantedBenefits: Array<{
 		id: string;
@@ -18,14 +19,14 @@ export type CustomerState = {
 };
 
 /**
- * Get customer by website ID (using external ID)
+ * Get customer by organization ID (using external ID)
  */
-export async function getCustomerByWebsiteId(
-	websiteId: string
+export async function getCustomerByOrganizationId(
+	organizationId: string
 ): Promise<{ id: string } | null> {
 	try {
 		const customer = await polarClient.customers.getExternal({
-			externalId: websiteId,
+			externalId: organizationId,
 		});
 
 		if (!customer) {
@@ -34,9 +35,20 @@ export async function getCustomerByWebsiteId(
 
 		return { id: customer.id };
 	} catch (error) {
-		console.error("Error getting customer by website ID:", error);
+		console.error("Error getting customer by organization ID:", error);
 		return null;
 	}
+}
+
+/**
+ * @deprecated Use getCustomerByOrganizationId instead
+ * Get customer by website ID (using external ID)
+ * Kept for backward compatibility during migration
+ */
+export async function getCustomerByWebsiteId(
+	websiteId: string
+): Promise<{ id: string } | null> {
+	return getCustomerByOrganizationId(websiteId);
 }
 
 /**
@@ -62,6 +74,7 @@ export async function getCustomerState(
 					productId: sub.productId,
 					productName: undefined, // Product name not directly in subscription, would need to fetch product
 					status: sub.status,
+					metadata: sub.metadata,
 				})) ?? [],
 			grantedBenefits:
 				state.grantedBenefits?.map((benefit) => ({
@@ -77,19 +90,55 @@ export async function getCustomerState(
 }
 
 /**
- * Get customer state by external ID (website ID)
- * This is a convenience function that combines getCustomerByWebsiteId and getCustomerState
+ * Get customer state by organization ID
+ * This is a convenience function that combines getCustomerByOrganizationId and getCustomerState
  */
-export async function getCustomerStateByWebsiteId(
-	websiteId: string
+export async function getCustomerStateByOrganizationId(
+	organizationId: string
 ): Promise<CustomerState | null> {
-	const customer = await getCustomerByWebsiteId(websiteId);
+	const customer = await getCustomerByOrganizationId(organizationId);
 
 	if (!customer) {
 		return null;
 	}
 
 	return getCustomerState(customer.id);
+}
+
+/**
+ * Get subscription for a specific website from customer state
+ * Filters subscriptions by metadata containing websiteId
+ */
+export function getSubscriptionForWebsite(
+	customerState: CustomerState | null,
+	websiteId: string
+): CustomerState["activeSubscriptions"][number] | null {
+	if (!customerState) {
+		return null;
+	}
+
+	// Find subscription with matching websiteId in metadata
+	const subscription = customerState.activeSubscriptions.find((sub) => {
+		if (!sub.metadata || typeof sub.metadata !== "object") {
+			return false;
+		}
+
+		// Check if metadata.websiteId matches
+		return "websiteId" in sub.metadata && sub.metadata.websiteId === websiteId;
+	});
+
+	return subscription ?? null;
+}
+
+/**
+ * @deprecated Use getCustomerStateByOrganizationId instead
+ * Get customer state by external ID (website ID)
+ * Kept for backward compatibility during migration
+ */
+export async function getCustomerStateByWebsiteId(
+	websiteId: string
+): Promise<CustomerState | null> {
+	return getCustomerStateByOrganizationId(websiteId);
 }
 
 /**

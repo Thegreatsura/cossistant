@@ -5,7 +5,11 @@ import {
 	getPlanConfig,
 	type PlanName,
 } from "./config";
-import { getCustomerStateByWebsiteId, getPlanFromCustomerState } from "./polar";
+import {
+	getCustomerStateByOrganizationId,
+	getPlanFromCustomerState,
+	getSubscriptionForWebsite,
+} from "./polar";
 
 type Website = typeof website.$inferSelect;
 
@@ -49,11 +53,33 @@ export async function canUse(
  */
 export async function getPlanForWebsite(_website: Website): Promise<PlanInfo> {
 	try {
-		// Get customer state from Polar
-		const customerState = await getCustomerStateByWebsiteId(_website.id);
+		// Get customer state from Polar using organization ID
+		const customerState = await getCustomerStateByOrganizationId(
+			_website.organizationId
+		);
 
-		// Determine plan from customer state
-		const planName = await getPlanFromCustomerState(customerState);
+		// Find subscription for this specific website
+		const websiteSubscription = getSubscriptionForWebsite(
+			customerState,
+			_website.id
+		);
+
+		let planName: PlanName | null = null;
+
+		if (websiteSubscription) {
+			// If we have a website-specific subscription, get plan from it
+			// Create a temporary customer state with just this subscription
+			const subscriptionCustomerState = {
+				customerId: customerState?.customerId ?? "",
+				activeSubscriptions: [websiteSubscription],
+				grantedBenefits: customerState?.grantedBenefits ?? [],
+			};
+			planName = await getPlanFromCustomerState(subscriptionCustomerState);
+		} else if (customerState) {
+			// If no website-specific subscription, check for any active subscription
+			// (could be organization-level or fallback)
+			planName = await getPlanFromCustomerState(customerState);
+		}
 
 		// If no plan found, default to free
 		const finalPlanName: PlanName = planName ?? "free";

@@ -13,7 +13,6 @@ import {
 	updateWebsite,
 } from "@api/db/queries/website";
 import { type WebsiteInsert, website } from "@api/db/schema";
-import polarClient from "@api/lib/polar";
 import { isOrganizationAdminOrOwner } from "@api/utils/access-control";
 import { generateULID } from "@api/utils/db/ids";
 import { normalizeDomain } from "@api/utils/domain";
@@ -207,12 +206,6 @@ export const websiteRouter = createTRPCRouter({
 					websiteName: input.name,
 					organizationId: input.organizationId,
 					createdBy: user.id,
-				}),
-				polarClient.customers.create({
-					email: user.email,
-					name: user.name,
-					// We link website to customer in Polar
-					externalId: createdWebsite.id,
 				}),
 			]);
 

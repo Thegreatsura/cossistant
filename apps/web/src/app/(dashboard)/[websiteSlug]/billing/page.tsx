@@ -23,7 +23,7 @@ export default async function BillingRedirect({ params }: BillingPageProps) {
 	console.log("website", website);
 
 	const customer = await polarClient.customers.getExternal({
-		externalId: website.id,
+		externalId: website.organizationId,
 	});
 
 	console.log("customer", customer);

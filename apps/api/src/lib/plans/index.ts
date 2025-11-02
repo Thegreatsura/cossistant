@@ -13,8 +13,11 @@ export {
 } from "./config";
 export {
 	type CustomerState,
-	getCustomerByWebsiteId,
+	getCustomerByOrganizationId,
+	getCustomerByWebsiteId, // @deprecated Use getCustomerByOrganizationId instead
 	getCustomerState,
-	getCustomerStateByWebsiteId,
+	getCustomerStateByOrganizationId,
+	getCustomerStateByWebsiteId, // @deprecated Use getCustomerStateByOrganizationId instead
 	getPlanFromCustomerState,
+	getSubscriptionForWebsite,
 } from "./polar";

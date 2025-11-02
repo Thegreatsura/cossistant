@@ -71,6 +71,60 @@ export const auth = betterAuth({
 					console.log("organization created", organization);
 					console.log("member", member);
 					console.log("user", user);
+
+					// Create Polar customer for organization
+					try {
+						// Check if customer already exists
+						try {
+							const existingCustomer = await polarClient.customers.getExternal({
+								externalId: organization.id,
+							});
+
+							if (existingCustomer) {
+								console.log(
+									`Polar customer already exists for organization ${organization.id}`
+								);
+								return;
+							}
+						} catch (error) {
+							// Customer doesn't exist, continue to create
+						}
+
+						// Create customer with organization ID as external ID
+						await polarClient.customers.create({
+							email: user.email,
+							name: user.name || undefined,
+							externalId: organization.id,
+						});
+
+						console.log(
+							`Created Polar customer for organization ${organization.id}`
+						);
+					} catch (error) {
+						// Handle "email already exists" error gracefully
+						const errorMessage =
+							error instanceof Error ? error.message : String(error);
+						const errorString = JSON.stringify(error);
+
+						const isEmailExistsError =
+							(errorMessage.includes("email") &&
+								errorMessage.includes("already exists")) ||
+							errorString.includes("email") ||
+							(errorString.includes("already exists") &&
+								errorString.includes("customer"));
+
+						if (isEmailExistsError) {
+							console.warn(
+								`Customer with email ${user.email} already exists in Polar. Skipping customer creation for organization ${organization.id}.`
+							);
+						} else {
+							console.error(
+								`Error creating Polar customer for organization ${organization.id}:`,
+								error
+							);
+							// Don't throw error to avoid blocking organization creation
+						}
+					}
 				},
 			},
 		}),
