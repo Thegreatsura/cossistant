@@ -75,8 +75,8 @@ Cossistant support widget is styled using Tailwind classes, you can simply impor
     ````css {3,4} showLineNumbers title="app/globals.css"
 @import "tailwindcss";
 
-@import "@cossistant/react/dist/styles.css";
-@source "@cossistant/react/src/support";
+@import "@cossistant/react/support.css";
+@source "@cossistant/react/dist/support";
 
 ````
   </TabsContent>
@@ -85,7 +85,7 @@ Cossistant support widget is styled using Tailwind classes, you can simply impor
     module.exports = {
       content: [
         "./app/**/*.{tsx,ts,mdx,md}",
-        "./node_modules/@cossistant/react/**/*.{js,ts,jsx,tsx}",
+        "./node_modules/@cossistant/react/dist/**/*.{js,ts,jsx,tsx}",
       ],
       theme: {
         extend: {},
@@ -94,13 +94,22 @@ Cossistant support widget is styled using Tailwind classes, you can simply impor
     };
 ```
 
+Then import the CSS file in your layout:
+
+```tsx {4} showLineNumbers title="app/layout.tsx"
+import { SupportProvider } from "@cossistant/next";
+
+import "./globals.css";
+import "@cossistant/react/support.css";
+```
+
   </TabsContent>
   <TabsContent value="css">
     ```tsx {4} showLineNumbers title="app/layout.tsx"
 import { SupportProvider } from "@cossistant/next";
 
 import "./globals.css";
-import "@cossistant/react/dist/styles.css";
+import "@cossistant/react/support.css";
 
 export default function RootLayout({
   children,

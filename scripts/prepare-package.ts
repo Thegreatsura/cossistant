@@ -29,6 +29,10 @@ const toDistExport = (value: unknown) => {
 	}
 	const normalized = stripSrcPrefix(value);
 	if (normalized.endsWith(".css")) {
+		// CSS files built to dist root should map support/support.css -> support.css
+		if (normalized === "./support/support.css") {
+			return "./support.css";
+		}
 		return normalized;
 	}
 	return {
