@@ -21,14 +21,15 @@ export type TimelineMessageItemProps = {
 export function TimelineMessageItem({
 	item,
 	isLast = false,
-	isSentByViewer,
+	isSentByViewer = false,
 }: TimelineMessageItemProps): React.ReactElement {
 	const text = useSupportText();
 	return (
 		<PrimitiveTimelineItem item={item}>
-			{({ isVisitor, isAI, timestamp }) => {
-				// Use passed isSentByViewer if provided, otherwise fall back to isVisitor
-				const isSentByViewerFinal = isSentByViewer ?? isVisitor;
+			{({ isAI, timestamp }) => {
+				// isSentByViewer defaults to false, meaning messages are treated as received
+				// (left side with background) unless explicitly marked as sent by viewer
+				const isSentByViewerFinal = isSentByViewer;
 
 				return (
 					<div
@@ -48,7 +49,7 @@ export function TimelineMessageItem({
 								className={cn(
 									"block w-max max-w-[300px] rounded-lg px-3.5 py-2.5 text-sm",
 									{
-										"bg-co-background-300 text-foreground dark:bg-co-background-600":
+										"bg-background-300 text-foreground dark:bg-background-600":
 											!isSentByViewerFinal,
 										"bg-primary text-primary-foreground": isSentByViewerFinal,
 										"rounded-br-sm": isLast && isSentByViewerFinal,
