@@ -20,13 +20,13 @@ const en: SupportLocaleMessages = {
 	"page.home.greeting": ({ variables, context, utils }) => {
 		const period = utils.timeOfDay();
 		const phrases: Record<typeof period.token, string> = {
-			morning: "morning",
-			afternoon: "afternoon",
-			evening: "evening",
+			morning: "Morning",
+			afternoon: "Afternoon",
+			evening: "Evening",
 		};
 		const visitorName =
 			variables?.visitorName || context.visitor?.contact?.name;
-		return `Good ${phrases[period.token]}${visitorName ? ` ${visitorName}` : ""}, how can we help?`;
+		return `${phrases[period.token]}${visitorName ? ` ${visitorName}` : ""}, how can we help?`;
 	},
 	"page.home.history.more": ({ variables, utils }) => {
 		const count = variables.count;

@@ -2,18 +2,32 @@
 
 import React from "react";
 
+type FakeSupportPage = "HOME" | "CONVERSATION";
+
 type FakeSupportNavigationState = {
-	current: {
-		page: "CONVERSATION";
-		params: {
-			conversationId: string;
-		};
-	};
+	current:
+		| {
+				page: "HOME";
+				params: Record<string, never>;
+		  }
+		| {
+				page: "CONVERSATION";
+				params: {
+					conversationId: string;
+					initialMessage?: string;
+				};
+		  };
 	previousPages: never[];
 };
 
 const FakeSupportNavigationContext = React.createContext<
-	FakeSupportNavigationState | undefined
+	| (FakeSupportNavigationState & {
+			navigate: (
+				page: FakeSupportPage,
+				params?: { conversationId?: string; initialMessage?: string }
+			) => void;
+	  })
+	| undefined
 >(undefined);
 
 const FakeSupportConfigContext = React.createContext<
@@ -29,6 +43,8 @@ const FakeSupportConfigContext = React.createContext<
 type FakeSupportStoreProviderProps = {
 	children: React.ReactNode;
 	conversationId: string;
+	initialPage?: FakeSupportPage;
+	onNavigate?: (page: FakeSupportPage) => void;
 };
 
 /**
@@ -38,21 +54,48 @@ type FakeSupportStoreProviderProps = {
 export function FakeSupportStoreProvider({
 	children,
 	conversationId,
+	initialPage = "HOME",
+	onNavigate,
 }: FakeSupportStoreProviderProps): React.ReactElement {
 	const [isOpen, setIsOpen] = React.useState(true);
+	const [currentPage, setCurrentPage] =
+		React.useState<FakeSupportPage>(initialPage);
+	const [initialMessage, setInitialMessage] = React.useState<
+		string | undefined
+	>();
 
-	const navigationValue = React.useMemo<FakeSupportNavigationState>(
-		() => ({
-			current: {
-				page: "CONVERSATION",
-				params: {
-					conversationId,
-				},
-			},
-			previousPages: [],
-		}),
-		[conversationId]
+	const navigate = React.useCallback(
+		(
+			page: FakeSupportPage,
+			params?: { conversationId?: string; initialMessage?: string }
+		) => {
+			setCurrentPage(page);
+			if (params?.initialMessage) {
+				setInitialMessage(params.initialMessage);
+			}
+			onNavigate?.(page);
+		},
+		[onNavigate]
 	);
+
+	const navigationValue = React.useMemo(() => {
+		const current: FakeSupportNavigationState["current"] =
+			currentPage === "HOME"
+				? { page: "HOME" as const, params: {} as Record<string, never> }
+				: {
+						page: "CONVERSATION" as const,
+						params: {
+							conversationId,
+							initialMessage,
+						},
+					};
+
+		return {
+			current,
+			previousPages: [] as never[],
+			navigate,
+		};
+	}, [currentPage, conversationId, initialMessage, navigate]);
 
 	const configValue = React.useMemo(
 		() => ({
@@ -75,7 +118,7 @@ export function FakeSupportStoreProvider({
 
 /**
  * Fake version of useSupportNavigation hook.
- * Always returns CONVERSATION page, goBack does nothing.
+ * Supports HOME and CONVERSATION pages with navigation.
  */
 export function useFakeSupportNavigation() {
 	const context = React.useContext(FakeSupportNavigationContext);
@@ -90,7 +133,7 @@ export function useFakeSupportNavigation() {
 		page: context.current.page,
 		params: context.current.params,
 		previousPages: context.previousPages,
-		navigate: () => {},
+		navigate: context.navigate,
 		replace: () => {},
 		goBack: () => {},
 		canGoBack: false,

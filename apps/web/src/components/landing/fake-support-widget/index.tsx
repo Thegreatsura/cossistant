@@ -12,18 +12,21 @@ import Icon from "@cossistant/react/support/components/icons";
 import { Watermark } from "@cossistant/react/support/components/watermark";
 // Text component uses real hooks, so we'll create a simple fake version
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useViewportVisibility } from "@/hooks/use-viewport-visibility";
 import { cn } from "@/lib/utils";
-import { useLandingAnimationStore } from "@/stores/landing-animation-store";
+import { useWidgetAnimationStore } from "@/stores/widget-animation-store";
 import { FakeBubble } from "./fake-bubble";
+import { FakeHomePage } from "./fake-home-page";
 import { FakeSupportProvider, useFakeSupport } from "./fake-support-context";
 import {
 	FakeSupportStoreProvider,
 	useFakeSupportConfig,
 } from "./fake-support-store";
 import { FakeSupportTextProvider, useSupportText } from "./fake-support-text";
-import { useFakeSupportWidget } from "./use-fake-support-widget";
+import { FakeWidgetMouseCursor } from "./fake-widget-mouse-cursor";
+import { useFakeSupportWidgetConversation } from "./use-fake-support-widget-conversation";
+import { useFakeSupportWidgetHome } from "./use-fake-support-widget-home";
 
 /**
  * Fake Header component that mimics the real Header but uses fake hooks
@@ -38,25 +41,18 @@ function FakeHeader({
 	const { close } = useFakeSupportConfig();
 
 	return (
-		<div className="absolute inset-x-0 top-0 z-10 h-18">
-			<div className="absolute inset-0 z-10 flex items-center justify-between gap-3 px-4">
-				<div className="flex flex-1 items-center gap-3">
-					{onGoBack && (
-						<Button
-							onClick={onGoBack}
-							size="icon"
-							type="button"
-							variant="ghost"
-						>
-							<Icon name="arrow-left" />
-						</Button>
-					)}
-					{children}
-				</div>
-				<Button onClick={close} size="icon" type="button" variant="ghost">
-					<Icon name="close" />
-				</Button>
+		<div className="absolute inset-x-0 top-0 z-10 flex h-18 items-center justify-between gap-3 bg-co-background px-4">
+			<div className="flex flex-1 items-center gap-3">
+				{onGoBack && (
+					<Button onClick={onGoBack} size="icon" type="button" variant="ghost">
+						<Icon name="arrow-left" />
+					</Button>
+				)}
+				{children}
 			</div>
+			<Button onClick={close} size="icon" type="button" variant="ghost">
+				<Icon name="close" />
+			</Button>
 		</div>
 	);
 }
@@ -101,14 +97,16 @@ function FakeConversationView({
 				</div>
 			</FakeHeader>
 
-			<ConversationTimelineList
-				availableAIAgents={availableAIAgents}
-				availableHumanAgents={availableHumanAgents}
-				className="min-h-0 flex-1 px-4 py-20"
-				conversationId={conversationId}
-				currentVisitorId={visitor?.id}
-				items={timelineItems}
-			/>
+			<div className="scrollbar-gutter-stable min-h-0 flex-1 overflow-y-auto">
+				<ConversationTimelineList
+					availableAIAgents={availableAIAgents}
+					availableHumanAgents={availableHumanAgents}
+					className="px-4 py-20"
+					conversationId={conversationId}
+					currentVisitorId={visitor?.id}
+					items={timelineItems}
+				/>
+			</div>
 
 			<div className="shrink-0 p-1">
 				<form className="flex flex-col gap-2">
@@ -149,29 +147,130 @@ function FakeConversationView({
  * isolated fake providers.
  */
 export function FakeSupportWidget({ className }: { className?: string }) {
-	const isPlaying = useLandingAnimationStore((state) => state.isPlaying);
-	const isRestarting = useLandingAnimationStore((state) => state.isRestarting);
-	const onAnimationComplete = useLandingAnimationStore(
+	const currentView = useWidgetAnimationStore((state) => state.currentView);
+	const isPlaying = useWidgetAnimationStore((state) => state.isPlaying);
+	const isRestarting = useWidgetAnimationStore((state) => state.isRestarting);
+	const onAnimationComplete = useWidgetAnimationStore(
 		(state) => state.onAnimationComplete
 	);
+	const play = useWidgetAnimationStore((state) => state.play);
+	const pause = useWidgetAnimationStore((state) => state.pause);
+	const reset = useWidgetAnimationStore((state) => state.reset);
+	const selectView = useWidgetAnimationStore((state) => state.selectView);
+	const previousViewRef = useRef<typeof currentView>(currentView);
+
 	const [widgetRef, isVisible] = useViewportVisibility<HTMLDivElement>({
 		threshold: 0.1,
 		rootMargin: "50px",
 	});
 
-	const widgetData = useFakeSupportWidget({
-		isPlaying: isPlaying && isVisible,
-		onComplete: onAnimationComplete,
+	// Pause animation when not visible
+	useEffect(() => {
+		if (!isVisible && isPlaying) {
+			pause();
+		} else if (isVisible && !isPlaying && currentView !== null) {
+			play();
+		}
+	}, [isVisible, isPlaying, pause, play, currentView]);
+
+	// Reset and start animation after a short delay to ensure everything is ready
+	useEffect(() => {
+		reset();
+		const timeout = setTimeout(() => {
+			play();
+		}, 500);
+		return () => clearTimeout(timeout);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	const [showMouseCursor, setShowMouseCursor] = useState(false);
+	const buttonRef = useRef<HTMLButtonElement>(null);
+
+	const handleMouseClick = useCallback(() => {
+		// Click triggers switch to conversation view
+		setShowMouseCursor(false);
+		// Small delay to ensure cursor animation completes before switching
+		setTimeout(() => {
+			selectView("conversation");
+		}, 100);
+	}, [selectView]);
+
+	const handleShowMouseCursor = useCallback(() => {
+		setShowMouseCursor(true);
+	}, []);
+
+	const handleNavigate = useCallback(
+		(page: "HOME" | "CONVERSATION") => {
+			if (page === "CONVERSATION") {
+				selectView("conversation");
+			} else {
+				selectView("home");
+			}
+		},
+		[selectView]
+	);
+
+	const homeHook = useFakeSupportWidgetHome({
+		isPlaying: isPlaying && currentView === "home",
+		onComplete: undefined, // Don't complete on home - mouse click handles transition
+		onShowMouseCursor:
+			currentView === "home" ? handleShowMouseCursor : undefined,
 	});
 
-	const conversationId = widgetData.conversation.id;
+	const conversationHook = useFakeSupportWidgetConversation({
+		isPlaying: isPlaying && currentView === "conversation",
+		onComplete:
+			currentView === "conversation" ? onAnimationComplete : undefined,
+	});
+
+	const conversationId = "01JGAA2222222222222222222";
 
 	// Reset animation data when restarting
 	useEffect(() => {
 		if (isRestarting) {
-			widgetData.resetDemoData();
+			// Reset all animation data when restart is triggered
+			homeHook.resetDemoData();
+			conversationHook.resetDemoData();
+			setShowMouseCursor(false);
 		}
-	}, [isRestarting, widgetData]);
+		// Only depend on isRestarting - hook functions are stable
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isRestarting]);
+
+	// Reset animation data when view changes
+	useEffect(() => {
+		const wasHome = previousViewRef.current === "home";
+		const wasConversation = previousViewRef.current === "conversation";
+		const isHome = currentView === "home";
+		const isConversation = currentView === "conversation";
+
+		// Only reset if we're actually switching views (not on initial mount)
+		if (
+			previousViewRef.current !== null &&
+			previousViewRef.current !== currentView
+		) {
+			if (wasHome && isConversation) {
+				// Switching from home to conversation - reset home
+				homeHook.resetDemoData();
+			} else if (wasConversation && isHome) {
+				// Switching from conversation to home - reset conversation and ensure home can restart
+				conversationHook.resetDemoData();
+				// Explicitly reset home to ensure it can restart
+				homeHook.resetDemoData();
+				// Force home animation to restart by briefly pausing and playing
+				if (isPlaying) {
+					pause();
+					setTimeout(() => {
+						play();
+					}, 50);
+				}
+			}
+			// Reset mouse cursor when switching views
+			setShowMouseCursor(false);
+		}
+		previousViewRef.current = currentView;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentView, isPlaying, play]);
 
 	return (
 		<div
@@ -183,13 +282,36 @@ export function FakeSupportWidget({ className }: { className?: string }) {
 		>
 			<FakeSupportProvider>
 				<FakeSupportTextProvider>
-					<FakeSupportStoreProvider conversationId={conversationId}>
+					<FakeSupportStoreProvider
+						conversationId={conversationId}
+						initialPage={currentView === "home" ? "HOME" : "CONVERSATION"}
+						onNavigate={handleNavigate}
+					>
 						<div className="relative flex flex-col items-end gap-4 py-10">
 							<div className="relative flex h-[550px] w-[360px] flex-col overflow-hidden rounded-lg border border-co-border bg-co-background">
-								<FakeConversationView
-									conversationId={conversationId}
-									timelineItems={widgetData.timelineItems as TimelineItem[]}
-								/>
+								{currentView === "home" ? (
+									<div className="relative flex h-full w-full flex-col">
+										<FakeHomePage
+											onStartConversation={handleMouseClick}
+											ref={buttonRef}
+											showMouseCursor={showMouseCursor}
+										/>
+										{showMouseCursor && buttonRef.current && (
+											<FakeWidgetMouseCursor
+												isVisible={showMouseCursor}
+												onClick={handleMouseClick}
+												targetElementRef={buttonRef}
+											/>
+										)}
+									</div>
+								) : (
+									<FakeConversationView
+										conversationId={conversationId}
+										timelineItems={
+											conversationHook.timelineItems as TimelineItem[]
+										}
+									/>
+								)}
 							</div>
 							<FakeBubble
 								className="opacity-50"

@@ -27,3 +27,14 @@
 - The repo follows Conventional Commits (`feat:`, `fix:`, `docs:`) as seen in recent history; use `bun run changeset` when shipping public package updates.
 - Each PR should summarize scope, link issues, list env/config changes, and add dashboard/widget screenshots when UI shifts.
 - Ensure lint/tests pass locally before requesting review; attach commands run (e.g., `bun run lint`, `bun run test`) in the PR description.
+
+## Support Widget Synchronization
+- **Critical**: Whenever the support widget (`packages/react/src/support`) is updated, both `fake-dashboard` and `fake-support-widget` in `apps/web/src/components/landing/` must be kept in sync.
+- The fake versions mimic the real widget for landing page animations and demos. Changes to the real widget structure, props, or APIs must be reflected in both fake implementations.
+- What needs synchronization:
+  - Component structure and layout changes (e.g., HomePage, ConversationPage)
+  - New props or API interfaces (e.g., hooks like `useHomePage`, `useConversationPage`)
+  - Navigation/routing changes (e.g., new pages, page transitions)
+  - Hook interfaces and return types (e.g., `useSupportNavigation`)
+  - UI patterns and animation behaviors
+- Both fake implementations use separate animation stores (`landing-animation-store` for fake-dashboard, `widget-animation-store` for fake-support-widget) to prevent interference between animations.
