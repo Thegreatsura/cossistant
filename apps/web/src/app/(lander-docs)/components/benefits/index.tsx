@@ -81,16 +81,16 @@ const benefits = [
 ] as const;
 
 export const Benefits = () => (
-	<section className="mt-20 grid gap-6 md:gap-12">
+	<section className="mt-40 mb-0 grid gap-6 md:gap-12 lg:my-60">
 		<div className="flex flex-col gap-2 px-4">
-			<span className="w-fit rounded-md bg-primary px-1 py-0.5 text-primary-foreground text-xs">
+			<span className="w-fit bg-cossistant-green px-1 py-0.5 font-semibold text-primary-foreground text-xs">
 				SOON
 			</span>
 			<h2 className="w-full max-w-2xl text-pretty font-f37-stout text-4xl sm:text-3xl md:text-balance md:text-4xl">
 				{HEADLINE}
 			</h2>
 		</div>
-		<div className="isolate grid gap-0 border-primary/10 border-y border-dashed lg:grid-cols-6">
+		<div className="isolate grid gap-0 border-primary/10 border-b-0 border-dashed lg:grid-cols-6 lg:border-y">
 			{benefits.map((benefit, index) => (
 				<div
 					className={cn(

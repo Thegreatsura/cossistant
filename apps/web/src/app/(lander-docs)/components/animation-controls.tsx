@@ -31,7 +31,7 @@ export function AnimationControls() {
 	};
 
 	return (
-		<div className="flex w-max gap-2">
+		<div className="hidden w-max gap-2 lg:flex">
 			<Button
 				className={cn(
 					"border-primary/10 border-dashed bg-background-200 dark:bg-background-400",

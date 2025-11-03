@@ -99,9 +99,9 @@ export type UseSupportValue = CossistantContextValue & {
 	size: "normal" | "larger";
 };
 
-const SupportContext = React.createContext<CossistantContextValue | undefined>(
-	undefined
-);
+export const SupportContext = React.createContext<
+	CossistantContextValue | undefined
+>(undefined);
 
 /**
  * Internal implementation that wires the REST client and websocket provider

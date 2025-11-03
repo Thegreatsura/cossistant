@@ -25,14 +25,14 @@ export default async function Landing() {
 					},
 				]}
 			/>
-			<div className="flex min-h-screen flex-col gap-8 pt-32 md:flex-row">
+			<div className="flex flex-col gap-8 pt-32 md:flex-row lg:min-h-screen">
 				<div className="flex flex-1 flex-col gap-6">
 					{/* <EscapeIframeAnimation /> */}
 					<div className="flex flex-col items-start gap-4 px-4 pb-8">
-						<h1 className="text-pretty text-center font-f37-stout text-[36px] leading-tight md:text-3xl lg:text-left xl:text-5xl">
+						<h1 className="text-pretty text-left font-f37-stout text-[40px] leading-tight md:text-3xl xl:text-5xl">
 							Ship the best customer support for your SaaS.
 						</h1>
-						<h3 className="w-full text-center text-base text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full lg:text-balance lg:text-left">
+						<h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
 							Human + AI agent support your users love in under 10 lines of
 							code.
 						</h3>
@@ -59,12 +59,12 @@ export default async function Landing() {
 							<WaitingListMessage />
 						</Suspense>
 					</div>
-					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed">
+					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed hidden lg:block">
 						<div className="fake-dashboard-container">
 							<FakeDashboard />
 						</div>
 					</BrowserWithBackground>
-					<div className="mt-10 flex w-full items-center justify-center gap-2 px-6 lg:mt-auto lg:justify-between lg:px-4">
+					<div className="mt-10 flex w-full flex-col-reverse items-center justify-center gap-10 px-6 lg:mt-auto lg:flex-row lg:justify-between lg:px-4">
 						<div className="flex items-center gap-2">
 							<p className="font-mono text-foreground/60 text-xs">
 								Works well with

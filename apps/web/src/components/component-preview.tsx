@@ -1,5 +1,6 @@
 import { ComponentPreviewTabs } from "@/components/component-preview-tabs";
 import { ComponentSource } from "@/components/component-source";
+import { cn } from "@/lib/utils";
 import { Index } from "@/registry/__index__";
 
 export function ComponentPreview({
@@ -31,7 +32,7 @@ export function ComponentPreview({
 	return (
 		<ComponentPreviewTabs
 			align={align}
-			className={className}
+			className={cn("w-full", className)}
 			component={<Component />}
 			sizeClasses={sizeClasses}
 			source={<ComponentSource name={name} />}
