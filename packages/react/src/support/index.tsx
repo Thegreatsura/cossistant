@@ -14,6 +14,7 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
+	positioning?: "fixed" | "absolute";
 	quickOptions?: string[];
 	defaultMessages?: DefaultMessage[];
 	defaultOpen?: boolean;
@@ -31,6 +32,7 @@ export function Support<Locale extends string = SupportLocale>({
 	className,
 	position = "bottom",
 	align = "right",
+	positioning = "fixed",
 	quickOptions,
 	defaultMessages,
 	defaultOpen,
@@ -59,6 +61,7 @@ export function Support<Locale extends string = SupportLocale>({
 						align={align}
 						className={className}
 						position={position}
+						positioning={positioning}
 					/>
 				</SupportTextProvider>
 			</SupportRealtimeProvider>

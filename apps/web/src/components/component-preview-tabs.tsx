@@ -29,7 +29,7 @@ export function ComponentPreviewTabs({
 					<TabsTrigger value="code">Code</TabsTrigger>
 				</TabsList>
 			</Tabs>
-			<div className="relative rounded bg-background p-[3px]">
+			<div className="relative w-full rounded bg-background p-[3px]">
 				{withOrnament && (
 					<>
 						{/* left */}
@@ -48,20 +48,20 @@ export function ComponentPreviewTabs({
 							transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
 						/>
 
-						<motion.div
-							animate={{ scaleY: 1 }}
-							className="-top-[25vh] pointer-events-none absolute left-0 h-[100vh] w-[1px] border-primary/10 border-l border-dashed"
-							initial={{ scaleY: 0 }}
-							style={{ originY: 0.5 }}
-							transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
-						/>
-						<motion.div
-							animate={{ scaleY: 1 }}
-							className="-top-[25vh] pointer-events-none absolute left-4 h-[100vh] w-[1px] border-primary/10 border-l border-dashed"
-							initial={{ scaleY: 0 }}
-							style={{ originY: 0.5 }}
-							transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
-						/>
+						{/* <motion.div
+              animate={{ scaleY: 1 }}
+              className="-top-[25vh] pointer-events-none absolute left-0 h-[100vh] w-[1px] border-primary/10 border-l border-dashed"
+              initial={{ scaleY: 0 }}
+              style={{ originY: 0.5 }}
+              transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
+            />
+            <motion.div
+              animate={{ scaleY: 1 }}
+              className="-top-[25vh] pointer-events-none absolute left-4 h-[100vh] w-[1px] border-primary/10 border-l border-dashed"
+              initial={{ scaleY: 0 }}
+              style={{ originY: 0.5 }}
+              transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
+            /> */}
 
 						{/* right */}
 						<motion.div
@@ -86,13 +86,13 @@ export function ComponentPreviewTabs({
               style={{ originY: 0.5 }}
               transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
             /> */}
-						<motion.div
-							animate={{ scaleY: 1 }}
-							className="-top-[25vh] pointer-events-none absolute right-4 h-[100vh] w-[1px] border-primary/10 border-r border-dashed"
-							initial={{ scaleY: 0 }}
-							style={{ originY: 0.5 }}
-							transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
-						/>
+						{/* <motion.div
+              animate={{ scaleY: 1 }}
+              className="-top-[25vh] pointer-events-none absolute right-4 h-[100vh] w-[1px] border-primary/10 border-r border-dashed"
+              initial={{ scaleY: 0 }}
+              style={{ originY: 0.5 }}
+              transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
+            /> */}
 
 						{/* top */}
 						<motion.div

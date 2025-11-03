@@ -9,6 +9,7 @@ import { AnimationControls } from "./components/animation-controls";
 import { Benefits } from "./components/benefits";
 import { BrowserWithBackground } from "./components/browser-with-background";
 import { GitHubLink } from "./components/github-link";
+import { Install } from "./components/install";
 import { WaitingListMessage } from "./components/waiting-list-rank/message";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,7 @@ export default async function Landing() {
 					</div>
 				</div>
 			</div>
+			<Install />
 			<Benefits />
 		</>
 	);

@@ -12,6 +12,7 @@ type SupportContentProps = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
+	positioning?: "fixed" | "absolute";
 };
 
 /**
@@ -27,9 +28,11 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 	className,
 	position = "bottom",
 	align = "right",
+	positioning = "fixed",
 }) => {
 	const containerClasses = cn(
-		"cossistant fixed z-[9999]",
+		"cossistant z-[9999]",
+		positioning === "fixed" ? "fixed" : "absolute",
 		{
 			"bottom-4": position === "bottom",
 			"top-4": position === "top",
