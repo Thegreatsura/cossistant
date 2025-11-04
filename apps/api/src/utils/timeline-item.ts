@@ -16,21 +16,23 @@ export type CreateTimelineItemOptions = {
 	websiteId: string;
 	conversationId: string;
 	conversationOwnerVisitorId?: string | null;
-	item: {
-		id?: string;
-		type:
-			| typeof ConversationTimelineType.MESSAGE
-			| typeof ConversationTimelineType.EVENT;
-		text?: string | null;
-		parts: unknown[];
-		userId?: string | null;
-		aiAgentId?: string | null;
-		visitorId?: string | null;
-		visibility?:
-			| typeof TimelineItemVisibility.PUBLIC
-			| typeof TimelineItemVisibility.PRIVATE;
-		createdAt?: Date;
-	};
+        item: {
+                id?: string;
+                type:
+                        | typeof ConversationTimelineType.MESSAGE
+                        | typeof ConversationTimelineType.EVENT
+                        | typeof ConversationTimelineType.IDENTIFICATION;
+                text?: string | null;
+                parts: unknown[];
+                userId?: string | null;
+                aiAgentId?: string | null;
+                visitorId?: string | null;
+                visibility?:
+                        | typeof TimelineItemVisibility.PUBLIC
+                        | typeof TimelineItemVisibility.PRIVATE;
+                createdAt?: Date;
+                tool?: string | null;
+        };
 };
 
 type TimelineItem = {
@@ -40,16 +42,18 @@ type TimelineItem = {
 	visibility:
 		| typeof TimelineItemVisibility.PUBLIC
 		| typeof TimelineItemVisibility.PRIVATE;
-	type:
-		| typeof ConversationTimelineType.MESSAGE
-		| typeof ConversationTimelineType.EVENT;
-	text: string | null;
-	parts: unknown;
-	userId: string | null;
-	visitorId: string | null;
-	aiAgentId: string | null;
-	createdAt: string;
-	deletedAt: string | null;
+        type:
+                | typeof ConversationTimelineType.MESSAGE
+                | typeof ConversationTimelineType.EVENT
+                | typeof ConversationTimelineType.IDENTIFICATION;
+        text: string | null;
+        parts: unknown;
+        userId: string | null;
+        visitorId: string | null;
+        aiAgentId: string | null;
+        createdAt: string;
+        deletedAt: string | null;
+        tool: string | null;
 };
 
 function serializeTimelineItemForRealtime(
@@ -62,22 +66,22 @@ function serializeTimelineItemForRealtime(
 		visitorId: string | null;
 	}
 ): RealtimeEventData<"timelineItemCreated"> {
-	return {
-		item: {
-			id: item.id,
-			conversationId: item.conversationId,
-			organizationId: item.organizationId,
-			visibility: item.visibility,
-			type:
-				item.type === ConversationTimelineType.MESSAGE ? "message" : "event",
-			text: item.text,
-			parts: item.parts as unknown[],
-			userId: item.userId,
-			visitorId: item.visitorId,
-			aiAgentId: item.aiAgentId,
-			createdAt: item.createdAt,
-			deletedAt: item.deletedAt,
-		},
+        return {
+                item: {
+                        id: item.id,
+                        conversationId: item.conversationId,
+                        organizationId: item.organizationId,
+                        visibility: item.visibility,
+                        type: item.type,
+                        text: item.text,
+                        parts: item.parts as unknown[],
+                        userId: item.userId,
+                        visitorId: item.visitorId,
+                        aiAgentId: item.aiAgentId,
+                        createdAt: item.createdAt,
+                        deletedAt: item.deletedAt,
+                        tool: item.tool,
+                },
 		conversationId: context.conversationId,
 		websiteId: context.websiteId,
 		organizationId: context.organizationId,
@@ -132,20 +136,21 @@ export async function createTimelineItem(
 	}
 
 	const realtimePayload = serializeTimelineItemForRealtime(
-		{
-			id: parsedItem.id,
-			conversationId: parsedItem.conversationId,
-			organizationId: parsedItem.organizationId,
-			visibility: parsedItem.visibility,
-			type: parsedItem.type,
-			text: parsedItem.text ?? null,
-			parts: parsedItem.parts,
-			userId: parsedItem.userId,
-			visitorId: parsedItem.visitorId,
-			aiAgentId: parsedItem.aiAgentId,
-			createdAt: parsedItem.createdAt,
-			deletedAt: parsedItem.deletedAt ?? null,
-		},
+                {
+                        id: parsedItem.id,
+                        conversationId: parsedItem.conversationId,
+                        organizationId: parsedItem.organizationId,
+                        visibility: parsedItem.visibility,
+                        type: parsedItem.type,
+                        text: parsedItem.text ?? null,
+                        parts: parsedItem.parts,
+                        userId: parsedItem.userId,
+                        visitorId: parsedItem.visitorId,
+                        aiAgentId: parsedItem.aiAgentId,
+                        createdAt: parsedItem.createdAt,
+                        deletedAt: parsedItem.deletedAt ?? null,
+                        tool: parsedItem.tool ?? null,
+                },
 		{
 			conversationId,
 			websiteId,
@@ -166,11 +171,12 @@ export async function createTimelineItem(
 		text: parsedItem.text ?? null,
 		parts: parsedItem.parts,
 		userId: parsedItem.userId,
-		visitorId: parsedItem.visitorId,
-		aiAgentId: parsedItem.aiAgentId,
-		createdAt: parsedItem.createdAt,
-		deletedAt: parsedItem.deletedAt ?? null,
-	};
+                visitorId: parsedItem.visitorId,
+                aiAgentId: parsedItem.aiAgentId,
+                createdAt: parsedItem.createdAt,
+                deletedAt: parsedItem.deletedAt ?? null,
+                tool: parsedItem.tool ?? null,
+        };
 }
 
 async function resolveConversationVisitorId(

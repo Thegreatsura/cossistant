@@ -171,14 +171,18 @@ function ConversationTimelineListComponent({
 										event={eventPart}
 										key={item.item.id || `timeline-event-${index}`}
 									/>
-								);
-							}
+                                                        );
+                                                }
 
-							// Use first timeline item ID as stable key
-							const groupKey = item.items?.[0]?.id || `group-${index}`;
+                                                if (item.type === "timeline_tool") {
+                                                        return null;
+                                                }
 
-							return (
-								<TimelineMessageGroup
+                                                // Use first timeline item ID as stable key
+                                                const groupKey = item.items?.[0]?.id || `group-${index}`;
+
+                                                return (
+                                                        <TimelineMessageGroup
 									availableAIAgents={availableAIAgents}
 									currentUserId={currentUserId}
 									items={item.items || []}

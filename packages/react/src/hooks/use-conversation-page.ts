@@ -6,6 +6,7 @@ import { useConversationAutoSeen } from "./use-conversation-auto-seen";
 import { useConversationLifecycle } from "./use-conversation-lifecycle";
 import { useConversationTimelineItems } from "./use-conversation-timeline-items";
 import { useMessageComposer } from "./use-message-composer";
+import { ConversationTimelineType, TimelineItemVisibility } from "@cossistant/types/enums";
 
 export type UseConversationPageOptions = {
 	/**
@@ -110,7 +111,7 @@ export function useConversationPage(
 		autoSeenEnabled = true,
 	} = options;
 
-	const { client, visitor } = useSupport();
+        const { client, visitor } = useSupport();
 
 	const trimmedInitialMessage = initialMessage?.trim() ?? "";
 	const hasInitialMessage = trimmedInitialMessage.length > 0;
@@ -136,11 +137,11 @@ export function useConversationPage(
 	});
 
 	// 4. Determine which items to display
-	const displayItems = useMemo(() => {
-		// If we have fetched timeline items, use them
-		if (timelineQuery.items.length > 0) {
-			return timelineQuery.items;
-		}
+        const baseItems = useMemo(() => {
+                // If we have fetched timeline items, use them
+                if (timelineQuery.items.length > 0) {
+                        return timelineQuery.items;
+                }
 
 		// If pending, use default timeline items
 		if (lifecycle.isPending && effectiveDefaultTimelineItems.length > 0) {
@@ -152,18 +153,67 @@ export function useConversationPage(
 			return passedItems;
 		}
 
-		return [];
-	}, [
-		timelineQuery.items,
-		lifecycle.isPending,
-		effectiveDefaultTimelineItems,
-		passedItems,
-	]);
+                return [];
+        }, [
+                timelineQuery.items,
+                lifecycle.isPending,
+                effectiveDefaultTimelineItems,
+                passedItems,
+        ]);
 
-	const lastTimelineItem = useMemo(
-		() => displayItems.at(-1) ?? null,
-		[displayItems]
-	);
+        const shouldShowIdentificationTool = useMemo(() => {
+                if (lifecycle.isPending) {
+                        return false;
+                }
+
+                if (visitor?.contact) {
+                        return false;
+                }
+
+                return !baseItems.some(
+                        (item) => item.type === ConversationTimelineType.IDENTIFICATION
+                );
+        }, [baseItems, lifecycle.isPending, visitor?.contact]);
+
+        const displayItems = useMemo(() => {
+                if (!shouldShowIdentificationTool) {
+                        return baseItems;
+                }
+
+                const organizationId =
+                        baseItems.at(-1)?.organizationId ??
+                        client.getConfiguration().organizationId ??
+                        "";
+
+                const identificationItem: TimelineItem = {
+                        id: `identification-${lifecycle.conversationId}`,
+                        conversationId: lifecycle.conversationId,
+                        organizationId,
+                        visibility: TimelineItemVisibility.PUBLIC,
+                        type: ConversationTimelineType.IDENTIFICATION,
+                        text: null,
+                        tool: "identification",
+                        parts: [],
+                        userId: null,
+                        visitorId: visitor?.id ?? null,
+                        aiAgentId: null,
+                        createdAt: new Date().toISOString(),
+                        deletedAt: null,
+                };
+
+                return [...baseItems, identificationItem];
+        }, [
+                baseItems,
+                client,
+                lifecycle.conversationId,
+                shouldShowIdentificationTool,
+                visitor?.id,
+        ]);
+
+        const lastTimelineItem = useMemo(
+                () => displayItems.at(-1) ?? null,
+                [displayItems]
+        );
 
 	// 5. Set up message composer
 	const composer = useMessageComposer({

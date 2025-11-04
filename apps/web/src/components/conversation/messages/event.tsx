@@ -61,12 +61,14 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 				return `${actorName} reopened the conversation`;
 			case "visitor_blocked":
 				return `${actorName} blocked the visitor`;
-			case "visitor_unblocked":
-				return `${actorName} unblocked the visitor`;
-			default:
-				return `${actorName} performed an action`;
-		}
-	};
+                        case "visitor_unblocked":
+                                return `${actorName} unblocked the visitor`;
+                        case "visitor_identified":
+                                return `${actorName} confirmed the visitor's contact details`;
+                        default:
+                                return `${actorName} performed an action`;
+                }
+        };
 
 	return (
 		<motion.div

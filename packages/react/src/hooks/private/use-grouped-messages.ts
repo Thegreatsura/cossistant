@@ -15,12 +15,22 @@ export type GroupedMessage = {
 };
 
 export type TimelineEventItem = {
-	type: "timeline_event";
-	item: TimelineItem;
-	timestamp: Date;
+        type: "timeline_event";
+        item: TimelineItem;
+        timestamp: Date;
 };
 
-export type ConversationItem = GroupedMessage | TimelineEventItem;
+export type TimelineToolItem = {
+        type: "timeline_tool";
+        item: TimelineItem;
+        tool: string | null;
+        timestamp: Date;
+};
+
+export type ConversationItem =
+        | GroupedMessage
+        | TimelineEventItem
+        | TimelineToolItem;
 
 export type UseGroupedMessagesOptions = {
 	items: TimelineItem[];
@@ -77,29 +87,44 @@ const getSenderIdAndTypeFromTimelineItem = (
 const EMPTY_STRING_ARRAY: readonly string[] = Object.freeze([]);
 
 // Helper function to group timeline items (messages only, events stay separate)
-const groupTimelineItems = (
-	items: TimelineItem[]
-): Array<GroupedMessage | TimelineEventItem> => {
-	const result: Array<GroupedMessage | TimelineEventItem> = [];
+const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
+        const result: ConversationItem[] = [];
 	let currentGroup: GroupedMessage | null = null;
 
 	for (const item of items) {
-		// Events don't get grouped
-		if (item.type === "event") {
-			// Finalize any existing group
-			if (currentGroup) {
-				result.push(currentGroup);
-				currentGroup = null;
-			}
+                // Events don't get grouped
+                if (item.type === "event") {
+                        // Finalize any existing group
+                        if (currentGroup) {
+                                result.push(currentGroup);
+                                currentGroup = null;
+                        }
 
-			// Add event as standalone item
-			result.push({
-				type: "timeline_event",
-				item,
-				timestamp: toDate(item.createdAt),
-			});
-			continue;
-		}
+                        // Add event as standalone item
+                        result.push({
+                                type: "timeline_event",
+                                item,
+                                timestamp: toDate(item.createdAt),
+                        });
+                        continue;
+                }
+
+                if (item.type === "identification") {
+                        // Finalize any existing group
+                        if (currentGroup) {
+                                result.push(currentGroup);
+                                currentGroup = null;
+                        }
+
+                        // Add tool item as standalone entry
+                        result.push({
+                                type: "timeline_tool",
+                                item,
+                                tool: item.tool ?? null,
+                                timestamp: toDate(item.createdAt),
+                        });
+                        continue;
+                }
 
 		// Group messages by sender
 		const { senderId, senderType } = getSenderIdAndTypeFromTimelineItem(item);

@@ -172,28 +172,32 @@ export function FakeConversationTimelineList({
 		>
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
 				{groupedMessages.map((item, index) => {
-					if (item.type === "timeline_event") {
-						// Extract event data from parts
-						const eventPart = extractEventPart(item.item);
+                                        if (item.type === "timeline_event") {
+                                                // Extract event data from parts
+                                                const eventPart = extractEventPart(item.item);
 
-						// Only render if we have valid event data
-						if (!eventPart) {
-							return null;
-						}
+                                                // Only render if we have valid event data
+                                                if (!eventPart) {
+                                                        return null;
+                                                }
 
-						return (
-							<ConversationEvent
-								availableAIAgents={availableAIAgents}
-								availableHumanAgents={availableHumanAgents}
-								createdAt={item.item.createdAt}
-								event={eventPart}
-								key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
-							/>
-						);
-					}
+                                                return (
+                                                        <ConversationEvent
+                                                                availableAIAgents={availableAIAgents}
+                                                                availableHumanAgents={availableHumanAgents}
+                                                                createdAt={item.item.createdAt}
+                                                                event={eventPart}
+                                                                key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
+                                                        />
+                                                );
+                                        }
 
-					// Only show seen indicator on the LAST message group sent by the visitor
-					const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
+                                        if (item.type === "timeline_tool") {
+                                                return null;
+                                        }
+
+                                        // Only show seen indicator on the LAST message group sent by the visitor
+                                        const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
 					const seenByIds = EMPTY_SEEN_BY_IDS; // No seen data for fake widget
 					const seenByNames = EMPTY_SEEN_BY_NAMES;
 

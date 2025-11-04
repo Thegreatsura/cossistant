@@ -1,14 +1,14 @@
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
 import type {
-	TimelineItem,
-	TimelinePartEvent,
+        TimelineItem,
+        TimelinePartEvent,
 } from "@cossistant/types/api/timeline-item";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { useConversationTimeline } from "../../hooks/use-conversation-timeline";
 import {
-	ConversationTimelineContainer,
-	ConversationTimeline as PrimitiveConversationTimeline,
+        ConversationTimelineContainer,
+        ConversationTimeline as PrimitiveConversationTimeline,
 } from "../../primitives/conversation-timeline";
 import { cn } from "../utils";
 import { ConversationEvent } from "./conversation-event";
@@ -17,8 +17,8 @@ import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
 // Helper to extract event part from timeline item
 function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
-	if (item.type !== "event") {
-		return null;
+        if (item.type !== "event") {
+                return null;
 	}
 
 	const eventPart = item.parts.find(
@@ -31,22 +31,38 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 const EMPTY_SEEN_BY_IDS: readonly string[] = Object.freeze([]);
 const EMPTY_SEEN_BY_NAMES: readonly string[] = Object.freeze([]);
 
+export type ConversationTimelineToolProps = {
+        item: TimelineItem;
+        conversationId: string;
+};
+
+export type ConversationTimelineToolDefinition = {
+        component: React.ComponentType<ConversationTimelineToolProps>;
+};
+
+export type ConversationTimelineTools = Record<
+        string,
+        ConversationTimelineToolDefinition
+>;
+
 export type ConversationTimelineProps = {
-	conversationId: string;
-	items: TimelineItem[];
-	className?: string;
-	availableAIAgents: AvailableAIAgent[];
-	availableHumanAgents: AvailableHumanAgent[];
-	currentVisitorId?: string;
+        conversationId: string;
+        items: TimelineItem[];
+        className?: string;
+        availableAIAgents: AvailableAIAgent[];
+        availableHumanAgents: AvailableHumanAgent[];
+        currentVisitorId?: string;
+        tools?: ConversationTimelineTools;
 };
 
 export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
-	conversationId,
-	items: timelineItems,
-	className,
-	availableAIAgents = [],
-	availableHumanAgents = [],
-	currentVisitorId,
+        conversationId,
+        items: timelineItems,
+        className,
+        availableAIAgents = [],
+        availableHumanAgents = [],
+        currentVisitorId,
+        tools,
 }) => {
 	const timeline = useConversationTimeline({
 		conversationId,
@@ -122,10 +138,10 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 			items={timelineItems}
 		>
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
-				{timeline.groupedMessages.items.map((item, index) => {
-					if (item.type === "timeline_event") {
-						// Extract event data from parts
-						const eventPart = extractEventPart(item.item);
+                                {timeline.groupedMessages.items.map((item, index) => {
+                                        if (item.type === "timeline_event") {
+                                                // Extract event data from parts
+                                                const eventPart = extractEventPart(item.item);
 
 						// Only render if we have valid event data
 						if (!eventPart) {
@@ -140,12 +156,37 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 								event={eventPart}
 								key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
 							/>
-						);
-					}
+                                                );
+                                        }
 
-					// Only show seen indicator on the LAST message group sent by the visitor
-					const isLastVisitorGroup =
-						index === timeline.lastVisitorMessageGroupIndex;
+                                        if (item.type === "timeline_tool") {
+                                                const toolName = item.tool ?? item.item.tool ?? item.item.type;
+                                                const toolDefinition = toolName
+                                                        ? tools?.[toolName]
+                                                        : undefined;
+
+                                                if (!toolDefinition) {
+                                                        return null;
+                                                }
+
+                                                const ToolComponent = toolDefinition.component;
+
+                                                const toolKey =
+                                                        item.item.id ??
+                                                        `${toolName}-${item.item.createdAt}-${index}`;
+
+                                                return (
+                                                        <ToolComponent
+                                                                conversationId={conversationId}
+                                                                item={item.item}
+                                                                key={toolKey}
+                                                        />
+                                                );
+                                        }
+
+                                        // Only show seen indicator on the LAST message group sent by the visitor
+                                        const isLastVisitorGroup =
+                                                index === timeline.lastVisitorMessageGroupIndex;
 					const seenByIds =
 						isLastVisitorGroup && item.lastMessageId
 							? timeline.groupedMessages.getMessageSeenBy(item.lastMessageId)
