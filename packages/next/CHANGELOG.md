@@ -1,5 +1,15 @@
 # @cossistant/next
 
+## 0.0.5
+
+### Patch Changes
+
+- 6bf7fb5: Performance optimizations and conversation timeline stability improvements. This release includes significant fixes for timeline auto-scroll behavior, conversation button primitive refactoring, and visitor blocking support. Dashboard improvements include redesigned contact pages, better timeline animations, and visitor blocking UI indicators.
+- 49f0cb9: Widget navigation and conversation tracking improvements. This release includes enhanced conversation visibility tracking, improved message handling logic for users and AI agents, better navigation flow and conversation history, and disabled visitor replies on closed conversations. Dashboard improvements include better inbox interface and enhanced landing page animations with synchronized fake dashboard demo.
+- Updated dependencies [6bf7fb5]
+- Updated dependencies [49f0cb9]
+  - @cossistant/react@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes

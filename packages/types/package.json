@@ -1,6 +1,6 @@
 {
   "name": "@cossistant/types",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "author": "Cossistant Team",
   "description": "Shared TypeScript types for Cossistant packages",
