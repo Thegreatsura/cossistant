@@ -15,17 +15,201 @@ The `<Support />` component is built on the principle of **simplicity first**. D
 - **Smart Routing**: Automatically routes conversations to appropriate channels
 - **Headless Architecture**: Full control through primitive components when needed
 
-## Props
+The component handles the complexity of modern support systems while maintaining a clean, minimal API surface.
+
+---
+
+## Customizing Messages & Quick Options
+
+Use the `<SupportConfig />` component to customize default messages and quick options per page or route. This is perfect for providing context-specific help.
+
+### Example: Pricing Page
+
+```tsx showLineNumbers title="app/pricing/page.tsx"
+import { SupportConfig } from "@cossistant/next";
+
+export default function PricingPage() {
+  return (
+    <>
+      <SupportConfig
+        quickOptions={[
+          "How does billing work?",
+          "What's included in Pro?",
+          "Can I cancel anytime?"
+        ]}
+      />
+      <h1>Choose your plan</h1>
+      {/* rest of pricing page */}
+    </>
+  );
+}
+```
+
+The `<SupportConfig />` component accepts the following props:
 
 <TypeTable
   type={{
-    percentage: {
-      description:
-        "The percentage of scroll position to display the roll button",
-      type: "number",
-      default: 0.2,
+    defaultMessages: {
+      description: "Custom welcome messages shown before a conversation starts",
+      type: "DefaultMessage[]",
+      required: false,
+    },
+    quickOptions: {
+      description: "Array of quick reply options displayed to users",
+      type: "string[]",
+      required: false,
     },
   }}
 />
 
-The component handles the complexity of modern support systems while maintaining a clean, minimal API surface.
+---
+
+## Identifying Visitors
+
+By default, visitors are **anonymous**. Use `<IdentifySupportVisitor />` to connect them to your authenticated users, transforming them into [contacts](/docs/concepts/contacts).
+
+Once identified, all conversations and metadata are linked to the contact across devices.
+
+### Example: Dashboard Layout with Better Auth
+
+```tsx showLineNumbers title="app/dashboard/layout.tsx"
+import { IdentifySupportVisitor } from "@cossistant/next";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+
+export default async function DashboardLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  return (
+    <div>
+      {session?.user && (
+        <IdentifySupportVisitor
+          externalId={session.user.id}
+          email={session.user.email}
+          name={session.user.name}
+          image={session.user.image}
+          metadata={{
+            plan: session.user.plan,
+            signupDate: session.user.createdAt
+          }}
+        />
+      )}
+      {children}
+    </div>
+  );
+}
+```
+
+<Alert variant="info" className="mt-6">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>What happens when I identify a visitor?</AlertTitle>
+  <AlertDescription>
+    The anonymous visitor becomes associated with a contact. All their conversations, metadata, and future interactions are linked to this contact—even across different devices. Learn more about <Link href="/docs/concepts/visitors">visitors</Link> and <Link href="/docs/concepts/contacts">contacts</Link>.
+  </AlertDescription>
+</Alert>
+
+### Props
+
+<TypeTable
+  type={{
+    externalId: {
+      description: "Your internal user ID to uniquely identify this visitor",
+      type: "string",
+      required: false,
+    },
+    email: {
+      description: "User's email address (required if externalId not provided)",
+      type: "string",
+      required: false,
+    },
+    name: {
+      description: "User's display name shown in conversations",
+      type: "string | null",
+      required: false,
+    },
+    image: {
+      description: "URL to user's avatar image",
+      type: "string | null",
+      required: false,
+    },
+    metadata: {
+      description: "Additional context about the user (plan, company, MRR, etc.)",
+      type: "VisitorMetadata | null",
+      typeDescription: "Record<string, string | number | boolean | null>",
+      required: false,
+    },
+  }}
+/>
+
+<Alert variant="default" className="mt-6">
+  <Icon name="code" className="size-4" />
+  <AlertTitle>Need programmatic control?</AlertTitle>
+  <AlertDescription>
+    Use the <Link href="/docs/support-component/hooks#usevisitor">useVisitor</Link> hook to identify visitors or update metadata from client components.
+  </AlertDescription>
+</Alert>
+
+---
+
+## Support Component Props
+
+The `<Support />` component accepts these optional props to customize its appearance and behavior:
+
+<TypeTable
+  type={{
+    className: {
+      description: "Additional CSS classes for the support widget container",
+      type: "string",
+      required: false,
+    },
+    position: {
+      description: "Vertical position of the widget",
+      type: '"top" | "bottom"',
+      default: '"bottom"',
+      required: false,
+    },
+    align: {
+      description: "Horizontal alignment of the widget",
+      type: '"right" | "left"',
+      default: '"right"',
+      required: false,
+    },
+    positioning: {
+      description: "CSS positioning strategy for the widget",
+      type: '"fixed" | "absolute"',
+      default: '"fixed"',
+      required: false,
+    },
+    quickOptions: {
+      description: "Quick reply options for this specific widget instance",
+      type: "string[]",
+      required: false,
+    },
+    defaultMessages: {
+      description: "Welcome messages shown before conversation starts",
+      type: "DefaultMessage[]",
+      required: false,
+    },
+    defaultOpen: {
+      description: "Whether the widget should open automatically on mount",
+      type: "boolean",
+      required: false,
+    },
+    locale: {
+      description: "Locale string for widget translations (e.g., 'en', 'fr', 'es')",
+      type: "string",
+      required: false,
+    },
+    content: {
+      description: "Custom text content overrides for widget copy",
+      type: "SupportTextContentOverrides<Locale>",
+      required: false,
+    },
+  }}
+/>

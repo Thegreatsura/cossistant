@@ -1,4 +1,4 @@
 {
-  "pages": ["index", "visitors", "contacts", "conversations"],
+  "pages": ["index", "contacts", "conversations", "timeline-items"],
   "title": "Concepts"
 }

@@ -1,6 +1,249 @@
 ---
 title: Hooks
-description: Configure widget copy with type-safe locales and overrides.
+description: Programmatic access to support widget state and visitor management.
 ---
 
 ## Overview
+
+Cossistant provides React hooks for programmatic control over the support widget and visitor identification. These hooks are ideal when you need to integrate support functionality into custom components or respond to application events.
+
+---
+
+## useSupport
+
+Access support widget state and controls from any client component.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/custom-support-button.tsx"
+"use client";
+
+import { useSupport } from "@cossistant/next";
+
+export function CustomSupportButton() {
+  const { isOpen, toggle, unreadCount } = useSupport();
+
+  return (
+    <button
+      onClick={toggle}
+      className="relative rounded-lg bg-primary px-4 py-2 text-white"
+    >
+      Support
+      {unreadCount > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs">
+          {unreadCount}
+        </span>
+      )}
+    </button>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  type={{
+    website: {
+      description: "Website configuration and available agents",
+      type: "PublicWebsiteResponse | null",
+      required: true,
+    },
+    visitor: {
+      description: "Current visitor data with normalized locale",
+      type: "PublicVisitor & { locale: string | null }",
+      required: true,
+    },
+    isOpen: {
+      description: "Whether the support widget is currently open",
+      type: "boolean",
+      required: true,
+    },
+    open: {
+      description: "Function to open the support widget",
+      type: "() => void",
+      required: true,
+    },
+    close: {
+      description: "Function to close the support widget",
+      type: "() => void",
+      required: true,
+    },
+    toggle: {
+      description: "Function to toggle the widget open/closed state",
+      type: "() => void",
+      required: true,
+    },
+    unreadCount: {
+      description: "Number of unread messages across all conversations",
+      type: "number",
+      required: true,
+    },
+    availableHumanAgents: {
+      description: "List of human support agents currently available",
+      type: "HumanAgent[]",
+      required: true,
+    },
+    availableAIAgents: {
+      description: "List of AI agents configured for support",
+      type: "AIAgent[]",
+      required: true,
+    },
+    client: {
+      description: "CossistantClient instance for direct API access",
+      type: "CossistantClient",
+      required: true,
+    },
+    isLoading: {
+      description: "Whether website data is still loading",
+      type: "boolean",
+      required: true,
+    },
+    error: {
+      description: "Error object if website data failed to load",
+      type: "Error | null",
+      required: true,
+    },
+    size: {
+      description: "Widget size configuration",
+      type: '"normal" | "larger"',
+      required: true,
+    },
+  }}
+/>
+
+---
+
+## useVisitor
+
+Programmatically identify visitors and manage contact metadata.
+
+<Alert variant="info" className="mt-6 mb-6">
+  <Icon name="info" className="size-4" />
+  <AlertTitle>Important: Metadata storage</AlertTitle>
+  <AlertDescription>
+    Metadata is stored on **contacts**, not visitors. You must call `identify()`
+    before `setVisitorMetadata()` will work. Learn more about{" "}
+    <Link href="/docs/concepts/visitors">visitors</Link> and{" "}
+    <Link href="/docs/concepts/contacts">contacts</Link>.
+  </AlertDescription>
+</Alert>
+
+### Example: Identify on Auth
+
+```tsx showLineNumbers title="components/auth-handler.tsx"
+"use client";
+
+import { useVisitor } from "@cossistant/next";
+import { useEffect } from "react";
+
+export function AuthHandler({ user }) {
+  const { visitor, identify } = useVisitor();
+
+  useEffect(() => {
+    // Only identify if we have a user and visitor isn't already a contact
+    if (user && !visitor?.contact) {
+      identify({
+        externalId: user.id,
+        email: user.email,
+        name: user.name,
+        image: user.avatar,
+      });
+    }
+  }, [user, visitor?.contact, identify]);
+
+  return null;
+}
+```
+
+### Example: Update Metadata on Action
+
+```tsx showLineNumbers title="components/upgrade-button.tsx"
+"use client";
+
+import { useVisitor } from "@cossistant/next";
+
+export function UpgradeButton() {
+  const { setVisitorMetadata } = useVisitor();
+
+  const handleUpgrade = async () => {
+    // Upgrade user's plan
+    await upgradeToPro();
+
+    // Update contact metadata so support agents see the change
+    await setVisitorMetadata({
+      plan: "pro",
+      upgradedAt: new Date().toISOString(),
+      mrr: 99,
+    });
+  };
+
+  return <button onClick={handleUpgrade}>Upgrade to Pro</button>;
+}
+```
+
+### Return Values
+
+<TypeTable
+  type={{
+    visitor: {
+      description: "Current visitor object (includes contact if identified)",
+      type: "PublicVisitor | null",
+      required: true,
+    },
+    identify: {
+      description: "Convert anonymous visitor into an identified contact",
+      type: "(params: IdentifyParams) => Promise<{ contactId: string; visitorId: string } | null>",
+      required: true,
+    },
+    setVisitorMetadata: {
+      description: "Update metadata for the identified contact",
+      type: "(metadata: VisitorMetadata) => Promise<VisitorResponse | null>",
+      required: true,
+    },
+  }}
+/>
+
+### identify() Parameters
+
+<TypeTable
+  type={{
+    externalId: {
+      description: "Your internal user ID (required if email not provided)",
+      type: "string",
+      required: false,
+    },
+    email: {
+      description: "User's email address (required if externalId not provided)",
+      type: "string",
+      required: false,
+    },
+    name: {
+      description: "User's display name",
+      type: "string",
+      required: false,
+    },
+    image: {
+      description: "URL to user's avatar image",
+      type: "string",
+      required: false,
+    },
+    metadata: {
+      description: "Initial metadata to attach to the contact",
+      type: "Record<string, unknown>",
+      required: false,
+    },
+  }}
+/>
+
+<Alert variant="default" className="mt-6">
+  <Icon name="lightbulb" className="size-4" />
+  <AlertTitle>Prefer declarative code?</AlertTitle>
+  <AlertDescription>
+    Use the{" "}
+    <Link href="/docs/support-component#identifying-visitors">
+      IdentifySupportVisitor
+    </Link>{" "}
+    component for a simpler, declarative approach to visitor identification in
+    Server Components.
+  </AlertDescription>
+</Alert>
