@@ -1,5 +1,6 @@
 import type { Conversation } from "@cossistant/types";
 import { useCallback, useMemo, useState } from "react";
+import { shouldDisplayConversation } from "../utils/conversation";
 import { useConversations } from "./use-conversations";
 
 export type UseConversationHistoryPageOptions = {
@@ -102,12 +103,21 @@ export function useConversationHistoryPage(
 	} = options;
 
 	// Fetch conversations
-	const { conversations, isLoading, error } = useConversations({
+	const {
+		conversations: allConversations,
+		isLoading,
+		error,
+	} = useConversations({
 		enabled,
 		// Most recent first
 		orderBy: "updatedAt",
 		order: "desc",
 	});
+
+	const conversations = useMemo(
+		() => allConversations.filter(shouldDisplayConversation),
+		[allConversations]
+	);
 
 	// Manage visible count for pagination
 	const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
@@ -115,7 +125,7 @@ export function useConversationHistoryPage(
 	// Compute visible conversations and pagination state
 	const { visibleConversations, hasMore, remainingCount } = useMemo(() => {
 		const visible = conversations.slice(0, visibleCount);
-		const remaining = Math.max(conversations.length - visibleCount, 0);
+		const remaining = Math.max(conversations.length - visible.length, 0);
 
 		return {
 			visibleConversations: visible,
