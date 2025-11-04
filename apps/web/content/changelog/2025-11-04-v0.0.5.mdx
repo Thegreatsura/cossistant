@@ -1,0 +1,39 @@
+---
+version: "0.0.5"
+description: "Widget navigation and conversation tracking improvements"
+date: "2025-11-04"
+author: "Cossistant Team"
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+<Callout title="Release 0.0.5" type="info">
+  This release delivers enhanced navigation, improved conversation tracking, and
+  better visitor interaction controls. Both `@cossistant/react@0.0.5` and
+  `@cossistant/next@0.0.5` are now available on npm. See the [git
+  tags](https://github.com/cossistantcom/origami-monorepo/tags) for the full
+  commit history.
+</Callout>
+
+## Widget
+
+- **Conversation Visibility Tracking**: Added widget visibility tracking to the `useConversationAutoSeen` hook, ensuring conversations are only marked as seen when the support widget is actually open and visible to the visitor.
+- **Message Handling Logic**: Updated message handling to mark conversations as seen only for users and AI agents, while improving visitor tracking with widget visibility checks for more accurate conversation state.
+- **Navigation and History**: Improved navigation flow and conversation history logic for a smoother, more intuitive user experience.
+- **Visitor Identification**: Enhanced the `IdentifySupportVisitor` component with better validation and error handling.
+- **Closed Conversation Handling**: Disabled visitor replies on closed conversations, preventing confusion and maintaining conversation state integrity.
+- **Unread Count**: Fixed unread count computation to accurately reflect unread messages in the widget badge.
+- **Default Open Option**: Added support for configuring the widget to open by default on page load.
+- **Prefetch Optimization**: Delayed support prefetch until website context is available, and improved prefetching of visitor conversations for accurate unread badge display.
+- **Code Quality**: Enhanced error handling in `CossistantRestClient` and improved code formatting across provider and timeline components for better maintainability.
+- **Widget Cleanup**: Removed unused features and code to reduce bundle size and improve performance.
+
+## Dashboard
+
+- **Inbox Improvements**: Enhanced inbox interface with better conversation list display and navigation.
+- **Landing Page Animations**: Improved dashboard animation on the landing page with synchronized fake dashboard and conversation list for better demo experience.
+
+## Documentation
+
+- Fixed Tailwind CSS setup documentation and configuration examples.
+- Improved release workflow documentation.
