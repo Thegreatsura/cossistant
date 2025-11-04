@@ -29,7 +29,7 @@ export default async function Landing() {
 				<div className="flex flex-1 flex-col gap-6">
 					{/* <EscapeIframeAnimation /> */}
 					<div className="flex flex-col items-start gap-4 px-4 pb-8">
-						<h1 className="text-pretty text-left font-f37-stout text-[40px] leading-tight md:text-3xl xl:text-5xl">
+						<h1 className="text-pretty text-left font-f37-stout text-[36px] leading-tight md:text-3xl xl:text-5xl">
 							Ship the best customer support for your SaaS.
 						</h1>
 						<h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
@@ -44,7 +44,7 @@ export default async function Landing() {
 							</Link>
 							<GitHubLink
 								className="h-12 w-full justify-between px-4 font-medium text-md lg:w-[250px]"
-								variant="ghost"
+								variant="secondary"
 							>
 								Star us on GitHub
 							</GitHubLink>

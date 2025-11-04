@@ -3,7 +3,7 @@
 import { TerminalIcon } from "lucide-react";
 import * as React from "react";
 
-import { CopyButton, copyToClipboardWithMeta } from "@/components/copy-button";
+import { CopyButton } from "@/components/copy-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useConfig } from "@/hooks/use-config";

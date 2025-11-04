@@ -215,7 +215,7 @@ export function useFakeSupportWidgetConversation({
 
 			// Animation completes after 7 seconds
 			if (onCompleteRef.current) {
-				currentSchedule(7000, () => {
+				currentSchedule(20_000, () => {
 					if (onCompleteRef.current) {
 						onCompleteRef.current();
 					}

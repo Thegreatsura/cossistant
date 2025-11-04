@@ -1,11 +1,7 @@
 "use client";
 
 import * as Primitive from "@cossistant/react/primitives";
-import {
-	Bubble,
-	Container,
-	ConversationTimelineList,
-} from "@cossistant/react/support/components";
+import { Bubble, Container } from "@cossistant/react/support/components";
 import { AvatarStack } from "@cossistant/react/support/components/avatar-stack";
 import { Button } from "@cossistant/react/support/components/button";
 import Icon from "@cossistant/react/support/components/icons";
@@ -17,6 +13,7 @@ import { useViewportVisibility } from "@/hooks/use-viewport-visibility";
 import { cn } from "@/lib/utils";
 import { useWidgetAnimationStore } from "@/stores/widget-animation-store";
 import { FakeBubble } from "./fake-bubble";
+import { FakeConversationTimelineList } from "./fake-conversation-timeline-list";
 import { FakeHomePage } from "./fake-home-page";
 import { FakeSupportProvider, useFakeSupport } from "./fake-support-context";
 import {
@@ -64,9 +61,11 @@ function FakeHeader({
 function FakeConversationView({
 	conversationId,
 	timelineItems,
+	typingVisitors,
 }: {
 	conversationId: string;
 	timelineItems: TimelineItem[];
+	typingVisitors: import("../fake-dashboard/data").FakeTypingVisitor[];
 }) {
 	const { website, availableAIAgents, availableHumanAgents, visitor } =
 		useFakeSupport();
@@ -97,14 +96,15 @@ function FakeConversationView({
 				</div>
 			</FakeHeader>
 
-			<div className="scrollbar-gutter-stable min-h-0 flex-1 overflow-y-auto">
-				<ConversationTimelineList
+			<div className="min-h-0 flex-1" style={{ scrollbarGutter: "stable" }}>
+				<FakeConversationTimelineList
 					availableAIAgents={availableAIAgents}
 					availableHumanAgents={availableHumanAgents}
 					className="px-4 py-20"
 					conversationId={conversationId}
 					currentVisitorId={visitor?.id}
 					items={timelineItems}
+					typingVisitors={typingVisitors}
 				/>
 			</div>
 
@@ -310,6 +310,7 @@ export function FakeSupportWidget({ className }: { className?: string }) {
 										timelineItems={
 											conversationHook.timelineItems as TimelineItem[]
 										}
+										typingVisitors={conversationHook.typingVisitors}
 									/>
 								)}
 							</div>
