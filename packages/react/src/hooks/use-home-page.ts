@@ -1,6 +1,6 @@
-import type { Conversation } from "@cossistant/types";
+import { type Conversation, ConversationStatus } from "@cossistant/types";
 import { useCallback, useMemo } from "react";
-import { PENDING_CONVERSATION_ID } from "../utils/id";
+import { shouldDisplayConversation } from "../utils/conversation";
 import { useConversations } from "./use-conversations";
 
 export type UseHomePageOptions = {
@@ -99,22 +99,35 @@ export function useHomePage(
 	} = options;
 
 	// Fetch conversations
-	const { conversations, isLoading, error } = useConversations({
+	const {
+		conversations: allConversations,
+		isLoading,
+		error,
+	} = useConversations({
 		enabled,
 		// Fetch most recent conversations first
 		orderBy: "updatedAt",
 		order: "desc",
 	});
 
+	const conversations = useMemo(
+		() => allConversations.filter(shouldDisplayConversation),
+		[allConversations]
+	);
+
 	// Derive useful state from conversations
 	const { lastOpenConversation, availableConversationsCount } = useMemo(() => {
 		// Find the most recent open conversation
 		const openConversation = conversations.find(
-			(conv) => conv.status === "open"
+			(conv) =>
+				conv.status === ConversationStatus.OPEN || conv.status === "open"
 		);
 
 		// Count other conversations (excluding the one we're showing)
-		const otherCount = Math.max((conversations.length || 0) - 1, 0);
+		const otherCount = Math.max(
+			conversations.length - (openConversation ? 1 : 0),
+			0
+		);
 
 		return {
 			lastOpenConversation: openConversation,
