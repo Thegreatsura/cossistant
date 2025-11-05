@@ -177,7 +177,7 @@
     },
     "packages/core": {
       "name": "@cossistant/core",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "nanoid": "^5.1.5",
         "ulid": "^3.0.1",
@@ -190,7 +190,7 @@
     },
     "packages/location": {
       "name": "@cossistant/location",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "next": "15.5.3",
       },
@@ -201,7 +201,7 @@
     },
     "packages/next": {
       "name": "@cossistant/next",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@cossistant/react": "workspace:*",
         "tailwindcss": "^4.1.13",
@@ -217,7 +217,7 @@
     },
     "packages/react": {
       "name": "@cossistant/react",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@cossistant/core": "workspace:*",
         "@cossistant/types": "workspace:*",
@@ -251,7 +251,7 @@
     },
     "packages/transactional": {
       "name": "@cossistant/transactional",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@react-email/components": "0.5.3",
         "react": "19.1.1",
@@ -267,7 +267,7 @@
     },
     "packages/types": {
       "name": "@cossistant/types",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "zod": "^4.1.8",
