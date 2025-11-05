@@ -28,13 +28,13 @@ export const TimelineItemVisibility = {
 } as const;
 
 export const ConversationTimelineType = {
-        MESSAGE: "message",
-        EVENT: "event",
-        IDENTIFICATION: "identification",
+	MESSAGE: "message",
+	EVENT: "event",
+	IDENTIFICATION: "identification",
 } as const;
 
 export type ConversationTimelineType =
-        (typeof ConversationTimelineType)[keyof typeof ConversationTimelineType];
+	(typeof ConversationTimelineType)[keyof typeof ConversationTimelineType];
 
 export const ConversationEventType = {
 	ASSIGNED: "assigned",
@@ -45,12 +45,12 @@ export const ConversationEventType = {
 	STATUS_CHANGED: "status_changed",
 	PRIORITY_CHANGED: "priority_changed",
 	TAG_ADDED: "tag_added",
-        TAG_REMOVED: "tag_removed",
-        RESOLVED: "resolved",
-        REOPENED: "reopened",
-        VISITOR_BLOCKED: "visitor_blocked",
-        VISITOR_UNBLOCKED: "visitor_unblocked",
-        VISITOR_IDENTIFIED: "visitor_identified",
+	TAG_REMOVED: "tag_removed",
+	RESOLVED: "resolved",
+	REOPENED: "reopened",
+	VISITOR_BLOCKED: "visitor_blocked",
+	VISITOR_UNBLOCKED: "visitor_unblocked",
+	VISITOR_IDENTIFIED: "visitor_identified",
 } as const;
 
 export const ConversationParticipationStatus = {

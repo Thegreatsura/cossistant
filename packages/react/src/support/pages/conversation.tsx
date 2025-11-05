@@ -1,6 +1,6 @@
 import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { useMemo, type ReactElement } from "react";
+import { type ReactElement, useMemo } from "react";
 import { useConversation } from "../../hooks/use-conversation";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
@@ -44,21 +44,21 @@ export const ConversationPage: ConversationPageComponent = ({
 }: ConversationPageProps) => {
 	const { website, availableAIAgents, availableHumanAgents, visitor } =
 		useSupport();
-        const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
-        const { isOpen } = useSupportConfig();
-        const text = useSupportText();
+	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
+	const { isOpen } = useSupportConfig();
+	const text = useSupportText();
 
-        const timelineTools = useMemo(
-                () => ({
-                        identification: { component: IdentificationTimelineTool },
-                }),
-                []
-        );
+	const timelineTools = useMemo(
+		() => ({
+			identification: { component: IdentificationTimelineTool },
+		}),
+		[]
+	);
 
-        // Main conversation hook - handles all logic
-        const conversation = useConversationPage({
-                conversationId: initialConversationId,
-                items: passedItems,
+	// Main conversation hook - handles all logic
+	const conversation = useConversationPage({
+		conversationId: initialConversationId,
+		items: passedItems,
 		initialMessage,
 		autoSeenEnabled: isOpen,
 		onConversationIdChange: (newConversationId) => {
@@ -112,15 +112,15 @@ export const ConversationPage: ConversationPageComponent = ({
 				</div>
 			</Header>
 
-                        <ConversationTimelineList
-                                availableAIAgents={availableAIAgents}
-                                availableHumanAgents={availableHumanAgents}
-                                className="min-h-0 flex-1 px-4"
-                                conversationId={conversation.conversationId}
-                                currentVisitorId={visitor?.id}
-                                items={conversation.items}
-                                tools={timelineTools}
-                        />
+			<ConversationTimelineList
+				availableAIAgents={availableAIAgents}
+				availableHumanAgents={availableHumanAgents}
+				className="min-h-0 flex-1 px-4"
+				conversationId={conversation.conversationId}
+				currentVisitorId={visitor?.id}
+				items={conversation.items}
+				tools={timelineTools}
+			/>
 
 			{isConversationClosed ? (
 				<div className="m-4 flex items-center justify-center text-balance px-4 pb-6 text-center font-medium text-muted-foreground text-sm">

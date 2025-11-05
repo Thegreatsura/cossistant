@@ -124,32 +124,33 @@ export function FakeConversationTimelineList({
 				<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
 					<AnimatePresence initial={false} mode="popLayout">
 						{items.map((item, index) => {
-                                                        if (item.type === "timeline_event") {
-                                                                // Extract event data from parts (same as real dashboard)
-                                                                const eventPart = extractEventPart(item.item);
+							if (item.type === "timeline_event") {
+								// Extract event data from parts (same as real dashboard)
+								const eventPart = extractEventPart(item.item);
 
-                                                                // Only render if we have valid event data
-                                                                if (!eventPart) {
-                                                                        return null;
-                                                                }
+								// Only render if we have valid event data
+								if (!eventPart) {
+									return null;
+								}
 
-                                                                return (
-                                                                        <ConversationEvent
-                                                                                availableAIAgents={[]}
-                                                                                availableHumanAgents={fakeAvailableHumanAgents}
-                                                                                createdAt={item.item.createdAt}
-                                                                                event={eventPart}
-                                                                                key={item.item.id || `timeline-event-${index}`}
-                                                                        />
-                                                                );
-                                                        }
+								return (
+									<ConversationEvent
+										availableAIAgents={[]}
+										availableHumanAgents={fakeAvailableHumanAgents}
+										createdAt={item.item.createdAt}
+										event={eventPart}
+										key={item.item.id || `timeline-event-${index}`}
+										visitor={visitor}
+									/>
+								);
+							}
 
-                                                        if (item.type === "timeline_tool") {
-                                                                return null;
-                                                        }
+							if (item.type === "timeline_tool") {
+								return null;
+							}
 
-                                                        // Use first timeline item ID as stable key (same as real dashboard)
-                                                        const groupKey = item.items?.[0]?.id || `group-${index}`;
+							// Use first timeline item ID as stable key (same as real dashboard)
+							const groupKey = item.items?.[0]?.id || `group-${index}`;
 
 							return (
 								<TimelineMessageGroup

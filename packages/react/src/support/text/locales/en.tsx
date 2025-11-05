@@ -78,28 +78,29 @@ const en: SupportLocaleMessages = {
 		`${variables.actorName} added a tag`,
 	"component.conversationEvent.tagRemoved": ({ variables }) =>
 		`${variables.actorName} removed a tag`,
-        "component.conversationEvent.visitorBlocked": ({ variables }) =>
-                `${variables.actorName} blocked the visitor`,
-        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
-                `${variables.actorName} unblocked the visitor`,
-        "component.conversationEvent.visitorIdentified": () =>
-                "Contact details confirmed",
-        "component.identificationTool.title": "Let us keep in touch",
-        "component.identificationTool.description":
-                "Leave your email so we can follow up on this conversation.",
-        "component.identificationTool.cta": "Share email",
-        "component.identificationTool.loading": "Saving...",
-        "component.identificationTool.success":
-                "Thanks! We'll reach out to you at this email if we need to.",
-        "component.identificationTool.error":
-                "We couldn't save your email. Please try again.",
-        "component.identificationTool.validation": "Enter an email address to continue.",
-        "component.identificationTool.inputPlaceholder": "you@example.com",
-        "component.identificationTool.inputLabel": "Email address",
-        "component.identificationTool.eventLog":
-                "Visitor confirmed their email address",
-        "component.conversationPage.closedMessage":
-                "This conversation is closed, start a new one to talk with us",
+	"component.conversationEvent.visitorBlocked": ({ variables }) =>
+		`${variables.actorName} blocked the visitor`,
+	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
+		`${variables.actorName} unblocked the visitor`,
+	"component.conversationEvent.visitorIdentified": () =>
+		"Contact details confirmed",
+	"component.identificationTool.title": "Let us keep in touch",
+	"component.identificationTool.description":
+		"Leave your email so we can follow up on this conversation.",
+	"component.identificationTool.cta": "Share email",
+	"component.identificationTool.loading": "Saving...",
+	"component.identificationTool.success":
+		"Thanks! We'll reach out to you at this email if we need to.",
+	"component.identificationTool.error":
+		"We couldn't save your email. Please try again.",
+	"component.identificationTool.validation":
+		"Enter an email address to continue.",
+	"component.identificationTool.inputPlaceholder": "you@example.com",
+	"component.identificationTool.inputLabel": "Email address",
+	"component.identificationTool.eventLog":
+		"Visitor confirmed their email address",
+	"component.conversationPage.closedMessage":
+		"This conversation is closed, start a new one to talk with us",
 	"component.multimodalInput.placeholder": "Type your message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Remove ${variables.fileName}`,

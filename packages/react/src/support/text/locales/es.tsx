@@ -76,28 +76,29 @@ const es: SupportLocaleMessages = {
 		`${variables.actorName} agregó una etiqueta`,
 	"component.conversationEvent.tagRemoved": ({ variables }) =>
 		`${variables.actorName} quitó una etiqueta`,
-        "component.conversationEvent.visitorBlocked": ({ variables }) =>
-                `${variables.actorName} bloqueó al visitante`,
-        "component.conversationEvent.visitorUnblocked": ({ variables }) =>
-                `${variables.actorName} desbloqueó al visitante`,
-        "component.conversationEvent.visitorIdentified": () =>
-                "Detalles de contacto confirmados",
-        "component.identificationTool.title": "Comparte tu correo",
-        "component.identificationTool.description":
-                "Déjanos tu correo electrónico para que podamos continuar la conversación.",
-        "component.identificationTool.cta": "Compartir correo",
-        "component.identificationTool.loading": "Guardando...",
-        "component.identificationTool.success":
-                "¡Gracias! Usaremos este correo si necesitamos contactarte.",
-        "component.identificationTool.error":
-                "No pudimos guardar tu correo. Inténtalo de nuevo.",
-        "component.identificationTool.validation": "Ingresa un correo electrónico para continuar.",
-        "component.identificationTool.inputPlaceholder": "tu@ejemplo.com",
-        "component.identificationTool.inputLabel": "Correo electrónico",
-        "component.identificationTool.eventLog":
-                "El visitante confirmó su correo electrónico",
-        "component.conversationPage.closedMessage":
-                "Esta conversación está cerrada, inicia una nueva para hablar con nosotros",
+	"component.conversationEvent.visitorBlocked": ({ variables }) =>
+		`${variables.actorName} bloqueó al visitante`,
+	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
+		`${variables.actorName} desbloqueó al visitante`,
+	"component.conversationEvent.visitorIdentified": () =>
+		"Detalles de contacto confirmados",
+	"component.identificationTool.title": "Comparte tu correo",
+	"component.identificationTool.description":
+		"Déjanos tu correo electrónico para que podamos continuar la conversación.",
+	"component.identificationTool.cta": "Compartir correo",
+	"component.identificationTool.loading": "Guardando...",
+	"component.identificationTool.success":
+		"¡Gracias! Usaremos este correo si necesitamos contactarte.",
+	"component.identificationTool.error":
+		"No pudimos guardar tu correo. Inténtalo de nuevo.",
+	"component.identificationTool.validation":
+		"Ingresa un correo electrónico para continuar.",
+	"component.identificationTool.inputPlaceholder": "tu@ejemplo.com",
+	"component.identificationTool.inputLabel": "Correo electrónico",
+	"component.identificationTool.eventLog":
+		"El visitante confirmó su correo electrónico",
+	"component.conversationPage.closedMessage":
+		"Esta conversación está cerrada, inicia una nueva para hablar con nosotros",
 	"component.multimodalInput.placeholder": "Escribe tu mensaje...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Eliminar ${variables.fileName}`,

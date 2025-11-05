@@ -121,28 +121,28 @@ export const supportTextDefinitions = {
 	"component.conversationEvent.tagRemoved": {
 		variables: { actorName: "" as string },
 	},
-        "component.conversationEvent.visitorBlocked": {
-                variables: { actorName: "" as string },
-        },
-        "component.conversationEvent.visitorUnblocked": {
-                variables: { actorName: "" as string },
-        },
-        "component.conversationEvent.visitorIdentified": {
-                variables: { actorName: "" as string },
-        },
-        "component.identificationTool.title": { variables: undefined },
-        "component.identificationTool.description": { variables: undefined },
-        "component.identificationTool.cta": { variables: undefined },
-        "component.identificationTool.loading": { variables: undefined },
-        "component.identificationTool.success": { variables: undefined },
-        "component.identificationTool.error": { variables: undefined },
-        "component.identificationTool.validation": { variables: undefined },
-        "component.identificationTool.inputPlaceholder": { variables: undefined },
-        "component.identificationTool.inputLabel": { variables: undefined },
-        "component.identificationTool.eventLog": { variables: undefined },
-        "component.conversationPage.closedMessage": {
-                variables: undefined,
-        },
+	"component.conversationEvent.visitorBlocked": {
+		variables: { actorName: "" as string },
+	},
+	"component.conversationEvent.visitorUnblocked": {
+		variables: { actorName: "" as string },
+	},
+	"component.conversationEvent.visitorIdentified": {
+		variables: { actorName: "" as string },
+	},
+	"component.identificationTool.title": { variables: undefined },
+	"component.identificationTool.description": { variables: undefined },
+	"component.identificationTool.cta": { variables: undefined },
+	"component.identificationTool.loading": { variables: undefined },
+	"component.identificationTool.success": { variables: undefined },
+	"component.identificationTool.error": { variables: undefined },
+	"component.identificationTool.validation": { variables: undefined },
+	"component.identificationTool.inputPlaceholder": { variables: undefined },
+	"component.identificationTool.inputLabel": { variables: undefined },
+	"component.identificationTool.eventLog": { variables: undefined },
+	"component.conversationPage.closedMessage": {
+		variables: undefined,
+	},
 	"component.multimodalInput.placeholder": {
 		variables: undefined,
 	},

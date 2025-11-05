@@ -308,19 +308,19 @@ export class CossistantClient {
 			: new Date().toISOString();
 
 		// Add optimistic timeline item
-                const optimisticTimelineItem: TimelineItem = {
-                        id: optimisticId,
-                        conversationId: rest.conversationId,
-                        organizationId: "", // Not available yet
-                        visibility: rest.item.visibility ?? TimelineItemVisibility.PUBLIC,
-                        type: rest.item.type ?? ConversationTimelineType.MESSAGE,
-                        text: rest.item.text,
-                        tool: rest.item.tool ?? null,
-                        parts:
-                                rest.item.parts && rest.item.parts.length > 0
-                                        ? rest.item.parts
-                                        : rest.item.text
-                                                ? [{ type: "text" as const, text: rest.item.text }]
+		const optimisticTimelineItem: TimelineItem = {
+			id: optimisticId,
+			conversationId: rest.conversationId,
+			organizationId: "", // Not available yet
+			visibility: rest.item.visibility ?? TimelineItemVisibility.PUBLIC,
+			type: rest.item.type ?? ConversationTimelineType.MESSAGE,
+			text: rest.item.text,
+			tool: rest.item.tool ?? null,
+			parts:
+				rest.item.parts && rest.item.parts.length > 0
+					? rest.item.parts
+					: rest.item.text
+						? [{ type: "text" as const, text: rest.item.text }]
 						: [],
 			userId: rest.item.userId ?? null,
 			visitorId: rest.item.visitorId ?? null,
@@ -475,18 +475,18 @@ function normalizeBootstrapTimelineItem(
 
 	const createdAt = item.createdAt ? item.createdAt : new Date().toISOString();
 
-        return {
-                ...item,
-                id: item.id ?? generateMessageId(),
-                conversationId,
-                organizationId: item.organizationId || "",
-                type: item.type ?? ConversationTimelineType.MESSAGE,
-                tool: item.tool ?? null,
-                createdAt,
-                deletedAt: item.deletedAt ?? null,
-                userId: item.userId ?? null,
-                aiAgentId: item.aiAgentId ?? null,
-                visitorId: item.visitorId ?? null,
+	return {
+		...item,
+		id: item.id ?? generateMessageId(),
+		conversationId,
+		organizationId: item.organizationId || "",
+		type: item.type ?? ConversationTimelineType.MESSAGE,
+		tool: item.tool ?? null,
+		createdAt,
+		deletedAt: item.deletedAt ?? null,
+		userId: item.userId ?? null,
+		aiAgentId: item.aiAgentId ?? null,
+		visitorId: item.visitorId ?? null,
 		visibility: item.visibility ?? TimelineItemVisibility.PUBLIC,
 	} satisfies TimelineItem;
 }

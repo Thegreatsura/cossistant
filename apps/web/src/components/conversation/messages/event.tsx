@@ -1,3 +1,4 @@
+import type { RouterOutputs } from "@api/trpc/types";
 import type {
 	AvailableAIAgent,
 	AvailableHumanAgent,
@@ -7,12 +8,14 @@ import { motion } from "motion/react";
 import type React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
+import { getVisitorNameWithFallback } from "@/lib/visitors";
 
 export type ConversationEventProps = {
 	event: TimelinePartEvent;
 	createdAt?: string;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
+	visitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
 };
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
@@ -20,6 +23,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	createdAt,
 	availableAIAgents,
 	availableHumanAgents,
+	visitor,
 }) => {
 	const isAI = event.actorAiAgentId !== null;
 	const humanAgent = availableHumanAgents.find(
@@ -28,6 +32,9 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	const aiAgent = availableAIAgents.find(
 		(agent) => agent.id === event.actorAiAgentId
 	);
+
+	// Get visitor name with fallback
+	const visitorName = visitor ? getVisitorNameWithFallback(visitor) : "Visitor";
 
 	// Get the actor name
 	const actorName = isAI
@@ -61,14 +68,17 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 				return `${actorName} reopened the conversation`;
 			case "visitor_blocked":
 				return `${actorName} blocked the visitor`;
-                        case "visitor_unblocked":
-                                return `${actorName} unblocked the visitor`;
-                        case "visitor_identified":
-                                return `${actorName} confirmed the visitor's contact details`;
-                        default:
-                                return `${actorName} performed an action`;
-                }
-        };
+			case "visitor_unblocked":
+				return `${actorName} unblocked the visitor`;
+			case "visitor_identified":
+				return `${visitorName} identified, new contact created`;
+			default:
+				return `${actorName} performed an action`;
+		}
+	};
+
+	// Determine what avatar to show based on event type
+	const isVisitorIdentifiedEvent = event.eventType === "visitor_identified";
 
 	return (
 		<motion.div
@@ -79,7 +89,14 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		>
 			<div className="flex items-center gap-2 text-muted-foreground text-xs">
 				<div className="flex flex-col justify-end">
-					{isAI ? (
+					{isVisitorIdentifiedEvent ? (
+						<Avatar
+							className="size-5 shrink-0 overflow-clip"
+							fallbackName={visitorName}
+							url={visitor?.contact?.image}
+							withBoringAvatar
+						/>
+					) : isAI ? (
 						<div className="flex size-5 items-center justify-center rounded-sm bg-primary/10">
 							<Logo className="h-3 w-3 text-primary" />
 						</div>

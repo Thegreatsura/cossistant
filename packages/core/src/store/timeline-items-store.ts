@@ -186,20 +186,20 @@ function normalizeRealtimeTimelineItem(
 	event: TimelineItemCreatedEvent
 ): TimelineItem {
 	const raw = event.payload.item;
-        return {
-                id: raw.id,
-                conversationId: raw.conversationId,
-                organizationId: raw.organizationId,
-                visibility: raw.visibility,
-                type: raw.type,
-                text: raw.text ?? null,
-                parts: raw.parts as TimelineItemParts,
-                tool: raw.tool ?? null,
-                userId: raw.userId,
-                visitorId: raw.visitorId,
-                aiAgentId: raw.aiAgentId,
-                createdAt: raw.createdAt,
-                deletedAt: raw.deletedAt ?? null,
+	return {
+		id: raw.id,
+		conversationId: raw.conversationId,
+		organizationId: raw.organizationId,
+		visibility: raw.visibility,
+		type: raw.type,
+		text: raw.text ?? null,
+		parts: raw.parts as TimelineItemParts,
+		tool: raw.tool ?? null,
+		userId: raw.userId,
+		visitorId: raw.visitorId,
+		aiAgentId: raw.aiAgentId,
+		createdAt: raw.createdAt,
+		deletedAt: raw.deletedAt ?? null,
 	};
 }
 

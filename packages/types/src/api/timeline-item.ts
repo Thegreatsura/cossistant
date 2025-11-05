@@ -61,11 +61,11 @@ const timelinePartEventSchema = z.object({
 	type: z.literal("event").openapi({
 		description: "Type of timeline part - always 'event' for event parts",
 	}),
-        eventType: z
-                .enum([
-                        ConversationEventType.ASSIGNED,
-                        ConversationEventType.UNASSIGNED,
-                        ConversationEventType.PARTICIPANT_REQUESTED,
+	eventType: z
+		.enum([
+			ConversationEventType.ASSIGNED,
+			ConversationEventType.UNASSIGNED,
+			ConversationEventType.PARTICIPANT_REQUESTED,
 			ConversationEventType.PARTICIPANT_JOINED,
 			ConversationEventType.PARTICIPANT_LEFT,
 			ConversationEventType.STATUS_CHANGED,
@@ -73,14 +73,14 @@ const timelinePartEventSchema = z.object({
 			ConversationEventType.TAG_ADDED,
 			ConversationEventType.TAG_REMOVED,
 			ConversationEventType.RESOLVED,
-                        ConversationEventType.REOPENED,
-                        ConversationEventType.VISITOR_BLOCKED,
-                        ConversationEventType.VISITOR_UNBLOCKED,
-                        ConversationEventType.VISITOR_IDENTIFIED,
-                ])
-                .openapi({
-                        description: "Type of event that occurred",
-                }),
+			ConversationEventType.REOPENED,
+			ConversationEventType.VISITOR_BLOCKED,
+			ConversationEventType.VISITOR_UNBLOCKED,
+			ConversationEventType.VISITOR_IDENTIFIED,
+		])
+		.openapi({
+			description: "Type of event that occurred",
+		}),
 	actorUserId: z.string().nullable().openapi({
 		description: "User that triggered the event, if applicable",
 	}),
@@ -127,24 +127,23 @@ export const timelineItemSchema = z.object({
 		.openapi({
 			description: "Visibility level of the timeline item",
 		}),
-        type: z
-                .enum([
-                        ConversationTimelineType.MESSAGE,
-                        ConversationTimelineType.EVENT,
-                        ConversationTimelineType.IDENTIFICATION,
-                ])
-                .openapi({
-                        description:
-                                "Type of timeline item - message, event, or interactive identification tool",
-                }),
-        text: z.string().nullable().openapi({
-                description: "Main text content of the timeline item",
-        }),
-        tool: z.string().nullable().optional().openapi({
-                description:
-                        "Optional tool identifier associated with this timeline item",
-        }),
-        parts: timelineItemPartsSchema,
+	type: z
+		.enum([
+			ConversationTimelineType.MESSAGE,
+			ConversationTimelineType.EVENT,
+			ConversationTimelineType.IDENTIFICATION,
+		])
+		.openapi({
+			description:
+				"Type of timeline item - message, event, or interactive identification tool",
+		}),
+	text: z.string().nullable().openapi({
+		description: "Main text content of the timeline item",
+	}),
+	tool: z.string().nullable().optional().openapi({
+		description: "Optional tool identifier associated with this timeline item",
+	}),
+	parts: timelineItemPartsSchema,
 	userId: z.string().nullable().openapi({
 		description: "ID of the user who created this timeline item, if applicable",
 	}),
@@ -240,20 +239,20 @@ export const sendTimelineItemRequestSchema = z
 				description: "Main text content of the timeline item",
 			}),
 			parts: timelineItemPartsSchema.optional(),
-                        visibility: z
-                                .enum([TimelineItemVisibility.PUBLIC, TimelineItemVisibility.PRIVATE])
-                                .default(TimelineItemVisibility.PUBLIC)
-                                .openapi({
-                                        description: "Visibility level of the timeline item",
-                                        default: TimelineItemVisibility.PUBLIC,
-                                }),
-                        tool: z.string().nullable().optional().openapi({
-                                description:
-                                        "Optional tool identifier when sending non-message timeline items",
-                        }),
-                        userId: z.string().nullable().optional().openapi({
-                                description: "ID of the user creating this timeline item",
-                        }),
+			visibility: z
+				.enum([TimelineItemVisibility.PUBLIC, TimelineItemVisibility.PRIVATE])
+				.default(TimelineItemVisibility.PUBLIC)
+				.openapi({
+					description: "Visibility level of the timeline item",
+					default: TimelineItemVisibility.PUBLIC,
+				}),
+			tool: z.string().nullable().optional().openapi({
+				description:
+					"Optional tool identifier when sending non-message timeline items",
+			}),
+			userId: z.string().nullable().optional().openapi({
+				description: "ID of the user creating this timeline item",
+			}),
 			aiAgentId: z.string().nullable().optional().openapi({
 				description: "ID of the AI agent creating this timeline item",
 			}),
