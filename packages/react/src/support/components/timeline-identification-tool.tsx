@@ -44,15 +44,15 @@ export const IdentificationTimelineTool: React.FC<ConversationTimelineToolProps>
                 setStatus("submitting");
                 setErrorMessage(null);
 
-                const identifyResult = await identify({ email: trimmedEmail });
-
-                if (!identifyResult) {
-                        setStatus("error");
-                        setErrorMessage(text("component.identificationTool.error"));
-                        return;
-                }
-
                 try {
+                        const identifyResult = await identify({ email: trimmedEmail });
+
+                        if (!identifyResult) {
+                                setStatus("error");
+                                setErrorMessage(text("component.identificationTool.error"));
+                                return;
+                        }
+
                         const payload: SendTimelineItemRequest = {
                                 conversationId,
                                 item: {
@@ -77,16 +77,17 @@ export const IdentificationTimelineTool: React.FC<ConversationTimelineToolProps>
                         };
 
                         await client.sendMessage(payload);
-                } catch (error) {
-                        console.error("Failed to create visitor_identified event", error);
+
+                        setStatus("success");
+                        setEmail("");
+
+                        void client
+                                .fetchWebsite({ force: true })
+                                .catch(() => {});
+                } catch {
+                        setStatus("error");
+                        setErrorMessage(text("component.identificationTool.error"));
                 }
-
-                setStatus("success");
-                setEmail("");
-
-                void client
-                        .fetchWebsite({ force: true })
-                        .catch(() => {});
         }, [
                 conversationId,
                 email,
