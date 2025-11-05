@@ -249,6 +249,10 @@ export const createWebsiteResponseSchema = z.object({
 		description: "The website's name.",
 		example: "Dub",
 	}),
+	slug: z.string().openapi({
+		description: "The website's slug.",
+		example: "dubdotco",
+	}),
 	whitelistedDomains: z.array(z.url()).openapi({
 		description: "The website's whitelisted domains.",
 		example: ["http://localhost:3000", "https://dub.co"],
@@ -375,3 +379,49 @@ export const publicWebsiteResponseSchema = z.object({
 export type PublicWebsiteResponse = z.infer<typeof publicWebsiteResponseSchema>;
 export type AvailableHumanAgent = z.infer<typeof availableHumanAgentSchema>;
 export type AvailableAIAgent = z.infer<typeof AvailableAIAgentSchema>;
+
+/**
+ * List websites by organization request schema
+ */
+export const listByOrganizationRequestSchema = z.object({
+	organizationId: z.ulid().openapi({
+		description: "The organization's unique identifier.",
+		example: "01JG000000000000000000000",
+	}),
+});
+
+export type ListByOrganizationRequest = z.infer<
+	typeof listByOrganizationRequestSchema
+>;
+
+/**
+ * Website list item schema - simplified website info for listing
+ */
+export const websiteListItemSchema = z.object({
+	id: z.ulid().openapi({
+		description: "The website's unique identifier.",
+		example: "01JG000000000000000000000",
+	}),
+	name: z.string().openapi({
+		description: "The website's name.",
+		example: "Dub",
+	}),
+	slug: z.string().openapi({
+		description: "The website's slug.",
+		example: "dub-co",
+	}),
+	logoUrl: z.string().url().nullable().openapi({
+		description: "Public URL to the website's logo.",
+		example: "https://cdn.example.com/logo.png",
+	}),
+	domain: z.string().openapi({
+		description: "The website's domain.",
+		example: "dub.co",
+	}),
+	organizationId: z.ulid().openapi({
+		description: "The owning organization's unique identifier.",
+		example: "01JG000000000000000000000",
+	}),
+});
+
+export type WebsiteListItem = z.infer<typeof websiteListItemSchema>;

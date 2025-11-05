@@ -12,7 +12,12 @@ import {
 	getWebsiteBySlugWithAccess,
 	updateWebsite,
 } from "@api/db/queries/website";
-import { type WebsiteInsert, website } from "@api/db/schema";
+import {
+	member,
+	session as sessionTable,
+	type WebsiteInsert,
+	website,
+} from "@api/db/schema";
 import { isOrganizationAdminOrOwner } from "@api/utils/access-control";
 import { generateULID } from "@api/utils/db/ids";
 import { normalizeDomain } from "@api/utils/domain";
@@ -23,10 +28,12 @@ import {
 	createWebsiteApiKeyRequestSchema,
 	createWebsiteRequestSchema,
 	createWebsiteResponseSchema,
+	listByOrganizationRequestSchema,
 	revokeWebsiteApiKeyRequestSchema,
 	updateWebsiteRequestSchema,
 	websiteApiKeySchema,
 	websiteDeveloperSettingsResponseSchema,
+	websiteListItemSchema,
 	websiteSummarySchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
@@ -68,7 +75,7 @@ const toWebsiteApiKey = (
 export const websiteRouter = createTRPCRouter({
 	getBySlug: protectedProcedure
 		.input(z.object({ slug: z.string() }))
-		.query(async ({ ctx: { db, user }, input }) => {
+		.query(async ({ ctx: { db, user, session }, input }) => {
 			const websiteData = await getWebsiteBySlugWithAccess(db, {
 				userId: user.id,
 				websiteSlug: input.slug,
@@ -81,7 +88,67 @@ export const websiteRouter = createTRPCRouter({
 				});
 			}
 
+			// Set the active organization in the session if it's not already set
+			if (
+				session.activeOrganizationId !== websiteData.organizationId &&
+				websiteData.organizationId
+			) {
+				try {
+					await db
+						.update(sessionTable)
+						.set({ activeOrganizationId: websiteData.organizationId })
+						.where(eq(sessionTable.id, session.id));
+				} catch (error) {
+					// Non-critical, continue
+					console.error("Failed to update active organization:", error);
+				}
+			}
+
 			return websiteData;
+		}),
+	listByOrganization: protectedProcedure
+		.input(listByOrganizationRequestSchema)
+		.output(z.array(websiteListItemSchema))
+		.query(async ({ ctx: { db, user }, input }) => {
+			// Verify user has access to this organization
+			const [membership] = await db
+				.select()
+				.from(member)
+				.where(
+					and(
+						eq(member.userId, user.id),
+						eq(member.organizationId, input.organizationId)
+					)
+				)
+				.limit(1);
+
+			if (!membership) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You do not have access to this organization",
+				});
+			}
+
+			// Get all websites for this organization
+			const websites = await db
+				.select({
+					id: website.id,
+					name: website.name,
+					slug: website.slug,
+					logoUrl: website.logoUrl,
+					domain: website.domain,
+					organizationId: website.organizationId,
+				})
+				.from(website)
+				.where(
+					and(
+						eq(website.organizationId, input.organizationId),
+						isNull(website.deletedAt)
+					)
+				)
+				.orderBy(website.createdAt);
+
+			return websites;
 		}),
 	developerSettings: protectedProcedure
 		.input(z.object({ slug: z.string() }))
@@ -212,6 +279,7 @@ export const websiteRouter = createTRPCRouter({
 			return {
 				id: createdWebsite.id,
 				name: createdWebsite.name,
+				slug: createdWebsite.slug,
 				whitelistedDomains: createdWebsite.whitelistedDomains,
 				organizationId: createdWebsite.organizationId,
 				apiKeys: apiKeys.map((key) =>

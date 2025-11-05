@@ -165,7 +165,14 @@ export function DashboardCodeBlock({
 						})}
 					</div>
 				) : null}
-				<div className="absolute top-0 right-6 flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+				<div
+					className={cn(
+						"absolute top-0 left-0 flex flex-wrap items-center justify-between gap-2 px-4 py-2",
+						{
+							"right-6": showFrameworkSwitcher,
+						}
+					)}
+				>
 					<span className="text-muted-foreground text-sm">{fileName}</span>
 				</div>
 				<ComponentCodeReact code={activeCode}>{highlighted}</ComponentCodeReact>

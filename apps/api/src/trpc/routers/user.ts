@@ -1,5 +1,6 @@
 import { getWebsiteBySlugWithAccess } from "@api/db/queries";
 import { getWebsiteMembers } from "@api/db/queries/member";
+import { getOrganizationsForUser } from "@api/db/queries/organization";
 import { updateUserProfile } from "@api/db/queries/user";
 import {
 	updateUserProfileRequestSchema,
@@ -69,4 +70,16 @@ export const userRouter = createTRPCRouter({
 
 			return members;
 		}),
+	getOrganizations: protectedProcedure.query(async ({ ctx: { db, user } }) => {
+		const organizations = await getOrganizationsForUser(db, {
+			userId: user.id,
+		});
+
+		return organizations.map((org) => ({
+			organization: org.organization,
+			role: org.role,
+			joinedAt: org.joinedAt.toISOString(),
+			websites: org.websites,
+		}));
+	}),
 });

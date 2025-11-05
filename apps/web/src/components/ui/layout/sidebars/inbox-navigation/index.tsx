@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
-import { UserDropdown } from "../../../../user-dropdown";
+import { NavigationDropdown } from "../../../../navigation-dropdown";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
 import { SidebarItem } from "../sidebar-item";
@@ -61,7 +61,7 @@ export function InboxNavigationSidebar() {
 							Settings
 						</SidebarItem>
 						<Separator className="opacity-30" />
-						<UserDropdown websiteSlug={website.slug} />
+						<NavigationDropdown websiteSlug={website.slug} />
 					</>
 				}
 			>

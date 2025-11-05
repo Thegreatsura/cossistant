@@ -91,7 +91,7 @@ export const HomePage = (): ReactElement => {
 					{quickOptions.length > 0 && (
 						<motion.div
 							animate="visible"
-							className="mt-6 inline-flex gap-2"
+							className="mt-6 space-x-2 space-y-2"
 							exit="exit"
 							initial="hidden"
 							transition={{
@@ -105,7 +105,7 @@ export const HomePage = (): ReactElement => {
 						>
 							{quickOptions?.map((option) => (
 								<Button
-									className="rounded-full border-dashed"
+									className="inline-flex w-fit rounded-lg border-dashed px-2"
 									key={option}
 									onClick={() => home.startConversation(option)}
 									size="default"

@@ -16,6 +16,7 @@ type WebsiteContextValue = {
 	user: Session["user"];
 	website: RouterOutputs["website"]["getBySlug"];
 	members: RouterOutputs["user"]["getWebsiteMembers"];
+	organizationWebsites: RouterOutputs["website"]["listByOrganization"];
 	isLoading: boolean;
 	views: RouterOutputs["view"]["list"];
 	error: TRPCClientErrorBase<DefaultErrorShape> | null;
@@ -71,6 +72,17 @@ export function WebsiteProvider({
 		enabled: !!sessionData,
 	});
 
+	const {
+		data: organizationWebsites,
+		isFetching: isLoadingOrgWebsites,
+		error: errorOrgWebsites,
+	} = useQuery({
+		...trpc.website.listByOrganization.queryOptions({
+			organizationId: website?.organizationId ?? "",
+		}),
+		enabled: !!sessionData && !!website?.organizationId,
+	});
+
 	useEffect(() => {
 		if (sessionData === null && !isLoadingSession) {
 			router.replace("/login");
@@ -78,7 +90,8 @@ export function WebsiteProvider({
 	}, [router, sessionData, isLoadingSession]);
 
 	useEffect(() => {
-		const authError = errorWebsite ?? errorMembers ?? errorViews;
+		const authError =
+			errorWebsite ?? errorMembers ?? errorViews ?? errorOrgWebsites;
 
 		if (!authError?.data?.code) {
 			return;
@@ -92,7 +105,7 @@ export function WebsiteProvider({
 		if (authError.data.code === "FORBIDDEN") {
 			router.replace("/select");
 		}
-	}, [errorMembers, errorViews, errorWebsite, router]);
+	}, [errorMembers, errorViews, errorWebsite, errorOrgWebsites, router]);
 
 	if (!sessionData) {
 		return null;
@@ -105,15 +118,17 @@ export function WebsiteProvider({
 				user: sessionData.user,
 				website: website!,
 				members: members!,
+				organizationWebsites: organizationWebsites ?? [],
 				views: views!,
 				isLoading:
 					isLoadingWebsite ||
 					isLoadingViews ||
 					isLoadingMembers ||
+					isLoadingOrgWebsites ||
 					!website ||
 					!members ||
 					!views,
-				error: errorViews || errorWebsite || errorMembers,
+				error: errorViews || errorWebsite || errorMembers || errorOrgWebsites,
 			}}
 		>
 			{children}
@@ -174,4 +189,15 @@ export function useWebsiteMembers() {
 	}
 
 	return context.members;
+}
+
+export function useOrganizationWebsites() {
+	const context = useContext(WebsiteContext);
+	if (!context) {
+		throw new Error(
+			"useOrganizationWebsites must be used within a WebsiteProvider"
+		);
+	}
+
+	return context.organizationWebsites;
 }

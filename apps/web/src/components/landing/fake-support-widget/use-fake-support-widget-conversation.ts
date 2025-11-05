@@ -26,9 +26,9 @@ export function useFakeSupportWidgetConversation({
 	isPlaying,
 	onComplete,
 }: UseFakeSupportWidgetConversationProps) {
-        const [timelineItems, setTimelineItems] = useState<
-                ConversationTimelineItem[]
-        >([]);
+	const [timelineItems, setTimelineItems] = useState<
+		ConversationTimelineItem[]
+	>([]);
 	const [typingVisitors, setTypingVisitors] = useState<FakeTypingVisitor[]>([]);
 	const hasScheduledRef = useRef(false);
 	const scheduleRef = useRef<
@@ -60,42 +60,42 @@ export function useFakeSupportWidgetConversation({
 		}
 	}, [isPlaying]);
 
-        const appendTimelineItems = useCallback(
-                (newItems: ConversationTimelineItem | ConversationTimelineItem[]) => {
-                        const itemsArray = Array.isArray(newItems) ? newItems : [newItems];
-                        if (itemsArray.length === 0) {
-                                return;
-                        }
+	const appendTimelineItems = useCallback(
+		(newItems: ConversationTimelineItem | ConversationTimelineItem[]) => {
+			const itemsArray = Array.isArray(newItems) ? newItems : [newItems];
+			if (itemsArray.length === 0) {
+				return;
+			}
 
-                        setTimelineItems((prev) => {
-                                const existingIds = new Set(prev.map((item) => item.id));
-                                let hasNewItem = false;
+			setTimelineItems((prev) => {
+				const existingIds = new Set(prev.map((item) => item.id));
+				let hasNewItem = false;
 
-                                const dedupedItems = itemsArray.filter((item) => {
-                                        if (existingIds.has(item.id)) {
-                                                return false;
-                                        }
-                                        existingIds.add(item.id);
-                                        hasNewItem = true;
-                                        return true;
-                                });
+				const dedupedItems = itemsArray.filter((item) => {
+					if (existingIds.has(item.id)) {
+						return false;
+					}
+					existingIds.add(item.id);
+					hasNewItem = true;
+					return true;
+				});
 
-                                if (!hasNewItem) {
-                                        return prev;
-                                }
+				if (!hasNewItem) {
+					return prev;
+				}
 
-                                return [...prev, ...dedupedItems];
-                        });
-                },
-                []
-        );
+				return [...prev, ...dedupedItems];
+			});
+		},
+		[]
+	);
 
-        const resetDemoData = useCallback(() => {
-                setTimelineItems([]);
-                setTypingVisitors([]);
-                resetScheduler();
-                hasScheduledRef.current = false;
-                hasInitializedRef.current = false;
+	const resetDemoData = useCallback(() => {
+		setTimelineItems([]);
+		setTypingVisitors([]);
+		resetScheduler();
+		hasScheduledRef.current = false;
+		hasInitializedRef.current = false;
 	}, [resetScheduler]);
 
 	// Simulate the conversation timeline
@@ -211,8 +211,8 @@ export function useFakeSupportWidgetConversation({
 					ANTHONY_RIERA_ID,
 					new Date(now.getTime() + 2500)
 				);
-                                appendTimelineItems(joinedEvent);
-                        });
+				appendTimelineItems(joinedEvent);
+			});
 
 			// 4. Show Anthony typing indicator (3s - 5.5s)
 			const anthonyResponseText =
@@ -240,8 +240,8 @@ export function useFakeSupportWidgetConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 5500),
 				});
-                                appendTimelineItems(anthonyMessage);
-                        });
+				appendTimelineItems(anthonyMessage);
+			});
 
 			// Animation completes after 7 seconds
 			if (onCompleteRef.current) {
@@ -254,8 +254,8 @@ export function useFakeSupportWidgetConversation({
 		};
 
 		// Start scheduling (with retry if schedule not ready)
-                scheduleTasks();
-        }, [appendTimelineItems, isPlaying]);
+		scheduleTasks();
+	}, [appendTimelineItems, isPlaying]);
 
 	return {
 		timelineItems,

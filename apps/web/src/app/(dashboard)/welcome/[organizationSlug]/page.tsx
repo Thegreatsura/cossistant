@@ -25,15 +25,7 @@ export default async function Page({
 	}
 
 	return (
-		<div className="flex w-sm flex-col">
-			<div className="flex items-center gap-4">
-				<Logo className="size-6" />
-				<span className="text-primary/30 text-sm">/</span>
-				<TextEffect className="text-center font-f37-stout text-2xl" delay={0.5}>
-					Welcome to cossistant
-				</TextEffect>
-			</div>
-
+		<div className="flex max-w-xl flex-col">
 			<CreationFlowWrapper organizationId={organization.id} />
 		</div>
 	);

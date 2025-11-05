@@ -17,9 +17,9 @@ export function FakeUserDropdown({ user }: FakeUserDropdownProps) {
 			type="button"
 		>
 			<div className="grid flex-1 text-left text-sm leading-tight">
-				<span className="truncate">{user.name}</span>
+				<div className="h-4 w-24 rounded bg-background-300" />
 			</div>
-			<Avatar className="size-5" fallbackName={user.name} url={user.image} />
+			<div className="size-5 min-w-5 rounded bg-background-300" />
 		</button>
 	);
 }

@@ -1,14 +1,32 @@
-import { SidebarContainer } from "../layout/sidebars/container";
-import { Logo } from "../logo";
+import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
+import { cn } from "../../../lib/utils";
+import { FakeCentralContainer } from "../../landing/fake-dashboard/fake-layout";
+import { FakeNavigationTopbar } from "../../landing/fake-dashboard/fake-navigation-topbar";
+import { FakeInboxNavigationSidebar } from "../../landing/fake-dashboard/fake-sidebar/inbox";
 
-export function AppLayoutSkeleton() {
+export function AppLayoutSkeleton({ className }: { className?: string }) {
 	return (
-		<div className="pointer-events-none h-screen w-screen">
-			<SidebarContainer>
-				<div className="flex h-10 items-center justify-between px-2">
-					<Logo className="text-primary/5" />
-				</div>
-			</SidebarContainer>
+		<div
+			className={cn(
+				"@container relative flex h-full w-full flex-col overflow-hidden bg-background-100 dark:bg-background",
+				className
+			)}
+		>
+			<FakeNavigationTopbar amountOfVisitors={0} />
+			<FakeCentralContainer>
+				<FakeInboxNavigationSidebar
+					activeView="inbox"
+					open
+					statusCounts={{ open: 0, resolved: 0, spam: 0, archived: 0 }}
+				/>
+				<Page className="relative px-0">
+					<PageHeader className="px-4">
+						<div className="flex items-center gap-2">
+							<PageHeaderTitle className="capitalize">Inbox</PageHeaderTitle>
+						</div>
+					</PageHeader>
+				</Page>
+			</FakeCentralContainer>
 		</div>
 	);
 }

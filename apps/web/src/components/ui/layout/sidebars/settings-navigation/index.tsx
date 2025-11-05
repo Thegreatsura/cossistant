@@ -6,7 +6,7 @@ import { SidebarUpgradeButton } from "@/components/plan/sidebar-upgrade-button";
 import { Separator } from "@/components/ui/separator";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
-import { UserDropdown } from "../../../../user-dropdown";
+import { NavigationDropdown } from "../../../../navigation-dropdown";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
 import { SidebarItem } from "../sidebar-item";
@@ -41,7 +41,7 @@ export function SettingsNavigationSidebar() {
 						)}
 						<SidebarItem href="/docs">Docs</SidebarItem>
 						<Separator className="opacity-30" />
-						<UserDropdown websiteSlug={website.slug} />
+						<NavigationDropdown websiteSlug={website.slug} />
 					</>
 				}
 			>

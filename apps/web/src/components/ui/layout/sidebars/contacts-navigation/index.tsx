@@ -23,7 +23,7 @@ import {
 	useContactsTableControls,
 } from "@/contexts/contacts-table-controls";
 import { useWebsite } from "@/contexts/website";
-import { UserDropdown } from "../../../../user-dropdown";
+import { NavigationDropdown } from "../../../../navigation-dropdown";
 
 const VISITOR_FILTER_OPTIONS: ReadonlyArray<{
 	value: ContactListVisitorStatus;
@@ -105,7 +105,7 @@ export function ContactsNavigationSidebar() {
 							Settings
 						</SidebarItem>
 						<Separator className="opacity-30" />
-						<UserDropdown websiteSlug={website.slug} />
+						<NavigationDropdown websiteSlug={website.slug} />
 					</>
 				}
 			>

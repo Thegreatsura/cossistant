@@ -107,14 +107,14 @@ export function FrameworkPicker({
 			type="single"
 			value={value}
 		>
-                        <FrameworkPickerItem icon={NextJsIcon} label="Next.js" value="nextjs" />
-                        <FrameworkPickerItem
-                                disabled
-                                icon={ReactIcon}
-                                label="React"
-                                showSoon
-                                value="react"
-                        />
+			<FrameworkPickerItem icon={NextJsIcon} label="Next.js" value="nextjs" />
+			<FrameworkPickerItem
+				disabled
+				icon={ReactIcon}
+				label="React"
+				showSoon
+				value="react"
+			/>
 			<FrameworkPickerItem
 				disabled
 				icon={TanstackStarterIcon}

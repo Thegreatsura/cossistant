@@ -4,7 +4,13 @@ import Link from "next/link";
 import { TopbarItem } from "@/components/ui/layout/navigation-topbar/topbar-item";
 import { Logo } from "@/components/ui/logo";
 
-export function FakeNavigationTopbar() {
+export function FakeNavigationTopbar({
+	className,
+	amountOfVisitors = 10,
+}: {
+	className?: string;
+	amountOfVisitors?: number;
+}) {
 	return (
 		<header className="pointer-events-none flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-3 pl-6.5">
 			<div className="flex flex-1 items-center gap-3">
@@ -37,7 +43,10 @@ export function FakeNavigationTopbar() {
 							aria-hidden
 							className="size-2 animate-pulse rounded-full bg-cossistant-green"
 						/>
-						<p>10 visitors online</p>
+						<p>
+							{amountOfVisitors} visitor{amountOfVisitors !== 1 ? "s" : ""}{" "}
+							online
+						</p>
 					</span>
 				</div>
 			</div>

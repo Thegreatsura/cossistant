@@ -1,7 +1,7 @@
 import { DEFAULT_PAGE_LIMIT } from "@api/constants";
 import type { Database } from "@api/db";
 import type { WebsiteInsert } from "@api/db/schema";
-import { member, teamMember, website } from "@api/db/schema";
+import { member, organization, teamMember, website } from "@api/db/schema";
 import { auth } from "@api/lib/auth";
 import type { WebsiteStatus } from "@cossistant/types/enums";
 
@@ -244,11 +244,21 @@ export async function getWebsiteBySlugWithAccess(
 ) {
 	const accessCheck = await checkUserWebsiteAccess(db, params);
 
-	if (!accessCheck.hasAccess) {
+	if (!(accessCheck.hasAccess && accessCheck.website)) {
 		return null;
 	}
 
-	return accessCheck.website;
+	// Fetch organization slug
+	const [org] = await db
+		.select({ slug: organization.slug })
+		.from(organization)
+		.where(eq(organization.id, accessCheck.website.organizationId))
+		.limit(1);
+
+	return {
+		...accessCheck.website,
+		organizationSlug: org?.slug ?? null,
+	};
 }
 
 // Get website by ID with access check
