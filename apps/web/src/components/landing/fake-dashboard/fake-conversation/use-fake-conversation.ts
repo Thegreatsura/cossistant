@@ -34,9 +34,9 @@ export function useFakeConversation({
 		initialMessages[0]?.timestamp || new Date()
 	);
 
-	const [timelineItems, setTimelineItems] = useState<
-		ConversationTimelineItem[]
-	>([]);
+        const [timelineItems, setTimelineItems] = useState<
+                ConversationTimelineItem[]
+        >([]);
 	const [typingVisitors, setTypingVisitors] = useState<FakeTypingVisitor[]>([]);
 	const hasScheduledRef = useRef(false);
 	const scheduleRef = useRef<
@@ -86,12 +86,42 @@ export function useFakeConversation({
 		}
 	}, [isPlaying]);
 
-	const resetDemoData = useCallback(() => {
-		setTimelineItems([]);
-		setTypingVisitors([]);
-		resetScheduler();
-		hasScheduledRef.current = false;
-		hasInitializedRef.current = false;
+        const appendTimelineItems = useCallback(
+                (newItems: ConversationTimelineItem | ConversationTimelineItem[]) => {
+                        const itemsArray = Array.isArray(newItems) ? newItems : [newItems];
+                        if (itemsArray.length === 0) {
+                                return;
+                        }
+
+                        setTimelineItems((prev) => {
+                                const existingIds = new Set(prev.map((item) => item.id));
+                                let hasNewItem = false;
+
+                                const dedupedItems = itemsArray.filter((item) => {
+                                        if (existingIds.has(item.id)) {
+                                                return false;
+                                        }
+                                        existingIds.add(item.id);
+                                        hasNewItem = true;
+                                        return true;
+                                });
+
+                                if (!hasNewItem) {
+                                        return prev;
+                                }
+
+                                return [...prev, ...dedupedItems];
+                        });
+                },
+                []
+        );
+
+        const resetDemoData = useCallback(() => {
+                setTimelineItems([]);
+                setTypingVisitors([]);
+                resetScheduler();
+                hasScheduledRef.current = false;
+                hasInitializedRef.current = false;
 	}, [resetScheduler]);
 
 	// Simulate the full conversation timeline with messages and events
@@ -210,8 +240,8 @@ export function useFakeConversation({
 					ANTHONY_RIERA_ID,
 					new Date(now.getTime() + 1500)
 				);
-				setTimelineItems((prev) => [...prev, joinedEvent]);
-			});
+                                appendTimelineItems(joinedEvent);
+                        });
 
 			// 3. Anthony's first response after 2.5 seconds
 			currentSchedule(2500, () => {
@@ -222,8 +252,8 @@ export function useFakeConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 2500),
 				});
-				setTimelineItems((prev) => [...prev, anthonyMessage]);
-			});
+                                appendTimelineItems(anthonyMessage);
+                        });
 
 			// 3b. Anthony's second message after 3.5 seconds (grouped with first)
 			currentSchedule(3500, () => {
@@ -234,8 +264,8 @@ export function useFakeConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 3500),
 				});
-				setTimelineItems((prev) => [...prev, anthonyMessage2]);
-			});
+                                appendTimelineItems(anthonyMessage2);
+                        });
 
 			// 4. Anthony's response about CORS (after seeing inbox messages) after 5 seconds
 			currentSchedule(5000, () => {
@@ -246,8 +276,8 @@ export function useFakeConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 5000),
 				});
-				setTimelineItems((prev) => [...prev, anthonyMessage3]);
-			});
+                                appendTimelineItems(anthonyMessage3);
+                        });
 
 			// 4b. Anthony's second message after 6 seconds (grouped with first response)
 			currentSchedule(6000, () => {
@@ -258,8 +288,8 @@ export function useFakeConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 6000),
 				});
-				setTimelineItems((prev) => [...prev, anthonyMessage4]);
-			});
+                                appendTimelineItems(anthonyMessage4);
+                        });
 
 			// 5. Marc starts typing third message (with preview) after 7.5 seconds
 			const thirdMessageText =
@@ -293,8 +323,8 @@ export function useFakeConversation({
 					visitorId: MARC_VISITOR_ID,
 					timestamp: new Date(now.getTime() + 11_000),
 				});
-				setTimelineItems((prev) => [...prev, thirdMessage]);
-			});
+                                appendTimelineItems(thirdMessage);
+                        });
 
 			// 7. Anthony's response after 12.5 seconds
 			currentSchedule(12_500, () => {
@@ -305,8 +335,8 @@ export function useFakeConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 12_500),
 				});
-				setTimelineItems((prev) => [...prev, anthonyMessage5]);
-			});
+                                appendTimelineItems(anthonyMessage5);
+                        });
 
 			// 7b. Anthony's second message after 13.5 seconds (grouped with first)
 			currentSchedule(13_500, () => {
@@ -317,8 +347,8 @@ export function useFakeConversation({
 					visitorId: null,
 					timestamp: new Date(now.getTime() + 13_500),
 				});
-				setTimelineItems((prev) => [...prev, anthonyMessage6]);
-			});
+                                appendTimelineItems(anthonyMessage6);
+                        });
 
 			// Animation completes after conversation animation finishes (13.5 seconds + small buffer)
 			if (onCompleteRef.current) {
@@ -331,14 +361,14 @@ export function useFakeConversation({
 		};
 
 		// Start scheduling (with retry if schedule not ready)
-		scheduleTasks();
-	}, [isPlaying]); // Only depend on isPlaying to prevent re-runs
+                scheduleTasks();
+        }, [appendTimelineItems, isPlaying]); // Depend on isPlaying (append helper is stable) to prevent re-runs
 
 	return {
 		conversation,
 		timelineItems,
 		visitor: marcVisitor,
 		resetDemoData,
-		typingVisitors,
-	};
+                typingVisitors,
+        };
 }
