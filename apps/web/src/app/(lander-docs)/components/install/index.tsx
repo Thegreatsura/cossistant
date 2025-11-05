@@ -16,6 +16,7 @@ export const Install = () => (
 					"lg:col-span-3"
 				)}
 			>
+				<p className="font-mono text-primary/70 text-xs">{"<Support />"}</p>
 				<h2 className="w-full max-w-3xl text-pretty font-f37-stout text-4xl md:text-balance md:text-4xl">
 					Code your own support widget with NextJS.
 				</h2>

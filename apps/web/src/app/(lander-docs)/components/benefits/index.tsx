@@ -83,9 +83,9 @@ const benefits = [
 export const Benefits = () => (
 	<section className="mt-40 mb-0 grid gap-6 md:gap-12 lg:my-60">
 		<div className="flex flex-col gap-2 px-4">
-			<span className="w-fit bg-cossistant-green px-1 py-0.5 font-semibold text-primary-foreground text-xs">
-				SOON
-			</span>
+			<p className="font-mono text-primary/70 text-xs">
+				[What we're building next]
+			</p>
 			<h2 className="w-full max-w-2xl text-pretty font-f37-stout text-4xl sm:text-3xl md:text-balance md:text-4xl">
 				{HEADLINE}
 			</h2>

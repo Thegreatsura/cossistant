@@ -29,13 +29,17 @@ export default async function Landing() {
 				<div className="flex flex-1 flex-col gap-6">
 					{/* <EscapeIframeAnimation /> */}
 					<div className="flex flex-col items-start gap-4 px-4 pb-8">
-						<h1 className="text-pretty text-left font-f37-stout text-[36px] leading-tight md:text-3xl xl:text-5xl">
-							Ship the best customer support for your SaaS.
-						</h1>
-						<h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
-							Human + AI agent support your users love in under 10 lines of
+						<p className="font-mono text-primary/70 text-xs">
+							[Programmatic Human + AI agent support your users love]
+						</p>
+						<h1 className="max-w-3xl text-balance text-left font-f37-stout text-[36px] leading-tight md:text-3xl xl:text-5xl">
+							Ship a customer support for your SaaS under 10 lines of React
 							code.
-						</h3>
+						</h1>
+						{/* <h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
+              Human + AI agent support your users love in under 10 lines of
+              code.
+            </h3> */}
 						<div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
 							<Link href="/waitlist">
 								<Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
