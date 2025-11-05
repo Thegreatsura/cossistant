@@ -170,8 +170,13 @@ function ConversationTimelineListComponent({
 										createdAt={item.item.createdAt}
 										event={eventPart}
 										key={item.item.id || `timeline-event-${index}`}
+										visitor={visitor}
 									/>
 								);
+							}
+
+							if (item.type === "timeline_tool") {
+								return null;
 							}
 
 							// Use first timeline item ID as stable key

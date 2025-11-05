@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -5,21 +7,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TopbarButton } from "@/components/ui/topbar-button";
-import { getAuth } from "@/lib/auth/server";
+import { authClient } from "@/lib/auth/client";
 import { CtaButton } from "./cta-button";
 
 export function DashboardButtonSkeleton() {
 	return (
-		<Button className="min-w-24 rounded-full">
-			<Skeleton className="size-4" />
+		<Button className="h-auto w-[126px] rounded-[2px] p-1 pr-3">
+			<Skeleton className="size-7 min-w-7 rounded-[1px] bg-background-700" />
+			<Skeleton className="w-full opacity-20" />
 		</Button>
 	);
 }
 
-export async function DashboardButton() {
-	const { user } = await getAuth();
+export function DashboardButton() {
+	const { data: session, isPending } = authClient.useSession();
 
-	if (!user) {
+	if (isPending) {
+		return <DashboardButtonSkeleton />;
+	}
+
+	if (!session?.user) {
 		return (
 			<>
 				<TopbarButton
@@ -37,11 +44,11 @@ export async function DashboardButton() {
 
 	return (
 		<Link href="/select">
-			<Button className="h-auto rounded-[2px] p-1 pr-3">
+			<Button className="h-auto w-[126px] rounded-[2px] p-1 pr-3">
 				<Avatar
 					className="size-7 rounded-[1px] bg-background-700 ring-0 ring-offset-0"
-					fallbackName={user.name}
-					url={user.image}
+					fallbackName={session.user.name}
+					url={session.user.image}
 				/>
 				Dashboard
 			</Button>

@@ -1,6 +1,6 @@
 import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import type { ReactElement } from "react";
+import { type ReactElement, useMemo } from "react";
 import { useConversation } from "../../hooks/use-conversation";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useSupport } from "../../provider";
@@ -8,6 +8,7 @@ import { AvatarStack } from "../components/avatar-stack";
 import { ConversationTimelineList } from "../components/conversation-timeline";
 import { Header } from "../components/header";
 import { MultimodalInput } from "../components/multimodal-input";
+import { IdentificationTimelineTool } from "../components/timeline-identification-tool";
 import { useSupportConfig, useSupportNavigation } from "../store";
 import { Text, useSupportText } from "../text";
 
@@ -46,6 +47,13 @@ export const ConversationPage: ConversationPageComponent = ({
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
 	const { isOpen } = useSupportConfig();
 	const text = useSupportText();
+
+	const timelineTools = useMemo(
+		() => ({
+			identification: { component: IdentificationTimelineTool },
+		}),
+		[]
+	);
 
 	// Main conversation hook - handles all logic
 	const conversation = useConversationPage({
@@ -111,6 +119,7 @@ export const ConversationPage: ConversationPageComponent = ({
 				conversationId={conversation.conversationId}
 				currentVisitorId={visitor?.id}
 				items={conversation.items}
+				tools={timelineTools}
 			/>
 
 			{isConversationClosed ? (

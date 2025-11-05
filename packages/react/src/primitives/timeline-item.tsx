@@ -14,7 +14,7 @@ export type TimelineItemRenderProps = {
 	timestamp: Date;
 	text: string | null;
 	senderType: "visitor" | "ai" | "human";
-	itemType: "message" | "event";
+	itemType: "message" | "event" | "identification";
 };
 
 export type TimelineItemProps = Omit<
@@ -57,14 +57,21 @@ export const TimelineItem = (() => {
 			const content =
 				typeof children === "function" ? children(renderProps) : children;
 
-			const itemTypeLabel =
-				item.type === "event"
-					? "Event"
-					: isVisitor
-						? "visitor"
-						: isAI
-							? "AI assistant"
-							: "human agent";
+			const itemTypeLabel = (() => {
+				if (item.type === "event") {
+					return "Event";
+				}
+				if (item.type === "identification") {
+					return "Identification";
+				}
+				if (isVisitor) {
+					return "visitor";
+				}
+				if (isAI) {
+					return "AI assistant";
+				}
+				return "human agent";
+			})();
 
 			return useRenderElement(
 				"div",

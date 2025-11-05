@@ -194,6 +194,7 @@ function normalizeRealtimeTimelineItem(
 		type: raw.type,
 		text: raw.text ?? null,
 		parts: raw.parts as TimelineItemParts,
+		tool: raw.tool ?? null,
 		userId: raw.userId,
 		visitorId: raw.visitorId,
 		aiAgentId: raw.aiAgentId,

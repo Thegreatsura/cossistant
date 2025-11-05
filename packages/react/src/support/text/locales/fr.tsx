@@ -80,6 +80,23 @@ const fr: SupportLocaleMessages = {
 		`${variables.actorName} a bloqué le visiteur`,
 	"component.conversationEvent.visitorUnblocked": ({ variables }) =>
 		`${variables.actorName} a débloqué le visiteur`,
+	"component.conversationEvent.visitorIdentified": () =>
+		"Coordonnées confirmées",
+	"component.identificationTool.title": "Partagez votre e-mail",
+	"component.identificationTool.description":
+		"Laissez-nous votre adresse e-mail afin que nous puissions vous recontacter.",
+	"component.identificationTool.cta": "Partager l'e-mail",
+	"component.identificationTool.loading": "Enregistrement...",
+	"component.identificationTool.success":
+		"Merci ! Nous utiliserons cette adresse si nous devons vous recontacter.",
+	"component.identificationTool.error":
+		"Impossible d'enregistrer votre e-mail. Veuillez réessayer.",
+	"component.identificationTool.validation":
+		"Veuillez saisir une adresse e-mail pour continuer.",
+	"component.identificationTool.inputPlaceholder": "vous@example.com",
+	"component.identificationTool.inputLabel": "Adresse e-mail",
+	"component.identificationTool.eventLog":
+		"Le visiteur a confirmé son adresse e-mail",
 	"component.conversationPage.closedMessage":
 		"Cette conversation est close, commencez-en une nouvelle pour discuter avec nous",
 	"component.multimodalInput.placeholder": "Écrivez votre message...",

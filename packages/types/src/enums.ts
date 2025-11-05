@@ -30,6 +30,7 @@ export const TimelineItemVisibility = {
 export const ConversationTimelineType = {
 	MESSAGE: "message",
 	EVENT: "event",
+	IDENTIFICATION: "identification",
 } as const;
 
 export type ConversationTimelineType =
@@ -49,6 +50,7 @@ export const ConversationEventType = {
 	REOPENED: "reopened",
 	VISITOR_BLOCKED: "visitor_blocked",
 	VISITOR_UNBLOCKED: "visitor_unblocked",
+	VISITOR_IDENTIFIED: "visitor_identified",
 } as const;
 
 export const ConversationParticipationStatus = {

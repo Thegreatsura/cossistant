@@ -31,6 +31,20 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 const EMPTY_SEEN_BY_IDS: readonly string[] = Object.freeze([]);
 const EMPTY_SEEN_BY_NAMES: readonly string[] = Object.freeze([]);
 
+export type ConversationTimelineToolProps = {
+	item: TimelineItem;
+	conversationId: string;
+};
+
+export type ConversationTimelineToolDefinition = {
+	component: React.ComponentType<ConversationTimelineToolProps>;
+};
+
+export type ConversationTimelineTools = Record<
+	string,
+	ConversationTimelineToolDefinition
+>;
+
 export type ConversationTimelineProps = {
 	conversationId: string;
 	items: TimelineItem[];
@@ -38,6 +52,7 @@ export type ConversationTimelineProps = {
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	currentVisitorId?: string;
+	tools?: ConversationTimelineTools;
 };
 
 export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
@@ -47,6 +62,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 	availableAIAgents = [],
 	availableHumanAgents = [],
 	currentVisitorId,
+	tools,
 }) => {
 	const timeline = useConversationTimeline({
 		conversationId,
@@ -139,6 +155,28 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 								createdAt={item.item.createdAt}
 								event={eventPart}
 								key={item.item.id ?? `timeline-event-${item.item.createdAt}`}
+							/>
+						);
+					}
+
+					if (item.type === "timeline_tool") {
+						const toolName = item.tool ?? item.item.tool ?? item.item.type;
+						const toolDefinition = toolName ? tools?.[toolName] : undefined;
+
+						if (!toolDefinition) {
+							return null;
+						}
+
+						const ToolComponent = toolDefinition.component;
+
+						const toolKey =
+							item.item.id ?? `${toolName}-${item.item.createdAt}-${index}`;
+
+						return (
+							<ToolComponent
+								conversationId={conversationId}
+								item={item.item}
+								key={toolKey}
 							/>
 						);
 					}

@@ -4,7 +4,7 @@ import { conversationTimelineItem } from "@api/db/schema";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
 import {
-	ConversationTimelineType,
+	type ConversationTimelineType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
 import { timelineItemSchema } from "@cossistant/types/api/timeline-item";
@@ -20,7 +20,8 @@ export type CreateTimelineItemOptions = {
 		id?: string;
 		type:
 			| typeof ConversationTimelineType.MESSAGE
-			| typeof ConversationTimelineType.EVENT;
+			| typeof ConversationTimelineType.EVENT
+			| typeof ConversationTimelineType.IDENTIFICATION;
 		text?: string | null;
 		parts: unknown[];
 		userId?: string | null;
@@ -30,6 +31,7 @@ export type CreateTimelineItemOptions = {
 			| typeof TimelineItemVisibility.PUBLIC
 			| typeof TimelineItemVisibility.PRIVATE;
 		createdAt?: Date;
+		tool?: string | null;
 	};
 };
 
@@ -42,7 +44,8 @@ type TimelineItem = {
 		| typeof TimelineItemVisibility.PRIVATE;
 	type:
 		| typeof ConversationTimelineType.MESSAGE
-		| typeof ConversationTimelineType.EVENT;
+		| typeof ConversationTimelineType.EVENT
+		| typeof ConversationTimelineType.IDENTIFICATION;
 	text: string | null;
 	parts: unknown;
 	userId: string | null;
@@ -50,6 +53,7 @@ type TimelineItem = {
 	aiAgentId: string | null;
 	createdAt: string;
 	deletedAt: string | null;
+	tool: string | null;
 };
 
 function serializeTimelineItemForRealtime(
@@ -68,8 +72,7 @@ function serializeTimelineItemForRealtime(
 			conversationId: item.conversationId,
 			organizationId: item.organizationId,
 			visibility: item.visibility,
-			type:
-				item.type === ConversationTimelineType.MESSAGE ? "message" : "event",
+			type: item.type,
 			text: item.text,
 			parts: item.parts as unknown[],
 			userId: item.userId,
@@ -77,6 +80,7 @@ function serializeTimelineItemForRealtime(
 			aiAgentId: item.aiAgentId,
 			createdAt: item.createdAt,
 			deletedAt: item.deletedAt,
+			tool: item.tool,
 		},
 		conversationId: context.conversationId,
 		websiteId: context.websiteId,
@@ -145,6 +149,7 @@ export async function createTimelineItem(
 			aiAgentId: parsedItem.aiAgentId,
 			createdAt: parsedItem.createdAt,
 			deletedAt: parsedItem.deletedAt ?? null,
+			tool: parsedItem.tool ?? null,
 		},
 		{
 			conversationId,
@@ -170,6 +175,7 @@ export async function createTimelineItem(
 		aiAgentId: parsedItem.aiAgentId,
 		createdAt: parsedItem.createdAt,
 		deletedAt: parsedItem.deletedAt ?? null,
+		tool: parsedItem.tool ?? null,
 	};
 }
 

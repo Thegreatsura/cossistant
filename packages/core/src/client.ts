@@ -315,6 +315,7 @@ export class CossistantClient {
 			visibility: rest.item.visibility ?? TimelineItemVisibility.PUBLIC,
 			type: rest.item.type ?? ConversationTimelineType.MESSAGE,
 			text: rest.item.text,
+			tool: rest.item.tool ?? null,
 			parts:
 				rest.item.parts && rest.item.parts.length > 0
 					? rest.item.parts
@@ -480,6 +481,7 @@ function normalizeBootstrapTimelineItem(
 		conversationId,
 		organizationId: item.organizationId || "",
 		type: item.type ?? ConversationTimelineType.MESSAGE,
+		tool: item.tool ?? null,
 		createdAt,
 		deletedAt: item.deletedAt ?? null,
 		userId: item.userId ?? null,

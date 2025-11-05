@@ -76,6 +76,7 @@ const timelinePartEventSchema = z.object({
 			ConversationEventType.REOPENED,
 			ConversationEventType.VISITOR_BLOCKED,
 			ConversationEventType.VISITOR_UNBLOCKED,
+			ConversationEventType.VISITOR_IDENTIFIED,
 		])
 		.openapi({
 			description: "Type of event that occurred",
@@ -127,12 +128,20 @@ export const timelineItemSchema = z.object({
 			description: "Visibility level of the timeline item",
 		}),
 	type: z
-		.enum([ConversationTimelineType.MESSAGE, ConversationTimelineType.EVENT])
+		.enum([
+			ConversationTimelineType.MESSAGE,
+			ConversationTimelineType.EVENT,
+			ConversationTimelineType.IDENTIFICATION,
+		])
 		.openapi({
-			description: "Type of timeline item - either a message or an event",
+			description:
+				"Type of timeline item - message, event, or interactive identification tool",
 		}),
 	text: z.string().nullable().openapi({
 		description: "Main text content of the timeline item",
+	}),
+	tool: z.string().nullable().optional().openapi({
+		description: "Optional tool identifier associated with this timeline item",
 	}),
 	parts: timelineItemPartsSchema,
 	userId: z.string().nullable().openapi({
@@ -237,6 +246,10 @@ export const sendTimelineItemRequestSchema = z
 					description: "Visibility level of the timeline item",
 					default: TimelineItemVisibility.PUBLIC,
 				}),
+			tool: z.string().nullable().optional().openapi({
+				description:
+					"Optional tool identifier when sending non-message timeline items",
+			}),
 			userId: z.string().nullable().optional().openapi({
 				description: "ID of the user creating this timeline item",
 			}),

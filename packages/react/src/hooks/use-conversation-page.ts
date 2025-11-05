@@ -1,4 +1,8 @@
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import {
+	ConversationTimelineType,
+	TimelineItemVisibility,
+} from "@cossistant/types/enums";
 import { useEffect, useMemo, useRef } from "react";
 import { useSupport } from "../provider";
 import { useDefaultMessages } from "./private/use-default-messages";
@@ -136,7 +140,7 @@ export function useConversationPage(
 	});
 
 	// 4. Determine which items to display
-	const displayItems = useMemo(() => {
+	const baseItems = useMemo(() => {
 		// If we have fetched timeline items, use them
 		if (timelineQuery.items.length > 0) {
 			return timelineQuery.items;
@@ -158,6 +162,55 @@ export function useConversationPage(
 		lifecycle.isPending,
 		effectiveDefaultTimelineItems,
 		passedItems,
+	]);
+
+	const shouldShowIdentificationTool = useMemo(() => {
+		if (lifecycle.isPending) {
+			return false;
+		}
+
+		if (visitor?.contact) {
+			return false;
+		}
+
+		return !baseItems.some(
+			(item) => item.type === ConversationTimelineType.IDENTIFICATION
+		);
+	}, [baseItems, lifecycle.isPending, visitor?.contact]);
+
+	const displayItems = useMemo(() => {
+		if (!shouldShowIdentificationTool) {
+			return baseItems;
+		}
+
+		const organizationId =
+			baseItems.at(-1)?.organizationId ??
+			client.getConfiguration().organizationId ??
+			"";
+
+		const identificationItem: TimelineItem = {
+			id: `identification-${lifecycle.conversationId}`,
+			conversationId: lifecycle.conversationId,
+			organizationId,
+			visibility: TimelineItemVisibility.PUBLIC,
+			type: ConversationTimelineType.IDENTIFICATION,
+			text: null,
+			tool: "identification",
+			parts: [],
+			userId: null,
+			visitorId: visitor?.id ?? null,
+			aiAgentId: null,
+			createdAt: new Date().toISOString(),
+			deletedAt: null,
+		};
+
+		return [...baseItems, identificationItem];
+	}, [
+		baseItems,
+		client,
+		lifecycle.conversationId,
+		shouldShowIdentificationTool,
+		visitor?.id,
 	]);
 
 	const lastTimelineItem = useMemo(

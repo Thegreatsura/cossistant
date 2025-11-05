@@ -59,6 +59,7 @@ export const realtimeSchema = {
 			type: z.enum([
 				ConversationTimelineType.MESSAGE,
 				ConversationTimelineType.EVENT,
+				ConversationTimelineType.IDENTIFICATION,
 			]),
 			text: z.string().nullable(),
 			parts: z.array(z.unknown()),
@@ -67,6 +68,7 @@ export const realtimeSchema = {
 			aiAgentId: z.string().nullable(),
 			createdAt: z.string(),
 			deletedAt: z.string().nullable(),
+			tool: z.string().nullable().optional(),
 		}),
 	}),
 	conversationCreated: baseRealtimeEvent.extend({

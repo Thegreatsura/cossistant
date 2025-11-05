@@ -192,6 +192,10 @@ export function FakeConversationTimelineList({
 						);
 					}
 
+					if (item.type === "timeline_tool") {
+						return null;
+					}
+
 					// Only show seen indicator on the LAST message group sent by the visitor
 					const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
 					const seenByIds = EMPTY_SEEN_BY_IDS; // No seen data for fake widget

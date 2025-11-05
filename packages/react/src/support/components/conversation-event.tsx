@@ -91,6 +91,10 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 				return text("component.conversationEvent.visitorUnblocked", {
 					actorName,
 				});
+			case "visitor_identified":
+				return text("component.conversationEvent.visitorIdentified", {
+					actorName,
+				});
 			default:
 				return text("component.conversationEvent.default", {
 					actorName,
