@@ -1,3 +1,0 @@
-# This file ensures the examples directory is tracked by git
-# Individual examples should have their own package.json and dependencies
-
