@@ -5,7 +5,7 @@ export type {
 	PublicWebsiteResponse,
 } from "@cossistant/types";
 
-export { conversationSchema, messageSchema } from "@cossistant/types";
+export { conversationSchema } from "@cossistant/types";
 export { CossistantClient, CossistantClient as default } from "./client";
 export { normalizeLocale } from "./locale-utils";
 export { CossistantRestClient } from "./rest-client";
