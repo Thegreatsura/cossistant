@@ -1,5 +1,19 @@
 # @cossistant/next
 
+## 0.0.7
+
+### Patch Changes
+
+- aa0ecdc: Documentation enhancements and dependency updates
+  - Updated Tailwind CSS to v4.1.13 for improved compatibility
+  - Enhanced package README with clearer installation and CSS import guidance
+  - Improved quickstart documentation with better code examples
+  - Added comprehensive examples README for common use cases
+  - Enhanced navigation dropdown and onboarding flow components
+
+- Updated dependencies [aa0ecdc]
+  - @cossistant/react@0.0.7
+
 ## 0.0.6
 
 ### Patch Changes

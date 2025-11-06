@@ -23,6 +23,48 @@ const withExtension = (value: string, extension: string) => {
 	return value;
 };
 
+/**
+ * Converts workspace:* dependencies to actual semver versions
+ */
+const resolveWorkspaceDependencies = async (
+	dependencies: Record<string, string> | undefined,
+	packageDir: string
+): Promise<Record<string, string> | undefined> => {
+	if (!dependencies) {
+		return;
+	}
+
+	const resolved: Record<string, string> = {};
+
+	for (const [name, version] of Object.entries(dependencies)) {
+		if (version === "workspace:*" || version.startsWith("workspace:")) {
+			// Try to resolve the workspace package version
+			const packageName = name.replace("@cossistant/", "");
+			const workspacePkgPath = path.join(
+				packageDir,
+				"..",
+				packageName,
+				"package.json"
+			);
+
+			try {
+				const workspacePkg = JSON.parse(
+					await readFile(workspacePkgPath, "utf8")
+				);
+				resolved[name] = workspacePkg.version;
+			} catch {
+				// If we can't read the package, keep the workspace protocol
+				// This happens for devDependencies like @cossistant/typescript-config
+				resolved[name] = version;
+			}
+		} else {
+			resolved[name] = version;
+		}
+	}
+
+	return resolved;
+};
+
 const toDistExport = (value: unknown) => {
 	if (typeof value !== "string") {
 		return value;
@@ -60,6 +102,16 @@ const main = async () => {
 	const publishConfig = { ...(pkg.publishConfig ?? {}) };
 	delete publishConfig.directory;
 
+	// Resolve workspace:* dependencies to actual versions
+	const resolvedDependencies = await resolveWorkspaceDependencies(
+		pkg.dependencies,
+		packageDir
+	);
+	const resolvedPeerDependencies = await resolveWorkspaceDependencies(
+		pkg.peerDependencies,
+		packageDir
+	);
+
 	const { scripts, devDependencies, files, ...rest } = pkg;
 	const distPkg = {
 		...rest,
@@ -67,6 +119,8 @@ const main = async () => {
 		module: "./index.js",
 		types: "./index.d.ts",
 		exports: distExports,
+		dependencies: resolvedDependencies,
+		peerDependencies: resolvedPeerDependencies,
 		publishConfig: Object.keys(publishConfig).length
 			? publishConfig
 			: undefined,
