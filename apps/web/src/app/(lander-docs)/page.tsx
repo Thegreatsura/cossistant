@@ -33,7 +33,7 @@ export default async function Landing() {
 							[Programmatic Human + AI agent support your users love]
 						</p>
 						<h1 className="max-w-3xl text-balance text-left font-f37-stout text-[36px] leading-tight md:text-3xl xl:text-5xl">
-							Add customer support to your SaaS under 10 lines of React.
+							Add customer support to your SaaS under 10 lines of code.
 						</h1>
 						{/* <h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
               Human + AI agent support your users love in under 10 lines of

@@ -26,10 +26,5 @@
     "../api/src/lib/loops.ts",
     "next.config.mjs"
   ],
-  "exclude": ["node_modules"],
-  "references": [
-    {
-      "path": "../api"
-    }
-  ]
+  "exclude": ["node_modules"]
 }

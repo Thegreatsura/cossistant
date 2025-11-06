@@ -71,6 +71,10 @@ const toDistExport = (value: unknown) => {
 	}
 	const normalized = stripSrcPrefix(value);
 	if (normalized.endsWith(".css")) {
+		// CSS files should strip ./dist/ prefix since the package.json is in dist/
+		if (normalized.startsWith("./dist/")) {
+			return normalized.replace(/^\.\/dist\//, "./");
+		}
 		// CSS files built to dist root should map support/support.css -> support.css
 		if (normalized === "./support/support.css") {
 			return "./support.css";

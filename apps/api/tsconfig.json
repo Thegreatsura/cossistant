@@ -10,13 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@api/*": ["src/*"],
-      "@cossistant/types/*": ["../../packages/types/src/*"]
-    },
-    "declaration": true,
-    "composite": false,
-    "declarationMap": true,
-    "outDir": "./dist"
+      "@api/*": ["src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

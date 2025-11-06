@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
-	AvatarInput,
 	type AvatarInputValue,
 	uploadToPresignedUrl,
 } from "@/components/ui/avatar-input";

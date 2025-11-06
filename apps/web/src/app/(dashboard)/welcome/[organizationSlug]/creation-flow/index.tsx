@@ -141,7 +141,7 @@ export default function CreationFlowWrapper({
 										code={`@import "tailwindcss";
 
 @import "@cossistant/next/tailwind.css";
-@source "@cossistant/next/dist/support";
+@source "@cossistant/next/support";
 `}
 										fileName="app/globals.css"
 										highlightLines="3,4"
