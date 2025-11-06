@@ -10,4 +10,3 @@ Documentation enhancements and dependency updates
 - Improved quickstart documentation with better code examples
 - Added comprehensive examples README for common use cases
 - Enhanced navigation dropdown and onboarding flow components
-
