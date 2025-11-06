@@ -122,6 +122,7 @@ export default function CreationFlowWrapper({
 									<DashboardCodeBlock
 										code={`NEXT_PUBLIC_COSSISTANT_API_KEY=${publicApiKey ?? "pk_test_replace_me"}`}
 										fileName=".env.local"
+										highlightLines="1"
 										language="bash"
 									/>
 									{publicApiKey ? null : (
@@ -143,6 +144,7 @@ export default function CreationFlowWrapper({
 @source "@cossistant/next/dist/support";
 `}
 										fileName="app/globals.css"
+										highlightLines="3,4"
 									/>
 								</div>
 
@@ -170,6 +172,7 @@ export default function RootLayout({
 }
 `}
 										fileName="app/layout.tsx"
+										highlightLines="1,13"
 									/>
 								</div>
 
@@ -190,6 +193,7 @@ export default function Page() {
 }
 `}
 										fileName="app/page.tsx"
+										highlightLines="1,7"
 									/>
 								</div>
 
