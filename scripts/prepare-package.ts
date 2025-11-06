@@ -7,7 +7,7 @@ const stripSrcPrefix = (value: string) => value.replace(/^\.\/src\//, "./");
 
 const withExtension = (value: string, extension: string) => {
 	if (value.endsWith("/*")) {
-		return `${value}${extension}`;
+		return `${value}.${extension}`;
 	}
 	if (value.includes("*")) {
 		return value
