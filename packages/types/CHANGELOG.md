@@ -1,5 +1,11 @@
 # @cossistant/types
 
+## 0.0.8
+
+### Patch Changes
+
+- Release new version of packages
+
 ## 0.0.7
 
 ## 0.0.6
