@@ -134,13 +134,26 @@ export default function CreationFlowWrapper({
 
 								<div className="space-y-3">
 									<h4 className="font-medium text-primary text-sm tracking-wide">
+										[Import the CSS in your globals.css]
+									</h4>
+									<DashboardCodeBlock
+										code={`@import "tailwindcss";
+
+@import "@cossistant/next/tailwind.css";
+@source "@cossistant/next/dist/support";
+`}
+										fileName="app/globals.css"
+									/>
+								</div>
+
+								<div className="space-y-3">
+									<h4 className="font-medium text-primary text-sm tracking-wide">
 										[Wrap your root layout]
 									</h4>
 									<DashboardCodeBlock
 										code={`import { SupportProvider } from "@cossistant/next";
 
 import "./globals.css";
-import "@cossistant/react/support.css";
 
 export default function RootLayout({
   children,

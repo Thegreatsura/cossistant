@@ -93,7 +93,7 @@ export function NavigationDropdown({ websiteSlug }: NavigationDropdownProps) {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<button
-					className="group flex items-center gap-3 rounded px-3 py-2.5 text-left text-primary/80 text-sm hover:cursor-pointer hover:bg-background-200 hover:text-primary disabled:opacity-50 dark:hover:bg-background-300"
+					className="group flex items-center gap-1 rounded px-3 py-2.5 text-left text-primary/80 text-sm hover:cursor-pointer hover:bg-background-200 hover:text-primary disabled:opacity-50 dark:hover:bg-background-300"
 					disabled={!user || isPending}
 					type="button"
 				>
@@ -102,7 +102,7 @@ export function NavigationDropdown({ websiteSlug }: NavigationDropdownProps) {
 						fallbackName={websiteName}
 						url={websiteLogoUrl}
 					/>
-					<div className="flex flex-1 items-center gap-2 text-left text-sm leading-tight">
+					<div className="flex flex-1 items-center gap-2 pl-2 text-left text-sm leading-tight">
 						<span className="truncate">{websiteName}</span>
 						{currentWebsitePlan && (
 							<span className="truncate rounded bg-background-500 px-1 text-muted-foreground text-xs">
@@ -118,14 +118,14 @@ export function NavigationDropdown({ websiteSlug }: NavigationDropdownProps) {
 				side="top"
 				sideOffset={4}
 			>
-				<DropdownMenuLabel className="flex items-center gap-2 px-2 py-1.5">
+				<DropdownMenuLabel className="flex items-center gap-3 px-2 py-1.5">
 					<Avatar
 						className="size-6"
 						fallbackName={userDisplayName}
 						url={userAvatarUrl}
 					/>
-					<div className="grid flex-1 text-left text-sm leading-tight">
-						<span className="truncate font-semibold">{userDisplayName}</span>
+					<div className="grid flex-1 text-left text-xs leading-tight">
+						<span className="truncate font-medium">{userDisplayName}</span>
 						<span className="truncate text-muted-foreground text-xs">
 							{userEmail}
 						</span>

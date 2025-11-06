@@ -63,48 +63,39 @@ export default function RootLayout({
   <Step>
   ## Import support widget styling
 
-Cossistant support widget is styled using Tailwind classes, you can simply import the styles to your app this way:
+Cossistant support widget provides two CSS options depending on your setup:
 
 <Tabs defaultValue="tailwindv4" className="mt-10">
   <TabsList>
     <TabsTrigger value="tailwindv4">Tailwind v4</TabsTrigger>
-    <TabsTrigger value="tailwindconfig">Tailwind config (v3)</TabsTrigger>
-    <TabsTrigger value="css">Using CSS</TabsTrigger>
+    <TabsTrigger value="css">Plain CSS</TabsTrigger>
   </TabsList>
   <TabsContent value="tailwindv4">
-    ````css {3,4} showLineNumbers title="app/globals.css"
+    If you're using Tailwind CSS v4, import the source file in your CSS to enable full theme customization:
+
+    ````css {4,5} showLineNumbers title="app/globals.css"
+
 @import "tailwindcss";
 
-@import "@cossistant/next/support.css";
+@import "@cossistant/next/tailwind.css";
 @source "@cossistant/next/dist/support";
 
 ````
-  </TabsContent>
-  <TabsContent value="tailwindconfig">
-    ```js {4} showLineNumbers title="tailwind.config.js"
-    module.exports = {
-      content: [
-        "./app/**/*.{tsx,ts,mdx,md}",
-        "./node_modules/@cossistant/next/dist/**/*.{js,ts,jsx,tsx}",
-      ],
-      theme: {
-        extend: {},
-      },
-      plugins: [],
-    };
-```
 
-Then import the CSS file in your layout:
+This allows you to override variables like `--co-theme-primary` in your own CSS for theming.
 
-```tsx {4} showLineNumbers title="app/layout.tsx"
-import { SupportProvider } from "@cossistant/next";
-
-import "./globals.css";
-import "@cossistant/next/support.css";
-```
+<Alert variant="info" className="mt-4">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Tailwind v3 users</AlertTitle>
+  <AlertDescription>
+    Tailwind v3 is not supported. Please use the plain CSS import instead (see "Plain CSS" tab).
+  </AlertDescription>
+</Alert>
 
   </TabsContent>
   <TabsContent value="css">
+    Import the pre-compiled CSS in your layout - works with any setup, no Tailwind required:
+
     ```tsx {4} showLineNumbers title="app/layout.tsx"
 import { SupportProvider } from "@cossistant/next";
 

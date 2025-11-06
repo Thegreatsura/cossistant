@@ -16,10 +16,37 @@ npm install @cossistant/react
 yarn add @cossistant/react
 ```
 
+## CSS Imports
+
+The SDK provides two CSS entrypoints to fit your setup:
+
+### Option 1: Tailwind v4 Source
+
+If you're using Tailwind CSS v4, import the source file to enable full theme customization:
+
+```tsx
+import "@cossistant/react/tailwind.css";
+```
+
+This imports the raw Tailwind v4 source file, allowing you to override theme variables like `--co-theme-primary` in your own CSS.
+
+### Option 2: Plain CSS
+
+Import the pre-compiled CSS with no Tailwind dependency:
+
+```tsx
+import "@cossistant/react/support.css";
+```
+
+This file contains all the compiled styles and works in any React application without requiring Tailwind CSS.
+
+> **Note:** Tailwind v3 is not supported. Use the plain CSS import if you're on Tailwind v3.
+
 ## Render the widget
 
 ```tsx
 import { SupportProvider, Support } from "@cossistant/react";
+import "@cossistant/react/support.css";
 
 export function App() {
   return (
