@@ -41,7 +41,7 @@
     "zod": "^4.1.8"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsdown",
     "lint": "biome check .",
     "check-types": "tsc --noEmit --project tsconfig.json"
   }
