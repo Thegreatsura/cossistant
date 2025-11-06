@@ -1,5 +1,6 @@
 {
   "name": "@cossistant/core",
+  "type": "module",
   "version": "0.0.5",
   "private": true,
   "author": "Cossistant Team",

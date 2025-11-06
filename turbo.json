@@ -12,14 +12,7 @@
     "//#fix": {
       "cache": false
     },
-    "@cossistant/core#build": {
-      "outputs": ["dist/**"]
-    },
-    "@cossistant/types#build": {
-      "outputs": ["dist/**"]
-    },
     "@cossistant/react#build": {
-      "dependsOn": ["@cossistant/core#build", "@cossistant/types#build"],
       "outputs": ["dist/**"]
     },
     "@cossistant/next#build": {
@@ -67,8 +60,6 @@
     "@cossistant/web#build": {
       "dependsOn": [
         "^build",
-        "@cossistant/core#build",
-        "@cossistant/types#build",
         "@cossistant/react#build",
         "@cossistant/next#build"
       ],
