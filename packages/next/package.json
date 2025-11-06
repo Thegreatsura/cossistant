@@ -41,7 +41,10 @@
     "./tailwind.css": "./src/support/support.css",
     "./realtime": "./src/realtime/index.ts",
     "./utils": "./src/utils/index.ts",
-    "./utils/*": "./src/utils/*.ts"
+    "./utils/*": "./src/utils/*.ts",
+    "./identify-visitor": "./src/identify-visitor.tsx",
+    "./provider": "./src/provider.tsx",
+    "./support-config": "./src/support-config.tsx"
   },
   "main": "./src/index.ts",
   "module": "./src/index.ts",

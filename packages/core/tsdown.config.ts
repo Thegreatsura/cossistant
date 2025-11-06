@@ -3,7 +3,10 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	entry: ["src/index.ts", "src/**/*.ts", "!src/**/*.test.ts"],
 	clean: true,
-	dts: true,
+	dts: {
+		// Resolve and bundle all type dependencies to avoid exposing third-party .d.cts files
+		resolve: true,
+	},
 	hash: false,
 	minify: false,
 	sourcemap: true,
@@ -13,5 +16,6 @@ export default defineConfig({
 		js: ".js",
 		dts: ".d.ts",
 	}),
-	external: ["@cossistant/types", "nanoid", "ulid", "zod"],
+	// Keep utility libraries external as they're commonly used
+	external: ["@cossistant/types", "nanoid", "ulid"],
 });

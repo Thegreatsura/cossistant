@@ -3,7 +3,10 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	entry: ["src/index.ts", "src/**/*.ts", "!src/**/*.test.ts"],
 	clean: true,
-	dts: true,
+	dts: {
+		// Resolve and bundle all type dependencies to avoid exposing zod's .d.cts files
+		resolve: true,
+	},
 	hash: false,
 	minify: false,
 	sourcemap: true,
@@ -13,5 +16,6 @@ export default defineConfig({
 		js: ".js",
 		dts: ".d.ts",
 	}),
-	external: ["zod", "@hono/zod-openapi"],
+	// Don't mark anything as external - bundle everything to avoid module resolution issues
+	external: [],
 });

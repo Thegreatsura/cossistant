@@ -11,7 +11,10 @@ export default defineConfig({
 		"!src/**/*.css",
 	],
 	clean: true,
-	dts: true,
+	dts: {
+		// Resolve and bundle all type dependencies to avoid exposing third-party .d.cts files
+		resolve: true,
+	},
 	hash: false,
 	minify: false,
 	sourcemap: true,

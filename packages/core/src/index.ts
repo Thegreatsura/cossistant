@@ -1,11 +1,4 @@
-export type {
-	CossistantConfig,
-	CossistantError,
-	Message,
-	PublicWebsiteResponse,
-} from "@cossistant/types";
-
-export { conversationSchema } from "@cossistant/types";
+export type { CossistantConfig, CossistantError } from "@cossistant/types";
 export { CossistantClient, CossistantClient as default } from "./client";
 export { normalizeLocale } from "./locale-utils";
 export { CossistantRestClient } from "./rest-client";
