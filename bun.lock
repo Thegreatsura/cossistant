@@ -175,7 +175,7 @@
     },
     "packages/core": {
       "name": "@cossistant/core",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "nanoid": "^5.1.5",
         "ulid": "^3.0.1",
@@ -198,7 +198,7 @@
     },
     "packages/next": {
       "name": "@cossistant/next",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@cossistant/react": "workspace:*",
         "tailwindcss": "^4.1.13",
@@ -214,7 +214,7 @@
     },
     "packages/react": {
       "name": "@cossistant/react",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@cossistant/core": "workspace:*",
         "@cossistant/types": "workspace:*",
@@ -264,7 +264,7 @@
     },
     "packages/types": {
       "name": "@cossistant/types",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "zod": "^4.1.8",

@@ -230,23 +230,21 @@ export function AllowedDomainsForm({
 	};
 
 	return (
-		<>
-			<Form {...form}>
-				<form className="space-y-6" onSubmit={form.handleSubmit(handleSubmit)}>
-					<DomainsInput form={form} isSubmitting={isSubmitting} />
-				</form>
-			</Form>
-			<SettingsRowFooter>
-				<BaseSubmitButton
-					disabled={!form.formState.isDirty}
-					isSubmitting={isSubmitting}
-					size="sm"
-					type="submit"
-					variant="default"
-				>
-					Save allowed domains
-				</BaseSubmitButton>
-			</SettingsRowFooter>
-		</>
+		<Form {...form}>
+			<form className="space-y-6" onSubmit={form.handleSubmit(handleSubmit)}>
+				<DomainsInput form={form} isSubmitting={isSubmitting} />
+				<SettingsRowFooter>
+					<BaseSubmitButton
+						disabled={!form.formState.isDirty}
+						isSubmitting={isSubmitting}
+						size="sm"
+						type="submit"
+						variant="default"
+					>
+						Save allowed domains
+					</BaseSubmitButton>
+				</SettingsRowFooter>
+			</form>
+		</Form>
 	);
 }
