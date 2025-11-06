@@ -1,12 +1,20 @@
 import { db } from "@api/db";
 import { getWebsiteUsageCounts } from "@api/db/queries/usage";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { member } from "@api/db/schema/auth";
+import { website } from "@api/db/schema/website";
 import { env } from "@api/env";
 import { getPlanForWebsite } from "@api/lib/plans/access";
 import { getPlanConfig, type PlanName } from "@api/lib/plans/config";
-import { getCustomerByOrganizationId } from "@api/lib/plans/polar";
+import {
+	getCustomerByOrganizationId,
+	getCustomerState,
+	getPlanFromCustomerState,
+	getSubscriptionForWebsite,
+} from "@api/lib/plans/polar";
 import polarClient from "@api/lib/polar";
 import { TRPCError } from "@trpc/server";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
@@ -61,6 +69,101 @@ export const planRouter = createTRPCRouter({
 					teamMembers: usageCounts.teamMembers,
 				},
 			};
+		}),
+	getPlansForOrganization: protectedProcedure
+		.input(
+			z.object({
+				organizationId: z.string(),
+			})
+		)
+		.query(async ({ ctx, input }) => {
+			// Verify user has access to this organization
+			const [membership] = await ctx.db
+				.select()
+				.from(member)
+				.where(
+					and(
+						eq(member.userId, ctx.user.id),
+						eq(member.organizationId, input.organizationId)
+					)
+				)
+				.limit(1);
+
+			if (!membership) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You do not have access to this organization",
+				});
+			}
+
+			// Get all websites for this organization
+			const websites = await ctx.db
+				.select({
+					id: website.id,
+					organizationId: website.organizationId,
+				})
+				.from(website)
+				.where(
+					and(
+						eq(website.organizationId, input.organizationId),
+						isNull(website.deletedAt)
+					)
+				);
+
+			if (websites.length === 0) {
+				return [];
+			}
+
+			// Get customer state once for the organization
+			const customer = await getCustomerByOrganizationId(input.organizationId);
+
+			if (!customer) {
+				// No customer means all websites are on free plan
+				const freePlan = getPlanConfig("free");
+				return websites.map((site) => ({
+					websiteId: site.id,
+					planName: "free" as PlanName,
+					displayName: freePlan.displayName,
+				}));
+			}
+
+			const customerState = await getCustomerState(customer.id);
+
+			// Map each website to its plan
+			const planPromises = websites.map(async (site) => {
+				const subscription = getSubscriptionForWebsite(customerState, site.id);
+
+				if (subscription) {
+					// Create a temporary customer state with just this subscription
+					const subscriptionCustomerState = {
+						customerId: customerState?.customerId ?? "",
+						activeSubscriptions: [subscription],
+						grantedBenefits: customerState?.grantedBenefits ?? [],
+					};
+
+					// Get plan from subscription
+					const planName = await getPlanFromCustomerState(
+						subscriptionCustomerState
+					);
+					const finalPlan = planName ?? "free";
+					const config = getPlanConfig(finalPlan);
+					return {
+						websiteId: site.id,
+						planName: finalPlan,
+						displayName: config.displayName,
+					};
+				}
+
+				// Default to free plan
+				const freePlan = getPlanConfig("free");
+				return {
+					websiteId: site.id,
+					planName: "free" as PlanName,
+					displayName: freePlan.displayName,
+				};
+			});
+
+			return Promise.all(planPromises);
 		}),
 	createCheckout: protectedProcedure
 		.input(
