@@ -14,7 +14,7 @@
       "@cossistant/types/*": ["../../packages/types/src/*"]
     },
     "declaration": true,
-    "composite": true,
+    "composite": false,
     "declarationMap": true,
     "outDir": "./dist"
   },
