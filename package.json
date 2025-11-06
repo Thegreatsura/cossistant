@@ -11,8 +11,9 @@
     "fix": "bunx ultracite fix",
     "check-types": "turbo run check-types",
     "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "changeset publish",
+    "changeset:version": "changeset version",
+    "changeset:publish": "bun run build && changeset publish",
+    "release": "bun run changeset:version && bun run changeset:publish",
     "prepare": "husky"
   },
   "devDependencies": {

@@ -1,20 +1,23 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": "@changesets/cli/changelog",
-  "commit": true,
+  "commit": false,
   "fixed": [
     [
       "@cossistant/core",
       "@cossistant/react",
       "@cossistant/types",
-      "@cossistant/location",
-      "@cossistant/next",
-      "@cossistant/transactional"
+      "@cossistant/next"
     ]
   ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
-  "updateInternalDependencies": "patch",
-  "ignore": ["@cossistant/api", "@cossistant/web"]
+  "updateInternalDependencies": "minor",
+  "ignore": [
+    "@cossistant/api",
+    "@cossistant/web",
+    "@cossistant/location",
+    "@cossistant/transactional"
+  ]
 }
