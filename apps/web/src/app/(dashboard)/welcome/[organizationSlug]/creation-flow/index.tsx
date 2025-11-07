@@ -140,7 +140,7 @@ export default function CreationFlowWrapper({
 									<DashboardCodeBlock
 										code={`@import "tailwindcss";
 
-@import "@cossistant/next/tailwind.css";
+@import "@cossistant/react/tailwind.css";
 `}
 										fileName="app/globals.css"
 										highlightLines="3"
