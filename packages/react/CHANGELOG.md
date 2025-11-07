@@ -1,5 +1,14 @@
 # @cossistant/react
 
+## 0.0.13
+
+### Patch Changes
+
+- Patch release with latest updates and improvements
+- Updated dependencies
+  - @cossistant/core@0.0.13
+  - @cossistant/types@0.0.13
+
 ## 0.0.12
 
 ### Patch Changes

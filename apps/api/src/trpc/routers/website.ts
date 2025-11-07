@@ -13,29 +13,29 @@ import {
 	updateWebsite,
 } from "@api/db/queries/website";
 import {
-        member,
-        session as sessionTable,
-        type WebsiteInsert,
-        website,
+	member,
+	session as sessionTable,
+	type WebsiteInsert,
+	website,
 } from "@api/db/schema";
-import { invalidateApiKeyCacheForWebsite } from "@api/utils/cache/api-key-cache";
 import { isOrganizationAdminOrOwner } from "@api/utils/access-control";
+import { invalidateApiKeyCacheForWebsite } from "@api/utils/cache/api-key-cache";
 import { generateULID } from "@api/utils/db/ids";
 import { normalizeDomain } from "@api/utils/domain";
 import { domainToSlug } from "@api/utils/domain-slug";
 import {
-        APIKeyType,
-        checkWebsiteDomainRequestSchema,
-        createWebsiteApiKeyRequestSchema,
-        createWebsiteRequestSchema,
-        createWebsiteResponseSchema,
-        listByOrganizationRequestSchema,
-        revokeWebsiteApiKeyRequestSchema,
-        updateWebsiteRequestSchema,
-        websiteApiKeySchema,
-        websiteDeveloperSettingsResponseSchema,
-        websiteListItemSchema,
-        websiteSummarySchema,
+	APIKeyType,
+	checkWebsiteDomainRequestSchema,
+	createWebsiteApiKeyRequestSchema,
+	createWebsiteRequestSchema,
+	createWebsiteResponseSchema,
+	listByOrganizationRequestSchema,
+	revokeWebsiteApiKeyRequestSchema,
+	updateWebsiteRequestSchema,
+	websiteApiKeySchema,
+	websiteDeveloperSettingsResponseSchema,
+	websiteListItemSchema,
+	websiteSummarySchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, ne } from "drizzle-orm";
@@ -52,10 +52,10 @@ type ApiKeyLike =
 	| Awaited<ReturnType<typeof revokeApiKey>>;
 
 const toWebsiteApiKey = (
-        key: ApiKeyLike,
-        options?: { includeRawKey?: boolean }
+	key: ApiKeyLike,
+	options?: { includeRawKey?: boolean }
 ) => ({
-        id: key.id,
+	id: key.id,
 	name:
 		key.name ??
 		`${key.isTest ? "Test " : ""}${
@@ -70,7 +70,7 @@ const toWebsiteApiKey = (
 	isActive: key.isActive,
 	createdAt: key.createdAt,
 	lastUsedAt: key.lastUsedAt ?? null,
-        revokedAt: key.revokedAt ?? null,
+	revokedAt: key.revokedAt ?? null,
 });
 
 export const websiteRouter = createTRPCRouter({
@@ -333,11 +333,11 @@ export const websiteRouter = createTRPCRouter({
 
 			return toWebsiteApiKey(createdKey, { includeRawKey: true });
 		}),
-        revokeApiKey: protectedProcedure
-                .input(revokeWebsiteApiKeyRequestSchema)
-                .output(websiteApiKeySchema)
-                .mutation(async ({ ctx, input }) => {
-                        const site = await ctx.db.query.website.findFirst({
+	revokeApiKey: protectedProcedure
+		.input(revokeWebsiteApiKeyRequestSchema)
+		.output(websiteApiKeySchema)
+		.mutation(async ({ ctx, input }) => {
+			const site = await ctx.db.query.website.findFirst({
 				where: and(
 					eq(website.id, input.websiteId),
 					eq(website.organizationId, input.organizationId),
@@ -391,13 +391,13 @@ export const websiteRouter = createTRPCRouter({
 				});
 			}
 
-                        return toWebsiteApiKey(revoked);
-                }),
-        checkDomain: protectedProcedure
-                .input(checkWebsiteDomainRequestSchema)
-                .output(z.boolean())
-                .query(async ({ ctx: { db }, input }) => {
-                        let normalizedDomain: string;
+			return toWebsiteApiKey(revoked);
+		}),
+	checkDomain: protectedProcedure
+		.input(checkWebsiteDomainRequestSchema)
+		.output(z.boolean())
+		.query(async ({ ctx: { db }, input }) => {
+			let normalizedDomain: string;
 
 			try {
 				normalizedDomain = normalizeDomain(input.domain);
@@ -472,9 +472,9 @@ export const websiteRouter = createTRPCRouter({
 				updateData.description = input.data.description;
 			if (input.data.logoUrl !== undefined)
 				updateData.logoUrl = input.data.logoUrl;
-                        if (input.data.whitelistedDomains !== undefined) {
-                                updateData.whitelistedDomains = input.data.whitelistedDomains;
-                        }
+			if (input.data.whitelistedDomains !== undefined) {
+				updateData.whitelistedDomains = input.data.whitelistedDomains;
+			}
 			if (input.data.installationTarget !== undefined)
 				updateData.installationTarget = input.data.installationTarget;
 			if (input.data.status !== undefined)
@@ -526,11 +526,11 @@ export const websiteRouter = createTRPCRouter({
 					}
 
 					updateData.isDomainOwnershipVerified = false;
-                                        const newDefaultDomain = `https://${normalizedDomain}`;
-                                        updateData.whitelistedDomains = [newDefaultDomain];
-                                }
+					const newDefaultDomain = `https://${normalizedDomain}`;
+					updateData.whitelistedDomains = [newDefaultDomain];
+				}
 
-                                updateData.domain = normalizedDomain;
+				updateData.domain = normalizedDomain;
 			}
 
 			if (updateData.contactEmail !== undefined) {
@@ -542,33 +542,30 @@ export const websiteRouter = createTRPCRouter({
 					trimmedEmail && trimmedEmail.length > 0 ? trimmedEmail : null;
 			}
 
-                        const updatedSite = await updateWebsite(ctx.db, {
-                                orgId: input.organizationId,
-                                websiteId: input.websiteId,
-                                data: updateData,
-                        });
+			const updatedSite = await updateWebsite(ctx.db, {
+				orgId: input.organizationId,
+				websiteId: input.websiteId,
+				data: updateData,
+			});
 
-                        if (!updatedSite) {
+			if (!updatedSite) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Website not found",
 				});
 			}
 
-                        try {
-                                await invalidateApiKeyCacheForWebsite(ctx.db, site.id);
-                        } catch (error) {
-                                console.error(
-                                        "Failed to invalidate API key cache for website",
-                                        error
-                                );
-                        }
+			try {
+				await invalidateApiKeyCacheForWebsite(ctx.db, site.id);
+			} catch (error) {
+				console.error("Failed to invalidate API key cache for website", error);
+			}
 
-                        return {
-                                id: updatedSite.id,
-                                slug: updatedSite.slug,
-                                name: updatedSite.name,
-                                domain: updatedSite.domain,
+			return {
+				id: updatedSite.id,
+				slug: updatedSite.slug,
+				name: updatedSite.name,
+				domain: updatedSite.domain,
 				contactEmail: updatedSite.contactEmail ?? null,
 				logoUrl: updatedSite.logoUrl ?? null,
 				organizationId: updatedSite.organizationId,

@@ -218,22 +218,22 @@ const websiteUpdateDataSchema = z
 	});
 
 export const updateWebsiteRequestSchema = z
-        .object({
-                organizationId: z.ulid().openapi({
-                        description: "The organization's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                websiteId: z.ulid().openapi({
-                        description: "The website's unique identifier.",
-                        example: "01JG000000000000000000000",
-                }),
-                data: websiteUpdateDataSchema.openapi({
-                        description: "The fields to update on the website.",
-                }),
-        })
-        .openapi({
-                description: "Payload to update website settings.",
-        });
+	.object({
+		organizationId: z.ulid().openapi({
+			description: "The organization's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		websiteId: z.ulid().openapi({
+			description: "The website's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		data: websiteUpdateDataSchema.openapi({
+			description: "The fields to update on the website.",
+		}),
+	})
+	.openapi({
+		description: "Payload to update website settings.",
+	});
 
 export type UpdateWebsiteRequest = z.infer<typeof updateWebsiteRequestSchema>;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { AvatarStack } from "@cossistant/react/support/components/avatar-stack";
-import { Button } from "@cossistant/react/support/components/button";
+import { CoButton as Button } from "@cossistant/react/support/components/button";
 import Icon from "@cossistant/react/support/components/icons";
 import { Watermark } from "@cossistant/react/support/components/watermark";
 import { motion } from "motion/react";

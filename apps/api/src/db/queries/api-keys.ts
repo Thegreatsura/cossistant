@@ -9,8 +9,8 @@ import { apiKey, organization, website } from "@api/db/schema";
 import { env } from "@api/env";
 import { generateApiKey, hashApiKey } from "@api/utils/api-keys";
 import {
-        API_KEY_CACHE_TAG,
-        getApiKeyCacheTagForKey,
+	API_KEY_CACHE_TAG,
+	getApiKeyCacheTagForKey,
 } from "@api/utils/cache/api-key-cache";
 import { generateULID } from "@api/utils/db/ids";
 import { APIKeyType } from "@cossistant/types";
@@ -35,8 +35,10 @@ export async function getApiKeyByKey(
 		.where(and(eq(apiKey.key, params.key), eq(apiKey.isActive, true)))
 		.innerJoin(organization, eq(apiKey.organizationId, organization.id))
 		.innerJoin(website, eq(apiKey.websiteId, website.id))
-                .limit(1)
-                .$withCache({ tags: [API_KEY_CACHE_TAG, getApiKeyCacheTagForKey(params.key)] });
+		.limit(1)
+		.$withCache({
+			tags: [API_KEY_CACHE_TAG, getApiKeyCacheTagForKey(params.key)],
+		});
 
 	if (res?.website && res.organization && res.api_key) {
 		return {

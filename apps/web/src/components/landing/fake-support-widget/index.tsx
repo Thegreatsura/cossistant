@@ -3,7 +3,7 @@
 import * as Primitive from "@cossistant/react/primitives";
 import { Bubble, Container } from "@cossistant/react/support/components";
 import { AvatarStack } from "@cossistant/react/support/components/avatar-stack";
-import { Button } from "@cossistant/react/support/components/button";
+import { CoButton as Button } from "@cossistant/react/support/components/button";
 import Icon from "@cossistant/react/support/components/icons";
 import { Watermark } from "@cossistant/react/support/components/watermark";
 // Text component uses real hooks, so we'll create a simple fake version
