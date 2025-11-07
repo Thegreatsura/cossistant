@@ -1,10 +1,11 @@
-@source "./components";
-@source "./pages";
-
 /*
 * This indicates to tailwind to
 * compile classes from Cossistant with the host tailwind config
 */
+@source "./components";
+@source "./pages";
+
+@custom-variant dark (&:is(.dark *));
 
 @layer base {
 	.cossistant {

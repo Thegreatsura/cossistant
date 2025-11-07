@@ -38,7 +38,6 @@
     "./hooks": "./src/hooks/index.ts",
     "./hooks/*": "./src/hooks/*",
     "./support.css": "./dist/support.css",
-    "./tailwind.css": "./dist/tailwind.css",
     "./realtime": "./src/realtime/index.ts",
     "./utils": "./src/utils/index.ts",
     "./utils/*": "./src/utils/*.ts",
@@ -90,7 +89,7 @@
   },
   "scripts": {
     "build": "tsdown && bun run build:css && bun run prepare-package",
-    "build:css": "cp ../react/dist/support.css dist/support.css && cp ../react/dist/tailwind.css dist/tailwind.css",
+    "build:css": "cp ../react/dist/support.css dist/support.css",
     "pub:release": "bun run build && npm publish --access public",
     "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
     "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
