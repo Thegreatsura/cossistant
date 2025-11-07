@@ -1,54 +1,119 @@
 ---
 title: Theme
-description: How the Support widget adopts your design tokens.
+description: Customize the Support widget's colors and style.
 ---
 
-## Philosophy
-The Support widget borrows your site colors whenever it can. It only exposes variables that start with `co-`, so the rest of your Tailwind or Shadcn setup stays untouched.
+## Overview
 
-## How we pick a value
-For every style variable the widget checks three places, always in the same order:
+The Support widget is **fully isolated** from your app's styles by default. All widget styles use the `co-` prefix, so they won't clash with your existing CSS.
 
-1. A widget-only override you place on `.cossistant` (`--co-theme-*`).
-2. The host app token, such as Shadcn's `--background`, `--radius`, or `--primary`.
-3. A baked-in default from Cossistant so the widget always renders sensibly.
+## How Theming Works
 
-| Final widget variable | Step 1: widget override (`--co-theme-*`) | Step 2: site variable | Step 3: built-in default |
-| --- | --- | --- | --- |
-| `--co-radius` | `--co-theme-radius` | `--radius` | `0.625rem` |
-| `--co-background` | `--co-theme-background` | `--background` | Soft white (`oklch(99% 0 0)`) |
-| `--co-foreground` | `--co-theme-foreground` | `--foreground` | Deep gray (`oklch(14.5% 0 0)`) |
-| `--co-border` | `--co-theme-border` | `--border` | Light gray (`oklch(92.2% 0 0)`) |
-| `--co-accent` | `--co-theme-accent` | `--accent` or `--primary` | Indigo (`oklch(20.5% 0 0)`) |
-| `--co-ring` | `--co-theme-ring` | `--ring` or `--primary` | Same indigo |
-| `--co-muted` | `--co-theme-muted` | `--muted` | Blend of background + foreground |
-| `--co-muted-foreground` | `--co-theme-muted-foreground` | `--muted-foreground` | Softer text blend |
+The widget checks two places for every style value:
 
-Background shades (`--co-background-50` -> `--co-background-600`) are created with `color-mix`, gently blending the base background with the text color. If a browser cannot do `color-mix`, we fall back to safe neutral values.
+1. **Your override** (`--co-theme-*` variables)
+2. **Built-in default** (sensible OKLCH colors)
 
-<StyleTokenCascade />
+```css
+/* Widget looks for --co-theme-primary first */
+--co-primary: var(--co-theme-primary, oklch(20.5% 0 0));
+```
 
-## Light and dark mode
-The widget follows the mode your site is in. If your layout toggles a `.dark` class we adapt automatically. You can also force the dark palette by adding `data-color-scheme="dark"` to the `.cossistant` wrapper. The three-step lookup stays the same—we only swap in darker defaults at Step 3 when needed.
+## Quick Start
 
-## Overriding Styles
-Apply overrides on the widget container. Host tokens continue to win, but any `--co-theme-*` variable lets you fine-tune the experience without touching global CSS:
+Override widget colors by setting `--co-theme-*` variables:
 
 ```css
 .cossistant {
-	--co-theme-background: oklch(0.96 0.02 140);
-	--co-theme-accent: var(--brand-primary);
-	--co-theme-radius: 12px;
+  --co-theme-primary: #3b82f6;
+  --co-theme-background: #ffffff;
+  --co-theme-foreground: #0f172a;
+  --co-theme-radius: 12px;
 }
 ```
 
-If your app does not expose Shadcn tokens, set the `co-theme` variables anywhere in your stylesheet:
+## Available Theme Variables
+
+| Variable                        | Default (Light)    | Default (Dark)     |
+| ------------------------------- | ------------------ | ------------------ |
+| `--co-theme-background`         | `oklch(99% 0 0)`   | `oklch(15.5% 0 0)` |
+| `--co-theme-foreground`         | `oklch(14.5% 0 0)` | `oklch(98.5% 0 0)` |
+| `--co-theme-primary`            | `oklch(20.5% 0 0)` | `oklch(98.5% 0 0)` |
+| `--co-theme-primary-foreground` | `oklch(98.5% 0 0)` | `oklch(20.5% 0 0)` |
+| `--co-theme-border`             | `oklch(92.2% 0 0)` | `oklch(26.9% 0 0)` |
+| `--co-theme-muted`              | Color-mixed        | Color-mixed        |
+| `--co-theme-muted-foreground`   | Color-mixed        | Color-mixed        |
+| `--co-theme-radius`             | `0.625rem`         | `0.625rem`         |
+
+### Status Colors
+
+| Variable                 | Default                     |
+| ------------------------ | --------------------------- |
+| `--co-theme-destructive` | `oklch(57.7% 0.245 27.325)` |
+| `--co-theme-success`     | `oklch(71.7% 0.18 142)`     |
+| `--co-theme-warning`     | `oklch(86.4% 0.144 99)`     |
+| `--co-theme-neutral`     | `oklch(60.8% 0 0)`          |
+
+### Accent Colors
+
+| Variable            | Default                  |
+| ------------------- | ------------------------ |
+| `--co-theme-pink`   | `oklch(76.3% 0.152 354)` |
+| `--co-theme-yellow` | `oklch(86.4% 0.144 99)`  |
+| `--co-theme-blue`   | `oklch(72.5% 0.132 241)` |
+| `--co-theme-orange` | `oklch(74.5% 0.166 50)`  |
+
+## Light and Dark Mode
+
+The widget automatically adapts to your site's color scheme. Add a `.dark` class to your layout or set `data-color-scheme="dark"` on the widget container.
+
+```tsx
+<Support className="dark" />
+```
+
+## Using shadcn/ui Colors
+
+Want the widget to match your shadcn/ui theme? Map shadcn variables to widget variables:
 
 ```css
 :root {
-	--co-theme-background: #0f172a;
-	--co-theme-foreground: #f1f5f9;
-	--co-theme-accent: #38bdf8;
-	--co-theme-accent-foreground: #0b1120;
+  --co-theme-background: var(--background);
+  --co-theme-foreground: var(--foreground);
+  --co-theme-primary: var(--primary);
+  --co-theme-primary-foreground: var(--primary-foreground);
+  --co-theme-border: var(--border);
+  --co-theme-radius: var(--radius);
 }
 ```
+
+This gives you full control—the widget only uses shadcn colors when you explicitly connect them.
+
+## Custom Branding
+
+Match your brand identity with custom colors:
+
+```css
+.cossistant {
+  --co-theme-primary: #ff6b35;
+  --co-theme-primary-foreground: #ffffff;
+  --co-theme-background: #fafafa;
+  --co-theme-foreground: #1a1a1a;
+  --co-theme-border: #e5e5e5;
+  --co-theme-radius: 16px;
+}
+```
+
+## Advanced: Per-Shade Overrides
+
+Fine-tune background shades for depth and hierarchy:
+
+```css
+.cossistant {
+  --co-theme-background-50: #fafafa;
+  --co-theme-background-100: #f5f5f5;
+  --co-theme-background-200: #eeeeee;
+  --co-theme-background-300: #e0e0e0;
+}
+```
+
+By default, these are generated with `color-mix()` from your base colors.

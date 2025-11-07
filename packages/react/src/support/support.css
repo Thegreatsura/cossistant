@@ -9,70 +9,45 @@
 
 @layer base {
 	.cossistant {
-		@apply border-co-border;
 		@apply scroll-smooth;
 
 		color-scheme: inherit;
 
 		/* Typeface tokens */
-		--co-font-sans: var(
-			--co-theme-font-sans,
-			var(--font-sans, "Geist", "Inter", sans-serif)
-		);
+		--co-font-sans: var(--co-theme-font-sans, "Geist", "Inter", sans-serif);
 		--co-font-mono: var(
 			--co-theme-font-mono,
-			var(--font-mono, "Geist Mono", "Inter Mono", monospace)
-		);
-
-		--co-border-color: var(
-			--co-theme-border-color,
-			var(--color-border, oklch(92.2% 0 0))
+			"Geist Mono",
+			"Inter Mono",
+			monospace
 		);
 
 		/* Core surfaces */
-		--co-radius: var(--co-theme-radius, var(--radius, 0.625rem));
-		--co-background-base: var(
-			--co-theme-background,
-			var(--background, oklch(99% 0 0))
-		);
-		--co-foreground-base: var(
-			--co-theme-foreground,
-			var(--foreground, oklch(14.5% 0 0))
-		);
-		--co-popover-base: var(
-			--co-theme-popover,
-			var(--popover, var(--co-background-base))
-		);
+		--co-radius: var(--co-theme-radius, 0.625rem);
+		--co-background-base: var(--co-theme-background, oklch(99% 0 0));
+		--co-foreground-base: var(--co-theme-foreground, oklch(14.5% 0 0));
+		--co-popover-base: var(--co-theme-popover, var(--co-background-base));
 		--co-popover-foreground-base: var(
 			--co-theme-popover-foreground,
-			var(--popover-foreground, var(--co-foreground-base))
+			var(--co-foreground-base)
 		);
-		--co-primary-base: var(
-			--co-theme-primary,
-			var(--primary, oklch(20.5% 0 0))
-		);
+		--co-primary-base: var(--co-theme-primary, oklch(20.5% 0 0));
 		--co-primary-foreground-base: var(
 			--co-theme-primary-foreground,
-			var(--primary-foreground, oklch(98.5% 0 0))
+			oklch(98.5% 0 0)
 		);
-		--co-secondary-base: var(
-			--co-theme-secondary,
-			var(--secondary, oklch(97% 0 0))
-		);
+		--co-secondary-base: var(--co-theme-secondary, oklch(97% 0 0));
 		--co-secondary-foreground-base: var(
 			--co-theme-secondary-foreground,
-			var(--secondary-foreground, oklch(20.5% 0 0))
+			oklch(20.5% 0 0)
 		);
-		--co-border-base: var(--co-theme-border, var(--border, oklch(92.2% 0 0)));
-		--co-input-base: var(--co-theme-input, var(--input, oklch(92.2% 0 0)));
-		--co-ring-base: var(--co-theme-ring, var(--ring, var(--co-primary-base)));
-		--co-accent-base: var(
-			--co-theme-accent,
-			var(--accent, var(--co-primary-base))
-		);
+		--co-border-base: var(--co-theme-border, oklch(92.2% 0 0));
+		--co-input-base: var(--co-theme-input, oklch(92.2% 0 0));
+		--co-ring-base: var(--co-theme-ring, var(--co-primary-base));
+		--co-accent-base: var(--co-theme-accent, var(--co-primary-base));
 		--co-accent-foreground-base: var(
 			--co-theme-accent-foreground,
-			var(--accent-foreground, var(--co-primary-foreground-base))
+			var(--co-primary-foreground-base)
 		);
 
 		/* Neutral shades derived from the background */
@@ -162,13 +137,10 @@
 		--co-primary-foreground: var(--co-primary-foreground-base);
 		--co-secondary: var(--co-secondary-base);
 		--co-secondary-foreground: var(--co-secondary-foreground-base);
-		--co-muted: var(
-			--co-theme-muted,
-			var(--muted, var(--co-muted-mix, oklch(97% 0 0)))
-		);
+		--co-muted: var(--co-theme-muted, var(--co-muted-mix, oklch(97% 0 0)));
 		--co-muted-foreground: var(
 			--co-theme-muted-foreground,
-			var(--muted-foreground, var(--co-muted-foreground-mix, oklch(55.6% 0 0)))
+			var(--co-muted-foreground-mix, oklch(55.6% 0 0))
 		);
 		--co-border: var(--co-border-base);
 		--co-input: var(--co-input-base);
@@ -203,57 +175,78 @@
 			--co-theme-warning-foreground,
 			oklch(41.4% 0.071 99)
 		);
+
+		/* Tailwind theme mapping - scoped to widget */
+		@theme inline {
+			--font-co-sans: var(--co-font-sans);
+			--font-co-mono: var(--co-font-mono);
+			--color-co-background: var(--co-background);
+			--color-co-background-50: var(--co-background-50);
+			--color-co-background-100: var(--co-background-100);
+			--color-co-background-200: var(--co-background-200);
+			--color-co-background-300: var(--co-background-300);
+			--color-co-background-400: var(--co-background-400);
+			--color-co-background-500: var(--co-background-500);
+			--color-co-background-600: var(--co-background-600);
+
+			--color-co-foreground: var(--co-foreground);
+
+			--color-co-primary: var(--co-primary);
+			--color-co-primary-foreground: var(--co-primary-foreground);
+			--color-co-secondary: var(--co-secondary);
+			--color-co-secondary-foreground: var(--co-secondary-foreground);
+			--color-co-muted: var(--co-muted);
+			--color-co-muted-foreground: var(--co-muted-foreground);
+			--color-co-border: var(--co-border);
+			--color-co-input: var(--co-input);
+			--color-co-ring: var(--co-ring);
+			--radius-co: var(--co-radius);
+
+			/* custom colors */
+			--color-co-pink: var(--co-pink);
+			--color-co-yellow: var(--co-yellow);
+			--color-co-blue: var(--co-blue);
+			--color-co-orange: var(--co-orange);
+
+			/* status colors */
+			--color-co-destructive: var(--co-destructive);
+			--color-co-destructive-foreground: var(--co-destructive-foreground);
+			--color-co-success: var(--co-success);
+			--color-co-success-foreground: var(--co-success-foreground);
+			--color-co-neutral: var(--co-neutral);
+			--color-co-neutral-foreground: var(--co-neutral-foreground);
+			--color-co-warning: var(--co-warning);
+			--color-co-warning-foreground: var(--co-warning-foreground);
+		}
 	}
 
 	.dark .cossistant,
 	.cossistant[data-color-scheme="dark"] {
-		/* Provide dark defaults without overriding host tokens */
-		--co-background-base: var(
-			--co-theme-background,
-			var(--background, oklch(15.5% 0 0))
-		);
-		--co-foreground-base: var(
-			--co-theme-foreground,
-			var(--foreground, oklch(98.5% 0 0))
-		);
-		--co-border-color: var(
-			--co-theme-border-color,
-			var(--color-border, oklch(26.9% 0 0))
-		);
-		--co-popover-base: var(
-			--co-theme-popover,
-			var(--popover, oklch(14.5% 0 0))
-		);
+		/* Dark mode defaults */
+		--co-background-base: var(--co-theme-background, oklch(15.5% 0 0));
+		--co-foreground-base: var(--co-theme-foreground, oklch(98.5% 0 0));
+		--co-popover-base: var(--co-theme-popover, oklch(14.5% 0 0));
 		--co-popover-foreground-base: var(
 			--co-theme-popover-foreground,
-			var(--popover-foreground, oklch(98.5% 0 0))
+			oklch(98.5% 0 0)
 		);
-		--co-primary-base: var(
-			--co-theme-primary,
-			var(--primary, oklch(98.5% 0 0))
-		);
+		--co-primary-base: var(--co-theme-primary, oklch(98.5% 0 0));
 		--co-primary-foreground-base: var(
 			--co-theme-primary-foreground,
-			var(--primary-foreground, oklch(20.5% 0 0))
+			oklch(20.5% 0 0)
 		);
-		--co-secondary-base: var(
-			--co-theme-secondary,
-			var(--secondary, oklch(26.9% 0 0))
-		);
+		--co-secondary-base: var(--co-theme-secondary, oklch(26.9% 0 0));
 		--co-secondary-foreground-base: var(
 			--co-theme-secondary-foreground,
-			var(--secondary-foreground, oklch(98.5% 0 0))
+			oklch(98.5% 0 0)
 		);
-		--co-border-base: var(--co-theme-border, var(--border, oklch(26.9% 0 0)));
-		--co-input-base: var(--co-theme-input, var(--input, oklch(26.9% 0 0)));
-		--co-ring-base: var(--co-theme-ring, var(--ring, var(--co-primary-base)));
-		--co-accent-base: var(
-			--co-theme-accent,
-			var(--accent, var(--co-primary-base))
-		);
+		--co-border-base: var(--co-theme-border, oklch(26.9% 0 0));
+		--co-input-base: var(--co-theme-input, oklch(26.9% 0 0));
+		--co-ring-base: var(--co-theme-ring, var(--co-primary-base));
+		--co-accent-base: var(--co-theme-accent, var(--co-primary-base));
 		--co-accent-foreground-base: var(
 			--co-theme-accent-foreground,
-			var(--accent-foreground, var(--co-primary-foreground-base))
+			var(--co-primary-foreground-base)
 		);
 
 		--co-muted-mix: color-mix(
@@ -326,48 +319,6 @@
 			oklch(85% 0.1 99)
 		);
 	}
-}
-
-@theme inline {
-	--font-co-sans: var(--co-font-sans);
-	--font-co-mono: var(--co-font-mono);
-	--color-co-background: var(--co-background);
-	--color-co-background-50: var(--co-background-50);
-	--color-co-background-100: var(--co-background-100);
-	--color-co-background-200: var(--co-background-200);
-	--color-co-background-300: var(--co-background-300);
-	--color-co-background-400: var(--co-background-400);
-	--color-co-background-500: var(--co-background-500);
-	--color-co-background-600: var(--co-background-600);
-
-	--color-co-foreground: var(--co-foreground);
-
-	--color-co-primary: var(--co-primary);
-	--color-co-primary-foreground: var(--co-primary-foreground);
-	--color-co-secondary: var(--co-secondary);
-	--color-co-secondary-foreground: var(--co-secondary-foreground);
-	--color-co-muted: var(--co-muted);
-	--color-co-muted-foreground: var(--co-muted-foreground);
-	--color-co-border: var(--co-border);
-	--color-co-input: var(--co-input);
-	--color-co-ring: var(--co-ring);
-	--radius-co: var(--co-radius);
-
-	/* custom colors */
-	--color-co-pink: var(--co-pink);
-	--color-co-yellow: var(--co-yellow);
-	--color-co-blue: var(--co-blue);
-	--color-co-orange: var(--co-orange);
-
-	/* status colors */
-	--color-co-destructive: var(--co-destructive);
-	--color-co-destructive-foreground: var(--co-destructive-foreground);
-	--color-co-success: var(--co-success);
-	--color-co-success-foreground: var(--co-success-foreground);
-	--color-co-neutral: var(--co-neutral);
-	--color-co-neutral-foreground: var(--co-neutral-foreground);
-	--color-co-warning: var(--co-warning);
-	--color-co-warning-foreground: var(--co-warning-foreground);
 }
 
 @layer utilities {
