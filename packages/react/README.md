@@ -28,8 +28,6 @@ If you're using Tailwind CSS v4, import the source file to enable full theme cus
 import "@cossistant/react/tailwind.css";
 ```
 
-This imports the raw Tailwind v4 source file, allowing you to override theme variables like `--co-theme-primary` in your own CSS.
-
 ### Option 2: Plain CSS
 
 Import the pre-compiled CSS with no Tailwind dependency:

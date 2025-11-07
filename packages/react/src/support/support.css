@@ -1,5 +1,11 @@
 @custom-variant dark (&:is(.dark *));
 
+/*
+* This indicates to tailwind to
+* compile classes from Cossistant with the host tailwind config
+*/
+@source "./"
+
 @layer base {
 	.cossistant {
 		@apply border-co-border;

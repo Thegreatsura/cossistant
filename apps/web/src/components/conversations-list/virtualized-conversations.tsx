@@ -94,8 +94,8 @@ export function VirtualizedConversations({
 	const virtualItems = virtualizer.getVirtualItems();
 
 	return (
-		<PageContent className="h-full contain-strict">
-			<ScrollArea className="h-full px-2" ref={scrollAreaRef}>
+		<PageContent className="h-full pr-0 contain-strict">
+			<ScrollArea className="h-full pr-3" ref={scrollAreaRef}>
 				<div
 					style={{
 						height: `${virtualizer.getTotalSize()}px`,
