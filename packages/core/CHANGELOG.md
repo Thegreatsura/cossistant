@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.12
+
+### Patch Changes
+
+- Patch release with latest updates and improvements
+
 ## 0.0.11
 
 ### Patch Changes
