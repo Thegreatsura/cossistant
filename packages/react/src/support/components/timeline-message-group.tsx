@@ -96,8 +96,8 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 					{isReceivedByViewer && (
 						<TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
 							{isAI ? (
-								<div className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-									<CossistantLogo className="h-4 w-4 text-primary" />
+								<div className="flex size-6 items-center justify-center rounded-full bg-co-primary/10">
+									<CossistantLogo className="h-4 w-4 text-co-primary" />
 								</div>
 							) : (
 								<Avatar
@@ -114,7 +114,7 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 					>
 						{/* Header - show sender name for received messages (agents) */}
 						{isReceivedByViewer && (
-							<TimelineItemGroupHeader className="px-1 text-muted-foreground text-xs">
+							<TimelineItemGroupHeader className="px-1 text-co-muted-foreground text-xs">
 								{isAI
 									? aiAgent?.name || "AI Assistant"
 									: humanAgent?.name || "Support"}
@@ -137,7 +137,7 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 									{hasSeenIndicator && (
 										<motion.div key="seen-indicator" {...SEEN_ANIMATION}>
 											<TimelineItemGroupSeenIndicator
-												className="px-1 text-muted-foreground text-xs"
+												className="px-1 text-co-muted-foreground text-xs"
 												seenByIds={seenByIds}
 											>
 												{() => `Seen by ${seenByNames.join(", ")}`}

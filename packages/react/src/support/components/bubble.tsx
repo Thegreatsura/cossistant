@@ -51,7 +51,7 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 									ease: "easeOut",
 								},
 							}}
-							className="pointer-events-none flex items-center rounded-full text-primary"
+							className="pointer-events-none flex items-center rounded-full text-co-primary"
 							exit={{
 								opacity: 0,
 								scale: 0.9,

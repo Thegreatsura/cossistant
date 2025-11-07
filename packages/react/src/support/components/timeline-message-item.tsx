@@ -49,9 +49,10 @@ export function TimelineMessageItem({
 								className={cn(
 									"block w-max max-w-[300px] rounded-lg px-3.5 py-2.5 text-sm",
 									{
-										"bg-background-300 text-foreground dark:bg-background-600":
+										"bg-co-background-300 text-co-foreground dark:bg-co-background-600":
 											!isSentByViewerFinal,
-										"bg-primary text-primary-foreground": isSentByViewerFinal,
+										"bg-co-primary text-co-primary-foreground":
+											isSentByViewerFinal,
 										"rounded-br-sm": isLast && isSentByViewerFinal,
 										"rounded-bl-sm": isLast && !isSentByViewerFinal,
 									}
@@ -61,7 +62,7 @@ export function TimelineMessageItem({
 							/>
 							{isLast && (
 								<TimelineItemTimestamp
-									className="px-1 text-muted-foreground text-xs"
+									className="px-1 text-co-muted-foreground text-xs"
 									timestamp={timestamp}
 								>
 									{() => (

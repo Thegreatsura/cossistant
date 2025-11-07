@@ -1,6 +1,6 @@
 import { useSupportConfig } from "../store";
 import { cn } from "../utils";
-import { Button } from "./button";
+import { CoButton } from "./button";
 import Icon from "./icons";
 
 export type HeaderProps = {
@@ -23,21 +23,21 @@ export const Header: React.FC<HeaderProps> = ({
 			<div className="absolute inset-0 z-10 flex items-center justify-between gap-3 px-4">
 				<div className="flex flex-1 items-center gap-3">
 					{onGoBack && (
-						<Button
+						<CoButton
 							onClick={onGoBack}
 							size="icon"
 							type="button"
 							variant="ghost"
 						>
 							<Icon name="arrow-left" />
-						</Button>
+						</CoButton>
 					)}
 					{children}
 				</div>
 				{actions && <div className="flex items-center gap-2">{actions}</div>}
-				<Button onClick={close} size="icon" type="button" variant="ghost">
+				<CoButton onClick={close} size="icon" type="button" variant="ghost">
 					<Icon name="close" />
-				</Button>
+				</CoButton>
 			</div>
 		</div>
 	);

@@ -3,7 +3,7 @@ import { PENDING_CONVERSATION_ID } from "@cossistant/react/utils/id";
 import type React from "react";
 import { useConversationHistoryPage } from "../../hooks/use-conversation-history-page";
 import { AvatarStack } from "../components/avatar-stack";
-import { Button } from "../components/button";
+import { CoButton } from "../components/button";
 import { ConversationButtonLink } from "../components/conversation-button-link";
 import { Header } from "../components/header";
 import Icon from "../components/icons";
@@ -91,7 +91,7 @@ export const ConversationHistoryPage: React.FC = () => {
 							))}
 						</div>
 						{history.hasMore && (
-							<Button
+							<CoButton
 								className="relative mt-6 w-full text-co-primary/40 text-xs hover:text-co-primary"
 								onClick={history.showAll}
 								variant="ghost"
@@ -101,13 +101,13 @@ export const ConversationHistoryPage: React.FC = () => {
 									textKey="page.conversationHistory.showMore"
 									variables={{ count: history.remainingCount }}
 								/>
-							</Button>
+							</CoButton>
 						)}
 					</div>
 				)}
 
 				<div className="sticky bottom-4 z-10 flex w-full flex-col items-center gap-2">
-					<Button
+					<CoButton
 						className="relative w-full justify-between"
 						onClick={() => history.startConversation()}
 						size="large"
@@ -119,7 +119,7 @@ export const ConversationHistoryPage: React.FC = () => {
 							variant="default"
 						/>
 						<Text as="span" textKey="common.actions.askQuestion" />
-					</Button>
+					</CoButton>
 					<Watermark className="mt-4 mb-2" />
 				</div>
 			</div>

@@ -4,7 +4,7 @@ import { useHomePage } from "../../hooks/use-home-page";
 import { useSupport } from "../../provider";
 import { PENDING_CONVERSATION_ID } from "../../utils/id";
 import { AvatarStack } from "../components/avatar-stack";
-import { Button } from "../components/button";
+import { CoButton } from "../components/button";
 import { ConversationButtonLink } from "../components/conversation-button-link";
 import { Header } from "../components/header";
 import Icon from "../components/icons";
@@ -104,7 +104,7 @@ export const HomePage = (): ReactElement => {
 							}}
 						>
 							{quickOptions?.map((option) => (
-								<Button
+								<CoButton
 									className="inline-flex w-fit rounded-lg border-dashed px-2"
 									key={option}
 									onClick={() => home.startConversation(option)}
@@ -112,7 +112,7 @@ export const HomePage = (): ReactElement => {
 									variant="outline"
 								>
 									{option}
-								</Button>
+								</CoButton>
 							))}
 						</motion.div>
 					)}
@@ -120,7 +120,7 @@ export const HomePage = (): ReactElement => {
 			</div>
 			<div className="flex flex-shrink-0 flex-col items-center justify-center gap-2 px-6 pb-4">
 				{home.availableConversationsCount > 0 && (
-					<Button
+					<CoButton
 						className="relative w-full text-co-primary/40 text-xs hover:text-co-primary"
 						onClick={home.openConversationHistory}
 						variant="ghost"
@@ -130,7 +130,7 @@ export const HomePage = (): ReactElement => {
 							textKey="page.home.history.more"
 							variables={{ count: home.availableConversationsCount }}
 						/>
-					</Button>
+					</CoButton>
 				)}
 
 				{home.lastOpenConversation && (
@@ -149,7 +149,7 @@ export const HomePage = (): ReactElement => {
 				)}
 
 				<div className="sticky bottom-4 z-10 flex w-full flex-col items-center gap-2">
-					<Button
+					<CoButton
 						className="relative w-full justify-between"
 						onClick={() => home.startConversation()}
 						size="large"
@@ -161,7 +161,7 @@ export const HomePage = (): ReactElement => {
 							variant="default"
 						/>
 						<Text as="span" textKey="common.actions.askQuestion" />
-					</Button>
+					</CoButton>
 					<Watermark className="mt-4 mb-0" />
 				</div>
 				<div />

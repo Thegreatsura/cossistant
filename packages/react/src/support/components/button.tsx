@@ -40,7 +40,7 @@ export type CossistantButtonProps = React.ComponentProps<"button"> &
  * Styled button primitive that forwards variant and size props to the shared
  * design tokens.
  */
-export function Button({
+export function CoButton({
 	className,
 	variant,
 	size,

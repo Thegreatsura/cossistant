@@ -130,7 +130,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 			<div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
 				<Primitive.MultimodalInput
 					className={cn(
-						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none",
+						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-co-primary/40 focus-visible:outline-none",
 						className
 					)}
 					disabled={disabled || isSubmitting}

@@ -109,11 +109,11 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 			initial={{ opacity: 0, scale: 0.95 }}
 			transition={{ duration: 0.3, ease: "easeOut" }}
 		>
-			<div className="flex items-center gap-2 text-muted-foreground text-xs">
+			<div className="flex items-center gap-2 text-co-muted-foreground text-xs">
 				<div className="flex flex-col justify-end">
 					{isAI ? (
-						<div className="flex size-5 items-center justify-center rounded-full bg-primary/10">
-							<CossistantLogo className="h-3 w-3 text-primary" />
+						<div className="flex size-5 items-center justify-center rounded-full bg-co-primary/10">
+							<CossistantLogo className="h-3 w-3 text-co-primary" />
 						</div>
 					) : (
 						<Avatar

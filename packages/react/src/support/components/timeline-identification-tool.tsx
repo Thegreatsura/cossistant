@@ -9,7 +9,7 @@ import { type FormEventHandler, useCallback, useMemo, useState } from "react";
 import { useVisitor } from "../../hooks/use-visitor";
 import { useSupport } from "../../provider";
 import { useSupportText } from "../text";
-import { Button } from "./button";
+import { CoButton } from "./button";
 import type { ConversationTimelineToolProps } from "./conversation-timeline";
 
 export const IdentificationTimelineTool: React.FC<
@@ -99,14 +99,14 @@ export const IdentificationTimelineTool: React.FC<
 	const helperMessage = useMemo(() => {
 		if (errorMessage) {
 			return (
-				<p className="text-destructive text-xs" role="alert">
+				<p className="text-co-destructive text-xs" role="alert">
 					{errorMessage}
 				</p>
 			);
 		}
 
 		if (hasSucceeded) {
-			return <p className="text-primary text-xs">{successLabel}</p>;
+			return <p className="text-co-primary text-xs">{successLabel}</p>;
 		}
 
 		return null;
@@ -117,10 +117,10 @@ export const IdentificationTimelineTool: React.FC<
 			<div className="flex flex-col gap-3">
 				<div className="flex flex-col gap-1">
 					<h3 className="font-semibold text-sm">{title}</h3>
-					<p className="text-muted-foreground text-xs">{description}</p>
+					<p className="text-co-muted-foreground text-xs">{description}</p>
 				</div>
 				{hasSucceeded ? (
-					<div className="rounded-md bg-co-primary/10 px-3 py-2 text-primary text-sm">
+					<div className="rounded-md bg-co-primary/10 px-3 py-2 text-co-primary text-sm">
 						{successLabel}
 					</div>
 				) : (
@@ -139,11 +139,11 @@ export const IdentificationTimelineTool: React.FC<
 							value={email}
 						/>
 						{helperMessage}
-						<Button className="h-10" disabled={submitDisabled} type="submit">
+						<CoButton className="h-10" disabled={submitDisabled} type="submit">
 							{status === "submitting"
 								? text("component.identificationTool.loading")
 								: ctaLabel}
-						</Button>
+						</CoButton>
 					</form>
 				)}
 			</div>

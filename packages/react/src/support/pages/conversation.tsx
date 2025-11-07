@@ -98,7 +98,7 @@ export const ConversationPage: ConversationPageComponent = ({
 						<p className="font-medium text-sm">{website?.name}</p>
 						<Text
 							as="p"
-							className="text-muted-foreground text-sm"
+							className="text-co-muted-foreground text-sm"
 							textKey="common.labels.supportOnline"
 						/>
 					</div>
@@ -123,7 +123,7 @@ export const ConversationPage: ConversationPageComponent = ({
 			/>
 
 			{isConversationClosed ? (
-				<div className="m-4 flex items-center justify-center text-balance px-4 pb-6 text-center font-medium text-muted-foreground text-sm">
+				<div className="m-4 flex items-center justify-center text-balance px-4 pb-6 text-center font-medium text-co-muted-foreground text-sm">
 					<Text as="p" textKey="component.conversationPage.closedMessage" />
 				</div>
 			) : (
