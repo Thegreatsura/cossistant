@@ -1,5 +1,16 @@
 # @cossistant/react
 
+## 0.0.11
+
+### Patch Changes
+
+- e5ad60d: Release version 0.0.10
+- Release version 0.0.11 with bug fixes and improvements
+- Updated dependencies [e5ad60d]
+- Updated dependencies
+  - @cossistant/core@0.0.11
+  - @cossistant/types@0.0.11
+
 ## 0.0.10
 
 ### Patch Changes
