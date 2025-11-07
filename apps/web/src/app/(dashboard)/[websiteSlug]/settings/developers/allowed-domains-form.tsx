@@ -186,17 +186,19 @@ export function AllowedDomainsForm({
 			queryKey: trpc.website.developerSettings.queryKey({ slug: websiteSlug }),
 		});
 
-	const { mutateAsync: updateWebsite, isPending: isSubmitting } = useMutation(
-		trpc.website.update.mutationOptions({
-			onSuccess: async () => {
-				await invalidateDeveloperSettings();
-				toast.success("Allowed domains updated.");
-			},
+        const { mutateAsync: updateWebsite, isPending: isUpdatingWebsite } = useMutation(
+                trpc.website.update.mutationOptions({
+                        onSuccess: async () => {
+                                await invalidateDeveloperSettings();
+                                toast.success("Allowed domains updated.");
+                        },
 			onError: () => {
 				toast.error("Failed to update allowed domains. Please try again.");
 			},
-		})
-	);
+                })
+        );
+
+        const isSubmitting = isUpdatingWebsite;
 
 	const handleSubmit = async (values: AllowedDomainsFormValues) => {
 		const sanitized = values.domains
@@ -218,16 +220,15 @@ export function AllowedDomainsForm({
 			return;
 		}
 
-		const uniqueDomains = Array.from(new Set(normalizedOrigins));
+                const uniqueDomains = Array.from(new Set(normalizedOrigins));
+                await updateWebsite({
+                        organizationId,
+                        websiteId,
+                        data: { whitelistedDomains: uniqueDomains },
+                });
 
-		await updateWebsite({
-			organizationId,
-			websiteId,
-			data: { whitelistedDomains: uniqueDomains },
-		});
-
-		reset({ domains: uniqueDomains });
-	};
+                reset({ domains: uniqueDomains });
+        };
 
 	return (
 		<Form {...form}>
