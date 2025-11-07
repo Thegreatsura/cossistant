@@ -154,7 +154,7 @@ export class CossistantRestClient {
 		if (this.visitorBlocked) {
 			const method = (options.method ?? "GET").toUpperCase();
 			const [rawPath] = path.split("?");
-			const normalizedPath = rawPath.endsWith("/")
+			const normalizedPath = rawPath?.endsWith("/")
 				? rawPath.slice(0, -1)
 				: rawPath;
 			const isWebsitesRoot = normalizedPath === "/websites";
