@@ -8,7 +8,13 @@ const HIDDEN_STATUSES = new Set<ConversationStatus | "closed">([
 function hasDisplayableTitle(conversation: Conversation): boolean {
 	const title = conversation.title?.trim();
 
-	return Boolean(title && title.length > 0);
+	if (title && title.length > 0) {
+		return true;
+	}
+
+	// Allow conversations with messages even if no explicit title
+	const lastMessageText = conversation.lastTimelineItem?.text?.trim();
+	return Boolean(lastMessageText && lastMessageText.length > 0);
 }
 
 export function shouldDisplayConversation(conversation: Conversation): boolean {

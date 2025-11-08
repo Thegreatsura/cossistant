@@ -85,7 +85,7 @@ export const Container: React.FC<ContainerProps> = ({
 					"flex flex-col overflow-hidden overscroll-none bg-co-background max-md:fixed max-md:inset-0",
 
 					// Desktop floating mode
-					"z-[9999] md:absolute md:z-[9900] md:aspect-[9/18] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-lg md:border md:border-co-border md:shadow-xl md:dark:shadow-co-background-600/50",
+					"z-[9999] md:absolute md:z-[9900] md:aspect-[9/18] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-lg md:border md:border-co-border md:shadow md:dark:shadow-co-background-600/50",
 					position === "bottom" && "md:bottom-16",
 					position === "top" && "md:top-16",
 					align === "right" && "md:right-0",

@@ -95,7 +95,9 @@ export const ConversationPage: ConversationPageComponent = ({
 			<Header onGoBack={handleGoBack}>
 				<div className="flex w-full items-center justify-between gap-2 py-3">
 					<div className="flex flex-col">
-						<p className="font-medium text-sm">{website?.name}</p>
+						<p className="font-medium text-co-primary text-sm">
+							{website?.name}
+						</p>
 						<Text
 							as="p"
 							className="text-co-muted-foreground text-sm"

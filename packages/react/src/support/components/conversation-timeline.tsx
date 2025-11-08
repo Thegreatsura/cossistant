@@ -129,8 +129,8 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 		<PrimitiveConversationTimeline
 			autoScroll={true}
 			className={cn(
-				"overflow-y-auto scroll-smooth px-3 py-6",
-				"scrollbar-thin scrollbar-thumb-co-background-300 scrollbar-track-transparent",
+				"overflow-y-scroll scroll-smooth px-3 py-6",
+				"scrollbar-thin scrollbar-thumb-co-primary/30 scrollbar-track-transparent",
 				"h-full w-full",
 				className
 			)}

@@ -119,8 +119,7 @@ export function useHomePage(
 	const { lastOpenConversation, availableConversationsCount } = useMemo(() => {
 		// Find the most recent open conversation
 		const openConversation = conversations.find(
-			(conv) =>
-				conv.status === ConversationStatus.OPEN || conv.status === "open"
+			(conv) => conv.status === ConversationStatus.OPEN
 		);
 
 		// Count other conversations (excluding the one we're showing)

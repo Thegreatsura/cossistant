@@ -91,7 +91,7 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 				{unreadCount > 0 && (
 					<motion.div
 						animate={{ scale: 1, opacity: 1 }}
-						className="-top-0 -right-0 absolute flex h-3 w-3 items-center justify-center rounded-full bg-co-destructive font-medium text-[10px] text-co-destructive-foreground text-white text-xs"
+						className="-top-0 -right-0 absolute flex size-2 items-center justify-center rounded-full bg-co-destructive font-medium text-[10px] text-co-destructive-foreground text-white text-xs"
 						exit={{ scale: 0, opacity: 0 }}
 						initial={{ scale: 0, opacity: 0 }}
 					/>

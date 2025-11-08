@@ -19,6 +19,7 @@ export * from "./use-create-conversation";
 export * from "./use-home-page";
 export * from "./use-message-composer";
 export * from "./use-realtime-support";
+export * from "./use-scroll-mask";
 export * from "./use-send-message";
 export * from "./use-visitor";
 export * from "./use-window-visibility-focus";

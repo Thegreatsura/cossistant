@@ -28,7 +28,7 @@ export const Watermark: React.FC<WatermarkProps> = ({ className }) => {
 	return (
 		<a
 			className={cn(
-				"flex items-center gap-1.5 font-medium font-mono text-co-primary hover:text-co-blue",
+				"group/watermark flex items-center gap-1.5 font-medium text-co-primary/80 hover:text-co-blue",
 				className
 			)}
 			href={cossistantUrl}
@@ -40,7 +40,7 @@ export const Watermark: React.FC<WatermarkProps> = ({ className }) => {
 				className="text-co-muted-foreground text-xs"
 				textKey="common.brand.watermark"
 			/>
-			<CossistantLogo className="h-3" />
+			<CossistantLogo className="h-3 transition-transform duration-200 group-focus-within/watermark:rotate-5 group-hover/watermark:scale-105" />
 		</a>
 	);
 };

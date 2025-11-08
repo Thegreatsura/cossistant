@@ -5,11 +5,12 @@
 @source "./components";
 @source "./pages";
 
-@custom-variant dark (&:is(.dark *));
+@plugin 'tailwind-scrollbar';
 
 @layer base {
 	.cossistant {
 		@apply scroll-smooth;
+		@apply text-co-primary;
 
 		color-scheme: inherit;
 
@@ -25,13 +26,13 @@
 		/* Core surfaces */
 		--co-radius: var(--co-theme-radius, 0.625rem);
 		--co-background-base: var(--co-theme-background, oklch(99% 0 0));
-		--co-foreground-base: var(--co-theme-foreground, oklch(14.5% 0 0));
+		--co-foreground-base: var(--co-theme-foreground, oklch(20.5% 0 0));
 		--co-popover-base: var(--co-theme-popover, var(--co-background-base));
 		--co-popover-foreground-base: var(
 			--co-theme-popover-foreground,
 			var(--co-foreground-base)
 		);
-		--co-primary-base: var(--co-theme-primary, oklch(20.5% 0 0));
+		--co-primary-base: var(--co-theme-primary, oklch(14.5% 0 0));
 		--co-primary-foreground-base: var(
 			--co-theme-primary-foreground,
 			oklch(98.5% 0 0)
@@ -39,7 +40,7 @@
 		--co-secondary-base: var(--co-theme-secondary, oklch(97% 0 0));
 		--co-secondary-foreground-base: var(
 			--co-theme-secondary-foreground,
-			oklch(20.5% 0 0)
+			oklch(14.5% 0 0)
 		);
 		--co-border-base: var(--co-theme-border, oklch(92.2% 0 0));
 		--co-input-base: var(--co-theme-input, oklch(92.2% 0 0));
@@ -224,21 +225,21 @@
 	.cossistant[data-color-scheme="dark"] {
 		/* Dark mode defaults */
 		--co-background-base: var(--co-theme-background, oklch(15.5% 0 0));
-		--co-foreground-base: var(--co-theme-foreground, oklch(98.5% 0 0));
+		--co-foreground-base: var(--co-theme-foreground, oklch(95% 0 0));
 		--co-popover-base: var(--co-theme-popover, oklch(14.5% 0 0));
 		--co-popover-foreground-base: var(
 			--co-theme-popover-foreground,
-			oklch(98.5% 0 0)
+			oklch(95% 0 0)
 		);
 		--co-primary-base: var(--co-theme-primary, oklch(98.5% 0 0));
 		--co-primary-foreground-base: var(
 			--co-theme-primary-foreground,
-			oklch(20.5% 0 0)
+			oklch(14.5% 0 0)
 		);
 		--co-secondary-base: var(--co-theme-secondary, oklch(26.9% 0 0));
 		--co-secondary-foreground-base: var(
 			--co-theme-secondary-foreground,
-			oklch(98.5% 0 0)
+			oklch(95% 0 0)
 		);
 		--co-border-base: var(--co-theme-border, oklch(26.9% 0 0));
 		--co-input-base: var(--co-theme-input, oklch(26.9% 0 0));

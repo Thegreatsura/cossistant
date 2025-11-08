@@ -1,5 +1,6 @@
 import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
+import { useScrollMask } from "../hooks/use-scroll-mask";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
@@ -69,9 +70,19 @@ export const ConversationTimeline = (() => {
 			ref
 		) => {
 			const internalRef = React.useRef<HTMLDivElement>(null);
+			const { ref: scrollMaskRef, style: scrollMaskStyle } = useScrollMask({
+				maskHeight: "54px",
+				scrollbarWidth: "8px",
+				topThreshold: TOP_THRESHOLD_PX,
+				bottomThreshold: BOTTOM_THRESHOLD_PX,
+			});
+
 			const setRefs = React.useCallback(
 				(node: HTMLDivElement | null) => {
 					internalRef.current = node;
+					(
+						scrollMaskRef as React.MutableRefObject<HTMLDivElement | null>
+					).current = node;
 					if (typeof ref === "function") {
 						ref(node);
 					} else if (ref) {
@@ -79,7 +90,7 @@ export const ConversationTimeline = (() => {
 							node;
 					}
 				},
-				[ref]
+				[ref, scrollMaskRef]
 			);
 
 			const isInitialRender = React.useRef(true);
@@ -163,28 +174,6 @@ export const ConversationTimeline = (() => {
 				[onScrollStart, onScrollEnd]
 			);
 
-			// Static fade effect on top and bottom
-			const fadeStyle = React.useMemo(() => {
-				const maskHeight = "90px";
-				const scrollbarWidth = "8px";
-
-				const maskImage = `linear-gradient(to bottom, transparent, black ${maskHeight}, black calc(100% - ${maskHeight}), transparent), linear-gradient(black, black)`;
-				const maskSize = `calc(100% - ${scrollbarWidth}) 100%, ${scrollbarWidth} 100%`;
-				const maskPosition = "0 0, 100% 0";
-				const maskRepeat = "no-repeat, no-repeat";
-
-				return {
-					maskImage,
-					maskSize,
-					maskPosition,
-					maskRepeat,
-					WebkitMaskImage: maskImage,
-					WebkitMaskSize: maskSize,
-					WebkitMaskPosition: maskPosition,
-					WebkitMaskRepeat: maskRepeat,
-				};
-			}, []);
-
 			return useRenderElement(
 				"div",
 				{
@@ -200,7 +189,7 @@ export const ConversationTimeline = (() => {
 						"aria-live": "polite",
 						"aria-relevant": "additions",
 						onScroll: handleScroll,
-						style: fadeStyle,
+						style: scrollMaskStyle,
 						...props,
 						children: content,
 					},
