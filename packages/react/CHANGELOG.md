@@ -1,5 +1,14 @@
 # @cossistant/react
 
+## 0.0.15
+
+### Patch Changes
+
+- c21911f: Patch release
+- Updated dependencies [c21911f]
+  - @cossistant/core@0.0.15
+  - @cossistant/types@0.0.15
+
 ## 0.0.14
 
 ### Patch Changes

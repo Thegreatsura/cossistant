@@ -1,5 +1,11 @@
 # @cossistant/types
 
+## 0.0.15
+
+### Patch Changes
+
+- c21911f: Patch release
+
 ## 0.0.14
 
 ### Patch Changes

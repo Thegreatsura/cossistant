@@ -18,6 +18,7 @@
     "@cossistant/api",
     "@cossistant/web",
     "@cossistant/location",
-    "@cossistant/transactional"
+    "@cossistant/transactional",
+    "widget-next-test"
   ]
 }
