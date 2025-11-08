@@ -6,15 +6,11 @@ export type PageProps<Params = unknown> = {
 };
 
 /**
- * Declaratively register a page in a router.
- * Works with any router that uses the page registry system.
+ * Declaratively register a page component.
  *
  * @example
- * <PageRegistryProvider>
- *   <Page name="HOME" component={HomePage} />
- *   <Page name="SETTINGS" component={SettingsPage} />
- *   <Router page={currentPage} params={params} />
- * </PageRegistryProvider>
+ * <Page name="HOME" component={HomePage} />
+ * <Page name="SETTINGS" component={SettingsPage} />
  */
 export function Page<Params = unknown>({
 	name,

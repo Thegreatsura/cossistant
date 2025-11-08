@@ -24,15 +24,12 @@ export type RouterProps = {
 };
 
 /**
- * Generic router that renders the current page from the registry.
- * Use with <Page> components to register pages declaratively.
+ * Router that renders registered pages based on current page name.
  *
  * @example
- * <PageRegistryProvider>
+ * <Router page={currentPage} params={params} fallback={NotFoundPage}>
  *   <Page name="HOME" component={HomePage} />
- *   <Page name="SETTINGS" component={SettingsPage} />
- *   <Router page={currentPage} params={params} fallback={NotFound} />
- * </PageRegistryProvider>
+ * </Router>
  */
 export const Router: React.FC<RouterProps> = ({
 	page,

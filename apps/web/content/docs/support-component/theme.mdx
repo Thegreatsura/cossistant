@@ -45,6 +45,46 @@ Override widget colors by setting `--co-theme-*` variables:
 | `--co-theme-muted-foreground`   | Color-mixed        | Color-mixed        |
 | `--co-theme-radius`             | `0.625rem`         | `0.625rem`         |
 
+<div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6 not-prose">
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div className="h-12 rounded-md" style={{ background: "oklch(99% 0 0)" }} />
+    <div className="text-xs">
+      <p className="font-medium">Background</p>
+      <code className="text-[10px] text-neutral-500">oklch(99% 0 0)</code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(14.5% 0 0)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Foreground</p>
+      <code className="text-[10px] text-neutral-500">oklch(14.5% 0 0)</code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(20.5% 0 0)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Primary</p>
+      <code className="text-[10px] text-neutral-500">oklch(20.5% 0 0)</code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(92.2% 0 0)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Border</p>
+      <code className="text-[10px] text-neutral-500">oklch(92.2% 0 0)</code>
+    </div>
+  </div>
+</div>
+
 ### Status Colors
 
 | Variable                 | Default                     |
@@ -54,6 +94,55 @@ Override widget colors by setting `--co-theme-*` variables:
 | `--co-theme-warning`     | `oklch(86.4% 0.144 99)`     |
 | `--co-theme-neutral`     | `oklch(60.8% 0 0)`          |
 
+<div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6 not-prose">
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(57.7% 0.245 27.325)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Destructive</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(57.7% 0.245 27.325)
+      </code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(71.7% 0.18 142)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Success</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(71.7% 0.18 142)
+      </code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(86.4% 0.144 99)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Warning</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(86.4% 0.144 99)
+      </code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(60.8% 0 0)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Neutral</p>
+      <code className="text-[10px] text-neutral-500">oklch(60.8% 0 0)</code>
+    </div>
+  </div>
+</div>
+
 ### Accent Colors
 
 | Variable            | Default                  |
@@ -62,6 +151,57 @@ Override widget colors by setting `--co-theme-*` variables:
 | `--co-theme-yellow` | `oklch(86.4% 0.144 99)`  |
 | `--co-theme-blue`   | `oklch(72.5% 0.132 241)` |
 | `--co-theme-orange` | `oklch(74.5% 0.166 50)`  |
+
+<div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6 not-prose">
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(76.3% 0.152 354)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Pink</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(76.3% 0.152 354)
+      </code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(86.4% 0.144 99)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Yellow</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(86.4% 0.144 99)
+      </code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(72.5% 0.132 241)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Blue</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(72.5% 0.132 241)
+      </code>
+    </div>
+  </div>
+  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <div
+      className="h-12 rounded-md"
+      style={{ background: "oklch(74.5% 0.166 50)" }}
+    />
+    <div className="text-xs">
+      <p className="font-medium">Orange</p>
+      <code className="text-[10px] text-neutral-500">
+        oklch(74.5% 0.166 50)
+      </code>
+    </div>
+  </div>
+</div>
 
 ## Light and Dark Mode
 

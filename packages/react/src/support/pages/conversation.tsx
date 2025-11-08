@@ -40,10 +40,7 @@ type ConversationPageProps = {
 };
 
 /**
- * Main conversation page component.
- *
- * All conversation logic is handled by the useConversationPage hook,
- * making this component focused purely on rendering and user interaction.
+ * Conversation page with message timeline and input composer.
  */
 type ConversationPageComponent = (props: ConversationPageProps) => ReactElement;
 

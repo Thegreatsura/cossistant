@@ -16,14 +16,7 @@ type ConversationHistoryPageProps = {
 };
 
 /**
- * Conversation history page component.
- *
- * Displays:
- * - List of all conversations
- * - Pagination controls
- * - Button to start new conversation
- *
- * All logic is handled by the useConversationHistoryPage hook.
+ * Conversation history page with list of past conversations and pagination.
  */
 export const ConversationHistoryPage: React.FC<ConversationHistoryPageProps> = (
 	_props = {}

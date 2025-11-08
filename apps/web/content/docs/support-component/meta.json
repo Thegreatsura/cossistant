@@ -1,4 +1,13 @@
 {
-  "pages": ["index", "about", "theme", "custom-components", "text", "hooks"],
+  "pages": [
+    "index",
+    "about",
+    "theme",
+    "customization",
+    "routing",
+    "primitives",
+    "text",
+    "hooks"
+  ],
   "title": "<Support />"
 }

@@ -7,10 +7,9 @@ import { HomePage } from "./pages/home";
 import { useSupportNavigation } from "./store/support-store";
 
 /**
- * Support-specific router that includes default pages.
- * Uses the primitive Router under the hood with declarative Page registration.
+ * Router with default support pages (HOME, ARTICLES, CONVERSATION, CONVERSATION_HISTORY).
+ * Add custom pages as children.
  *
- * Custom pages can be added as children:
  * @example
  * <SupportRouter>
  *   <Page name="SETTINGS" component={SettingsPage} />

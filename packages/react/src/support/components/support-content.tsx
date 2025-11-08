@@ -20,13 +20,7 @@ type SupportContentProps = {
 };
 
 /**
- * Main support widget content container.
- *
- * Handles the layout and positioning of the support widget,
- * and renders the appropriate page via SupportRouter.
- *
- * Each page (e.g., conversation, home) manages its own state internally,
- * so this component is purely presentational.
+ * Main support widget container handling layout, positioning, and routing.
  */
 export const SupportContent: React.FC<SupportContentProps> = ({
 	className,

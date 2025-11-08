@@ -1,0 +1,277 @@
+---
+title: Primitives
+description: Headless, composable building blocks for support experiences.
+---
+
+## Philosophy
+
+Primitives are **headless UI components** that give you complete control over styling and behavior. Inspired by **shadcn/ui**, they follow these principles:
+
+- **Unstyled by default** - Bring your own Tailwind classes
+- **Fully composable** - Build complex UIs from simple pieces
+- **Developer-owned** - Copy, modify, and extend as needed
+- **Accessible** - Built-in ARIA patterns and keyboard navigation
+
+Use primitives when you need **complete control** over the support experience.
+
+## Quick Example
+
+```tsx
+import * as Primitive from "@cossistant/react/primitives";
+
+<Primitive.PageRegistryProvider>
+  <Primitive.Page name="HOME" component={HomePage} />
+  <Primitive.Page name="SETTINGS" component={SettingsPage} />
+
+  <Primitive.Window>
+    {({ isOpen, close }) => (
+      <div className="fixed inset-0 bg-black/50">
+        <Primitive.Router page={currentPage} params={params} />
+      </div>
+    )}
+  </Primitive.Window>
+
+  <Primitive.Bubble>
+    {({ toggle }) => (
+      <button onClick={toggle}>Open Chat</button>
+    )}
+  </Primitive.Bubble>
+</Primitive.PageRegistryProvider>
+```
+
+## Primitives Reference
+
+### Layout & Structure
+
+**`<PageRegistryProvider>`**
+
+Context provider for declarative page registration. Wrap your app to enable `<Page>` and `<Router>`.
+
+```tsx
+<PageRegistryProvider>
+  <Page name="HOME" component={HomePage} />
+  <Router page={currentPage} />
+</PageRegistryProvider>
+```
+
+**`<Router>`**
+
+Generic router that renders registered pages.
+
+```tsx
+<Router
+  page={currentPage}        // Current page name
+  params={params}           // Params to pass
+  fallback={NotFoundPage}   // Optional fallback
+>
+  <Page name="HOME" component={HomePage} />
+</Router>
+```
+
+**`<Page>`**
+
+Declaratively register a page component.
+
+```tsx
+<Page name="SETTINGS" component={SettingsPage} />
+```
+
+**`<Window>`**
+
+Dialog container with open/close state and escape key handling.
+
+```tsx
+<Window isOpen={isOpen} onOpenChange={setOpen}>
+  {({ isOpen, close }) => (
+    <div>
+      {isOpen && <p>Dialog content</p>}
+      <button onClick={close}>Close</button>
+    </div>
+  )}
+</Window>
+```
+
+**`<Bubble>`**
+
+Floating action button with widget state.
+
+```tsx
+<Bubble>
+  {({ isOpen, unreadCount, isTyping, toggle }) => (
+    <button onClick={toggle}>
+      {isOpen ? "×" : "💬"}
+      {unreadCount > 0 && <span>{unreadCount}</span>}
+    </button>
+  )}
+</Bubble>
+```
+
+### Timeline & Messages
+
+**`<ConversationTimeline>`**
+
+Message timeline with automatic scrolling and loading states.
+
+```tsx
+<ConversationTimeline items={messages} isLoading={loading}>
+  {(item) => <TimelineItem item={item} />}
+</ConversationTimeline>
+```
+
+**`<TimelineItem>`**
+
+Individual message or event in the timeline.
+
+```tsx
+<TimelineItem>
+  <TimelineItemContent>{message.text}</TimelineItemContent>
+  <TimelineItemTimestamp>{message.createdAt}</TimelineItemTimestamp>
+</TimelineItem>
+```
+
+**`<TimelineItemGroup>`**
+
+Group consecutive messages by the same sender.
+
+```tsx
+<TimelineItemGroup>
+  <TimelineItemGroupHeader>
+    <TimelineItemGroupAvatar src={user.image} />
+    <span>{user.name}</span>
+  </TimelineItemGroupHeader>
+  <TimelineItemGroupContent>
+    {messages.map(msg => <TimelineItem key={msg.id} {...msg} />)}
+  </TimelineItemGroupContent>
+</TimelineItemGroup>
+```
+
+### Input & Interaction
+
+**`<MultimodalInput>`**
+
+Rich text input with file upload support.
+
+```tsx
+<MultimodalInput
+  value={text}
+  onChange={setText}
+  onSubmit={handleSend}
+  placeholder="Type a message..."
+/>
+```
+
+**`<FileInput>`**
+
+File upload component with drag-and-drop.
+
+```tsx
+<FileInput
+  onFilesSelected={handleFiles}
+  accept="image/*,application/pdf"
+  maxFiles={5}
+/>
+```
+
+**`<Button>`**
+
+Accessible button with variants.
+
+```tsx
+<Button variant="primary" size="large" onClick={handleClick}>
+  Click me
+</Button>
+```
+
+### Visual
+
+**`<Avatar>`**, **`<AvatarImage>`**, **`<AvatarFallback>`**
+
+User avatar with image and fallback.
+
+```tsx
+<Avatar>
+  <AvatarImage src={user.image} alt={user.name} />
+  <AvatarFallback>{user.initials}</AvatarFallback>
+</Avatar>
+```
+
+**`<TypingIndicator>`**
+
+Animated typing indicator.
+
+```tsx
+<TypingIndicator
+  participants={[
+    { id: "1", name: "Alice", type: "user" }
+  ]}
+/>
+```
+
+### Configuration
+
+**`<Config>`**
+
+Configure widget behavior per route or page.
+
+```tsx
+<Config
+  quickOptions={["Pricing", "Features", "Support"]}
+  defaultMessages={[{ text: "Hi! How can we help?" }]}
+/>
+```
+
+## Building from Scratch
+
+Create a completely custom support experience:
+
+```tsx
+import * as Primitive from "@cossistant/react/primitives";
+import { useSupportStore } from "@cossistant/react";
+
+export function CustomSupport() {
+  const { isOpen, toggle } = useSupportStore();
+  const [page, setPage] = useState("HOME");
+
+  return (
+    <Primitive.PageRegistryProvider>
+      <Primitive.Page name="HOME" component={CustomHomePage} />
+      <Primitive.Page name="CHAT" component={CustomChatPage} />
+
+      {/* Custom bubble */}
+      <Primitive.Bubble>
+        {({ toggle, unreadCount }) => (
+          <button
+            onClick={toggle}
+            className="fixed bottom-4 right-4 rounded-full bg-blue-600 p-4"
+          >
+            💬 {unreadCount > 0 && `(${unreadCount})`}
+          </button>
+        )}
+      </Primitive.Bubble>
+
+      {/* Custom window */}
+      <Primitive.Window isOpen={isOpen}>
+        {({ close }) => (
+          <div className="fixed inset-0 flex items-end justify-end p-4">
+            <div className="w-96 h-[600px] bg-white rounded-lg shadow-xl">
+              <button onClick={close}>×</button>
+              <Primitive.Router page={page} fallback={CustomHomePage} />
+            </div>
+          </div>
+        )}
+      </Primitive.Window>
+    </Primitive.PageRegistryProvider>
+  );
+}
+```
+
+## Why Primitives?
+
+**Full control.** No opinionated styles or structure—build exactly what you need.
+
+**Type-safe.** All primitives are fully typed with TypeScript.
+
+**Framework-agnostic patterns.** Principles work in any React environment.
+
+Use the `<Support />` component for quick setup. Use primitives when you need **complete freedom**.
+

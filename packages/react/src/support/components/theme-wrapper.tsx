@@ -6,9 +6,8 @@ type ThemeWrapperProps = {
 };
 
 /**
- * Wraps children with theme data attribute when dark mode is explicitly requested.
- * When theme is undefined or "light", children are rendered directly to allow
- * automatic theme detection from parent elements.
+ * Applies theme data attribute when dark mode is requested.
+ * Omit theme for automatic detection from parent elements.
  */
 export const ThemeWrapper: React.FC<ThemeWrapperProps> = ({
 	theme,

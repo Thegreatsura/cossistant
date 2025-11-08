@@ -21,8 +21,16 @@ export type SupportBubbleProps = Omit<
 };
 
 /**
- * Floating action button that toggles the support window. Exposes widget state
- * and unread counts to render-prop children for fully custom UI shells.
+ * Floating action button that toggles the support window.
+ *
+ * @example
+ * <Bubble>
+ *   {({ isOpen, unreadCount, toggle }) => (
+ *     <button onClick={toggle}>
+ *       {isOpen ? "×" : "💬"} {unreadCount > 0 && `(${unreadCount})`}
+ *     </button>
+ *   )}
+ * </Bubble>
  */
 export const SupportBubble = (() => {
 	const Component = React.forwardRef<HTMLButtonElement, SupportBubbleProps>(

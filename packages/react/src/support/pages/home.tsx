@@ -17,16 +17,7 @@ type HomePageProps = {
 };
 
 /**
- * Home page component for the support widget.
- *
- * Displays:
- * - Welcome message with available agents
- * - Quick action buttons
- * - Last open conversation (if any)
- * - Button to start new conversation
- * - Link to conversation history
- *
- * All logic is handled by the useHomePage hook.
+ * Home page with welcome message, quick options, and conversation starter.
  */
 export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 	const { website, availableHumanAgents, visitor, quickOptions } = useSupport();

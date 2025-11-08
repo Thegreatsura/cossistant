@@ -20,9 +20,14 @@ export type WindowProps = Omit<
 };
 
 /**
- * Host container for the support experience. Handles escape
- * key dismissal and propagates render props so callers can take over the
- * layout.
+ * Dialog container with open/close state and escape key handling.
+ *
+ * @example
+ * <Window isOpen={isOpen} onOpenChange={setOpen}>
+ *   {({ isOpen, close }) => (
+ *     <div>Content here</div>
+ *   )}
+ * </Window>
  */
 export const SupportWindow = (() => {
 	const Component = React.forwardRef<HTMLDivElement, WindowProps>(

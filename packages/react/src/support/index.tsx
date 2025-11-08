@@ -50,11 +50,18 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	children?: React.ReactNode;
 };
 
-// Internal component that needs the conversation context
 /**
- * Orchestrates the end-user support experience by nesting realtime and
- * content providers. Renders nothing until website data is available to avoid
- * flashing incomplete UI.
+ * Complete support widget with chat, routing, and real-time features.
+ *
+ * @example
+ * // Zero config
+ * <Support />
+ *
+ * @example
+ * // With customization
+ * <Support theme="dark" classNames={{ bubble: "bg-purple-600" }}>
+ *   <Page name="FAQ" component={FAQPage} />
+ * </Support>
  */
 export function Support<Locale extends string = SupportLocale>({
 	className,

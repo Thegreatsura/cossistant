@@ -1,0 +1,158 @@
+---
+title: Customization
+description: Style and customize the Support widget with Tailwind classes and component slots.
+---
+
+## Overview
+
+Every part of the Support widget can be customized while keeping the **zero-config** experience intact. Style with **Tailwind classes** or replace entire components with **slots**.
+
+## Custom Styling with classNames
+
+Override styles for specific parts of the widget:
+
+```tsx
+<Support
+  classNames={{
+    root: "bottom-8 right-8",
+    bubble: "bg-purple-600 hover:bg-purple-700",
+    container: "border-purple-200 shadow-2xl"
+  }}
+/>
+```
+
+### Available classNames
+
+- **`root`** - The outermost container (positioning, spacing)
+- **`bubble`** - The floating chat button
+- **`container`** - The main widget dialog
+
+## Custom Bubble
+
+Replace the default chat bubble with your own component using **slots**:
+
+```tsx
+import { Support, type BubbleSlotProps } from "@cossistant/react";
+import * as Primitive from "@cossistant/react/primitives";
+
+const CustomBubble = ({ className }: BubbleSlotProps) => (
+  <Primitive.Bubble className={className}>
+    {({ isOpen, isTyping, unreadCount }) => (
+      <div className="flex items-center justify-center">
+        {isOpen ? "✕" : isTyping ? "..." : "💬"}
+        {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+      </div>
+    )}
+  </Primitive.Bubble>
+);
+
+<Support slots={{ bubble: CustomBubble }} />
+```
+
+### Bubble Render Props
+
+The `Primitive.Bubble` component provides:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `isOpen` | `boolean` | Whether the widget is currently open |
+| `unreadCount` | `number` | Number of unread messages |
+| `isTyping` | `boolean` | Whether an agent is typing |
+| `toggle` | `() => void` | Function to toggle widget open/closed |
+
+## Custom Container
+
+Replace the widget container to control layout and animations:
+
+```tsx
+import { Support, type ContainerSlotProps } from "@cossistant/react";
+
+const CustomContainer = ({
+  className,
+  children,
+  position,
+  align
+}: ContainerSlotProps) => (
+  <div className={`my-custom-container ${className}`}>
+    {children}
+  </div>
+);
+
+<Support slots={{ container: CustomContainer }} />
+```
+
+## Custom Router
+
+For complete control over routing logic:
+
+```tsx
+import { Support, type RouterSlotProps, useSupportNavigation } from "@cossistant/react";
+import * as Primitive from "@cossistant/react/primitives";
+
+const CustomRouter = ({ children }: RouterSlotProps) => {
+  const { current } = useSupportNavigation();
+
+  return (
+    <>
+      <Primitive.Page name="CUSTOM" component={CustomPage} />
+      {children}
+      <Primitive.Router page={current.page} params={current.params} />
+    </>
+  );
+};
+
+<Support slots={{ router: CustomRouter }} />
+```
+
+## Slot Types Reference
+
+All slot components receive typed props:
+
+```tsx
+type BubbleSlotProps = {
+  className?: string;
+};
+
+type ContainerSlotProps = {
+  className?: string;
+  children: React.ReactNode;
+  position?: "top" | "bottom";
+  align?: "right" | "left";
+};
+
+type RouterSlotProps = {
+  children?: React.ReactNode;
+};
+```
+
+## Full Example
+
+Combine multiple customizations:
+
+```tsx
+import { Support } from "@cossistant/react";
+import * as Primitive from "@cossistant/react/primitives";
+
+const MyBubble = ({ className }) => (
+  <Primitive.Bubble className={className}>
+    {({ isOpen }) => <span>{isOpen ? "×" : "?"}</span>}
+  </Primitive.Bubble>
+);
+
+export default function App() {
+  return (
+    <Support
+      theme="dark"
+      classNames={{
+        root: "bottom-8 right-8",
+        bubble: "bg-indigo-600 hover:bg-indigo-700",
+        container: "border-indigo-200"
+      }}
+      slots={{
+        bubble: MyBubble
+      }}
+    />
+  );
+}
+```
+

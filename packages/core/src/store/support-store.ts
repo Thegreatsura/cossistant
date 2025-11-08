@@ -1,6 +1,8 @@
 import { createStore, type Store } from "./create-store";
 
-// Default built-in routes with exact param types
+/**
+ * Built-in routes with their parameter types.
+ */
 export type DefaultRoutes = {
 	HOME: undefined;
 	ARTICLES: undefined;
@@ -8,13 +10,16 @@ export type DefaultRoutes = {
 	CONVERSATION_HISTORY: undefined;
 };
 
-// Extensible interface via module augmentation
-// Users can extend this in their code:
-// declare module '@cossistant/core' {
-//   interface RouteRegistry {
-//     SETTINGS: { tab: string };
-//   }
-// }
+/**
+ * Extensible route registry via module augmentation.
+ *
+ * @example
+ * declare module '@cossistant/core' {
+ *   interface RouteRegistry {
+ *     SETTINGS: { tab: string };
+ *   }
+ * }
+ */
 export interface RouteRegistry extends DefaultRoutes {}
 
 // Build discriminated union from route registry

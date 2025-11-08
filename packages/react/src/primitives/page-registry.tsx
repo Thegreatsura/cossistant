@@ -7,8 +7,7 @@ type PageRegistry = Map<string, PageComponent>;
 const PageRegistryContext = createContext<PageRegistry>(new Map());
 
 /**
- * Provider for page registry used by Router primitive.
- * Wrap your router with this to enable declarative page registration.
+ * Context provider for declarative page registration.
  *
  * @example
  * <PageRegistryProvider>
@@ -29,13 +28,12 @@ export const PageRegistryProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 /**
- * Access the page registry. Used internally by Router and Page components.
+ * Access the page registry (used internally by Router and Page).
  */
 export const usePageRegistry = () => useContext(PageRegistryContext);
 
 /**
- * Register a page component in the registry.
- * Used internally by the Page component.
+ * Register a page in the registry (used internally by Page component).
  */
 export const useRegisterPage = (name: string, component: PageComponent) => {
 	const registry = usePageRegistry();
