@@ -1,0 +1,320 @@
+---
+title: Custom Components
+description: Customize every part of the Support widget with slots, custom pages, and primitives.
+---
+
+## Overview
+
+The Support widget is built to be fully customizable while maintaining extreme simplicity. You can:
+
+- Replace core components (bubble, container, router) with **slots**
+- Add custom pages with declarative **`<Page>`** components
+- Style with **className** overrides
+- Build with headless **primitives**
+
+All while keeping the zero-config `<Support />` experience intact.
+
+## Custom Styling with classNames
+
+Override styles for specific parts of the widget:
+
+```tsx
+<Support
+  classNames={{
+    root: "bottom-8 right-8",
+    bubble: "bg-purple-600 hover:bg-purple-700",
+    container: "border-purple-200 shadow-2xl",
+  }}
+/>
+```
+
+## Custom Bubble
+
+Replace the default chat bubble with your own component:
+
+```tsx
+import { Support, type BubbleSlotProps } from "@cossistant/react";
+import * as Primitive from "@cossistant/react/primitives";
+
+const CustomBubble = ({ className }: BubbleSlotProps) => (
+  <Primitive.Bubble className={className}>
+    {({ isOpen, isTyping }) => (
+      <div className="flex items-center justify-center">
+        {isOpen ? "✕" : isTyping ? "..." : "💬"}
+      </div>
+    )}
+  </Primitive.Bubble>
+);
+
+<Support slots={{ bubble: CustomBubble }} />;
+```
+
+The `Primitive.Bubble` component provides:
+
+- `isOpen` - whether the widget is open
+- `unreadCount` - number of unread messages
+- `isTyping` - whether someone is typing
+- `toggle` - function to toggle the widget
+
+## Custom Pages
+
+Add custom pages to the support widget using the declarative `<Page>` component:
+
+### Step 1: Define route types (optional but recommended)
+
+```tsx
+// Type augmentation for full TypeScript support
+declare module "@cossistant/core" {
+  interface RouteRegistry {
+    SETTINGS: { tab: string };
+    PRICING: undefined;
+  }
+}
+```
+
+### Step 2: Create your page component
+
+```tsx
+import { useSupportNavigation, Button, Header } from "@cossistant/react";
+
+const SettingsPage = ({ params }) => {
+  const { navigate, goBack } = useSupportNavigation();
+
+  return (
+    <>
+      <Header>
+        {canGoBack && <button onClick={goBack}>← Back</button>}
+        <h1>Settings</h1>
+      </Header>
+      <div className="p-4">
+        <p>Current tab: {params?.tab}</p>
+        <Button onClick={() => navigate({ page: "HOME" })}>Go Home</Button>
+      </div>
+    </>
+  );
+};
+```
+
+### Step 3: Register the page
+
+```tsx
+import { Support, Page } from "@cossistant/react";
+
+<Support>
+  <Page name="SETTINGS" component={SettingsPage} />
+</Support>;
+```
+
+### Step 4: Navigate to it
+
+```tsx
+const { navigate } = useSupportNavigation();
+
+// Fully typed! TypeScript knows SETTINGS requires { tab: string }
+navigate({
+  page: "SETTINGS",
+  params: { tab: "profile" },
+});
+```
+
+## Navigation Hooks
+
+Build custom pages with full navigation control:
+
+```tsx
+import { useSupportNavigation } from "@cossistant/react";
+
+const MyPage = () => {
+  const {
+    navigate, // Navigate to a new page (adds to history)
+    replace, // Replace current page (no history)
+    goBack, // Go to previous page
+    canGoBack, // Boolean: can go back?
+    current, // Current page state
+    page, // Current page name
+    params, // Current page params
+  } = useSupportNavigation();
+
+  return (
+    <div>
+      {canGoBack && <button onClick={goBack}>Back</button>}
+      <p>Current: {page}</p>
+    </div>
+  );
+};
+```
+
+## Replace the Router
+
+For complete control over routing logic, replace the entire router:
+
+```tsx
+import { Support, type RouterSlotProps } from "@cossistant/react";
+import * as Primitive from "@cossistant/react/primitives";
+
+const CustomRouter = ({ children }: RouterSlotProps) => {
+  const { current } = useSupportNavigation();
+
+  return (
+    <>
+      {/* Register your pages */}
+      <Primitive.Page name="CUSTOM" component={CustomPage} />
+      {children}
+
+      {/* Render with primitive router */}
+      <Primitive.Router page={current.page} params={current.params} />
+    </>
+  );
+};
+
+<Support slots={{ router: CustomRouter }} />;
+```
+
+## UI Components for Custom Pages
+
+Build custom pages with pre-built components:
+
+```tsx
+import { Header, Button, Text, useSupportText } from "@cossistant/react";
+
+const MyPage = () => {
+  const text = useSupportText();
+
+  return (
+    <>
+      <Header>
+        <h1>Custom Page</h1>
+      </Header>
+
+      <div className="p-4">
+        <Text textKey="common.actions.askQuestion" />
+
+        <Button variant="secondary" size="large">
+          Click me
+        </Button>
+      </div>
+    </>
+  );
+};
+```
+
+## Primitives Reference
+
+All primitives are available at `@cossistant/react/primitives`:
+
+### Layout & Structure
+
+- **`<PageRegistryProvider>`** - Context provider for page registration
+- **`<Router>`** - Generic router that renders registered pages
+- **`<Page>`** - Declaratively register a page component
+- **`<Window>`** - Dialog container with open/close state
+- **`<Bubble>`** - Floating action button
+
+### Timeline & Messages
+
+- **`<ConversationTimeline>`** - Message timeline container
+- **`<TimelineItem>`** - Individual message item
+- **`<TimelineItemGroup>`** - Group messages by sender
+- **`<TimelineItemContent>`** - Message content
+- **`<TimelineItemTimestamp>`** - Message timestamp
+
+### Input & Interaction
+
+- **`<MultimodalInput>`** - Rich text input with file uploads
+- **`<FileInput>`** - File upload component
+- **`<Button>`** - Accessible button component
+
+### Visual
+
+- **`<Avatar>`**, **`<AvatarImage>`**, **`<AvatarFallback>`** - User avatars
+- **`<TypingIndicator>`** - Animated typing indicator
+
+### Configuration
+
+- **`<Config>`** - Configure widget behavior
+
+## Full Example: Custom Support Experience
+
+```tsx
+"use client";
+
+import { Support, Page, useSupportNavigation } from "@cossistant/react";
+import * as Primitive from "@cossistant/react/primitives";
+
+// 1. Extend types
+declare module "@cossistant/core" {
+  interface RouteRegistry {
+    FAQ: undefined;
+  }
+}
+
+// 2. Create custom bubble
+const MyBubble = ({ className }) => (
+  <Primitive.Bubble className={className}>
+    {({ isOpen }) => <span>{isOpen ? "×" : "?"}</span>}
+  </Primitive.Bubble>
+);
+
+// 3. Create custom page
+const FAQPage = () => {
+  const { goBack } = useSupportNavigation();
+
+  return (
+    <div>
+      <button onClick={goBack}>← Back</button>
+      <h1>Frequently Asked Questions</h1>
+      <p>Coming soon...</p>
+    </div>
+  );
+};
+
+// 4. Compose everything
+export default function App() {
+  return (
+    <Support
+      theme="dark"
+      classNames={{
+        bubble: "bg-indigo-600",
+      }}
+      slots={{
+        bubble: MyBubble,
+      }}
+    >
+      <Page name="FAQ" component={FAQPage} />
+    </Support>
+  );
+}
+```
+
+## Type Safety
+
+All navigation is fully typed:
+
+```tsx
+// ✅ TypeScript knows CONVERSATION requires conversationId
+navigate({
+  page: "CONVERSATION",
+  params: { conversationId: "123" },
+});
+
+// ❌ TypeScript error: missing required param
+navigate({
+  page: "CONVERSATION",
+  params: {},
+});
+
+// ✅ Custom routes are typed too
+navigate({
+  page: "SETTINGS",
+  params: { tab: "profile" },
+});
+```
+
+## Migration
+
+All customization is opt-in. Existing code continues to work:
+
+```tsx
+// Still works!
+<Support />
+```

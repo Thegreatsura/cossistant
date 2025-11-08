@@ -13,16 +13,17 @@
     "check-types": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "next": "16.0.1",
     "@cossistant/api": "workspace:*",
     "@cossistant/core": "workspace:*",
     "@cossistant/location": "workspace:*",
     "@cossistant/next": "workspace:*",
+    "@cossistant/react": "workspace:*",
     "@cossistant/transactional": "workspace:*",
     "@cossistant/types": "workspace:*",
-    "@cossistant/react": "workspace:*"
+    "next": "16.0.1",
+    "next-themes": "^0.4.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
   },
   "devDependencies": {
     "babel-plugin-react-compiler": "1.0.0",

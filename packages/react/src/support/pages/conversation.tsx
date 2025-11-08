@@ -14,18 +14,28 @@ import { Text, useSupportText } from "../text";
 
 type ConversationPageProps = {
 	/**
-	 * The conversation ID to display (can be PENDING_CONVERSATION_ID or a real ID).
+	 * Page params object (for compatibility with Page component)
 	 */
-	conversationId: string;
+	params?: {
+		/**
+		 * The conversation ID to display (can be PENDING_CONVERSATION_ID or a real ID).
+		 */
+		conversationId: string;
 
-	/**
-	 * Optional initial message to send when opening the conversation.
-	 */
+		/**
+		 * Optional initial message to send when opening the conversation.
+		 */
+		initialMessage?: string;
+
+		/**
+		 * Optional timeline items to display (for optimistic updates or initial state).
+		 */
+		items?: TimelineItem[];
+	};
+
+	// Legacy direct props support (deprecated but maintained for backward compatibility)
+	conversationId?: string;
 	initialMessage?: string;
-
-	/**
-	 * Optional timeline items to display (for optimistic updates or initial state).
-	 */
 	items?: TimelineItem[];
 };
 
@@ -38,10 +48,16 @@ type ConversationPageProps = {
 type ConversationPageComponent = (props: ConversationPageProps) => ReactElement;
 
 export const ConversationPage: ConversationPageComponent = ({
-	conversationId: initialConversationId,
-	initialMessage,
-	items: passedItems = [],
+	params,
+	conversationId: legacyConversationId,
+	initialMessage: legacyInitialMessage,
+	items: legacyItems,
 }: ConversationPageProps) => {
+	// Support both params object (new) and direct props (legacy)
+	const initialConversationId =
+		params?.conversationId ?? legacyConversationId ?? "";
+	const initialMessage = params?.initialMessage ?? legacyInitialMessage;
+	const passedItems = params?.items ?? legacyItems ?? [];
 	const { website, availableAIAgents, availableHumanAgents, visitor } =
 		useSupport();
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();

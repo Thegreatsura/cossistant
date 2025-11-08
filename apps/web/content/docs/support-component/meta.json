@@ -1,4 +1,4 @@
 {
-  "pages": ["index", "about", "theme", "text", "hooks"],
+  "pages": ["index", "about", "theme", "custom-components", "text", "hooks"],
   "title": "<Support />"
 }

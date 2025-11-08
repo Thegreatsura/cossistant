@@ -8,10 +8,13 @@ import { CoButton } from "../components/button";
 import { ConversationButtonLink } from "../components/conversation-button-link";
 import { Header } from "../components/header";
 import Icon from "../components/icons";
-import { TextEffect } from "../components/text-effect";
 import { Watermark } from "../components/watermark";
 import { useSupportNavigation } from "../store/support-store";
 import { Text, useSupportText } from "../text";
+
+type HomePageProps = {
+	params?: undefined;
+};
 
 /**
  * Home page component for the support widget.
@@ -25,7 +28,7 @@ import { Text, useSupportText } from "../text";
  *
  * All logic is handled by the useHomePage hook.
  */
-export const HomePage = (): ReactElement => {
+export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 	const { website, availableHumanAgents, visitor, quickOptions } = useSupport();
 	const { navigate } = useSupportNavigation();
 	const text = useSupportText();

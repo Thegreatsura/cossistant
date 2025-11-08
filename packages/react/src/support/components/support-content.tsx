@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import type React from "react";
 
+import type { SupportProps } from "../index";
 import { SupportRouter } from "../router";
 import { cn } from "../utils";
 import { Bubble } from "./bubble";
@@ -13,6 +14,9 @@ type SupportContentProps = {
 	position?: "top" | "bottom";
 	align?: "right" | "left";
 	positioning?: "fixed" | "absolute";
+	slots?: SupportProps["slots"];
+	classNames?: SupportProps["classNames"];
+	children?: React.ReactNode;
 };
 
 /**
@@ -29,7 +33,15 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 	position = "bottom",
 	align = "right",
 	positioning = "fixed",
+	slots = {},
+	classNames = {},
+	children,
 }) => {
+	// Use custom components if provided, otherwise use defaults
+	const BubbleComponent = slots.bubble ?? Bubble;
+	const ContainerComponent = slots.container ?? Container;
+	const RouterComponent = slots.router ?? SupportRouter;
+
 	const containerClasses = cn(
 		"cossistant z-[9999]",
 		positioning === "fixed" ? "fixed" : "absolute",
@@ -39,6 +51,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 			"right-4": align === "right",
 			"left-4": align === "left",
 		},
+		classNames.root,
 		className
 	);
 
@@ -53,10 +66,16 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 				layout: { duration: 0.3 },
 			}}
 		>
-			<Bubble className="z-[1000] md:z-[9999]" />
-			<Container align={align} position={position}>
-				<SupportRouter />
-			</Container>
+			<BubbleComponent
+				className={cn("z-[1000] md:z-[9999]", classNames.bubble)}
+			/>
+			<ContainerComponent
+				align={align}
+				className={classNames.container}
+				position={position}
+			>
+				<RouterComponent>{children}</RouterComponent>
+			</ContainerComponent>
 		</motion.div>
 	);
 };

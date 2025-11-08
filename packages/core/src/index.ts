@@ -24,10 +24,13 @@ export {
 } from "./store/seen-store";
 export {
 	createSupportStore,
+	type DefaultRoutes,
 	type NavigationState,
+	type RouteRegistry,
 	type SUPPORT_PAGES,
 	type SupportConfig,
 	type SupportNavigation,
+	type SupportPage,
 	type SupportStore,
 	type SupportStoreActions,
 	type SupportStoreOptions,

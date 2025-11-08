@@ -7,10 +7,13 @@ import { CoButton } from "../components/button";
 import { ConversationButtonLink } from "../components/conversation-button-link";
 import { Header } from "../components/header";
 import Icon from "../components/icons";
-import { TextEffect } from "../components/text-effect";
 import { Watermark } from "../components/watermark";
 import { useSupportNavigation } from "../store/support-store";
 import { Text, useSupportText } from "../text";
+
+type ConversationHistoryPageProps = {
+	params?: undefined;
+};
 
 /**
  * Conversation history page component.
@@ -22,7 +25,9 @@ import { Text, useSupportText } from "../text";
  *
  * All logic is handled by the useConversationHistoryPage hook.
  */
-export const ConversationHistoryPage: React.FC = () => {
+export const ConversationHistoryPage: React.FC<ConversationHistoryPageProps> = (
+	_props = {}
+) => {
 	const { goBack, canGoBack, navigate } = useSupportNavigation();
 	const { availableAIAgents, availableHumanAgents } = useSupport();
 	const text = useSupportText();

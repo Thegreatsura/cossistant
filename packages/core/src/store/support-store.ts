@@ -1,19 +1,45 @@
 import { createStore, type Store } from "./create-store";
 
-export type NavigationState =
-	| { page: "HOME"; params?: undefined }
-	| { page: "ARTICLES"; params?: undefined }
-	| {
-			page: "CONVERSATION";
-			params: { conversationId: string; initialMessage?: string };
-	  }
-	| { page: "CONVERSATION_HISTORY"; params?: undefined };
+// Default built-in routes with exact param types
+export type DefaultRoutes = {
+	HOME: undefined;
+	ARTICLES: undefined;
+	CONVERSATION: { conversationId: string; initialMessage?: string };
+	CONVERSATION_HISTORY: undefined;
+};
 
-export type SUPPORT_PAGES = NavigationState["page"];
+// Extensible interface via module augmentation
+// Users can extend this in their code:
+// declare module '@cossistant/core' {
+//   interface RouteRegistry {
+//     SETTINGS: { tab: string };
+//   }
+// }
+export interface RouteRegistry extends DefaultRoutes {}
 
-export type SupportNavigation = {
-	previousPages: NavigationState[];
-	current: NavigationState;
+// Build discriminated union from route registry
+export type NavigationState<
+	Routes extends Record<string, unknown> = RouteRegistry,
+> = {
+	[K in keyof Routes]: Routes[K] extends undefined
+		? { page: K; params?: undefined }
+		: { page: K; params: Routes[K] };
+}[keyof Routes];
+
+// Extract page names as string union
+export type SupportPage<
+	Routes extends Record<string, unknown> = RouteRegistry,
+> = keyof Routes & string;
+
+// Keep backward compatibility
+export type SUPPORT_PAGES = SupportPage;
+
+// Typed navigation
+export type SupportNavigation<
+	Routes extends Record<string, unknown> = RouteRegistry,
+> = {
+	previousPages: NavigationState<Routes>[];
+	current: NavigationState<Routes>;
 };
 
 export type SupportConfig = {
@@ -28,14 +54,18 @@ export type SupportConfig = {
 	};
 };
 
-export type SupportStoreState = {
-	navigation: SupportNavigation;
+export type SupportStoreState<
+	Routes extends Record<string, unknown> = RouteRegistry,
+> = {
+	navigation: SupportNavigation<Routes>;
 	config: SupportConfig;
 };
 
-export type SupportStoreActions = {
-	navigate(state: NavigationState): void;
-	replace(state: NavigationState): void;
+export type SupportStoreActions<
+	Routes extends Record<string, unknown> = RouteRegistry,
+> = {
+	navigate(state: NavigationState<Routes>): void;
+	replace(state: NavigationState<Routes>): void;
 	goBack(): void;
 	open(): void;
 	close(): void;
@@ -55,20 +85,24 @@ export type SupportStoreOptions = {
 	storageKey?: string;
 };
 
-export type SupportStore = Store<SupportStoreState> & SupportStoreActions;
+export type SupportStore<
+	Routes extends Record<string, unknown> = RouteRegistry,
+> = Store<SupportStoreState<Routes>> & SupportStoreActions<Routes>;
 
 const STORAGE_KEY = "cossistant-support-store";
 
 type PersistedConfig = Pick<SupportConfig, "size" | "isOpen">;
 
-type PersistedState = {
-	navigation?: SupportNavigation;
+type PersistedState<Routes extends Record<string, unknown> = RouteRegistry> = {
+	navigation?: SupportNavigation<Routes>;
 	config?: PersistedConfig;
 };
 
-function createDefaultNavigation(): SupportNavigation {
+function createDefaultNavigation<
+	Routes extends Record<string, unknown> = RouteRegistry,
+>(): SupportNavigation<Routes> {
 	return {
-		current: { page: "HOME" },
+		current: { page: "HOME" } as NavigationState<Routes>,
 		previousPages: [],
 	};
 }
@@ -81,41 +115,46 @@ function createDefaultConfig(): SupportConfig {
 	};
 }
 
-function createDefaultState(): SupportStoreState {
+function createDefaultState<
+	Routes extends Record<string, unknown> = RouteRegistry,
+>(): SupportStoreState<Routes> {
 	return {
-		navigation: createDefaultNavigation(),
+		navigation: createDefaultNavigation<Routes>(),
 		config: createDefaultConfig(),
 	};
 }
 
-function cloneNavigationState(state: NavigationState): NavigationState {
-	switch (state.page) {
-		case "CONVERSATION":
-			return {
-				page: "CONVERSATION",
-				params: { ...state.params },
-			};
-		default:
-			return { page: state.page, params: state.params } as NavigationState;
+function cloneNavigationState<
+	Routes extends Record<string, unknown> = RouteRegistry,
+>(state: NavigationState<Routes>): NavigationState<Routes> {
+	// Type-safe cloning with params if they exist
+	if ("params" in state && state.params !== undefined) {
+		return {
+			...state,
+			params: { ...state.params },
+		} as NavigationState<Routes>;
 	}
+	return { ...state } as NavigationState<Routes>;
 }
 
-function parsePersistedState(
-	persisted: PersistedState | null | undefined,
-	fallback: SupportStoreState
-): SupportStoreState {
+function parsePersistedState<
+	Routes extends Record<string, unknown> = RouteRegistry,
+>(
+	persisted: PersistedState<Routes> | null | undefined,
+	fallback: SupportStoreState<Routes>
+): SupportStoreState<Routes> {
 	if (!persisted) {
 		return fallback;
 	}
 
 	const persistedNavigation = persisted.navigation;
-	const navigation: SupportNavigation = {
+	const navigation: SupportNavigation<Routes> = {
 		current: persistedNavigation?.current
-			? cloneNavigationState(persistedNavigation.current)
-			: cloneNavigationState(fallback.navigation.current),
+			? cloneNavigationState<Routes>(persistedNavigation.current)
+			: cloneNavigationState<Routes>(fallback.navigation.current),
 		previousPages: (
 			persistedNavigation?.previousPages ?? fallback.navigation.previousPages
-		).map((page) => cloneNavigationState(page)),
+		).map((page) => cloneNavigationState<Routes>(page)),
 	};
 
 	const config: SupportConfig = {
@@ -129,8 +168,10 @@ function parsePersistedState(
 	};
 }
 
-function getInitialState(options: SupportStoreOptions): SupportStoreState {
-	const fallback = createDefaultState();
+function getInitialState<
+	Routes extends Record<string, unknown> = RouteRegistry,
+>(options: SupportStoreOptions): SupportStoreState<Routes> {
+	const fallback = createDefaultState<Routes>();
 	const storage = options.storage;
 	if (!storage) {
 		return fallback;
@@ -142,16 +183,16 @@ function getInitialState(options: SupportStoreOptions): SupportStoreState {
 			return fallback;
 		}
 
-		const parsed = JSON.parse(raw) as PersistedState;
-		return parsePersistedState(parsed, fallback);
+		const parsed = JSON.parse(raw) as PersistedState<Routes>;
+		return parsePersistedState<Routes>(parsed, fallback);
 	} catch (error) {
 		console.warn("[SupportStore] Failed to read persisted state", error);
 		return fallback;
 	}
 }
 
-function persistState(
-	state: SupportStoreState,
+function persistState<Routes extends Record<string, unknown> = RouteRegistry>(
+	state: SupportStoreState<Routes>,
 	options: SupportStoreOptions
 ): void {
 	const storage = options.storage;
@@ -159,7 +200,7 @@ function persistState(
 		return;
 	}
 
-	const data: PersistedState = {
+	const data: PersistedState<Routes> = {
 		navigation: {
 			current: state.navigation.current,
 			previousPages: [...state.navigation.previousPages],
@@ -177,13 +218,15 @@ function persistState(
 	}
 }
 
-export function createSupportStore(
-	options: SupportStoreOptions = {}
-): SupportStore {
-	const initialState = getInitialState(options);
-	const store = createStore<SupportStoreState>(initialState);
+export function createSupportStore<
+	Routes extends Record<string, unknown> = RouteRegistry,
+>(options: SupportStoreOptions = {}): SupportStore<Routes> {
+	const initialState = getInitialState<Routes>(options);
+	const store = createStore<SupportStoreState<Routes>>(initialState);
 
-	const commit = (updater: (state: SupportStoreState) => SupportStoreState) => {
+	const commit = (
+		updater: (state: SupportStoreState<Routes>) => SupportStoreState<Routes>
+	) => {
 		const previous = store.getState();
 		store.setState(updater);
 		const next = store.getState();
@@ -263,7 +306,7 @@ export function createSupportStore(
 			}));
 		},
 		reset() {
-			commit(() => createDefaultState());
+			commit(() => createDefaultState<Routes>());
 		},
 	};
 }

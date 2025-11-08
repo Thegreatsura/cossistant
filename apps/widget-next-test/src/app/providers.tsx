@@ -1,6 +1,8 @@
 "use client";
 
 import { SupportProvider } from "@cossistant/next";
+import { ThemeProvider } from "next-themes";
+
 import type { ReactNode } from "react";
 
 type ProviderProps = {
@@ -20,8 +22,10 @@ const WS_URL =
 
 export function Providers({ children }: ProviderProps) {
 	return (
-		<SupportProvider apiUrl={API_URL} wsUrl={WS_URL}>
-			{children}
-		</SupportProvider>
+		<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+			<SupportProvider apiUrl={API_URL} wsUrl={WS_URL}>
+				{children}
+			</SupportProvider>
+		</ThemeProvider>
 	);
 }

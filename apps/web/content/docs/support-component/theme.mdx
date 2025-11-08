@@ -65,10 +65,37 @@ Override widget colors by setting `--co-theme-*` variables:
 
 ## Light and Dark Mode
 
-The widget automatically adapts to your site's color scheme. Add a `.dark` class to your layout or set `data-color-scheme="dark"` on the widget container.
+### Using the theme prop
+
+Force a specific theme regardless of your app's settings:
 
 ```tsx
-<Support className="dark" />
+// Force dark theme
+<Support theme="dark" />
+
+// Force light theme (default)
+<Support theme="light" />
+```
+
+### Automatic theme detection (default)
+
+By default, the widget automatically adapts to your app's theme. It looks for:
+
+1. `.dark` class on any parent element
+2. `data-color-scheme="dark"` attribute on any parent element
+
+This works seamlessly with popular theme libraries like **next-themes** and **shadcn's theme system**.
+
+```tsx
+// Widget adapts automatically
+<body className="dark">
+  <Support />
+</body>
+
+// Or with data attribute
+<div data-color-scheme="dark">
+  <Support />
+</div>
 ```
 
 ## Using shadcn/ui Colors

@@ -1,4 +1,5 @@
 import type React from "react";
+import * as Primitive from "../primitives";
 import { ArticlesPage } from "./pages/articles";
 import { ConversationPage } from "./pages/conversation";
 import { ConversationHistoryPage } from "./pages/conversation-history";
@@ -6,34 +7,53 @@ import { HomePage } from "./pages/home";
 import { useSupportNavigation } from "./store/support-store";
 
 /**
- * Routes between different support widget pages based on navigation state.
+ * Support-specific router that includes default pages.
+ * Uses the primitive Router under the hood with declarative Page registration.
  *
- * Each page manages its own state internally via dedicated hooks,
- * so the router simply maps navigation state to the appropriate page component.
+ * Custom pages can be added as children:
+ * @example
+ * <SupportRouter>
+ *   <Page name="SETTINGS" component={SettingsPage} />
+ * </SupportRouter>
  */
-export const SupportRouter: React.FC = () => {
+export const SupportRouter: React.FC<{ children?: React.ReactNode }> = ({
+	children,
+}) => {
 	const { current } = useSupportNavigation();
 
-	switch (current.page) {
-		case "HOME":
-			return <HomePage />;
+	return (
+		<>
+			{/* Register default pages */}
+			<Primitive.Page
+				component={HomePage as React.ComponentType<{ params?: unknown }>}
+				name="HOME"
+			/>
+			<Primitive.Page
+				component={ArticlesPage as React.ComponentType<{ params?: unknown }>}
+				name="ARTICLES"
+			/>
+			<Primitive.Page
+				component={
+					ConversationPage as React.ComponentType<{ params?: unknown }>
+				}
+				name="CONVERSATION"
+			/>
+			<Primitive.Page
+				component={
+					ConversationHistoryPage as React.ComponentType<{ params?: unknown }>
+				}
+				name="CONVERSATION_HISTORY"
+			/>
 
-		case "ARTICLES":
-			return <ArticlesPage />;
+			{/* Allow custom pages via children */}
+			{children}
 
-		case "CONVERSATION":
-			return (
-				<ConversationPage
-					conversationId={current.params.conversationId}
-					initialMessage={current.params.initialMessage}
-				/>
-			);
-
-		case "CONVERSATION_HISTORY":
-			return <ConversationHistoryPage />;
-
-		default: {
-			return <HomePage />;
-		}
-	}
+			{/* Render using primitive router */}
+			<Primitive.Router
+				fallback={HomePage as React.ComponentType<{ params?: unknown }>}
+				page={current.page as string}
+				params={current.params}
+			/>
+		</>
+	);
 };

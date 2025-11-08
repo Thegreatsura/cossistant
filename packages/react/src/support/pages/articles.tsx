@@ -3,7 +3,11 @@ import { Container } from "../components/container";
 import { Header } from "../components/header";
 import { NavigationTab } from "../components/navigation-tab";
 
-export const ArticlesPage: React.FC = () => (
+type ArticlesPageProps = {
+	params?: undefined;
+};
+
+export const ArticlesPage: React.FC<ArticlesPageProps> = (_props = {}) => (
 	<>
 		<Header>
 			<NavigationTab />

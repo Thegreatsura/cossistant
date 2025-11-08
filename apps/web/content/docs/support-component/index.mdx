@@ -35,7 +35,7 @@ export default function PricingPage() {
         quickOptions={[
           "How does billing work?",
           "What's included in Pro?",
-          "Can I cancel anytime?"
+          "Can I cancel anytime?",
         ]}
       />
       <h1>Choose your plan</h1>
@@ -78,12 +78,12 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 export default async function DashboardLayout({
-  children
+  children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   const session = await auth.api.getSession({
-    headers: await headers()
+    headers: await headers(),
   });
 
   return (
@@ -96,7 +96,7 @@ export default async function DashboardLayout({
           image={session.user.image}
           metadata={{
             plan: session.user.plan,
-            signupDate: session.user.createdAt
+            signupDate: session.user.createdAt,
           }}
         />
       )}
@@ -110,7 +110,11 @@ export default async function DashboardLayout({
   <Icon name="help" className="size-4" />
   <AlertTitle>What happens when I identify a visitor?</AlertTitle>
   <AlertDescription>
-    The anonymous visitor becomes associated with a contact. All their conversations, metadata, and future interactions are linked to this contact—even across different devices. Learn more about <Link href="/docs/concepts/visitors">visitors</Link> and <Link href="/docs/concepts/contacts">contacts</Link>.
+    The anonymous visitor becomes associated with a contact. All their
+    conversations, metadata, and future interactions are linked to this
+    contact—even across different devices. Learn more about{" "}
+    <Link href="/docs/concepts/visitors">visitors</Link> and{" "}
+    <Link href="/docs/concepts/contacts">contacts</Link>.
   </AlertDescription>
 </Alert>
 
@@ -139,7 +143,8 @@ export default async function DashboardLayout({
       required: false,
     },
     metadata: {
-      description: "Additional context about the user (plan, company, MRR, etc.)",
+      description:
+        "Additional context about the user (plan, company, MRR, etc.)",
       type: "VisitorMetadata | null",
       typeDescription: "Record<string, string | number | boolean | null>",
       required: false,
@@ -151,7 +156,9 @@ export default async function DashboardLayout({
   <Icon name="code" className="size-4" />
   <AlertTitle>Need programmatic control?</AlertTitle>
   <AlertDescription>
-    Use the <Link href="/docs/support-component/hooks#usevisitor">useVisitor</Link> hook to identify visitors or update metadata from client components.
+    Use the{" "}
+    <Link href="/docs/support-component/hooks#usevisitor">useVisitor</Link> hook
+    to identify visitors or update metadata from client components.
   </AlertDescription>
 </Alert>
 
@@ -186,6 +193,29 @@ The `<Support />` component accepts these optional props to customize its appear
       default: '"fixed"',
       required: false,
     },
+    theme: {
+      description:
+        "Force a specific theme (light/dark). Omit for automatic detection",
+      type: '"light" | "dark"',
+      required: false,
+    },
+    slots: {
+      description:
+        "Replace core components (bubble, container, router) with custom implementations",
+      type: "{ bubble?: ComponentType<BubbleSlotProps>, container?: ComponentType<ContainerSlotProps>, router?: ComponentType<RouterSlotProps> }",
+      required: false,
+    },
+    classNames: {
+      description:
+        "Granular className overrides for specific parts of the widget",
+      type: "{ root?: string, bubble?: string, container?: string }",
+      required: false,
+    },
+    children: {
+      description: "Declarative Page components to register custom routes",
+      type: "React.ReactNode",
+      required: false,
+    },
     quickOptions: {
       description: "Quick reply options for this specific widget instance",
       type: "string[]",
@@ -202,7 +232,8 @@ The `<Support />` component accepts these optional props to customize its appear
       required: false,
     },
     locale: {
-      description: "Locale string for widget translations (e.g., 'en', 'fr', 'es')",
+      description:
+        "Locale string for widget translations (e.g., 'en', 'fr', 'es')",
       type: "string",
       required: false,
     },
@@ -213,3 +244,45 @@ The `<Support />` component accepts these optional props to customize its appear
     },
   }}
 />
+
+### Usage Examples
+
+Basic customization with theme and styling:
+
+```tsx
+<Support
+  theme="dark"
+  position="bottom"
+  align="right"
+  classNames={{
+    bubble: "bg-purple-600 hover:bg-purple-700",
+    container: "border-purple-200 shadow-2xl",
+  }}
+/>
+```
+
+With custom page:
+
+```tsx
+import { Support, Page, useSupportNavigation } from "@cossistant/next";
+
+const HelpPage = () => {
+  const { goBack } = useSupportNavigation();
+  return (
+    <div className="p-4">
+      <button onClick={goBack}>← Back</button>
+      <h1>Help Center</h1>
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <Support>
+      <Page name="HELP" component={HelpPage} />
+    </Support>
+  );
+}
+```
+
+For advanced customization, see the [Custom Components](/docs/support-component/custom-components) guide.
