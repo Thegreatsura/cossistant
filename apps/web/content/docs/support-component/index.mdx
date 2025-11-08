@@ -17,8 +17,6 @@ The `<Support />` component is built on the principle of **simplicity first**. D
 
 The component handles the complexity of modern support systems while maintaining a clean, minimal API surface.
 
----
-
 ## Customizing Messages & Quick Options
 
 Use the `<SupportConfig />` component to customize default messages and quick options per page or route. This is perfect for providing context-specific help.
@@ -52,6 +50,7 @@ The `<SupportConfig />` component accepts the following props:
     defaultMessages: {
       description: "Custom welcome messages shown before a conversation starts",
       type: "DefaultMessage[]",
+      typeDescriptionLink: "#defaultmessage",
       required: false,
     },
     quickOptions: {
@@ -61,8 +60,6 @@ The `<SupportConfig />` component accepts the following props:
     },
   }}
 />
-
----
 
 ## Identifying Visitors
 
@@ -147,6 +144,7 @@ export default async function DashboardLayout({
         "Additional context about the user (plan, company, MRR, etc.)",
       type: "VisitorMetadata | null",
       typeDescription: "Record<string, string | number | boolean | null>",
+      typeDescriptionLink: "#visitormetadata",
       required: false,
     },
   }}
@@ -161,8 +159,6 @@ export default async function DashboardLayout({
     to identify visitors or update metadata from client components.
   </AlertDescription>
 </Alert>
-
----
 
 ## Support Component Props
 
@@ -202,13 +198,16 @@ The `<Support />` component accepts these optional props to customize its appear
     slots: {
       description:
         "Replace core components (bubble, container, router) with custom implementations",
-      type: "{ bubble?: ComponentType<BubbleSlotProps>, container?: ComponentType<ContainerSlotProps>, router?: ComponentType<RouterSlotProps> }",
+      type: "object",
+      typeDescription:
+        "{ bubble?: ComponentType<BubbleSlotProps>, container?: ComponentType<ContainerSlotProps>, router?: ComponentType<RouterSlotProps> }",
       required: false,
     },
     classNames: {
       description:
         "Granular className overrides for specific parts of the widget",
-      type: "{ root?: string, bubble?: string, container?: string }",
+      type: "object",
+      typeDescription: "{ root?: string, bubble?: string, container?: string }",
       required: false,
     },
     children: {
@@ -224,6 +223,7 @@ The `<Support />` component accepts these optional props to customize its appear
     defaultMessages: {
       description: "Welcome messages shown before conversation starts",
       type: "DefaultMessage[]",
+      typeDescriptionLink: "#defaultmessage",
       required: false,
     },
     defaultOpen: {
@@ -239,7 +239,9 @@ The `<Support />` component accepts these optional props to customize its appear
     },
     content: {
       description: "Custom text content overrides for widget copy",
-      type: "SupportTextContentOverrides<Locale>",
+      type: "Partial<SupportTextContent>",
+      typeDescription:
+        "Partial record of all text strings used in the widget for internationalization and customization",
       required: false,
     },
   }}
@@ -286,3 +288,77 @@ export default function App() {
 ```
 
 For advanced customization, see the [Custom Components](/docs/support-component/custom-components) guide.
+
+## Types
+
+### DefaultMessage
+
+Structure for pre-conversation welcome messages.
+
+<TypeTable
+  variant="property"
+  type={{
+    content: {
+      description: "The message text content",
+      type: "string",
+      required: true,
+    },
+    senderType: {
+      description: "Who is sending the message",
+      type: "SenderType",
+      typeDescription: '"visitor" | "team_member" | "ai"',
+      typeDescriptionLink: "#sendertype",
+      required: true,
+    },
+    senderId: {
+      description: "Optional ID of the specific sender (agent or AI)",
+      type: "string",
+      required: false,
+    },
+  }}
+/>
+
+### VisitorMetadata
+
+Key-value pairs for storing custom data about contacts.
+
+<TypeTable
+  variant="property"
+  type={{
+    "[key: string]": {
+      description:
+        "Any string key can map to a string, number, boolean, or null value. Common examples include plan, company, role, MRR, etc.",
+      type: "string | number | boolean | null",
+      required: false,
+    },
+  }}
+/>
+
+**Type Definition:** `Record<string, string | number | boolean | null>`
+
+### SenderType
+
+Enum defining who can send messages.
+
+<TypeTable
+  variant="property"
+  type={{
+    VISITOR: {
+      description: "Message from an end user/visitor",
+      type: '"visitor"',
+      required: true,
+    },
+    TEAM_MEMBER: {
+      description: "Message from a human support agent",
+      type: '"team_member"',
+      required: true,
+    },
+    AI: {
+      description: "Message from an AI agent",
+      type: '"ai"',
+      required: true,
+    },
+  }}
+/>
+
+**Type Definition:** `"visitor" | "team_member" | "ai"`

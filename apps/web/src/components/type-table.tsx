@@ -57,12 +57,29 @@ const keyVariants = cva("text-fd-primary", {
 
 const fieldVariants = cva("not-prose pe-2 text-fd-muted-foreground");
 
-export function TypeTable({ type }: { type: Record<string, TypeNode> }) {
+export type TypeTableVariant = "prop" | "property" | "parameter" | "return";
+
+const headerLabels: Record<TypeTableVariant, { name: string; type: string }> = {
+	prop: { name: "Prop", type: "Type" },
+	property: { name: "Property", type: "Type" },
+	parameter: { name: "Parameter", type: "Type" },
+	return: { name: "Name", type: "Type" },
+};
+
+export function TypeTable({
+	type,
+	variant = "prop",
+}: {
+	type: Record<string, TypeNode>;
+	variant?: TypeTableVariant;
+}) {
+	const headers = headerLabels[variant];
+
 	return (
 		<div className="@container my-6 flex flex-col overflow-hidden rounded border border-primary/10 border-dashed bg-background-100 p-1 text-primary text-sm">
 			<div className="not-prose mb-4 flex items-center px-3 py-1 font-medium text-fd-muted-foreground">
-				<p className="w-[25%]">Prop</p>
-				<p className="@max-xl:hidden">Type</p>
+				<p className="w-[33%]">{headers.name}</p>
+				<p className="@max-xl:hidden">{headers.type}</p>
 			</div>
 			{Object.entries(type).map(([key, value]) => (
 				<Item item={value} key={key} name={key} />
@@ -104,12 +121,12 @@ function Item({
 					className={cn(
 						keyVariants({
 							deprecated,
-							className: "w-[25%] min-w-fit font-medium",
+							className: "w-[33%] min-w-fit font-medium text-cossistant-green",
 						})
 					)}
 				>
 					{name}
-					{!required && "?"}
+					{!required && <span className="ml-1 text-cossistant-orange">?</span>}
 				</code>
 				{typeDescriptionLink ? (
 					<Link className="@max-xl:hidden underline" href={typeDescriptionLink}>
