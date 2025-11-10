@@ -1,7 +1,7 @@
 {
   "name": "@cossistant/react",
   "type": "module",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "private": false,
   "author": "Cossistant team",
   "description": "Headless React SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
@@ -79,13 +79,17 @@
     "react-dom": ">=18 <20",
     "@types/react": "",
     "motion": "^12.18.1",
-    "tailwindcss": "*"
+    "tailwindcss": "*",
+    "tailwind-scrollbar": "*"
   },
   "peerDependenciesMeta": {
     "@types/react": {
       "optional": true
     },
     "tailwindcss": {
+      "optional": true
+    },
+    "tailwind-scrollbar": {
       "optional": true
     }
   },

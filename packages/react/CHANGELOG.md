@@ -1,5 +1,13 @@
 # @cossistant/react
 
+## 0.0.17
+
+### Patch Changes
+
+- Add tailwind-scrollbar as optional peer dependency to fix missing plugin error when using the package
+  - @cossistant/core@0.0.17
+  - @cossistant/types@0.0.17
+
 ## 0.0.16
 
 ### Patch Changes
