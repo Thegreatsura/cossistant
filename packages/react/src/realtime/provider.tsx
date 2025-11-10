@@ -287,7 +287,7 @@ function resolvePublicKey(explicit?: string | null): string | null {
 	}
 
 	const fromEnv =
-		process.env.NEXT_PUBLIC_COSSISTANT_KEY ||
+		process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
 		process.env.COSSISTANT_PUBLIC_KEY ||
 		null;
 

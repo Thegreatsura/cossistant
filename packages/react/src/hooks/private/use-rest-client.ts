@@ -22,13 +22,13 @@ export function useClient(
 ): UseClientResult {
 	const client = useMemo(() => {
 		const keyFromEnv =
-			process.env.NEXT_PUBLIC_COSSISTANT_KEY ||
+			process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
 			process.env.COSSISTANT_PUBLIC_KEY;
 		const keyToUse = publicKey ?? keyFromEnv;
 
 		if (!keyToUse) {
 			throw new Error(
-				"Public key is required. Please provide it as a prop or set NEXT_PUBLIC_COSSISTANT_KEY environment variable."
+				"Public key is required. Please provide it as a prop or set NEXT_PUBLIC_COSSISTANT_API_KEY environment variable."
 			);
 		}
 
