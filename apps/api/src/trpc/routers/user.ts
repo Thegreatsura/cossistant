@@ -2,6 +2,7 @@ import { getWebsiteBySlugWithAccess } from "@api/db/queries";
 import { getWebsiteMembers } from "@api/db/queries/member";
 import { getOrganizationsForUser } from "@api/db/queries/organization";
 import { updateUserProfile } from "@api/db/queries/user";
+import { auth } from "@api/lib/auth";
 import {
 	updateUserProfileRequestSchema,
 	userResponseSchema,
@@ -21,7 +22,7 @@ export const userRouter = createTRPCRouter({
 	updateProfile: protectedProcedure
 		.input(updateUserProfileRequestSchema)
 		.output(userResponseSchema)
-		.mutation(async ({ ctx: { db, user }, input }) => {
+		.mutation(async ({ ctx: { db, user, headers }, input }) => {
 			if (input.userId !== user.id) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -38,6 +39,15 @@ export const userRouter = createTRPCRouter({
 			if (!updatedUser) {
 				throw new TRPCError({ code: "NOT_FOUND" });
 			}
+
+			// Force session cache refresh by fetching with disableCookieCache
+			// This updates the cookie cache with the fresh user data
+			await auth.api.getSession({
+				headers,
+				query: {
+					disableCookieCache: true,
+				},
+			});
 
 			return {
 				...updatedUser,

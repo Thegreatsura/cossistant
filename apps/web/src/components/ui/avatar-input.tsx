@@ -649,13 +649,6 @@ export const AvatarInput =
 
 		const uploadAriaLabel =
 			uploadLabel ?? (resolvedPreviewUrl ? "Change image" : "Upload image");
-		const uploadInstruction = uploadLabel
-			? `Click the preview to ${uploadLabel.toLowerCase()}.`
-			: resolvedPreviewUrl
-				? "Click the preview to change the image."
-				: "Click the preview to upload an image.";
-
-		const showPlaceholder = !resolvedPreviewUrl && placeholder;
 
 		const openFileDialog = useCallback(() => {
 			if (disabled || isUploading) {
@@ -692,13 +685,13 @@ export const AvatarInput =
 					ref={fileInputRef}
 					type="file"
 				/>
-				<div className="flex items-start gap-4">
+				<div className="flex flex-col items-start gap-1">
 					<div className={cn("relative", previewClassName)}>
 						<button
 							aria-describedby={instructionsId}
 							aria-label={uploadAriaLabel}
 							className={cn(
-								"relative block size-24 rounded-md border border-border/70 border-dashed bg-muted/40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+								"relative block size-20 rounded border border-border/50 border-dashed bg-cossistant-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
 								(disabled || isUploading) && "cursor-not-allowed opacity-70",
 								!(disabled || isUploading) && "cursor-pointer"
 							)}
@@ -721,37 +714,24 @@ export const AvatarInput =
 								</AvatarFallback>
 							</AvatarContainer>
 							{isUploading && (
-								<div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/70">
+								<div className="absolute inset-0 flex items-center justify-center rounded bg-background/70">
 									<Spinner className="text-primary" />
 								</div>
 							)}
 						</button>
 					</div>
-					<div className="flex flex-1 flex-col gap-2 text-sm">
-						{showPlaceholder && (
-							<p className="text-muted-foreground text-sm">{placeholder}</p>
-						)}
-						<div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-							<span id={instructionsId}>
-								{isUploading ? "Uploading…" : uploadInstruction}
-							</span>
-							{allowRemove && (resolvedPreviewUrl || resolvedValue) && (
-								<Button
-									disabled={disabled || isUploading}
-									onClick={removeAvatar}
-									size="sm"
-									type="button"
-									variant="ghost"
-								>
-									<XIcon aria-hidden="true" className="size-4" />
-									Remove
-								</Button>
-							)}
-						</div>
-						{description && (
-							<p className="text-muted-foreground text-xs">{description}</p>
-						)}
-					</div>
+					{allowRemove && (resolvedPreviewUrl || resolvedValue) && (
+						<Button
+							disabled={disabled || isUploading}
+							onClick={removeAvatar}
+							size="xs"
+							type="button"
+							variant="ghost"
+						>
+							<XIcon aria-hidden="true" className="size-4" />
+							Remove
+						</Button>
+					)}
 				</div>
 				<Dialog
 					onOpenChange={(open) => !open && closeCropper()}
@@ -766,7 +746,7 @@ export const AvatarInput =
 							</DialogDescription>
 						</DialogHeader>
 						<div className="mt-2 flex flex-col gap-4">
-							<div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
+							<div className="relative aspect-square w-full overflow-hidden rounded bg-muted">
 								{cropState && (
 									<Cropper
 										aspect={aspectRatio}

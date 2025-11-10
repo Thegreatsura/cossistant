@@ -15,6 +15,7 @@ export type TRPCContext = {
 	session: typeof auth.$Infer.Session.session;
 	db: Database;
 	geo: ReturnType<typeof getGeoContext>;
+	headers: Headers;
 };
 
 export const createTRPCContext = async (
@@ -31,6 +32,7 @@ export const createTRPCContext = async (
 		session,
 		geo,
 		db,
+		headers: c.req.raw.headers,
 	};
 };
 

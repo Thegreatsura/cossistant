@@ -95,15 +95,38 @@ export function UserProfileForm({
 	const { mutateAsync: updateProfile, isPending } = useMutation(
 		trpc.user.updateProfile.mutationOptions({
 			onSuccess: async (updatedUser) => {
-				await queryClient.invalidateQueries({
-					queryKey: trpc.user.me.queryKey(),
+				// Invalidate all queries that display user data
+				await Promise.all([
+					queryClient.invalidateQueries({
+						queryKey: trpc.user.me.queryKey(),
+					}),
+					queryClient.invalidateQueries({
+						predicate: (query) =>
+							query.queryKey[0] === "user.getWebsiteMembers",
+					}),
+				]);
+
+				// Force Better Auth to refetch session from server
+				// This bypasses cookie cache, fetches from DB, and refreshes the cookie
+				await authClient.getSession({
+					query: {
+						disableCookieCache: true,
+					},
 				});
+
+				// Reset form with updated data
 				form.reset({
 					name: updatedUser.name ?? "",
-					avatar: updatedUser.image ?? null,
+					avatar: updatedUser.image
+						? {
+								previewUrl: updatedUser.image,
+								url: updatedUser.image,
+								mimeType: "image/jpeg",
+							}
+						: null,
 				});
+
 				toast.success("Profile updated.");
-				authClient.$store.notify("$sessionSignal");
 			},
 			onError: () => {
 				toast.error("Failed to update your profile. Please try again.");
@@ -192,8 +215,18 @@ export function UserProfileForm({
 
 			let imageUrl: string | null = null;
 
-			if (typeof avatarValue === "string") {
-				imageUrl = avatarValue;
+			// Explicitly handle null (avatar removed)
+			if (avatarValue === null) {
+				imageUrl = null;
+			} else if (typeof avatarValue === "string") {
+				// Strip any existing query parameters (like cache-busting)
+				try {
+					const url = new URL(avatarValue);
+					url.search = ""; // Remove all query parameters
+					imageUrl = url.toString();
+				} catch {
+					imageUrl = avatarValue;
+				}
 			} else if (avatarValue && typeof avatarValue === "object") {
 				if (!avatarValue.url) {
 					toast.error(
@@ -201,7 +234,15 @@ export function UserProfileForm({
 					);
 					return;
 				}
-				imageUrl = avatarValue.url;
+
+				// Strip any existing query parameters before saving
+				try {
+					const url = new URL(avatarValue.url);
+					url.search = ""; // Remove all query parameters
+					imageUrl = url.toString();
+				} catch {
+					imageUrl = avatarValue.url;
+				}
 			}
 
 			await updateProfile({
@@ -247,7 +288,7 @@ export function UserProfileForm({
 							</FormItem>
 						)}
 					/>
-					{/* <FormField
+					<FormField
 						control={form.control}
 						name="avatar"
 						render={({ field }) => (
@@ -282,7 +323,7 @@ export function UserProfileForm({
 								<FormMessage />
 							</FormItem>
 						)}
-					/> */}
+					/>
 				</div>
 				<SettingsRowFooter className="flex items-center justify-end gap-2">
 					<BaseSubmitButton
