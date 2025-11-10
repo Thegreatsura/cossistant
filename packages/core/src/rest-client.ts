@@ -62,7 +62,7 @@ export class CossistantRestClient {
 
 		if (!this.publicKey) {
 			throw new Error(
-				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_API_KEY or COSSISTANT_PUBLIC_KEY environment variable."
+				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_API_KEY or COSSISTANT_API_KEY environment variable."
 			);
 		}
 

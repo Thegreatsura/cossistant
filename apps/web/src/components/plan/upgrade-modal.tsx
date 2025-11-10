@@ -66,7 +66,7 @@ function FeatureRow({
 	const upgraded = isUpgrade(currentValue, targetValue);
 
 	return (
-		<div className="flex items-center justify-between border-primary/10 border-b py-2 last:border-0">
+		<div className="flex items-center justify-between border-primary/5 border-b py-2 last:border-0">
 			<span className="font-medium text-sm">{label}</span>
 			<div className="flex items-center gap-3">
 				<span
@@ -177,30 +177,24 @@ export function UpgradeModal({
 				<div className="py-4">
 					{/* Discount banner with holographic effect */}
 					{discount && isDiscountValid && (
-						<div className="group relative mb-10 overflow-hidden rounded-lg border border-transparent bg-cossistant-green p-px">
-							{/* Inner card content */}
-							<div className="relative rounded-lg border border-primary/10 bg-linear-to-br from-primary/5 via-primary/8 to-primary/5 p-4 backdrop-blur-sm">
-								{/* Shimmer effect overlay */}
-								<div className="-translate-x-full absolute inset-0 animate-shimmer-slow bg-linear-to-r from-transparent via-cossistant-pink/5 to-transparent" />
-
-								<div className="relative z-10 flex flex-col gap-4">
-									<div className="flex items-center gap-2">
-										<h4 className="font-semibold text-primary-foreground text-sm">
-											Early Bird Discount
-										</h4>
-									</div>
-									<div className="flex items-center justify-between gap-2">
-										<p className="font-medium font-mono text-primary-foreground/90 text-sm">
-											{formatDiscountOffer(discount)}
-										</p>
-										<div className="flex items-center gap-2 font-mono text-primary-foreground/70 text-xs">
-											<Tag className="size-3" />
-											<span>
-												{discount.redemptionsLeft !== null
-													? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
-													: "Limited time offer"}
-											</span>
-										</div>
+						<div className="group relative mb-10 overflow-hidden rounded border border-transparent bg-cossistant-green/20 p-px dark:bg-cossistant-green">
+							<div className="relative z-10 flex flex-col gap-4 p-4">
+								<div className="flex items-center gap-2">
+									<h4 className="font-semibold text-black text-sm">
+										Early Bird Discount
+									</h4>
+								</div>
+								<div className="flex items-center justify-between gap-2">
+									<p className="font-medium font-mono text-black/90 text-sm">
+										{formatDiscountOffer(discount)}
+									</p>
+									<div className="flex items-center gap-2 font-mono text-black/70 text-xs">
+										<Tag className="size-3" />
+										<span>
+											{discount.redemptionsLeft !== null
+												? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
+												: "Limited time offer"}
+										</span>
 									</div>
 								</div>
 							</div>

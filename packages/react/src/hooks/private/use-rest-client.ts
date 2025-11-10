@@ -23,7 +23,8 @@ export function useClient(
 	const client = useMemo(() => {
 		const keyFromEnv =
 			process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-			process.env.COSSISTANT_PUBLIC_KEY;
+			process.env.NEXT_PUBLIC_COSSISTANT_KEY ||
+			process.env.COSSISTANT_API_KEY;
 		const keyToUse = publicKey ?? keyFromEnv;
 
 		if (!keyToUse) {

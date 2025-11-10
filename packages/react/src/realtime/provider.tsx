@@ -288,7 +288,8 @@ function resolvePublicKey(explicit?: string | null): string | null {
 
 	const fromEnv =
 		process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-		process.env.COSSISTANT_PUBLIC_KEY ||
+		process.env.NEXT_PUBLIC_COSSISTANT_KEY ||
+		process.env.COSSISTANT_API_KEY ||
 		null;
 
 	const normalized = fromEnv?.trim();
@@ -382,7 +383,7 @@ export function RealtimeProvider({
 
 	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
-	const lastHeartbeatRef = useRef<number>(Date.now());
+	const lastHeartbeatRef = useRef<number>(0);
 	const hasOpenedRef = useRef(false);
 	const previousUrlRef = useRef<string | null>(null);
 	const [connectionError, setConnectionError] = useState<Error | null>(null);
@@ -560,8 +561,11 @@ export function RealtimeProvider({
 				return;
 			}
 
-			// Check if heartbeat has timed out
-			if (isHeartbeatTimedOut(lastHeartbeatRef.current, heartbeatTimeoutMs)) {
+			// Check if heartbeat has timed out (skip if connection hasn't opened yet)
+			if (
+				lastHeartbeatRef.current !== 0 &&
+				isHeartbeatTimedOut(lastHeartbeatRef.current, heartbeatTimeoutMs)
+			) {
 				const socket = getWebSocket();
 				socket?.close(4000, "Heartbeat timeout");
 				return;
