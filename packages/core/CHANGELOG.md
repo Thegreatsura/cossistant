@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.19
+
+### Patch Changes
+
+- Fix discount calculation and validation logic
+
 ## 0.0.18
 
 ## 0.0.17

@@ -1,5 +1,14 @@
 # @cossistant/react
 
+## 0.0.19
+
+### Patch Changes
+
+- Fix discount calculation and validation logic
+- Updated dependencies
+  - @cossistant/core@0.0.19
+  - @cossistant/types@0.0.19
+
 ## 0.0.18
 
 ### Patch Changes
