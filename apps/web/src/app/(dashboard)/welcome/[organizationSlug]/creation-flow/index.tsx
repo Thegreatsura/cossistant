@@ -120,7 +120,7 @@ export default function CreationFlowWrapper({
 										[Add your public key]
 									</h4>
 									<DashboardCodeBlock
-										code={`NEXT_PUBLIC_COSSISTANT_API_KEY=${publicApiKey ?? "pk_test_replace_me"}`}
+										code={`NEXT_PUBLIC_COSSISTANT_KEY=${publicApiKey ?? "pk_test_replace_me"}`}
 										fileName=".env.local"
 										highlightLines="1"
 										language="bash"

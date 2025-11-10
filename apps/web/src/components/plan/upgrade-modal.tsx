@@ -208,12 +208,12 @@ export function UpgradeModal({
 
 								<div className="relative z-10 flex flex-col gap-4">
 									<div className="flex items-center gap-2">
-										<h4 className="font-semibold text-base text-primary-foreground">
+										<h4 className="font-semibold text-primary-foreground text-sm">
 											Early Bird Discount
 										</h4>
 									</div>
 									<div className="flex items-center justify-between gap-2">
-										<p className="ont-medium font-mono text-primary-foreground/90 text-sm">
+										<p className="font-medium font-mono text-primary-foreground/90 text-sm">
 											{formatDiscountOffer(discount)}
 										</p>
 										<div className="flex items-center gap-2 font-mono text-primary-foreground/70 text-xs">
@@ -244,24 +244,26 @@ export function UpgradeModal({
 								<h3 className="font-semibold text-lg">
 									{currentPlan.displayName}
 								</h3>
-								{currentPlan.price && (
-									<p className="text-primary/60 text-sm">
+								{currentPlan.price ? (
+									<p className="text-base text-primary/60">
 										${currentPlan.price}/month
 									</p>
+								) : (
+									<p className="mb-6 text-primary/60 text-sm">–</p>
 								)}
 							</div>
 							<div className="text-right">
-								<h3 className="font-semibold text-lg">
+								<h3 className="font-semibold text-base">
 									{targetPlanConfig.displayName}
 								</h3>
 								{targetPlanConfig.price && (
 									<div className="flex flex-col items-end">
 										{discount && isDiscountValid ? (
 											<>
-												<p className="text-primary/40 text-sm line-through">
+												<p className="text-lg text-primary/40 line-through">
 													${targetPlanConfig.price}/month
 												</p>
-												<p className="font-semibold text-primary text-sm">
+												<p className="font-semibold text-lg text-primary">
 													${discountedPrice}/month
 												</p>
 											</>
@@ -275,7 +277,7 @@ export function UpgradeModal({
 							</div>
 						</div>
 
-						<div className="space-y-1">
+						<div className="mt-10 space-y-1">
 							<FeatureRow
 								currentValue={currentPlan.features.conversations}
 								label="Conversations"
