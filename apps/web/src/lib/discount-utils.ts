@@ -6,7 +6,7 @@ import type { RouterOutputs } from "@cossistant/api/types";
  * - Max redemptions: 150
  */
 const EARLY_BIRD_DISCOUNT_PRODUCTION = "0bc0399c-ee9b-436f-be70-cd02af419cd4";
-const EARLY_BIRD_DISCOUNT_SANDBOX = "eb055bb6-eb17-46c5-9944-b59b2ef2bbe0";
+const EARLY_BIRD_DISCOUNT_SANDBOX = "5f9eb3b0-75d6-4291-851d-d40b0c7965eb";
 
 /**
  * Get the appropriate Early Bird discount ID based on environment

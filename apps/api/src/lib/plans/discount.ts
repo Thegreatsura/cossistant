@@ -86,7 +86,11 @@ export async function getDiscountInfo(
 			endsAt: discount.endsAt?.toISOString() ?? null,
 		};
 	} catch (error) {
-		console.error("Error fetching discount info:", error);
+		console.error("Error fetching discount info:", {
+			error,
+			discountId,
+			message: error instanceof Error ? error.message : "Unknown error",
+		});
 		throw new TRPCError({
 			code: "INTERNAL_SERVER_ERROR",
 			message: "Failed to fetch discount information",

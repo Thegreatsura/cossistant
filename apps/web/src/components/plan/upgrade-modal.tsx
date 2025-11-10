@@ -98,7 +98,7 @@ export function UpgradeModal({
 	const trpc = useTRPC();
 
 	// Fetch discount info
-	const { data: discount } = useQuery({
+	const { data: discount, isLoading: isLoadingDiscount } = useQuery({
 		...trpc.plan.getDiscountInfo.queryOptions({
 			discountId: EARLY_BIRD_DISCOUNT_ID,
 		}),
@@ -106,6 +106,16 @@ export function UpgradeModal({
 	});
 
 	const isDiscountValid = discount ? isDiscountAvailable(discount) : false;
+
+	// Debug logging
+	if (open) {
+		console.log("Discount Debug:", {
+			discountId: EARLY_BIRD_DISCOUNT_ID,
+			discount,
+			isDiscountValid,
+			isLoadingDiscount,
+		});
+	}
 
 	// Get target plan config
 	const targetPlanConfig =
@@ -176,25 +186,56 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="py-4">
-					{discount && isDiscountValid && (
+					{/* Loading state */}
+					{isLoadingDiscount && (
 						<div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
 							<div className="mb-2 flex items-center gap-2">
-								<Sparkles className="size-4 text-primary" />
-								<h4 className="font-semibold text-primary text-sm">
-									Early Bird Discount
-								</h4>
+								<div className="h-4 w-4 animate-pulse rounded bg-primary/20" />
+								<div className="h-4 w-32 animate-pulse rounded bg-primary/20" />
 							</div>
-							<p className="mb-2 text-primary/80 text-sm">
-								{formatDiscountOffer(discount)}
+							<div className="mb-2 h-4 w-48 animate-pulse rounded bg-primary/20" />
+							<div className="h-3 w-40 animate-pulse rounded bg-primary/20" />
+						</div>
+					)}
+
+					{/* Discount banner with holographic effect */}
+					{!isLoadingDiscount && discount && isDiscountValid && (
+						<div className="group relative mb-10 overflow-hidden rounded-lg border border-transparent bg-cossistant-green p-px">
+							{/* Inner card content */}
+							<div className="relative rounded-lg border border-primary/10 bg-linear-to-br from-primary/5 via-primary/8 to-primary/5 p-4 backdrop-blur-sm">
+								{/* Shimmer effect overlay */}
+								<div className="-translate-x-full absolute inset-0 animate-shimmer-slow bg-linear-to-r from-transparent via-cossistant-pink/5 to-transparent" />
+
+								<div className="relative z-10 flex flex-col gap-4">
+									<div className="flex items-center gap-2">
+										<h4 className="font-semibold text-base text-primary-foreground">
+											Early Bird Discount
+										</h4>
+									</div>
+									<div className="flex items-center justify-between gap-2">
+										<p className="ont-medium font-mono text-primary-foreground/90 text-sm">
+											{formatDiscountOffer(discount)}
+										</p>
+										<div className="flex items-center gap-2 font-mono text-primary-foreground/70 text-xs">
+											<Tag className="size-3" />
+											<span>
+												{discount.redemptionsLeft !== null
+													? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
+													: "Limited time offer"}
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{/* Debug: Show when discount is null but not loading */}
+					{!(isLoadingDiscount || discount) && (
+						<div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+							<p className="text-xs text-yellow-800">
+								Debug: Discount could not be loaded. Check console for details.
 							</p>
-							<div className="flex items-center gap-2 text-primary/70 text-xs">
-								<Tag className="size-3" />
-								<span>
-									{discount.redemptionsLeft !== null
-										? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
-										: "Limited time offer"}
-								</span>
-							</div>
 						</div>
 					)}
 					<div className="mb-4 p-0">

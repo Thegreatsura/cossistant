@@ -181,9 +181,9 @@ export const planRouter = createTRPCRouter({
 
 			try {
 				const discount = await getDiscountInfo(discountId);
+
 				return discount;
 			} catch (error) {
-				// Return null if discount doesn't exist or is unavailable
 				return null;
 			}
 		}),
