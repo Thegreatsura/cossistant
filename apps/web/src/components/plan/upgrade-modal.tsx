@@ -1,8 +1,8 @@
 "use client";
 
 import type { RouterOutputs } from "@cossistant/api/types";
-import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, Check } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowRight, Check, Sparkles, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	calculateDiscountedPrice,
+	EARLY_BIRD_DISCOUNT_ID,
+	formatDiscountOffer,
+	isDiscountAvailable,
+} from "@/lib/discount-utils";
 import { useTRPC } from "@/lib/trpc/client";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
@@ -36,10 +42,12 @@ function FeatureRow({
 	label,
 	currentValue,
 	targetValue,
+	valueUnitLabel,
 }: {
 	label: string;
 	currentValue: number | null;
 	targetValue: number | null;
+	valueUnitLabel?: string;
 }) {
 	const isUpgrade = (current: number | null, target: number | null) => {
 		if (current === null && target === null) {
@@ -65,12 +73,14 @@ function FeatureRow({
 					className={`text-sm ${isSame ? "text-primary/60" : "text-primary/40"}`}
 				>
 					{formatFeatureValue(currentValue)}
+					{valueUnitLabel && ` ${valueUnitLabel}`}
 				</span>
-				<ArrowRight className="size-4 text-primary/40" />
+				<ArrowRight className="mx-2 size-4 text-primary/40" />
 				<span
-					className={`font-semibold text-sm ${upgraded ? "text-primary" : ""}`}
+					className={`min-w-[100px] text-right font-semibold text-sm ${upgraded ? "text-primary" : ""}`}
 				>
 					{formatFeatureValue(targetValue)}
+					{valueUnitLabel && ` ${valueUnitLabel}`}
 				</span>
 				{upgraded && <Check className="size-4 text-primary" />}
 			</div>
@@ -86,6 +96,16 @@ export function UpgradeModal({
 	websiteSlug,
 }: UpgradeModalProps) {
 	const trpc = useTRPC();
+
+	// Fetch discount info
+	const { data: discount } = useQuery({
+		...trpc.plan.getDiscountInfo.queryOptions({
+			discountId: EARLY_BIRD_DISCOUNT_ID,
+		}),
+		enabled: open, // Only fetch when modal is open
+	});
+
+	const isDiscountValid = discount ? isDiscountAvailable(discount) : false;
 
 	// Get target plan config
 	const targetPlanConfig =
@@ -115,6 +135,11 @@ export function UpgradeModal({
 					},
 				};
 
+	const discountedPrice =
+		targetPlanConfig.price && discount && isDiscountValid
+			? calculateDiscountedPrice(targetPlanConfig.price, discount)
+			: targetPlanConfig.price;
+
 	const { mutateAsync: createCheckout, isPending: isLoading } = useMutation(
 		trpc.plan.createCheckout.mutationOptions({
 			onSuccess: (data) => {
@@ -132,6 +157,7 @@ export function UpgradeModal({
 			await createCheckout({
 				websiteSlug,
 				targetPlan: targetPlanName,
+				discountId: isDiscountValid ? EARLY_BIRD_DISCOUNT_ID : undefined,
 			});
 		} catch (error) {
 			// Error handled in onError
@@ -150,6 +176,27 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="py-4">
+					{discount && isDiscountValid && (
+						<div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
+							<div className="mb-2 flex items-center gap-2">
+								<Sparkles className="size-4 text-primary" />
+								<h4 className="font-semibold text-primary text-sm">
+									Early Bird Discount
+								</h4>
+							</div>
+							<p className="mb-2 text-primary/80 text-sm">
+								{formatDiscountOffer(discount)}
+							</p>
+							<div className="flex items-center gap-2 text-primary/70 text-xs">
+								<Tag className="size-3" />
+								<span>
+									{discount.redemptionsLeft !== null
+										? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
+										: "Limited time offer"}
+								</span>
+							</div>
+						</div>
+					)}
 					<div className="mb-4 p-0">
 						<div className="mb-4 flex items-center justify-between">
 							<div>
@@ -167,9 +214,22 @@ export function UpgradeModal({
 									{targetPlanConfig.displayName}
 								</h3>
 								{targetPlanConfig.price && (
-									<p className="text-primary/60 text-sm">
-										${targetPlanConfig.price}/month
-									</p>
+									<div className="flex flex-col items-end">
+										{discount && isDiscountValid ? (
+											<>
+												<p className="text-primary/40 text-sm line-through">
+													${targetPlanConfig.price}/month
+												</p>
+												<p className="font-semibold text-primary text-sm">
+													${discountedPrice}/month
+												</p>
+											</>
+										) : (
+											<p className="text-primary/60 text-sm">
+												${targetPlanConfig.price}/month
+											</p>
+										)}
+									</div>
 								)}
 							</div>
 						</div>
@@ -196,6 +256,7 @@ export function UpgradeModal({
 								targetValue={
 									targetPlanConfig.features["conversation-retention"]
 								}
+								valueUnitLabel="days"
 							/>
 							<FeatureRow
 								currentValue={currentPlan.features["team-members"]}
