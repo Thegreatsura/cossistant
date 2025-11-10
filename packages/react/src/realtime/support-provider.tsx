@@ -105,25 +105,6 @@ export function SupportRealtimeProvider({
 					ignoreVisitorId: context.visitorId,
 				});
 			},
-			conversationEventCreated: (
-				_data: unknown,
-				{
-					event,
-					context,
-				}: {
-					event: RealtimeEvent<"conversationEventCreated">;
-					context: SupportRealtimeContext;
-				}
-			) => {
-				if (
-					context.websiteId &&
-					event.payload.websiteId !== context.websiteId
-				) {
-					return;
-				}
-
-				context.client.handleRealtimeEvent(event);
-			},
 		}),
 		// Empty dependencies is fine here since we use the context parameter
 		// which always has fresh data from the memoized realtimeContext
