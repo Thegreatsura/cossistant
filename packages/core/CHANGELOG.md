@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.16
+
+### Patch Changes
+
+- c21911f: Patch release
+
 ## 0.0.15
 
 ### Patch Changes
