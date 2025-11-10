@@ -54,20 +54,27 @@ export function SettingsNavigationSidebar() {
 				</SidebarItem>
 
 				<div className="mt-5 flex flex-col gap-2">
-					<SidebarItem
-						active={
-							pathname.includes(basePath) && !pathname.includes(`${basePath}/`)
-						}
-						href={basePath}
-						iconName="settings-2"
-					>
-						General
-					</SidebarItem>
-					<SidebarItem
-						active={pathname.includes(`${basePath}/usage`)}
-						href={`${basePath}/plan`}
-						iconName="wallet"
-					>
+                                        <SidebarItem
+                                                active={
+                                                        pathname.includes(basePath) && !pathname.includes(`${basePath}/`)
+                                                }
+                                                href={basePath}
+                                                iconName="settings-2"
+                                        >
+                                                General
+                                        </SidebarItem>
+                                        <SidebarItem
+                                                active={pathname.includes(`${basePath}/notifications`)}
+                                                href={`${basePath}/notifications`}
+                                                iconName="notification"
+                                        >
+                                                Notifications
+                                        </SidebarItem>
+                                        <SidebarItem
+                                                active={pathname.includes(`${basePath}/usage`)}
+                                                href={`${basePath}/plan`}
+                                                iconName="wallet"
+                                        >
 						Plan & Usage
 					</SidebarItem>
 					<SidebarItem

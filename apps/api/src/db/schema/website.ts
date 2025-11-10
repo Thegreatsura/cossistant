@@ -133,11 +133,12 @@ export const contact = pgTable(
 		name: text("name"),
 		email: text("email"),
 		image: text("image"),
-		metadata: jsonb("metadata"),
-		// Reference Fields
-		websiteId: ulidReference("website_id")
-			.notNull()
-			.references(() => website.id, { onDelete: "cascade" }),
+                metadata: jsonb("metadata"),
+                notificationSettings: jsonb("notification_settings"),
+                // Reference Fields
+                websiteId: ulidReference("website_id")
+                        .notNull()
+                        .references(() => website.id, { onDelete: "cascade" }),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }

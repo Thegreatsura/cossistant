@@ -3,6 +3,7 @@ export * from "./common";
 export * from "./contact";
 export * from "./conversation";
 export * from "./organization";
+export * from "./notification";
 export * from "./timeline-item";
 export * from "./upload";
 export * from "./user";
