@@ -1,7 +1,13 @@
 /**
  * Friendly relative time formatter used throughout the support widget.
+ * Only use this in browser context (components with effects, not during SSR).
  */
 export function formatTimeAgo(date: Date | string): string {
+	// Guard against SSR - return empty string or static fallback
+	if (typeof window === "undefined") {
+		return "";
+	}
+
 	const now = new Date();
 	const messageDate = typeof date === "string" ? new Date(date) : date;
 	const diffMs = now.getTime() - messageDate.getTime();

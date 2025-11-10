@@ -24,7 +24,8 @@ export function useDefaultMessages({
 		() =>
 			defaultMessages.map((message, index) => {
 				const messageId = generateMessageId();
-				const timestamp = new Date().toISOString();
+				const timestamp =
+					typeof window !== "undefined" ? new Date().toISOString() : "";
 
 				return {
 					id: messageId,

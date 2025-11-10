@@ -95,7 +95,7 @@ export default function SelectClient({ organizations }: SelectClientProps) {
 		<div className="flex h-screen w-screen items-center justify-center bg-background">
 			<div className="w-full max-w-md space-y-8 p-8">
 				<div className="flex flex-col items-center gap-4">
-					<Logo className="size-12" />
+					<Logo className="size-8" />
 					<div className="text-center">
 						<h1 className="font-semibold text-2xl">Select a website</h1>
 						<p className="mt-2 text-muted-foreground text-sm">
@@ -107,32 +107,33 @@ export default function SelectClient({ organizations }: SelectClientProps) {
 				<div className="space-y-2">
 					{allWebsites.map((website) => (
 						<button
-							className="flex w-full items-center gap-4 rounded-lg border border-border bg-background p-4 text-left transition hover:border-primary/50 hover:bg-accent disabled:opacity-50"
+							className="flex w-full items-center gap-4 rounded border border-border bg-background-100 p-2 pl-3 text-left transition hover:border-border hover:bg-background-200 disabled:opacity-50 dark:hover:bg-background-300"
 							disabled={isPending}
 							key={website.id}
 							onClick={() => handleSelectWebsite(website.id)}
 							type="button"
 						>
 							<Avatar
-								className="size-10"
+								className="size-8"
 								fallbackName={website.name}
 								url={website.logoUrl}
 							/>
 							<div className="flex-1">
-								<p className="font-medium">{website.name}</p>
+								<p className="font-medium text-sm">{website.name}</p>
 								<p className="text-muted-foreground text-sm">
 									{website.domain}
 								</p>
 							</div>
-							<div className="text-muted-foreground text-xs">
-								{website.organizationName}
-							</div>
+							{/* <div className="text-muted-foreground text-xs">
+                {website.organizationName}
+              </div> */}
 						</button>
 					))}
 				</div>
 
 				<div className="text-center">
 					<Button
+						className="w-full"
 						onClick={() => {
 							if (organizations[0]) {
 								router.push(`/welcome/${organizations[0].organization.slug}`);

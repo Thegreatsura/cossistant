@@ -60,7 +60,7 @@ function buildTimelineItemPayload(
 	visitorId: string | null,
 	messageId?: string
 ): TimelineItem {
-	const nowIso = new Date().toISOString();
+	const nowIso = typeof window !== "undefined" ? new Date().toISOString() : "";
 	const id = messageId ?? generateMessageId();
 
 	return {

@@ -105,7 +105,7 @@ export function createTextUtils(
 		},
 		timeOfDay: () => {
 			// Return a stable default during SSR to avoid hydration mismatches
-			if (!isHydrated) {
+			if (!isHydrated || typeof window === "undefined") {
 				return {
 					token: "morning" as SupportTimeOfDayToken,
 					label: dayPeriodLabels.morning,

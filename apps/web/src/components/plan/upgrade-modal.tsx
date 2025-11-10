@@ -180,7 +180,7 @@ export function UpgradeModal({
 						<div className="group relative mb-10 overflow-hidden rounded border border-transparent bg-cossistant-green/20 p-px dark:bg-cossistant-green">
 							<div className="relative z-10 flex flex-col gap-4 p-4">
 								<div className="flex items-center gap-2">
-									<h4 className="font-semibold text-black text-sm">
+									<h4 className="font-mono font-semibold text-black text-sm">
 										Early Bird Discount
 									</h4>
 								</div>
