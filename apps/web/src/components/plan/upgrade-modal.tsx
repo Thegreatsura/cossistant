@@ -98,24 +98,13 @@ export function UpgradeModal({
 	const trpc = useTRPC();
 
 	// Fetch discount info
-	const { data: discount, isLoading: isLoadingDiscount } = useQuery({
+	const { data: discount } = useQuery({
 		...trpc.plan.getDiscountInfo.queryOptions({
 			discountId: EARLY_BIRD_DISCOUNT_ID,
 		}),
-		enabled: open, // Only fetch when modal is open
 	});
 
 	const isDiscountValid = discount ? isDiscountAvailable(discount) : false;
-
-	// Debug logging
-	if (open) {
-		console.log("Discount Debug:", {
-			discountId: EARLY_BIRD_DISCOUNT_ID,
-			discount,
-			isDiscountValid,
-			isLoadingDiscount,
-		});
-	}
 
 	// Get target plan config
 	const targetPlanConfig =
@@ -186,20 +175,8 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="py-4">
-					{/* Loading state */}
-					{isLoadingDiscount && (
-						<div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
-							<div className="mb-2 flex items-center gap-2">
-								<div className="h-4 w-4 animate-pulse rounded bg-primary/20" />
-								<div className="h-4 w-32 animate-pulse rounded bg-primary/20" />
-							</div>
-							<div className="mb-2 h-4 w-48 animate-pulse rounded bg-primary/20" />
-							<div className="h-3 w-40 animate-pulse rounded bg-primary/20" />
-						</div>
-					)}
-
 					{/* Discount banner with holographic effect */}
-					{!isLoadingDiscount && discount && isDiscountValid && (
+					{discount && isDiscountValid && (
 						<div className="group relative mb-10 overflow-hidden rounded-lg border border-transparent bg-cossistant-green p-px">
 							{/* Inner card content */}
 							<div className="relative rounded-lg border border-primary/10 bg-linear-to-br from-primary/5 via-primary/8 to-primary/5 p-4 backdrop-blur-sm">
@@ -227,15 +204,6 @@ export function UpgradeModal({
 									</div>
 								</div>
 							</div>
-						</div>
-					)}
-
-					{/* Debug: Show when discount is null but not loading */}
-					{!(isLoadingDiscount || discount) && (
-						<div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-							<p className="text-xs text-yellow-800">
-								Debug: Discount could not be loaded. Check console for details.
-							</p>
 						</div>
 					)}
 					<div className="mb-4 p-0">
