@@ -1,5 +1,13 @@
 # @cossistant/react
 
+## 0.0.18
+
+### Patch Changes
+
+- Remove tailwind-scrollbar dependency completely - replaced with native CSS scrollbar styling using scrollbar-width and ::-webkit-scrollbar pseudo-elements
+  - @cossistant/core@0.0.18
+  - @cossistant/types@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes
