@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Add tailwind-scrollbar as optional peer dependency to fix missing plugin error when using the package
+- Remove tailwind-scrollbar dependency and replace with native CSS scrollbar styling to eliminate the need for users to install additional packages
   - @cossistant/core@0.0.17
   - @cossistant/types@0.0.17
 

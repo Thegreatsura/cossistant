@@ -71,7 +71,6 @@
     "@types/react-dom": "^19.2.2",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
-    "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4.1.13"
   },
   "peerDependencies": {
@@ -79,17 +78,13 @@
     "react-dom": ">=18 <20",
     "@types/react": "",
     "motion": "^12.18.1",
-    "tailwindcss": "*",
-    "tailwind-scrollbar": "*"
+    "tailwindcss": "*"
   },
   "peerDependenciesMeta": {
     "@types/react": {
       "optional": true
     },
     "tailwindcss": {
-      "optional": true
-    },
-    "tailwind-scrollbar": {
       "optional": true
     }
   },
