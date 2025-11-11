@@ -1,5 +1,13 @@
 # @cossistant/next
 
+## 0.0.20
+
+### Patch Changes
+
+- Bug fixes for better compatibility with Next.js
+- Updated dependencies
+  - @cossistant/react@0.0.20
+
 ## 0.0.19
 
 ### Patch Changes

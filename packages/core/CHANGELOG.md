@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.20
+
+### Patch Changes
+
+- Bug fixes for better compatibility with Next.js
+
 ## 0.0.19
 
 ### Patch Changes
