@@ -103,14 +103,14 @@ export default function CreationFlowWrapper({
 
 								<div className="space-y-3">
 									<h4 className="font-medium text-primary text-sm tracking-wide">
-										[ Install the package]
+										[ Install the packages]
 									</h4>
 									<div className="relative overflow-clip rounded border border-primary/10 bg-background-200 pt-0">
 										<CodeBlockCommand
-											__bun__="bun add @cossistant/next"
-											__npm__="npm install @cossistant/next"
-											__pnpm__="pnpm add @cossistant/next"
-											__yarn__="yarn add @cossistant/next"
+											__bun__="bun add @cossistant/next @cossistant/react"
+											__npm__="npm install @cossistant/next @cossistant/react"
+											__pnpm__="pnpm add @cossistant/next @cossistant/react"
+											__yarn__="yarn add @cossistant/next @cossistant/react"
 										/>
 									</div>
 								</div>
