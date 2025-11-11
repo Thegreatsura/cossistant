@@ -360,7 +360,7 @@ export function MemberNotificationSettingsForm({
                                         <BaseSubmitButton
                                                 disabled={
                                                         isDisabled ||
-                                                        (!form.formState.isDirty && !isPending)
+                                                        !form.formState.isDirty
                                                 }
                                                 isSubmitting={isPending}
                                         >

@@ -1,4 +1,8 @@
-import { WebsiteInstallationTarget, WebsiteStatus } from "@cossistant/types";
+import {
+        type ContactNotificationSettings,
+        WebsiteInstallationTarget,
+        WebsiteStatus,
+} from "@cossistant/types";
 import {
 	type InferInsertModel,
 	type InferSelectModel,
@@ -134,7 +138,9 @@ export const contact = pgTable(
 		email: text("email"),
 		image: text("image"),
                 metadata: jsonb("metadata"),
-                notificationSettings: jsonb("notification_settings"),
+                notificationSettings: jsonb("notification_settings").$type<
+                        ContactNotificationSettings | null
+                >(),
                 // Reference Fields
                 websiteId: ulidReference("website_id")
                         .notNull()

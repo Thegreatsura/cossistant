@@ -1,3 +1,4 @@
+import type { Database } from "@api/db";
 import { getMemberNotificationSettings, updateMemberNotificationSettings } from "@api/db/queries";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { member } from "@api/db/schema";
@@ -12,7 +13,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
 async function getMemberForOrganization(
-        db: Parameters<typeof getMemberNotificationSettings>[0],
+        db: Database,
         params: { userId: string; organizationId: string }
 ) {
         const membership = await db.query.member.findFirst({

@@ -117,6 +117,24 @@ export type UpdateMemberNotificationSettingsResponse = z.infer<
         typeof updateMemberNotificationSettingsResponseSchema
 >;
 
+export const contactNotificationChannelConfigSchema = z
+        .object({
+                enabled: z.boolean().optional(),
+                config: z.record(z.unknown()).optional(),
+        })
+        .passthrough();
+
+export const contactNotificationSettingsSchema = z
+        .object({
+                emailNotifications: z.boolean().optional(),
+                channels: z.record(contactNotificationChannelConfigSchema).optional(),
+        })
+        .passthrough();
+
+export type ContactNotificationSettings = z.infer<
+        typeof contactNotificationSettingsSchema
+>;
+
 export const MEMBER_NOTIFICATION_DEFINITION_MAP =
         MEMBER_NOTIFICATION_CHANNEL_DEFINITIONS.reduce(
                 (acc, definition) => {

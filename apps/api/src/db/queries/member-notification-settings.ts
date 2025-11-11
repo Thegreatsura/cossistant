@@ -116,13 +116,26 @@ export async function updateMemberNotificationSettings(
                                                 memberNotificationSetting.memberId,
                                                 memberNotificationSetting.channel,
                                         ],
-                                        set: {
-                                                enabled: setting.enabled,
-                                                delaySeconds,
-                                                priority,
-                                                config: setting.config ?? null,
-                                                updatedAt: new Date(),
-                                        },
+                                        set: (() => {
+                                                const baseSet = {
+                                                        enabled: setting.enabled,
+                                                        delaySeconds,
+                                                        priority,
+                                                        updatedAt: new Date(),
+                                                } as {
+                                                        enabled: boolean;
+                                                        delaySeconds: number;
+                                                        priority: number;
+                                                        updatedAt: Date;
+                                                        config?: Record<string, unknown> | null;
+                                                };
+
+                                                if (setting.config !== undefined) {
+                                                        baseSet.config = setting.config ?? null;
+                                                }
+
+                                                return baseSet;
+                                        })(),
                                 });
                 }
 
