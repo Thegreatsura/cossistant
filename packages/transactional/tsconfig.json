@@ -3,6 +3,8 @@
   "extends": "@cossistant/typescript-config/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "jsxImportSource": "react"
   },
   "include": ["."],

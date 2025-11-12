@@ -29,7 +29,7 @@ export const JoinedWaitlistEmail = ({
 				<Container className="mx-auto max-w-[600px] px-[40px] py-[40px]">
 					<Img
 						alt="Cossistant Logo"
-						className="mb-[40px] h-auto w-[120px] object-cover"
+						className="mb-[40px] h-auto w-[40px] object-cover"
 						src={LOGO_URL}
 					/>
 

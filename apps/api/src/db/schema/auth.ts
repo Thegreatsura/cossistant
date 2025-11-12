@@ -4,14 +4,14 @@ import {
 	relations,
 } from "drizzle-orm";
 import {
-        boolean,
-        index,
-        integer,
-        jsonb,
-        pgTable,
-        text,
-        timestamp,
-        uniqueIndex,
+	boolean,
+	index,
+	integer,
+	jsonb,
+	pgTable,
+	text,
+	timestamp,
+	uniqueIndex,
 } from "drizzle-orm/pg-core";
 import {
 	ulidNullableReference,
@@ -158,10 +158,10 @@ export const organization = pgTable(
 );
 
 export const member = pgTable(
-        "member",
-        {
-                id: ulidPrimaryKey("id"),
-                organizationId: ulidReference("organization_id").references(
+	"member",
+	{
+		id: ulidPrimaryKey("id"),
+		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }
 		),
@@ -180,52 +180,58 @@ export const member = pgTable(
 		index("member_user_idx").on(table.userId),
 		// Index for role-based queries
 		index("member_role_idx").on(table.role),
-        ]
+	]
 );
 
 export const memberNotificationSetting = pgTable(
-        "member_notification_setting",
-        {
-                id: ulidPrimaryKey("id"),
-                memberId: ulidReference("member_id")
-                        .notNull()
-                        .references(() => member.id, {
-                                onDelete: "cascade",
-                        }),
-                organizationId: ulidReference("organization_id")
-                        .notNull()
-                        .references(() => organization.id, {
-                                onDelete: "cascade",
-                        }),
-                channel: text("channel").notNull(),
-                enabled: boolean("enabled").$defaultFn(() => true).notNull(),
-                config: jsonb("config"),
-                priority: integer("priority").$defaultFn(() => 0).notNull(),
-                delaySeconds: integer("delay_seconds").$defaultFn(() => 0).notNull(),
-                createdAt: timestamp("created_at")
-                        .$defaultFn(() => new Date())
-                        .notNull(),
-                updatedAt: timestamp("updated_at")
-                        .$defaultFn(() => new Date())
-                        .notNull(),
-        },
-        (table) => [
-                index("member_notification_setting_member_idx").on(table.memberId),
-                index("member_notification_setting_org_idx").on(table.organizationId),
-                index("member_notification_setting_channel_idx").on(table.channel),
-                index("member_notification_setting_priority_idx").on(table.priority),
-                uniqueIndex("member_notification_setting_member_channel_idx").on(
-                        table.memberId,
-                        table.channel
-                ),
-        ]
+	"member_notification_setting",
+	{
+		id: ulidPrimaryKey("id"),
+		memberId: ulidReference("member_id")
+			.notNull()
+			.references(() => member.id, {
+				onDelete: "cascade",
+			}),
+		organizationId: ulidReference("organization_id")
+			.notNull()
+			.references(() => organization.id, {
+				onDelete: "cascade",
+			}),
+		channel: text("channel").notNull(),
+		enabled: boolean("enabled")
+			.$defaultFn(() => true)
+			.notNull(),
+		config: jsonb("config"),
+		priority: integer("priority")
+			.$defaultFn(() => 0)
+			.notNull(),
+		delaySeconds: integer("delay_seconds")
+			.$defaultFn(() => 0)
+			.notNull(),
+		createdAt: timestamp("created_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+		updatedAt: timestamp("updated_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		index("member_notification_setting_member_idx").on(table.memberId),
+		index("member_notification_setting_org_idx").on(table.organizationId),
+		index("member_notification_setting_channel_idx").on(table.channel),
+		index("member_notification_setting_priority_idx").on(table.priority),
+		uniqueIndex("member_notification_setting_member_channel_idx").on(
+			table.memberId,
+			table.channel
+		),
+	]
 );
 
 export const team = pgTable(
-        "team",
-        {
-                id: ulidPrimaryKey("id"),
-                name: text("name").notNull(),
+	"team",
+	{
+		id: ulidPrimaryKey("id"),
+		name: text("name").notNull(),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }
@@ -344,29 +350,29 @@ export const teamMemberRelations = relations(teamMember, ({ one }) => ({
 }));
 
 export const memberRelations = relations(member, ({ one, many }) => ({
-        organization: one(organization, {
-                fields: [member.organizationId],
-                references: [organization.id],
-        }),
-        user: one(user, {
-                fields: [member.userId],
-                references: [user.id],
-        }),
-        notificationSettings: many(memberNotificationSetting),
+	organization: one(organization, {
+		fields: [member.organizationId],
+		references: [organization.id],
+	}),
+	user: one(user, {
+		fields: [member.userId],
+		references: [user.id],
+	}),
+	notificationSettings: many(memberNotificationSetting),
 }));
 
 export const memberNotificationSettingRelations = relations(
-        memberNotificationSetting,
-        ({ one }) => ({
-                member: one(member, {
-                        fields: [memberNotificationSetting.memberId],
-                        references: [member.id],
-                }),
-                organization: one(organization, {
-                        fields: [memberNotificationSetting.organizationId],
-                        references: [organization.id],
-                }),
-        })
+	memberNotificationSetting,
+	({ one }) => ({
+		member: one(member, {
+			fields: [memberNotificationSetting.memberId],
+			references: [member.id],
+		}),
+		organization: one(organization, {
+			fields: [memberNotificationSetting.organizationId],
+			references: [organization.id],
+		}),
+	})
 );
 
 export const invitationRelations = relations(invitation, ({ one }) => ({
@@ -403,10 +409,10 @@ export type MemberSelect = InferSelectModel<typeof member>;
 export type MemberInsert = InferInsertModel<typeof member>;
 
 export type MemberNotificationSettingSelect = InferSelectModel<
-        typeof memberNotificationSetting
+	typeof memberNotificationSetting
 >;
 export type MemberNotificationSettingInsert = InferInsertModel<
-        typeof memberNotificationSetting
+	typeof memberNotificationSetting
 >;
 
 export type InvitationSelect = InferSelectModel<typeof invitation>;

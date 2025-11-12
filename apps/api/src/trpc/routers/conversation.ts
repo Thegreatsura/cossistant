@@ -20,6 +20,7 @@ import {
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
+import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	type ContactMetadata,
@@ -191,6 +192,18 @@ export const conversationRouter = createTRPCRouter({
 					visitorId: null,
 					aiAgentId: null,
 				},
+			});
+
+			// Trigger notification workflow (non-blocking)
+			// This will send email notifications to relevant participants after configured delays
+			triggerMessageNotificationWorkflow({
+				conversationId: input.conversationId,
+				messageId: createdTimelineItem.id,
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+				actor: { type: "user", userId: user.id },
+			}).catch((error) => {
+				console.error("[dev] Failed to trigger notification workflow:", error);
 			});
 
 			// Mark conversation as read by user after sending timeline item

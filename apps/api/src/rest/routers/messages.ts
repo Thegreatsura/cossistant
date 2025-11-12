@@ -5,6 +5,7 @@ import {
 import { getConversationById } from "@api/db/queries/conversation";
 import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
+import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
@@ -211,6 +212,18 @@ messagesRouter.openapi(
 			// Fallback to visitor if no actor is set (shouldn't happen)
 			actor = { type: "visitor", visitorId: visitorId ?? "" };
 		}
+
+		// Trigger notification workflow (non-blocking)
+		// This will send email notifications to relevant participants after configured delays
+		triggerMessageNotificationWorkflow({
+			conversationId: body.conversationId,
+			messageId: createdTimelineItem.id,
+			websiteId: website.id,
+			organizationId: organization.id,
+			actor,
+		}).catch((error) => {
+			console.error("[dev] Failed to trigger notification workflow:", error);
+		});
 
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];

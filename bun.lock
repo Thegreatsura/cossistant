@@ -202,7 +202,7 @@
     },
     "packages/core": {
       "name": "@cossistant/core",
-      "version": "0.0.15",
+      "version": "0.0.20",
       "dependencies": {
         "nanoid": "^5.1.5",
         "ulid": "^3.0.1",
@@ -225,7 +225,7 @@
     },
     "packages/next": {
       "name": "@cossistant/next",
-      "version": "0.0.15",
+      "version": "0.0.20",
       "dependencies": {
         "@cossistant/react": "workspace:*",
         "tailwindcss": "^4.1.13",
@@ -234,14 +234,14 @@
         "@cossistant/typescript-config": "workspace:*",
       },
       "peerDependencies": {
-        "next": ">=13.5.2 || ^14.0.0 || ^15.0.0",
+        "next": ">=13.5.2 || ^14.0.0 || ^15.0.0 || ^16.0.0",
         "react": ">=18 <20",
         "react-dom": ">=18 <20",
       },
     },
     "packages/react": {
       "name": "@cossistant/react",
-      "version": "0.0.15",
+      "version": "0.0.20",
       "dependencies": {
         "@cossistant/core": "workspace:*",
         "@cossistant/types": "workspace:*",
@@ -259,7 +259,6 @@
         "@types/react-dom": "^19.2.2",
         "autoprefixer": "^10.4.21",
         "postcss": "^8.5.6",
-        "tailwind-scrollbar": "^4.0.2",
         "tailwindcss": "^4.1.13",
       },
       "peerDependencies": {
@@ -292,7 +291,7 @@
     },
     "packages/types": {
       "name": "@cossistant/types",
-      "version": "0.0.15",
+      "version": "0.0.20",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "zod": "^4.1.8",

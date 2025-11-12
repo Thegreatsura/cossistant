@@ -1,7 +1,7 @@
 import {
-        type ContactNotificationSettings,
-        WebsiteInstallationTarget,
-        WebsiteStatus,
+	type ContactNotificationSettings,
+	WebsiteInstallationTarget,
+	WebsiteStatus,
 } from "@cossistant/types";
 import {
 	type InferInsertModel,
@@ -137,14 +137,14 @@ export const contact = pgTable(
 		name: text("name"),
 		email: text("email"),
 		image: text("image"),
-                metadata: jsonb("metadata"),
-                notificationSettings: jsonb("notification_settings").$type<
-                        ContactNotificationSettings | null
-                >(),
-                // Reference Fields
-                websiteId: ulidReference("website_id")
-                        .notNull()
-                        .references(() => website.id, { onDelete: "cascade" }),
+		metadata: jsonb("metadata"),
+		notificationSettings: jsonb(
+			"notification_settings"
+		).$type<ContactNotificationSettings | null>(),
+		// Reference Fields
+		websiteId: ulidReference("website_id")
+			.notNull()
+			.references(() => website.id, { onDelete: "cascade" }),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }
