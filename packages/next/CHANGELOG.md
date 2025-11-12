@@ -1,5 +1,43 @@
 # @cossistant/next
 
+## 0.0.20
+
+### Patch Changes
+
+- Bug fixes for better compatibility with Next.js
+- Updated dependencies
+  - @cossistant/react@0.0.20
+
+## 0.0.19
+
+### Patch Changes
+
+- Fix discount calculation and validation logic
+- Updated dependencies
+  - @cossistant/react@0.0.19
+
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies
+  - @cossistant/react@0.0.18
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @cossistant/react@0.0.17
+
+## 0.0.16
+
+### Patch Changes
+
+- c21911f: Patch release
+- Updated dependencies [c21911f]
+  - @cossistant/react@0.0.16
+
 ## 0.0.15
 
 ### Patch Changes

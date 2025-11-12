@@ -1,5 +1,48 @@
 # @cossistant/react
 
+## 0.0.20
+
+### Patch Changes
+
+- Bug fixes for better compatibility with Next.js
+- Updated dependencies
+  - @cossistant/core@0.0.20
+  - @cossistant/types@0.0.20
+
+## 0.0.19
+
+### Patch Changes
+
+- Fix discount calculation and validation logic
+- Updated dependencies
+  - @cossistant/core@0.0.19
+  - @cossistant/types@0.0.19
+
+## 0.0.18
+
+### Patch Changes
+
+- Remove tailwind-scrollbar dependency completely - replaced with native CSS scrollbar styling using scrollbar-width and ::-webkit-scrollbar pseudo-elements
+  - @cossistant/core@0.0.18
+  - @cossistant/types@0.0.18
+
+## 0.0.17
+
+### Patch Changes
+
+- Remove tailwind-scrollbar dependency and replace with native CSS scrollbar styling to eliminate the need for users to install additional packages
+  - @cossistant/core@0.0.17
+  - @cossistant/types@0.0.17
+
+## 0.0.16
+
+### Patch Changes
+
+- c21911f: Patch release
+- Updated dependencies [c21911f]
+  - @cossistant/core@0.0.16
+  - @cossistant/types@0.0.16
+
 ## 0.0.15
 
 ### Patch Changes

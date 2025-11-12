@@ -60,7 +60,7 @@ function buildTimelineItemPayload(
 	visitorId: string | null,
 	messageId?: string
 ): TimelineItem {
-	const nowIso = new Date().toISOString();
+	const nowIso = typeof window !== "undefined" ? new Date().toISOString() : "";
 	const id = messageId ?? generateMessageId();
 
 	return {
@@ -143,7 +143,10 @@ export function useSendMessage(
 					item: {
 						id: timelineItemPayload.id,
 						text: timelineItemPayload.text ?? "",
-						type: timelineItemPayload.type,
+						type:
+							timelineItemPayload.type === "identification"
+								? "message"
+								: timelineItemPayload.type,
 						visibility: timelineItemPayload.visibility,
 						userId: timelineItemPayload.userId,
 						aiAgentId: timelineItemPayload.aiAgentId,

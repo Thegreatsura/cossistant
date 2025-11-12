@@ -55,7 +55,7 @@ const getTimestamp = (date: Date | string | null | undefined): number => {
 // Helper function to safely convert to Date
 const toDate = (date: Date | string | null | undefined): Date => {
 	if (!date) {
-		return new Date();
+		return typeof window !== "undefined" ? new Date() : new Date(0);
 	}
 	if (typeof date === "string") {
 		return new Date(date);

@@ -200,7 +200,7 @@ export function useConversationPage(
 			userId: null,
 			visitorId: visitor?.id ?? null,
 			aiAgentId: null,
-			createdAt: new Date().toISOString(),
+			createdAt: typeof window !== "undefined" ? new Date().toISOString() : "",
 			deletedAt: null,
 		};
 

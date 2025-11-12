@@ -1,7 +1,7 @@
 {
   "name": "@cossistant/next",
   "type": "module",
-  "version": "0.0.15",
+  "version": "0.0.20",
   "private": false,
   "author": "Cossistant team",
   "description": "Next.js-ready SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
@@ -68,7 +68,7 @@
   "peerDependencies": {
     "react": ">=18 <20",
     "react-dom": ">=18 <20",
-    "next": ">=13.5.2 || ^14.0.0 || ^15.0.0"
+    "next": ">=13.5.2 || ^14.0.0 || ^15.0.0 || ^16.0.0"
   },
   "peerDependenciesMeta": {
     "@types/react": {

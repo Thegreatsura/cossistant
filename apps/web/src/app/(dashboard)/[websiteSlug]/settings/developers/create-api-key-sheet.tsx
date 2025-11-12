@@ -327,7 +327,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
 											lastCreatedKey.keyType === APIKeyType.PUBLIC
 												? {
 														nextjs: {
-															code: `NEXT_PUBLIC_COSSISTANT_KEY=${lastCreatedKey.key}`,
+															code: `NEXT_PUBLIC_COSSISTANT_API_KEY=${lastCreatedKey.key}`,
 															comment:
 																"This is the public key for your website.",
 														},

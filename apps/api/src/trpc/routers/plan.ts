@@ -7,6 +7,10 @@ import { env } from "@api/env";
 import { getPlanForWebsite } from "@api/lib/plans/access";
 import { getPlanConfig, type PlanName } from "@api/lib/plans/config";
 import {
+	EARLY_BIRD_DISCOUNT_ID,
+	getDiscountInfo,
+} from "@api/lib/plans/discount";
+import {
 	getCustomerByOrganizationId,
 	getCustomerState,
 	getPlanFromCustomerState,
@@ -165,11 +169,30 @@ export const planRouter = createTRPCRouter({
 
 			return Promise.all(planPromises);
 		}),
+	getDiscountInfo: protectedProcedure
+		.input(
+			z.object({
+				discountId: z.string().optional(),
+			})
+		)
+		.query(async ({ input }) => {
+			// Default to early bird discount if not specified
+			const discountId = input.discountId ?? EARLY_BIRD_DISCOUNT_ID;
+
+			try {
+				const discount = await getDiscountInfo(discountId);
+
+				return discount;
+			} catch (error) {
+				return null;
+			}
+		}),
 	createCheckout: protectedProcedure
 		.input(
 			z.object({
 				websiteSlug: z.string(),
 				targetPlan: z.enum(["free", "hobby"]),
+				discountId: z.string().optional(),
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -214,7 +237,14 @@ export const planRouter = createTRPCRouter({
 				const baseUrl = env.PUBLIC_APP_URL || "http://localhost:3000";
 				const returnPath = `/${input.websiteSlug}/settings/plan`;
 
-				const checkout = await polarClient.checkouts.create({
+				const checkoutParams: {
+					products: string[];
+					externalCustomerId: string;
+					metadata: { websiteId: string };
+					successUrl: string;
+					failureUrl: string;
+					discountId?: string;
+				} = {
 					products: [targetPlanConfig.polarProductId],
 					externalCustomerId: websiteData.organizationId,
 					metadata: {
@@ -222,7 +252,14 @@ export const planRouter = createTRPCRouter({
 					},
 					successUrl: `${baseUrl}${returnPath}?checkout_success=true`,
 					failureUrl: `${baseUrl}${returnPath}?checkout_error=true`,
-				});
+				};
+
+				// Add discount if provided
+				if (input.discountId) {
+					checkoutParams.discountId = input.discountId;
+				}
+
+				const checkout = await polarClient.checkouts.create(checkoutParams);
 
 				return {
 					checkoutUrl: checkout.url,

@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": ["**/.env"],
-  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_COSSISTANT_KEY"],
+  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_COSSISTANT_API_KEY"],
   "ui": "tui",
   "tasks": {
     "build": {

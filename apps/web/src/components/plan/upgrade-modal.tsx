@@ -1,8 +1,8 @@
 "use client";
 
 import type { RouterOutputs } from "@cossistant/api/types";
-import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, Check } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowRight, Check, Sparkles, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	calculateDiscountedPrice,
+	EARLY_BIRD_DISCOUNT_ID,
+	formatDiscountOffer,
+	isDiscountAvailable,
+} from "@/lib/discount-utils";
 import { useTRPC } from "@/lib/trpc/client";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
@@ -36,10 +42,12 @@ function FeatureRow({
 	label,
 	currentValue,
 	targetValue,
+	valueUnitLabel,
 }: {
 	label: string;
 	currentValue: number | null;
 	targetValue: number | null;
+	valueUnitLabel?: string;
 }) {
 	const isUpgrade = (current: number | null, target: number | null) => {
 		if (current === null && target === null) {
@@ -58,19 +66,21 @@ function FeatureRow({
 	const upgraded = isUpgrade(currentValue, targetValue);
 
 	return (
-		<div className="flex items-center justify-between border-primary/10 border-b py-2 last:border-0">
+		<div className="flex items-center justify-between border-primary/5 border-b py-2 last:border-0">
 			<span className="font-medium text-sm">{label}</span>
 			<div className="flex items-center gap-3">
 				<span
 					className={`text-sm ${isSame ? "text-primary/60" : "text-primary/40"}`}
 				>
 					{formatFeatureValue(currentValue)}
+					{valueUnitLabel && ` ${valueUnitLabel}`}
 				</span>
-				<ArrowRight className="size-4 text-primary/40" />
+				<ArrowRight className="mx-2 size-4 text-primary/40" />
 				<span
-					className={`font-semibold text-sm ${upgraded ? "text-primary" : ""}`}
+					className={`min-w-[100px] text-right font-semibold text-sm ${upgraded ? "text-primary" : ""}`}
 				>
 					{formatFeatureValue(targetValue)}
+					{valueUnitLabel && ` ${valueUnitLabel}`}
 				</span>
 				{upgraded && <Check className="size-4 text-primary" />}
 			</div>
@@ -86,6 +96,15 @@ export function UpgradeModal({
 	websiteSlug,
 }: UpgradeModalProps) {
 	const trpc = useTRPC();
+
+	// Fetch discount info
+	const { data: discount } = useQuery({
+		...trpc.plan.getDiscountInfo.queryOptions({
+			discountId: EARLY_BIRD_DISCOUNT_ID,
+		}),
+	});
+
+	const isDiscountValid = discount ? isDiscountAvailable(discount) : false;
 
 	// Get target plan config
 	const targetPlanConfig =
@@ -115,6 +134,11 @@ export function UpgradeModal({
 					},
 				};
 
+	const discountedPrice =
+		targetPlanConfig.price && discount && isDiscountValid
+			? calculateDiscountedPrice(targetPlanConfig.price, discount)
+			: targetPlanConfig.price;
+
 	const { mutateAsync: createCheckout, isPending: isLoading } = useMutation(
 		trpc.plan.createCheckout.mutationOptions({
 			onSuccess: (data) => {
@@ -132,6 +156,7 @@ export function UpgradeModal({
 			await createCheckout({
 				websiteSlug,
 				targetPlan: targetPlanName,
+				discountId: isDiscountValid ? EARLY_BIRD_DISCOUNT_ID : undefined,
 			});
 		} catch (error) {
 			// Error handled in onError
@@ -150,31 +175,71 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="py-4">
+					{/* Discount banner with holographic effect */}
+					{discount && isDiscountValid && (
+						<div className="group relative mb-10 overflow-hidden rounded border border-transparent bg-cossistant-green/20 p-px dark:bg-cossistant-green">
+							<div className="relative z-10 flex flex-col gap-4 p-4">
+								<div className="flex items-center gap-2">
+									<h4 className="font-mono font-semibold text-black text-sm">
+										Early Bird Discount
+									</h4>
+								</div>
+								<div className="flex items-center justify-between gap-2">
+									<p className="font-medium font-mono text-black/90 text-sm">
+										{formatDiscountOffer(discount)}
+									</p>
+									<div className="flex items-center gap-2 font-mono text-black/70 text-xs">
+										<Tag className="size-3" />
+										<span>
+											{discount.redemptionsLeft !== null
+												? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
+												: "Limited time offer"}
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
 					<div className="mb-4 p-0">
 						<div className="mb-4 flex items-center justify-between">
 							<div>
 								<h3 className="font-semibold text-lg">
 									{currentPlan.displayName}
 								</h3>
-								{currentPlan.price && (
-									<p className="text-primary/60 text-sm">
+								{currentPlan.price ? (
+									<p className="text-base text-primary/60">
 										${currentPlan.price}/month
 									</p>
+								) : (
+									<p className="mb-6 text-primary/60 text-sm">–</p>
 								)}
 							</div>
 							<div className="text-right">
-								<h3 className="font-semibold text-lg">
+								<h3 className="font-semibold text-base">
 									{targetPlanConfig.displayName}
 								</h3>
 								{targetPlanConfig.price && (
-									<p className="text-primary/60 text-sm">
-										${targetPlanConfig.price}/month
-									</p>
+									<div className="flex flex-col items-end">
+										{discount && isDiscountValid ? (
+											<>
+												<p className="text-lg text-primary/40 line-through">
+													${targetPlanConfig.price}/month
+												</p>
+												<p className="font-semibold text-lg text-primary">
+													${discountedPrice}/month
+												</p>
+											</>
+										) : (
+											<p className="text-primary/60 text-sm">
+												${targetPlanConfig.price}/month
+											</p>
+										)}
+									</div>
 								)}
 							</div>
 						</div>
 
-						<div className="space-y-1">
+						<div className="mt-10 space-y-1">
 							<FeatureRow
 								currentValue={currentPlan.features.conversations}
 								label="Conversations"
@@ -196,6 +261,7 @@ export function UpgradeModal({
 								targetValue={
 									targetPlanConfig.features["conversation-retention"]
 								}
+								valueUnitLabel="days"
 							/>
 							<FeatureRow
 								currentValue={currentPlan.features["team-members"]}

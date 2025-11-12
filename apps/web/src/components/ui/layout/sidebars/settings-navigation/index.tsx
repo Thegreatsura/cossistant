@@ -31,13 +31,10 @@ export function SettingsNavigationSidebar() {
 				footer={
 					<>
 						{planInfo && (
-							<>
-								<SidebarUpgradeButton
-									planInfo={planInfo}
-									websiteSlug={website.slug}
-								/>
-								<Separator className="opacity-30" />
-							</>
+							<SidebarUpgradeButton
+								planInfo={planInfo}
+								websiteSlug={website.slug}
+							/>
 						)}
 						<SidebarItem href="/docs">Docs</SidebarItem>
 						<Separator className="opacity-30" />

@@ -48,7 +48,7 @@ import "@cossistant/react/support.css";
 
 export function App() {
   return (
-    <SupportProvider publicKey={process.env.NEXT_PUBLIC_COSSISTANT_KEY}>
+    <SupportProvider publicKey={process.env.NEXT_PUBLIC_COSSISTANT_API_KEY}>
       <Support />
     </SupportProvider>
   );

@@ -1,160 +1,93 @@
-"use client";
+import { db } from "@api/db";
+import { getOrganizationsForUserOrCreateDefault } from "@api/db/queries/organization";
+import type { OrganizationSelect, WebsiteSelect } from "@api/db/schema";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import { ensurePageAuth } from "@/lib/auth/server";
+import SelectClient from "./select-client";
 
-import type { RouterOutputs } from "@cossistant/api/types";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
-import { switchWebsite } from "@/app/actions/switch-website";
-import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/logo";
-import { authClient } from "@/lib/auth/client";
-import { useTRPC } from "@/lib/trpc/client";
+export const dynamic = "force-dynamic";
 
-export default function Select() {
-	const router = useRouter();
-	const trpc = useTRPC();
-	const { data: session } = authClient.useSession();
-	const [isPending, startTransition] = useTransition();
-	const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(
-		null
-	);
+const getDefaultWebsiteToRedirectTo = ({
+	orgs,
+}: {
+	orgs: {
+		organization: OrganizationSelect;
+		websites: WebsiteSelect[];
+		role: string;
+		joinedAt: Date;
+	}[];
+}): {
+	availableWebsitesCount: number;
+	availableWebsites: {
+		websiteSlug: string | undefined;
+		organizationSlug: string | undefined;
+	}[];
+	defaultOrgSlug: string | undefined;
+} => {
+	const defaultOrgSlug = orgs[0]?.organization.slug ?? undefined;
 
-	// Fetch all organizations the user belongs to
-	const { data: organizations, isLoading } = useQuery({
-		...trpc.user.getOrganizations.queryOptions(),
-		enabled: !!session?.user,
-	});
-
-	const handleSelectWebsite = (websiteId: string) => {
-		setSelectedWebsiteId(websiteId);
-		startTransition(async () => {
-			try {
-				const slug = await switchWebsite(websiteId);
-				router.push(`/${slug}/inbox`);
-			} catch (error) {
-				console.error("Failed to select website:", error);
-				setSelectedWebsiteId(null);
-			}
-		});
-	};
-
-	// Auto-redirect if user has only one website
-	useEffect(() => {
-		if (!isLoading && organizations && !isPending) {
-			const allWebsites = organizations.flatMap((org) =>
-				org.websites.map((website) => ({
-					...website,
-					organizationSlug: org.organization.slug,
-				}))
-			);
-
-			// If no organizations, this shouldn't happen but handle gracefully
-			if (organizations.length === 0) {
-				router.push("/");
-				return;
-			}
-
-			// If no websites in any organization, redirect to welcome page
-			if (allWebsites.length === 0 && organizations[0]) {
-				router.push(`/welcome/${organizations[0].organization.slug}`);
-				return;
-			}
-
-			// If exactly one website, auto-select it
-			if (allWebsites.length === 1) {
-				const website = allWebsites[0];
-				if (website) {
-					handleSelectWebsite(website.id);
-				}
-			}
-		}
-	}, [isLoading, organizations, isPending, router, handleSelectWebsite]);
-
-	if (isLoading || !organizations) {
-		return (
-			<div className="flex h-screen w-screen items-center justify-center">
-				<div className="flex flex-col items-center gap-4">
-					<Logo className="size-12 animate-pulse" />
-					<p className="text-muted-foreground text-sm">Loading...</p>
-				</div>
-			</div>
-		);
+	// Should not happen, but just in case
+	if (orgs.length === 0) {
+		return {
+			availableWebsitesCount: 0,
+			availableWebsites: [],
+			defaultOrgSlug,
+		};
 	}
 
-	const allWebsites = organizations.flatMap((org) =>
-		org.websites.map((website) => ({
-			...website,
-			organizationName: org.organization.name,
-			organizationSlug: org.organization.slug,
+	const availableWebsites = orgs.flatMap((org) =>
+		org.websites.map((orgWebsite) => ({
+			websiteSlug: orgWebsite.slug ?? undefined,
+			organizationSlug: org.organization.slug ?? undefined,
 		}))
 	);
 
-	// If we're in the process of selecting a website, show loading
-	if (isPending || selectedWebsiteId) {
-		return (
-			<div className="flex h-screen w-screen items-center justify-center">
-				<div className="flex flex-col items-center gap-4">
-					<Logo className="size-12 animate-pulse" />
-					<p className="text-muted-foreground text-sm">Redirecting...</p>
-				</div>
-			</div>
-		);
+	return {
+		availableWebsitesCount: availableWebsites.length,
+		availableWebsites,
+		defaultOrgSlug,
+	};
+};
+
+export default async function Select() {
+	const { user } = await ensurePageAuth();
+
+	const cookieStore = await cookies();
+
+	// If the user lands on this page and is not a member of any organization, we create a default one for them
+	const orgs = await getOrganizationsForUserOrCreateDefault(db, {
+		userId: user?.id,
+		userEmail: user?.email,
+		userName: user?.name,
+	});
+
+	const { availableWebsitesCount, availableWebsites, defaultOrgSlug } =
+		getDefaultWebsiteToRedirectTo({
+			orgs,
+		});
+
+	// This should never happen, but just in case
+	if (!defaultOrgSlug) {
+		console.error(`ERROR: User ${user?.id} has no organizations found`);
+
+		notFound();
 	}
 
-	return (
-		<div className="flex h-screen w-screen items-center justify-center bg-background">
-			<div className="w-full max-w-md space-y-8 p-8">
-				<div className="flex flex-col items-center gap-4">
-					<Logo className="size-12" />
-					<div className="text-center">
-						<h1 className="font-semibold text-2xl">Select a website</h1>
-						<p className="mt-2 text-muted-foreground text-sm">
-							Choose which website you'd like to access
-						</p>
-					</div>
-				</div>
+	// If the user has no website, we redirect to the onboarding "welcome"
+	if (availableWebsitesCount === 0) {
+		redirect(`/welcome/${defaultOrgSlug}`);
+	}
 
-				<div className="space-y-2">
-					{allWebsites.map((website) => (
-						<button
-							className="flex w-full items-center gap-4 rounded-lg border border-border bg-background p-4 text-left transition hover:border-primary/50 hover:bg-accent disabled:opacity-50"
-							disabled={isPending}
-							key={website.id}
-							onClick={() => handleSelectWebsite(website.id)}
-							type="button"
-						>
-							<Avatar
-								className="size-10"
-								fallbackName={website.name}
-								url={website.logoUrl}
-							/>
-							<div className="flex-1">
-								<p className="font-medium">{website.name}</p>
-								<p className="text-muted-foreground text-sm">
-									{website.domain}
-								</p>
-							</div>
-							<div className="text-muted-foreground text-xs">
-								{website.organizationName}
-							</div>
-						</button>
-					))}
-				</div>
+	// If the user has only one website, we redirect to it
+	if (availableWebsitesCount === 1 && availableWebsites[0]?.websiteSlug) {
+		const websiteSlug = availableWebsites[0].websiteSlug;
 
-				<div className="text-center">
-					<Button
-						onClick={() => {
-							if (organizations[0]) {
-								router.push(`/welcome/${organizations[0].organization.slug}`);
-							}
-						}}
-						variant="ghost"
-					>
-						Create new website
-					</Button>
-				</div>
-			</div>
-		</div>
-	);
+		if (websiteSlug) {
+			redirect(`/${websiteSlug}/inbox`);
+		}
+	}
+
+	// If the user has multiple websites, we show the select page
+	return <SelectClient organizations={orgs} />;
 }

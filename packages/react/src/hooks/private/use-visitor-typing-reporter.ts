@@ -99,7 +99,7 @@ export function useVisitorTypingReporter({
 
 			const trimmed = value.trim();
 			latestPreviewRef.current = trimmed.slice(0, PREVIEW_MAX_LENGTH);
-			const now = Date.now();
+			const now = typeof window !== "undefined" ? Date.now() : 0;
 
 			if (trimmed.length === 0) {
 				if (typingActiveRef.current) {
@@ -146,7 +146,7 @@ export function useVisitorTypingReporter({
 		}
 
 		typingActiveRef.current = false;
-		lastSentAtRef.current = Date.now();
+		lastSentAtRef.current = typeof window !== "undefined" ? Date.now() : 0;
 		clearKeepAlive();
 		clearStopTypingTimeout();
 		void sendTyping(false);
@@ -158,7 +158,7 @@ export function useVisitorTypingReporter({
 		}
 
 		typingActiveRef.current = false;
-		lastSentAtRef.current = Date.now();
+		lastSentAtRef.current = typeof window !== "undefined" ? Date.now() : 0;
 		clearKeepAlive();
 		clearStopTypingTimeout();
 		void sendTyping(false);

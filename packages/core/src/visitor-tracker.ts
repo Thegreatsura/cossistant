@@ -67,14 +67,14 @@ export function setVisitorId(websiteId: string, visitorId: string): void {
 	}
 
 	try {
+		if (typeof window === "undefined") {
+			return;
+		}
 		const data = {
 			visitorId,
 			timestamp: Date.now(),
 			websiteId,
 		};
-		if (typeof window === "undefined") {
-			return;
-		}
 		const key = getStorageKey(websiteId);
 		localStorage.setItem(key, JSON.stringify(data));
 	} catch {

@@ -179,7 +179,7 @@ export class CossistantClient {
 		params: InitiateConversationParams = {}
 	): InitiateConversationResult {
 		const conversationId = params.conversationId ?? generateConversationId();
-		const now = new Date().toISOString();
+		const now = typeof window !== "undefined" ? new Date().toISOString() : "";
 		const timelineItems = (params.defaultTimelineItems ?? []).map((item) =>
 			normalizeBootstrapTimelineItem(conversationId, item)
 		);
@@ -305,7 +305,9 @@ export class CossistantClient {
 		const optimisticId = rest.item.id ?? generateMessageId();
 		const createdAt = rest.item.createdAt
 			? rest.item.createdAt
-			: new Date().toISOString();
+			: typeof window !== "undefined"
+				? new Date().toISOString()
+				: "";
 
 		// Add optimistic timeline item
 		const optimisticTimelineItem: TimelineItem = {
@@ -450,7 +452,8 @@ function normalizeBootstrapTimelineItem(
 	item: DefaultMessage | TimelineItem
 ): TimelineItem {
 	if (isDefaultMessage(item)) {
-		const createdAt = new Date().toISOString();
+		const createdAt =
+			typeof window !== "undefined" ? new Date().toISOString() : "";
 
 		return {
 			id: generateMessageId(),
@@ -473,7 +476,11 @@ function normalizeBootstrapTimelineItem(
 		} satisfies TimelineItem;
 	}
 
-	const createdAt = item.createdAt ? item.createdAt : new Date().toISOString();
+	const createdAt = item.createdAt
+		? item.createdAt
+		: typeof window !== "undefined"
+			? new Date().toISOString()
+			: "";
 
 	return {
 		...item,

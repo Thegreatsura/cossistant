@@ -1,5 +1,27 @@
 # @cossistant/core
 
+## 0.0.20
+
+### Patch Changes
+
+- Bug fixes for better compatibility with Next.js
+
+## 0.0.19
+
+### Patch Changes
+
+- Fix discount calculation and validation logic
+
+## 0.0.18
+
+## 0.0.17
+
+## 0.0.16
+
+### Patch Changes
+
+- c21911f: Patch release
+
 ## 0.0.15
 
 ### Patch Changes

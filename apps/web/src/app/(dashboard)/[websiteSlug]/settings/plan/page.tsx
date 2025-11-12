@@ -3,9 +3,11 @@ import {
 	SettingsHeader,
 	SettingsPage,
 	SettingsRow,
+	SettingsRowFooter,
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 import { getQueryClient, prefetch, trpc } from "@/lib/trpc/server";
+import { DiscountBanner } from "./discount-banner";
 import { PlanPageClient } from "./plan-page-client";
 import { UpgradeButton } from "./upgrade-button";
 
@@ -65,6 +67,7 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 				}.`}
 				title="Current Plan"
 			>
+				<DiscountBanner className="mx-2 mt-2 mb-10" />
 				<div className="p- flex items-center justify-between p-2 pl-4">
 					<div className="flex items-center gap-2">
 						<span className="font-medium text-lg">{plan.displayName}</span>

@@ -271,11 +271,15 @@ function constructRealtimeEvent(parsed: unknown): AnyRealtimeEvent | null {
 
 /**
  * Checks if heartbeat has timed out.
+ * Only call this function in browser context (inside effects or event handlers).
  */
 function isHeartbeatTimedOut(
 	lastHeartbeat: number,
 	timeoutMs: number
 ): boolean {
+	if (typeof window === "undefined") {
+		return false;
+	}
 	const elapsed = Date.now() - lastHeartbeat;
 	return elapsed > timeoutMs;
 }
@@ -287,8 +291,9 @@ function resolvePublicKey(explicit?: string | null): string | null {
 	}
 
 	const fromEnv =
+		process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
 		process.env.NEXT_PUBLIC_COSSISTANT_KEY ||
-		process.env.COSSISTANT_PUBLIC_KEY ||
+		process.env.COSSISTANT_API_KEY ||
 		null;
 
 	const normalized = fromEnv?.trim();
@@ -367,13 +372,14 @@ function buildSocketUrl(
 }
 
 /**
- * Provides websocket connectivity and heartbeating logic for realtime events.
+ * Internal component that handles the WebSocket connection.
+ * Only rendered in the browser to avoid SSR issues with react-use-websocket.
  */
-export function RealtimeProvider({
+function RealtimeProviderInternal({
 	children,
 	wsUrl = DEFAULT_WS_URL,
 	auth,
-	autoConnect = true,
+	autoConnect,
 	onConnect,
 	onDisconnect,
 	onError,
@@ -382,7 +388,7 @@ export function RealtimeProvider({
 
 	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
-	const lastHeartbeatRef = useRef<number>(Date.now());
+	const lastHeartbeatRef = useRef<number>(0);
 	const hasOpenedRef = useRef(false);
 	const previousUrlRef = useRef<string | null>(null);
 	const [connectionError, setConnectionError] = useState<Error | null>(null);
@@ -439,7 +445,8 @@ export function RealtimeProvider({
 			onOpen: () => {
 				hasOpenedRef.current = true;
 				setConnectionError(null);
-				lastHeartbeatRef.current = Date.now();
+				lastHeartbeatRef.current =
+					typeof window !== "undefined" ? Date.now() : 0;
 				onConnect?.();
 			},
 			onClose: () => {
@@ -515,12 +522,14 @@ export function RealtimeProvider({
 		// Handle different message types
 		switch (message.type) {
 			case "pong":
-				lastHeartbeatRef.current = Date.now();
+				lastHeartbeatRef.current =
+					typeof window !== "undefined" ? Date.now() : 0;
 				break;
 
 			case "connection-established":
 				setConnectionId(message.connectionId);
-				lastHeartbeatRef.current = Date.now();
+				lastHeartbeatRef.current =
+					typeof window !== "undefined" ? Date.now() : 0;
 				break;
 
 			case "error": {
@@ -531,7 +540,8 @@ export function RealtimeProvider({
 			}
 
 			case "event":
-				lastHeartbeatRef.current = Date.now();
+				lastHeartbeatRef.current =
+					typeof window !== "undefined" ? Date.now() : 0;
 				setLastEvent(message.event);
 				for (const handler of eventHandlersRef.current) {
 					Promise.resolve(handler(message.event)).catch((error) => {
@@ -560,8 +570,11 @@ export function RealtimeProvider({
 				return;
 			}
 
-			// Check if heartbeat has timed out
-			if (isHeartbeatTimedOut(lastHeartbeatRef.current, heartbeatTimeoutMs)) {
+			// Check if heartbeat has timed out (skip if connection hasn't opened yet)
+			if (
+				lastHeartbeatRef.current !== 0 &&
+				isHeartbeatTimedOut(lastHeartbeatRef.current, heartbeatTimeoutMs)
+			) {
 				const socket = getWebSocket();
 				socket?.close(4000, "Heartbeat timeout");
 				return;
@@ -672,6 +685,78 @@ export function RealtimeProvider({
 		<RealtimeContext.Provider value={value}>
 			{children}
 		</RealtimeContext.Provider>
+	);
+}
+
+/**
+ * Provides websocket connectivity and heartbeating logic for realtime events.
+ * Handles SSR by only initializing the WebSocket connection in the browser.
+ */
+export function RealtimeProvider({
+	children,
+	wsUrl = DEFAULT_WS_URL,
+	auth,
+	autoConnect = true,
+	onConnect,
+	onDisconnect,
+	onError,
+}: RealtimeProviderProps): React.ReactElement {
+	const [isBrowser, setIsBrowser] = useState(false);
+
+	useEffect(() => {
+		setIsBrowser(true);
+	}, []);
+
+	const normalizedAuth = normalizeAuth(auth);
+
+	// Create a default context value for SSR
+	const defaultValue = useMemo<RealtimeContextValue>(
+		() => ({
+			isConnected: false,
+			isConnecting: false,
+			error: null,
+			send: () => {
+				throw new Error("Realtime connection is not available during SSR");
+			},
+			sendRaw: () => {
+				throw new Error("Realtime connection is not available during SSR");
+			},
+			subscribe: () => () => {},
+			lastEvent: null,
+			connectionId: null,
+			reconnect: () => {},
+			visitorId: normalizedAuth?.visitorId ?? null,
+			websiteId: normalizedAuth?.websiteId ?? null,
+			userId: normalizedAuth?.userId ?? null,
+		}),
+		[
+			normalizedAuth?.visitorId,
+			normalizedAuth?.websiteId,
+			normalizedAuth?.userId,
+		]
+	);
+
+	// During SSR or before hydration, provide a default context
+	if (!isBrowser) {
+		return (
+			<RealtimeContext.Provider value={defaultValue}>
+				{children}
+			</RealtimeContext.Provider>
+		);
+	}
+
+	// In the browser, use the full implementation
+	return (
+		<RealtimeProviderInternal
+			auth={auth}
+			autoConnect={autoConnect}
+			onConnect={onConnect}
+			onDisconnect={onDisconnect}
+			onError={onError}
+			wsUrl={wsUrl}
+		>
+			{children}
+		</RealtimeProviderInternal>
 	);
 }
 
