@@ -9,7 +9,10 @@ import {
 	getVisitorEmailForNotification,
 	getWebsiteForNotification,
 } from "@api/utils/notification-helpers";
-import { VISITOR_MESSAGE_DELAY_MINUTES } from "@api/workflows/constants";
+import {
+	MAX_MESSAGES_IN_EMAIL,
+	VISITOR_MESSAGE_DELAY_MINUTES,
+} from "@api/workflows/constants";
 import { NewMessageInConversation } from "@cossistant/transactional/emails/new-message-in-conversation";
 import { serve } from "@upstash/workflow/hono";
 import { Hono } from "hono";
@@ -117,7 +120,7 @@ memberSentMessageWorkflow.post(
 						conversationId,
 						organizationId,
 						recipientUserId: participant.userId,
-						maxMessages: 3,
+						maxMessages: MAX_MESSAGES_IN_EMAIL,
 					});
 				}
 			);
@@ -207,7 +210,7 @@ memberSentMessageWorkflow.post(
 					conversationId,
 					organizationId,
 					recipientVisitorId: conversation.visitorId,
-					maxMessages: 3,
+					maxMessages: MAX_MESSAGES_IN_EMAIL,
 				});
 			});
 

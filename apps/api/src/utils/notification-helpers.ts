@@ -12,7 +12,7 @@ import {
 } from "@api/db/schema";
 import type { ConversationParticipationStatus } from "@cossistant/types";
 import { MemberNotificationChannel } from "@cossistant/types";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne } from "drizzle-orm";
 
 /**
  * Get all active conversation participants except the sender
@@ -52,13 +52,7 @@ export async function getConversationParticipantsForNotification(
 				),
 				isNull(conversationParticipant.leftAt),
 				params.excludeUserId
-					? and(
-							eq(conversationParticipant.userId, params.excludeUserId),
-							eq(
-								conversationParticipant.status,
-								"ACTIVE" as ConversationParticipationStatus
-							)
-						)
+					? ne(conversationParticipant.userId, params.excludeUserId)
 					: undefined
 			)
 		);

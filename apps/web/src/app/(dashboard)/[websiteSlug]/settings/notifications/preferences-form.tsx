@@ -284,6 +284,7 @@ export function MemberNotificationSettingsForm({
 															{...delayField}
 															disabled={isDisabled || !field.value}
 															inputMode="numeric"
+															max={1440}
 															min={0}
 															type="number"
 														/>

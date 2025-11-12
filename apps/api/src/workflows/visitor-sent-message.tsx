@@ -7,6 +7,7 @@ import {
 	getMessagesForEmail,
 	getWebsiteForNotification,
 } from "@api/utils/notification-helpers";
+import { MAX_MESSAGES_IN_EMAIL } from "@api/workflows/constants";
 import { NewMessageInConversation } from "@cossistant/transactional/emails/new-message-in-conversation";
 import { serve } from "@upstash/workflow/hono";
 import { Hono } from "hono";
@@ -113,7 +114,7 @@ visitorSentMessageWorkflow.post(
 						conversationId,
 						organizationId,
 						recipientUserId: participant.userId,
-						maxMessages: 3,
+						maxMessages: MAX_MESSAGES_IN_EMAIL,
 					});
 				}
 			);
