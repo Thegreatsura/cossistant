@@ -255,6 +255,8 @@ export function UserProfileForm({
 	);
 
 	const nameValue = form.watch("name");
+	const avatarValue = form.watch("avatar");
+
 	const fallbackInitials = useMemo(() => {
 		const trimmed = nameValue?.trim();
 		if (!trimmed) {
@@ -265,7 +267,36 @@ export function UserProfileForm({
 		return first ? first.toUpperCase() : undefined;
 	}, [nameValue]);
 
+	// Check if avatar has actually changed by comparing URLs
+	const hasAvatarChanged = useMemo(() => {
+		const currentAvatarUrl =
+			avatarValue === null
+				? null
+				: typeof avatarValue === "string"
+					? avatarValue
+					: avatarValue?.url || avatarValue?.previewUrl;
+
+		const initialUrl = initialAvatarUrl || null;
+
+		// Normalize URLs by removing query params for comparison
+		const normalizeUrl = (url: string | null) => {
+			if (!url) {
+				return null;
+			}
+			try {
+				const urlObj = new URL(url);
+				urlObj.search = "";
+				return urlObj.toString();
+			} catch {
+				return url;
+			}
+		};
+
+		return normalizeUrl(currentAvatarUrl) !== normalizeUrl(initialUrl);
+	}, [avatarValue, initialAvatarUrl]);
+
 	const isSubmitting = isPending || isUploadingAvatar;
+	const hasChanges = form.formState.isDirty || hasAvatarChanged;
 
 	return (
 		<Form {...form}>
@@ -327,10 +358,7 @@ export function UserProfileForm({
 				</div>
 				<SettingsRowFooter className="flex items-center justify-end gap-2">
 					<BaseSubmitButton
-						disabled={
-							!(form.formState.isDirty && form.formState.isValid) ||
-							isSubmitting
-						}
+						disabled={!(hasChanges && form.formState.isValid) || isSubmitting}
 						isSubmitting={isSubmitting}
 						size="sm"
 						type="submit"
