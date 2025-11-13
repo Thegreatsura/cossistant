@@ -11,7 +11,7 @@ import {
 // Needed for email templates, don't remove
 import React from "react";
 
-import { LOGO_URL } from "../constants";
+import { LOGO_URL } from "../constants.js";
 
 type WaitlistConfirmationEmailProps = {
 	name: string;
@@ -71,3 +71,5 @@ export const JoinedWaitlistEmail = ({
 		</Tailwind>
 	</Html>
 );
+
+export default JoinedWaitlistEmail;

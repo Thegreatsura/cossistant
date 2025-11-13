@@ -17,7 +17,7 @@ import {
 
 const MAX_DISPLAYED_MESSAGES = 3;
 
-import { LOGO_URL, OG_AVATAR_URL } from "../constants";
+import { LOGO_URL, OG_AVATAR_URL } from "../constants.js";
 
 export function NewMessageInConversation({
 	website = {
@@ -97,7 +97,7 @@ export function NewMessageInConversation({
 							</Text>
 						</Section>
 
-						<Section className="rounded-xl border border-neutral-200 border-solid p-6">
+						<Section className="rounded border border-neutral-200 border-solid p-6">
 							{messages.slice(0, MAX_DISPLAYED_MESSAGES).map((message, idx) => (
 								<Row className={idx > 0 ? "pt-3" : ""} key={idx}>
 									<Column className="align-bottom">
@@ -148,7 +148,6 @@ export function NewMessageInConversation({
 							</Link>
 						</Section>
 
-						<Hr className="mx-0 my-6 w-full border border-neutral-200" />
 						<Text className="text-[12px] text-neutral-500 leading-6">
 							This email was intended for{" "}
 							<span className="text-black">{email}</span>. If you were not
@@ -169,3 +168,5 @@ export function NewMessageInConversation({
 		</Html>
 	);
 }
+
+export default NewMessageInConversation;

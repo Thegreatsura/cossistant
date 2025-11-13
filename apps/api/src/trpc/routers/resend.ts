@@ -1,4 +1,3 @@
-import { env } from "@api/env";
 import {
 	RESEND_AUDIENCE_ID,
 	updateContactSubscriptionStatus,

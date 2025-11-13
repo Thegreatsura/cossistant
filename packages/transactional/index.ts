@@ -12,8 +12,8 @@
 // Constants (logos, avatars, etc.)
 export * from "./constants";
 // Email templates
-export * from "./emails";
+export * from "./emails/index";
 // Resend utilities (client, types, constants, audience management)
-export * from "./resend";
+export * from "./resend/index";
 // Main email sending functions
 export { sendBatchEmail, sendEmail } from "./send-via-resend";

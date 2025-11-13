@@ -13,7 +13,7 @@ import {
 // Needed for email templates, don't remove
 import React from "react";
 
-import { LOGO_URL } from "../constants";
+import { LOGO_URL } from "../constants.js";
 
 type ResetPasswordEmailProps = {
 	name?: string;
@@ -68,3 +68,5 @@ export const ResetPasswordEmail = ({
 		</Tailwind>
 	</Html>
 );
+
+export default ResetPasswordEmail;

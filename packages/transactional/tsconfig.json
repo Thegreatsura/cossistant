@@ -9,8 +9,9 @@
     "jsxImportSource": "react",
     "strict": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    "paths": {
+      "resend": ["./node_modules/resend"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist"]

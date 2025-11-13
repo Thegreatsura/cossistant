@@ -1,5 +1,6 @@
-import { resend } from "./resend";
+import type { CreateBatchOptions, CreateEmailOptions } from "resend";
 import { ANTHONY_EMAIL, VARIANT_TO_FROM_MAP } from "./resend/constants";
+import { resend } from "./resend/index";
 import type {
 	ResendBulkEmailOptions,
 	ResendEmailOptions,
@@ -9,12 +10,13 @@ import type {
  * Transform email options to Resend format
  * Follows the Dub.co pattern for clean email sending
  */
-const prepareEmailOptions = (opts: ResendEmailOptions) => {
+const prepareEmailOptions = (opts: ResendEmailOptions): CreateEmailOptions => {
 	const {
 		to,
 		from,
 		variant = "notifications",
 		bcc,
+		cc,
 		replyTo,
 		subject,
 		text,
@@ -22,51 +24,61 @@ const prepareEmailOptions = (opts: ResendEmailOptions) => {
 		scheduledAt,
 		headers = {},
 		tags,
-		...rest
+		attachments,
 	} = opts;
 
-	// Prepare the base email object
-	const emailData: Record<string, unknown> = {
+	// Build email data object conditionally based on what's provided
+	const baseEmail = {
 		to: Array.isArray(to) ? to : [to],
 		from: from || VARIANT_TO_FROM_MAP[variant],
 		subject,
-		...rest,
 	};
 
 	// Add optional fields
+	const optionalFields: Partial<CreateEmailOptions> = {};
+
 	if (bcc) {
-		emailData.bcc = bcc;
+		optionalFields.bcc = bcc;
+	}
+	if (cc) {
+		optionalFields.cc = cc;
 	}
 	if (text) {
-		emailData.text = text;
+		optionalFields.text = text;
 	}
 	if (react) {
-		emailData.react = react;
+		optionalFields.react = react;
 	}
 	if (scheduledAt) {
-		emailData.scheduledAt = scheduledAt;
+		optionalFields.scheduledAt = scheduledAt;
 	}
 	if (tags) {
-		emailData.tags = tags;
+		optionalFields.tags = tags;
+	}
+	if (attachments) {
+		optionalFields.attachments = attachments;
 	}
 
 	// Handle replyTo - if explicitly set to "noreply", omit it, otherwise use provided or default
 	if (replyTo !== "noreply") {
-		emailData.replyTo = replyTo || ANTHONY_EMAIL;
+		optionalFields.replyTo = replyTo || ANTHONY_EMAIL;
 	}
 
 	// Add List-Unsubscribe header for marketing emails
+	let finalHeaders = headers;
 	if (variant === "marketing") {
-		emailData.headers = {
+		finalHeaders = {
 			...headers,
 			"List-Unsubscribe": "<https://cossistant.com/settings/notifications>",
 			"List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
 		};
-	} else if (Object.keys(headers).length > 0) {
-		emailData.headers = headers;
 	}
 
-	return emailData;
+	if (Object.keys(finalHeaders).length > 0) {
+		optionalFields.headers = finalHeaders;
+	}
+
+	return { ...baseEmail, ...optionalFields } as CreateEmailOptions;
 };
 
 /**
@@ -119,7 +131,7 @@ export const sendBatchEmail = async (
 	}
 
 	try {
-		const payload = opts.map(prepareEmailOptions);
+		const payload: CreateBatchOptions = opts.map(prepareEmailOptions);
 		const { idempotencyKey } = options || {};
 
 		return await resend.batch.send(
