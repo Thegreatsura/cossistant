@@ -2,10 +2,16 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@cossistant/typescript-config/base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "baseUrl": ".",
     "module": "ESNext",
-    "jsxImportSource": "react"
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "include": ["."],
-  "exclude": ["dist", "build", "node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,7 +1,6 @@
 import { db } from "@api/db";
 import { getConversationById } from "@api/db/queries/conversation";
 import { env } from "@api/env";
-import { sendEmail } from "@api/lib/resend";
 import {
 	getConversationParticipantsForNotification,
 	getMemberNotificationPreference,
@@ -13,7 +12,7 @@ import {
 	MAX_MESSAGES_IN_EMAIL,
 	VISITOR_MESSAGE_DELAY_MINUTES,
 } from "@api/workflows/constants";
-import { NewMessageInConversation } from "@cossistant/transactional/emails/new-message-in-conversation";
+import { NewMessageInConversation, sendEmail } from "@cossistant/transactional";
 import { serve } from "@upstash/workflow/hono";
 import { Hono } from "hono";
 
@@ -140,12 +139,12 @@ memberSentMessageWorkflow.post(
 			await context.run(`send-email-${participant.userId}`, async () => {
 				try {
 					await sendEmail({
-						to: [participant.userEmail],
+						to: participant.userEmail,
 						subject:
 							totalCount > 1
 								? `${totalCount} new messages from ${websiteInfo.name}`
 								: `New message from ${websiteInfo.name}`,
-						content: (
+						react: (
 							<NewMessageInConversation
 								conversationId={conversationId}
 								email={participant.userEmail}
@@ -158,7 +157,7 @@ memberSentMessageWorkflow.post(
 								}}
 							/>
 						),
-						includeUnsubscribe: false,
+						variant: "notifications",
 					});
 					console.log(
 						`[dev] Email sent successfully to participant ${participant.userId}`
@@ -236,12 +235,12 @@ memberSentMessageWorkflow.post(
 
 			try {
 				await sendEmail({
-					to: [visitorInfo.contactEmail],
+					to: visitorInfo.contactEmail,
 					subject:
 						visitorTotalCount > 1
 							? `${visitorTotalCount} new messages from ${websiteInfo.name}`
 							: `New message from ${websiteInfo.name}`,
-					content: (
+					react: (
 						<NewMessageInConversation
 							conversationId={conversationId}
 							email={visitorInfo.contactEmail}
@@ -254,7 +253,7 @@ memberSentMessageWorkflow.post(
 							}}
 						/>
 					),
-					includeUnsubscribe: false,
+					variant: "notifications",
 				});
 				console.log(
 					`[dev] Email sent successfully to visitor ${conversation.visitorId}`

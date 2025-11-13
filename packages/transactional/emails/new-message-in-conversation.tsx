@@ -19,7 +19,7 @@ const MAX_DISPLAYED_MESSAGES = 3;
 
 import { LOGO_URL, OG_AVATAR_URL } from "../constants";
 
-export default function NewMessageInConversation({
+export function NewMessageInConversation({
 	website = {
 		name: "Acme",
 		slug: "acme",

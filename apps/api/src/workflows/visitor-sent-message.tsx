@@ -1,6 +1,5 @@
 import { db } from "@api/db";
 import { getConversationById } from "@api/db/queries/conversation";
-import { sendEmail } from "@api/lib/resend";
 import {
 	getConversationParticipantsForNotification,
 	getMemberNotificationPreference,
@@ -8,7 +7,7 @@ import {
 	getWebsiteForNotification,
 } from "@api/utils/notification-helpers";
 import { MAX_MESSAGES_IN_EMAIL } from "@api/workflows/constants";
-import { NewMessageInConversation } from "@cossistant/transactional/emails/new-message-in-conversation";
+import { NewMessageInConversation, sendEmail } from "@cossistant/transactional";
 import { serve } from "@upstash/workflow/hono";
 import { Hono } from "hono";
 
@@ -134,12 +133,12 @@ visitorSentMessageWorkflow.post(
 			await context.run(`send-email-${participant.userId}`, async () => {
 				try {
 					await sendEmail({
-						to: [participant.userEmail],
+						to: participant.userEmail,
 						subject:
 							totalCount > 1
 								? `${totalCount} new messages from ${websiteInfo.name}`
 								: `New message from ${websiteInfo.name}`,
-						content: (
+						react: (
 							<NewMessageInConversation
 								conversationId={conversationId}
 								email={participant.userEmail}
@@ -152,7 +151,7 @@ visitorSentMessageWorkflow.post(
 								}}
 							/>
 						),
-						includeUnsubscribe: false,
+						variant: "notifications",
 					});
 					console.log(
 						`[dev] Email sent successfully to participant ${participant.userId}`
