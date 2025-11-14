@@ -89,9 +89,12 @@ const prepareEmailOptions = (opts: ResendEmailOptions): CreateEmailOptions => {
  *   subject: "Welcome!",
  *   react: <WelcomeEmail />,
  *   variant: "notifications",
- * });
+ * }, { idempotencyKey: "unique-key" });
  */
-export const sendEmail = async (opts: ResendEmailOptions) => {
+export const sendEmail = async (
+	opts: ResendEmailOptions,
+	options?: { idempotencyKey?: string }
+) => {
 	if (!resend) {
 		console.warn(
 			"RESEND_API_KEY is not set in the environment. Skipping email send."
@@ -100,7 +103,13 @@ export const sendEmail = async (opts: ResendEmailOptions) => {
 	}
 
 	try {
-		return await resend.emails.send(prepareEmailOptions(opts));
+		const emailOptions = prepareEmailOptions(opts);
+		const { idempotencyKey } = options || {};
+
+		return await resend.emails.send(
+			emailOptions,
+			idempotencyKey ? { idempotencyKey } : undefined
+		);
 	} catch (error) {
 		console.error("Failed to send email:", error);
 		throw error;

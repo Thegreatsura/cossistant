@@ -1,11 +1,20 @@
 import { db } from "@api/db";
 import { getConversationById } from "@api/db/queries/conversation";
+import { isEmailSuppressed } from "@api/db/queries/email-bounce";
+import {
+	generateEmailIdempotencyKey,
+	generateThreadingHeaders,
+} from "@api/utils/email-threading";
 import {
 	getConversationParticipantsForNotification,
 	getMemberNotificationPreference,
 	getMessagesForEmail,
 	getWebsiteForNotification,
 } from "@api/utils/notification-helpers";
+import {
+	logEmailSent,
+	logEmailSuppressed,
+} from "@api/utils/notification-monitoring";
 import { MAX_MESSAGES_IN_EMAIL } from "@api/workflows/constants";
 import { NewMessageInConversation, sendEmail } from "@cossistant/transactional";
 import { serve } from "@upstash/workflow/hono";
@@ -129,33 +138,76 @@ visitorSentMessageWorkflow.post(
 				`[dev] Found ${totalCount} unseen message(s) for participant ${participant.userId}, sending email`
 			);
 
+			// Check if email is suppressed (bounced/complained)
+			const isSuppressed = await context.run(
+				`check-suppressed-${participant.userId}`,
+				async () =>
+					isEmailSuppressed(db, {
+						email: participant.userEmail,
+						organizationId,
+					})
+			);
+
+			if (isSuppressed) {
+				console.log(
+					`[dev] Email ${participant.userEmail} is suppressed (bounced/complained), skipping`
+				);
+				logEmailSuppressed({
+					email: participant.userEmail,
+					conversationId,
+					organizationId,
+					reason: "bounced_or_complained",
+				});
+				continue;
+			}
+
 			// Send email notification
 			await context.run(`send-email-${participant.userId}`, async () => {
 				try {
-					await sendEmail({
-						to: participant.userEmail,
-						subject:
-							totalCount > 1
-								? `${totalCount} new messages from ${websiteInfo.name}`
-								: `New message from ${websiteInfo.name}`,
-						react: (
-							<NewMessageInConversation
-								conversationId={conversationId}
-								email={participant.userEmail}
-								messages={messages}
-								totalCount={totalCount}
-								website={{
-									name: websiteInfo.name,
-									slug: websiteInfo.slug,
-									logo: websiteInfo.logo,
-								}}
-							/>
-						),
-						variant: "notifications",
+					// Generate threading headers for conversation continuity
+					const threadingHeaders = generateThreadingHeaders({
+						conversationId,
 					});
+
+					// Generate idempotency key to prevent duplicate sends
+					const idempotencyKey = generateEmailIdempotencyKey({
+						conversationId,
+						recipientEmail: participant.userEmail,
+					});
+
+					await sendEmail(
+						{
+							to: participant.userEmail,
+							subject:
+								totalCount > 1
+									? `${totalCount} new messages from ${websiteInfo.name}`
+									: `New message from ${websiteInfo.name}`,
+							react: (
+								<NewMessageInConversation
+									conversationId={conversationId}
+									email={participant.userEmail}
+									messages={messages}
+									totalCount={totalCount}
+									website={{
+										name: websiteInfo.name,
+										slug: websiteInfo.slug,
+										logo: websiteInfo.logo,
+									}}
+								/>
+							),
+							variant: "notifications",
+							headers: threadingHeaders,
+						},
+						{ idempotencyKey }
+					);
 					console.log(
 						`[dev] Email sent successfully to participant ${participant.userId}`
 					);
+					logEmailSent({
+						email: participant.userEmail,
+						conversationId,
+						organizationId,
+					});
 				} catch (error) {
 					console.error(
 						`[dev] Failed to send email to participant ${participant.userId}:`,

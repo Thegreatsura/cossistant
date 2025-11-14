@@ -22,10 +22,24 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useTRPC } from "@/lib/trpc/client";
+
+// Available delay options in minutes
+const DELAY_OPTIONS = [
+	{ value: "0", label: "No delay" },
+	{ value: "1", label: "1 minute" },
+	{ value: "3", label: "3 minutes" },
+	{ value: "5", label: "5 minutes" },
+] as const;
 
 const notificationFormSchema = z.object({
 	[MemberNotificationChannel.EMAIL_MARKETING]: z.object({
@@ -33,7 +47,7 @@ const notificationFormSchema = z.object({
 	}),
 	[MemberNotificationChannel.EMAIL_NEW_MESSAGE]: z.object({
 		enabled: z.boolean(),
-		delayMinutes: z.number().int().min(0).max(1440),
+		delayMinutes: z.enum(["0", "1", "3", "5"]),
 	}),
 	[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]: z.object({
 		enabled: z.boolean(),
@@ -67,15 +81,31 @@ function toFormValues(
 		? Math.round(emailDefinition.defaultDelaySeconds / 60)
 		: 5;
 
+	// Get delay in minutes and map to closest preset option
+	const delayMinutes = emailMessages
+		? Math.round(emailMessages.delaySeconds / 60)
+		: defaultEmailDelayMinutes;
+
+	// Map to closest preset option (0, 1, 3, 5)
+	let delayOption: "0" | "1" | "3" | "5" = "5";
+
+	if (delayMinutes === 0) {
+		delayOption = "0";
+	} else if (delayMinutes <= 1) {
+		delayOption = "1";
+	} else if (delayMinutes <= 3) {
+		delayOption = "3";
+	} else {
+		delayOption = "5";
+	}
+
 	return {
 		[MemberNotificationChannel.EMAIL_MARKETING]: {
 			enabled: marketing?.enabled ?? true,
 		},
 		[MemberNotificationChannel.EMAIL_NEW_MESSAGE]: {
 			enabled: emailMessages?.enabled ?? true,
-			delayMinutes: emailMessages
-				? Math.round(emailMessages.delaySeconds / 60)
-				: defaultEmailDelayMinutes,
+			delayMinutes: delayOption,
 		},
 		[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]: {
 			enabled: browserPush?.enabled ?? false,
@@ -150,14 +180,15 @@ export function MemberNotificationSettingsForm({
 				}
 
 				if (setting.channel === MemberNotificationChannel.EMAIL_NEW_MESSAGE) {
-					const delayMinutes =
+					const delayMinutesStr =
 						values[MemberNotificationChannel.EMAIL_NEW_MESSAGE].delayMinutes;
+					const delayMinutes = Number.parseInt(delayMinutesStr, 10);
 
 					return {
 						...setting,
 						enabled:
 							values[MemberNotificationChannel.EMAIL_NEW_MESSAGE].enabled,
-						delaySeconds: Math.max(0, delayMinutes * 60),
+						delaySeconds: delayMinutes * 60,
 					};
 				}
 
@@ -279,19 +310,30 @@ export function MemberNotificationSettingsForm({
 											render={({ field: delayField }) => (
 												<FormItem>
 													<FormLabel>Delay before emailing</FormLabel>
-													<FormControl>
-														<Input
-															{...delayField}
-															disabled={isDisabled || !field.value}
-															inputMode="numeric"
-															max={1440}
-															min={0}
-															type="number"
-														/>
-													</FormControl>
+													<Select
+														disabled={isDisabled || !field.value}
+														onValueChange={delayField.onChange}
+														value={delayField.value}
+													>
+														<FormControl>
+															<SelectTrigger>
+																<SelectValue placeholder="Select delay" />
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															{DELAY_OPTIONS.map((option) => (
+																<SelectItem
+																	key={option.value}
+																	value={option.value}
+																>
+																	{option.label}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
 													<FormDescription>
-														Minutes to wait after a new message before sending
-														an email.
+														Time to wait after a new message before sending an
+														email.
 													</FormDescription>
 													<FormMessage />
 												</FormItem>

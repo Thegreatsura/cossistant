@@ -155,6 +155,13 @@
       "when": 1762951089593,
       "tag": "0021_damp_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1763112100277,
+      "tag": "0022_busy_strong_guy",
+      "breakpoints": true
     }
   ]
 }

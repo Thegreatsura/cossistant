@@ -296,3 +296,55 @@ export async function getWebsiteForNotification(
 
 	return websiteInfo;
 }
+
+/**
+ * Check if visitor has email notifications enabled
+ * Checks contact.notificationSettings JSONB field
+ * Returns true if enabled or if no preference is set (default to enabled)
+ */
+export async function isVisitorEmailNotificationEnabled(
+	db: Database,
+	params: {
+		visitorId: string;
+		websiteId: string;
+	}
+): Promise<boolean> {
+	const [result] = await db
+		.select({
+			contactId: visitor.contactId,
+		})
+		.from(visitor)
+		.where(
+			and(
+				eq(visitor.id, params.visitorId),
+				eq(visitor.websiteId, params.websiteId)
+			)
+		)
+		.limit(1);
+
+	if (!result?.contactId) {
+		// No contact associated, default to enabled
+		return true;
+	}
+
+	const [contactInfo] = await db
+		.select({
+			notificationSettings: contact.notificationSettings,
+		})
+		.from(contact)
+		.where(eq(contact.id, result.contactId))
+		.limit(1);
+
+	// If no notification settings, default to enabled
+	if (!contactInfo?.notificationSettings) {
+		return true;
+	}
+
+	// Check if emailNotifications is explicitly disabled
+	const settings = contactInfo.notificationSettings as {
+		emailNotifications?: boolean;
+	};
+
+	// Default to true if not explicitly set to false
+	return settings.emailNotifications !== false;
+}

@@ -41,6 +41,7 @@ export const env = {
 	GITHUB_CLIENT_SECRET: getEnvVariable("GITHUB_CLIENT_SECRET"),
 	RESEND_API_KEY: getEnvVariable("RESEND_API_KEY"),
 	RESEND_AUDIENCE_ID: getEnvVariable("RESEND_AUDIENCE_ID"),
+	RESEND_WEBHOOK_SECRET: getEnvVariable("RESEND_WEBHOOK_SECRET"),
 	PUBLIC_APP_URL: getEnvVariable("PUBLIC_APP_URL"),
 	PORT: +getEnvVariable("PORT", "8787"),
 	QSTASH_TOKEN: getEnvVariable("QSTASH_TOKEN"),
