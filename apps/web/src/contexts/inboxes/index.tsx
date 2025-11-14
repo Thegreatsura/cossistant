@@ -38,6 +38,10 @@ type InboxesContextValue = {
 
 const InboxesContext = createContext<InboxesContextValue | null>(null);
 
+export function useOptionalInboxes() {
+        return useContext(InboxesContext);
+}
+
 type InboxesProviderProps = {
 	children: React.ReactNode;
 	websiteSlug: string;
@@ -111,11 +115,11 @@ export function InboxesProvider({
 }
 
 export function useInboxes() {
-	const context = useContext(InboxesContext);
+        const context = useOptionalInboxes();
 
-	if (!context) {
-		throw new Error("useInboxes must be used within a InboxesProvider");
-	}
+        if (!context) {
+                throw new Error("useInboxes must be used within a InboxesProvider");
+        }
 
 	if (context.isLoading) {
 		throw new Error("Conversations not found");
