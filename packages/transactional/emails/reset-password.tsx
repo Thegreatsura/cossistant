@@ -13,7 +13,7 @@ import {
 // Needed for email templates, don't remove
 import React from "react";
 
-import { LOGO_URL } from "../constants.js";
+import { LOGO_URL } from "../constants";
 
 type ResetPasswordEmailProps = {
 	name?: string;

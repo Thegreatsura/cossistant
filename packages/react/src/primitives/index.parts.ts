@@ -19,13 +19,7 @@ export {
 	MultimodalInput,
 	SupportInput as Input,
 } from "./multimodal-input";
-export { Page, type PageProps } from "./page";
-export {
-	PageRegistryProvider,
-	usePageRegistry,
-	useRegisterPage,
-} from "./page-registry";
-export { Router, type RouterProps } from "./router";
+export { type PageDefinition, Router, type RouterProps } from "./router";
 export {
 	TimelineItem,
 	TimelineItemContent,

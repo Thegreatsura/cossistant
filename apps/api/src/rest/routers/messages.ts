@@ -117,6 +117,10 @@ messagesRouter.openapi(
 		const { db, website, organization, body, visitorIdHeader, apiKey } =
 			await safelyExtractRequestData(c, sendTimelineItemRequestSchema);
 
+		console.log(
+			`[dev] REST /messages endpoint called with item.id: ${body.item?.id}, conversationId: ${body.conversationId}`
+		);
+
 		const visitorId = body.item.visitorId || visitorIdHeader || null;
 
 		const conversation = await getConversationById(db, {
@@ -215,6 +219,9 @@ messagesRouter.openapi(
 
 		// Trigger notification workflow (non-blocking)
 		// This will send email notifications to relevant participants after configured delays
+		console.log(
+			`[dev] About to trigger workflow from REST endpoint for message ${createdTimelineItem.id}`
+		);
 		triggerMessageNotificationWorkflow({
 			conversationId: body.conversationId,
 			messageId: createdTimelineItem.id,

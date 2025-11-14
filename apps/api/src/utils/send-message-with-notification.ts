@@ -72,11 +72,19 @@ export async function triggerMemberSentMessageWorkflow(params: {
 			`[dev] Member-sent message workflow triggered successfully: ${result.workflowRunId}`
 		);
 	} catch (error) {
-		// Log error but don't throw - we don't want to block message creation
-		console.error(
-			`[dev] Failed to trigger member-sent message workflow for conversation ${params.conversationId}:`,
-			error
-		);
+		// Check if this is a "workflow already exists" error - this is expected for message batching
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		if (errorMessage.includes("workflow already exists")) {
+			console.log(
+				`[dev] Workflow already running for conversation ${params.conversationId}, message will be batched`
+			);
+		} else {
+			// Log other errors but don't throw - we don't want to block message creation
+			console.error(
+				`[dev] Failed to trigger member-sent message workflow for conversation ${params.conversationId}:`,
+				error
+			);
+		}
 	}
 }
 
@@ -123,11 +131,19 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 			`[dev] Visitor-sent message workflow triggered successfully: ${result.workflowRunId}`
 		);
 	} catch (error) {
-		// Log error but don't throw - we don't want to block message creation
-		console.error(
-			`[dev] Failed to trigger visitor-sent message workflow for conversation ${params.conversationId}:`,
-			error
-		);
+		// Check if this is a "workflow already exists" error - this is expected for message batching
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		if (errorMessage.includes("workflow already exists")) {
+			console.log(
+				`[dev] Workflow already running for conversation ${params.conversationId}, message will be batched`
+			);
+		} else {
+			// Log other errors but don't throw - we don't want to block message creation
+			console.error(
+				`[dev] Failed to trigger visitor-sent message workflow for conversation ${params.conversationId}:`,
+				error
+			);
+		}
 	}
 }
 
@@ -146,7 +162,7 @@ export async function triggerMessageNotificationWorkflow(params: {
 		| { type: "aiAgent"; aiAgentId: string };
 }): Promise<void> {
 	console.log(
-		`[dev] Triggering message notification workflow for actor type: ${params.actor.type}`
+		`[dev] Triggering message notification workflow for actor type: ${params.actor.type}, messageId: ${params.messageId}, conversationId: ${params.conversationId}`
 	);
 
 	if (params.actor.type === "user") {

@@ -266,17 +266,37 @@ export function createSupportStore<
 		goBack() {
 			commit((current) => {
 				const { previousPages } = current.navigation;
+
 				if (previousPages.length === 0) {
-					return current;
+					// No history, go to HOME
+					return {
+						navigation: {
+							previousPages: [],
+							current: { page: "HOME" } as NavigationState<Routes>,
+						},
+						config: current.config,
+					};
 				}
 
-				const nextPrevious = previousPages.slice(0, -1);
 				const previous = previousPages.at(-1);
 
 				if (!previous) {
 					return current;
 				}
 
+				// Safeguard: If the previous page is the same as the current page,
+				// navigate to HOME instead to avoid getting stuck
+				if (previous.page === current.navigation.current.page) {
+					return {
+						navigation: {
+							previousPages: [],
+							current: { page: "HOME" } as NavigationState<Routes>,
+						},
+						config: current.config,
+					};
+				}
+
+				const nextPrevious = previousPages.slice(0, -1);
 				return {
 					navigation: {
 						previousPages: nextPrevious,

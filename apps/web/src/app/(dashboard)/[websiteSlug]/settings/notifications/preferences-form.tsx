@@ -353,7 +353,7 @@ export function MemberNotificationSettingsForm({
 						)}
 					/>
 
-					<FormField
+					{/* <FormField
 						control={form.control}
 						name={
 							`${MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE}.enabled` as const
@@ -382,7 +382,7 @@ export function MemberNotificationSettingsForm({
 								<FormMessage />
 							</FormItem>
 						)}
-					/>
+					/> */}
 				</div>
 
 				<SettingsRowFooter>
