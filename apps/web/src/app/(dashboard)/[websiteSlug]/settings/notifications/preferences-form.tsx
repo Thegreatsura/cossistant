@@ -308,7 +308,7 @@ export function MemberNotificationSettingsForm({
 												`${MemberNotificationChannel.EMAIL_NEW_MESSAGE}.delayMinutes` as const
 											}
 											render={({ field: delayField }) => (
-												<FormItem>
+												<FormItem className="mt-6">
 													<FormLabel>Delay before emailing</FormLabel>
 													<Select
 														disabled={isDisabled || !field.value}

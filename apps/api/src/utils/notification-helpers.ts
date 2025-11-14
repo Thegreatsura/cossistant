@@ -10,8 +10,10 @@ import {
 	visitor,
 	website,
 } from "@api/db/schema";
-import type { ConversationParticipationStatus } from "@cossistant/types";
-import { MemberNotificationChannel } from "@cossistant/types";
+import {
+	ConversationParticipationStatus,
+	MemberNotificationChannel,
+} from "@cossistant/types";
 import { and, desc, eq, gt, isNull, ne } from "drizzle-orm";
 
 /**
@@ -48,7 +50,7 @@ export async function getConversationParticipantsForNotification(
 				eq(conversationParticipant.organizationId, params.organizationId),
 				eq(
 					conversationParticipant.status,
-					"ACTIVE" as ConversationParticipationStatus
+					ConversationParticipationStatus.ACTIVE
 				),
 				isNull(conversationParticipant.leftAt),
 				params.excludeUserId

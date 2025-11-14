@@ -55,6 +55,9 @@ export const website = pgTable(
 		description: text("description"),
 		logoUrl: text("logo_url"),
 		whitelistedDomains: text("whitelisted_domains").array().notNull(),
+		defaultParticipantIds: jsonb("default_participant_ids").$type<
+			string[] | null
+		>(),
 		installationTarget: websiteInstallationTargetEnum("installation_target")
 			.$defaultFn(() => WebsiteInstallationTarget.NEXTJS)
 			.notNull(),

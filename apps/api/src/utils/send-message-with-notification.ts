@@ -1,33 +1,9 @@
-import { env } from "@api/env";
-import type {
-	MemberSentMessageData,
-	VisitorSentMessageData,
+import { triggerWorkflow } from "@api/utils/workflow";
+import {
+	type MemberSentMessageData,
+	type VisitorSentMessageData,
+	WORKFLOW,
 } from "@api/workflows/types";
-import { WORKFLOW } from "@api/workflows/types";
-import { Client } from "@upstash/workflow";
-
-// Initialize Upstash Workflow client
-const workflowClient = new Client({ token: env.QSTASH_TOKEN });
-
-/**
- * Get the base URL for workflow endpoints
- * In production, use BETTER_AUTH_URL or construct from PUBLIC_APP_URL
- * In development, use localhost with the configured port
- */
-function getWorkflowBaseUrl(): string {
-	if (env.NODE_ENV === "production") {
-		// Use BETTER_AUTH_URL if available, otherwise construct from PUBLIC_APP_URL
-		if (env.BETTER_AUTH_URL) {
-			return env.BETTER_AUTH_URL;
-		}
-		// Fallback: construct API URL from app URL
-		const appUrl = env.PUBLIC_APP_URL;
-		return appUrl.replace("app.", "api.");
-	}
-
-	// Development: use localhost with configured port
-	return `http://localhost:${env.PORT}`;
-}
 
 /**
  * Trigger notification workflow when a member sends a message
@@ -40,51 +16,33 @@ export async function triggerMemberSentMessageWorkflow(params: {
 	organizationId: string;
 	senderId: string;
 }): Promise<void> {
+	const data: MemberSentMessageData = {
+		conversationId: params.conversationId,
+		messageId: params.messageId,
+		websiteId: params.websiteId,
+		organizationId: params.organizationId,
+		senderId: params.senderId,
+	};
+
 	try {
-		const baseUrl = getWorkflowBaseUrl();
-		const workflowUrl = `${baseUrl}/workflows/message/member-sent`;
-
-		// Use deterministic workflow ID for message grouping
-		const workflowRunId = `conversation-${params.conversationId}-member-notification`;
-
-		const payload: MemberSentMessageData = {
-			conversationId: params.conversationId,
-			messageId: params.messageId,
-			websiteId: params.websiteId,
-			organizationId: params.organizationId,
-			senderId: params.senderId,
-		};
-
 		console.log(
 			`[dev] Triggering member-sent message workflow for conversation ${params.conversationId}`
 		);
-		console.log(`[dev] Workflow URL: ${workflowUrl}`);
-		console.log(`[dev] Workflow Run ID: ${workflowRunId}`);
 
-		const result = await workflowClient.trigger({
-			url: workflowUrl,
-			body: payload,
-			workflowRunId,
-			retries: 3,
+		await triggerWorkflow({
+			path: WORKFLOW.MEMBER_SENT_MESSAGE,
+			data,
 		});
 
 		console.log(
-			`[dev] Member-sent message workflow triggered successfully: ${result.workflowRunId}`
+			`[dev] Member-sent message workflow triggered successfully for conversation ${params.conversationId}`
 		);
 	} catch (error) {
-		// Check if this is a "workflow already exists" error - this is expected for message batching
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		if (errorMessage.includes("workflow already exists")) {
-			console.log(
-				`[dev] Workflow already running for conversation ${params.conversationId}, message will be batched`
-			);
-		} else {
-			// Log other errors but don't throw - we don't want to block message creation
-			console.error(
-				`[dev] Failed to trigger member-sent message workflow for conversation ${params.conversationId}:`,
-				error
-			);
-		}
+		// Log errors but don't throw - we don't want to block message creation
+		console.error(
+			`[dev] Failed to trigger member-sent message workflow for conversation ${params.conversationId}:`,
+			error
+		);
 	}
 }
 
@@ -99,51 +57,33 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 	organizationId: string;
 	visitorId: string;
 }): Promise<void> {
+	const data: VisitorSentMessageData = {
+		conversationId: params.conversationId,
+		messageId: params.messageId,
+		websiteId: params.websiteId,
+		organizationId: params.organizationId,
+		visitorId: params.visitorId,
+	};
+
 	try {
-		const baseUrl = getWorkflowBaseUrl();
-		const workflowUrl = `${baseUrl}/workflows/message/visitor-sent`;
-
-		// Use deterministic workflow ID for message grouping
-		const workflowRunId = `conversation-${params.conversationId}-visitor-notification`;
-
-		const payload: VisitorSentMessageData = {
-			conversationId: params.conversationId,
-			messageId: params.messageId,
-			websiteId: params.websiteId,
-			organizationId: params.organizationId,
-			visitorId: params.visitorId,
-		};
-
 		console.log(
 			`[dev] Triggering visitor-sent message workflow for conversation ${params.conversationId}`
 		);
-		console.log(`[dev] Workflow URL: ${workflowUrl}`);
-		console.log(`[dev] Workflow Run ID: ${workflowRunId}`);
 
-		const result = await workflowClient.trigger({
-			url: workflowUrl,
-			body: payload,
-			workflowRunId,
-			retries: 3,
+		await triggerWorkflow({
+			path: WORKFLOW.VISITOR_SENT_MESSAGE,
+			data,
 		});
 
 		console.log(
-			`[dev] Visitor-sent message workflow triggered successfully: ${result.workflowRunId}`
+			`[dev] Visitor-sent message workflow triggered successfully for conversation ${params.conversationId}`
 		);
 	} catch (error) {
-		// Check if this is a "workflow already exists" error - this is expected for message batching
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		if (errorMessage.includes("workflow already exists")) {
-			console.log(
-				`[dev] Workflow already running for conversation ${params.conversationId}, message will be batched`
-			);
-		} else {
-			// Log other errors but don't throw - we don't want to block message creation
-			console.error(
-				`[dev] Failed to trigger visitor-sent message workflow for conversation ${params.conversationId}:`,
-				error
-			);
-		}
+		// Log errors but don't throw - we don't want to block message creation
+		console.error(
+			`[dev] Failed to trigger visitor-sent message workflow for conversation ${params.conversationId}:`,
+			error
+		);
 	}
 }
 

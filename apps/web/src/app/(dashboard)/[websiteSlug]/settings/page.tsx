@@ -5,6 +5,7 @@ import {
 	SettingsRow,
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
+import { DefaultParticipantsForm } from "./default-participants-form";
 import { UserProfileForm } from "./user-profile-form";
 import { WebsiteInformationForm } from "./website-information-form";
 
@@ -48,6 +49,17 @@ export default async function GeneralSettingsPage({
 						organizationId={website.organizationId}
 						userId={user.id}
 						websiteId={website.id}
+					/>
+				</SettingsRow>
+				<SettingsRow
+					description="Choose which team members are automatically added to new conversations."
+					title="Default conversation participants"
+				>
+					<DefaultParticipantsForm
+						initialDefaultParticipantIds={website.defaultParticipantIds}
+						organizationId={website.organizationId}
+						websiteId={website.id}
+						websiteSlug={website.slug}
 					/>
 				</SettingsRow>
 			</PageContent>

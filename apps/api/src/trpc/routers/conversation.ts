@@ -16,10 +16,15 @@ import {
 } from "@api/db/queries/conversation";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import {
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
+import {
+	addConversationParticipant,
+	isUserParticipant,
+} from "@api/utils/participant-helpers";
 import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
@@ -173,6 +178,30 @@ export const conversationRouter = createTRPCRouter({
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Conversation not found",
+				});
+			}
+
+			// Check if user needs to be added as participant
+			const isParticipant = await isUserParticipant(db, {
+				conversationId: input.conversationId,
+				userId: user.id,
+			});
+
+			if (!isParticipant) {
+				// Add user as participant
+				await addConversationParticipant(db, {
+					conversationId: input.conversationId,
+					userId: user.id,
+					organizationId: websiteData.organizationId,
+					reason: "Sent message",
+				});
+
+				// Create participant joined event
+				await createParticipantJoinedEvent(db, {
+					conversationId: input.conversationId,
+					organizationId: websiteData.organizationId,
+					targetUserId: user.id,
+					isAutoAdded: true,
 				});
 			}
 

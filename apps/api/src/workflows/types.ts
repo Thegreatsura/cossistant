@@ -1,8 +1,8 @@
 export const WORKFLOW = {
 	WAITLIST_JOIN: "waitlist/join",
 	WAITLIST_LEAVE: "waitlist/leave",
-	MEMBER_SENT_MESSAGE: "message/member-sent",
-	VISITOR_SENT_MESSAGE: "message/visitor-sent",
+	MEMBER_SENT_MESSAGE: "message/member-sent-message",
+	VISITOR_SENT_MESSAGE: "message/visitor-sent-message",
 } as const;
 
 // Export data types for use in workflow handlers
