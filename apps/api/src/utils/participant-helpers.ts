@@ -29,8 +29,8 @@ export async function getAdminAndOwnerIds(
 /**
  * Get default participants for a website based on defaultParticipantIds setting
  * - null: returns empty array (feature disabled)
- * - empty array: returns admin/owner IDs
- * - array with IDs: returns those IDs
+ * - empty array: returns admin/owner IDs (auto mode)
+ * - array with IDs: returns those IDs (specific users mode)
  */
 export async function getDefaultParticipants(
 	db: Database,
@@ -44,7 +44,7 @@ export async function getDefaultParticipants(
 		return [];
 	}
 
-	// Auto mode - get admin/owner
+	// Auto mode - get admin/owner when empty array
 	if (websiteRecord.defaultParticipantIds.length === 0) {
 		return getAdminAndOwnerIds(db, websiteRecord.organizationId);
 	}

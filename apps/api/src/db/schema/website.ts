@@ -7,6 +7,7 @@ import {
 	type InferInsertModel,
 	type InferSelectModel,
 	relations,
+	sql,
 } from "drizzle-orm";
 import {
 	boolean,
@@ -55,9 +56,9 @@ export const website = pgTable(
 		description: text("description"),
 		logoUrl: text("logo_url"),
 		whitelistedDomains: text("whitelisted_domains").array().notNull(),
-		defaultParticipantIds: jsonb("default_participant_ids").$type<
-			string[] | null
-		>(),
+		defaultParticipantIds: jsonb("default_participant_ids")
+			.$type<string[] | null>()
+			.default(sql`'[]'::jsonb`),
 		installationTarget: websiteInstallationTargetEnum("installation_target")
 			.$defaultFn(() => WebsiteInstallationTarget.NEXTJS)
 			.notNull(),
