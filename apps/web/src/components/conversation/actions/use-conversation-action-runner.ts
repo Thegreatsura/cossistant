@@ -37,6 +37,8 @@ type NavigationAwareAction =
         | "markArchived"
         | "markUnarchived";
 
+type NavigationCallback = (() => void) | null;
+
 function resolveInboxFilter(
         status: ConversationStatus | "archived" | null | undefined
 ): InboxFilter {
@@ -109,40 +111,41 @@ export function useConversationActionRunner(
                 [inboxes, params.conversationId]
         );
 
-        const navigateWithinInbox = useCallback(() => {
-                        if (!inboxes) {
-                                return;
-                        }
+        const resolveNavigationCallback = useCallback((): NavigationCallback => {
+                if (!inboxes) {
+                        return null;
+                }
 
-                        if (inboxes.nextConversation) {
-                                inboxes.navigateToNextConversation();
-                                return;
-                        }
+                if (inboxes.nextConversation) {
+                        return inboxes.navigateToNextConversation;
+                }
 
-                        if (inboxes.previousConversation) {
-                                inboxes.navigateToPreviousConversation();
-                                return;
-                        }
+                if (inboxes.previousConversation) {
+                        return inboxes.navigateToPreviousConversation;
+                }
 
-                        inboxes.goBack();
-                },
-                [inboxes]
-        );
+                return inboxes.goBack;
+        }, [inboxes]);
 
         const runNavigationAwareAction = useCallback(
                 async <T,>(
                         action: () => Promise<T>,
                         actionName: NavigationAwareAction
                 ): Promise<T> => {
+                        const shouldNavigate = shouldNavigateAfterAction(actionName);
+                        const navigationCallback = shouldNavigate
+                                ? resolveNavigationCallback()
+                                : null;
+
                         const result = await action();
 
-                        if (shouldNavigateAfterAction(actionName)) {
-                                navigateWithinInbox();
+                        if (navigationCallback) {
+                                navigationCallback();
                         }
 
                         return result;
                 },
-                [navigateWithinInbox, shouldNavigateAfterAction]
+                [resolveNavigationCallback, shouldNavigateAfterAction]
         );
 
         const markResolved = useCallback(
