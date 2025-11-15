@@ -18,8 +18,10 @@ import { useConversationActions } from "@/data/use-conversation-actions";
 import { useConversationTimelineItems } from "@/data/use-conversation-timeline-items";
 import { useVisitor } from "@/data/use-visitor";
 import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
+import { useDashboardNewMessageSound } from "@/hooks/use-dashboard-new-message-sound";
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { useSidebar } from "@/hooks/use-sidebars";
+import { useSoundPreferences } from "@/hooks/use-sound-preferences";
 
 const MESSAGES_PAGE_LIMIT = 50;
 const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
@@ -42,6 +44,10 @@ export function ConversationPane({
 	websiteSlug,
 	currentUserId,
 }: ConversationPaneProps) {
+	const { newMessageEnabled } = useSoundPreferences({ websiteSlug });
+	const playNewMessageSound = useDashboardNewMessageSound(newMessageEnabled);
+	const previousItemsRef = useRef<TimelineItem[]>([]);
+
 	const { submit: submitConversationMessage } = useSendConversationMessage({
 		conversationId,
 		websiteSlug,
@@ -144,6 +150,29 @@ export function ConversationPane({
 		}
 		return null;
 	}, [items]);
+
+	// Play sound when new messages arrive from others (not current user)
+	useEffect(() => {
+		const currentItems = items;
+		const previousItems = previousItemsRef.current;
+
+		// Check if there are new items
+		if (currentItems.length > previousItems.length) {
+			// Find the new items
+			const newItems = currentItems.slice(previousItems.length);
+
+			// Play sound only if new message is from someone else (not current user)
+			for (const item of newItems) {
+				if (item.type === "message" && item.userId !== currentUserId) {
+					playNewMessageSound();
+					break; // Only play once per batch
+				}
+			}
+		}
+
+		// Update the ref
+		previousItemsRef.current = currentItems;
+	}, [items, currentUserId, playNewMessageSound]);
 
 	useEffect(() => {
 		if (markSeenTimeoutRef.current) {

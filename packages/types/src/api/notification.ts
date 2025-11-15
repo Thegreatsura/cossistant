@@ -4,6 +4,8 @@ export const MemberNotificationChannel = {
 	EMAIL_MARKETING: "email_marketing",
 	EMAIL_NEW_MESSAGE: "email_new_message",
 	BROWSER_PUSH_NEW_MESSAGE: "browser_push_new_message",
+	SOUND_NEW_MESSAGE: "sound_new_message",
+	SOUND_TYPING: "sound_typing",
 } as const;
 
 export const memberNotificationChannelSchema = z.nativeEnum(
@@ -59,6 +61,29 @@ export const MEMBER_NOTIFICATION_CHANNEL_DEFINITIONS = [
 		defaultDelaySeconds: 0,
 		defaultPriority: 0,
 		requiresSetup: true,
+		supportsDelaySeconds: false,
+		defaultConfig: null,
+	},
+	{
+		channel: MemberNotificationChannel.SOUND_NEW_MESSAGE,
+		label: "New message sounds",
+		description: "Play a sound effect when new customer messages arrive.",
+		defaultEnabled: true,
+		defaultDelaySeconds: 0,
+		defaultPriority: 5,
+		requiresSetup: false,
+		supportsDelaySeconds: false,
+		defaultConfig: null,
+	},
+	{
+		channel: MemberNotificationChannel.SOUND_TYPING,
+		label: "Typing indicator sounds",
+		description:
+			"Play a sound effect when someone is typing in a conversation.",
+		defaultEnabled: true,
+		defaultDelaySeconds: 0,
+		defaultPriority: 5,
+		requiresSetup: false,
 		supportsDelaySeconds: false,
 		defaultConfig: null,
 	},

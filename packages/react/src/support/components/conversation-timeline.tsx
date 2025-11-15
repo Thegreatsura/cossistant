@@ -6,6 +6,7 @@ import type {
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { useConversationTimeline } from "../../hooks/use-conversation-timeline";
+import { useTypingSound } from "../../hooks/use-typing-sound";
 import {
 	ConversationTimelineContainer,
 	ConversationTimeline as PrimitiveConversationTimeline,
@@ -78,6 +79,12 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 			})),
 		[timeline.typingParticipants]
 	);
+
+	// Play typing sound when someone is typing
+	useTypingSound(typingIndicatorParticipants.length > 0, {
+		volume: 1.2,
+		playbackRate: 1.0,
+	});
 
 	const seenNameLookup = useMemo(() => {
 		const map = new Map<string, string>();

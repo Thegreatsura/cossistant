@@ -263,6 +263,11 @@ export async function getMessagesForEmail(
 				text: message.text ?? "",
 				createdAt: new Date(message.createdAt),
 				sender: {
+					id:
+						message.userId ||
+						message.visitorId ||
+						message.aiAgentId ||
+						"unknown",
 					name: senderName,
 					image: senderImage,
 				},
@@ -271,7 +276,7 @@ export async function getMessagesForEmail(
 	);
 
 	return {
-		messages: enrichedMessages,
+		messages: enrichedMessages.reverse(), // Reverse to show oldest first, newest last
 		totalCount: unseenMessages.length,
 	};
 }

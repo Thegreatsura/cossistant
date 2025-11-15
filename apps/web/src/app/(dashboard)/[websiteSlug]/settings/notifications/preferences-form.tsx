@@ -52,6 +52,12 @@ const notificationFormSchema = z.object({
 	[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]: z.object({
 		enabled: z.boolean(),
 	}),
+	[MemberNotificationChannel.SOUND_NEW_MESSAGE]: z.object({
+		enabled: z.boolean(),
+	}),
+	[MemberNotificationChannel.SOUND_TYPING]: z.object({
+		enabled: z.boolean(),
+	}),
 });
 
 type NotificationFormValues = z.infer<typeof notificationFormSchema>;
@@ -72,6 +78,12 @@ function toFormValues(
 	const browserPush = data?.settings.find(
 		(setting) =>
 			setting.channel === MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE
+	);
+	const soundNewMessage = data?.settings.find(
+		(setting) => setting.channel === MemberNotificationChannel.SOUND_NEW_MESSAGE
+	);
+	const soundTyping = data?.settings.find(
+		(setting) => setting.channel === MemberNotificationChannel.SOUND_TYPING
 	);
 	const emailDefinition = MEMBER_NOTIFICATION_DEFINITION_MAP.get(
 		MemberNotificationChannel.EMAIL_NEW_MESSAGE
@@ -109,6 +121,12 @@ function toFormValues(
 		},
 		[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]: {
 			enabled: browserPush?.enabled ?? false,
+		},
+		[MemberNotificationChannel.SOUND_NEW_MESSAGE]: {
+			enabled: soundNewMessage?.enabled ?? true,
+		},
+		[MemberNotificationChannel.SOUND_TYPING]: {
+			enabled: soundTyping?.enabled ?? true,
 		},
 	} satisfies NotificationFormValues;
 }
@@ -200,6 +218,23 @@ export function MemberNotificationSettingsForm({
 						enabled:
 							values[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]
 								.enabled,
+						delaySeconds: definition.defaultDelaySeconds,
+					};
+				}
+
+				if (setting.channel === MemberNotificationChannel.SOUND_NEW_MESSAGE) {
+					return {
+						...setting,
+						enabled:
+							values[MemberNotificationChannel.SOUND_NEW_MESSAGE].enabled,
+						delaySeconds: definition.defaultDelaySeconds,
+					};
+				}
+
+				if (setting.channel === MemberNotificationChannel.SOUND_TYPING) {
+					return {
+						...setting,
+						enabled: values[MemberNotificationChannel.SOUND_TYPING].enabled,
 						delaySeconds: definition.defaultDelaySeconds,
 					};
 				}
@@ -383,6 +418,66 @@ export function MemberNotificationSettingsForm({
 							</FormItem>
 						)}
 					/> */}
+
+					<FormField
+						control={form.control}
+						name={
+							`${MemberNotificationChannel.SOUND_NEW_MESSAGE}.enabled` as const
+						}
+						render={({ field }) => (
+							<FormItem className="space-y-3">
+								<div className="flex items-center justify-between gap-6">
+									<div>
+										<FormLabel className="text-base">
+											New message sounds
+										</FormLabel>
+										<FormDescription>
+											{renderDescription(
+												MemberNotificationChannel.SOUND_NEW_MESSAGE
+											)}
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											disabled={isDisabled}
+											onCheckedChange={field.onChange}
+										/>
+									</FormControl>
+								</div>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name={`${MemberNotificationChannel.SOUND_TYPING}.enabled` as const}
+						render={({ field }) => (
+							<FormItem className="space-y-3">
+								<div className="flex items-center justify-between gap-6">
+									<div>
+										<FormLabel className="text-base">
+											Typing indicator sounds
+										</FormLabel>
+										<FormDescription>
+											{renderDescription(
+												MemberNotificationChannel.SOUND_TYPING
+											)}
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											disabled={isDisabled}
+											onCheckedChange={field.onChange}
+										/>
+									</FormControl>
+								</div>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 				</div>
 
 				<SettingsRowFooter>
