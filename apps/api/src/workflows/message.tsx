@@ -4,6 +4,7 @@ import { isEmailSuppressed } from "@api/db/queries/email-bounce";
 import { env } from "@api/env";
 import {
 	generateEmailIdempotencyKey,
+	generateInboundReplyAddress,
 	generateThreadingHeaders,
 } from "@api/utils/email-threading";
 import {
@@ -141,6 +142,7 @@ messageWorkflow.post(
 				await sendEmail(
 					{
 						to: participant.userEmail,
+						replyTo: generateInboundReplyAddress({ conversationId }),
 						subject:
 							totalCount > 1
 								? `${totalCount} new messages from ${websiteInfo.name}`
@@ -259,6 +261,7 @@ messageWorkflow.post(
 			await sendEmail(
 				{
 					to: visitorInfo.contactEmail,
+					replyTo: generateInboundReplyAddress({ conversationId }),
 					subject:
 						visitorTotalCount > 1
 							? `${visitorTotalCount} new messages from ${websiteInfo.name}`
@@ -398,6 +401,7 @@ messageWorkflow.post(
 				await sendEmail(
 					{
 						to: participant.userEmail,
+						replyTo: generateInboundReplyAddress({ conversationId }),
 						subject:
 							totalCount > 1
 								? `${totalCount} new messages from ${websiteInfo.name}`

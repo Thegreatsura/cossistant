@@ -117,11 +117,11 @@
 	--sidebar-border: hsl(220 13% 91%);
 	--sidebar-ring: hsl(217.2 91.2% 59.8%);
 
-	--cossistant-pink: hsla(314, 100%, 75%, 1);
-	--cossistant-yellow: hsla(58, 92%, 70%, 1);
-	--cossistant-blue: hsla(218, 91%, 68%, 1);
-	--cossistant-orange: hsla(19, 99%, 65%, 1);
-	--cossistant-green: rgb(72, 208, 153);
+	--cossistant-pink: hsla(314, 100%, 80%, 1);
+	--cossistant-yellow: hsla(58, 93%, 72%, 1);
+	--cossistant-blue: hsla(218, 92%, 72%, 1);
+	--cossistant-orange: hsla(19, 99%, 44%, 1);
+	--cossistant-green: hsla(156, 86%, 40%, 1);
 
 	--surface-foreground: var(--foreground);
 	--code: var(--surface);

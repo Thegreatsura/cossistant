@@ -120,6 +120,7 @@ export async function getMemberNotificationPreference(
 /**
  * Get unseen messages for a recipient in a conversation
  * Returns all messages that were created after the recipient's lastSeenAt timestamp
+ * and excludes messages authored by the recipient themselves
  */
 export async function getUnseenMessagesForRecipient(
 	db: Database,
@@ -157,24 +158,32 @@ export async function getUnseenMessagesForRecipient(
 		.where(seenWhere)
 		.limit(1);
 
-	// If no seen record exists, get all messages
-	// If seen record exists, get messages created after lastSeenAt
-	const messagesWhere = seenRecord?.lastSeenAt
-		? and(
-				eq(conversationTimelineItem.conversationId, params.conversationId),
-				eq(conversationTimelineItem.organizationId, params.organizationId),
-				gt(conversationTimelineItem.createdAt, seenRecord.lastSeenAt),
-				eq(conversationTimelineItem.type, "message"),
-				eq(conversationTimelineItem.visibility, "public"),
-				isNull(conversationTimelineItem.deletedAt)
-			)
-		: and(
-				eq(conversationTimelineItem.conversationId, params.conversationId),
-				eq(conversationTimelineItem.organizationId, params.organizationId),
-				eq(conversationTimelineItem.type, "message"),
-				eq(conversationTimelineItem.visibility, "public"),
-				isNull(conversationTimelineItem.deletedAt)
-			);
+	// Build base conditions for messages
+	const baseConditions = [
+		eq(conversationTimelineItem.conversationId, params.conversationId),
+		eq(conversationTimelineItem.organizationId, params.organizationId),
+		eq(conversationTimelineItem.type, "message"),
+		eq(conversationTimelineItem.visibility, "public"),
+		isNull(conversationTimelineItem.deletedAt),
+	];
+
+	// Add lastSeenAt filter if we have a seen record
+	if (seenRecord?.lastSeenAt) {
+		baseConditions.push(
+			gt(conversationTimelineItem.createdAt, seenRecord.lastSeenAt)
+		);
+	}
+
+	// Exclude messages authored by the recipient
+	if (params.recipientUserId) {
+		baseConditions.push(
+			ne(conversationTimelineItem.userId, params.recipientUserId)
+		);
+	} else if (params.recipientVisitorId) {
+		baseConditions.push(
+			ne(conversationTimelineItem.visitorId, params.recipientVisitorId)
+		);
+	}
 
 	const messages = await db
 		.select({
@@ -186,7 +195,7 @@ export async function getUnseenMessagesForRecipient(
 			aiAgentId: conversationTimelineItem.aiAgentId,
 		})
 		.from(conversationTimelineItem)
-		.where(messagesWhere)
+		.where(and(...baseConditions))
 		.orderBy(desc(conversationTimelineItem.createdAt));
 
 	return messages;

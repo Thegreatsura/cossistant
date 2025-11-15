@@ -138,10 +138,8 @@ export function NewMessageInConversation({
 				<Body className="mx-auto my-auto bg-white font-sans">
 					<Container className="mx-auto my-8 max-w-[600px] px-8 py-8">
 						<Section className="mt-8">
-							{website.logo ? (
+							{website.logo && (
 								<Img alt={website.name} height="24" src={website.logo} />
-							) : (
-								<Img alt="Cossistant Logo" height="24" src={LOGO_URL} />
 							)}
 						</Section>
 
@@ -159,6 +157,14 @@ export function NewMessageInConversation({
 						</Section>
 
 						<Section className="my-4">
+							{actualCount > MAX_DISPLAYED_MESSAGES && (
+								<Text className="mb-3 text-center text-[12px] text-neutral-500">
+									+{actualCount - MAX_DISPLAYED_MESSAGES} earlier{" "}
+									{actualCount - MAX_DISPLAYED_MESSAGES === 1
+										? "message"
+										: "messages"}
+								</Text>
+							)}
 							{messages.slice(0, MAX_DISPLAYED_MESSAGES).map((message, idx) => {
 								const firstInGroup = isFirstInGroup(
 									idx,
@@ -170,52 +176,13 @@ export function NewMessageInConversation({
 								);
 
 								return (
-									<Row
-										className={
-											firstInGroup && idx > 0 ? "pt-3" : idx > 0 ? "pt-1" : ""
-										}
-										key={idx}
-									>
-										{lastInGroup ? (
-											<>
-												<Column className="align-bottom">
-													<Img
-														alt={message.sender.name}
-														className="rounded-full bg-white p-2"
-														height="24"
-														src={
-															message.sender.image ||
-															`${OG_AVATAR_URL}${encodeURIComponent(message.sender.name)}`
-														}
-														width="24"
-													/>
-												</Column>
-												<Column className="w-full pl-2">
-													{firstInGroup && (
-														<Text className="my-0 font-medium text-[12px] text-neutral-500">
-															<span className="text-neutral-700">
-																{message.sender.name}
-															</span>
-															&nbsp;&nbsp;
-															{new Date(message.createdAt).toLocaleTimeString(
-																"en-US",
-																{
-																	hour: "numeric",
-																	minute: "numeric",
-																}
-															)}
-														</Text>
-													)}
-													<Text
-														className="my-0 rounded-lg rounded-bl-none bg-neutral-100 px-4 py-2.5 text-neutral-800 text-sm leading-5"
-														style={{ whiteSpace: "pre-wrap" }}
-													>
-														{message.text}
-													</Text>
-												</Column>
-											</>
-										) : (
-											<Column className="w-full pl-12">
+									<React.Fragment key={idx}>
+										<Row
+											className={
+												firstInGroup && idx > 0 ? "pt-3" : idx > 0 ? "pt-1" : ""
+											}
+										>
+											<Column className="w-full">
 												{firstInGroup && (
 													<Text className="my-0 font-medium text-[12px] text-neutral-500">
 														<span className="text-neutral-700">
@@ -238,18 +205,26 @@ export function NewMessageInConversation({
 													{message.text}
 												</Text>
 											</Column>
+										</Row>
+										{lastInGroup && (
+											<Row className="mt-2">
+												<Column className="align-top" style={{ width: "28px" }}>
+													<Img
+														alt={message.sender.name}
+														className="rounded-full"
+														height="28"
+														src={
+															message.sender.image ||
+															`${OG_AVATAR_URL}${encodeURIComponent(message.sender.name)}?bg=77A6F9&color=ffffff`
+														}
+														width="28"
+													/>
+												</Column>
+											</Row>
 										)}
-									</Row>
+									</React.Fragment>
 								);
 							})}
-							{actualCount > MAX_DISPLAYED_MESSAGES && (
-								<Text className="mt-4 text-center text-[12px] text-neutral-500">
-									+{actualCount - MAX_DISPLAYED_MESSAGES} more{" "}
-									{actualCount - MAX_DISPLAYED_MESSAGES === 1
-										? "message"
-										: "messages"}
-								</Text>
-							)}
 							{isReceiverVisitor ? (
 								<Text className="mt-4 text-center font-medium text-[12px] text-primary">
 									You can reply by replying to this email.
@@ -270,7 +245,7 @@ export function NewMessageInConversation({
 								settings.
 							</Text>
 						)}
-						<Text className="mt-4 text-center text-[11px] text-neutral-400">
+						<Text className="text-center text-[11px] text-neutral-400">
 							Our support is powered by{" "}
 							<Link
 								className="text-neutral-500 underline"

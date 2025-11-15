@@ -1,19 +1,27 @@
 import { db } from "@api/db";
+import { getConversationById } from "@api/db/queries/conversation";
 import {
 	recordEmailBounce,
 	recordEmailComplaint,
 	recordEmailFailure,
 } from "@api/db/queries/email-bounce";
+import { contact, member, user } from "@api/db/schema";
 import { env } from "@api/env";
+import {
+	type ParsedInboundReplyAddress,
+	parseInboundReplyAddress,
+} from "@api/utils/email-threading";
 import {
 	logEmailBounce,
 	logEmailComplaint,
 	logEmailFailure,
 } from "@api/utils/notification-monitoring";
-
+import { createTimelineItem } from "@api/utils/timeline-item";
+import { resend } from "@cossistant/transactional";
+import { ConversationTimelineType } from "@cossistant/types";
+import { and, eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { resend } from "node_modules/@cossistant/transactional/resend/client";
 
 const resendRouters = new Hono();
 
@@ -25,13 +33,15 @@ type ResendWebhookEvent = {
 		| "email.complained"
 		| "email.failed"
 		| "email.opened"
-		| "email.clicked";
+		| "email.clicked"
+		| "email.received";
 	created_at: string;
 	data: {
 		email_id: string;
 		from: string;
 		to: string[];
 		subject: string;
+		message_id?: string;
 		bounce?: {
 			type: string;
 			subType?: string;
@@ -43,6 +53,23 @@ type ResendWebhookEvent = {
 		// Additional fields...
 	};
 };
+
+function extractEmailAddress(raw: string): string | null {
+	const trimmed = raw.trim();
+	const angleStart = trimmed.lastIndexOf("<");
+	const angleEnd = trimmed.lastIndexOf(">");
+
+	if (angleStart !== -1 && angleEnd !== -1 && angleEnd > angleStart + 1) {
+		return trimmed.slice(angleStart + 1, angleEnd).trim();
+	}
+
+	// Fallback: if there are no angle brackets, assume the whole string is an email
+	if (trimmed.includes("@")) {
+		return trimmed;
+	}
+
+	return null;
+}
 
 resendRouters.post("/webhooks", async (c: Context) => {
 	try {
@@ -87,6 +114,12 @@ resendRouters.post("/webhooks", async (c: Context) => {
 async function processWebhookEvent(event: ResendWebhookEvent): Promise<void> {
 	const { type, data } = event;
 
+	// Receiving emails (inbound replies) are handled separately
+	if (type === "email.received") {
+		await handleEmailReceived(event);
+		return;
+	}
+
 	// Extract recipient email (use first recipient)
 	const recipientEmail = data.to[0];
 	if (!recipientEmail) {
@@ -98,6 +131,7 @@ async function processWebhookEvent(event: ResendWebhookEvent): Promise<void> {
 	// For now, we'll need to query the database to find which organization this email belongs to
 	// This is a simplified approach - in production, you might want to include org ID in email tags
 	const organizationId = await getOrganizationIdFromEmail(recipientEmail);
+
 	if (!organizationId) {
 		console.warn(
 			`[Resend Webhook] Could not determine organization for email ${recipientEmail}`
@@ -160,6 +194,152 @@ async function processWebhookEvent(event: ResendWebhookEvent): Promise<void> {
 	}
 }
 
+async function handleEmailReceived(event: ResendWebhookEvent): Promise<void> {
+	const { data } = event;
+
+	if (!Array.isArray(data.to) || data.to.length === 0) {
+		console.warn("[Resend Webhook] email.received event has no recipients");
+		return;
+	}
+
+	// Find the inbound.cossistant.com recipient we encoded the conversation into
+	const inboundRecipient = data.to.find((address) =>
+		address.toLowerCase().endsWith("@inbound.cossistant.com")
+	);
+
+	if (!inboundRecipient) {
+		console.warn(
+			"[Resend Webhook] email.received event without inbound.cossistant.com recipient"
+		);
+		return;
+	}
+
+	const parsed: ParsedInboundReplyAddress | null =
+		parseInboundReplyAddress(inboundRecipient);
+
+	if (!parsed) {
+		console.warn(
+			`[Resend Webhook] Failed to parse inbound reply address: ${inboundRecipient}`
+		);
+		return;
+	}
+
+	const isProdEnv = env.NODE_ENV === "production";
+	const isInboundProd = parsed.environment === "production";
+
+	// Only process events that match the current runtime environment
+	if (isProdEnv !== isInboundProd) {
+		console.log(
+			`[Resend Webhook] Skipping email.received for conversation ${parsed.conversationId} due to environment mismatch (parsed=${parsed.environment}, env=${env.NODE_ENV})`
+		);
+		return;
+	}
+
+	const conversation = await getConversationById(db, {
+		conversationId: parsed.conversationId,
+	});
+
+	if (!conversation) {
+		console.warn(
+			`[Resend Webhook] Conversation not found for inbound reply: ${parsed.conversationId}`
+		);
+		return;
+	}
+
+	if (!resend) {
+		console.warn(
+			"[Resend Webhook] Resend client not initialized, unable to fetch received email content"
+		);
+		return;
+	}
+
+	// Fetch the full email content (HTML, text, headers) using the Receiving API
+	// See https://resend.com/docs/dashboard/receiving/get-email-content
+	const receivedEmailResult = await resend.emails.receiving.get(data.email_id);
+	// SDKs typically return { data, error }, but be defensive in case of different shapes
+	const receivedEmail =
+		(
+			receivedEmailResult as {
+				data?: { text?: string | null; html?: string | null };
+			}
+		).data ??
+		(receivedEmailResult as { text?: string | null; html?: string | null });
+
+	if (!receivedEmail) {
+		console.warn(
+			`[Resend Webhook] Unable to retrieve received email content for id ${data.email_id}`
+		);
+		return;
+	}
+
+	const textBody = (receivedEmail.text ?? "").trim();
+	const htmlBody = (receivedEmail.html ?? "").trim();
+
+	let messageText = textBody;
+
+	if (!messageText && htmlBody) {
+		// Very minimal HTML to text fallback – enough to get readable content
+		messageText = htmlBody
+			.replace(/<[^>]+>/g, " ")
+			.replace(/\s+/g, " ")
+			.trim();
+	}
+
+	if (!messageText) {
+		console.warn(
+			`[Resend Webhook] Received email ${data.email_id} has no usable body content`
+		);
+		return;
+	}
+
+	const senderEmail = extractEmailAddress(data.from);
+
+	let timelineUserId: string | null = null;
+	let timelineVisitorId: string | null = conversation.visitorId;
+
+	if (senderEmail) {
+		const [memberMatch] = await db
+			.select({
+				userId: user.id,
+			})
+			.from(user)
+			.innerJoin(member, eq(member.userId, user.id))
+			.where(
+				and(
+					eq(user.email, senderEmail),
+					eq(member.organizationId, conversation.organizationId)
+				)
+			)
+			.limit(1);
+
+		if (memberMatch) {
+			timelineUserId = memberMatch.userId;
+			timelineVisitorId = null;
+		}
+	}
+
+	// Create a new public message on the conversation as if sent by the visitor/contact
+	await createTimelineItem({
+		db,
+		organizationId: conversation.organizationId,
+		websiteId: conversation.websiteId,
+		conversationId: conversation.id,
+		conversationOwnerVisitorId: conversation.visitorId,
+		item: {
+			type: ConversationTimelineType.MESSAGE,
+			text: messageText,
+			parts: [{ type: "text", text: messageText }],
+			userId: timelineUserId,
+			visitorId: timelineVisitorId,
+			aiAgentId: null,
+		},
+	});
+
+	console.log(
+		`[Resend Webhook] Created timeline message from inbound email for conversation ${conversation.id}`
+	);
+}
+
 /**
  * Get organization ID from recipient email
  * This queries the database to find which organization the email belongs to
@@ -168,10 +348,6 @@ async function getOrganizationIdFromEmail(
 	email: string
 ): Promise<string | null> {
 	try {
-		// Import schema
-		const { user, member, contact } = await import("@api/db/schema");
-		const { eq } = await import("drizzle-orm");
-
 		// Check if email belongs to a user (member)
 		const [userResult] = await db
 			.select({

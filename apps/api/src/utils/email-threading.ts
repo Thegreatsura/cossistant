@@ -1,7 +1,12 @@
+import { env } from "@api/env";
+
 /**
  * Email threading utilities for maintaining conversation continuity
  * Generates proper Message-ID, In-Reply-To, and References headers
+ * and helpers for inbound reply-to addresses.
  */
+
+const INBOUND_EMAIL_DOMAIN = "inbound.cossistant.com";
 
 /**
  * Generate a unique Message-ID for an email
@@ -17,6 +22,71 @@ export function generateMessageId(messageId: string): string {
  */
 export function generateConversationThreadId(conversationId: string): string {
 	return `<conv-${conversationId}@cossistant.com>`;
+}
+
+/**
+ * Generate the inbound reply-to email address for a conversation.
+ *
+ * Our inbound domain is <anything>@inbound.cossistant.com.
+ * We encode:
+ * - environment: in dev/test we prefix "test-", in prod we add nothing
+ * - the conversation id: conv-{conversationId}
+ *
+ * Final format:
+ *   - production: conv-{conversationId}@inbound.cossistant.com
+ *   - non-production: test-conv-{conversationId}@inbound.cossistant.com
+ */
+export function generateInboundReplyAddress(params: {
+	conversationId: string;
+}): string {
+	const envPrefix = env.NODE_ENV === "production" ? "" : "test-";
+	const localPart = `${envPrefix}conv-${params.conversationId}`;
+	return `${localPart}@${INBOUND_EMAIL_DOMAIN}`;
+}
+
+export type ParsedInboundReplyAddress = {
+	conversationId: string;
+	environment: "production" | "test";
+};
+
+/**
+ * Parse an inbound reply-to address and extract the conversation id
+ * and target environment.
+ *
+ * Returns null if the address doesn't match our expected pattern.
+ */
+export function parseInboundReplyAddress(
+	address: string
+): ParsedInboundReplyAddress | null {
+	const [localPart, domainPart] = address.split("@");
+
+	if (!(localPart && domainPart)) {
+		return null;
+	}
+
+	if (domainPart.toLowerCase() !== INBOUND_EMAIL_DOMAIN) {
+		return null;
+	}
+
+	const hasTestPrefix = localPart.startsWith("test-");
+	const withoutEnvPrefix = hasTestPrefix
+		? localPart.slice("test-".length)
+		: localPart;
+
+	if (!withoutEnvPrefix.startsWith("conv-")) {
+		return null;
+	}
+
+	const conversationId = withoutEnvPrefix.slice("conv-".length);
+
+	if (!conversationId) {
+		return null;
+	}
+
+	return {
+		conversationId,
+		environment: hasTestPrefix ? "test" : "production",
+	};
 }
 
 /**
