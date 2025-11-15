@@ -103,7 +103,7 @@ export async function resolveSession(
 			.where(and(eq(session.token, token), gt(session.expiresAt, now)))
 			.innerJoin(user, eq(session.userId, user.id))
 			.limit(1)
-			.$withCache({ tag: `session:${token}` });
+			.$withCache();
 
 		if (res) {
 			foundSession = {
