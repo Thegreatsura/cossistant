@@ -328,7 +328,10 @@ async function handleEmailReceived(event: ResendWebhookEvent): Promise<void> {
 		item: {
 			type: ConversationTimelineType.MESSAGE,
 			text: messageText,
-			parts: [{ type: "text", text: messageText }],
+			parts: [
+				{ type: "text", text: messageText },
+				{ type: "metadata", source: "email" },
+			],
 			userId: timelineUserId,
 			visitorId: timelineVisitorId,
 			aiAgentId: null,

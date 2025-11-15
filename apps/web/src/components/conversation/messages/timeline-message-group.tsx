@@ -58,6 +58,23 @@ export function TimelineMessageGroup({
 	);
 	const visitorName = getVisitorNameWithFallback(visitor);
 
+	// Check if any message in the group was sent via email
+	const isFromEmail = useMemo(
+		() =>
+			items.some((item) =>
+				item.parts?.some(
+					(part) =>
+						typeof part === "object" &&
+						part !== null &&
+						"type" in part &&
+						part.type === "metadata" &&
+						"source" in part &&
+						part.source === "email"
+				)
+			),
+		[items]
+	);
+
 	// Extract who has read the last timeline item in this group (equal check).
 	const readByIds: string[] = useMemo(() => {
 		if (!lastReadMessageIds || items.length === 0) {
@@ -148,6 +165,7 @@ export function TimelineMessageGroup({
 										: humanAgent?.name ||
 											humanAgent?.email?.split("@")[0] ||
 											"Unknown member"}
+								{isFromEmail && " via email"}
 							</TimelineItemGroupHeader>
 						)}
 
