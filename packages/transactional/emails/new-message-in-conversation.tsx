@@ -18,7 +18,7 @@ import {
 // Needed for email templates, don't remove
 import React from "react";
 
-const MAX_DISPLAYED_MESSAGES = 3;
+const MAX_DISPLAYED_MESSAGES = 5;
 
 import { LOGO_URL, OG_AVATAR_URL } from "../constants";
 

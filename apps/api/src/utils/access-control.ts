@@ -21,7 +21,7 @@ export async function isOrganizationAdminOrOwner(
 			)
 		)
 		.limit(1)
-		.$withCache({ tag: "org-admin-membership" });
+		.$withCache();
 
 	return Boolean(result);
 }

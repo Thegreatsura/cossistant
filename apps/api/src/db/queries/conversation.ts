@@ -683,7 +683,7 @@ export async function getConversationById(
 		.from(conversation)
 		.where(eq(conversation.id, params.conversationId))
 		.limit(1)
-		.$withCache({ tag: "conversation_by_id" });
+		.$withCache();
 
 	return _conversation;
 }

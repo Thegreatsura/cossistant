@@ -84,7 +84,8 @@ export function parseInboundReplyAddress(
 	}
 
 	return {
-		conversationId,
+		// Make sure ULID are uppercase, resend can send them lowercase
+		conversationId: conversationId.toUpperCase(),
 		environment: hasTestPrefix ? "test" : "production",
 	};
 }

@@ -36,9 +36,7 @@ export async function getApiKeyByKey(
 		.innerJoin(organization, eq(apiKey.organizationId, organization.id))
 		.innerJoin(website, eq(apiKey.websiteId, website.id))
 		.limit(1)
-		.$withCache({
-			tags: [API_KEY_CACHE_TAG, getApiKeyCacheTagForKey(params.key)],
-		});
+		.$withCache();
 
 	if (res?.website && res.organization && res.api_key) {
 		return {

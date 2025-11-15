@@ -14,7 +14,7 @@ import {
 	ConversationParticipationStatus,
 	MemberNotificationChannel,
 } from "@cossistant/types";
-import { and, desc, eq, gt, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 
 /**
  * Get all active conversation participants except the sender
@@ -158,7 +158,7 @@ export async function getUnseenMessagesForRecipient(
 		.where(seenWhere)
 		.limit(1);
 
-	// Build base conditions for messages
+	// Build base conditions for messages - be permissive here
 	const baseConditions = [
 		eq(conversationTimelineItem.conversationId, params.conversationId),
 		eq(conversationTimelineItem.organizationId, params.organizationId),
@@ -171,17 +171,6 @@ export async function getUnseenMessagesForRecipient(
 	if (seenRecord?.lastSeenAt) {
 		baseConditions.push(
 			gt(conversationTimelineItem.createdAt, seenRecord.lastSeenAt)
-		);
-	}
-
-	// Exclude messages authored by the recipient
-	if (params.recipientUserId) {
-		baseConditions.push(
-			ne(conversationTimelineItem.userId, params.recipientUserId)
-		);
-	} else if (params.recipientVisitorId) {
-		baseConditions.push(
-			ne(conversationTimelineItem.visitorId, params.recipientVisitorId)
 		);
 	}
 
@@ -198,7 +187,20 @@ export async function getUnseenMessagesForRecipient(
 		.where(and(...baseConditions))
 		.orderBy(desc(conversationTimelineItem.createdAt));
 
-	return messages;
+	// Filter out messages authored by the recipient in code
+	const filteredMessages = messages.filter((message) => {
+		if (params.recipientUserId) {
+			// Exclude messages where the userId matches the recipient's userId
+			return message.userId !== params.recipientUserId;
+		}
+		if (params.recipientVisitorId) {
+			// Exclude messages where the visitorId matches the recipient's visitorId
+			return message.visitorId !== params.recipientVisitorId;
+		}
+		return true;
+	});
+
+	return filteredMessages;
 }
 
 /**

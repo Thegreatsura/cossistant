@@ -66,7 +66,7 @@ export async function resolveSession(
 			)
 			.innerJoin(user, eq(session.userId, user.id))
 			.limit(1)
-			.$withCache({ tag: `session:${normalizedCookieToken}` });
+			.$withCache();
 
 		if (res) {
 			foundSession = {
