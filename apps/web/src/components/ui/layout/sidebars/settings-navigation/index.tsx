@@ -63,7 +63,7 @@ export function SettingsNavigationSidebar() {
 					<SidebarItem
 						active={pathname.includes(`${basePath}/notifications`)}
 						href={`${basePath}/notifications`}
-						iconName="notification"
+						iconName="notifications"
 					>
 						Notifications
 					</SidebarItem>

@@ -4,8 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { BaseSubmitButton } from "@/components/ui/base-submit-button";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { UserSelect } from "@/components/ui/user-select";
@@ -117,7 +119,7 @@ export function DefaultParticipantsForm({
 
 	return (
 		<form className="space-y-6" onSubmit={handleSubmit}>
-			<div className="space-y-4">
+			<div className="space-y-4 p-4">
 				<div className="flex items-center justify-between">
 					<div className="space-y-0.5">
 						<Label htmlFor="enable-defaults">Enable default participants</Label>
@@ -179,14 +181,15 @@ export function DefaultParticipantsForm({
 					</div>
 				)}
 			</div>
-
-			<Button
-				className={cn("min-w-[100px]", isPending && "opacity-50")}
-				disabled={isPending || !isFormDirty()}
-				type="submit"
-			>
-				{isPending ? "Saving..." : "Save changes"}
-			</Button>
+			<SettingsRowFooter className="flex items-center justify-end gap-2">
+				<BaseSubmitButton
+					disabled={isPending || !isFormDirty()}
+					isSubmitting={isPending}
+					type="submit"
+				>
+					Save default participants
+				</BaseSubmitButton>
+			</SettingsRowFooter>
 		</form>
 	);
 }
