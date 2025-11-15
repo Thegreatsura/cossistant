@@ -210,6 +210,24 @@ export function useConversationAutoSeen(
 				return;
 			}
 
+			// Check if conversation timeline is scrolled near bottom
+			const timelineElement =
+				typeof document !== "undefined"
+					? document.getElementById("conversation-timeline")
+					: null;
+			const isNearBottom = timelineElement
+				? timelineElement.scrollHeight -
+						timelineElement.scrollTop -
+						timelineElement.clientHeight <=
+					32
+				: true; // Default to true if element not found (SSR or unmounted)
+
+			if (!isNearBottom) {
+				markSeenInFlightRef.current = false;
+				markSeenTimeoutRef.current = null;
+				return;
+			}
+
 			markSeenInFlightRef.current = true;
 
 			client

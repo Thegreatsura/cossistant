@@ -46,7 +46,7 @@ export function ConversationPane({
 }: ConversationPaneProps) {
 	const { newMessageEnabled } = useSoundPreferences({ websiteSlug });
 	const playNewMessageSound = useDashboardNewMessageSound(newMessageEnabled);
-	const previousItemsRef = useRef<TimelineItem[]>([]);
+	const previousItemsRef = useRef<readonly TimelineItem[]>([]);
 
 	const { submit: submitConversationMessage } = useSendConversationMessage({
 		conversationId,
@@ -171,7 +171,7 @@ export function ConversationPane({
 		}
 
 		// Update the ref
-		previousItemsRef.current = currentItems;
+		previousItemsRef.current = currentItems as readonly TimelineItem[];
 	}, [items, currentUserId, playNewMessageSound]);
 
 	useEffect(() => {
@@ -224,6 +224,23 @@ export function ConversationPane({
 					: true;
 
 			if (!(isVisibleNow && hasFocusNow)) {
+				markSeenTimeoutRef.current = null;
+				return;
+			}
+
+			// Check if conversation timeline is scrolled near bottom
+			const timelineElement =
+				typeof document !== "undefined"
+					? document.getElementById("conversation-timeline")
+					: null;
+			const isNearBottom = timelineElement
+				? timelineElement.scrollHeight -
+						timelineElement.scrollTop -
+						timelineElement.clientHeight <=
+					32
+				: true; // Default to true if element not found (SSR or unmounted)
+
+			if (!isNearBottom) {
 				markSeenTimeoutRef.current = null;
 				return;
 			}

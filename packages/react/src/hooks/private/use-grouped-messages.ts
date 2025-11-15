@@ -184,7 +184,7 @@ const buildTimelineReadReceiptData = (
 
 	// Process seen data for each viewer
 	for (const seen of seenData) {
-		let seenTime = getTimestamp(seen.updatedAt);
+		let seenTime = getTimestamp(seen.lastSeenAt);
 		const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
 		if (!viewerId) {
 			continue;
