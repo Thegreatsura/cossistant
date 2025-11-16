@@ -26,21 +26,27 @@ export function useConversationSeen(
 	const hydratedKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (!(conversationId && initialData) || initialData.length === 0) {
+		// Clear hydration key when conversation changes or is unmounted
+		if (!conversationId) {
+			hydratedKeyRef.current = null;
 			return;
 		}
 
-		const hydrationKey = `${conversationId}:${initialData
-			.map((entry) => `${entry.id}:${new Date(entry.updatedAt).getTime()}`)
-			.join("|")}`;
+		// Skip if no initial data
+		if (!initialData || initialData.length === 0) {
+			return;
+		}
+
+		// Only hydrate once per conversation
+		const hydrationKey = conversationId;
 
 		if (hydratedKeyRef.current === hydrationKey) {
-			return;
+			return; // Already hydrated for this conversation
 		}
 
 		hydrateConversationSeen(conversationId, initialData);
 		hydratedKeyRef.current = hydrationKey;
-	}, [conversationId, initialData]);
+	}, [conversationId]); // Only depend on conversationId, NOT initialData
 
 	const conversationSeen = useSeenStore((state) =>
 		conversationId ? (state.conversations[conversationId] ?? null) : null

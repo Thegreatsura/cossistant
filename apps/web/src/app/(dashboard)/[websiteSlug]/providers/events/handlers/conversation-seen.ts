@@ -1,6 +1,6 @@
-import { applyConversationSeenEvent } from "@cossistant/react/realtime/seen-store";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationHeader } from "@/data/conversation-header-cache";
+import { updateConversationSeenInCache } from "@/hooks/use-conversation-seen";
 import type { DashboardRealtimeContext } from "../types";
 
 type ConversationSeenEvent = RealtimeEvent<"conversationSeen">;
@@ -258,8 +258,13 @@ export function handleConversationSeen({
 
 	const conversationId = event.payload.conversationId;
 
-	// Apply to seen store immediately for reactive updates
-	applyConversationSeenEvent(event);
+	// Update React Query cache immediately for reactive updates
+	updateConversationSeenInCache(context.queryClient, conversationId, {
+		userId: event.payload.userId || null,
+		visitorId: event.payload.visitorId || null,
+		aiAgentId: event.payload.aiAgentId || null,
+		lastSeenAt: event.payload.lastSeenAt,
+	});
 
 	// Clear any existing pending update for this conversation
 	const existing = pendingSeenUpdates.get(conversationId);

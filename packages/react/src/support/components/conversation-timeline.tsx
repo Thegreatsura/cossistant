@@ -82,8 +82,8 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 
 	// Play typing sound when someone is typing
 	useTypingSound(typingIndicatorParticipants.length > 0, {
-		volume: 1.2,
-		playbackRate: 1.0,
+		volume: 1,
+		playbackRate: 1.3,
 	});
 
 	const seenNameLookup = useMemo(() => {

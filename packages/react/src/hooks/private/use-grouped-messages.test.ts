@@ -38,44 +38,20 @@ const buildTimelineReadReceiptData = (
 
 	// Process seen data for each viewer
 	for (const seen of seenData) {
-		let seenTime = getTimestamp(seen.lastSeenAt);
+		const seenTime = getTimestamp(seen.lastSeenAt);
 		const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
 		if (!viewerId) {
 			continue;
 		}
 
-		// Find the last message sent by this viewer
-		const lastItemByViewer = sortedItems
-			.filter((item) => {
-				if (seen.userId) {
-					return item.userId === viewerId;
-				}
-				if (seen.visitorId) {
-					return item.visitorId === viewerId;
-				}
-				if (seen.aiAgentId) {
-					return item.aiAgentId === viewerId;
-				}
-				return false;
-			})
-			.at(-1);
-
-		if (lastItemByViewer) {
-			const lastItemTime = getTimestamp(lastItemByViewer.createdAt);
-			if (lastItemTime > seenTime) {
-				seenTime = lastItemTime;
-			}
-		}
-
 		let lastReadItem: TimelineItem | null = null;
 		let unreadCount = 0;
-		let hasPassedLastSeen = false;
 
 		// Process items in chronological order
 		for (const item of sortedItems) {
 			const itemTime = getTimestamp(item.createdAt);
 
-			if (itemTime <= seenTime && !hasPassedLastSeen) {
+			if (itemTime <= seenTime) {
 				// This item has been seen
 				if (item.id) {
 					const seenBy = seenByMap.get(item.id);
@@ -86,7 +62,6 @@ const buildTimelineReadReceiptData = (
 				lastReadItem = item;
 			} else {
 				// This item is unread
-				hasPassedLastSeen = true;
 				unreadCount++;
 			}
 		}
@@ -237,7 +212,7 @@ describe("buildTimelineReadReceiptData", () => {
 		expect(seenByMap.get("msg-3")?.has("user-2")).toBe(false);
 	});
 
-	it("extends seen time to include viewer's own last message", () => {
+	it("does NOT extend seen time to include viewer's own messages sent after lastSeenAt", () => {
 		const items: TimelineItem[] = [
 			createTimelineItem({
 				id: "msg-1",
@@ -259,8 +234,8 @@ describe("buildTimelineReadReceiptData", () => {
 			}),
 		];
 
-		// Visitor's lastSeenAt is 10:03, but they sent a message at 10:05
-		// So they implicitly saw everything up to 10:05
+		// Visitor's lastSeenAt is 10:03, and they sent a message at 10:05
+		// With the fix, their seen time should remain at 10:03
 		const seenData: ConversationSeen[] = [
 			createSeenEntry({
 				userId: null,
@@ -272,11 +247,75 @@ describe("buildTimelineReadReceiptData", () => {
 
 		const { seenByMap } = buildTimelineReadReceiptData(seenData, items);
 
-		// Visitor should have seen msg-1 and msg-2 (msg-2 is their own message)
+		// Visitor should have seen msg-1 (before 10:03)
 		expect(seenByMap.get("msg-1")?.has("visitor-1")).toBe(true);
-		expect(seenByMap.get("msg-2")?.has("visitor-1")).toBe(true);
 
-		// Visitor should NOT have seen msg-3 (after their last message)
+		// Visitor should NOT have seen msg-2 (their own message sent after lastSeenAt)
+		expect(seenByMap.get("msg-2")?.has("visitor-1")).toBe(false);
+
+		// Visitor should NOT have seen msg-3 (after their lastSeenAt)
 		expect(seenByMap.get("msg-3")?.has("visitor-1")).toBe(false);
+	});
+
+	it("correctly handles visitor leaves scenario where dashboard user sends messages", () => {
+		// Scenario: Visitor sends message, leaves, dashboard user responds
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: null,
+				visitorId: "visitor-1",
+				createdAt: new Date("2024-01-01T10:00:00.000Z").toISOString(),
+				text: "Hello, I need help",
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: "dashboard-user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-01T10:05:00.000Z").toISOString(),
+				text: "Hi! How can I help you?",
+			}),
+			createTimelineItem({
+				id: "msg-3",
+				userId: "dashboard-user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-01T10:06:00.000Z").toISOString(),
+				text: "Are you still there?",
+			}),
+		];
+
+		// Visitor saw only up to their own message (they left immediately after sending)
+		const seenData: ConversationSeen[] = [
+			createSeenEntry({
+				userId: null,
+				visitorId: "visitor-1",
+				lastSeenAt: new Date("2024-01-01T10:00:00.000Z").toISOString(),
+			}),
+			createSeenEntry({
+				userId: "dashboard-user-1",
+				visitorId: null,
+				lastSeenAt: new Date("2024-01-01T10:06:00.000Z").toISOString(),
+			}),
+		];
+
+		const { seenByMap, unreadCountMap } = buildTimelineReadReceiptData(
+			seenData,
+			items
+		);
+
+		// Visitor should have seen only msg-1 (their own message at exactly lastSeenAt)
+		expect(seenByMap.get("msg-1")?.has("visitor-1")).toBe(true);
+
+		// Visitor should NOT have seen dashboard user's responses
+		expect(seenByMap.get("msg-2")?.has("visitor-1")).toBe(false);
+		expect(seenByMap.get("msg-3")?.has("visitor-1")).toBe(false);
+
+		// Visitor should have 2 unread messages
+		expect(unreadCountMap.get("visitor-1")).toBe(2);
+
+		// Dashboard user should have seen all messages
+		expect(seenByMap.get("msg-1")?.has("dashboard-user-1")).toBe(true);
+		expect(seenByMap.get("msg-2")?.has("dashboard-user-1")).toBe(true);
+		expect(seenByMap.get("msg-3")?.has("dashboard-user-1")).toBe(true);
+		expect(unreadCountMap.get("dashboard-user-1")).toBe(0);
 	});
 });

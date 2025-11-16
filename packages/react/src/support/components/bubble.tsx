@@ -32,8 +32,8 @@ const BubbleContent: React.FC<BubbleContentProps> = ({
 
 	// Play typing sound when widget is closed and someone is typing
 	useTypingSound(!isOpen && isTyping, {
-		volume: 1.2,
-		playbackRate: 1.0,
+		volume: 1,
+		playbackRate: 1.3,
 	});
 
 	// Play new message sound when unread count increases

@@ -3,7 +3,6 @@
 
 import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
 import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
-import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
 import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
 import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
@@ -18,6 +17,7 @@ import { useConversationActions } from "@/data/use-conversation-actions";
 import { useConversationTimelineItems } from "@/data/use-conversation-timeline-items";
 import { useVisitor } from "@/data/use-visitor";
 import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
+import { useConversationSeen } from "@/hooks/use-conversation-seen";
 import { useDashboardNewMessageSound } from "@/hooks/use-dashboard-new-message-sound";
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { useSidebar } from "@/hooks/use-sidebars";
@@ -99,6 +99,7 @@ export function ConversationPane({
 	);
 
 	const members = useWebsiteMembers();
+
 	const {
 		selectedConversation,
 		previousConversation,

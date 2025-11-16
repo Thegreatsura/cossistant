@@ -184,44 +184,20 @@ const buildTimelineReadReceiptData = (
 
 	// Process seen data for each viewer
 	for (const seen of seenData) {
-		let seenTime = getTimestamp(seen.lastSeenAt);
+		const seenTime = getTimestamp(seen.lastSeenAt);
 		const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
 		if (!viewerId) {
 			continue;
 		}
 
-		// Find the last message sent by this viewer
-		const lastItemByViewer = sortedItems
-			.filter((item) => {
-				if (seen.userId) {
-					return item.userId === viewerId;
-				}
-				if (seen.visitorId) {
-					return item.visitorId === viewerId;
-				}
-				if (seen.aiAgentId) {
-					return item.aiAgentId === viewerId;
-				}
-				return false;
-			})
-			.at(-1);
-
-		if (lastItemByViewer) {
-			const lastItemTime = getTimestamp(lastItemByViewer.createdAt);
-			if (lastItemTime > seenTime) {
-				seenTime = lastItemTime;
-			}
-		}
-
 		let lastReadItem: TimelineItem | null = null;
 		let unreadCount = 0;
-		let hasPassedLastSeen = false;
 
 		// Process items in chronological order
 		for (const item of sortedItems) {
 			const itemTime = getTimestamp(item.createdAt);
 
-			if (itemTime <= seenTime && !hasPassedLastSeen) {
+			if (itemTime <= seenTime) {
 				// This item has been seen
 				if (item.id) {
 					const seenBy = seenByMap.get(item.id);
@@ -232,7 +208,6 @@ const buildTimelineReadReceiptData = (
 				lastReadItem = item;
 			} else {
 				// This item is unread
-				hasPassedLastSeen = true;
 				unreadCount++;
 			}
 		}
