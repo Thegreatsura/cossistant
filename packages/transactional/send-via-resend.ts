@@ -8,7 +8,6 @@ import type {
 
 /**
  * Transform email options to Resend format
- * Follows the Dub.co pattern for clean email sending
  */
 const prepareEmailOptions = (opts: ResendEmailOptions): CreateEmailOptions => {
 	const {
@@ -66,10 +65,11 @@ const prepareEmailOptions = (opts: ResendEmailOptions): CreateEmailOptions => {
 
 	// Add List-Unsubscribe header for marketing emails
 	let finalHeaders = headers;
+
 	if (variant === "marketing") {
 		finalHeaders = {
 			...headers,
-			"List-Unsubscribe": "<https://cossistant.com/settings/notifications>",
+			"List-Unsubscribe": "<https://cossistant.com/email/unsubscribe>",
 			"List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
 		};
 	}

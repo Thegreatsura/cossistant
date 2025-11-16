@@ -1,4 +1,5 @@
 import type { Database } from "@api/db";
+import { getConversationById } from "@api/db/queries/conversation";
 import { getMemberNotificationSettings } from "@api/db/queries/member-notification-settings";
 import {
 	contact,
@@ -14,7 +15,7 @@ import {
 	ConversationParticipationStatus,
 	MemberNotificationChannel,
 } from "@cossistant/types";
-import { and, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNull, ne, or } from "drizzle-orm";
 
 /**
  * Get all active conversation participants except the sender
@@ -131,34 +132,50 @@ export async function getUnseenMessagesForRecipient(
 		recipientUserId?: string;
 		recipientVisitorId?: string;
 		earliestCreatedAt?: string | Date;
+		lastSeenAt?: string | Date | null;
 	}
 ) {
-	// Get the recipient's last seen timestamp
-	const seenWhere = params.recipientUserId
-		? and(
-				eq(conversationSeen.conversationId, params.conversationId),
-				eq(conversationSeen.userId, params.recipientUserId)
-			)
-		: params.recipientVisitorId
-			? and(
-					eq(conversationSeen.conversationId, params.conversationId),
-					eq(conversationSeen.visitorId, params.recipientVisitorId)
-				)
-			: undefined;
+	const hasRecipientUserId = typeof params.recipientUserId === "string";
+	const hasRecipientVisitorId = typeof params.recipientVisitorId === "string";
 
-	if (!seenWhere) {
+	if (hasRecipientUserId || hasRecipientVisitorId) {
+		// ok
+	} else {
 		throw new Error(
 			"Either recipientUserId or recipientVisitorId must be provided"
 		);
 	}
 
-	const [seenRecord] = await db
-		.select({
-			lastSeenAt: conversationSeen.lastSeenAt,
-		})
-		.from(conversationSeen)
-		.where(seenWhere)
-		.limit(1);
+	// Determine the lastSeenAt value, either from the override or by querying the DB
+	let lastSeenAt: string | null = null;
+
+	if (params.lastSeenAt !== undefined) {
+		if (params.lastSeenAt instanceof Date) {
+			lastSeenAt = params.lastSeenAt.toISOString();
+		} else {
+			lastSeenAt = params.lastSeenAt ?? null;
+		}
+	} else {
+		const seenWhere = params.recipientUserId
+			? and(
+					eq(conversationSeen.conversationId, params.conversationId),
+					eq(conversationSeen.userId, params.recipientUserId)
+				)
+			: and(
+					eq(conversationSeen.conversationId, params.conversationId),
+					eq(conversationSeen.visitorId, params.recipientVisitorId as string)
+				);
+
+		const [seenRecord] = await db
+			.select({
+				lastSeenAt: conversationSeen.lastSeenAt,
+			})
+			.from(conversationSeen)
+			.where(seenWhere)
+			.limit(1);
+
+		lastSeenAt = seenRecord?.lastSeenAt ?? null;
+	}
 
 	// Build base conditions for messages - be permissive here
 	const baseConditions = [
@@ -169,11 +186,9 @@ export async function getUnseenMessagesForRecipient(
 		isNull(conversationTimelineItem.deletedAt),
 	];
 
-	// Add lastSeenAt filter if we have a seen record
-	if (seenRecord?.lastSeenAt) {
-		baseConditions.push(
-			gt(conversationTimelineItem.createdAt, seenRecord.lastSeenAt)
-		);
+	// Add lastSeenAt filter if we have a seen value
+	if (lastSeenAt) {
+		baseConditions.push(gt(conversationTimelineItem.createdAt, lastSeenAt));
 	}
 
 	// Add earliestCreatedAt filter if provided to cap messages to those after the triggering message
@@ -182,7 +197,7 @@ export async function getUnseenMessagesForRecipient(
 			params.earliestCreatedAt instanceof Date
 				? params.earliestCreatedAt.toISOString()
 				: params.earliestCreatedAt;
-		baseConditions.push(gt(conversationTimelineItem.createdAt, earliestDate));
+		baseConditions.push(gte(conversationTimelineItem.createdAt, earliestDate));
 	}
 
 	const messages = await db
@@ -228,6 +243,7 @@ export async function getMessagesForEmail(
 		recipientVisitorId?: string;
 		maxMessages?: number;
 		earliestCreatedAt?: string | Date;
+		lastSeenAt?: string | Date | null;
 	}
 ) {
 	const unseenMessages = await getUnseenMessagesForRecipient(db, {
@@ -236,6 +252,7 @@ export async function getMessagesForEmail(
 		recipientUserId: params.recipientUserId,
 		recipientVisitorId: params.recipientVisitorId,
 		earliestCreatedAt: params.earliestCreatedAt,
+		lastSeenAt: params.lastSeenAt,
 	});
 
 	if (unseenMessages.length === 0) {
@@ -379,4 +396,34 @@ export async function isVisitorEmailNotificationEnabled(
 
 	// Default to true if not explicitly set to false
 	return settings.emailNotifications !== false;
+}
+
+/**
+ * Fetch all notification data in one step
+ * Consolidates conversation, website, and participant data fetching
+ */
+export async function getNotificationData(
+	db: Database,
+	params: {
+		conversationId: string;
+		websiteId: string;
+		organizationId: string;
+		excludeUserId?: string;
+	}
+) {
+	const [conversation, websiteInfo, participants] = await Promise.all([
+		getConversationById(db, { conversationId: params.conversationId }),
+		getWebsiteForNotification(db, { websiteId: params.websiteId }),
+		getConversationParticipantsForNotification(db, {
+			conversationId: params.conversationId,
+			organizationId: params.organizationId,
+			excludeUserId: params.excludeUserId,
+		}),
+	]);
+
+	return {
+		conversation,
+		websiteInfo,
+		participants,
+	};
 }

@@ -25,7 +25,7 @@
     "@react-email/render": "^1.2.3",
     "@trpc/server": "^11.5.1",
     "@types/node": "^24.5.0",
-    "@upstash/workflow": "^0.2.19",
+    "@upstash/workflow": "^0.2.22",
     "drizzle-orm": "^0.44.5",
     "hono": "^4.10.1",
     "hono-rate-limiter": "^0.4.2",

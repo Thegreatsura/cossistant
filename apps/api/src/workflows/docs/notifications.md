@@ -12,17 +12,18 @@ The deduplication manager uses Redis to ensure only one workflow runs per conver
 
 ```typescript
 interface WorkflowState {
-  workflowRunId: string;          // Current active workflow run ID
-  initialMessageId: string;       // First message that triggered notifications
+  workflowRunId: string; // Current active workflow run ID
+  initialMessageId: string; // First message that triggered notifications
   initialMessageCreatedAt: string; // Timestamp of the initial message
   conversationId: string;
-  direction: WorkflowDirection;   // "member-to-visitor" | "visitor-to-member"
+  direction: WorkflowDirection; // "member-to-visitor" | "visitor-to-member"
   createdAt: string;
   updatedAt: string;
 }
 ```
 
 **Key Functions:**
+
 - `triggerDeduplicatedWorkflow()`: Cancels any existing workflow and starts a new one, preserving the initial message ID
 - `isActiveWorkflow()`: Checks if a workflow run ID is still the active one
 - `clearWorkflowState()`: Removes workflow state after successful completion
@@ -30,6 +31,7 @@ interface WorkflowState {
 ### 2. Message Trigger Logic (`send-message-with-notification.ts`)
 
 When a new message is sent, the system:
+
 1. Fetches the message metadata (ID and timestamp)
 2. Determines the workflow direction based on sender type
 3. Calls `triggerDeduplicatedWorkflow()` which:
@@ -43,23 +45,31 @@ When a new message is sent, the system:
 The workflow handlers (`/member-sent-message` and `/visitor-sent-message`) follow this flow:
 
 #### Step 1: Validate Workflow
+
 ```typescript
 // Check if this workflow is still active
-const isActive = await isActiveWorkflow(conversationId, direction, workflowRunId);
+const isActive = await isActiveWorkflow(
+  conversationId,
+  direction,
+  workflowRunId
+);
 if (!isActive) return; // Exit if cancelled
 ```
 
 #### Step 2: Fetch Initial Message Info
+
 ```typescript
 // Get the initial message that triggered this workflow
 const workflowState = await getWorkflowState(conversationId, direction);
 ```
 
-#### Step 3: Apply Delays
-- Member notifications: User-configurable delay (0-300 seconds)
-- Visitor notifications: Fixed 1-minute delay
+#### Step 3: Apply Delay
+
+- A single global delay is applied for **all recipients** (members and visitors)
+- This delay allows batching multiple messages into one notification email
 
 #### Step 4: Fetch Unseen Messages
+
 ```typescript
 const { messages, totalCount } = await getMessagesForEmail(db, {
   conversationId,
@@ -73,11 +83,13 @@ const { messages, totalCount } = await getMessagesForEmail(db, {
 This ensures only messages AFTER the initial triggering message are included.
 
 #### Step 5: Send Emails
+
 - Uses idempotency keys to prevent duplicate sends
 - Includes threading headers for email clients
 - Shows up to 3 messages with sender info
 
 #### Step 6: Cleanup
+
 ```typescript
 await clearWorkflowState(conversationId, direction);
 ```
@@ -115,14 +127,11 @@ Time 60s: Workflow 3 executes -> Sends email with messages A, B, C
 ## Configuration
 
 ### Constants (`constants.ts`)
-```typescript
-export const VISITOR_MESSAGE_DELAY_MINUTES = 1;  // Fixed delay for visitors
-export const MAX_MESSAGES_IN_EMAIL = 3;          // Maximum messages shown
-```
 
-### Member Delays
-- Configurable per member: 0-300 seconds
-- Set via notification preferences in the dashboard
+```typescript
+export const MESSAGE_NOTIFICATION_DELAY_MINUTES = 1; // Global delay for all recipients
+export const MAX_MESSAGES_IN_EMAIL = 3; // Maximum messages shown
+```
 
 ## Error Handling
 
@@ -134,6 +143,7 @@ export const MAX_MESSAGES_IN_EMAIL = 3;          // Maximum messages shown
 ## Monitoring & Debugging
 
 ### Log Patterns
+
 ```
 [dev] Triggering member-sent message workflow for conversation conv_123
 [dev] Member-sent message workflow replaced successfully, workflowRunId: msg-notif-conv_123-member-to-visitor-1234567890
@@ -141,6 +151,7 @@ export const MAX_MESSAGES_IN_EMAIL = 3;          // Maximum messages shown
 ```
 
 ### Redis Keys
+
 ```
 workflow:message:{conversationId}:{direction}
 ```

@@ -23,23 +23,8 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useTRPC } from "@/lib/trpc/client";
-
-// Available delay options in minutes
-const DELAY_OPTIONS = [
-	{ value: "0", label: "No delay" },
-	{ value: "1", label: "1 minute" },
-	{ value: "3", label: "3 minutes" },
-	{ value: "5", label: "5 minutes" },
-] as const;
 
 const notificationFormSchema = z.object({
 	[MemberNotificationChannel.EMAIL_MARKETING]: z.object({
@@ -47,7 +32,6 @@ const notificationFormSchema = z.object({
 	}),
 	[MemberNotificationChannel.EMAIL_NEW_MESSAGE]: z.object({
 		enabled: z.boolean(),
-		delayMinutes: z.enum(["0", "1", "3", "5"]),
 	}),
 	[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]: z.object({
 		enabled: z.boolean(),
@@ -85,31 +69,6 @@ function toFormValues(
 	const soundTyping = data?.settings.find(
 		(setting) => setting.channel === MemberNotificationChannel.SOUND_TYPING
 	);
-	const emailDefinition = MEMBER_NOTIFICATION_DEFINITION_MAP.get(
-		MemberNotificationChannel.EMAIL_NEW_MESSAGE
-	);
-
-	const defaultEmailDelayMinutes = emailDefinition
-		? Math.round(emailDefinition.defaultDelaySeconds / 60)
-		: 5;
-
-	// Get delay in minutes and map to closest preset option
-	const delayMinutes = emailMessages
-		? Math.round(emailMessages.delaySeconds / 60)
-		: defaultEmailDelayMinutes;
-
-	// Map to closest preset option (0, 1, 3, 5)
-	let delayOption: "0" | "1" | "3" | "5" = "5";
-
-	if (delayMinutes === 0) {
-		delayOption = "0";
-	} else if (delayMinutes <= 1) {
-		delayOption = "1";
-	} else if (delayMinutes <= 3) {
-		delayOption = "3";
-	} else {
-		delayOption = "5";
-	}
 
 	return {
 		[MemberNotificationChannel.EMAIL_MARKETING]: {
@@ -117,7 +76,6 @@ function toFormValues(
 		},
 		[MemberNotificationChannel.EMAIL_NEW_MESSAGE]: {
 			enabled: emailMessages?.enabled ?? true,
-			delayMinutes: delayOption,
 		},
 		[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]: {
 			enabled: browserPush?.enabled ?? false,
@@ -182,14 +140,6 @@ export function MemberNotificationSettingsForm({
 			}
 
 			const nextSettings = data.settings.map((setting) => {
-				const definition = MEMBER_NOTIFICATION_DEFINITION_MAP.get(
-					setting.channel
-				);
-
-				if (!definition) {
-					return setting;
-				}
-
 				if (setting.channel === MemberNotificationChannel.EMAIL_MARKETING) {
 					return {
 						...setting,
@@ -198,15 +148,10 @@ export function MemberNotificationSettingsForm({
 				}
 
 				if (setting.channel === MemberNotificationChannel.EMAIL_NEW_MESSAGE) {
-					const delayMinutesStr =
-						values[MemberNotificationChannel.EMAIL_NEW_MESSAGE].delayMinutes;
-					const delayMinutes = Number.parseInt(delayMinutesStr, 10);
-
 					return {
 						...setting,
 						enabled:
 							values[MemberNotificationChannel.EMAIL_NEW_MESSAGE].enabled,
-						delaySeconds: delayMinutes * 60,
 					};
 				}
 
@@ -218,7 +163,6 @@ export function MemberNotificationSettingsForm({
 						enabled:
 							values[MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE]
 								.enabled,
-						delaySeconds: definition.defaultDelaySeconds,
 					};
 				}
 
@@ -227,7 +171,6 @@ export function MemberNotificationSettingsForm({
 						...setting,
 						enabled:
 							values[MemberNotificationChannel.SOUND_NEW_MESSAGE].enabled,
-						delaySeconds: definition.defaultDelaySeconds,
 					};
 				}
 
@@ -235,7 +178,6 @@ export function MemberNotificationSettingsForm({
 					return {
 						...setting,
 						enabled: values[MemberNotificationChannel.SOUND_TYPING].enabled,
-						delaySeconds: definition.defaultDelaySeconds,
 					};
 				}
 
@@ -326,54 +268,15 @@ export function MemberNotificationSettingsForm({
 						render={({ field }) => (
 							<FormItem className="space-y-3">
 								<div className="flex items-center justify-between gap-6">
-									<div className="space-y-3">
-										<div>
-											<FormLabel className="text-base">
-												New message emails
-											</FormLabel>
-											<FormDescription>
-												{renderDescription(
-													MemberNotificationChannel.EMAIL_NEW_MESSAGE
-												)}
-											</FormDescription>
-										</div>
-										<FormField
-											control={form.control}
-											name={
-												`${MemberNotificationChannel.EMAIL_NEW_MESSAGE}.delayMinutes` as const
-											}
-											render={({ field: delayField }) => (
-												<FormItem className="mt-6">
-													<FormLabel>Delay before emailing</FormLabel>
-													<Select
-														disabled={isDisabled || !field.value}
-														onValueChange={delayField.onChange}
-														value={delayField.value}
-													>
-														<FormControl>
-															<SelectTrigger>
-																<SelectValue placeholder="Select delay" />
-															</SelectTrigger>
-														</FormControl>
-														<SelectContent>
-															{DELAY_OPTIONS.map((option) => (
-																<SelectItem
-																	key={option.value}
-																	value={option.value}
-																>
-																	{option.label}
-																</SelectItem>
-															))}
-														</SelectContent>
-													</Select>
-													<FormDescription>
-														Time to wait after a new message before sending an
-														email.
-													</FormDescription>
-													<FormMessage />
-												</FormItem>
+									<div>
+										<FormLabel className="text-base">
+											New message emails
+										</FormLabel>
+										<FormDescription>
+											{renderDescription(
+												MemberNotificationChannel.EMAIL_NEW_MESSAGE
 											)}
-										/>
+										</FormDescription>
 									</div>
 									<FormControl>
 										<Switch
