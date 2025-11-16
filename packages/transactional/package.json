@@ -8,7 +8,6 @@
   "exports": {
     ".": "./index.ts",
     "./emails": "./emails/index.ts",
-    "./resend": "./resend/index.ts",
     "./send": "./send-via-resend.ts"
   },
   "dependencies": {
