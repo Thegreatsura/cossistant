@@ -14,13 +14,14 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
 import {
 	Sheet,
@@ -58,6 +59,8 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const trpc = useTRPC();
 	const queryNormalizer = useQueryNormalizer();
 	const {
+		searchTerm,
+		setSearchTerm,
 		page,
 		setPage,
 		pageSize,
@@ -141,9 +144,16 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
 	return (
-		<Page className="relative flex flex-col gap-6">
-			<PageHeader className="bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+		<Page className="relative flex flex-col gap-6 pt-12">
+			<PageHeader className="bg-background/80 backdrop-blur">
 				<PageHeaderTitle>Contacts</PageHeaderTitle>
+				<Input
+					containerClassName="max-w-xs"
+					onChange={(event) => setSearchTerm(event.target.value)}
+					placeholder="Search by name or email"
+					prepend={<Search className="h-4 w-4 text-muted-foreground" />}
+					value={searchTerm}
+				/>
 			</PageHeader>
 			<div className="mt-2 flex flex-col gap-5">
 				{listQuery.error ? (
@@ -192,7 +202,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 				</div>
 			</div>
 			<Sheet onOpenChange={handleOpenChange} open={sheetOpen}>
-				<SheetContent className="w-full border-primary/10 border-l bg-background sm:max-w-xl">
+				<SheetContent className="w-full bg-background sm:max-w-xl">
 					<SheetHeader>
 						<SheetTitle>Contact details</SheetTitle>
 						<SheetDescription>
@@ -377,11 +387,14 @@ function ContactsTable({
 
 	if (isLoading) {
 		return (
-			<div className="overflow-hidden rounded-xl border border-primary/10 bg-background/80 shadow-sm">
+			<div className="overflow-hidden">
 				<Table>
 					<TableHeader>
 						{headerGroups.map((headerGroup) => (
-							<TableRow key={headerGroup.id}>
+							<TableRow
+								className="border-transparent border-b-0"
+								key={headerGroup.id}
+							>
 								{headerGroup.headers.map((header) => (
 									<TableHead key={header.id}>
 										{header.isPlaceholder
@@ -397,7 +410,7 @@ function ContactsTable({
 					</TableHeader>
 					<TableBody>
 						{Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
-							<TableRow key={index}>
+							<TableRow className="border-transparent border-b-0" key={index}>
 								<TableCell colSpan={columns.length}>
 									<Skeleton className="h-12 w-full" />
 								</TableCell>
@@ -411,7 +424,7 @@ function ContactsTable({
 
 	if (!rows.length) {
 		return (
-			<div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-primary/20 border-dashed bg-background/60 px-10 py-16 text-center">
+			<div className="flex flex-col items-center justify-center gap-3 px-10 py-16 text-center">
 				<div className="space-y-1">
 					<h3 className="font-semibold text-base">
 						No contacts match your filters
@@ -426,11 +439,14 @@ function ContactsTable({
 	}
 
 	return (
-		<div className="overflow-hidden rounded-xl border border-primary/10 bg-background/80 shadow-sm">
+		<div className="overflow-hidden">
 			<Table>
 				<TableHeader>
 					{headerGroups.map((headerGroup) => (
-						<TableRow key={headerGroup.id}>
+						<TableRow
+							className="border-transparent border-b-0"
+							key={headerGroup.id}
+						>
 							{headerGroup.headers.map((header) => {
 								const sorted = header.column.getIsSorted();
 
@@ -460,7 +476,7 @@ function ContactsTable({
 				<TableBody>
 					{rows.map((row) => (
 						<TableRow
-							className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/50 focus-visible:outline-offset-2"
+							className="cursor-pointer border-transparent border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/50 focus-visible:outline-offset-2"
 							key={row.id}
 							onClick={() => onRowClick(row.original.id)}
 							onKeyDown={(event) => {
@@ -643,10 +659,7 @@ function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
 				) : (
 					<div className="space-y-3">
 						{visitors.map((visitor) => (
-							<div
-								className="rounded-md border border-primary/10 bg-background/80 p-3"
-								key={visitor.id}
-							>
+							<div className="p-3" key={visitor.id}>
 								<div className="flex flex-col gap-1">
 									<div className="flex items-center justify-between gap-2">
 										<span className="font-medium text-sm">

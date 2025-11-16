@@ -1,5 +1,8 @@
 import { db } from "@api/db";
-import { getConversationById } from "@api/db/queries/conversation";
+import {
+	getConversationById,
+	getMessageMetadata,
+} from "@api/db/queries/conversation";
 import { isEmailSuppressed } from "@api/db/queries/email-bounce";
 import { env } from "@api/env";
 import {
@@ -20,6 +23,12 @@ import {
 	logEmailSuppressed,
 } from "@api/utils/notification-monitoring";
 import {
+	clearWorkflowState,
+	getWorkflowState,
+	isActiveWorkflow,
+	type WorkflowDirection,
+} from "@api/utils/workflow-dedup-manager";
+import {
 	MAX_MESSAGES_IN_EMAIL,
 	VISITOR_MESSAGE_DELAY_MINUTES,
 } from "@api/workflows/constants";
@@ -37,8 +46,38 @@ const messageWorkflow = new Hono();
 messageWorkflow.post(
 	"/member-sent-message",
 	serve<MemberSentMessageData>(async (context) => {
-		const { conversationId, websiteId, organizationId, senderId } =
+		const { conversationId, websiteId, organizationId, senderId, messageId } =
 			context.requestPayload;
+
+		// Get workflow run ID from headers
+		const workflowRunId = context.headers.get("upstash-workflow-runid");
+		const direction: WorkflowDirection = "member-to-visitor";
+
+		// Check if this workflow run is still active
+		if (workflowRunId) {
+			const isActive = await context.run("check-active", async () =>
+				isActiveWorkflow(conversationId, direction, workflowRunId)
+			);
+
+			if (!isActive) {
+				console.log(
+					`[workflow] Workflow ${workflowRunId} is no longer active for ${conversationId}, exiting`
+				);
+				return;
+			}
+		}
+
+		// Get workflow state to find the initial message
+		const workflowState = await context.run("get-workflow-state", async () =>
+			getWorkflowState(conversationId, direction)
+		);
+
+		if (!workflowState) {
+			console.error(
+				`[workflow] No workflow state found for ${conversationId}, this should not happen`
+			);
+			return;
+		}
 
 		// Step 1: Fetch conversation details
 		const conversation = await context.run("fetch-conversation", async () =>
@@ -99,6 +138,7 @@ messageWorkflow.post(
 						organizationId,
 						recipientUserId: participant.userId,
 						maxMessages: MAX_MESSAGES_IN_EMAIL,
+						earliestCreatedAt: workflowState.initialMessageCreatedAt,
 					})
 			);
 
@@ -212,6 +252,7 @@ messageWorkflow.post(
 					organizationId,
 					recipientVisitorId: conversation.visitorId,
 					maxMessages: MAX_MESSAGES_IN_EMAIL,
+					earliestCreatedAt: workflowState.initialMessageCreatedAt,
 				})
 			);
 
@@ -291,14 +332,49 @@ messageWorkflow.post(
 				organizationId,
 			});
 		});
+
+		// Clean up workflow state after successful completion
+		await context.run("cleanup-state", async () => {
+			await clearWorkflowState(conversationId, direction);
+		});
 	})
 );
 
 messageWorkflow.post(
 	"/visitor-sent-message",
 	serve<VisitorSentMessageData>(async (context) => {
-		const { conversationId, websiteId, organizationId, visitorId } =
+		const { conversationId, websiteId, organizationId, visitorId, messageId } =
 			context.requestPayload;
+
+		// Get workflow run ID from headers
+		const workflowRunId = context.headers.get("upstash-workflow-runid");
+		const direction: WorkflowDirection = "visitor-to-member";
+
+		// Check if this workflow run is still active
+		if (workflowRunId) {
+			const isActive = await context.run("check-active", async () =>
+				isActiveWorkflow(conversationId, direction, workflowRunId)
+			);
+
+			if (!isActive) {
+				console.log(
+					`[workflow] Workflow ${workflowRunId} is no longer active for ${conversationId}, exiting`
+				);
+				return;
+			}
+		}
+
+		// Get workflow state to find the initial message
+		const workflowState = await context.run("get-workflow-state", async () =>
+			getWorkflowState(conversationId, direction)
+		);
+
+		if (!workflowState) {
+			console.error(
+				`[workflow] No workflow state found for ${conversationId}, this should not happen`
+			);
+			return;
+		}
 
 		// Step 1: Fetch conversation details
 		const conversation = await context.run("fetch-conversation", async () =>
@@ -358,6 +434,7 @@ messageWorkflow.post(
 						organizationId,
 						recipientUserId: participant.userId,
 						maxMessages: MAX_MESSAGES_IN_EMAIL,
+						earliestCreatedAt: workflowState.initialMessageCreatedAt,
 					})
 			);
 
@@ -432,6 +509,11 @@ messageWorkflow.post(
 				});
 			});
 		}
+
+		// Clean up workflow state after successful completion
+		await context.run("cleanup-state", async () => {
+			await clearWorkflowState(conversationId, direction);
+		});
 	})
 );
 

@@ -1,4 +1,11 @@
-import { triggerWorkflow } from "@api/utils/workflow";
+import { db } from "@api/db";
+import { getMessageMetadata } from "@api/db/queries/conversation";
+import { env } from "@api/env";
+import { workflowClient } from "@api/utils/workflow";
+import {
+	triggerDeduplicatedWorkflow,
+	type WorkflowDirection,
+} from "@api/utils/workflow-dedup-manager";
 import {
 	type MemberSentMessageData,
 	type VisitorSentMessageData,
@@ -25,17 +32,36 @@ export async function triggerMemberSentMessageWorkflow(params: {
 	};
 
 	try {
+		// Fetch message metadata for deduplication
+		const messageMetadata = await getMessageMetadata(db, {
+			messageId: params.messageId,
+			organizationId: params.organizationId,
+		});
+
+		if (!messageMetadata) {
+			console.error(
+				`[dev] Message ${params.messageId} not found, skipping notification workflow`
+			);
+			return;
+		}
+
 		console.log(
 			`[dev] Triggering member-sent message workflow for conversation ${params.conversationId}`
 		);
 
-		await triggerWorkflow({
+		const { workflowRunId, isReplacement } = await triggerDeduplicatedWorkflow({
+			client: workflowClient,
 			path: WORKFLOW.MEMBER_SENT_MESSAGE,
 			data,
+			url: env.BETTER_AUTH_URL,
+			conversationId: params.conversationId,
+			direction: "member-to-visitor" as WorkflowDirection,
+			messageId: params.messageId,
+			messageCreatedAt: messageMetadata.createdAt,
 		});
 
 		console.log(
-			`[dev] Member-sent message workflow triggered successfully for conversation ${params.conversationId}`
+			`[dev] Member-sent message workflow ${isReplacement ? "replaced" : "triggered"} successfully for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
 		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation
@@ -66,17 +92,36 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 	};
 
 	try {
+		// Fetch message metadata for deduplication
+		const messageMetadata = await getMessageMetadata(db, {
+			messageId: params.messageId,
+			organizationId: params.organizationId,
+		});
+
+		if (!messageMetadata) {
+			console.error(
+				`[dev] Message ${params.messageId} not found, skipping notification workflow`
+			);
+			return;
+		}
+
 		console.log(
 			`[dev] Triggering visitor-sent message workflow for conversation ${params.conversationId}`
 		);
 
-		await triggerWorkflow({
+		const { workflowRunId, isReplacement } = await triggerDeduplicatedWorkflow({
+			client: workflowClient,
 			path: WORKFLOW.VISITOR_SENT_MESSAGE,
 			data,
+			url: env.BETTER_AUTH_URL,
+			conversationId: params.conversationId,
+			direction: "visitor-to-member" as WorkflowDirection,
+			messageId: params.messageId,
+			messageCreatedAt: messageMetadata.createdAt,
 		});
 
 		console.log(
-			`[dev] Visitor-sent message workflow triggered successfully for conversation ${params.conversationId}`
+			`[dev] Visitor-sent message workflow ${isReplacement ? "replaced" : "triggered"} successfully for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
 		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation

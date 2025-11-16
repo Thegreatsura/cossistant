@@ -121,6 +121,7 @@ export async function getMemberNotificationPreference(
  * Get unseen messages for a recipient in a conversation
  * Returns all messages that were created after the recipient's lastSeenAt timestamp
  * and excludes messages authored by the recipient themselves
+ * Can optionally filter to only include messages after a specific timestamp
  */
 export async function getUnseenMessagesForRecipient(
 	db: Database,
@@ -129,6 +130,7 @@ export async function getUnseenMessagesForRecipient(
 		organizationId: string;
 		recipientUserId?: string;
 		recipientVisitorId?: string;
+		earliestCreatedAt?: string | Date;
 	}
 ) {
 	// Get the recipient's last seen timestamp
@@ -174,6 +176,15 @@ export async function getUnseenMessagesForRecipient(
 		);
 	}
 
+	// Add earliestCreatedAt filter if provided to cap messages to those after the triggering message
+	if (params.earliestCreatedAt) {
+		const earliestDate =
+			params.earliestCreatedAt instanceof Date
+				? params.earliestCreatedAt.toISOString()
+				: params.earliestCreatedAt;
+		baseConditions.push(gt(conversationTimelineItem.createdAt, earliestDate));
+	}
+
 	const messages = await db
 		.select({
 			id: conversationTimelineItem.id,
@@ -206,6 +217,7 @@ export async function getUnseenMessagesForRecipient(
 /**
  * Get messages for email with sender information
  * Fetches up to maxMessages with sender details (user or visitor name/image)
+ * Can optionally filter to only include messages after a specific timestamp
  */
 export async function getMessagesForEmail(
 	db: Database,
@@ -215,6 +227,7 @@ export async function getMessagesForEmail(
 		recipientUserId?: string;
 		recipientVisitorId?: string;
 		maxMessages?: number;
+		earliestCreatedAt?: string | Date;
 	}
 ) {
 	const unseenMessages = await getUnseenMessagesForRecipient(db, {
@@ -222,6 +235,7 @@ export async function getMessagesForEmail(
 		organizationId: params.organizationId,
 		recipientUserId: params.recipientUserId,
 		recipientVisitorId: params.recipientVisitorId,
+		earliestCreatedAt: params.earliestCreatedAt,
 	});
 
 	if (unseenMessages.length === 0) {

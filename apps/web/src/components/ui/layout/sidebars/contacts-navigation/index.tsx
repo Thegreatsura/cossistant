@@ -59,7 +59,6 @@ const SORT_FIELD_OPTIONS: Array<{ value: ContactSortField; label: string }> = [
 
 export function ContactsNavigationSidebar() {
 	const website = useWebsite();
-	const pathname = usePathname();
 	const {
 		searchTerm,
 		setSearchTerm,
@@ -72,7 +71,6 @@ export function ContactsNavigationSidebar() {
 	} = useContactsTableControls();
 
 	const basePath = `/${website.slug}/contacts`;
-	const isArchivedActive = pathname.startsWith(`${basePath}/archived`);
 
 	const activeSort = sorting[0] ?? { id: "updatedAt", desc: true };
 	const sortField = (activeSort.id as ContactSortField) ?? "updatedAt";
@@ -109,125 +107,98 @@ export function ContactsNavigationSidebar() {
 					</>
 				}
 			>
-				<div className="space-y-5 rounded-xl border border-primary/10 bg-background/80 p-3 shadow-sm">
-					<section className="space-y-2">
-						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground text-xs uppercase tracking-wide">
-								Search
-							</span>
-							<Search className="h-3.5 w-3.5 text-muted-foreground" />
-						</div>
-						<Input
-							onChange={(event) => setSearchTerm(event.target.value)}
-							placeholder="Search by name or email"
-							prepend={<Search className="h-4 w-4 text-muted-foreground" />}
-							value={searchTerm}
-						/>
-					</section>
+				<div className="flex items-center justify-between">
+					<span className="text-muted-foreground text-xs uppercase tracking-wide">
+						Results per page
+					</span>
+					<span className="text-muted-foreground text-xs">{pageSize}</span>
+				</div>
+				<Select
+					onValueChange={(value) => setPageSize(Number.parseInt(value, 10))}
+					value={String(pageSize)}
+				>
+					<SelectTrigger className="w-full">
+						<SelectValue placeholder={pageSize} />
+					</SelectTrigger>
+					<SelectContent>
+						{CONTACTS_PAGE_SIZE_OPTIONS.map((option) => (
+							<SelectItem key={option} value={String(option)}>
+								{option} per page
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
-					<section className="space-y-2">
-						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground text-xs uppercase tracking-wide">
-								Results per page
-							</span>
-							<span className="text-muted-foreground text-xs">{pageSize}</span>
-						</div>
-						<Select
-							onValueChange={(value) => setPageSize(Number.parseInt(value, 10))}
-							value={String(pageSize)}
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wide">
+						<Filter className="h-3.5 w-3.5" />
+						<span>Filters</span>
+					</div>
+					<Button
+						className="h-auto px-2 py-1 text-xs"
+						onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
+						variant="ghost"
+					>
+						Reset
+					</Button>
+				</div>
+				<div className="space-y-2">
+					{VISITOR_FILTER_OPTIONS.map((option) => (
+						<button
+							className="flex w-full flex-col gap-0.5 rounded-md border border-primary/10 bg-background/60 px-3 py-2 text-left transition hover:border-primary/30 hover:bg-background"
+							key={option.value}
+							onClick={() => setVisitorStatus(option.value)}
+							type="button"
 						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder={pageSize} />
-							</SelectTrigger>
-							<SelectContent>
-								{CONTACTS_PAGE_SIZE_OPTIONS.map((option) => (
-									<SelectItem key={option} value={String(option)}>
-										{option} per page
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</section>
-
-					<section className="space-y-3">
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wide">
-								<Filter className="h-3.5 w-3.5" />
-								<span>Filters</span>
+							<div className="flex items-center justify-between text-xs">
+								<span className="font-medium">{option.title}</span>
+								{visitorStatus === option.value ? (
+									<ListFilter className="h-3.5 w-3.5 text-primary" />
+								) : null}
 							</div>
-							<Button
-								className="h-auto px-2 py-1 text-xs"
-								onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
-								variant="ghost"
-							>
-								Reset
-							</Button>
-						</div>
-						<div className="space-y-2">
-							{VISITOR_FILTER_OPTIONS.map((option) => (
-								<button
-									className="flex w-full flex-col gap-0.5 rounded-md border border-primary/10 bg-background/60 px-3 py-2 text-left transition hover:border-primary/30 hover:bg-background"
-									key={option.value}
-									onClick={() => setVisitorStatus(option.value)}
-									type="button"
-								>
-									<div className="flex items-center justify-between text-xs">
-										<span className="font-medium">{option.title}</span>
-										{visitorStatus === option.value ? (
-											<ListFilter className="h-3.5 w-3.5 text-primary" />
-										) : null}
-									</div>
-									<span className="text-[11px] text-muted-foreground">
-										{option.description}
-									</span>
-								</button>
-							))}
-						</div>
-					</section>
-
-					<section className="space-y-3">
-						<div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-wide">
-							<span>Ordering</span>
-							<ListFilter className="h-3.5 w-3.5" />
-						</div>
-						<Select onValueChange={handleSortFieldChange} value={sortField}>
-							<SelectTrigger className="w-full">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{SORT_FIELD_OPTIONS.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<ToggleGroup
-							className="w-full"
-							onValueChange={handleSortOrderChange}
-							type="single"
-							value={sortOrder}
-							variant="outline"
-						>
-							<ToggleGroupItem className="flex-1" value="asc">
-								<div className="flex items-center justify-center gap-1 text-xs">
-									<SortAsc className="h-3.5 w-3.5" />
-									<span>Asc</span>
-								</div>
-							</ToggleGroupItem>
-							<ToggleGroupItem className="flex-1" value="desc">
-								<div className="flex items-center justify-center gap-1 text-xs">
-									<SortDesc className="h-3.5 w-3.5" />
-									<span>Desc</span>
-								</div>
-							</ToggleGroupItem>
-						</ToggleGroup>
-					</section>
+							<span className="text-[11px] text-muted-foreground">
+								{option.description}
+							</span>
+						</button>
+					))}
 				</div>
 
-				<SidebarItem active={isArchivedActive} href={`${basePath}/archived`}>
-					Archived
-				</SidebarItem>
+				<div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-wide">
+					<span>Ordering</span>
+					<ListFilter className="h-3.5 w-3.5" />
+				</div>
+				<Select onValueChange={handleSortFieldChange} value={sortField}>
+					<SelectTrigger className="w-full">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{SORT_FIELD_OPTIONS.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<ToggleGroup
+					className="w-full"
+					onValueChange={handleSortOrderChange}
+					type="single"
+					value={sortOrder}
+					variant="outline"
+				>
+					<ToggleGroupItem className="flex-1" value="asc">
+						<div className="flex items-center justify-center gap-1 text-xs">
+							<SortAsc className="h-3.5 w-3.5" />
+							<span>Asc</span>
+						</div>
+					</ToggleGroupItem>
+					<ToggleGroupItem className="flex-1" value="desc">
+						<div className="flex items-center justify-center gap-1 text-xs">
+							<SortDesc className="h-3.5 w-3.5" />
+							<span>Desc</span>
+						</div>
+					</ToggleGroupItem>
+				</ToggleGroup>
 			</SidebarContainer>
 		</ResizableSidebar>
 	);

@@ -821,3 +821,34 @@ export async function getConversationTimelineItems(
 		hasNextPage,
 	};
 }
+
+/**
+ * Get a specific message's metadata (id and createdAt)
+ * Used for anchoring notification workflows to the triggering message
+ */
+export async function getMessageMetadata(
+	db: Database,
+	params: {
+		messageId: string;
+		organizationId: string;
+	}
+) {
+	const [message] = await db
+		.select({
+			id: conversationTimelineItem.id,
+			createdAt: conversationTimelineItem.createdAt,
+			conversationId: conversationTimelineItem.conversationId,
+		})
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.id, params.messageId),
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.type, "message"),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.limit(1);
+
+	return message;
+}
