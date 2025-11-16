@@ -14,6 +14,6 @@ export * from "./constants";
 // Email templates
 export * from "./emails/index";
 // Resend utilities (client, types, constants, audience management)
-export * from "./resend/index";
+export * from "./resend-utils/index";
 // Main email sending functions
 export { sendBatchEmail, sendEmail } from "./send-via-resend";

@@ -1,10 +1,10 @@
 import type { CreateBatchOptions, CreateEmailOptions } from "resend";
-import { ANTHONY_EMAIL, VARIANT_TO_FROM_MAP } from "./resend/constants";
-import { resend } from "./resend/index";
+import { ANTHONY_EMAIL, VARIANT_TO_FROM_MAP } from "./resend-utils/constants";
+import { resend } from "./resend-utils/index";
 import type {
 	ResendBulkEmailOptions,
 	ResendEmailOptions,
-} from "./resend/types";
+} from "./resend-utils/types";
 
 /**
  * Transform email options to Resend format
