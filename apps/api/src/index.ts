@@ -20,6 +20,7 @@ import { db } from "./db";
 import { getTRPCSession } from "./db/queries/session";
 import { polarRouters } from "./polar";
 import { realtime } from "./realtime/emitter";
+import { resendRouters } from "./resend";
 import { workflowsRouters } from "./workflows";
 import { upgradedWebsocket, websocket } from "./ws/socket";
 
@@ -134,7 +135,7 @@ app.use("/v1/*", defaultRateLimiter);
 app.route("/v1", routers);
 
 app.route("/polar", polarRouters);
-
+app.route("/resend", resendRouters);
 app.route("/workflow", workflowsRouters);
 
 // WebSocket endpoint for real-time communication with rate limiting

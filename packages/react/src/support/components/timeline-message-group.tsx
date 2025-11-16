@@ -67,7 +67,7 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 		return null;
 	}
 
-	const hasSeenIndicator = seenByIds.length > 0 && seenByNames.length > 0;
+	const hasSeenIndicator = seenByIds.length > 0;
 
 	return (
 		<PrimitiveTimelineItemGroup
@@ -140,7 +140,11 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 												className="px-1 text-co-muted-foreground text-xs"
 												seenByIds={seenByIds}
 											>
-												{() => `Seen by ${seenByNames.join(", ")}`}
+												{() =>
+													seenByNames.length > 0
+														? `Seen by ${seenByNames.join(", ")}`
+														: "Seen"
+												}
 											</TimelineItemGroupSeenIndicator>
 										</motion.div>
 									)}

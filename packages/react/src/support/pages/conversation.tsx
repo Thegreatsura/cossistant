@@ -1,8 +1,9 @@
 import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { type ReactElement, useMemo } from "react";
+import { type ReactElement, useEffect, useMemo, useRef } from "react";
 import { useConversation } from "../../hooks/use-conversation";
 import { useConversationPage } from "../../hooks/use-conversation-page";
+import { useNewMessageSound } from "../../hooks/use-new-message-sound";
 import { useSupport } from "../../provider";
 import { AvatarStack } from "../components/avatar-stack";
 import { ConversationTimelineList } from "../components/conversation-timeline";
@@ -60,6 +61,11 @@ export const ConversationPage: ConversationPageComponent = ({
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
 	const { isOpen } = useSupportConfig();
 	const text = useSupportText();
+	const playNewMessageSound = useNewMessageSound({
+		volume: 0.7,
+		playbackRate: 1.0,
+	});
+	const previousItemsRef = useRef<TimelineItem[]>([]);
 
 	const timelineTools = useMemo(
 		() => ({
@@ -102,6 +108,29 @@ export const ConversationPage: ConversationPageComponent = ({
 			navigate({ page: "HOME" });
 		}
 	};
+
+	// Play sound when new messages arrive from agents (not visitor)
+	useEffect(() => {
+		const currentItems = conversation.items;
+		const previousItems = previousItemsRef.current;
+
+		// Check if there are new items
+		if (currentItems.length > previousItems.length) {
+			// Find the new items
+			const newItems = currentItems.slice(previousItems.length);
+
+			// Play sound only if new message is from agent (not visitor)
+			for (const item of newItems) {
+				if (item.type === "message" && !item.visitorId) {
+					playNewMessageSound();
+					break; // Only play once per batch
+				}
+			}
+		}
+
+		// Update the ref
+		previousItemsRef.current = currentItems;
+	}, [conversation.items, playNewMessageSound]);
 
 	return (
 		<div className="flex h-full flex-col gap-0 overflow-hidden">

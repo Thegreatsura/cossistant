@@ -3,7 +3,6 @@
 
 import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
 import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
-import { useConversationSeen } from "@cossistant/react/hooks/use-conversation-seen";
 import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
 import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
@@ -18,8 +17,11 @@ import { useConversationActions } from "@/data/use-conversation-actions";
 import { useConversationTimelineItems } from "@/data/use-conversation-timeline-items";
 import { useVisitor } from "@/data/use-visitor";
 import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
+import { useConversationSeen } from "@/hooks/use-conversation-seen";
+import { useDashboardNewMessageSound } from "@/hooks/use-dashboard-new-message-sound";
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { useSidebar } from "@/hooks/use-sidebars";
+import { useSoundPreferences } from "@/hooks/use-sound-preferences";
 
 const MESSAGES_PAGE_LIMIT = 50;
 const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
@@ -42,6 +44,10 @@ export function ConversationPane({
 	websiteSlug,
 	currentUserId,
 }: ConversationPaneProps) {
+	const { newMessageEnabled } = useSoundPreferences({ websiteSlug });
+	const playNewMessageSound = useDashboardNewMessageSound(newMessageEnabled);
+	const previousItemsRef = useRef<readonly TimelineItem[]>([]);
+
 	const { submit: submitConversationMessage } = useSendConversationMessage({
 		conversationId,
 		websiteSlug,
@@ -93,6 +99,7 @@ export function ConversationPane({
 	);
 
 	const members = useWebsiteMembers();
+
 	const {
 		selectedConversation,
 		previousConversation,
@@ -145,6 +152,29 @@ export function ConversationPane({
 		return null;
 	}, [items]);
 
+	// Play sound when new messages arrive from others (not current user)
+	useEffect(() => {
+		const currentItems = items;
+		const previousItems = previousItemsRef.current;
+
+		// Check if there are new items
+		if (currentItems.length > previousItems.length) {
+			// Find the new items
+			const newItems = currentItems.slice(previousItems.length);
+
+			// Play sound only if new message is from someone else (not current user)
+			for (const item of newItems) {
+				if (item.type === "message" && item.userId !== currentUserId) {
+					playNewMessageSound();
+					break; // Only play once per batch
+				}
+			}
+		}
+
+		// Update the ref
+		previousItemsRef.current = currentItems as readonly TimelineItem[];
+	}, [items, currentUserId, playNewMessageSound]);
+
 	useEffect(() => {
 		if (markSeenTimeoutRef.current) {
 			clearTimeout(markSeenTimeoutRef.current);
@@ -195,6 +225,23 @@ export function ConversationPane({
 					: true;
 
 			if (!(isVisibleNow && hasFocusNow)) {
+				markSeenTimeoutRef.current = null;
+				return;
+			}
+
+			// Check if conversation timeline is scrolled near bottom
+			const timelineElement =
+				typeof document !== "undefined"
+					? document.getElementById("conversation-timeline")
+					: null;
+			const isNearBottom = timelineElement
+				? timelineElement.scrollHeight -
+						timelineElement.scrollTop -
+						timelineElement.clientHeight <=
+					32
+				: true; // Default to true if element not found (SSR or unmounted)
+
+			if (!isNearBottom) {
 				markSeenTimeoutRef.current = null;
 				return;
 			}

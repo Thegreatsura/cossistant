@@ -1,0 +1,354 @@
+import { db } from "@api/db";
+import { isEmailSuppressed } from "@api/db/queries/email-bounce";
+import {
+	generateEmailIdempotencyKey,
+	generateInboundReplyAddress,
+	generateThreadingHeaders,
+} from "@api/utils/email-threading";
+import {
+	getMessagesForEmail,
+	getNotificationData,
+	getVisitorEmailForNotification,
+	isVisitorEmailNotificationEnabled,
+} from "@api/utils/notification-helpers";
+import {
+	logEmailSent,
+	logEmailSuppressed,
+} from "@api/utils/notification-monitoring";
+import {
+	clearWorkflowState,
+	getWorkflowState,
+	isActiveWorkflow,
+	type WorkflowDirection,
+} from "@api/utils/workflow-dedup-manager";
+import {
+	MAX_MESSAGES_IN_EMAIL,
+	MESSAGE_NOTIFICATION_DELAY_MINUTES,
+} from "@api/workflows/constants";
+import { sendMemberEmailNotification } from "@api/workflows/member-email-notifier";
+import { NewMessageInConversation, sendEmail } from "@cossistant/transactional";
+import { serve } from "@upstash/workflow/hono";
+import { Hono } from "hono";
+
+// Needed for email templates, don't remove
+import React from "react";
+
+import type { MemberSentMessageData, VisitorSentMessageData } from "./types";
+
+const messageWorkflow = new Hono();
+
+messageWorkflow.post(
+	"/member-sent-message",
+	serve<MemberSentMessageData>(async (context) => {
+		const { conversationId, websiteId, organizationId, senderId } =
+			context.requestPayload;
+
+		// Get workflow run ID from headers
+		const workflowRunId = context.headers.get("upstash-workflow-runid");
+		const direction: WorkflowDirection = "member-to-visitor";
+
+		// Check if this workflow run is still active
+		if (workflowRunId) {
+			const isActive = await context.run("check-active", async () =>
+				isActiveWorkflow(conversationId, direction, workflowRunId)
+			);
+
+			if (!isActive) {
+				console.log(
+					`[workflow] Workflow ${workflowRunId} is no longer active for ${conversationId}, exiting`
+				);
+				return;
+			}
+		}
+
+		// Get workflow state to find the initial message
+		const workflowState = await context.run("get-workflow-state", async () =>
+			getWorkflowState(conversationId, direction)
+		);
+
+		if (!workflowState) {
+			console.error(
+				`[workflow] No workflow state found for ${conversationId}, this should not happen`
+			);
+			return;
+		}
+
+		// Step 1: Prepare data (conversation, website, participants, seen state, recipients)
+		const prepared = await context.run("prepare-data", async () => {
+			const { conversation, websiteInfo, participants } =
+				await getNotificationData(db, {
+					conversationId,
+					websiteId,
+					organizationId,
+					excludeUserId: senderId,
+				});
+
+			if (!conversation) {
+				return null;
+			}
+
+			if (!websiteInfo) {
+				return null;
+			}
+
+			const memberRecipients = participants.map((participant) => ({
+				kind: "member" as const,
+				userId: participant.userId,
+				memberId: participant.memberId,
+				email: participant.userEmail,
+			}));
+
+			// Optional visitor recipient
+			const visitorInfo = await getVisitorEmailForNotification(db, {
+				visitorId: conversation.visitorId,
+				websiteId,
+			});
+
+			let visitorRecipient: {
+				kind: "visitor";
+				visitorId: string;
+				email: string;
+			} | null = null;
+
+			if (visitorInfo?.contactEmail) {
+				const visitorNotificationsEnabled =
+					await isVisitorEmailNotificationEnabled(db, {
+						visitorId: conversation.visitorId,
+						websiteId,
+					});
+
+				if (visitorNotificationsEnabled) {
+					visitorRecipient = {
+						kind: "visitor",
+						visitorId: conversation.visitorId,
+						email: visitorInfo.contactEmail,
+					};
+				}
+			}
+
+			return {
+				conversationId,
+				websiteId,
+				organizationId,
+				conversation,
+				websiteInfo,
+				memberRecipients,
+				visitorRecipient,
+			};
+		});
+
+		if (!prepared) {
+			return;
+		}
+
+		// Step 2: Apply a single global delay for all recipients
+		const globalDelaySeconds = MESSAGE_NOTIFICATION_DELAY_MINUTES * 60;
+
+		if (globalDelaySeconds > 0) {
+			await context.sleep("global-delay", globalDelaySeconds);
+		}
+
+		// Step 3: Send notifications in a single step with an internal loop
+		await context.run("send-notifications", async () => {
+			// Send emails to member recipients using the shared helper
+			for (const recipient of prepared.memberRecipients) {
+				await sendMemberEmailNotification({
+					db,
+					recipient,
+					conversationId: prepared.conversationId,
+					organizationId: prepared.organizationId,
+					websiteInfo: prepared.websiteInfo,
+					workflowState,
+				});
+			}
+
+			// Handle visitor recipient separately (keeping inline for now)
+			if (prepared.visitorRecipient?.email) {
+				// Visitor preferences already checked in prepare-data
+
+				// Fetch unseen messages for visitor
+				const { messages, totalCount } = await getMessagesForEmail(db, {
+					conversationId: prepared.conversationId,
+					organizationId: prepared.organizationId,
+					recipientVisitorId: prepared.visitorRecipient.visitorId,
+					maxMessages: MAX_MESSAGES_IN_EMAIL,
+					earliestCreatedAt: workflowState.initialMessageCreatedAt,
+				});
+
+				if (messages.length > 0) {
+					// Check suppression
+					const isSuppressed = await isEmailSuppressed(db, {
+						email: prepared.visitorRecipient.email,
+						organizationId: prepared.organizationId,
+					});
+
+					if (isSuppressed) {
+						logEmailSuppressed({
+							email: prepared.visitorRecipient.email,
+							conversationId: prepared.conversationId,
+							organizationId: prepared.organizationId,
+							reason: "bounced_or_complained",
+						});
+					} else {
+						// Send email notification
+						const threadingHeaders = generateThreadingHeaders({
+							conversationId: prepared.conversationId,
+						});
+
+						const idempotencyKey = generateEmailIdempotencyKey({
+							conversationId: prepared.conversationId,
+							recipientEmail: prepared.visitorRecipient.email,
+							timestamp: new Date(
+								workflowState.initialMessageCreatedAt
+							).getTime(),
+						});
+
+						await sendEmail(
+							{
+								to: prepared.visitorRecipient.email,
+								replyTo: generateInboundReplyAddress({
+									conversationId: prepared.conversationId,
+								}),
+								subject:
+									totalCount > 1
+										? `${totalCount} new messages from ${prepared.websiteInfo.name}`
+										: `New message from ${prepared.websiteInfo.name}`,
+								react: (
+									<NewMessageInConversation
+										conversationId={prepared.conversationId}
+										email={prepared.visitorRecipient.email}
+										isReceiverVisitor={true}
+										messages={messages}
+										totalCount={totalCount}
+										website={{
+											name: prepared.websiteInfo.name,
+											slug: prepared.websiteInfo.slug,
+											logo: prepared.websiteInfo.logo,
+										}}
+									/>
+								),
+								variant: "notifications",
+								headers: threadingHeaders,
+							},
+							{ idempotencyKey }
+						);
+
+						logEmailSent({
+							email: prepared.visitorRecipient.email,
+							conversationId: prepared.conversationId,
+							organizationId: prepared.organizationId,
+						});
+					}
+				}
+			}
+		});
+
+		// Step 4: Clean up workflow state after successful completion
+		await context.run("cleanup-state", async () => {
+			await clearWorkflowState(conversationId, direction);
+		});
+	})
+);
+
+messageWorkflow.post(
+	"/visitor-sent-message",
+	serve<VisitorSentMessageData>(async (context) => {
+		const { conversationId, websiteId, organizationId } =
+			context.requestPayload;
+
+		// Get workflow run ID from headers
+		const workflowRunId = context.headers.get("upstash-workflow-runid");
+		const direction: WorkflowDirection = "visitor-to-member";
+
+		// Check if this workflow run is still active
+		if (workflowRunId) {
+			const isActive = await context.run("check-active", async () =>
+				isActiveWorkflow(conversationId, direction, workflowRunId)
+			);
+
+			if (!isActive) {
+				console.log(
+					`[workflow] Workflow ${workflowRunId} is no longer active for ${conversationId}, exiting`
+				);
+				return;
+			}
+		}
+
+		// Get workflow state to find the initial message
+		const workflowState = await context.run("get-workflow-state", async () =>
+			getWorkflowState(conversationId, direction)
+		);
+
+		if (!workflowState) {
+			console.error(
+				`[workflow] No workflow state found for ${conversationId}, this should not happen`
+			);
+			return;
+		}
+
+		// Step 1: Prepare data (conversation, website, participants, seen state, recipients)
+		const prepared = await context.run("prepare-data", async () => {
+			const { conversation, websiteInfo, participants } =
+				await getNotificationData(db, {
+					conversationId,
+					websiteId,
+					organizationId,
+				});
+
+			if (!conversation) {
+				return null;
+			}
+
+			if (!websiteInfo) {
+				return null;
+			}
+
+			const memberRecipients = participants.map((participant) => ({
+				kind: "member" as const,
+				userId: participant.userId,
+				memberId: participant.memberId,
+				email: participant.userEmail,
+			}));
+
+			return {
+				conversationId,
+				organizationId,
+				websiteInfo,
+				memberRecipients,
+			};
+		});
+
+		if (!prepared) {
+			return;
+		}
+
+		// Step 2: Apply a single global delay for all recipients
+		const globalDelaySeconds = MESSAGE_NOTIFICATION_DELAY_MINUTES * 60;
+
+		if (globalDelaySeconds > 0) {
+			await context.sleep("global-delay", globalDelaySeconds);
+		}
+
+		// Step 3: Send notifications in a single step with an internal loop
+		await context.run("send-notifications", async () => {
+			// Send emails to member recipients using the shared helper
+			for (const recipient of prepared.memberRecipients) {
+				await sendMemberEmailNotification({
+					db,
+					recipient,
+					conversationId: prepared.conversationId,
+					organizationId: prepared.organizationId,
+					websiteInfo: prepared.websiteInfo,
+					workflowState,
+				});
+			}
+		});
+
+		// Step 4: Clean up workflow state after successful completion
+		await context.run("cleanup-state", async () => {
+			await clearWorkflowState(conversationId, direction);
+		});
+	})
+);
+
+export default messageWorkflow;

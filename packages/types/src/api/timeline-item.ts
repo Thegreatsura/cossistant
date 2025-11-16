@@ -98,6 +98,15 @@ const timelinePartEventSchema = z.object({
 	}),
 });
 
+const timelinePartMetadataSchema = z.object({
+	type: z.literal("metadata").openapi({
+		description: "Type of timeline part - always 'metadata' for metadata parts",
+	}),
+	source: z.enum(["email", "widget", "api"]).openapi({
+		description: "Source channel through which the message was created",
+	}),
+});
+
 export const timelineItemPartsSchema = z
 	.array(
 		z.union([
@@ -105,6 +114,7 @@ export const timelineItemPartsSchema = z
 			timelinePartEventSchema,
 			timelinePartImageSchema,
 			timelineFileSchema,
+			timelinePartMetadataSchema,
 		])
 	)
 	.openapi({
@@ -173,6 +183,7 @@ export type TimelinePartText = z.infer<typeof timelinePartTextSchema>;
 export type TimelinePartImage = z.infer<typeof timelinePartImageSchema>;
 export type TimelinePartFile = z.infer<typeof timelineFileSchema>;
 export type TimelinePartEvent = z.infer<typeof timelinePartEventSchema>;
+export type TimelinePartMetadata = z.infer<typeof timelinePartMetadataSchema>;
 
 // REST API Schemas
 export const getConversationTimelineItemsRequestSchema = z

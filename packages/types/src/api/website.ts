@@ -125,6 +125,14 @@ export const websiteSummarySchema = z
 			description: "The domains allowed to use the website's public keys.",
 			example: ["https://dub.co", "http://localhost:3000"],
 		}),
+		defaultParticipantIds: z
+			.array(z.string())
+			.nullable()
+			.openapi({
+				description:
+					"Default participant user IDs for new conversations. null = disabled, [] = auto (admin/owner), [...ids] = specific users.",
+				example: ["01JG000000000000000000000"],
+			}),
 	})
 	.openapi({
 		description: "Summary information for a website used in settings screens.",
@@ -209,6 +217,7 @@ const websiteUpdateDataSchema = z
 		description: z.string().nullable().optional(),
 		logoUrl: z.string().url().nullable().optional(),
 		whitelistedDomains: z.array(z.url()).optional(),
+		defaultParticipantIds: z.array(z.string()).nullable().optional(),
 		installationTarget: z.nativeEnum(WebsiteInstallationTarget).optional(),
 		status: z.enum(WEBSITE_STATUS_VALUES).optional(),
 		teamId: z.string().nullable().optional(),

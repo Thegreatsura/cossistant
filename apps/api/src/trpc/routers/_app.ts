@@ -3,6 +3,7 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { createTRPCRouter } from "../init";
 import { contactRouter } from "./contact";
 import { conversationRouter } from "./conversation";
+import { notificationRouter } from "./notification";
 import { planRouter } from "./plan";
 import { resendRouter } from "./resend";
 import { uploadRouter } from "./upload";
@@ -23,6 +24,7 @@ export const origamiTRPCRouter = createTRPCRouter({
 	contact: contactRouter,
 	upload: uploadRouter,
 	plan: planRouter,
+	notification: notificationRouter,
 });
 
 // export type definition of API

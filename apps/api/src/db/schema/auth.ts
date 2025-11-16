@@ -3,7 +3,16 @@ import {
 	type InferSelectModel,
 	relations,
 } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+	boolean,
+	index,
+	integer,
+	jsonb,
+	pgTable,
+	text,
+	timestamp,
+	uniqueIndex,
+} from "drizzle-orm/pg-core";
 import {
 	ulidNullableReference,
 	ulidPrimaryKey,
@@ -174,6 +183,50 @@ export const member = pgTable(
 	]
 );
 
+export const memberNotificationSetting = pgTable(
+	"member_notification_setting",
+	{
+		id: ulidPrimaryKey("id"),
+		memberId: ulidReference("member_id")
+			.notNull()
+			.references(() => member.id, {
+				onDelete: "cascade",
+			}),
+		organizationId: ulidReference("organization_id")
+			.notNull()
+			.references(() => organization.id, {
+				onDelete: "cascade",
+			}),
+		channel: text("channel").notNull(),
+		enabled: boolean("enabled")
+			.$defaultFn(() => true)
+			.notNull(),
+		config: jsonb("config"),
+		priority: integer("priority")
+			.$defaultFn(() => 0)
+			.notNull(),
+		delaySeconds: integer("delay_seconds")
+			.$defaultFn(() => 0)
+			.notNull(),
+		createdAt: timestamp("created_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+		updatedAt: timestamp("updated_at")
+			.$defaultFn(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		index("member_notification_setting_member_idx").on(table.memberId),
+		index("member_notification_setting_org_idx").on(table.organizationId),
+		index("member_notification_setting_channel_idx").on(table.channel),
+		index("member_notification_setting_priority_idx").on(table.priority),
+		uniqueIndex("member_notification_setting_member_channel_idx").on(
+			table.memberId,
+			table.channel
+		),
+	]
+);
+
 export const team = pgTable(
 	"team",
 	{
@@ -305,7 +358,22 @@ export const memberRelations = relations(member, ({ one, many }) => ({
 		fields: [member.userId],
 		references: [user.id],
 	}),
+	notificationSettings: many(memberNotificationSetting),
 }));
+
+export const memberNotificationSettingRelations = relations(
+	memberNotificationSetting,
+	({ one }) => ({
+		member: one(member, {
+			fields: [memberNotificationSetting.memberId],
+			references: [member.id],
+		}),
+		organization: one(organization, {
+			fields: [memberNotificationSetting.organizationId],
+			references: [organization.id],
+		}),
+	})
+);
 
 export const invitationRelations = relations(invitation, ({ one }) => ({
 	organization: one(organization, {
@@ -339,6 +407,13 @@ export type VerificationInsert = InferInsertModel<typeof verification>;
 
 export type MemberSelect = InferSelectModel<typeof member>;
 export type MemberInsert = InferInsertModel<typeof member>;
+
+export type MemberNotificationSettingSelect = InferSelectModel<
+	typeof memberNotificationSetting
+>;
+export type MemberNotificationSettingInsert = InferInsertModel<
+	typeof memberNotificationSetting
+>;
 
 export type InvitationSelect = InferSelectModel<typeof invitation>;
 export type InvitationInsert = InferInsertModel<typeof invitation>;

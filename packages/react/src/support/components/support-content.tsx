@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import type React from "react";
 
 import type { SupportProps } from "../index";
+import type { CustomPage } from "../router";
 import { SupportRouter } from "../router";
 import { cn } from "../utils";
 import { Bubble } from "./bubble";
@@ -16,6 +17,7 @@ type SupportContentProps = {
 	positioning?: "fixed" | "absolute";
 	slots?: SupportProps["slots"];
 	classNames?: SupportProps["classNames"];
+	customPages?: CustomPage[];
 	children?: React.ReactNode;
 };
 
@@ -29,6 +31,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 	positioning = "fixed",
 	slots = {},
 	classNames = {},
+	customPages,
 	children,
 }) => {
 	// Use custom components if provided, otherwise use defaults
@@ -68,7 +71,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 				className={classNames.container}
 				position={position}
 			>
-				<RouterComponent>{children}</RouterComponent>
+				<RouterComponent customPages={customPages}>{children}</RouterComponent>
 			</ContainerComponent>
 		</motion.div>
 	);

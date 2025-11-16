@@ -1,5 +1,7 @@
-import { env } from "@api/env";
-import { updateContactSubscriptionStatus } from "@api/lib/resend";
+import {
+	RESEND_AUDIENCE_ID,
+	updateContactSubscriptionStatus,
+} from "@cossistant/transactional";
 import { emailSchema } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -17,7 +19,7 @@ export const resendRouter = createTRPCRouter({
 
 			try {
 				const success = await updateContactSubscriptionStatus(
-					env.RESEND_AUDIENCE_ID,
+					RESEND_AUDIENCE_ID,
 					email,
 					true // Set unsubscribed to true
 				);

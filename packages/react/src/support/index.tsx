@@ -2,12 +2,12 @@ import "./support.css";
 
 import type { DefaultMessage } from "@cossistant/types";
 import React, { type ReactElement } from "react";
-import { PageRegistryProvider } from "../primitives";
 import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportConfig } from "../support-config";
 import { SupportContent } from "./components/support-content";
 import { ThemeWrapper } from "./components/theme-wrapper";
+import type { CustomPage } from "./router";
 import { initializeSupportStore } from "./store/support-store";
 import type { SupportLocale, SupportTextContentOverrides } from "./text";
 import { SupportTextProvider } from "./text";
@@ -46,7 +46,9 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 		container?: string;
 	};
 
-	// NEW: Allow declarative children (Page components)
+	// NEW: Type-safe custom pages
+	customPages?: CustomPage[];
+
 	children?: React.ReactNode;
 };
 
@@ -58,10 +60,14 @@ export type SupportProps<Locale extends string = SupportLocale> = {
  * <Support />
  *
  * @example
- * // With customization
- * <Support theme="dark" classNames={{ bubble: "bg-purple-600" }}>
- *   <Page name="FAQ" component={FAQPage} />
- * </Support>
+ * // With customization and custom pages
+ * <Support
+ *   theme="dark"
+ *   classNames={{ bubble: "bg-purple-600" }}
+ *   customPages={[
+ *     { name: "FAQ", component: FAQPage }
+ *   ]}
+ * />
  */
 export function Support<Locale extends string = SupportLocale>({
 	className,
@@ -76,6 +82,7 @@ export function Support<Locale extends string = SupportLocale>({
 	theme,
 	slots,
 	classNames,
+	customPages,
 	children,
 }: SupportProps<Locale>): ReactElement | null {
 	const { website } = useSupport();
@@ -94,27 +101,25 @@ export function Support<Locale extends string = SupportLocale>({
 
 	return (
 		<ThemeWrapper theme={theme}>
-			<PageRegistryProvider>
-				{children}
-				<SupportRealtimeProvider>
-					<SupportTextProvider content={content} locale={locale}>
-						<SupportContent
-							align={align}
-							className={className}
-							classNames={classNames}
-							position={position}
-							positioning={positioning}
-							slots={slots}
-						>
-							{children}
-						</SupportContent>
-					</SupportTextProvider>
-				</SupportRealtimeProvider>
-				<SupportConfig
-					defaultMessages={defaultMessages}
-					quickOptions={quickOptions}
-				/>
-			</PageRegistryProvider>
+			<SupportRealtimeProvider>
+				<SupportTextProvider content={content} locale={locale}>
+					<SupportContent
+						align={align}
+						className={className}
+						classNames={classNames}
+						customPages={customPages}
+						position={position}
+						positioning={positioning}
+						slots={slots}
+					>
+						{children}
+					</SupportContent>
+				</SupportTextProvider>
+			</SupportRealtimeProvider>
+			<SupportConfig
+				defaultMessages={defaultMessages}
+				quickOptions={quickOptions}
+			/>
 		</ThemeWrapper>
 	);
 }
@@ -128,15 +133,14 @@ export type {
 	RouteRegistry,
 	SupportPage,
 } from "@cossistant/core";
-export type { PageProps } from "../primitives";
-// Page component for declarative routing (re-exported from primitives)
-export { Page } from "../primitives";
 export { CoButton as Button } from "./components/button";
 // UI components for building custom pages
 export { Header } from "./components/header";
 // WebSocket context
 export type { WebSocketContextValue } from "./context/websocket";
 export { useWebSocket, WebSocketProvider } from "./context/websocket";
+// Custom page type for type-safe routing
+export type { CustomPage } from "./router";
 // Navigation hooks and store
 export {
 	useSupportConfig,

@@ -2,12 +2,11 @@ import { db } from "@api/db";
 import * as schema from "@api/db/schema";
 import { waitingListEntry } from "@api/db/schema/waiting-list";
 import { env } from "@api/env";
-import { sendEmail } from "@api/lib/resend";
 import { generateULID } from "@api/utils/db/ids";
 import { generateUniqueReferralCode } from "@api/utils/referral-code";
 import { triggerWorkflow } from "@api/utils/workflow";
 import { WORKFLOW } from "@api/workflows/types";
-import { ResetPasswordEmail } from "@cossistant/transactional/emails/reset-password";
+import { ResetPasswordEmail, sendEmail } from "@cossistant/transactional";
 import { polar, portal, usage } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 import { betterAuth } from "better-auth";
@@ -17,10 +16,10 @@ import {
 	anonymous,
 	organization as organizationPlugin,
 } from "better-auth/plugins";
+import React from "react";
 import polarClient from "./polar";
 
-// Needed for email templates, don't remove
-// Error bellow is expected
+// Needed for email templates
 export const auth = betterAuth({
 	baseURL:
 		process.env.BETTER_AUTH_URL ||
@@ -40,16 +39,16 @@ export const auth = betterAuth({
 		sendResetPassword: async ({ user, url, token }, request) => {
 			try {
 				await sendEmail({
-					to: [user.email],
+					to: user.email,
 					subject: "Reset your password",
-					content: (
+					react: (
 						<ResetPasswordEmail
 							email={user.email}
 							name={user.name}
 							resetUrl={url}
 						/>
 					),
-					includeUnsubscribe: false,
+					variant: "notifications",
 				});
 				console.log(`Password reset email sent to ${user.email}`);
 			} catch (error) {

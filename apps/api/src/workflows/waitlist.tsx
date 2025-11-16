@@ -1,5 +1,8 @@
-import { addUserToDefaultAudience, sendEmail } from "@api/lib/resend";
-import { JoinedWaitlistEmail } from "@cossistant/transactional/emails/joined-waitlist";
+import {
+	addUserToDefaultAudience,
+	JoinedWaitlistEmail,
+	sendEmail,
+} from "@cossistant/transactional";
 import { serve } from "@upstash/workflow/hono";
 import { Hono } from "hono";
 
@@ -20,14 +23,13 @@ waitlistWorkflow.post(
 				`Processing waitlist join for user ${userId} with email ${email}`
 			);
 
-			// Add user in resend audience
 			// Send email and add user to default audience
 			await Promise.all([
 				sendEmail({
-					to: [email],
+					to: email,
 					subject: "Welcome to Cossistant",
-					content: <JoinedWaitlistEmail email={email} name={name || ""} />,
-					includeUnsubscribe: false,
+					react: <JoinedWaitlistEmail email={email} name={name || ""} />,
+					variant: "marketing",
 				}),
 				addUserToDefaultAudience(email),
 			]);

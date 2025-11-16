@@ -16,10 +16,16 @@ import {
 } from "@api/db/queries/conversation";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import {
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
+import {
+	addConversationParticipant,
+	isUserParticipant,
+} from "@api/utils/participant-helpers";
+import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	type ContactMetadata,
@@ -175,6 +181,30 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
+			// Check if user needs to be added as participant
+			const isParticipant = await isUserParticipant(db, {
+				conversationId: input.conversationId,
+				userId: user.id,
+			});
+
+			if (!isParticipant) {
+				// Add user as participant
+				await addConversationParticipant(db, {
+					conversationId: input.conversationId,
+					userId: user.id,
+					organizationId: websiteData.organizationId,
+					reason: "Sent message",
+				});
+
+				// Create participant joined event
+				await createParticipantJoinedEvent(db, {
+					conversationId: input.conversationId,
+					organizationId: websiteData.organizationId,
+					targetUserId: user.id,
+					isAutoAdded: true,
+				});
+			}
+
 			const createdTimelineItem = await createTimelineItem({
 				db,
 				organizationId: websiteData.organizationId,
@@ -191,6 +221,18 @@ export const conversationRouter = createTRPCRouter({
 					visitorId: null,
 					aiAgentId: null,
 				},
+			});
+
+			// Trigger notification workflow (non-blocking)
+			// This will send email notifications to relevant participants after configured delays
+			triggerMessageNotificationWorkflow({
+				conversationId: input.conversationId,
+				messageId: createdTimelineItem.id,
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+				actor: { type: "user", userId: user.id },
+			}).catch((error) => {
+				console.error("[dev] Failed to trigger notification workflow:", error);
 			});
 
 			// Mark conversation as read by user after sending timeline item

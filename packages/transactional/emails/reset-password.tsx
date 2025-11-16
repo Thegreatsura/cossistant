@@ -68,3 +68,5 @@ export const ResetPasswordEmail = ({
 		</Tailwind>
 	</Html>
 );
+
+export default ResetPasswordEmail;

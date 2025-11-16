@@ -166,6 +166,7 @@ export const websiteRouter = createTRPCRouter({
 					logoUrl: true,
 					organizationId: true,
 					whitelistedDomains: true,
+					defaultParticipantIds: true,
 				},
 			});
 
@@ -204,6 +205,7 @@ export const websiteRouter = createTRPCRouter({
 					logoUrl: site.logoUrl ?? null,
 					organizationId: site.organizationId,
 					whitelistedDomains: site.whitelistedDomains,
+					defaultParticipantIds: site.defaultParticipantIds ?? null,
 				},
 				apiKeys: apiKeys
 					.filter((key) => key.isActive)
@@ -475,6 +477,9 @@ export const websiteRouter = createTRPCRouter({
 			if (input.data.whitelistedDomains !== undefined) {
 				updateData.whitelistedDomains = input.data.whitelistedDomains;
 			}
+			if (input.data.defaultParticipantIds !== undefined) {
+				updateData.defaultParticipantIds = input.data.defaultParticipantIds;
+			}
 			if (input.data.installationTarget !== undefined)
 				updateData.installationTarget = input.data.installationTarget;
 			if (input.data.status !== undefined)
@@ -570,6 +575,7 @@ export const websiteRouter = createTRPCRouter({
 				logoUrl: updatedSite.logoUrl ?? null,
 				organizationId: updatedSite.organizationId,
 				whitelistedDomains: updatedSite.whitelistedDomains,
+				defaultParticipantIds: updatedSite.defaultParticipantIds ?? null,
 			};
 		}),
 });

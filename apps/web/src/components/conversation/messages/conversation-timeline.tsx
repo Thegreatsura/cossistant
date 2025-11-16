@@ -18,6 +18,9 @@ import type { RefObject } from "react";
 import { memo, useEffect, useMemo, useRef } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
+import { useWebsite } from "@/contexts/website";
+import { useDashboardTypingSound } from "@/hooks/use-dashboard-typing-sound";
+import { useSoundPreferences } from "@/hooks/use-sound-preferences";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
 import { TimelineMessageGroup } from "./timeline-message-group";
@@ -69,6 +72,11 @@ function ConversationTimelineListComponent({
 	const fallbackRef = useRef<HTMLDivElement | null>(null);
 	const messageListRef =
 		(ref as RefObject<HTMLDivElement | null> | undefined) ?? fallbackRef;
+
+	const website = useWebsite();
+	const { typingEnabled } = useSoundPreferences({
+		websiteSlug: website.slug,
+	});
 
 	const {
 		items,
@@ -127,6 +135,9 @@ function ConversationTimelineListComponent({
 				),
 		[typingEntries]
 	);
+
+	// Play typing sound when someone is typing
+	useDashboardTypingSound(activeTypingEntities.length > 0, typingEnabled);
 
 	useEffect(() => {
 		if (!messageListRef.current || activeTypingEntities.length === 0) {

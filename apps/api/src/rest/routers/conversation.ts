@@ -18,6 +18,11 @@ import {
 	emitConversationSeenEvent,
 	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
+import {
+	addConversationParticipants,
+	getDefaultParticipants,
+} from "@api/utils/participant-helpers";
+import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
@@ -208,6 +213,17 @@ conversationRouter.openapi(
 			conversationId: body.conversationId,
 		});
 
+		// Add default participants if configured
+		const defaultParticipantIds = await getDefaultParticipants(db, website);
+		if (defaultParticipantIds.length > 0) {
+			await addConversationParticipants(db, {
+				conversationId: conversationRecord.id,
+				userIds: defaultParticipantIds,
+				organizationId: organization.id,
+				reason: "Default participant",
+			});
+		}
+
 		const defaults = body.defaultTimelineItems ?? [];
 		const createdItems =
 			defaults.length > 0
@@ -239,6 +255,43 @@ conversationRouter.openapi(
 		// Get the last timeline item if any were sent
 		const lastTimelineItem =
 			createdItems.length > 0 ? createdItems.at(-1) : undefined;
+
+		// Trigger notification workflow for any initial messages
+		// This handles the case where a conversation is created with initial messages
+		if (lastTimelineItem) {
+			// Determine the actor based on who sent the last message
+			let actor:
+				| { type: "user"; userId: string }
+				| { type: "visitor"; visitorId: string }
+				| { type: "aiAgent"; aiAgentId: string }
+				| null = null;
+
+			if (lastTimelineItem.visitorId) {
+				actor = { type: "visitor", visitorId: lastTimelineItem.visitorId };
+			} else if (lastTimelineItem.userId) {
+				actor = { type: "user", userId: lastTimelineItem.userId };
+			} else if (lastTimelineItem.aiAgentId) {
+				actor = { type: "aiAgent", aiAgentId: lastTimelineItem.aiAgentId };
+			}
+
+			if (actor) {
+				console.log(
+					`[dev] Triggering notification for new conversation ${conversationRecord.id} with initial message ${lastTimelineItem.id} from ${actor.type}`
+				);
+				triggerMessageNotificationWorkflow({
+					conversationId: conversationRecord.id,
+					messageId: lastTimelineItem.id,
+					websiteId: website.id,
+					organizationId: organization.id,
+					actor,
+				}).catch((error) => {
+					console.error(
+						"[dev] Failed to trigger notification workflow for new conversation:",
+						error
+					);
+				});
+			}
+		}
 
 		const header = await getConversationHeader(db, {
 			organizationId: organization.id,

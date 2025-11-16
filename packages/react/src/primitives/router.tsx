@@ -1,68 +1,52 @@
+import type { RouteRegistry } from "@cossistant/core";
 import type React from "react";
-import { usePageRegistry } from "./page-registry";
 
+// Type-safe page definition that extracts params from RouteRegistry
+export type PageDefinition<
+	K extends keyof RouteRegistry = keyof RouteRegistry,
+> = {
+	name: K;
+	component: React.ComponentType<{ params?: RouteRegistry[K] }>;
+};
+
+// Router props that maintain type safety
 export type RouterProps = {
-	/**
-	 * Current page name to render
-	 */
-	page: string;
-
-	/**
-	 * Params to pass to the page component
-	 */
-	params?: unknown;
-
-	/**
-	 * Fallback component when page is not found
-	 */
+	page: keyof RouteRegistry;
+	params?: RouteRegistry[keyof RouteRegistry];
+	pages: PageDefinition[];
 	fallback?: React.ComponentType<{ params?: unknown }>;
-
-	/**
-	 * Children (Page components for registration)
-	 */
-	children?: React.ReactNode;
 };
 
 /**
- * Router that renders registered pages based on current page name.
+ * Type-safe router that renders pages based on current page name.
+ * Pages are matched synchronously without effects or registries.
  *
  * @example
- * <Router page={currentPage} params={params} fallback={NotFoundPage}>
- *   <Page name="HOME" component={HomePage} />
- * </Router>
+ * const pages = [
+ *   { name: "HOME", component: HomePage },
+ *   { name: "SETTINGS", component: SettingsPage }
+ * ];
+ *
+ * <Router page={currentPage} params={params} pages={pages} fallback={NotFoundPage} />
  */
 export const Router: React.FC<RouterProps> = ({
 	page,
 	params,
+	pages,
 	fallback: Fallback,
-	children,
 }) => {
-	const registry = usePageRegistry();
+	// Find matching page (synchronous, no effects!)
+	const matchedPage = pages.find((p) => p.name === page);
 
-	// Render children first (they register pages via useEffect)
-	// Page components return null, so this is effectively a no-op render
-
-	// Get the page component from registry
-	const PageComponent = registry.get(page);
-
-	if (PageComponent) {
-		return (
-			<>
-				{children}
-				<PageComponent params={params} />
-			</>
-		);
+	if (matchedPage) {
+		const Component = matchedPage.component;
+		return <Component params={params} />;
 	}
 
 	// Fall back if provided
 	if (Fallback) {
-		return (
-			<>
-				{children}
-				<Fallback params={params} />
-			</>
-		);
+		return <Fallback params={params} />;
 	}
 
-	return <>{children}</>;
+	return null;
 };

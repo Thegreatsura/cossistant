@@ -4,7 +4,13 @@ import {
 } from "@api/db/mutations/conversation";
 import { getConversationById } from "@api/db/queries/conversation";
 import { markUserPresence, markVisitorPresence } from "@api/services/presence";
+import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
+import {
+	addConversationParticipant,
+	isUserParticipant,
+} from "@api/utils/participant-helpers";
+import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
 import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
@@ -178,6 +184,32 @@ messagesRouter.openapi(
 			);
 		}
 
+		// Check if user needs to be added as participant
+		if (body.item.userId && !isPublic) {
+			const isParticipant = await isUserParticipant(db, {
+				conversationId: body.conversationId,
+				userId: body.item.userId,
+			});
+
+			if (!isParticipant) {
+				// Add user as participant
+				await addConversationParticipant(db, {
+					conversationId: body.conversationId,
+					userId: body.item.userId,
+					organizationId: organization.id,
+					reason: "Sent message",
+				});
+
+				// Create participant joined event
+				await createParticipantJoinedEvent(db, {
+					conversationId: body.conversationId,
+					organizationId: organization.id,
+					targetUserId: body.item.userId,
+					isAutoAdded: true,
+				});
+			}
+		}
+
 		const createdTimelineItem = await createTimelineItem({
 			db,
 			organizationId: organization.id,
@@ -211,6 +243,21 @@ messagesRouter.openapi(
 			// Fallback to visitor if no actor is set (shouldn't happen)
 			actor = { type: "visitor", visitorId: visitorId ?? "" };
 		}
+
+		// Trigger notification workflow (non-blocking)
+		// This will send email notifications to relevant participants after configured delays
+		console.log(
+			`[dev] About to trigger workflow from REST endpoint for message ${createdTimelineItem.id}`
+		);
+		triggerMessageNotificationWorkflow({
+			conversationId: body.conversationId,
+			messageId: createdTimelineItem.id,
+			websiteId: website.id,
+			organizationId: organization.id,
+			actor,
+		}).catch((error) => {
+			console.error("[dev] Failed to trigger notification workflow:", error);
+		});
 
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];

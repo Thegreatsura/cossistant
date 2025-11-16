@@ -6,6 +6,8 @@ const client = new Client({
 	token: env.QSTASH_TOKEN,
 });
 
+export { client as workflowClient };
+
 type TriggerWorkflowParams<
 	T extends keyof WorkflowDataMap = keyof WorkflowDataMap,
 > = {

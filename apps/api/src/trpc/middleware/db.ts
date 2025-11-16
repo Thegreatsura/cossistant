@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import type { TRPCContext } from "../init.js";
+import type { TRPCContext } from "../init";
 
 export const withPrimaryDbMiddleware = async <TReturn>(options: {
 	ctx: TRPCContext;

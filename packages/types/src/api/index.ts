@@ -2,6 +2,7 @@
 export * from "./common";
 export * from "./contact";
 export * from "./conversation";
+export * from "./notification";
 export * from "./organization";
 export * from "./timeline-item";
 export * from "./upload";
