@@ -186,13 +186,33 @@ export async function getUnseenMessagesForRecipient(
 		isNull(conversationTimelineItem.deletedAt),
 	];
 
-	// Add lastSeenAt filter if we have a seen value
-	if (lastSeenAt) {
-		baseConditions.push(gt(conversationTimelineItem.createdAt, lastSeenAt));
-	}
+	// Handle date filtering
+	// When both lastSeenAt and earliestCreatedAt exist, we need to be careful:
+	// - lastSeenAt: messages created AFTER this time (user hasn't seen them)
+	// - earliestCreatedAt: messages created AT OR AFTER this time (include the initial message)
 
-	// Add earliestCreatedAt filter if provided to cap messages to those after the triggering message
-	if (params.earliestCreatedAt) {
+	if (lastSeenAt && params.earliestCreatedAt) {
+		// Convert earliestCreatedAt to string if needed
+		const earliestDate =
+			params.earliestCreatedAt instanceof Date
+				? params.earliestCreatedAt.toISOString()
+				: params.earliestCreatedAt;
+
+		// If user has seen messages AFTER the initial message was created,
+		// only show messages created after lastSeenAt
+		if (lastSeenAt >= earliestDate) {
+			baseConditions.push(gt(conversationTimelineItem.createdAt, lastSeenAt));
+		} else {
+			// User hasn't seen the initial message yet, show from earliestCreatedAt onwards
+			baseConditions.push(
+				gte(conversationTimelineItem.createdAt, earliestDate)
+			);
+		}
+	} else if (lastSeenAt) {
+		// Only lastSeenAt exists - show messages created after it
+		baseConditions.push(gt(conversationTimelineItem.createdAt, lastSeenAt));
+	} else if (params.earliestCreatedAt) {
+		// Only earliestCreatedAt exists - show messages from that point onwards
 		const earliestDate =
 			params.earliestCreatedAt instanceof Date
 				? params.earliestCreatedAt.toISOString()
