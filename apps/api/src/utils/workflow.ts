@@ -13,17 +13,19 @@ type TriggerWorkflowParams<
 > = {
 	path: T;
 	data: WorkflowDataMap[T];
+	workflowRunId?: string;
 };
 
 export const triggerWorkflow = async <T extends keyof WorkflowDataMap>({
 	path,
 	data,
-}: TriggerWorkflowParams<T>) => {
-	await client.trigger({
+	workflowRunId,
+}: TriggerWorkflowParams<T>) =>
+	client.trigger({
 		url: `${env.BETTER_AUTH_URL}/workflow/${path}`,
 		headers: {
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify(data),
+		...(workflowRunId ? { workflowRunId } : {}),
 	});
-};

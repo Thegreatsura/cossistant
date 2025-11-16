@@ -1,6 +1,5 @@
 import { db } from "@api/db";
 import { getMessageMetadata } from "@api/db/queries/conversation";
-import { env } from "@api/env";
 import { workflowClient } from "@api/utils/workflow";
 import {
 	triggerDeduplicatedWorkflow,
@@ -53,7 +52,6 @@ export async function triggerMemberSentMessageWorkflow(params: {
 			client: workflowClient,
 			path: WORKFLOW.MEMBER_SENT_MESSAGE,
 			data,
-			url: env.BETTER_AUTH_URL,
 			conversationId: params.conversationId,
 			direction: "member-to-visitor" as WorkflowDirection,
 			messageId: params.messageId,
@@ -113,7 +111,6 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 			client: workflowClient,
 			path: WORKFLOW.VISITOR_SENT_MESSAGE,
 			data,
-			url: env.BETTER_AUTH_URL,
 			conversationId: params.conversationId,
 			direction: "visitor-to-member" as WorkflowDirection,
 			messageId: params.messageId,

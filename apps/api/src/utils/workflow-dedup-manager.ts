@@ -1,4 +1,5 @@
 import { getRedis } from "@api/redis";
+import { triggerWorkflow } from "@api/utils/workflow";
 import type {
 	MemberSentMessageData,
 	VisitorSentMessageData,
@@ -103,7 +104,6 @@ export async function triggerDeduplicatedWorkflow<
 	client: Client;
 	path: T;
 	data: WorkflowDataMap[T];
-	url: string;
 	conversationId: string;
 	direction: WorkflowDirection;
 	messageId: string;
@@ -113,7 +113,6 @@ export async function triggerDeduplicatedWorkflow<
 		client,
 		path,
 		data,
-		url,
 		conversationId,
 		direction,
 		messageId,
@@ -128,12 +127,9 @@ export async function triggerDeduplicatedWorkflow<
 		await cancelWorkflow(client, existingState.workflowRunId);
 
 		// Trigger new workflow with the ORIGINAL message ID as the anchor
-		const { workflowRunId: newWorkflowRunId } = await client.trigger({
-			url: `${url}/workflow/${path}`,
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(data),
+		const { workflowRunId: newWorkflowRunId } = await triggerWorkflow({
+			path,
+			data,
 			workflowRunId: `msg-notif-${conversationId}-${direction}-${Date.now()}`,
 		});
 
@@ -154,12 +150,9 @@ export async function triggerDeduplicatedWorkflow<
 	}
 
 	// No existing workflow, create new one
-	const { workflowRunId } = await client.trigger({
-		url: `${url}/workflow/${path}`,
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(data),
+	const { workflowRunId } = await triggerWorkflow({
+		path,
+		data,
 		workflowRunId: `msg-notif-${conversationId}-${direction}-${Date.now()}`,
 	});
 
