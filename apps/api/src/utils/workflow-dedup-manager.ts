@@ -35,6 +35,13 @@ function getWorkflowKey(
 	return `workflow:message:${conversationId}:${direction}`;
 }
 
+function generateWorkflowRunId(
+	conversationId: string,
+	direction: WorkflowDirection
+): string {
+	return `msg-notif-${conversationId}-${direction}-${Date.now()}`;
+}
+
 /**
  * Get the current workflow state from Redis
  */
@@ -126,16 +133,11 @@ export async function triggerDeduplicatedWorkflow<
 		// Cancel the existing workflow
 		await cancelWorkflow(client, existingState.workflowRunId);
 
-		// Trigger new workflow with the ORIGINAL message ID as the anchor
-		const { workflowRunId: newWorkflowRunId } = await triggerWorkflow({
-			path,
-			data,
-			workflowRunId: `msg-notif-${conversationId}-${direction}-${Date.now()}`,
-		});
+		const workflowRunId = generateWorkflowRunId(conversationId, direction);
 
 		// Update state but keep the original message ID
 		const newState: WorkflowState = {
-			workflowRunId: newWorkflowRunId,
+			workflowRunId,
 			initialMessageId: existingState.initialMessageId, // Keep original
 			initialMessageCreatedAt: existingState.initialMessageCreatedAt, // Keep original
 			conversationId,
@@ -146,16 +148,23 @@ export async function triggerDeduplicatedWorkflow<
 
 		await setWorkflowState(newState);
 
-		return { workflowRunId: newWorkflowRunId, isReplacement: true };
+		try {
+			await triggerWorkflow({
+				path,
+				data,
+				workflowRunId,
+			});
+		} catch (error) {
+			await setWorkflowState(existingState);
+			throw error;
+		}
+
+		return { workflowRunId, isReplacement: true };
 	}
 
-	// No existing workflow, create new one
-	const { workflowRunId } = await triggerWorkflow({
-		path,
-		data,
-		workflowRunId: `msg-notif-${conversationId}-${direction}-${Date.now()}`,
-	});
+	const workflowRunId = generateWorkflowRunId(conversationId, direction);
 
+	// No existing workflow, create new one
 	// Store state with this message as the initial trigger
 	const newState: WorkflowState = {
 		workflowRunId,
@@ -168,6 +177,17 @@ export async function triggerDeduplicatedWorkflow<
 	};
 
 	await setWorkflowState(newState);
+
+	try {
+		await triggerWorkflow({
+			path,
+			data,
+			workflowRunId,
+		});
+	} catch (error) {
+		await clearWorkflowState(conversationId, direction);
+		throw error;
+	}
 
 	return { workflowRunId, isReplacement: false };
 }
