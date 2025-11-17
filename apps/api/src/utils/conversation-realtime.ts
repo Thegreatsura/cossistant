@@ -74,20 +74,20 @@ function mapActor(actor: ConversationRealtimeActor) {
 }
 
 export async function emitConversationSeenEvent({
-        conversation,
-        actor,
-        lastSeenAt,
+	conversation,
+	actor,
+	lastSeenAt,
 }: SeenEventParams) {
-        const actorPayload = mapActor(actor);
+	const actorPayload = mapActor(actor);
 
-        await realtime.emit("conversationSeen", {
-                conversationId: conversation.id,
-                organizationId: conversation.organizationId,
-                websiteId: conversation.websiteId,
-                lastSeenAt,
-                ...actorPayload,
-                visitorId: actorPayload.visitorId ?? null,
-        });
+	await realtime.emit("conversationSeen", {
+		conversationId: conversation.id,
+		organizationId: conversation.organizationId,
+		websiteId: conversation.websiteId,
+		lastSeenAt,
+		...actorPayload,
+		visitorId: actorPayload.visitorId ?? null,
+	});
 }
 
 export async function emitConversationTypingEvent({

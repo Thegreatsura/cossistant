@@ -2,8 +2,8 @@ import type { CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useRef } from "react";
 import {
-        hydrateConversationSeen,
-        upsertConversationSeen,
+	hydrateConversationSeen,
+	upsertConversationSeen,
 } from "../realtime/seen-store";
 import { useWindowVisibilityFocus } from "./use-window-visibility-focus";
 
@@ -83,8 +83,8 @@ export function useConversationAutoSeen(
 
 	const lastSeenItemIdRef = useRef<string | null>(null);
 	const markSeenInFlightRef = useRef(false);
-        const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-        const { isPageVisible } = useWindowVisibilityFocus();
+	const markSeenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const { isPageVisible } = useWindowVisibilityFocus();
 
 	// Reset seen tracking when conversation changes
 	useEffect(() => {
@@ -96,19 +96,19 @@ export function useConversationAutoSeen(
 		}
 	}, [conversationId]);
 
-        // Clear timeout immediately when widget closes and reset tracking
-        useEffect(() => {
-                if (!isWidgetOpen) {
-                        if (markSeenTimeoutRef.current) {
-                                clearTimeout(markSeenTimeoutRef.current);
-                                markSeenTimeoutRef.current = null;
-                        }
-                        markSeenInFlightRef.current = false;
-                        // Reset last seen item ID so we don't skip marking when widget reopens
-                        // This ensures we check again when the widget is reopened
-                        lastSeenItemIdRef.current = null;
-                }
-        }, [isWidgetOpen]);
+	// Clear timeout immediately when widget closes and reset tracking
+	useEffect(() => {
+		if (!isWidgetOpen) {
+			if (markSeenTimeoutRef.current) {
+				clearTimeout(markSeenTimeoutRef.current);
+				markSeenTimeoutRef.current = null;
+			}
+			markSeenInFlightRef.current = false;
+			// Reset last seen item ID so we don't skip marking when widget reopens
+			// This ensures we check again when the widget is reopened
+			lastSeenItemIdRef.current = null;
+		}
+	}, [isWidgetOpen]);
 
 	// Fetch and hydrate initial seen data when conversation loads
 	useEffect(() => {
@@ -126,107 +126,104 @@ export function useConversationAutoSeen(
 		}
 	}, [enabled, client, conversationId]);
 
-        // Auto-mark timeline items as seen
-        useEffect(() => {
-                const canMarkSeen =
-                        enabled &&
-                        isWidgetOpen &&
-                        client &&
-                        conversationId &&
-                        visitorId &&
-                        lastTimelineItem &&
-                        isPageVisible;
+	// Auto-mark timeline items as seen
+	useEffect(() => {
+		const canMarkSeen =
+			enabled &&
+			isWidgetOpen &&
+			client &&
+			conversationId &&
+			visitorId &&
+			lastTimelineItem &&
+			isPageVisible;
 
-                if (!canMarkSeen) {
-                        if (markSeenTimeoutRef.current) {
-                                clearTimeout(markSeenTimeoutRef.current);
-                                markSeenTimeoutRef.current = null;
-                        }
-                        return;
-                }
+		if (!canMarkSeen) {
+			if (markSeenTimeoutRef.current) {
+				clearTimeout(markSeenTimeoutRef.current);
+				markSeenTimeoutRef.current = null;
+			}
+			return;
+		}
 
-                if (markSeenTimeoutRef.current) {
-                        clearTimeout(markSeenTimeoutRef.current);
-                        markSeenTimeoutRef.current = null;
-                }
+		if (markSeenTimeoutRef.current) {
+			clearTimeout(markSeenTimeoutRef.current);
+			markSeenTimeoutRef.current = null;
+		}
 
-                // Don't mark our own timeline items as seen via API (we already know we saw them)
-                if (lastTimelineItem.visitorId === visitorId) {
-                        lastSeenItemIdRef.current = lastTimelineItem.id || null;
-                        return;
-                }
+		// Don't mark our own timeline items as seen via API (we already know we saw them)
+		if (lastTimelineItem.visitorId === visitorId) {
+			lastSeenItemIdRef.current = lastTimelineItem.id || null;
+			return;
+		}
 
-                // Already marked this item
-                if (lastSeenItemIdRef.current === lastTimelineItem.id) {
-                        return;
-                }
+		// Already marked this item
+		if (lastSeenItemIdRef.current === lastTimelineItem.id) {
+			return;
+		}
 
-                const pendingItemId = lastTimelineItem.id || null;
+		const pendingItemId = lastTimelineItem.id || null;
 
-                markSeenTimeoutRef.current = setTimeout(() => {
-                        const attemptMarkSeen = () => {
-                                const stillCanMark =
-                                        enabled &&
-                                        isWidgetOpen &&
-                                        client &&
-                                        conversationId &&
-                                        visitorId &&
-                                        isPageVisible;
+		markSeenTimeoutRef.current = setTimeout(() => {
+			const attemptMarkSeen = () => {
+				const stillCanMark =
+					enabled &&
+					isWidgetOpen &&
+					client &&
+					conversationId &&
+					visitorId &&
+					isPageVisible;
 
-                                if (!stillCanMark) {
-                                        markSeenInFlightRef.current = false;
-                                        markSeenTimeoutRef.current = null;
-                                        return;
-                                }
+				if (!stillCanMark) {
+					markSeenInFlightRef.current = false;
+					markSeenTimeoutRef.current = null;
+					return;
+				}
 
-                                if (markSeenInFlightRef.current) {
-                                        markSeenTimeoutRef.current = setTimeout(
-                                                attemptMarkSeen,
-                                                100
-                                        );
-                                        return;
-                                }
+				if (markSeenInFlightRef.current) {
+					markSeenTimeoutRef.current = setTimeout(attemptMarkSeen, 100);
+					return;
+				}
 
-                                markSeenInFlightRef.current = true;
+				markSeenInFlightRef.current = true;
 
-                                client
-                                        .markConversationSeen({ conversationId })
-                                        .then((response) => {
-                                                lastSeenItemIdRef.current = pendingItemId;
+				client
+					.markConversationSeen({ conversationId })
+					.then((response) => {
+						lastSeenItemIdRef.current = pendingItemId;
 
-                                                // Optimistically update local seen store
-                                                upsertConversationSeen({
-                                                        conversationId,
-                                                        actorType: "visitor",
-                                                        actorId: visitorId,
-                                                        lastSeenAt: new Date(response.lastSeenAt),
-                                                });
-                                        })
-                                        .catch((err) => {
-                                                console.error("Failed to mark conversation as seen:", err);
-                                        })
-                                        .finally(() => {
-                                                markSeenInFlightRef.current = false;
-                                                markSeenTimeoutRef.current = null;
-                                        });
-                        };
+						// Optimistically update local seen store
+						upsertConversationSeen({
+							conversationId,
+							actorType: "visitor",
+							actorId: visitorId,
+							lastSeenAt: new Date(response.lastSeenAt),
+						});
+					})
+					.catch((err) => {
+						console.error("Failed to mark conversation as seen:", err);
+					})
+					.finally(() => {
+						markSeenInFlightRef.current = false;
+						markSeenTimeoutRef.current = null;
+					});
+			};
 
-                        attemptMarkSeen();
-                }, CONVERSATION_AUTO_SEEN_DELAY_MS);
+			attemptMarkSeen();
+		}, CONVERSATION_AUTO_SEEN_DELAY_MS);
 
-                return () => {
-                        if (markSeenTimeoutRef.current) {
-                                clearTimeout(markSeenTimeoutRef.current);
-                                markSeenTimeoutRef.current = null;
-                        }
-                };
-        }, [
-                enabled,
-                isWidgetOpen,
-                client,
-                conversationId,
-                visitorId,
-                lastTimelineItem,
-                isPageVisible,
-        ]);
+		return () => {
+			if (markSeenTimeoutRef.current) {
+				clearTimeout(markSeenTimeoutRef.current);
+				markSeenTimeoutRef.current = null;
+			}
+		};
+	}, [
+		enabled,
+		isWidgetOpen,
+		client,
+		conversationId,
+		visitorId,
+		lastTimelineItem,
+		isPageVisible,
+	]);
 }
