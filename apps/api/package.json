@@ -30,6 +30,7 @@
     "hono": "^4.10.1",
     "hono-rate-limiter": "^0.4.2",
     "ioredis": "^5.8.1",
+    "linkifyjs": "^4.1.4",
     "nanoid": "^5.1.6",
     "pg": "^8.16.3",
     "rate-limit-redis": "^4.2.2",
