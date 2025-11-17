@@ -35,107 +35,149 @@ import React from "react";
 
 import type { MemberSentMessageData, VisitorSentMessageData } from "./types";
 
+type BaseMessagePayload = {
+        conversationId: string;
+        websiteId: string;
+        organizationId: string;
+};
+
+type SetupResult<P extends BaseMessagePayload> =
+        | { status: "missing" | "inactive" | "no-state" }
+        | { status: "ok"; payload: P; workflowState: Awaited<ReturnType<typeof getWorkflowState>>; workflowRunId?: string };
+
+async function runWorkflowSetup<P extends BaseMessagePayload>(
+        context: Parameters<Parameters<typeof serve<P>>[0]>[0],
+        direction: WorkflowDirection
+): Promise<SetupResult<P>> {
+        return context.run("setup", async () => {
+                const payload = context.requestPayload as P | null;
+                const workflowRunId = context.headers.get("upstash-workflow-runid");
+
+                if (!payload) {
+                        console.error("[workflow] Missing payload in message workflow");
+                        return { status: "missing" as const };
+                }
+
+                if (workflowRunId) {
+                        const active = await isActiveWorkflow(payload.conversationId, direction, workflowRunId);
+
+                        if (!active) {
+                                console.log(
+                                        `[workflow] Workflow ${workflowRunId} is no longer active for ${payload.conversationId}, exiting`
+                                );
+                                return { status: "inactive" as const };
+                        }
+                }
+
+                const workflowState = await getWorkflowState(payload.conversationId, direction);
+
+                if (!workflowState) {
+                        console.error(`[workflow] No workflow state found for ${payload.conversationId}, this should not happen`);
+                        return { status: "no-state" as const };
+                }
+
+                return { status: "ok", payload, workflowState, workflowRunId };
+        });
+}
+
+async function prepareNotificationData({
+        conversationId,
+        websiteId,
+        organizationId,
+        excludeUserId,
+        includeVisitorRecipient,
+}: {
+        conversationId: string;
+        websiteId: string;
+        organizationId: string;
+        excludeUserId?: string;
+        includeVisitorRecipient: boolean;
+}) {
+        const { conversation, websiteInfo, participants } = await getNotificationData(db, {
+                conversationId,
+                websiteId,
+                organizationId,
+                excludeUserId,
+        });
+
+        if (!conversation || !websiteInfo) {
+                return null;
+        }
+
+        const memberRecipients = participants.map((participant) => ({
+                kind: "member" as const,
+                userId: participant.userId,
+                memberId: participant.memberId,
+                email: participant.userEmail,
+        }));
+
+        let visitorRecipient: {
+                kind: "visitor";
+                visitorId: string;
+                email: string;
+        } | null = null;
+
+        if (includeVisitorRecipient && conversation.visitorId) {
+                const visitorInfo = await getVisitorEmailForNotification(db, {
+                        visitorId: conversation.visitorId,
+                        websiteId,
+                });
+
+                if (visitorInfo?.contactEmail) {
+                        const visitorNotificationsEnabled = await isVisitorEmailNotificationEnabled(db, {
+                                visitorId: conversation.visitorId,
+                                websiteId,
+                        });
+
+                        if (visitorNotificationsEnabled) {
+                                visitorRecipient = {
+                                        kind: "visitor",
+                                        visitorId: conversation.visitorId,
+                                        email: visitorInfo.contactEmail,
+                                };
+                        }
+                }
+        }
+
+        return {
+                conversationId,
+                websiteId,
+                organizationId,
+                conversation,
+                websiteInfo,
+                memberRecipients,
+                visitorRecipient,
+        };
+}
+
 const messageWorkflow = new Hono();
 
 messageWorkflow.post(
-	"/member-sent-message",
-	serve<MemberSentMessageData>(async (context) => {
-		const { conversationId, websiteId, organizationId, senderId } =
-			context.requestPayload;
+        "/member-sent-message",
+        serve<MemberSentMessageData>(async (context) => {
+                const direction: WorkflowDirection = "member-to-visitor";
 
-		// Get workflow run ID from headers
-		const workflowRunId = context.headers.get("upstash-workflow-runid");
-		const direction: WorkflowDirection = "member-to-visitor";
+                const setup = await runWorkflowSetup<MemberSentMessageData>(context, direction);
 
-		// Check if this workflow run is still active
-		if (workflowRunId) {
-			const isActive = await context.run("check-active", async () =>
-				isActiveWorkflow(conversationId, direction, workflowRunId)
-			);
+                if (setup?.status !== "ok") {
+                        return;
+                }
 
-			if (!isActive) {
-				console.log(
-					`[workflow] Workflow ${workflowRunId} is no longer active for ${conversationId}, exiting`
-				);
-				return;
-			}
-		}
-
-		// Get workflow state to find the initial message
-		const workflowState = await context.run("get-workflow-state", async () =>
-			getWorkflowState(conversationId, direction)
-		);
-
-		if (!workflowState) {
-			console.error(
-				`[workflow] No workflow state found for ${conversationId}, this should not happen`
-			);
-			return;
-		}
+                const {
+                        payload: { conversationId, websiteId, organizationId, senderId },
+                        workflowState,
+                } = setup;
 
 		// Step 1: Prepare data (conversation, website, participants, seen state, recipients)
-		const prepared = await context.run("prepare-data", async () => {
-			const { conversation, websiteInfo, participants } =
-				await getNotificationData(db, {
-					conversationId,
-					websiteId,
-					organizationId,
-					excludeUserId: senderId,
-				});
-
-			if (!conversation) {
-				return null;
-			}
-
-			if (!websiteInfo) {
-				return null;
-			}
-
-			const memberRecipients = participants.map((participant) => ({
-				kind: "member" as const,
-				userId: participant.userId,
-				memberId: participant.memberId,
-				email: participant.userEmail,
-			}));
-
-			// Optional visitor recipient
-			const visitorInfo = await getVisitorEmailForNotification(db, {
-				visitorId: conversation.visitorId,
-				websiteId,
-			});
-
-			let visitorRecipient: {
-				kind: "visitor";
-				visitorId: string;
-				email: string;
-			} | null = null;
-
-			if (visitorInfo?.contactEmail) {
-				const visitorNotificationsEnabled =
-					await isVisitorEmailNotificationEnabled(db, {
-						visitorId: conversation.visitorId,
-						websiteId,
-					});
-
-				if (visitorNotificationsEnabled) {
-					visitorRecipient = {
-						kind: "visitor",
-						visitorId: conversation.visitorId,
-						email: visitorInfo.contactEmail,
-					};
-				}
-			}
-
-			return {
-				conversationId,
-				websiteId,
-				organizationId,
-				conversation,
-				websiteInfo,
-				memberRecipients,
-				visitorRecipient,
-			};
-		});
+                const prepared = await context.run("prepare-data", async () => {
+                        return prepareNotificationData({
+                                conversationId,
+                                websiteId,
+                                organizationId,
+                                excludeUserId: senderId,
+                                includeVisitorRecipient: true,
+                        });
+                });
 
 		if (!prepared) {
 			return;
@@ -251,72 +293,30 @@ messageWorkflow.post(
 );
 
 messageWorkflow.post(
-	"/visitor-sent-message",
-	serve<VisitorSentMessageData>(async (context) => {
-		const { conversationId, websiteId, organizationId } =
-			context.requestPayload;
+        "/visitor-sent-message",
+        serve<VisitorSentMessageData>(async (context) => {
+                const direction: WorkflowDirection = "visitor-to-member";
 
-		// Get workflow run ID from headers
-		const workflowRunId = context.headers.get("upstash-workflow-runid");
-		const direction: WorkflowDirection = "visitor-to-member";
+                const setup = await runWorkflowSetup<VisitorSentMessageData>(context, direction);
 
-		// Check if this workflow run is still active
-		if (workflowRunId) {
-			const isActive = await context.run("check-active", async () =>
-				isActiveWorkflow(conversationId, direction, workflowRunId)
-			);
+                if (setup?.status !== "ok") {
+                        return;
+                }
 
-			if (!isActive) {
-				console.log(
-					`[workflow] Workflow ${workflowRunId} is no longer active for ${conversationId}, exiting`
-				);
-				return;
-			}
-		}
-
-		// Get workflow state to find the initial message
-		const workflowState = await context.run("get-workflow-state", async () =>
-			getWorkflowState(conversationId, direction)
-		);
-
-		if (!workflowState) {
-			console.error(
-				`[workflow] No workflow state found for ${conversationId}, this should not happen`
-			);
-			return;
-		}
+                const {
+                        payload: { conversationId, websiteId, organizationId },
+                        workflowState,
+                } = setup;
 
 		// Step 1: Prepare data (conversation, website, participants, seen state, recipients)
-		const prepared = await context.run("prepare-data", async () => {
-			const { conversation, websiteInfo, participants } =
-				await getNotificationData(db, {
-					conversationId,
-					websiteId,
-					organizationId,
-				});
-
-			if (!conversation) {
-				return null;
-			}
-
-			if (!websiteInfo) {
-				return null;
-			}
-
-			const memberRecipients = participants.map((participant) => ({
-				kind: "member" as const,
-				userId: participant.userId,
-				memberId: participant.memberId,
-				email: participant.userEmail,
-			}));
-
-			return {
-				conversationId,
-				organizationId,
-				websiteInfo,
-				memberRecipients,
-			};
-		});
+                const prepared = await context.run("prepare-data", async () => {
+                        return prepareNotificationData({
+                                conversationId,
+                                websiteId,
+                                organizationId,
+                                includeVisitorRecipient: false,
+                        });
+                });
 
 		if (!prepared) {
 			return;
