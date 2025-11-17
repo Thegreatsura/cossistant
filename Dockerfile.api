@@ -19,14 +19,15 @@ RUN bun install
 # Copy source files
 COPY . .
 
-# Build the application
-RUN bunx turbo run build --filter=@cossistant/api...
+# Build dependencies (transactional, types, location packages)
+# but skip the API binary compilation
+RUN bunx turbo run build --filter=@cossistant/api^...
 
-# Copy the built server to the root directory
-RUN cp ./apps/api/server ./server
+# Build TypeScript types for the API
+RUN cd apps/api && bun run build:types
 
 # Railway will set the PORT environment variable
 # EXPOSE is mainly for documentation, the actual port is controlled by env.PORT
 
-# Run the server
-CMD ["./server"]
+# Run with bun runtime instead of compiled binary
+CMD ["bun", "run", "apps/api/src/index.ts"]
