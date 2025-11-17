@@ -23,7 +23,10 @@ import {
 	getDefaultParticipants,
 } from "@api/utils/participant-helpers";
 import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
-import { createTimelineItem } from "@api/utils/timeline-item";
+import {
+        createMessageTimelineItem,
+        createTimelineItem,
+} from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
 	safelyExtractRequestQuery,
@@ -224,74 +227,96 @@ conversationRouter.openapi(
 			});
 		}
 
-		const defaults = body.defaultTimelineItems ?? [];
-		const createdItems =
-			defaults.length > 0
-				? await Promise.all(
-						defaults.map((item) =>
-							createTimelineItem({
-								db,
-								organizationId: organization.id,
-								websiteId: website.id,
-								conversationId: conversationRecord.id,
-								conversationOwnerVisitorId: conversationRecord.visitorId,
-								item: {
-									type: item.type ?? "message",
-									text: item.text,
-									parts: item.parts,
-									visibility: item.visibility,
-									userId: item.userId ?? null,
-									aiAgentId: item.aiAgentId ?? null,
-									visitorId: item.visitorId ?? null,
-									createdAt: item.createdAt
-										? new Date(item.createdAt)
-										: undefined,
-								},
-							})
-						)
-					)
-				: [];
+                const defaults = body.defaultTimelineItems ?? [];
+                const createdItemsWithActors =
+                        defaults.length > 0
+                                ? await Promise.all(
+                                                defaults.map(async (item) => {
+                                                        if ((item.type ?? "message") === "message") {
+                                                                return createMessageTimelineItem({
+                                                                        db,
+                                                                        organizationId: organization.id,
+                                                                        websiteId: website.id,
+                                                                        conversationId: conversationRecord.id,
+                                                                        conversationOwnerVisitorId:
+                                                                                conversationRecord.visitorId,
+                                                                        triggerNotificationWorkflow: false,
+                                                                        item: {
+                                                                                type: item.type ?? "message",
+                                                                                text: item.text,
+                                                                                parts:
+                                                                                        item.parts ??
+                                                                                        [
+                                                                                                {
+                                                                                                        type: "text",
+                                                                                                        text: item.text,
+                                                                                                },
+                                                                                        ],
+                                                                                visibility: item.visibility,
+                                                                                userId: item.userId ?? null,
+                                                                                aiAgentId: item.aiAgentId ?? null,
+                                                                                visitorId: item.visitorId ?? null,
+                                                                                createdAt: item.createdAt
+                                                                                        ? new Date(item.createdAt)
+                                                                                        : undefined,
+                                                                        },
+                                                                });
+                                                        }
 
-		// Get the last timeline item if any were sent
-		const lastTimelineItem =
-			createdItems.length > 0 ? createdItems.at(-1) : undefined;
+                                                        const createdItem = await createTimelineItem({
+                                                                db,
+                                                                organizationId: organization.id,
+                                                                websiteId: website.id,
+                                                                conversationId: conversationRecord.id,
+                                                                conversationOwnerVisitorId: conversationRecord.visitorId,
+                                                                item: {
+                                                                        type: item.type ?? "message",
+                                                                        text: item.text,
+                                                                        parts: item.parts,
+                                                                        visibility: item.visibility,
+                                                                        userId: item.userId ?? null,
+                                                                        aiAgentId: item.aiAgentId ?? null,
+                                                                        visitorId: item.visitorId ?? null,
+                                                                        createdAt: item.createdAt
+                                                                                ? new Date(item.createdAt)
+                                                                                : undefined,
+                                                                },
+                                                        });
 
-		// Trigger notification workflow for any initial messages
-		// This handles the case where a conversation is created with initial messages
-		if (lastTimelineItem) {
-			// Determine the actor based on who sent the last message
-			let actor:
-				| { type: "user"; userId: string }
-				| { type: "visitor"; visitorId: string }
-				| { type: "aiAgent"; aiAgentId: string }
-				| null = null;
+                                                        return { item: createdItem, actor: null };
+                                                })
+                                        )
+                                : [];
 
-			if (lastTimelineItem.visitorId) {
-				actor = { type: "visitor", visitorId: lastTimelineItem.visitorId };
-			} else if (lastTimelineItem.userId) {
-				actor = { type: "user", userId: lastTimelineItem.userId };
-			} else if (lastTimelineItem.aiAgentId) {
-				actor = { type: "aiAgent", aiAgentId: lastTimelineItem.aiAgentId };
-			}
+                const createdItems = createdItemsWithActors.map(({ item }) => item);
 
-			if (actor) {
-				console.log(
-					`[dev] Triggering notification for new conversation ${conversationRecord.id} with initial message ${lastTimelineItem.id} from ${actor.type}`
-				);
-				triggerMessageNotificationWorkflow({
-					conversationId: conversationRecord.id,
-					messageId: lastTimelineItem.id,
-					websiteId: website.id,
-					organizationId: organization.id,
-					actor,
-				}).catch((error) => {
-					console.error(
-						"[dev] Failed to trigger notification workflow for new conversation:",
-						error
-					);
-				});
-			}
-		}
+                // Get the last timeline item if any were sent
+                const lastTimelineItem =
+                        createdItems.length > 0 ? createdItems.at(-1) : undefined;
+
+                // Trigger notification workflow for any initial messages
+                // This handles the case where a conversation is created with initial messages
+                if (lastTimelineItem?.type === "message") {
+                        const lastItemActor = createdItemsWithActors.at(-1)?.actor;
+
+                        if (lastItemActor) {
+                                console.log(
+                                        `[dev] Triggering notification for new conversation ${conversationRecord.id} with initial message ${lastTimelineItem.id} from ${lastItemActor.type}`
+                                );
+                                triggerMessageNotificationWorkflow({
+                                        conversationId: conversationRecord.id,
+                                        messageId: lastTimelineItem.id,
+                                        websiteId: website.id,
+                                        organizationId: organization.id,
+                                        actor: lastItemActor,
+                                }).catch((error) => {
+                                        console.error(
+                                                "[dev] Failed to trigger notification workflow for new conversation:",
+                                                error
+                                        );
+                                });
+                        }
+                }
 
 		const header = await getConversationHeader(db, {
 			organizationId: organization.id,
