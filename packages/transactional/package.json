@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@react-email/components": "^1.0.1",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "resend": "^6.4.2"
   },
   "scripts": {
