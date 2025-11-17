@@ -1,37 +1,25 @@
 import { db } from "@api/db";
-import { isEmailSuppressed } from "@api/db/queries/email-bounce";
 import {
-	generateEmailIdempotencyKey,
-	generateInboundReplyAddress,
-	generateThreadingHeaders,
-} from "@api/utils/email-threading";
-import {
-	getMessagesForEmail,
-	getNotificationData,
-	getVisitorEmailForNotification,
-	isVisitorEmailNotificationEnabled,
+        getNotificationData,
+        getVisitorEmailForNotification,
+        isVisitorEmailNotificationEnabled,
 } from "@api/utils/notification-helpers";
 import {
-	logEmailSent,
-	logEmailSuppressed,
-} from "@api/utils/notification-monitoring";
-import {
-	clearWorkflowState,
-	getWorkflowState,
-	isActiveWorkflow,
-	type WorkflowDirection,
+        clearWorkflowState,
+        getWorkflowState,
+        isActiveWorkflow,
+        type WorkflowDirection,
 } from "@api/utils/workflow-dedup-manager";
 import {
-	MAX_MESSAGES_IN_EMAIL,
-	MESSAGE_NOTIFICATION_DELAY_MINUTES,
+        MESSAGE_NOTIFICATION_DELAY_MINUTES,
 } from "@api/workflows/constants";
 import { sendMemberEmailNotification } from "@api/workflows/member-email-notifier";
-import { NewMessageInConversation, sendEmail } from "@cossistant/transactional";
+import {
+        sendVisitorEmailNotification,
+        type VisitorRecipient,
+} from "@api/workflows/visitor-email-notifier";
 import { serve } from "@upstash/workflow/hono";
 import { Hono } from "hono";
-
-// Needed for email templates, don't remove
-import React from "react";
 
 import type { MemberSentMessageData, VisitorSentMessageData } from "./types";
 
@@ -43,7 +31,12 @@ type BaseMessagePayload = {
 
 type SetupResult<P extends BaseMessagePayload> =
         | { status: "missing" | "inactive" | "no-state" }
-        | { status: "ok"; payload: P; workflowState: Awaited<ReturnType<typeof getWorkflowState>>; workflowRunId?: string };
+        | {
+                  status: "ok";
+                  payload: P;
+                  workflowState: NonNullable<Awaited<ReturnType<typeof getWorkflowState>>>;
+                  workflowRunId?: string;
+          };
 
 async function runWorkflowSetup<P extends BaseMessagePayload>(
         context: Parameters<Parameters<typeof serve<P>>[0]>[0],
@@ -111,11 +104,7 @@ async function prepareNotificationData({
                 email: participant.userEmail,
         }));
 
-        let visitorRecipient: {
-                kind: "visitor";
-                visitorId: string;
-                email: string;
-        } | null = null;
+        let visitorRecipient: VisitorRecipient | null = null;
 
         if (includeVisitorRecipient && conversation.visitorId) {
                 const visitorInfo = await getVisitorEmailForNotification(db, {
@@ -159,7 +148,7 @@ messageWorkflow.post(
 
                 const setup = await runWorkflowSetup<MemberSentMessageData>(context, direction);
 
-                if (setup?.status !== "ok") {
+                if (setup.status !== "ok") {
                         return;
                 }
 
@@ -204,86 +193,17 @@ messageWorkflow.post(
 				});
 			}
 
-			// Handle visitor recipient separately (keeping inline for now)
-			if (prepared.visitorRecipient?.email) {
-				// Visitor preferences already checked in prepare-data
-
-				// Fetch unseen messages for visitor
-				const { messages, totalCount } = await getMessagesForEmail(db, {
-					conversationId: prepared.conversationId,
-					organizationId: prepared.organizationId,
-					recipientVisitorId: prepared.visitorRecipient.visitorId,
-					maxMessages: MAX_MESSAGES_IN_EMAIL,
-					earliestCreatedAt: workflowState.initialMessageCreatedAt,
-				});
-
-				if (messages.length > 0) {
-					// Check suppression
-					const isSuppressed = await isEmailSuppressed(db, {
-						email: prepared.visitorRecipient.email,
-						organizationId: prepared.organizationId,
-					});
-
-					if (isSuppressed) {
-						logEmailSuppressed({
-							email: prepared.visitorRecipient.email,
-							conversationId: prepared.conversationId,
-							organizationId: prepared.organizationId,
-							reason: "bounced_or_complained",
-						});
-					} else {
-						// Send email notification
-						const threadingHeaders = generateThreadingHeaders({
-							conversationId: prepared.conversationId,
-						});
-
-						const idempotencyKey = generateEmailIdempotencyKey({
-							conversationId: prepared.conversationId,
-							recipientEmail: prepared.visitorRecipient.email,
-							timestamp: new Date(
-								workflowState.initialMessageCreatedAt
-							).getTime(),
-						});
-
-						await sendEmail(
-							{
-								to: prepared.visitorRecipient.email,
-								replyTo: generateInboundReplyAddress({
-									conversationId: prepared.conversationId,
-								}),
-								subject:
-									totalCount > 1
-										? `${totalCount} new messages from ${prepared.websiteInfo.name}`
-										: `New message from ${prepared.websiteInfo.name}`,
-								react: (
-									<NewMessageInConversation
-										conversationId={prepared.conversationId}
-										email={prepared.visitorRecipient.email}
-										isReceiverVisitor={true}
-										messages={messages}
-										totalCount={totalCount}
-										website={{
-											name: prepared.websiteInfo.name,
-											slug: prepared.websiteInfo.slug,
-											logo: prepared.websiteInfo.logo,
-										}}
-									/>
-								),
-								variant: "notifications",
-								headers: threadingHeaders,
-							},
-							{ idempotencyKey }
-						);
-
-						logEmailSent({
-							email: prepared.visitorRecipient.email,
-							conversationId: prepared.conversationId,
-							organizationId: prepared.organizationId,
-						});
-					}
-				}
-			}
-		});
+                        if (prepared.visitorRecipient) {
+                                await sendVisitorEmailNotification({
+                                        db,
+                                        recipient: prepared.visitorRecipient,
+                                        conversationId: prepared.conversationId,
+                                        organizationId: prepared.organizationId,
+                                        websiteInfo: prepared.websiteInfo,
+                                        workflowState,
+                                });
+                        }
+                });
 
 		// Step 4: Clean up workflow state after successful completion
 		await context.run("cleanup-state", async () => {
@@ -299,7 +219,7 @@ messageWorkflow.post(
 
                 const setup = await runWorkflowSetup<VisitorSentMessageData>(context, direction);
 
-                if (setup?.status !== "ok") {
+                if (setup.status !== "ok") {
                         return;
                 }
 
