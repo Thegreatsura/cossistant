@@ -36,7 +36,7 @@ export function TimelineMessageItem({
 					>
 						<TimelineItemContent
 							className={cn(
-								"block max-w-full rounded-lg px-3 py-2 text-sm md:w-max md:max-w-[420px]",
+								"block max-w-full break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
 								{
 									"bg-background-300 text-foreground dark:bg-background-600":
 										!isSentByViewer,
