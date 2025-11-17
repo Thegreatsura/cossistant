@@ -1,9 +1,7 @@
 "use client";
 
-import * as Primitive from "@cossistant/next/primitives";
-import { useComposerRefocus } from "@cossistant/react/hooks/use-composer-refocus";
 import type React from "react";
-import { useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
@@ -43,13 +41,26 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
 }) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const hasContent = value.trim().length > 0 || files.length > 0;
-	const { focusComposer, inputRef } = useComposerRefocus({
-		disabled,
-		hasContent,
-		isSubmitting,
-	});
 	const canSubmit = !(disabled || isSubmitting) && hasContent;
+
+	// Auto-resize textarea with max height constraint
+	useLayoutEffect(() => {
+		const textarea = textareaRef.current;
+		if (!textarea) {
+			return;
+		}
+
+		// Reset height to auto to get accurate scrollHeight
+		textarea.style.height = "auto";
+
+		// Get the scroll height
+		const scrollHeight = textarea.scrollHeight;
+
+		textarea.style.height = `${scrollHeight}px`;
+		textarea.style.overflowY = "hidden";
+	}, [value]);
 
 	const handleSubmit = () => {
 		if (!canSubmit) {
@@ -57,7 +68,10 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		}
 
 		onSubmit();
-		focusComposer();
+		// Focus textarea after submission
+		setTimeout(() => {
+			textareaRef.current?.focus();
+		}, 0);
 	};
 
 	const handleFormSubmit = (e: React.FormEvent) => {
@@ -123,65 +137,91 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 				)}
 
 				{/* Input area */}
-				<div className="flex flex-col rounded border border-border/50 bg-background-100 drop-shadow-xs dark:border-border/50 dark:bg-background-300">
-					<Primitive.MultimodalInput
-						className={cn(
-							"flex-1 resize-none overflow-hidden p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
-							className
-						)}
-						disabled={disabled || isSubmitting}
-						error={error}
-						onChange={onChange}
-						onFileSelect={onFileSelect}
-						onSubmit={handleSubmit}
-						placeholder={placeholder}
-						ref={inputRef}
-						value={value}
-					/>
-
-					<div className="flex items-center justify-end py-2 pr-1 pl-3">
+				<div className="flex h-fit flex-col rounded-lg border border-border/50 bg-background-100 drop-shadow-xs dark:border-border/50 dark:bg-background-300">
+					<div className="scrollbar-thin scrollbar-track-fd-overlay scrollbar-thumb-border/30 hover:scrollbar-thumb-border/50 max-h-[280px] overflow-y-scroll">
+						<textarea
+							aria-describedby={error ? "multimodal-input-error" : undefined}
+							aria-invalid={error ? "true" : undefined}
+							className={cn(
+								"min-h-[20px] w-full flex-1 resize-none p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
+								className
+							)}
+							disabled={disabled || isSubmitting}
+							onChange={(e) => onChange(e.target.value)}
+							onKeyDown={(e) => {
+								// Handle Cmd/Ctrl + Enter to submit
+								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+									e.preventDefault();
+									handleSubmit();
+								}
+							}}
+							placeholder={placeholder}
+							ref={textareaRef}
+							rows={1}
+							value={value}
+						/>
+					</div>
+					<div className="flex items-center justify-end pr-1 pb-1 pl-3">
 						<div className="flex items-center gap-0.5">
 							{/* File attachment button */}
 							{/* {onFileSelect && (
-								<>
-									<TooltipOnHover content="Attach files">
-										<Button
-											className={cn(files.length >= maxFiles && "opacity-50")}
-											disabled={
-												disabled || isSubmitting || files.length >= maxFiles
-											}
-											onClick={handleAttachClick}
-											size="icon"
-											type="button"
-											variant="ghost"
-										>
-											<Icon className="h-4 w-4" name="attachment" />
-										</Button>
-									</TooltipOnHover>
+                <>
+                  <TooltipOnHover content="Attach files">
+                    <Button
+                      className={cn(files.length >= maxFiles && "opacity-50")}
+                      disabled={
+                        disabled || isSubmitting || files.length >= maxFiles
+                      }
+                      onClick={handleAttachClick}
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Icon className="h-4 w-4" name="attachment" />
+                    </Button>
+                  </TooltipOnHover>
 
-									<Primitive.FileInput
-										accept={allowedFileTypes.join(",")}
-										className="hidden"
-										disabled={
-											disabled || isSubmitting || files.length >= maxFiles
-										}
-										onFileSelect={onFileSelect}
-										ref={fileInputRef}
-									/>
-								</>
-							)} */}
+                  <input
+                    type="file"
+                    accept={allowedFileTypes.join(",")}
+                    className="hidden"
+                    disabled={
+                      disabled || isSubmitting || files.length >= maxFiles
+                    }
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0 && onFileSelect) {
+                        onFileSelect(files);
+                        // Reset input to allow selecting the same file again
+                        e.target.value = "";
+                      }
+                    }}
+                    ref={fileInputRef}
+                    multiple
+                  />
+                </>
+              )} */}
 
 							<TooltipOnHover
 								content="Send message"
 								shortcuts={["mod", "enter"]}
 							>
 								<Button
+									className={cn(
+										canSubmit
+											? "[&_svg]:text-primary/90"
+											: "[&_svg]:text-primary/50"
+									)}
 									disabled={!canSubmit}
 									size="icon"
 									type="submit"
 									variant="ghost"
 								>
-									<Icon className="h-4 w-4" name="send" />
+									<Icon
+										className={cn("size-4")}
+										name="send"
+										variant={canSubmit ? "filled" : "default"}
+									/>
 								</Button>
 							</TooltipOnHover>
 						</div>
