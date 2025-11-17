@@ -23,8 +23,8 @@ COPY . .
 # but skip the API binary compilation
 RUN bunx turbo run build --filter=@cossistant/api^...
 
-# Build TypeScript types for the API
-RUN cd apps/api && bun run build:types
+# # Build TypeScript types for the API
+# RUN cd apps/api && bun run build:types
 
 # Railway will set the PORT environment variable
 # EXPOSE is mainly for documentation, the actual port is controlled by env.PORT
