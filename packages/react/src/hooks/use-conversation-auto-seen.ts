@@ -161,50 +161,57 @@ export function useConversationAutoSeen(
                         return;
                 }
 
-                // Already in flight
-                if (markSeenInFlightRef.current) {
-                        return;
-                }
-
                 const pendingItemId = lastTimelineItem.id || null;
 
                 markSeenTimeoutRef.current = setTimeout(() => {
-                        const stillCanMark =
-                                enabled &&
-                                isWidgetOpen &&
-                                client &&
-                                conversationId &&
-                                visitorId &&
-                                isPageVisible;
+                        const attemptMarkSeen = () => {
+                                const stillCanMark =
+                                        enabled &&
+                                        isWidgetOpen &&
+                                        client &&
+                                        conversationId &&
+                                        visitorId &&
+                                        isPageVisible;
 
-                        if (!stillCanMark) {
-                                markSeenInFlightRef.current = false;
-                                markSeenTimeoutRef.current = null;
-                                return;
-                        }
-
-                        markSeenInFlightRef.current = true;
-
-                        client
-                                .markConversationSeen({ conversationId })
-                                .then((response) => {
-                                        lastSeenItemIdRef.current = pendingItemId;
-
-                                        // Optimistically update local seen store
-                                        upsertConversationSeen({
-                                                conversationId,
-                                                actorType: "visitor",
-                                                actorId: visitorId,
-                                                lastSeenAt: new Date(response.lastSeenAt),
-                                        });
-                                })
-                                .catch((err) => {
-                                        console.error("Failed to mark conversation as seen:", err);
-                                })
-                                .finally(() => {
+                                if (!stillCanMark) {
                                         markSeenInFlightRef.current = false;
                                         markSeenTimeoutRef.current = null;
-                                });
+                                        return;
+                                }
+
+                                if (markSeenInFlightRef.current) {
+                                        markSeenTimeoutRef.current = setTimeout(
+                                                attemptMarkSeen,
+                                                100
+                                        );
+                                        return;
+                                }
+
+                                markSeenInFlightRef.current = true;
+
+                                client
+                                        .markConversationSeen({ conversationId })
+                                        .then((response) => {
+                                                lastSeenItemIdRef.current = pendingItemId;
+
+                                                // Optimistically update local seen store
+                                                upsertConversationSeen({
+                                                        conversationId,
+                                                        actorType: "visitor",
+                                                        actorId: visitorId,
+                                                        lastSeenAt: new Date(response.lastSeenAt),
+                                                });
+                                        })
+                                        .catch((err) => {
+                                                console.error("Failed to mark conversation as seen:", err);
+                                        })
+                                        .finally(() => {
+                                                markSeenInFlightRef.current = false;
+                                                markSeenTimeoutRef.current = null;
+                                        });
+                        };
+
+                        attemptMarkSeen();
                 }, CONVERSATION_AUTO_SEEN_DELAY_MS);
 
                 return () => {
