@@ -36,7 +36,7 @@ waitlistWorkflow.post(
 			});
 		},
 		{
-			baseUrl: getWorkflowUrl("WAITLIST_JOIN"),
+			url: getWorkflowUrl("WAITLIST_JOIN"),
 		}
 	)
 );

@@ -227,7 +227,7 @@ messageWorkflow.post(
 			});
 		},
 		{
-			baseUrl: getWorkflowUrl("MEMBER_SENT_MESSAGE"),
+			url: getWorkflowUrl("MEMBER_SENT_MESSAGE"),
 		}
 	)
 );
@@ -294,7 +294,7 @@ messageWorkflow.post(
 			});
 		},
 		{
-			baseUrl: getWorkflowUrl("VISITOR_SENT_MESSAGE"),
+			url: getWorkflowUrl("VISITOR_SENT_MESSAGE"),
 		}
 	)
 );
