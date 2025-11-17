@@ -1,5 +1,5 @@
 import { env } from "@api/env";
-import type { WorkflowDataMap } from "@api/workflows/types";
+import { WORKFLOW, type WorkflowDataMap } from "@api/workflows/types";
 import { Client } from "@upstash/workflow";
 
 const client = new Client({
@@ -15,6 +15,9 @@ type TriggerWorkflowParams<
 	data: WorkflowDataMap[T];
 	workflowRunId?: string;
 };
+
+export const getWorkflowUrl = (path: keyof typeof WORKFLOW) =>
+	`${env.BETTER_AUTH_URL}/workflow/${WORKFLOW[path]}`;
 
 export const triggerWorkflow = async <T extends keyof WorkflowDataMap>({
 	path,
