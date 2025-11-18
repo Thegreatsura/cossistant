@@ -38,14 +38,14 @@ export const Install = () => (
 						asChild
 						className="h-12 border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
 					>
-						<Link href="/sign-up">Add support to your SaaS</Link>
+						<Link href="/sign-up">Start integration now</Link>
 					</Button>
 					<Button
 						asChild
 						className="h-12 border border-transparent font-medium text-md has-[>svg]:px-4"
 						variant="ghost"
 					>
-						<Link href="/docs">Explore the docs</Link>
+						<Link href="/docs">See the docs first</Link>
 					</Button>
 				</div>
 			</div>

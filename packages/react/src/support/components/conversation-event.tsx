@@ -105,7 +105,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	return (
 		<motion.div
 			animate={{ opacity: 1, scale: 1 }}
-			className="flex items-center justify-center py-4"
+			className="flex items-center justify-center pt-4 pb-8"
 			initial={{ opacity: 0, scale: 0.95 }}
 			transition={{ duration: 0.3, ease: "easeOut" }}
 		>
