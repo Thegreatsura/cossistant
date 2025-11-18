@@ -12,11 +12,11 @@ import {
 	parseInboundReplyAddress,
 } from "@api/utils/email-threading";
 import {
-	logEmailBounce,
-	logEmailComplaint,
-	logEmailFailure,
+        logEmailBounce,
+        logEmailComplaint,
+        logEmailFailure,
 } from "@api/utils/notification-monitoring";
-import { createTimelineItem } from "@api/utils/timeline-item";
+import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import { resend } from "@cossistant/transactional";
 import { ConversationTimelineType } from "@cossistant/types";
 import { and, eq } from "drizzle-orm";
@@ -318,25 +318,25 @@ async function handleEmailReceived(event: ResendWebhookEvent): Promise<void> {
 		}
 	}
 
-	// Create a new public message on the conversation as if sent by the visitor/contact
-	await createTimelineItem({
-		db,
-		organizationId: conversation.organizationId,
-		websiteId: conversation.websiteId,
-		conversationId: conversation.id,
-		conversationOwnerVisitorId: conversation.visitorId,
-		item: {
-			type: ConversationTimelineType.MESSAGE,
-			text: messageText,
-			parts: [
-				{ type: "text", text: messageText },
-				{ type: "metadata", source: "email" },
-			],
-			userId: timelineUserId,
-			visitorId: timelineVisitorId,
-			aiAgentId: null,
-		},
-	});
+        // Create a new public message on the conversation as if sent by the visitor/contact
+        await createMessageTimelineItem({
+                db,
+                organizationId: conversation.organizationId,
+                websiteId: conversation.websiteId,
+                conversationId: conversation.id,
+                conversationOwnerVisitorId: conversation.visitorId,
+                item: {
+                        type: ConversationTimelineType.MESSAGE,
+                        text: messageText,
+                        parts: [
+                                { type: "text", text: messageText },
+                                { type: "metadata", source: "email" },
+                        ],
+                        userId: timelineUserId,
+                        visitorId: timelineVisitorId,
+                        aiAgentId: null,
+                },
+        });
 
 	console.log(
 		`[Resend Webhook] Created timeline message from inbound email for conversation ${conversation.id}`
