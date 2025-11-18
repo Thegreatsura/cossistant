@@ -235,26 +235,29 @@ messagesRouter.openapi(
                         });
 
                 // Determine the actor from the created timeline item
-                const resolvedActor: ConversationActor =
-                        actor ?? { type: "visitor", visitorId: visitorId ?? "" };
+                const resolvedActor: ConversationActor | null =
+                        actor ??
+                        (visitorId
+                                ? { type: "visitor", visitorId }
+                                : null);
 
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];
 
-		// Only mark conversation as seen for users and AI agents when sending messages.
-		// For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
-		// This prevents conversations from being marked as seen when the widget is closed.
-		let lastSeenAt: string;
-                if (resolvedActor.type !== "visitor") {
+                // Only mark conversation as seen for users and AI agents when sending messages.
+                // For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
+                // This prevents conversations from being marked as seen when the widget is closed.
+                let lastSeenAt: string | undefined;
+                if (resolvedActor && resolvedActor.type !== "visitor") {
                         lastSeenAt = await markConversationAsSeen(db, {
                                 conversation,
                                 actor: resolvedActor,
                         });
 
-			// Emit conversation seen event for users and AI agents
-			promises.push(
-				emitConversationSeenEvent({
-					conversation,
+                        // Emit conversation seen event for users and AI agents
+                        promises.push(
+                                emitConversationSeenEvent({
+                                        conversation,
                                         actor:
                                                 resolvedActor.type === "aiAgent"
                                                         ? {
@@ -265,26 +268,28 @@ messagesRouter.openapi(
                                         lastSeenAt,
                                 })
                         );
-                } else {
-			// For visitors, just create a timestamp for presence tracking
-			// without marking the conversation as seen
-			lastSeenAt = new Date().toISOString();
-		}
 
-		// Mark presence only for visitors and users (not AI agents)
-                if (resolvedActor.type === "visitor") {
+                        if (resolvedActor.type === "user") {
+                                promises.push(
+                                        markUserPresence({
+                                                websiteId: website.id,
+                                                userId: resolvedActor.userId,
+                                                lastSeenAt,
+                                        })
+                                );
+                        }
+                } else if (
+                        resolvedActor?.type === "visitor" &&
+                        resolvedActor.visitorId
+                ) {
+                        // For visitors, just create a timestamp for presence tracking
+                        // without marking the conversation as seen
+                        lastSeenAt = new Date().toISOString();
+
                         promises.push(
                                 markVisitorPresence({
                                         websiteId: website.id,
                                         visitorId: resolvedActor.visitorId,
-                                        lastSeenAt,
-                                })
-                        );
-                } else if (resolvedActor.type === "user") {
-                        promises.push(
-                                markUserPresence({
-                                        websiteId: website.id,
-                                        userId: resolvedActor.userId,
                                         lastSeenAt,
                                 })
                         );
