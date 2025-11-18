@@ -12,14 +12,15 @@ import {
 	parseInboundReplyAddress,
 } from "@api/utils/email-threading";
 import {
-        logEmailBounce,
-        logEmailComplaint,
-        logEmailFailure,
+	logEmailBounce,
+	logEmailComplaint,
+	logEmailFailure,
 } from "@api/utils/notification-monitoring";
 import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import { resend } from "@cossistant/transactional";
 import { ConversationTimelineType } from "@cossistant/types";
 import { and, eq } from "drizzle-orm";
+import EmailReplyParser from "email-reply-parser";
 import type { Context } from "hono";
 import { Hono } from "hono";
 
@@ -272,18 +273,10 @@ async function handleEmailReceived(event: ResendWebhookEvent): Promise<void> {
 		return;
 	}
 
-	const textBody = (receivedEmail.text ?? "").trim();
-	const htmlBody = (receivedEmail.html ?? "").trim();
-
-	let messageText = textBody;
-
-	if (!messageText && htmlBody) {
-		// Very minimal HTML to text fallback – enough to get readable content
-		messageText = htmlBody
-			.replace(/<[^>]+>/g, " ")
-			.replace(/\s+/g, " ")
-			.trim();
-	}
+	const messageText = sanitizeIncomingEmailBody({
+		textBody: receivedEmail.text,
+		htmlBody: receivedEmail.html,
+	});
 
 	if (!messageText) {
 		console.warn(
@@ -318,29 +311,65 @@ async function handleEmailReceived(event: ResendWebhookEvent): Promise<void> {
 		}
 	}
 
-        // Create a new public message on the conversation as if sent by the visitor/contact
-        await createMessageTimelineItem({
-                db,
-                organizationId: conversation.organizationId,
-                websiteId: conversation.websiteId,
-                conversationId: conversation.id,
-                conversationOwnerVisitorId: conversation.visitorId,
-                item: {
-                        type: ConversationTimelineType.MESSAGE,
-                        text: messageText,
-                        parts: [
-                                { type: "text", text: messageText },
-                                { type: "metadata", source: "email" },
-                        ],
-                        userId: timelineUserId,
-                        visitorId: timelineVisitorId,
-                        aiAgentId: null,
-                },
-        });
+	// Create a new public message on the conversation as if sent by the visitor/contact
+	await createMessageTimelineItem({
+		db,
+		organizationId: conversation.organizationId,
+		websiteId: conversation.websiteId,
+		conversationId: conversation.id,
+		conversationOwnerVisitorId: conversation.visitorId,
+		item: {
+			type: ConversationTimelineType.MESSAGE,
+			text: messageText,
+			parts: [
+				{ type: "text", text: messageText },
+				{ type: "metadata", source: "email" },
+			],
+			userId: timelineUserId,
+			visitorId: timelineVisitorId,
+			aiAgentId: null,
+		},
+	});
 
 	console.log(
 		`[Resend Webhook] Created timeline message from inbound email for conversation ${conversation.id}`
 	);
+}
+
+function sanitizeIncomingEmailBody({
+	textBody,
+	htmlBody,
+}: {
+	textBody?: string | null;
+	htmlBody?: string | null;
+}): string | null {
+	const parser = new EmailReplyParser();
+
+	const normalizedText = textBody?.trim() ?? "";
+	if (normalizedText) {
+		const parsed = parser.parseReply(normalizedText).trim();
+		if (parsed) {
+			return parsed;
+		}
+	}
+
+	const normalizedHtml = htmlBody?.trim() ?? "";
+
+	if (!normalizedHtml) {
+		return null;
+	}
+
+	const htmlAsText = normalizedHtml
+		.replace(/<script[\s\S]*?<\/script>/gi, " ")
+		.replace(/<style[\s\S]*?<\/style>/gi, " ")
+		.replace(/<[^>]+>/g, " ")
+		.replace(/\s+/g, " ")
+		.replace(/[\u200B-\u200D\uFEFF]/g, "")
+		.trim();
+
+	const parsed = parser.parseReply(htmlAsText).trim();
+
+	return parsed || null;
 }
 
 /**

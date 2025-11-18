@@ -26,6 +26,7 @@
     "@types/node": "^24.5.0",
     "@upstash/workflow": "^0.2.22",
     "drizzle-orm": "^0.44.5",
+    "email-reply-parser": "^2.3.3",
     "hono": "^4.10.1",
     "hono-rate-limiter": "^0.4.2",
     "ioredis": "^5.8.1",
