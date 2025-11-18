@@ -27,10 +27,10 @@ export const Install = () => (
 				</p>
 				<div className="mt-6 border border-primary/10 border-dashed bg-background-100 lg:w-5/6">
 					<CodeBlockCommand
-						__bun__="bun add @cossistant/next"
-						__npm__="npm install @cossistant/next"
-						__pnpm__="pnpm add @cossistant/next"
-						__yarn__="yarn add @cossistant/next"
+						__bun__="bun add @cossistant/next @cossistant/react"
+						__npm__="npm install @cossistant/next @cossistant/react"
+						__pnpm__="pnpm add @cossistant/next @cossistant/react"
+						__yarn__="yarn add @cossistant/next @cossistant/react"
 					/>
 				</div>
 				<div className="mt-6 flex w-full flex-row gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:items-center">
