@@ -28,6 +28,7 @@
         "noUndeclaredVariables": "off",
         "noUnusedFunctionParameters": "off",
         "noUnusedVariables": "off",
+        "noUnknownProperty": "off",
         "useExhaustiveDependencies": "off"
       },
       "performance": {

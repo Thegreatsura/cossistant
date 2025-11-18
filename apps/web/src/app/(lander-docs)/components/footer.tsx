@@ -9,7 +9,7 @@ import { StatusWidget } from "./status-widget";
 export function Footer() {
 	return (
 		<footer className="mt-16 flex-col border-primary/10 border-t border-dashed md:mt-0 md:border-transparent">
-			<div className="container-wrapper z-0 mx-auto px-2 py-12 lg:px-0">
+			<div className="container-wrapper z-0 mx-auto px-2 py-12 md:pt-60 lg:px-0">
 				<div className="container grid grid-cols-1 gap-8 px-2 md:grid-cols-4 md:px-4">
 					{/* Brand */}
 					<div className="col-span-1 md:col-span-2">
@@ -113,7 +113,7 @@ export function Footer() {
 					</div>
 					<ThemeToggle />
 				</div>
-				<div className="container-wrapper mx-auto flex flex-col items-center justify-between gap-6 px-4 pt-4 pb-4 md:flex-row md:items-start md:gap-0">
+				<div className="container-wrapper mx-auto flex flex-col items-center justify-between gap-6 px-4 pt-4 pb-20 md:flex-row md:items-start md:gap-0">
 					<ThreeLogo className="size-full w-full opacity-40" />
 				</div>
 			</div>
