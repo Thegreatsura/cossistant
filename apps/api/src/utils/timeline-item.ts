@@ -97,6 +97,7 @@ export type CreateMessageTimelineItemOptions = {
 	conversationOwnerVisitorId?: string | null;
 	text: string; // Now required - the raw text content
 	extraParts?: unknown[]; // Optional additional parts (images, files, events, etc.)
+	id?: string; // Optional ID for the timeline item
 	userId?: string | null;
 	aiAgentId?: string | null;
 	visitorId?: string | null;
@@ -173,6 +174,7 @@ export async function createMessageTimelineItem(
 		conversationOwnerVisitorId,
 		text,
 		extraParts = [],
+		id,
 		db,
 		organizationId,
 		websiteId,
@@ -198,6 +200,7 @@ export async function createMessageTimelineItem(
 		conversationId,
 		conversationOwnerVisitorId,
 		item: {
+			id,
 			type: ConversationTimelineType.MESSAGE,
 			text: parsedText,
 			parts,

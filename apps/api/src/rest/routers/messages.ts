@@ -216,6 +216,7 @@ messagesRouter.openapi(
 				websiteId: website.id,
 				conversationId: body.conversationId,
 				conversationOwnerVisitorId: visitorId,
+				id: body.item.id,
 				text: body.item.text ?? "",
 				extraParts:
 					body.item.parts?.filter((part) => part.type !== "text") ?? [],
