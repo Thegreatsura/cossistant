@@ -4,12 +4,39 @@ import { conversationTimelineItem } from "@api/db/schema";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
 import {
-        type ConversationTimelineType,
-        TimelineItemVisibility,
+	ConversationTimelineType,
+	TimelineItemVisibility,
 } from "@cossistant/types";
 import { timelineItemSchema } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEventData } from "@cossistant/types/realtime-events";
+import * as linkify from "linkifyjs";
 import { triggerMessageNotificationWorkflow } from "./send-message-with-notification";
+
+/**
+ * Parses raw text and converts URLs to markdown link format
+ * @param text - The raw text to parse
+ * @returns The text with URLs converted to markdown links
+ */
+function parseTextToMarkdown(text: string): string {
+	const matches = linkify.find(text);
+
+	if (matches.length === 0) {
+		return text;
+	}
+
+	let result = text;
+
+	// Process matches in reverse to maintain correct positions
+	for (let i = matches.length - 1; i >= 0; i--) {
+		const match = matches[i];
+		const markdownLink = `[${match.value}](${match.href})`;
+
+		result =
+			result.slice(0, match.start) + markdownLink + result.slice(match.end);
+	}
+
+	return result;
+}
 
 export type CreateTimelineItemOptions = {
 	db: Database;
@@ -37,9 +64,9 @@ export type CreateTimelineItemOptions = {
 };
 
 type TimelineItem = {
-        id: string;
-        conversationId: string;
-        organizationId: string;
+	id: string;
+	conversationId: string;
+	organizationId: string;
 	visibility:
 		| typeof TimelineItemVisibility.PUBLIC
 		| typeof TimelineItemVisibility.PRIVATE;
@@ -54,27 +81,36 @@ type TimelineItem = {
 	aiAgentId: string | null;
 	createdAt: string;
 	deletedAt: string | null;
-        tool: string | null;
+	tool: string | null;
 };
 
 export type MessageTimelineActor =
-        | { type: "user"; userId: string }
-        | { type: "visitor"; visitorId: string }
-        | { type: "aiAgent"; aiAgentId: string };
+	| { type: "user"; userId: string }
+	| { type: "visitor"; visitorId: string }
+	| { type: "aiAgent"; aiAgentId: string };
 
-export type CreateMessageTimelineItemOptions = Omit<
-        CreateTimelineItemOptions,
-        "item"
-> & {
-        item: Omit<CreateTimelineItemOptions["item"], "type"> & {
-                type?: typeof ConversationTimelineType.MESSAGE;
-        };
-        triggerNotificationWorkflow?: boolean;
+export type CreateMessageTimelineItemOptions = {
+	db: Database;
+	organizationId: string;
+	websiteId: string;
+	conversationId: string;
+	conversationOwnerVisitorId?: string | null;
+	text: string; // Now required - the raw text content
+	extraParts?: unknown[]; // Optional additional parts (images, files, events, etc.)
+	userId?: string | null;
+	aiAgentId?: string | null;
+	visitorId?: string | null;
+	visibility?:
+		| typeof TimelineItemVisibility.PUBLIC
+		| typeof TimelineItemVisibility.PRIVATE;
+	createdAt?: Date;
+	tool?: string | null;
+	triggerNotificationWorkflow?: boolean;
 };
 
 function serializeTimelineItemForRealtime(
-        item: TimelineItem,
-        context: {
+	item: TimelineItem,
+	context: {
 		conversationId: string;
 		websiteId: string;
 		organizationId: string;
@@ -103,73 +139,95 @@ function serializeTimelineItemForRealtime(
 		organizationId: context.organizationId,
 		userId: context.userId,
 		visitorId: context.visitorId,
-        };
+	};
 }
 
 function resolveMessageActor(
-        item: TimelineItem,
-        fallbackVisitorId?: string | null
+	item: TimelineItem,
+	fallbackVisitorId?: string | null
 ): MessageTimelineActor | null {
-        if (item.userId) {
-                return { type: "user", userId: item.userId };
-        }
+	if (item.userId) {
+		return { type: "user", userId: item.userId };
+	}
 
-        if (item.aiAgentId) {
-                return { type: "aiAgent", aiAgentId: item.aiAgentId };
-        }
+	if (item.aiAgentId) {
+		return { type: "aiAgent", aiAgentId: item.aiAgentId };
+	}
 
-        if (item.visitorId) {
-                return { type: "visitor", visitorId: item.visitorId };
-        }
+	if (item.visitorId) {
+		return { type: "visitor", visitorId: item.visitorId };
+	}
 
-        if (fallbackVisitorId) {
-                return { type: "visitor", visitorId: fallbackVisitorId };
-        }
+	if (fallbackVisitorId) {
+		return { type: "visitor", visitorId: fallbackVisitorId };
+	}
 
-        return null;
+	return null;
 }
 
 export async function createMessageTimelineItem(
-        options: CreateMessageTimelineItemOptions
+	options: CreateMessageTimelineItemOptions
 ): Promise<{ item: TimelineItem; actor: MessageTimelineActor | null }> {
-        const {
-                triggerNotificationWorkflow = true,
-                conversationOwnerVisitorId,
-                item,
-                ...rest
-        } = options;
+	const {
+		triggerNotificationWorkflow = true,
+		conversationOwnerVisitorId,
+		text,
+		extraParts = [],
+		db,
+		organizationId,
+		websiteId,
+		conversationId,
+		userId,
+		aiAgentId,
+		visitorId,
+		visibility,
+		createdAt,
+		tool,
+	} = options;
 
-        const createdTimelineItem = await createTimelineItem({
-                conversationOwnerVisitorId,
-                ...rest,
-                item: {
-                        ...item,
-                        type: ConversationTimelineType.MESSAGE,
-                        parts: item.parts ?? [{ type: "text", text: item.text }],
-                },
-        });
+	// Parse the text to convert URLs to markdown links
+	const parsedText = parseTextToMarkdown(text);
 
-        const actor = resolveMessageActor(
-                createdTimelineItem,
-                conversationOwnerVisitorId ?? null
-        );
+	// Construct the parts array with the text part first
+	const parts = [{ type: "text", text: parsedText }, ...extraParts];
 
-        if (triggerNotificationWorkflow && actor) {
-                triggerMessageNotificationWorkflow({
-                        conversationId: rest.conversationId,
-                        messageId: createdTimelineItem.id,
-                        websiteId: rest.websiteId,
-                        organizationId: rest.organizationId,
-                        actor,
-                }).catch((error) => {
-                        console.error(
-                                "[dev] Failed to trigger notification workflow:",
-                                error
-                        );
-                });
-        }
+	const createdTimelineItem = await createTimelineItem({
+		db,
+		organizationId,
+		websiteId,
+		conversationId,
+		conversationOwnerVisitorId,
+		item: {
+			type: ConversationTimelineType.MESSAGE,
+			text: parsedText,
+			parts,
+			userId,
+			aiAgentId,
+			visitorId,
+			visibility,
+			createdAt,
+			tool,
+		},
+	});
 
-        return { item: createdTimelineItem, actor };
+	const actor = resolveMessageActor(
+		createdTimelineItem,
+		conversationOwnerVisitorId ?? null
+	);
+
+	if (triggerNotificationWorkflow && actor) {
+		triggerMessageNotificationWorkflow({
+			conversationId,
+			messageId: createdTimelineItem.id,
+			websiteId,
+			organizationId,
+			actor,
+		}).catch((error) => {
+			console.error("[dev] Failed to trigger notification workflow:", error);
+		});
+	}
+
+	return { item: createdTimelineItem, actor };
 }
 
 export async function createTimelineItem(

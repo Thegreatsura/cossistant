@@ -216,19 +216,16 @@ messagesRouter.openapi(
 				websiteId: website.id,
 				conversationId: body.conversationId,
 				conversationOwnerVisitorId: visitorId,
-				item: {
-					id: body.item.id,
-					type: ConversationTimelineType.MESSAGE,
-					text: body.item.text,
-					parts: body.item.parts ?? [{ type: "text", text: body.item.text }],
-					visibility: body.item.visibility,
-					userId: isPublic ? null : (body.item.userId ?? null),
-					aiAgentId: isPublic ? null : (body.item.aiAgentId ?? null),
-					visitorId: visitorId ?? null,
-					createdAt: body.item.createdAt
-						? new Date(body.item.createdAt)
-						: undefined,
-				},
+				text: body.item.text ?? "",
+				extraParts:
+					body.item.parts?.filter((part) => part.type !== "text") ?? [],
+				visibility: body.item.visibility,
+				userId: isPublic ? null : (body.item.userId ?? null),
+				aiAgentId: isPublic ? null : (body.item.aiAgentId ?? null),
+				visitorId: visitorId ?? null,
+				createdAt: body.item.createdAt
+					? new Date(body.item.createdAt)
+					: undefined,
 			});
 
 		// Determine the actor from the created timeline item
