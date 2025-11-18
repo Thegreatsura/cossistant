@@ -1,6 +1,5 @@
 import { SupportConfig } from "@cossistant/react/support-config";
 import Link from "next/link";
-import { Suspense } from "react";
 import { FakeDashboard } from "@/components/landing/fake-dashboard";
 import { Button } from "@/components/ui/button";
 import { Logos } from "@/components/ui/logos";
@@ -8,9 +7,7 @@ import { TooltipOnHover } from "@/components/ui/tooltip";
 import { AnimationControls } from "./components/animation-controls";
 import { Benefits } from "./components/benefits";
 import { BrowserWithBackground } from "./components/browser-with-background";
-import { GitHubLink } from "./components/github-link";
 import { Install } from "./components/install";
-import { WaitingListMessage } from "./components/waiting-list-rank/message";
 
 export const dynamic = "force-dynamic";
 
@@ -39,28 +36,18 @@ export default async function Landing() {
               Human + AI agent support your users love in under 10 lines of
               code.
             </h3> */}
-						<div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
-							<Link href="/waitlist">
-								<Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
-									Join the waitlist
-								</Button>
-							</Link>
-							<GitHubLink
-								className="h-12 w-full justify-between px-4 font-medium text-md lg:w-[250px]"
-								variant="secondary"
-							>
-								Star us on GitHub
-							</GitHubLink>
-						</div>
-						<Suspense
-							fallback={
-								<p className="text-balance text-center font-mono text-foreground/20 text-xs md:text-left">
-									Already xxx people on the waitlist. Join them, be early.
-								</p>
-							}
-						>
-							<WaitingListMessage />
-						</Suspense>
+                                                <div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
+                                                        <Link href="/playground">
+                                                                <Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
+                                                                        Add support to your SaaS
+                                                                </Button>
+                                                        </Link>
+                                                        <Link className="lg:w-[250px]" href="/docs">
+                                                                <Button className="h-12 w-full justify-between px-4 font-medium text-md" variant="secondary">
+                                                                        Explore the docs
+                                                                </Button>
+                                                        </Link>
+                                                </div>
 					</div>
 					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed hidden lg:block">
 						<div className="fake-dashboard-container">

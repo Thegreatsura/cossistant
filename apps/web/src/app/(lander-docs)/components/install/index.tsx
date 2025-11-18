@@ -33,21 +33,21 @@ export const Install = () => (
 						__yarn__="yarn add @cossistant/next"
 					/>
 				</div>
-				<div className="mt-6 flex w-full flex-row gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:items-center">
-					<Link href="/waitlist">
-						<Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
-							Join the waitlist
-						</Button>
-					</Link>
-					<Link href="/docs">
-						<Button
-							className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
-							variant="secondary"
-						>
-							Read the docs
-						</Button>
-					</Link>
-				</div>
+                                <div className="mt-6 flex w-full flex-row gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:items-center">
+                                        <Link href="/playground">
+                                                <Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
+                                                        Add support to your SaaS
+                                                </Button>
+                                        </Link>
+                                        <Link href="/docs">
+                                                <Button
+                                                        className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
+                                                        variant="secondary"
+                                                >
+                                                        Explore the docs
+                                                </Button>
+                                        </Link>
+                                </div>
 			</div>
 			<div className="flex-1">
 				<ComponentPreview

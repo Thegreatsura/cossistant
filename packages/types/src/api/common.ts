@@ -29,14 +29,6 @@ export const optionalUserIdSchema = z.ulid().optional().openapi({
 });
 
 /**
- * Referral code validation schema
- */
-export const referralCodeSchema = z.string().min(1).openapi({
-	description: "A referral code for accessing features.",
-	example: "WELCOME2024",
-});
-
-/**
  * Common pagination schema
  */
 export const paginationSchema = z.object({
