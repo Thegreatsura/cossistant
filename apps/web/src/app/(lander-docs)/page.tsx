@@ -36,18 +36,21 @@ export default async function Landing() {
               Human + AI agent support your users love in under 10 lines of
               code.
             </h3> */}
-                                                <div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
-                                                        <Link href="/sign-up">
-                                                                <Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
-                                                                        Add support to your SaaS
-                                                                </Button>
-                                                        </Link>
-                                                        <Link className="lg:w-[250px]" href="/docs">
-                                                                <Button className="h-12 w-full justify-between px-4 font-medium text-md" variant="secondary">
-                                                                        Explore the docs
-                                                                </Button>
-                                                        </Link>
-                                                </div>
+						<div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
+							<Link href="/sign-up">
+								<Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
+									Add support to your SaaS
+								</Button>
+							</Link>
+							<Link className="lg:w-[250px]" href="/docs">
+								<Button
+									className="h-12 w-full justify-between px-4 font-medium text-md"
+									variant="secondary"
+								>
+									Explore the docs
+								</Button>
+							</Link>
+						</div>
 					</div>
 					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed hidden lg:block">
 						<div className="fake-dashboard-container">
@@ -85,7 +88,7 @@ export default async function Landing() {
 				</div>
 			</div>
 			<Install />
-			<Benefits />
+			{/* <Benefits /> */}
 		</>
 	);
 }
