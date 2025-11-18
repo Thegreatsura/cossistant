@@ -4,11 +4,12 @@ import { conversationTimelineItem } from "@api/db/schema";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
 import {
-	type ConversationTimelineType,
-	TimelineItemVisibility,
+        type ConversationTimelineType,
+        TimelineItemVisibility,
 } from "@cossistant/types";
 import { timelineItemSchema } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEventData } from "@cossistant/types/realtime-events";
+import { triggerMessageNotificationWorkflow } from "./send-message-with-notification";
 
 export type CreateTimelineItemOptions = {
 	db: Database;
@@ -36,9 +37,9 @@ export type CreateTimelineItemOptions = {
 };
 
 type TimelineItem = {
-	id: string;
-	conversationId: string;
-	organizationId: string;
+        id: string;
+        conversationId: string;
+        organizationId: string;
 	visibility:
 		| typeof TimelineItemVisibility.PUBLIC
 		| typeof TimelineItemVisibility.PRIVATE;
@@ -53,12 +54,27 @@ type TimelineItem = {
 	aiAgentId: string | null;
 	createdAt: string;
 	deletedAt: string | null;
-	tool: string | null;
+        tool: string | null;
+};
+
+export type MessageTimelineActor =
+        | { type: "user"; userId: string }
+        | { type: "visitor"; visitorId: string }
+        | { type: "aiAgent"; aiAgentId: string };
+
+export type CreateMessageTimelineItemOptions = Omit<
+        CreateTimelineItemOptions,
+        "item"
+> & {
+        item: Omit<CreateTimelineItemOptions["item"], "type"> & {
+                type?: typeof ConversationTimelineType.MESSAGE;
+        };
+        triggerNotificationWorkflow?: boolean;
 };
 
 function serializeTimelineItemForRealtime(
-	item: TimelineItem,
-	context: {
+        item: TimelineItem,
+        context: {
 		conversationId: string;
 		websiteId: string;
 		organizationId: string;
@@ -87,7 +103,73 @@ function serializeTimelineItemForRealtime(
 		organizationId: context.organizationId,
 		userId: context.userId,
 		visitorId: context.visitorId,
-	};
+        };
+}
+
+function resolveMessageActor(
+        item: TimelineItem,
+        fallbackVisitorId?: string | null
+): MessageTimelineActor | null {
+        if (item.userId) {
+                return { type: "user", userId: item.userId };
+        }
+
+        if (item.aiAgentId) {
+                return { type: "aiAgent", aiAgentId: item.aiAgentId };
+        }
+
+        if (item.visitorId) {
+                return { type: "visitor", visitorId: item.visitorId };
+        }
+
+        if (fallbackVisitorId) {
+                return { type: "visitor", visitorId: fallbackVisitorId };
+        }
+
+        return null;
+}
+
+export async function createMessageTimelineItem(
+        options: CreateMessageTimelineItemOptions
+): Promise<{ item: TimelineItem; actor: MessageTimelineActor | null }> {
+        const {
+                triggerNotificationWorkflow = true,
+                conversationOwnerVisitorId,
+                item,
+                ...rest
+        } = options;
+
+        const createdTimelineItem = await createTimelineItem({
+                conversationOwnerVisitorId,
+                ...rest,
+                item: {
+                        ...item,
+                        type: ConversationTimelineType.MESSAGE,
+                        parts: item.parts ?? [{ type: "text", text: item.text }],
+                },
+        });
+
+        const actor = resolveMessageActor(
+                createdTimelineItem,
+                conversationOwnerVisitorId ?? null
+        );
+
+        if (triggerNotificationWorkflow && actor) {
+                triggerMessageNotificationWorkflow({
+                        conversationId: rest.conversationId,
+                        messageId: createdTimelineItem.id,
+                        websiteId: rest.websiteId,
+                        organizationId: rest.organizationId,
+                        actor,
+                }).catch((error) => {
+                        console.error(
+                                "[dev] Failed to trigger notification workflow:",
+                                error
+                        );
+                });
+        }
+
+        return { item: createdTimelineItem, actor };
 }
 
 export async function createTimelineItem(

@@ -18,18 +18,17 @@ import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import {
-	emitConversationSeenEvent,
-	emitConversationTypingEvent,
+        emitConversationSeenEvent,
+        emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
 import {
-	addConversationParticipant,
-	isUserParticipant,
+        addConversationParticipant,
+        isUserParticipant,
 } from "@api/utils/participant-helpers";
-import { triggerMessageNotificationWorkflow } from "@api/utils/send-message-with-notification";
-import { createTimelineItem } from "@api/utils/timeline-item";
+import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import {
-	type ContactMetadata,
-	conversationMutationResponseSchema,
+        type ContactMetadata,
+        conversationMutationResponseSchema,
 	listConversationHeadersResponseSchema,
 	visitorResponseSchema,
 } from "@cossistant/types";
@@ -205,35 +204,23 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
-			const createdTimelineItem = await createTimelineItem({
-				db,
-				organizationId: websiteData.organizationId,
-				websiteId: websiteData.id,
-				conversationId: input.conversationId,
-				conversationOwnerVisitorId: conversation.visitorId,
-				item: {
-					id: input.timelineItemId,
-					type: "message",
-					text: input.text,
-					parts: [{ type: "text", text: input.text }],
-					visibility: input.visibility,
-					userId: user.id,
-					visitorId: null,
-					aiAgentId: null,
-				},
-			});
-
-			// Trigger notification workflow (non-blocking)
-			// This will send email notifications to relevant participants after configured delays
-			triggerMessageNotificationWorkflow({
-				conversationId: input.conversationId,
-				messageId: createdTimelineItem.id,
-				websiteId: websiteData.id,
-				organizationId: websiteData.organizationId,
-				actor: { type: "user", userId: user.id },
-			}).catch((error) => {
-				console.error("[dev] Failed to trigger notification workflow:", error);
-			});
+                        const { item: createdTimelineItem } = await createMessageTimelineItem({
+                                db,
+                                organizationId: websiteData.organizationId,
+                                websiteId: websiteData.id,
+                                conversationId: input.conversationId,
+                                conversationOwnerVisitorId: conversation.visitorId,
+                                item: {
+                                        id: input.timelineItemId,
+                                        type: "message",
+                                        text: input.text,
+                                        parts: [{ type: "text", text: input.text }],
+                                        visibility: input.visibility,
+                                        userId: user.id,
+                                        visitorId: null,
+                                        aiAgentId: null,
+                                },
+                        });
 
 			// Mark conversation as read by user after sending timeline item
 			const { lastSeenAt } = await markConversationAsRead(db, {
