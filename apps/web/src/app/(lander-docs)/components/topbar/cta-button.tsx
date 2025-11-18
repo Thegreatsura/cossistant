@@ -9,7 +9,7 @@ export function CtaButton() {
 	const hasScrolled = useHasScrolled(250);
 
         return (
-                <Link href="/playground">
+                <Link href="/sign-up">
                         <Button
                                 className={cn(hasScrolled && "border dark:border-transparent")}
                                 variant={hasScrolled ? "default" : "outline"}

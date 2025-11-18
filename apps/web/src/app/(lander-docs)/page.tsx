@@ -37,7 +37,7 @@ export default async function Landing() {
               code.
             </h3> */}
                                                 <div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
-                                                        <Link href="/playground">
+                                                        <Link href="/sign-up">
                                                                 <Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
                                                                         Add support to your SaaS
                                                                 </Button>
