@@ -29,27 +29,27 @@ export default async function Landing() {
 						<p className="font-mono text-primary/70 text-xs">
 							[Programmatic Human + AI agent support your users love]
 						</p>
-						<h1 className="max-w-3xl text-balance text-left font-f37-stout text-[36px] leading-tight md:text-3xl xl:text-5xl">
-							Add customer support to your SaaS under 10 lines of code.
+						<h1 className="max-w-4xl text-balance text-left font-f37-stout text-[42px] leading-tight md:text-3xl xl:text-5xl">
+							Make your customer support move faster under 10 lines of code.
 						</h1>
 						{/* <h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
               Human + AI agent support your users love in under 10 lines of
               code.
             </h3> */}
 						<div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
-							<Link href="/sign-up">
-								<Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
-									Add support to your SaaS
-								</Button>
-							</Link>
-							<Link className="lg:w-[250px]" href="/docs">
-								<Button
-									className="h-12 w-full justify-between px-4 font-medium text-md"
-									variant="secondary"
-								>
-									Explore the docs
-								</Button>
-							</Link>
+							<Button
+								asChild
+								className="h-12 border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
+							>
+								<Link href="/sign-up">Install Cossistant now</Link>
+							</Button>
+							<Button
+								asChild
+								className="h-12 justify-between px-4 font-medium text-md"
+								variant="ghost"
+							>
+								<Link href="/docs">Explore the docs</Link>
+							</Button>
 						</div>
 					</div>
 					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed hidden lg:block">

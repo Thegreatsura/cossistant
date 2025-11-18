@@ -6,7 +6,7 @@ import { BackgroundImage } from "@/components/ui/background-image";
 
 function CossistantLandingSupport() {
 	return (
-		<div className="cossistant relative w-full">
+		<div className="cossistant relative h-full w-full">
 			<BackgroundImage
 				alt="Cossistant Background"
 				largeSrc="https://cdn.cossistant.com/landing/secondary-large.jpg"
