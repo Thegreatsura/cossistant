@@ -18,17 +18,17 @@ import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import {
-        emitConversationSeenEvent,
-        emitConversationTypingEvent,
+	emitConversationSeenEvent,
+	emitConversationTypingEvent,
 } from "@api/utils/conversation-realtime";
 import {
-        addConversationParticipant,
-        isUserParticipant,
+	addConversationParticipant,
+	isUserParticipant,
 } from "@api/utils/participant-helpers";
 import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import {
-        type ContactMetadata,
-        conversationMutationResponseSchema,
+	type ContactMetadata,
+	conversationMutationResponseSchema,
 	listConversationHeadersResponseSchema,
 	visitorResponseSchema,
 } from "@cossistant/types";
@@ -204,23 +204,19 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
-                        const { item: createdTimelineItem } = await createMessageTimelineItem({
-                                db,
-                                organizationId: websiteData.organizationId,
-                                websiteId: websiteData.id,
-                                conversationId: input.conversationId,
-                                conversationOwnerVisitorId: conversation.visitorId,
-                                item: {
-                                        id: input.timelineItemId,
-                                        type: "message",
-                                        text: input.text,
-                                        parts: [{ type: "text", text: input.text }],
-                                        visibility: input.visibility,
-                                        userId: user.id,
-                                        visitorId: null,
-                                        aiAgentId: null,
-                                },
-                        });
+			const { item: createdTimelineItem } = await createMessageTimelineItem({
+				db,
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				conversationId: input.conversationId,
+				conversationOwnerVisitorId: conversation.visitorId,
+				id: input.timelineItemId,
+				text: input.text,
+				visibility: input.visibility,
+				userId: user.id,
+				visitorId: null,
+				aiAgentId: null,
+			});
 
 			// Mark conversation as read by user after sending timeline item
 			const { lastSeenAt } = await markConversationAsRead(db, {

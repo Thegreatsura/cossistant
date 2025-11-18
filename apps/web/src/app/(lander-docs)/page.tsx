@@ -1,6 +1,5 @@
 import { SupportConfig } from "@cossistant/react/support-config";
 import Link from "next/link";
-import { Suspense } from "react";
 import { FakeDashboard } from "@/components/landing/fake-dashboard";
 import { Button } from "@/components/ui/button";
 import { Logos } from "@/components/ui/logos";
@@ -8,9 +7,7 @@ import { TooltipOnHover } from "@/components/ui/tooltip";
 import { AnimationControls } from "./components/animation-controls";
 import { Benefits } from "./components/benefits";
 import { BrowserWithBackground } from "./components/browser-with-background";
-import { GitHubLink } from "./components/github-link";
 import { Install } from "./components/install";
-import { WaitingListMessage } from "./components/waiting-list-rank/message";
 
 export const dynamic = "force-dynamic";
 
@@ -32,35 +29,28 @@ export default async function Landing() {
 						<p className="font-mono text-primary/70 text-xs">
 							[Programmatic Human + AI agent support your users love]
 						</p>
-						<h1 className="max-w-3xl text-balance text-left font-f37-stout text-[36px] leading-tight md:text-3xl xl:text-5xl">
-							Add customer support to your SaaS under 10 lines of code.
+						<h1 className="max-w-4xl text-balance text-left font-f37-stout text-[42px] leading-tight md:text-3xl xl:text-5xl">
+							Make your customer support move faster under 10 lines of code.
 						</h1>
 						{/* <h3 className="w-full text-balance text-left text-[18px] text-primary/70 md:max-w-[75%] md:text-lg lg:max-w-full">
               Human + AI agent support your users love in under 10 lines of
               code.
             </h3> */}
 						<div className="mt-6 flex w-full flex-col gap-3 md:max-w-[75%] md:gap-6 lg:max-w-full lg:flex-row lg:items-center">
-							<Link href="/waitlist">
-								<Button className="h-12 w-full border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]">
-									Join the waitlist
-								</Button>
-							</Link>
-							<GitHubLink
-								className="h-12 w-full justify-between px-4 font-medium text-md lg:w-[250px]"
-								variant="secondary"
+							<Button
+								asChild
+								className="h-12 border border-transparent font-medium text-md has-[>svg]:px-4 lg:w-[250px]"
 							>
-								Star us on GitHub
-							</GitHubLink>
+								<Link href="/sign-up">Install Cossistant now</Link>
+							</Button>
+							<Button
+								asChild
+								className="h-12 justify-between px-4 font-medium text-md"
+								variant="ghost"
+							>
+								<Link href="/docs">Explore the docs</Link>
+							</Button>
 						</div>
-						<Suspense
-							fallback={
-								<p className="text-balance text-center font-mono text-foreground/20 text-xs md:text-left">
-									Already xxx people on the waitlist. Join them, be early.
-								</p>
-							}
-						>
-							<WaitingListMessage />
-						</Suspense>
 					</div>
 					<BrowserWithBackground containerClassName="w-full border-primary/10 border-y border-dashed hidden lg:block">
 						<div className="fake-dashboard-container">
@@ -98,7 +88,7 @@ export default async function Landing() {
 				</div>
 			</div>
 			<Install />
-			<Benefits />
+			{/* <Benefits /> */}
 		</>
 	);
 }

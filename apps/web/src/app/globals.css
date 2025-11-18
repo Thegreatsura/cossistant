@@ -130,6 +130,16 @@
 	--code-number: oklch(0.56 0 0);
 	--selection: oklch(0.145 0 0);
 	--selection-foreground: oklch(1 0 0);
+
+	/* Squircle support variables */
+	--avatar-border-radius-multiplier: 1;
+}
+
+/* Squircle support detection */
+@supports (corner-shape: squircle) {
+	:root {
+		--avatar-border-radius-multiplier: 2;
+	}
 }
 
 .dark {
@@ -188,6 +198,9 @@
 	--code-number: oklch(0.72 0 0);
 	--selection: oklch(0.922 0 0);
 	--selection-foreground: oklch(0.205 0 0);
+
+	/* Squircle support variables (dark mode inherits from root) */
+	--avatar-border-radius-multiplier: var(--avatar-border-radius-multiplier);
 }
 
 @layer base {

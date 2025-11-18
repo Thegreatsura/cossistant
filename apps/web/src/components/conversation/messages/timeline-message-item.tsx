@@ -30,13 +30,13 @@ export function TimelineMessageItem({
 				>
 					<div
 						className={cn(
-							"flex w-full flex-1 flex-col gap-3",
+							"flex w-full min-w-0 flex-1 flex-col gap-3",
 							isSentByViewer && "items-end"
 						)}
 					>
 						<TimelineItemContent
 							className={cn(
-								"block max-w-full break-all rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+								"block w-fit min-w-0 max-w-full break-all rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
 								{
 									"bg-background-300 text-foreground dark:bg-background-600":
 										!isSentByViewer,

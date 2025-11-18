@@ -44,7 +44,10 @@ export function DashboardButton() {
 
 	return (
 		<Link href="/select">
-			<Button className="h-auto w-[126px] rounded-[2px] p-1 pr-3">
+			<Button
+				className="h-auto w-[126px] rounded-[2px] p-1 pr-3"
+				variant="ghost"
+			>
 				<Avatar
 					className="size-7 rounded-[1px] bg-background-700 ring-0 ring-offset-0"
 					fallbackName={session.user.name}

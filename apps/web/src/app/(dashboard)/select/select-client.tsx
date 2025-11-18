@@ -107,7 +107,7 @@ export default function SelectClient({ organizations }: SelectClientProps) {
 				<div className="space-y-2">
 					{allWebsites.map((website) => (
 						<button
-							className="flex w-full items-center gap-4 rounded border border-border bg-background-100 p-2 pl-3 text-left transition hover:border-border hover:bg-background-200 disabled:opacity-50 dark:hover:bg-background-300"
+							className="flex w-full items-center gap-4 rounded border border-border bg-background-100 p-2 pl-3 text-left transition hover:cursor-pointer hover:border-border hover:bg-background-200 disabled:opacity-50 dark:hover:bg-background-300"
 							disabled={isPending}
 							key={website.id}
 							onClick={() => handleSelectWebsite(website.id)}

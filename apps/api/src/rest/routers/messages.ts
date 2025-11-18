@@ -7,13 +7,13 @@ import { markUserPresence, markVisitorPresence } from "@api/services/presence";
 import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
 import {
-        addConversationParticipant,
-        isUserParticipant,
+	addConversationParticipant,
+	isUserParticipant,
 } from "@api/utils/participant-helpers";
 import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import {
-        safelyExtractRequestData,
-        validateResponse,
+	safelyExtractRequestData,
+	validateResponse,
 } from "@api/utils/validate";
 import {
 	sendTimelineItemRequestSchema,
@@ -184,9 +184,9 @@ messagesRouter.openapi(
 		}
 
 		// Check if user needs to be added as participant
-                if (body.item.userId && !isPublic) {
-                        const isParticipant = await isUserParticipant(db, {
-                                conversationId: body.conversationId,
+		if (body.item.userId && !isPublic) {
+			const isParticipant = await isUserParticipant(db, {
+				conversationId: body.conversationId,
 				userId: body.item.userId,
 			});
 
@@ -205,95 +205,84 @@ messagesRouter.openapi(
 					organizationId: organization.id,
 					targetUserId: body.item.userId,
 					isAutoAdded: true,
-                                });
-                        }
-                }
+				});
+			}
+		}
 
-                const { item: createdTimelineItem, actor } =
-                        await createMessageTimelineItem({
-                                db,
-                                organizationId: organization.id,
-                                websiteId: website.id,
-                                conversationId: body.conversationId,
-                                conversationOwnerVisitorId: visitorId,
-                                item: {
-                                        id: body.item.id,
-                                        type: body.item.type ?? ConversationTimelineType.MESSAGE,
-                                        text: body.item.text,
-                                        parts:
-                                                body.item.parts ?? [
-                                                        { type: "text", text: body.item.text },
-                                                ],
-                                        visibility: body.item.visibility,
-                                        userId: isPublic ? null : (body.item.userId ?? null),
-                                        aiAgentId: isPublic ? null : (body.item.aiAgentId ?? null),
-                                        visitorId: visitorId ?? null,
-                                        createdAt: body.item.createdAt
-                                                ? new Date(body.item.createdAt)
-                                                : undefined,
-                                },
-                        });
+		const { item: createdTimelineItem, actor } =
+			await createMessageTimelineItem({
+				db,
+				organizationId: organization.id,
+				websiteId: website.id,
+				conversationId: body.conversationId,
+				conversationOwnerVisitorId: visitorId,
+				id: body.item.id,
+				text: body.item.text ?? "",
+				extraParts:
+					body.item.parts?.filter((part) => part.type !== "text") ?? [],
+				visibility: body.item.visibility,
+				userId: isPublic ? null : (body.item.userId ?? null),
+				aiAgentId: isPublic ? null : (body.item.aiAgentId ?? null),
+				visitorId: visitorId ?? null,
+				createdAt: body.item.createdAt
+					? new Date(body.item.createdAt)
+					: undefined,
+			});
 
-                // Determine the actor from the created timeline item
-                const resolvedActor: ConversationActor | null =
-                        actor ??
-                        (visitorId
-                                ? { type: "visitor", visitorId }
-                                : null);
+		// Determine the actor from the created timeline item
+		const resolvedActor: ConversationActor | null =
+			actor ?? (visitorId ? { type: "visitor", visitorId } : null);
 
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];
 
-                // Only mark conversation as seen for users and AI agents when sending messages.
-                // For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
-                // This prevents conversations from being marked as seen when the widget is closed.
-                let lastSeenAt: string | undefined;
-                if (resolvedActor && resolvedActor.type !== "visitor") {
-                        lastSeenAt = await markConversationAsSeen(db, {
-                                conversation,
-                                actor: resolvedActor,
-                        });
+		// Only mark conversation as seen for users and AI agents when sending messages.
+		// For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
+		// This prevents conversations from being marked as seen when the widget is closed.
+		let lastSeenAt: string | undefined;
+		if (resolvedActor && resolvedActor.type !== "visitor") {
+			lastSeenAt = await markConversationAsSeen(db, {
+				conversation,
+				actor: resolvedActor,
+			});
 
-                        // Emit conversation seen event for users and AI agents
-                        promises.push(
-                                emitConversationSeenEvent({
-                                        conversation,
-                                        actor:
-                                                resolvedActor.type === "aiAgent"
-                                                        ? {
-                                                                  type: "ai_agent",
-                                                                  aiAgentId: resolvedActor.aiAgentId,
-                                                          }
-                                                        : resolvedActor,
-                                        lastSeenAt,
-                                })
-                        );
+			// Emit conversation seen event for users and AI agents
+			promises.push(
+				emitConversationSeenEvent({
+					conversation,
+					actor:
+						resolvedActor.type === "aiAgent"
+							? {
+									type: "ai_agent",
+									aiAgentId: resolvedActor.aiAgentId,
+								}
+							: resolvedActor,
+					lastSeenAt,
+				})
+			);
 
-                        if (resolvedActor.type === "user") {
-                                promises.push(
-                                        markUserPresence({
-                                                websiteId: website.id,
-                                                userId: resolvedActor.userId,
-                                                lastSeenAt,
-                                        })
-                                );
-                        }
-                } else if (
-                        resolvedActor?.type === "visitor" &&
-                        resolvedActor.visitorId
-                ) {
-                        // For visitors, just create a timestamp for presence tracking
-                        // without marking the conversation as seen
-                        lastSeenAt = new Date().toISOString();
+			if (resolvedActor.type === "user") {
+				promises.push(
+					markUserPresence({
+						websiteId: website.id,
+						userId: resolvedActor.userId,
+						lastSeenAt,
+					})
+				);
+			}
+		} else if (resolvedActor?.type === "visitor" && resolvedActor.visitorId) {
+			// For visitors, just create a timestamp for presence tracking
+			// without marking the conversation as seen
+			lastSeenAt = new Date().toISOString();
 
-                        promises.push(
-                                markVisitorPresence({
-                                        websiteId: website.id,
-                                        visitorId: resolvedActor.visitorId,
-                                        lastSeenAt,
-                                })
-                        );
-                }
+			promises.push(
+				markVisitorPresence({
+					websiteId: website.id,
+					visitorId: resolvedActor.visitorId,
+					lastSeenAt,
+				})
+			);
+		}
 
 		await Promise.allSettled(promises);
 

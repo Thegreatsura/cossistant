@@ -18,10 +18,14 @@ function AvatarContainer({
 	return (
 		<AvatarPrimitive.Root
 			className={cn(
-				"relative flex size-8 shrink-0 overflow-hidden rounded-sm",
+				"relative flex size-8 shrink-0 overflow-hidden",
+				"[corner-shape:squircle]",
 				className
 			)}
 			data-slot="avatar"
+			style={{
+				borderRadius: "calc(20% * var(--avatar-border-radius-multiplier, 1))",
+			}}
 			{...props}
 		/>
 	);
