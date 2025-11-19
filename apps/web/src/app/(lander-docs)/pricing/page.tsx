@@ -8,7 +8,7 @@ import {
 import { Check, Info, Tag, X } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { type ReactNode, Suspense } from "react";
+import type { ReactNode } from "react";
 import {
 	Accordion,
 	AccordionContent,
@@ -17,12 +17,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Icon from "@/components/ui/icons";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+
 import { TooltipOnHover } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
@@ -118,11 +113,24 @@ const FeatureCell = ({
 	return (
 		<li className="flex h-12 items-center gap-2 border-primary/10 border-b border-dashed px-6 last-of-type:border-transparent">
 			{icon}
+
 			<span className="flex w-full items-center justify-between gap-2 pl-2 text-primary">
+				<span className="flex-1 text-primary xl:hidden">
+					{displayName}{" "}
+					{isComingSoon && (
+						<Badge className="ml-2 text-xs opacity-45" variant="secondary">
+							Soon
+						</Badge>
+					)}
+				</span>
+
 				{displayValue && <span className="text-primary">{displayValue}</span>}
 				{isComingSoon && (
-					<Badge className="ml-auto text-xs opacity-45" variant="secondary">
-						Coming Soon
+					<Badge
+						className="ml-auto hidden text-xs opacity-45 xl:block"
+						variant="secondary"
+					>
+						Soon
 					</Badge>
 				)}
 			</span>
@@ -196,8 +204,8 @@ export default function PricingPage() {
 			)}
 
 			{/* Pricing Cards */}
-			<div className="mt-14 grid border-primary/10 border-y border-dashed md:grid-cols-4">
-				<div className="flex flex-col border-primary/10 border-r border-dashed last-of-type:border-r-0">
+			<div className="mt-14 grid grid-cols-1 border-primary/10 border-y border-dashed xl:grid-cols-4">
+				<div className="hidden flex-col border-primary/10 border-r border-dashed last-of-type:border-r-0 xl:flex">
 					<div className="sticky top-18 z-1 h-[233px] w-full border-primary/10 border-b border-dashed bg-background" />
 					<div className="flex-1 pt-0">
 						{(() => {
@@ -236,7 +244,7 @@ export default function PricingPage() {
 				</div>
 				{plans.map((plan) => (
 					<div
-						className="flex flex-col border-primary/10 border-r border-dashed last-of-type:border-r-0"
+						className="flex flex-col border-primary/10 border-b border-dashed last-of-type:border-r-0 xl:border-r xl:border-b-0"
 						key={plan.name}
 					>
 						<div className="sticky top-18 z-10 flex flex-col space-y-1.5 border-primary/10 border-b border-dashed bg-background p-6">
