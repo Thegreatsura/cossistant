@@ -151,7 +151,9 @@ export const contactNotificationChannelConfigSchema = z
 export const contactNotificationSettingsSchema = z
 	.object({
 		emailNotifications: z.boolean().optional(),
-		channels: z.record(contactNotificationChannelConfigSchema).optional(),
+		channels: z
+			.record(z.string(), contactNotificationChannelConfigSchema)
+			.optional(),
 	})
 	.passthrough();
 

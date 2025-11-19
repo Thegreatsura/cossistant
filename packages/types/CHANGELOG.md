@@ -1,5 +1,11 @@
 # @cossistant/types
 
+## 0.0.22
+
+### Patch Changes
+
+- Release new version of all packages including @cossistant/next
+
 ## 0.0.21
 
 ### Patch Changes
