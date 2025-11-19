@@ -144,7 +144,7 @@ export type UpdateMemberNotificationSettingsResponse = z.infer<
 export const contactNotificationChannelConfigSchema = z
 	.object({
 		enabled: z.boolean().optional(),
-		config: z.record(z.unknown()).optional(),
+		config: z.record(z.string(), z.unknown()).optional(),
 	})
 	.passthrough();
 
