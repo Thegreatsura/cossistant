@@ -1,5 +1,14 @@
 # @cossistant/react
 
+## 0.0.21
+
+### Patch Changes
+
+- Release new version of all packages including @cossistant/next
+- Updated dependencies
+  - @cossistant/core@0.0.21
+  - @cossistant/types@0.0.21
+
 ## 0.0.20
 
 ### Patch Changes
