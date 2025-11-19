@@ -109,6 +109,7 @@ export function ConversationPane({
 		goBack,
 		statusCounts,
 		selectedConversationIndex,
+		conversations,
 	} = useInboxes();
 
 	const { open: isRightSidebarOpen, toggle: toggleRightSidebar } = useSidebar({
@@ -352,7 +353,7 @@ export function ConversationPane({
 		hasPreviousConversation: Boolean(previousConversation),
 		hasNextConversation: Boolean(nextConversation),
 		selectedConversationIndex,
-		totalOpenConversations: statusCounts.open,
+		totalOpenConversations: conversations.length,
 	};
 
 	const conversationProps: ConversationProps = {

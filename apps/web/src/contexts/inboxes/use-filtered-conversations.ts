@@ -91,7 +91,8 @@ function matchesStatusFilter(
 function filterAndProcessConversations(
 	conversations: ConversationHeader[],
 	selectedStatus: ConversationStatusFilter,
-	selectedViewId: string | null
+	selectedViewId: string | null,
+	selectedConversationId: string | null
 ): FilterResult {
 	const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
 	const filteredConversations: ConversationHeader[] = [];
@@ -125,8 +126,11 @@ function filterAndProcessConversations(
 		const matchesViewFilter =
 			!selectedViewId || conversation.viewIds.includes(selectedViewId);
 
-		// Add to filtered list if matches all filters
-		if (matchesStatus && matchesViewFilter) {
+		// Add to filtered list if matches all filters OR if it is the selected conversation
+		if (
+			(matchesStatus && matchesViewFilter) ||
+			conversation.id === selectedConversationId
+		) {
 			filteredConversations.push(conversation);
 
 			const lastActivityFromMessage = toTimestamp(conversation.lastMessageAt);
@@ -229,9 +233,15 @@ export function useFilteredConversations({
 			filterAndProcessConversations(
 				unfilteredConversations,
 				selectedConversationStatus,
-				selectedViewId
+				selectedViewId,
+				selectedConversationId
 			),
-		[unfilteredConversations, selectedConversationStatus, selectedViewId]
+		[
+			unfilteredConversations,
+			selectedConversationStatus,
+			selectedViewId,
+			selectedConversationId,
+		]
 	);
 
 	const currentIndex = selectedConversationId
