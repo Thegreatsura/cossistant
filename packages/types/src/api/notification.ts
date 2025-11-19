@@ -98,7 +98,7 @@ export const memberNotificationPreferenceSchema = z.object({
 	priority: z.number().int(),
 	requiresSetup: z.boolean(),
 	supportsDelaySeconds: z.boolean(),
-	config: z.record(z.unknown()).nullable(),
+	config: z.record(z.string(), z.unknown()).nullable(),
 });
 
 export type MemberNotificationPreference = z.infer<
@@ -124,7 +124,7 @@ export const updateMemberNotificationSettingsRequestSchema = z.object({
 				enabled: z.boolean(),
 				delaySeconds: z.number().int().min(0),
 				priority: z.number().int(),
-				config: z.record(z.unknown()).nullable().optional(),
+				config: z.record(z.string(), z.unknown()).nullable().optional(),
 			})
 		)
 		.min(1),
