@@ -53,14 +53,14 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 		key: "conversations",
 		name: "Conversations",
 		description: "Number of conversations that can be created per month",
-		unit: "conversations/month",
+		unit: "per month",
 		category: "primary",
 	},
 	messages: {
 		key: "messages",
 		name: "Messages",
 		description: "Total number of messages allowed per month",
-		unit: "messages/month",
+		unit: "per month",
 		category: "primary",
 	},
 	contacts: {
@@ -136,7 +136,8 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 	"custom-events": {
 		key: "custom-events",
 		name: "Custom Events",
-		description: "Track and trigger custom events",
+		description:
+			"Track and trigger custom events like visited pages, clicks or errors your users are experiencing",
 		category: "secondary",
 	},
 	"ai-workflows": {
@@ -150,7 +151,7 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 		key: "ai-credit",
 		name: "AI Credit",
 		description: "Credits for AI-powered features and workflows",
-		unit: "credits/month",
+		unit: "credits per month",
 		category: "secondary",
 		comingSoon: true,
 	},

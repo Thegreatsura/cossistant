@@ -87,16 +87,22 @@ const FeatureCell = ({
 				displayValue = `${value} ${unit}`;
 			} else if (unit === "MB") {
 				displayValue = `${value} MB`;
+			} else if (unit === "MB per AI agent") {
+				displayValue = `${value} MB per agent`;
 			} else if (unit === "seats") {
 				displayValue = value === 1 ? `${value} seat` : `${value} seats`;
 			} else if (unit === "agents") {
 				displayValue = value === 1 ? `${value} agent` : `${value} agents`;
 			} else if (unit === "links") {
 				displayValue = `${value} links`;
-			} else if (unit.includes("/month")) {
+			} else if (unit === "per month") {
 				// Format large numbers with commas for monthly limits
 				const formattedValue = value.toLocaleString();
-				displayValue = formattedValue;
+				displayValue = `${formattedValue} per month`;
+			} else if (unit === "credits per month") {
+				// Format AI credits with commas
+				const formattedValue = value.toLocaleString();
+				displayValue = `${formattedValue} credits/mo`;
 			} else {
 				displayValue = `${value} ${unit}`;
 			}
@@ -254,7 +260,7 @@ export default function PricingPage() {
 							<div className="mt-10">
 								{plan.priceWithPromo && plan.price !== plan.priceWithPromo ? (
 									<div className="flex items-baseline gap-2">
-										<span className="font-f37-stout font-semibold text-3xl text-cossistant-orange">
+										<span className="font-f37-stout font-semibold text-3xl text-cossistant-orange underline decoration-1 underline-offset-3">
 											${plan.priceWithPromo}
 										</span>
 										<span className="relative font-f37-stout text-base text-muted-foreground">
