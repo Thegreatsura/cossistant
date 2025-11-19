@@ -20,9 +20,26 @@ import polarClient from "@api/lib/polar";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../init";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../init";
 
 export const planRouter = createTRPCRouter({
+	getPublicDiscountInfo: publicProcedure
+		.input(
+			z.object({
+				discountId: z.string().optional(),
+			})
+		)
+		.query(async ({ input }) => {
+			// Default to early bird discount if not specified
+			const discountId = input.discountId ?? EARLY_BIRD_DISCOUNT_ID;
+
+			try {
+				const discount = await getDiscountInfo(discountId);
+				return discount;
+			} catch (error) {
+				return null;
+			}
+		}),
 	getPlanInfo: protectedProcedure
 		.input(
 			z.object({

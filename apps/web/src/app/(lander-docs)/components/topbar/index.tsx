@@ -37,6 +37,9 @@ export function TopBar({
 						<TopbarButton className="text-foreground" href="/docs">
 							Docs
 						</TopbarButton>
+						<TopbarButton className="text-foreground" href="/pricing">
+							Pricing
+						</TopbarButton>
 						<TopbarButton href={DISCORD_INVITE} icon={<DiscordIcon />}>
 							Discord
 						</TopbarButton>

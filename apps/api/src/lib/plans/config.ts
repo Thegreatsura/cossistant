@@ -5,50 +5,183 @@ export type FeatureKey =
 	| "messages"
 	| "contacts"
 	| "conversation-retention"
-	| "team-members";
+	| "team-members"
+	| "email-notifications"
+	| "email-reply"
+	| "slack-support"
+	| "slack-custom-channel"
+	| "pro-integrations"
+	| "rest-api"
+	| "webhooks"
+	| "self-host"
+	| "custom-events"
+	| "ai-workflows"
+	| "ai-credit"
+	| "latest-ai-models"
+	| "ai-support-agents"
+	| "ai-agent-training-links"
+	| "ai-agent-training-mb";
 
-export type PlanName = "free" | "hobby";
+export type PlanName = "free" | "hobby" | "pro";
+
+export type FeatureValue = number | boolean | null;
+
+export type FeatureCategory = "primary" | "secondary";
 
 export type FeatureConfig = {
 	key: FeatureKey;
 	name: string;
 	description: string;
+	unit?: string; // Unit for numeric values (e.g., "days", "MB", "credits")
+	category: FeatureCategory; // Whether this is a primary or secondary feature
+	comingSoon?: boolean; // Flag for coming soon features
 };
 
 export type PlanConfig = {
 	name: PlanName;
 	displayName: string;
 	price?: number; // USD per month
+	priceWithPromo?: number; // Promotional price (if available)
+	isRecommended?: boolean; // Whether this plan is recommended
 	polarProductId?: string; // For mapping to Polar products
 	polarProductName?: string; // Alternative: map by name
-	features: Record<FeatureKey, number | null>; // null = unlimited, number = limit
+	features: Record<FeatureKey, FeatureValue>; // null = unlimited, number = limit, boolean = included/not included
 };
 
 export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 	conversations: {
 		key: "conversations",
 		name: "Conversations",
-		description: "Number of conversations that can be created",
+		description: "Number of conversations that can be created per month",
+		unit: "conversations/month",
+		category: "primary",
 	},
 	messages: {
 		key: "messages",
 		name: "Messages",
-		description: "Number of messages allowed",
+		description: "Total number of messages allowed per month",
+		unit: "messages/month",
+		category: "primary",
 	},
 	contacts: {
 		key: "contacts",
 		name: "Contacts",
-		description: "Number of contacts that can be stored",
+		description: "Number of unique contacts that can be stored",
+		unit: "contacts",
+		category: "primary",
 	},
 	"conversation-retention": {
 		key: "conversation-retention",
 		name: "Conversation Retention",
-		description: "Number of days conversations are retained",
+		description: "How long conversations are stored and accessible",
+		unit: "days",
+		category: "primary",
 	},
 	"team-members": {
 		key: "team-members",
 		name: "Team Members",
-		description: "Number of team members allowed",
+		description: "Number of team members who can access the dashboard",
+		unit: "seats",
+		category: "primary",
+	},
+	"email-notifications": {
+		key: "email-notifications",
+		name: "Email Notifications",
+		description: "Receive email notifications about new messages",
+		category: "primary",
+	},
+	"email-reply": {
+		key: "email-reply",
+		name: "Reply via Email",
+		description: "Reply to conversations directly from email",
+		category: "primary",
+	},
+	"slack-support": {
+		key: "slack-support",
+		name: "Slack Support by Founder",
+		description: "Direct support from the founder via Slack",
+		category: "secondary",
+	},
+	"slack-custom-channel": {
+		key: "slack-custom-channel",
+		name: "Custom Slack Channel",
+		description: "Dedicated Slack channel for your team with priority support",
+		category: "secondary",
+	},
+	"pro-integrations": {
+		key: "pro-integrations",
+		name: "Pro Integrations",
+		description: "Advanced integrations with enterprise tools and custom APIs",
+		category: "secondary",
+	},
+	"rest-api": {
+		key: "rest-api",
+		name: "REST API",
+		description: "Access to REST API endpoints",
+		category: "secondary",
+	},
+	webhooks: {
+		key: "webhooks",
+		name: "Webhooks",
+		description: "Real-time event notifications via webhooks",
+		category: "secondary",
+		comingSoon: true,
+	},
+	"self-host": {
+		key: "self-host",
+		name: "Self Host Cossistant",
+		description: "Run Cossistant on your own infrastructure",
+		category: "secondary",
+	},
+	"custom-events": {
+		key: "custom-events",
+		name: "Custom Events",
+		description: "Track and trigger custom events",
+		category: "secondary",
+	},
+	"ai-workflows": {
+		key: "ai-workflows",
+		name: "AI Workflows",
+		description: "Automated AI-powered workflows",
+		category: "secondary",
+		comingSoon: true,
+	},
+	"ai-credit": {
+		key: "ai-credit",
+		name: "AI Credit",
+		description: "Credits for AI-powered features and workflows",
+		unit: "credits/month",
+		category: "secondary",
+		comingSoon: true,
+	},
+	"latest-ai-models": {
+		key: "latest-ai-models",
+		name: "Latest AI Models",
+		description: "Access to the latest AI models",
+		category: "secondary",
+		comingSoon: true,
+	},
+	"ai-support-agents": {
+		key: "ai-support-agents",
+		name: "AI Support Agents",
+		description: "Number of AI-powered support agents you can configure",
+		unit: "agents",
+		category: "secondary",
+		comingSoon: true,
+	},
+	"ai-agent-training-links": {
+		key: "ai-agent-training-links",
+		name: "AI Agent Training Links",
+		description: "Number of URLs for training AI agents on your content",
+		unit: "links",
+		category: "secondary",
+	},
+	"ai-agent-training-mb": {
+		key: "ai-agent-training-mb",
+		name: "AI Agent Training MB Size",
+		description: "Maximum size of knowledge base for AI agent training",
+		unit: "MB per AI agent",
+		category: "secondary",
 	},
 };
 
@@ -65,6 +198,10 @@ const POLAR_PRODUCT_IDS: Record<
 		sandbox: "b060ff1e-c2dd-4c02-a3e4-395d7cce84a0",
 		production: "758ff687-1254-422f-9b4a-b23d39c6b47e",
 	},
+	pro: {
+		sandbox: "c87aa036-2f0b-40da-9338-1a1fcc191543",
+		production: "f34bf87c-96ab-4e54-9167-c4de8527669a",
+	},
 };
 
 function getPolarProductId(planName: PlanName): string | undefined {
@@ -78,17 +215,34 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 		name: "free",
 		displayName: "Free",
 		features: {
-			conversations: 200, // Limited conversations
+			conversations: 100, // Limited conversations
 			messages: 500, // Limited messages
-			contacts: 100, // Limited contacts
+			contacts: 50, // Limited contacts
 			"conversation-retention": 30, // Days - conversations retained for 30 days
-			"team-members": 2, // Limited team members
+			"team-members": 1, // Limited team members
+			"email-notifications": true, // Included
+			"email-reply": true, // Included
+			"slack-support": false, // Paid only
+			"slack-custom-channel": false, // Pro only
+			"pro-integrations": false, // Pro only
+			"rest-api": true, // Included
+			webhooks: true, // Included (coming soon)
+			"self-host": true, // Included
+			"custom-events": true, // Included
+			"ai-workflows": true, // Included (coming soon)
+			"ai-credit": 100, // Limited AI credits (coming soon)
+			"latest-ai-models": false, // Paid only
+			"ai-support-agents": 1, // 1 AI agent (coming soon)
+			"ai-agent-training-links": 10, // 10 training links
+			"ai-agent-training-mb": 0.5, // 10 MB KB size
 		},
 	},
 	hobby: {
 		name: "hobby",
 		displayName: "Hobby",
-		price: 29,
+		price: 30,
+		priceWithPromo: 20,
+		isRecommended: false,
 		polarProductId: getPolarProductId("hobby"),
 		polarProductName: "Hobby", // Map to Polar product name (can be overridden via env)
 		features: {
@@ -96,7 +250,53 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			messages: null, // Unlimited
 			contacts: 2000,
 			"conversation-retention": null, // Full retention (unlimited)
-			"team-members": 4, // Limited team members
+			"team-members": 2, // 2 team members
+			"email-notifications": true, // Included
+			"email-reply": true, // Included
+			"slack-support": true, // Included
+			"slack-custom-channel": false, // Pro only
+			"pro-integrations": false, // Pro only
+			"rest-api": true, // Included
+			webhooks: true, // Included (coming soon)
+			"self-host": true, // Included
+			"custom-events": true, // Included
+			"ai-workflows": true, // Included (coming soon)
+			"ai-credit": 1000, // Higher AI credits (coming soon)
+			"latest-ai-models": true, // Included
+			"ai-support-agents": 5, // 5 AI agents (coming soon)
+			"ai-agent-training-links": null, // 100 training links
+			"ai-agent-training-mb": 10, // 100 MB KB size
+		},
+	},
+	pro: {
+		name: "pro",
+		displayName: "Pro",
+		price: 90,
+		priceWithPromo: 40,
+		isRecommended: true,
+		polarProductId: getPolarProductId("pro"),
+		polarProductName: "Pro",
+		features: {
+			conversations: null, // Unlimited
+			messages: null, // Unlimited
+			contacts: 6000, // Triple the Hobby limit
+			"conversation-retention": null, // Full retention (unlimited)
+			"team-members": 4, // 4 team member seats
+			"email-notifications": true, // Included
+			"email-reply": true, // Included
+			"slack-support": true, // Included
+			"slack-custom-channel": true, // Custom Slack channel included
+			"pro-integrations": true, // Pro integrations included
+			"rest-api": true, // Included
+			webhooks: true, // Included (coming soon)
+			"self-host": true, // Included
+			"custom-events": true, // Included
+			"ai-workflows": true, // Included (coming soon)
+			"ai-credit": 3000, // Triple AI credits (coming soon)
+			"latest-ai-models": true, // Included
+			"ai-support-agents": 15, // Triple AI agents (coming soon)
+			"ai-agent-training-links": null, // Triple training links
+			"ai-agent-training-mb": 40, // Triple KB size (300 MB)
 		},
 	},
 };

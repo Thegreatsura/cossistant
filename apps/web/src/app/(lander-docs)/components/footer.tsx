@@ -43,6 +43,14 @@ export function Footer() {
 									Docs
 								</Link>
 							</li>
+							<li>
+								<Link
+									className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
+									href="/pricing"
+								>
+									Pricing
+								</Link>
+							</li>
 						</ul>
 					</div>
 
