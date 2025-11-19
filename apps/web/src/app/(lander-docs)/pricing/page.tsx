@@ -5,7 +5,7 @@ import {
 	type FeatureValue,
 	PLAN_CONFIG,
 } from "@api/lib/plans/config";
-import { Check, Info, Tag, X } from "lucide-react";
+import { Check, Info, X } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -19,6 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { TooltipOnHover } from "@/components/ui/tooltip";
+import { PromoBannerOrnaments } from "./promo-banner-ornaments";
+import { PromoIndicator } from "./promo-indicator";
 
 export const metadata: Metadata = {
 	title: "Pricing - Cossistant",
@@ -161,7 +163,7 @@ export default function PricingPage() {
 	};
 
 	return (
-		<div className="flex flex-col pt-40 pb-60">
+		<div className="flex flex-col pt-40">
 			<div className="mx-auto max-w-2xl text-center">
 				<h1 className="font-f37-stout text-4xl leading-tight md:text-6xl">
 					Pricing
@@ -173,33 +175,36 @@ export default function PricingPage() {
 
 			{/* Launch Promotion Banner */}
 			{(PLAN_CONFIG.hobby.priceWithPromo || PLAN_CONFIG.pro.priceWithPromo) && (
-				<div className="mx-auto mt-10 max-w-4xl border border-cossistant-orange/30 border-dashed bg-cossistant-orange/5 p-2 text-center">
-					<div className="flex flex-col items-center justify-center gap-2">
-						<h3 className="flex items-center gap-2 text-cossistant-orange text-sm">
-							Limited launch offer on all our plans – up to{" "}
-							<span className="font-bold text-cossistant-orange">
-								{Math.max(
-									PLAN_CONFIG.hobby.priceWithPromo && PLAN_CONFIG.hobby.price
-										? Math.round(
-												((PLAN_CONFIG.hobby.price -
-													PLAN_CONFIG.hobby.priceWithPromo) /
-													PLAN_CONFIG.hobby.price) *
-													100
-											)
-										: 0,
-									PLAN_CONFIG.pro.priceWithPromo && PLAN_CONFIG.pro.price
-										? Math.round(
-												((PLAN_CONFIG.pro.price -
-													PLAN_CONFIG.pro.priceWithPromo) /
-													PLAN_CONFIG.pro.price) *
-													100
-											)
-										: 0
-								)}
-								% off
-							</span>
-						</h3>
-					</div>
+				<div className="relative mx-auto mt-10 max-w-4xl px-2 py-1 text-center">
+					<PromoBannerOrnaments>
+						<div className="flex flex-col items-center justify-center gap-2 py-2">
+							<h3 className="flex items-center gap-2 text-cossistant-orange text-sm">
+								Limited launch offer – up to{" "}
+								<span className="font-bold text-cossistant-orange">
+									{Math.max(
+										PLAN_CONFIG.hobby.priceWithPromo && PLAN_CONFIG.hobby.price
+											? Math.round(
+													((PLAN_CONFIG.hobby.price -
+														PLAN_CONFIG.hobby.priceWithPromo) /
+														PLAN_CONFIG.hobby.price) *
+														100
+												)
+											: 0,
+										PLAN_CONFIG.pro.priceWithPromo && PLAN_CONFIG.pro.price
+											? Math.round(
+													((PLAN_CONFIG.pro.price -
+														PLAN_CONFIG.pro.priceWithPromo) /
+														PLAN_CONFIG.pro.price) *
+														100
+												)
+											: 0
+									)}
+									% off
+								</span>{" "}
+								lifetime while subscribed
+							</h3>
+						</div>
+					</PromoBannerOrnaments>
 				</div>
 			)}
 
@@ -248,10 +253,16 @@ export default function PricingPage() {
 						key={plan.name}
 					>
 						<div className="sticky top-18 z-10 flex flex-col space-y-1.5 border-primary/10 border-b border-dashed bg-background p-6">
-							<div className="flex gap-2">
+							<div className="flex items-center gap-2">
 								<h3 className="font-medium text-2xl leading-none tracking-tight">
 									{plan.displayName}
 								</h3>
+								{plan.priceWithPromo && plan.price !== plan.priceWithPromo && (
+									<PromoIndicator
+										price={plan.price}
+										promoPrice={plan.priceWithPromo}
+									/>
+								)}
 								{plan.isRecommended && (
 									<p className="z-0 font-medium text-cossistant-orange text-xs">
 										Recommended
@@ -345,8 +356,8 @@ export default function PricingPage() {
 			</div>
 
 			{/* FAQ Section */}
-			<div className="mx-auto mt-24 max-w-3xl">
-				<h2 className="mb-8 text-center font-bold text-3xl">
+			<div className="mx-auto mt-24 w-full px-6">
+				<h2 className="mb-8 font-bold font-f37-stout text-3xl">
 					Frequently Asked Questions
 				</h2>
 				<Accordion className="w-full" collapsible type="single">
@@ -354,30 +365,133 @@ export default function PricingPage() {
 						<AccordionTrigger>Can I self-host Cossistant?</AccordionTrigger>
 						<AccordionContent>
 							Yes! Cossistant is open source. You can self-host it on your own
-							infrastructure. Check out our GitHub repository for instructions.
+							infrastructure. Check out our{" "}
+							<Link
+								className="text-primary underline"
+								href="https://github.com/cossistantcom/cossistant"
+							>
+								GitHub repository
+							</Link>{" "}
+							for instructions.
 						</AccordionContent>
 					</AccordionItem>
 					<AccordionItem value="item-2">
-						<AccordionTrigger>
-							What happens if I exceed my limits?
-						</AccordionTrigger>
+						<AccordionTrigger>Do you offer annual billing?</AccordionTrigger>
 						<AccordionContent>
-							We'll notify you when you're close to your limits. If you exceed
-							them, we won't cut you off immediately, but we'll ask you to
-							upgrade to a higher plan to continue using the service without
-							interruption.
+							We currently offer monthly billing only. Annual plans may be
+							available in the future.
 						</AccordionContent>
 					</AccordionItem>
 					<AccordionItem value="item-3">
 						<AccordionTrigger>
-							Do you offer enterprise support?
+							How long does the launch promo pricing apply?
 						</AccordionTrigger>
 						<AccordionContent>
-							Yes, for enterprise needs including custom integrations, SLAs, and
-							dedicated support, please contact our sales team.
+							The promotional pricing applies for the lifetime of your
+							subscription. If you cancel, you'll lose the promo rate and
+							re-subscribing will use the then-current pricing.
 						</AccordionContent>
 					</AccordionItem>
 					<AccordionItem value="item-4">
+						<AccordionTrigger>When do my usage limits reset?</AccordionTrigger>
+						<AccordionContent>
+							All usage limits operate on a rolling 30-day window from when each
+							limit was first reached.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-5">
+						<AccordionTrigger>
+							What happens if I exceed my limits?
+						</AccordionTrigger>
+						<AccordionContent>
+							We'll notify you when approaching limits. For workflows and AI
+							credits, you can continue with usage-based billing. For other
+							limits, please upgrade your plan or{" "}
+							<Link
+								className="text-primary underline"
+								href="mailto:support@cossistant.com"
+							>
+								contact us
+							</Link>
+							.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-6">
+						<AccordionTrigger>
+							Can I buy add-ons or enable whitelabelling?
+						</AccordionTrigger>
+						<AccordionContent>
+							Add-ons for increased limits and full whitelabelling are coming
+							soon.{" "}
+							<Link
+								className="text-primary underline"
+								href="mailto:support@cossistant.com"
+							>
+								Contact us
+							</Link>{" "}
+							to join the waitlist or discuss your needs.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-7">
+						<AccordionTrigger>
+							When will "coming soon" features be available?
+						</AccordionTrigger>
+						<AccordionContent>
+							We ship fast but have no specific ETA yet.{" "}
+							<Link
+								className="text-primary underline"
+								href="mailto:support@cossistant.com"
+							>
+								Contact us
+							</Link>{" "}
+							if you need a particular feature prioritized for your use case.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-8">
+						<AccordionTrigger>How do AI credits work?</AccordionTrigger>
+						<AccordionContent>
+							AI credits reset monthly with your billing cycle. Any usage beyond
+							your plan's included credits is billed on a usage basis.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-9">
+						<AccordionTrigger>
+							Can I export my data? What happens when I cancel?
+						</AccordionTrigger>
+						<AccordionContent>
+							You can export your data anytime. Conversation retention follows
+							your plan limits. After cancellation, data is retained for 180
+							days before deletion.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-10">
+						<AccordionTrigger>How does billing work?</AccordionTrigger>
+						<AccordionContent>
+							Billing is in USD only via Polar. Taxes/VAT are calculated at
+							checkout based on your location. Invoices are automatically
+							emailed after each payment.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-11">
+						<AccordionTrigger>
+							What support comes with each plan?
+						</AccordionTrigger>
+						<AccordionContent>
+							Free plan includes email support. Hobby adds Slack support from
+							the founder. Pro includes a dedicated Slack channel. No formal SLA
+							is offered currently.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-12">
+						<AccordionTrigger>
+							Where is my data hosted and what about compliance?
+						</AccordionTrigger>
+						<AccordionContent>
+							Data is hosted in the US with GDPR and SOC 2 compliance
+							prioritized. Regional hosting choice (US or EU) is coming soon.
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="item-13">
 						<AccordionTrigger>Can I cancel anytime?</AccordionTrigger>
 						<AccordionContent>
 							Absolutely. You can cancel your subscription at any time. Your
