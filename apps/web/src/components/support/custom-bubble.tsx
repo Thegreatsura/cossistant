@@ -12,7 +12,7 @@ export const CustomBubble = ({ className }: BubbleSlotProps) => (
 	<Primitive.Bubble
 		className={cn(
 			className,
-			"relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-cossistant-orange text-co-primary-foreground transition-colors hover:bg-cossistant-orange data-[open=true]:bg-co-primary/90"
+			"relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-cossistant-orange text-primary-foreground transition-colors"
 		)}
 	>
 		{({ isOpen, isTyping, unreadCount }) => (
