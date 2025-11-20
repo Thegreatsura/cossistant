@@ -92,12 +92,13 @@ function LogoPlane() {
 	// Calculate plane size to fill the viewport
 	const fov = (camera as THREE.PerspectiveCamera).fov;
 	const distance = camera.position.z;
-	const aspect = size.width / size.height;
+	// Safe aspect to avoid divide-by-zero on first layout/hidden states
+	const safeAspect = size.height > 0 ? size.width / size.height : 1355 / 210;
 
 	// Calculate the height and width that would fill the view
 	const vFOV = (fov * Math.PI) / 180;
 	const planeHeight = 2 * Math.tan(vFOV / 2) * distance;
-	const planeWidth = planeHeight * aspect;
+	const planeWidth = planeHeight * safeAspect;
 
 	return (
 		<mesh position={[0, 0, 0]} ref={meshRef}>
@@ -165,6 +166,13 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 	// Round resolution to avoid floating point precision issues
 	const finalResolution = Math.min(1, Math.round(safeResolution * 1000) / 1000);
 
+	// Only render AsciiRenderer when dimensions and resolution are valid
+	const canRenderAscii =
+		dimensions.width >= 1 &&
+		dimensions.height >= 1 &&
+		Number.isFinite(finalResolution) &&
+		finalResolution > 0;
+
 	return (
 		<div className={className} ref={containerRef} style={{ width: "100%" }}>
 			<Canvas
@@ -174,12 +182,14 @@ export function ThreeLogo({ className }: ThreeLogoProps) {
 			>
 				<IntegerSizeEnforcer />
 				<LogoPlane />
-				<AsciiRenderer
-					bgColor="transparent"
-					characters=" .%=*:+-# "
-					fgColor={resolvedTheme === "dark" ? "white" : "black"}
-					resolution={finalResolution}
-				/>
+				{canRenderAscii && (
+					<AsciiRenderer
+						bgColor="transparent"
+						characters=" .%=*:+-# "
+						fgColor={resolvedTheme === "dark" ? "white" : "black"}
+						resolution={finalResolution}
+					/>
+				)}
 			</Canvas>
 		</div>
 	);

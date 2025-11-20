@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 			<Footer />
 			<Support
 				classNames={{
-					bubble: "bg-cossistant-orange hover:bg-cossistant-orange/80",
+					bubble: "bg-cossistant-orange",
 				}}
 				slots={{
 					bubble: CustomBubble,
