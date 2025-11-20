@@ -8,7 +8,7 @@ import { motion } from "motion/react";
 import type React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
-import { getVisitorNameWithFallback } from "@/lib/visitors";
+import { buildTimelineEventDisplay } from "@/lib/timeline-events";
 
 export type ConversationEventProps = {
 	event: TimelinePartEvent;
@@ -25,60 +25,14 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	availableHumanAgents,
 	visitor,
 }) => {
-	const isAI = event.actorAiAgentId !== null;
-	const humanAgent = availableHumanAgents.find(
-		(agent) => agent.id === event.actorUserId
-	);
-	const aiAgent = availableAIAgents.find(
-		(agent) => agent.id === event.actorAiAgentId
-	);
+        const display = buildTimelineEventDisplay({
+                event,
+                availableAIAgents,
+                availableHumanAgents,
+                visitor,
+        });
 
-	// Get visitor name with fallback
-	const visitorName = visitor ? getVisitorNameWithFallback(visitor) : "Visitor";
-
-	// Get the actor name
-	const actorName = isAI
-		? aiAgent?.name || "Cossistant"
-		: humanAgent?.name || "Someone";
-
-	// Convert event type to plain English
-	const getEventText = () => {
-		switch (event.eventType) {
-			case "assigned":
-				return `${actorName} assigned the conversation`;
-			case "unassigned":
-				return `${actorName} unassigned the conversation`;
-			case "participant_requested":
-				return `${actorName} requested to join`;
-			case "participant_joined":
-				return `${actorName} joined the conversation`;
-			case "participant_left":
-				return `${actorName} left the conversation`;
-			case "status_changed":
-				return `${actorName} changed the status`;
-			case "priority_changed":
-				return `${actorName} changed the priority`;
-			case "tag_added":
-				return `${actorName} added a tag`;
-			case "tag_removed":
-				return `${actorName} removed a tag`;
-			case "resolved":
-				return `${actorName} resolved the conversation`;
-			case "reopened":
-				return `${actorName} reopened the conversation`;
-			case "visitor_blocked":
-				return `${actorName} blocked the visitor`;
-			case "visitor_unblocked":
-				return `${actorName} unblocked the visitor`;
-			case "visitor_identified":
-				return `${visitorName} identified, new contact created`;
-			default:
-				return `${actorName} performed an action`;
-		}
-	};
-
-	// Determine what avatar to show based on event type
-	const isVisitorIdentifiedEvent = event.eventType === "visitor_identified";
+        const isVisitorIdentifiedEvent = display.avatarType === "visitor";
 
 	return (
 		<motion.div
@@ -89,26 +43,29 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		>
 			<div className="flex items-center gap-2 text-muted-foreground text-xs">
 				<div className="flex flex-col justify-end">
-					{isVisitorIdentifiedEvent ? (
-						<Avatar
-							className="size-5 shrink-0 overflow-clip"
-							fallbackName={visitorName}
-							url={visitor?.contact?.image}
-							withBoringAvatar
-						/>
-					) : isAI ? (
-						<div className="flex size-5 items-center justify-center rounded-sm bg-primary/10">
-							<Logo className="h-3 w-3 text-primary" />
-						</div>
-					) : (
-						<Avatar
-							className="size-5 shrink-0 overflow-clip"
-							fallbackName={humanAgent?.name ?? "Someone"}
-							url={humanAgent?.image}
-						/>
-					)}
-				</div>
-				<span className="px-1">{getEventText()}</span>
+                                        {isVisitorIdentifiedEvent ? (
+                                                <Avatar
+                                                        className="size-5 shrink-0 overflow-clip"
+                                                        fallbackName={display.avatarFallbackName}
+                                                        url={display.avatarImage}
+                                                        withBoringAvatar
+                                                />
+                                        ) : display.avatarType === "ai" ? (
+                                                <div className="flex size-5 items-center justify-center rounded-sm bg-primary/10">
+                                                        <Logo className="h-3 w-3 text-primary" />
+                                                </div>
+                                        ) : (
+                                                <Avatar
+                                                        className="size-5 shrink-0 overflow-clip"
+                                                        fallbackName={display.avatarFallbackName}
+                                                        url={display.avatarImage}
+                                                />
+                                        )}
+                                </div>
+                                <span className="px-1">
+                                        <span className="font-semibold">{display.actorName}</span>{" "}
+                                        {display.actionText}
+                                </span>
 				{createdAt && (
 					<time className="text-[10px]">
 						{new Date(createdAt).toLocaleTimeString([], {

@@ -10,7 +10,10 @@ import {
 	addConversationParticipant,
 	isUserParticipant,
 } from "@api/utils/participant-helpers";
-import { createMessageTimelineItem } from "@api/utils/timeline-item";
+import {
+        createMessageTimelineItem,
+        createTimelineItem,
+} from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
 	validateResponse,
@@ -209,25 +212,74 @@ messagesRouter.openapi(
 			}
 		}
 
-		const { item: createdTimelineItem, actor } =
-			await createMessageTimelineItem({
-				db,
-				organizationId: organization.id,
-				websiteId: website.id,
-				conversationId: body.conversationId,
-				conversationOwnerVisitorId: visitorId,
-				id: body.item.id,
-				text: body.item.text ?? "",
-				extraParts:
-					body.item.parts?.filter((part) => part.type !== "text") ?? [],
-				visibility: body.item.visibility,
-				userId: isPublic ? null : (body.item.userId ?? null),
-				aiAgentId: isPublic ? null : (body.item.aiAgentId ?? null),
-				visitorId: visitorId ?? null,
-				createdAt: body.item.createdAt
-					? new Date(body.item.createdAt)
-					: undefined,
-			});
+                const timelineItemType =
+                        body.item.type ?? ConversationTimelineType.MESSAGE;
+
+                const resolvedUserId = isPublic ? null : body.item.userId ?? null;
+                const resolvedAiAgentId = isPublic
+                        ? null
+                        : body.item.aiAgentId ?? null;
+
+                const { item: createdTimelineItem, actor } =
+                        timelineItemType === ConversationTimelineType.MESSAGE
+                                ? await createMessageTimelineItem({
+                                          db,
+                                          organizationId: organization.id,
+                                          websiteId: website.id,
+                                          conversationId: body.conversationId,
+                                          conversationOwnerVisitorId: visitorId,
+                                          id: body.item.id,
+                                          text: body.item.text ?? "",
+                                          extraParts:
+                                                  body.item.parts?.filter(
+                                                          (part) => part.type !== "text"
+                                                  ) ?? [],
+                                          visibility: body.item.visibility,
+                                          userId: resolvedUserId,
+                                          aiAgentId: resolvedAiAgentId,
+                                          visitorId: visitorId ?? null,
+                                          createdAt: body.item.createdAt
+                                                  ? new Date(body.item.createdAt)
+                                                  : undefined,
+                                          tool: body.item.tool ?? null,
+                                  })
+                                : {
+                                          item: await createTimelineItem({
+                                                  db,
+                                                  organizationId: organization.id,
+                                                  websiteId: website.id,
+                                                  conversationId: body.conversationId,
+                                                  conversationOwnerVisitorId: visitorId,
+                                                  item: {
+                                                          id: body.item.id,
+                                                          type: timelineItemType,
+                                                          text: body.item.text ?? null,
+                                                          parts: body.item.parts ?? [],
+                                                          userId: resolvedUserId,
+                                                          aiAgentId: resolvedAiAgentId,
+                                                          visitorId: visitorId ?? null,
+                                                          visibility: body.item.visibility,
+                                                          createdAt: body.item.createdAt
+                                                                  ? new Date(body.item.createdAt)
+                                                                  : undefined,
+                                                          tool: body.item.tool ?? null,
+                                                  },
+                                          }),
+                                          actor:
+                                                  resolvedUserId
+                                                          ? { type: "user", userId: resolvedUserId }
+                                                          : resolvedAiAgentId
+                                                          ? {
+                                                                        type: "aiAgent" as const,
+                                                                        aiAgentId: resolvedAiAgentId,
+                                                                }
+                                                          : visitorId
+                                                          ? {
+                                                                        type: "visitor" as const,
+                                                                        visitorId,
+                                                                }
+                                                          : null,
+                                  };
 
 		// Determine the actor from the created timeline item
 		const resolvedActor: ConversationActor | null =
