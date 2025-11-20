@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
 import Icon from "../ui/icons";
-import { Logo } from "../ui/logo";
 import { LogoEyesTracking } from "../ui/logo-eyes-tracking";
 
 export const CustomBubble = ({ className }: BubbleSlotProps) => (
