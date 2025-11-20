@@ -282,7 +282,7 @@ export default function PricingPage() {
 										<span className="font-f37-stout font-semibold text-3xl text-cossistant-orange underline decoration-1 underline-offset-3">
 											${plan.priceWithPromo}
 										</span>
-										<span className="relative font-f37-stout text-base text-muted-foreground">
+										<span className="relative font-f37-stout text-base text-muted-foreground line-through decoration-1 decoration-cossistant-orange">
 											${plan.price}
 										</span>
 										<span className="text-muted-foreground text-sm">
