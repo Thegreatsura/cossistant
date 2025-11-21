@@ -341,7 +341,7 @@ export function ConversationItem({
 		}
 
 		return getWaitingSinceLabel(messageDate);
-	}, [inboundWaitingTimelineItem?.createdAt]);
+        }, [inboundWaitingTimelineItem]);
 
 	const headerLastSeenAt = header.lastSeenAt
 		? new Date(header.lastSeenAt)

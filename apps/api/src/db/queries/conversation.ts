@@ -16,7 +16,7 @@ import {
 	ConversationStatus,
 	type TimelineItemVisibility as TimelineItemVisibilityEnum,
 } from "@cossistant/types";
-import type { TimelineItemParts } from "@cossistant/types/api/timeline-item";
+import { timelineItemPartsSchema } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import type { ConversationHeader } from "@cossistant/types/trpc/conversation";
 
@@ -48,6 +48,13 @@ type LastTimelineItemRow = {
         lastTimelineItemDeletedAt: string | null;
 };
 
+/**
+ * Normalize raw last timeline item fields from a conversation header row.
+ *
+ * Returns null when required identifiers or visibility metadata are missing,
+ * or when the persisted parts payload fails validation. Timeline item text is
+ * allowed to be null to support event-only entries.
+ */
 function buildLastTimelineItem<T extends LastTimelineItemRow>(row: T) {
         if (
                 !row.lastTimelineItemId ||
@@ -60,12 +67,20 @@ function buildLastTimelineItem<T extends LastTimelineItemRow>(row: T) {
                 return null;
         }
 
+        const parsedPartsResult = timelineItemPartsSchema.safeParse(
+                row.lastTimelineItemParts
+        );
+
+        if (!parsedPartsResult.success) {
+                return null;
+        }
+
         return {
                 id: row.lastTimelineItemId,
                 conversationId: row.conversation.id,
                 text: row.lastTimelineItemText,
                 type: row.lastTimelineItemType,
-                parts: row.lastTimelineItemParts as TimelineItemParts,
+                parts: parsedPartsResult.data,
                 visibility: row.lastTimelineItemVisibility,
                 userId: row.lastTimelineItemUserId,
                 visitorId: row.lastTimelineItemVisitorId,
