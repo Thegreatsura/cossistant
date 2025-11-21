@@ -1,7 +1,7 @@
 import type { RealtimeEvent } from "@cossistant/types";
-import type {
-	TimelineItem,
-	TimelineItemParts,
+import {
+	type TimelineItem,
+	timelineItemPartsSchema,
 } from "@cossistant/types/api/timeline-item";
 import { createStore, type Store } from "./create-store";
 
@@ -186,6 +186,9 @@ function normalizeRealtimeTimelineItem(
 	event: TimelineItemCreatedEvent
 ): TimelineItem {
 	const raw = event.payload.item;
+
+	const parsedParts = timelineItemPartsSchema.parse(raw.parts);
+
 	return {
 		id: raw.id,
 		conversationId: raw.conversationId,
@@ -193,7 +196,7 @@ function normalizeRealtimeTimelineItem(
 		visibility: raw.visibility,
 		type: raw.type,
 		text: raw.text ?? null,
-		parts: raw.parts as TimelineItemParts,
+		parts: parsedParts,
 		tool: raw.tool ?? null,
 		userId: raw.userId,
 		visitorId: raw.visitorId,

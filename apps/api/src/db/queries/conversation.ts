@@ -16,7 +16,7 @@ import {
 	ConversationStatus,
 	type TimelineItemVisibility as TimelineItemVisibilityEnum,
 } from "@cossistant/types";
-import type { TimelineItemParts } from "@cossistant/types/api/timeline-item";
+import { timelineItemPartsSchema } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import type { ConversationHeader } from "@cossistant/types/trpc/conversation";
 
@@ -32,6 +32,66 @@ import {
 	or,
 	sql,
 } from "drizzle-orm";
+
+type LastTimelineItemRow = {
+	conversation: { id: string };
+	lastTimelineItemId: string | null;
+	lastTimelineItemText: string | null;
+	lastTimelineItemType: string | null;
+	lastTimelineItemParts: unknown;
+	lastTimelineItemVisibility: TimelineItemVisibilityEnum | null;
+	lastTimelineItemOrganizationId: string | null;
+	lastTimelineItemCreatedAt: string | null;
+	lastTimelineItemUserId: string | null;
+	lastTimelineItemVisitorId: string | null;
+	lastTimelineItemAiAgentId: string | null;
+	lastTimelineItemDeletedAt: string | null;
+};
+
+/**
+ * Normalize raw last timeline item fields from a conversation header row.
+ *
+ * Returns null when required identifiers or visibility metadata are missing,
+ * or when the persisted parts payload fails validation. Timeline item text is
+ * allowed to be null to support event-only entries.
+ */
+function buildLastTimelineItem<T extends LastTimelineItemRow>(row: T) {
+	if (
+		!(
+			row.lastTimelineItemId &&
+			row.lastTimelineItemType &&
+			row.lastTimelineItemOrganizationId &&
+			row.lastTimelineItemVisibility &&
+			row.lastTimelineItemCreatedAt &&
+			row.lastTimelineItemParts
+		)
+	) {
+		return null;
+	}
+
+	const parsedPartsResult = timelineItemPartsSchema.safeParse(
+		row.lastTimelineItemParts
+	);
+
+	if (!parsedPartsResult.success) {
+		return null;
+	}
+
+	return {
+		id: row.lastTimelineItemId,
+		conversationId: row.conversation.id,
+		text: row.lastTimelineItemText,
+		type: row.lastTimelineItemType,
+		parts: parsedPartsResult.data,
+		visibility: row.lastTimelineItemVisibility,
+		userId: row.lastTimelineItemUserId,
+		visitorId: row.lastTimelineItemVisitorId,
+		organizationId: row.lastTimelineItemOrganizationId,
+		aiAgentId: row.lastTimelineItemAiAgentId,
+		createdAt: row.lastTimelineItemCreatedAt,
+		deletedAt: row.lastTimelineItemDeletedAt,
+	};
+}
 
 export async function upsertConversation(
 	db: Database,
@@ -430,29 +490,7 @@ export async function listConversationsHeaders(
 	// Transform results (much simpler now!)
 	const conversationsWithDetails = items.map((row) => {
 		// Build last timeline item object if it exists
-		const lastTimelineItem =
-			row.lastTimelineItemId &&
-			row.lastTimelineItemText !== null &&
-			row.lastTimelineItemType &&
-			row.lastTimelineItemOrganizationId &&
-			row.lastTimelineItemVisibility &&
-			row.lastTimelineItemCreatedAt &&
-			row.lastTimelineItemParts
-				? {
-						id: row.lastTimelineItemId,
-						conversationId: row.conversation.id,
-						text: row.lastTimelineItemText,
-						type: row.lastTimelineItemType,
-						parts: row.lastTimelineItemParts as TimelineItemParts,
-						visibility: row.lastTimelineItemVisibility,
-						userId: row.lastTimelineItemUserId,
-						visitorId: row.lastTimelineItemVisitorId,
-						organizationId: row.lastTimelineItemOrganizationId,
-						aiAgentId: row.lastTimelineItemAiAgentId,
-						createdAt: row.lastTimelineItemCreatedAt,
-						deletedAt: row.lastTimelineItemDeletedAt,
-					}
-				: null;
+		const lastTimelineItem = buildLastTimelineItem(row);
 
 		return {
 			...row.conversation,
@@ -623,29 +661,7 @@ export async function getConversationHeader(
 		deletedAt: null,
 	}));
 
-	const lastTimelineItem =
-		row.lastTimelineItemId &&
-		row.lastTimelineItemText !== null &&
-		row.lastTimelineItemType &&
-		row.lastTimelineItemOrganizationId &&
-		row.lastTimelineItemVisibility &&
-		row.lastTimelineItemCreatedAt &&
-		row.lastTimelineItemParts
-			? {
-					id: row.lastTimelineItemId,
-					conversationId: row.conversation.id,
-					text: row.lastTimelineItemText,
-					type: row.lastTimelineItemType,
-					parts: row.lastTimelineItemParts as TimelineItemParts,
-					visibility: row.lastTimelineItemVisibility,
-					userId: row.lastTimelineItemUserId,
-					visitorId: row.lastTimelineItemVisitorId,
-					organizationId: row.lastTimelineItemOrganizationId,
-					aiAgentId: row.lastTimelineItemAiAgentId,
-					createdAt: row.lastTimelineItemCreatedAt,
-					deletedAt: row.lastTimelineItemDeletedAt,
-				}
-			: null;
+	const lastTimelineItem = buildLastTimelineItem(row);
 
 	return {
 		...row.conversation,

@@ -13,12 +13,12 @@ import { visitorRouter } from "./visitor";
 import { websiteRouter } from "./website";
 
 export const origamiTRPCRouter = createTRPCRouter({
-        resend: resendRouter,
-        user: userRouter,
-        website: websiteRouter,
-        conversation: conversationRouter,
-        view: viewRouter,
-        visitor: visitorRouter,
+	resend: resendRouter,
+	user: userRouter,
+	website: websiteRouter,
+	conversation: conversationRouter,
+	view: viewRouter,
+	visitor: visitorRouter,
 	contact: contactRouter,
 	upload: uploadRouter,
 	plan: planRouter,

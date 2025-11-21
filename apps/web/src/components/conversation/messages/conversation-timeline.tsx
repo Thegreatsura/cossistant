@@ -8,10 +8,7 @@ import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-
 
 import type { AvailableAIAgent } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
-import type {
-	TimelineItem,
-	TimelinePartEvent,
-} from "@cossistant/types/api/timeline-item";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { AnimatePresence } from "motion/react";
 import type { RefObject } from "react";
@@ -21,23 +18,11 @@ import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useWebsite } from "@/contexts/website";
 import { useDashboardTypingSound } from "@/hooks/use-dashboard-typing-sound";
 import { useSoundPreferences } from "@/hooks/use-sound-preferences";
+import { extractEventPart } from "@/lib/timeline-events";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
 import { TimelineMessageGroup } from "./timeline-message-group";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
-
-// Helper to extract event part from timeline item
-function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
-	if (item.type !== "event") {
-		return null;
-	}
-
-	const eventPart = item.parts.find(
-		(part): part is TimelinePartEvent => part.type === "event"
-	);
-
-	return eventPart || null;
-}
 
 const EMPTY_TIMELINE_ITEMS: TimelineItem[] = [];
 const EMPTY_TEAM_MEMBERS: RouterOutputs["user"]["getWebsiteMembers"] = [];

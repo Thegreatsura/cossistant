@@ -1,0 +1,138 @@
+import type { RouterOutputs } from "@api/trpc/types";
+import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
+import type {
+	TimelineItem,
+	TimelinePartEvent,
+} from "@cossistant/types/api/timeline-item";
+import { getVisitorNameWithFallback } from "./visitors";
+
+export type TimelineEventDisplay = {
+	actorName: string;
+	actionText: string;
+	avatarType: "ai" | "human" | "visitor";
+	avatarImage?: string | null;
+	avatarFallbackName: string;
+};
+
+type EventDisplayParams = {
+	event: TimelinePartEvent;
+	availableAIAgents: AvailableAIAgent[];
+	availableHumanAgents: AvailableHumanAgent[];
+	visitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
+};
+
+export function extractEventPart(
+	item: TimelineItem | null | undefined
+): TimelinePartEvent | null {
+	if (!item || item.type !== "event") {
+		return null;
+	}
+
+	const eventPart = item.parts.find(
+		(part): part is TimelinePartEvent => part.type === "event"
+	);
+
+	return eventPart || null;
+}
+
+function getActorName(params: EventDisplayParams): {
+	actorName: string;
+	avatarType: TimelineEventDisplay["avatarType"];
+	avatarImage?: string | null;
+	avatarFallbackName: string;
+} {
+	const { event, availableAIAgents, availableHumanAgents, visitor } = params;
+	const visitorName = visitor ? getVisitorNameWithFallback(visitor) : "Visitor";
+
+	if (event.eventType === "visitor_identified") {
+		return {
+			actorName: visitorName,
+			avatarType: "visitor",
+			avatarImage: visitor?.contact?.image,
+			avatarFallbackName: visitorName,
+		};
+	}
+
+	if (event.actorAiAgentId) {
+		const aiAgent = availableAIAgents.find(
+			(agent) => agent.id === event.actorAiAgentId
+		);
+
+		const actorName = aiAgent?.name || "AI agent";
+
+		return {
+			actorName,
+			avatarType: "ai",
+			avatarFallbackName: actorName,
+		};
+	}
+
+	const humanAgent = availableHumanAgents.find(
+		(agent) => agent.id === event.actorUserId
+	);
+
+	const actorName = humanAgent?.name || "Someone";
+
+	return {
+		actorName,
+		avatarType: "human",
+		avatarImage: humanAgent?.image,
+		avatarFallbackName: actorName,
+	};
+}
+
+export function buildTimelineEventDisplay(
+	params: EventDisplayParams
+): TimelineEventDisplay {
+	const { event } = params;
+	const actor = getActorName(params);
+
+	const defaultAction = (() => {
+		switch (event.eventType) {
+			case "assigned":
+				return "assigned the conversation";
+			case "unassigned":
+				return "unassigned the conversation";
+			case "participant_requested":
+				return "requested to join";
+			case "participant_joined":
+				return "joined the conversation";
+			case "participant_left":
+				return "left the conversation";
+			case "status_changed":
+				return "changed the status";
+			case "priority_changed":
+				return "changed the priority";
+			case "tag_added":
+				return "added a tag";
+			case "tag_removed":
+				return "removed a tag";
+			case "resolved":
+				return "resolved the conversation";
+			case "reopened":
+				return "reopened the conversation";
+			case "visitor_blocked":
+				return "blocked the visitor";
+			case "visitor_unblocked":
+				return "unblocked the visitor";
+			case "visitor_identified":
+				return "identified, new contact created";
+			default:
+				return "performed an action";
+		}
+	})();
+
+	return {
+		...actor,
+		actionText: event.message ?? defaultAction,
+	} satisfies TimelineEventDisplay & {
+		actionText: string;
+	};
+}
+
+export function buildTimelineEventPreview(params: EventDisplayParams): string {
+	const display = buildTimelineEventDisplay(params);
+	const parts = [display.actorName, display.actionText].filter(Boolean);
+
+	return parts.join(" ");
+}

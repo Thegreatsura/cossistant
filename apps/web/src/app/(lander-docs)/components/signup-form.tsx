@@ -135,6 +135,7 @@ export function SignupForm() {
 								disabled={isLoading || !email.trim() || !password.trim()}
 								isSubmitting={isLoading}
 								size="lg"
+								type="submit"
 							>
 								Create account
 							</BaseSubmitButton>
@@ -142,6 +143,7 @@ export function SignupForm() {
 								className="w-full"
 								onClick={() => setDisplayEmailSignup(false)}
 								size="lg"
+								type="button"
 								variant="outline"
 							>
 								Back
@@ -187,7 +189,6 @@ export function SignupForm() {
 					>
 						Use email instead
 					</Button>
-
 					<div className="flex flex-col text-center">
 						<p className="text-primary/60 text-sm">Already have an account?</p>
 						<Link className="text-primary/60 text-sm underline" href="/login">

@@ -2,7 +2,10 @@
 
 import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
-import { ConversationStatus } from "@cossistant/types";
+import {
+	ConversationStatus,
+	ConversationTimelineType,
+} from "@cossistant/types";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { differenceInHours } from "date-fns";
@@ -12,24 +15,32 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
-import { useUserSession } from "@/contexts/website";
+import { useUserSession, useWebsiteMembers } from "@/contexts/website";
 import { useLatestConversationMessage } from "@/data/use-latest-conversation-message";
 import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { isInboundVisitorMessage } from "@/lib/conversation-messages";
 import { formatTimeAgo, getWaitingSinceLabel } from "@/lib/date";
+import {
+	buildTimelineEventPreview,
+	extractEventPart,
+} from "@/lib/timeline-events";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
 
+function stripMarkdownLinks(text: string): string {
+	return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+}
+
 type ConversationItemViewProps = {
 	visitorName: string;
 	visitorAvatarUrl?: string | null;
 	visitorPresenceStatus?: "online" | "away";
 	visitorLastSeenAt?: string | null;
-	lastMessageText: string;
-	lastMessageCreatedAt?: Date | null;
+	lastTimelineContent: ReactNode;
+	lastTimelineItemCreatedAt?: Date | null;
 	isTyping: boolean;
 	waitingSinceLabel?: string | null;
 	hasUnreadMessage: boolean;
@@ -45,8 +56,8 @@ export function ConversationItemView({
 	visitorAvatarUrl,
 	visitorPresenceStatus,
 	visitorLastSeenAt,
-	lastMessageText,
-	lastMessageCreatedAt,
+	lastTimelineContent,
+	lastTimelineItemCreatedAt,
 	isTyping,
 	waitingSinceLabel,
 	hasUnreadMessage,
@@ -61,10 +72,10 @@ export function ConversationItemView({
 
 	useEffect(() => {
 		setIsMounted(true);
-		if (lastMessageCreatedAt) {
-			setFormattedTime(formatTimeAgo(lastMessageCreatedAt));
+		if (lastTimelineItemCreatedAt) {
+			setFormattedTime(formatTimeAgo(lastTimelineItemCreatedAt));
 		}
-	}, [lastMessageCreatedAt]);
+	}, [lastTimelineItemCreatedAt]);
 
 	const content = (
 		<>
@@ -83,9 +94,9 @@ export function ConversationItemView({
 				{isTyping ? (
 					<BouncingDots />
 				) : (
-					<p className={cn("truncate pr-6 text-muted-foreground")}>
-						{lastMessageText}
-					</p>
+					<div className="flex min-w-0 items-center gap-2 truncate pr-6 text-muted-foreground">
+						{lastTimelineContent}
+					</div>
 				)}
 			</div>
 			<div className="flex items-center gap-3">
@@ -166,8 +177,22 @@ export function ConversationItem({
 		header;
 	const { prefetchConversation } = usePrefetchConversationData();
 	const { user } = useUserSession();
+	const members = useWebsiteMembers();
 	const trpc = useTRPC();
 	const presence = useVisitorPresenceById(header.visitorId);
+
+	const availableHumanAgents = useMemo(
+		() =>
+			members.map((member) => ({
+				id: member.id,
+				name: member.name ?? member.email?.split("@")[0] ?? "Someone",
+				image: member.image,
+				lastSeenAt: member.lastSeenAt,
+			})),
+		[members]
+	);
+
+	const availableAIAgents = useMemo(() => [], []);
 
 	const visitorQueryOptions = useMemo(
 		() =>
@@ -239,6 +264,53 @@ export function ConversationItem({
 		? new Date(lastTimelineItem.createdAt)
 		: null;
 
+	const lastTimelinePreview = useMemo(() => {
+		if (!lastTimelineItem) {
+			return "";
+		}
+
+		if (lastTimelineItem.type === ConversationTimelineType.EVENT) {
+			const eventPart = extractEventPart(lastTimelineItem);
+
+			if (!eventPart) {
+				return "";
+			}
+
+			return buildTimelineEventPreview({
+				event: eventPart,
+				availableAIAgents,
+				availableHumanAgents,
+				visitor,
+			});
+		}
+
+		return stripMarkdownLinks(lastTimelineItem.text ?? "");
+	}, [availableAIAgents, availableHumanAgents, lastTimelineItem, visitor]);
+
+	const isEventPreview = Boolean(
+		lastTimelineItem?.type === ConversationTimelineType.EVENT &&
+			lastTimelinePreview
+	);
+
+	const lastTimelineContent = useMemo<ReactNode>(() => {
+		if (!lastTimelineItem) {
+			return "";
+		}
+
+		if (isEventPreview) {
+			return (
+				<>
+					<span className="shrink-0 rounded-full bg-background-300 px-2 py-0.5 font-semibold text-[11px] text-muted-foreground uppercase tracking-tight">
+						Event
+					</span>
+					<span className="truncate">{lastTimelinePreview}</span>
+				</>
+			);
+		}
+
+		return <span className="truncate">{lastTimelinePreview}</span>;
+	}, [isEventPreview, lastTimelineItem, lastTimelinePreview]);
+
 	const shouldDisplayWaitingPill =
 		showWaitingForReplyPill &&
 		header.status === ConversationStatus.OPEN &&
@@ -267,7 +339,7 @@ export function ConversationItem({
 		}
 
 		return getWaitingSinceLabel(messageDate);
-	}, [inboundWaitingTimelineItem?.createdAt]);
+	}, [inboundWaitingTimelineItem]);
 
 	const headerLastSeenAt = header.lastSeenAt
 		? new Date(header.lastSeenAt)
@@ -291,8 +363,8 @@ export function ConversationItem({
 			hasUnreadMessage={hasUnreadMessage}
 			href={href}
 			isTyping={Boolean(typingInfo)}
-			lastMessageCreatedAt={lastTimelineItemCreatedAt}
-			lastMessageText={lastTimelineItem?.text ?? ""}
+			lastTimelineContent={lastTimelineContent}
+			lastTimelineItemCreatedAt={lastTimelineItemCreatedAt}
 			onMouseEnter={() => {
 				setFocused?.();
 				prefetchConversation({
