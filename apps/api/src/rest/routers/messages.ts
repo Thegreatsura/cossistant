@@ -33,6 +33,31 @@ import type { RestContext } from "../types";
 
 export const messagesRouter = new OpenAPIHono<RestContext>();
 
+function resolveTimelineActor(params: {
+        actor: ConversationActor | null;
+        userId: string | null;
+        aiAgentId: string | null;
+        visitorId: string | null;
+}): ConversationActor | null {
+        if (params.actor) {
+                return params.actor;
+        }
+
+        if (params.userId) {
+                return { type: "user", userId: params.userId } satisfies ConversationActor;
+        }
+
+        if (params.aiAgentId) {
+                return { type: "aiAgent", aiAgentId: params.aiAgentId } satisfies ConversationActor;
+        }
+
+        if (params.visitorId) {
+                return { type: "visitor", visitorId: params.visitorId } satisfies ConversationActor;
+        }
+
+        return null;
+}
+
 // Apply middleware to all routes in this router
 messagesRouter.use("/*", ...protectedPublicApiKeyMiddleware);
 
@@ -265,32 +290,22 @@ messagesRouter.openapi(
                                                           tool: body.item.tool ?? null,
                                                   },
                                           }),
-                                          actor:
-                                                  resolvedUserId
-                                                          ? { type: "user", userId: resolvedUserId }
-                                                          : resolvedAiAgentId
-                                                          ? {
-                                                                        type: "aiAgent" as const,
-                                                                        aiAgentId: resolvedAiAgentId,
-                                                                }
-                                                          : visitorId
-                                                          ? {
-                                                                        type: "visitor" as const,
-                                                                        visitorId,
-                                                                }
-                                                          : null,
+                                          actor: null,
                                   };
 
-		// Determine the actor from the created timeline item
-		const resolvedActor: ConversationActor | null =
-			actor ?? (visitorId ? { type: "visitor", visitorId } : null);
+                const resolvedActor: ConversationActor | null = resolveTimelineActor({
+                        actor,
+                        userId: resolvedUserId,
+                        aiAgentId: resolvedAiAgentId,
+                        visitorId: visitorId ?? null,
+                });
 
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];
 
-		// Only mark conversation as seen for users and AI agents when sending messages.
-		// For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
-		// This prevents conversations from being marked as seen when the widget is closed.
+                // Mark conversations as seen for users and AI agents when sending timeline items.
+                // For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
+                // This prevents conversations from being marked as seen when the widget is closed.
 		let lastSeenAt: string | undefined;
 		if (resolvedActor && resolvedActor.type !== "visitor") {
 			lastSeenAt = await markConversationAsSeen(db, {

@@ -32,17 +32,17 @@ function stripMarkdownLinks(text: string): string {
 }
 
 type ConversationItemViewProps = {
-	visitorName: string;
-	visitorAvatarUrl?: string | null;
-	visitorPresenceStatus?: "online" | "away";
-	visitorLastSeenAt?: string | null;
+        visitorName: string;
+        visitorAvatarUrl?: string | null;
+        visitorPresenceStatus?: "online" | "away";
+        visitorLastSeenAt?: string | null;
         lastTimelineContent: ReactNode;
-        lastMessageCreatedAt?: Date | null;
+        lastTimelineItemCreatedAt?: Date | null;
         isTyping: boolean;
         waitingSinceLabel?: string | null;
-	hasUnreadMessage: boolean;
-	focused?: boolean;
-	rightContent?: ReactNode;
+        hasUnreadMessage: boolean;
+        focused?: boolean;
+        rightContent?: ReactNode;
 	className?: string;
 	onMouseEnter?: () => void;
 	href?: string;
@@ -51,15 +51,15 @@ type ConversationItemViewProps = {
 export function ConversationItemView({
 	visitorName,
 	visitorAvatarUrl,
-	visitorPresenceStatus,
-	visitorLastSeenAt,
+        visitorPresenceStatus,
+        visitorLastSeenAt,
         lastTimelineContent,
-        lastMessageCreatedAt,
+        lastTimelineItemCreatedAt,
         isTyping,
         waitingSinceLabel,
-	hasUnreadMessage,
-	focused = false,
-	rightContent,
+        hasUnreadMessage,
+        focused = false,
+        rightContent,
 	className,
 	onMouseEnter,
 	href,
@@ -67,12 +67,12 @@ export function ConversationItemView({
 	const [isMounted, setIsMounted] = useState(false);
 	const [formattedTime, setFormattedTime] = useState<string | null>(null);
 
-	useEffect(() => {
-		setIsMounted(true);
-		if (lastMessageCreatedAt) {
-			setFormattedTime(formatTimeAgo(lastMessageCreatedAt));
-		}
-	}, [lastMessageCreatedAt]);
+        useEffect(() => {
+                setIsMounted(true);
+                if (lastTimelineItemCreatedAt) {
+                        setFormattedTime(formatTimeAgo(lastTimelineItemCreatedAt));
+                }
+        }, [lastTimelineItemCreatedAt]);
 
 	const content = (
 		<>
@@ -365,7 +365,7 @@ export function ConversationItem({
                         hasUnreadMessage={hasUnreadMessage}
                         href={href}
                         isTyping={Boolean(typingInfo)}
-                        lastMessageCreatedAt={lastTimelineItemCreatedAt}
+                        lastTimelineItemCreatedAt={lastTimelineItemCreatedAt}
                         lastTimelineContent={lastTimelineContent}
                         onMouseEnter={() => {
                                 setFocused?.();
