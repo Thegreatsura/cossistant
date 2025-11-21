@@ -1,5 +1,6 @@
 import { Support } from "@cossistant/next";
 import { DashboardButton } from "@/app/(lander-docs)/components/topbar/dashboard-button";
+import { CustomBubble } from "@/components/support/custom-bubble";
 import { Footer } from "./components/footer";
 import { TopBar } from "./components/topbar";
 
@@ -13,7 +14,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 				<div className="container-wrapper mx-auto">{children}</div>
 			</main>
 			<Footer />
-			<Support />
+			<Support
+				classNames={{
+					bubble: "bg-cossistant-orange",
+				}}
+				slots={{
+					bubble: CustomBubble,
+				}}
+			/>
 		</div>
 	);
 }
