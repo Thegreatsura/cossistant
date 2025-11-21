@@ -25,14 +25,14 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	availableHumanAgents,
 	visitor,
 }) => {
-        const display = buildTimelineEventDisplay({
-                event,
-                availableAIAgents,
-                availableHumanAgents,
-                visitor,
-        });
+	const display = buildTimelineEventDisplay({
+		event,
+		availableAIAgents,
+		availableHumanAgents,
+		visitor,
+	});
 
-        const isVisitorIdentifiedEvent = display.avatarType === "visitor";
+	const isVisitorIdentifiedEvent = display.avatarType === "visitor";
 
 	return (
 		<motion.div
@@ -43,29 +43,29 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		>
 			<div className="flex items-center gap-2 text-muted-foreground text-xs">
 				<div className="flex flex-col justify-end">
-                                        {isVisitorIdentifiedEvent ? (
-                                                <Avatar
-                                                        className="size-5 shrink-0 overflow-clip"
-                                                        fallbackName={display.avatarFallbackName}
-                                                        url={display.avatarImage}
-                                                        withBoringAvatar
-                                                />
-                                        ) : display.avatarType === "ai" ? (
-                                                <div className="flex size-5 items-center justify-center rounded-sm bg-primary/10">
-                                                        <Logo className="h-3 w-3 text-primary" />
-                                                </div>
-                                        ) : (
-                                                <Avatar
-                                                        className="size-5 shrink-0 overflow-clip"
-                                                        fallbackName={display.avatarFallbackName}
-                                                        url={display.avatarImage}
-                                                />
-                                        )}
-                                </div>
-                                <span className="px-1">
-                                        <span className="font-semibold">{display.actorName}</span>{" "}
-                                        {display.actionText}
-                                </span>
+					{isVisitorIdentifiedEvent ? (
+						<Avatar
+							className="size-5 shrink-0 overflow-clip"
+							fallbackName={display.avatarFallbackName}
+							url={display.avatarImage}
+							withBoringAvatar
+						/>
+					) : display.avatarType === "ai" ? (
+						<div className="flex size-5 items-center justify-center rounded-sm bg-primary/10">
+							<Logo className="h-3 w-3 text-primary" />
+						</div>
+					) : (
+						<Avatar
+							className="size-5 shrink-0 overflow-clip"
+							fallbackName={display.avatarFallbackName}
+							url={display.avatarImage}
+						/>
+					)}
+				</div>
+				<span className="px-1">
+					<span className="font-semibold">{display.actorName}</span>{" "}
+					{display.actionText}
+				</span>
 				{createdAt && (
 					<time className="text-[10px]">
 						{new Date(createdAt).toLocaleTimeString([], {

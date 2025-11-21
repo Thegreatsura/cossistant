@@ -31,9 +31,9 @@ export const ensurePageAuth = async (
 ) => {
 	const { session, user } = await getAuth();
 
-        if (!(user && session)) {
-                redirect(props.redirectTo);
-        }
+	if (!(user && session)) {
+		redirect(props.redirectTo);
+	}
 
-        return { session, user };
+	return { session, user };
 };

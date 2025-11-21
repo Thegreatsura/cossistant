@@ -14,9 +14,9 @@ import {
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
 import {
-        ulidNullableReference,
-        ulidPrimaryKey,
-        ulidReference,
+	ulidNullableReference,
+	ulidPrimaryKey,
+	ulidReference,
 } from "../../utils/db/ids";
 
 import { website } from "./website";
@@ -310,10 +310,10 @@ export const invitation = pgTable(
 
 // Relations
 export const userRelations = relations(user, ({ many, one }) => ({
-        sessions: many(session),
-        accounts: many(account),
-        memberships: many(member),
-        invitations: many(invitation),
+	sessions: many(session),
+	accounts: many(account),
+	memberships: many(member),
+	invitations: many(invitation),
 }));
 
 export const organizationRelations = relations(organization, ({ many }) => ({

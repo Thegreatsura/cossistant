@@ -21,7 +21,7 @@ import React from "react";
 const MAX_DISPLAYED_MESSAGES = 5;
 
 const stripMarkdownLinks = (text: string): string =>
-        text.replace(/\[([^\]]+)]\(([^)]+)\)/g, "$2");
+	text.replace(/\[([^\]]+)]\(([^)]+)\)/g, "$2");
 
 import { LOGO_URL, OG_AVATAR_URL } from "../constants";
 
@@ -201,12 +201,12 @@ export function NewMessageInConversation({
 														)}
 													</Text>
 												)}
-                                                                                                <Text
-                                                                                                        className="my-0 rounded-lg rounded-bl-none bg-neutral-100 px-4 py-2.5 text-neutral-800 text-sm leading-5"
-                                                                                                        style={{ whiteSpace: "pre-wrap" }}
-                                                                                                >
-                                                                                                        {stripMarkdownLinks(message.text)}
-                                                                                                </Text>
+												<Text
+													className="my-0 rounded-lg rounded-bl-none bg-neutral-100 px-4 py-2.5 text-neutral-800 text-sm leading-5"
+													style={{ whiteSpace: "pre-wrap" }}
+												>
+													{stripMarkdownLinks(message.text)}
+												</Text>
 											</Column>
 										</Row>
 										{lastInGroup && (

@@ -11,8 +11,8 @@ import {
 	isUserParticipant,
 } from "@api/utils/participant-helpers";
 import {
-        createMessageTimelineItem,
-        createTimelineItem,
+	createMessageTimelineItem,
+	createTimelineItem,
 } from "@api/utils/timeline-item";
 import {
 	safelyExtractRequestData,
@@ -34,28 +34,34 @@ import type { RestContext } from "../types";
 export const messagesRouter = new OpenAPIHono<RestContext>();
 
 function resolveTimelineActor(params: {
-        actor: ConversationActor | null;
-        userId: string | null;
-        aiAgentId: string | null;
-        visitorId: string | null;
+	actor: ConversationActor | null;
+	userId: string | null;
+	aiAgentId: string | null;
+	visitorId: string | null;
 }): ConversationActor | null {
-        if (params.actor) {
-                return params.actor;
-        }
+	if (params.actor) {
+		return params.actor;
+	}
 
-        if (params.userId) {
-                return { type: "user", userId: params.userId } satisfies ConversationActor;
-        }
+	if (params.userId) {
+		return { type: "user", userId: params.userId } satisfies ConversationActor;
+	}
 
-        if (params.aiAgentId) {
-                return { type: "aiAgent", aiAgentId: params.aiAgentId } satisfies ConversationActor;
-        }
+	if (params.aiAgentId) {
+		return {
+			type: "aiAgent",
+			aiAgentId: params.aiAgentId,
+		} satisfies ConversationActor;
+	}
 
-        if (params.visitorId) {
-                return { type: "visitor", visitorId: params.visitorId } satisfies ConversationActor;
-        }
+	if (params.visitorId) {
+		return {
+			type: "visitor",
+			visitorId: params.visitorId,
+		} satisfies ConversationActor;
+	}
 
-        return null;
+	return null;
 }
 
 // Apply middleware to all routes in this router
@@ -237,75 +243,70 @@ messagesRouter.openapi(
 			}
 		}
 
-                const timelineItemType =
-                        body.item.type ?? ConversationTimelineType.MESSAGE;
+		const timelineItemType = body.item.type ?? ConversationTimelineType.MESSAGE;
 
-                const resolvedUserId = isPublic ? null : body.item.userId ?? null;
-                const resolvedAiAgentId = isPublic
-                        ? null
-                        : body.item.aiAgentId ?? null;
+		const resolvedUserId = isPublic ? null : (body.item.userId ?? null);
+		const resolvedAiAgentId = isPublic ? null : (body.item.aiAgentId ?? null);
 
-                const { item: createdTimelineItem, actor } =
-                        timelineItemType === ConversationTimelineType.MESSAGE
-                                ? await createMessageTimelineItem({
-                                          db,
-                                          organizationId: organization.id,
-                                          websiteId: website.id,
-                                          conversationId: body.conversationId,
-                                          conversationOwnerVisitorId: visitorId,
-                                          id: body.item.id,
-                                          text: body.item.text ?? "",
-                                          extraParts:
-                                                  body.item.parts?.filter(
-                                                          (part) => part.type !== "text"
-                                                  ) ?? [],
-                                          visibility: body.item.visibility,
-                                          userId: resolvedUserId,
-                                          aiAgentId: resolvedAiAgentId,
-                                          visitorId: visitorId ?? null,
-                                          createdAt: body.item.createdAt
-                                                  ? new Date(body.item.createdAt)
-                                                  : undefined,
-                                          tool: body.item.tool ?? null,
-                                  })
-                                : {
-                                          item: await createTimelineItem({
-                                                  db,
-                                                  organizationId: organization.id,
-                                                  websiteId: website.id,
-                                                  conversationId: body.conversationId,
-                                                  conversationOwnerVisitorId: visitorId,
-                                                  item: {
-                                                          id: body.item.id,
-                                                          type: timelineItemType,
-                                                          text: body.item.text ?? null,
-                                                          parts: body.item.parts ?? [],
-                                                          userId: resolvedUserId,
-                                                          aiAgentId: resolvedAiAgentId,
-                                                          visitorId: visitorId ?? null,
-                                                          visibility: body.item.visibility,
-                                                          createdAt: body.item.createdAt
-                                                                  ? new Date(body.item.createdAt)
-                                                                  : undefined,
-                                                          tool: body.item.tool ?? null,
-                                                  },
-                                          }),
-                                          actor: null,
-                                  };
+		const { item: createdTimelineItem, actor } =
+			timelineItemType === ConversationTimelineType.MESSAGE
+				? await createMessageTimelineItem({
+						db,
+						organizationId: organization.id,
+						websiteId: website.id,
+						conversationId: body.conversationId,
+						conversationOwnerVisitorId: visitorId,
+						id: body.item.id,
+						text: body.item.text ?? "",
+						extraParts:
+							body.item.parts?.filter((part) => part.type !== "text") ?? [],
+						visibility: body.item.visibility,
+						userId: resolvedUserId,
+						aiAgentId: resolvedAiAgentId,
+						visitorId: visitorId ?? null,
+						createdAt: body.item.createdAt
+							? new Date(body.item.createdAt)
+							: undefined,
+						tool: body.item.tool ?? null,
+					})
+				: {
+						item: await createTimelineItem({
+							db,
+							organizationId: organization.id,
+							websiteId: website.id,
+							conversationId: body.conversationId,
+							conversationOwnerVisitorId: visitorId,
+							item: {
+								id: body.item.id,
+								type: timelineItemType,
+								text: body.item.text ?? null,
+								parts: body.item.parts ?? [],
+								userId: resolvedUserId,
+								aiAgentId: resolvedAiAgentId,
+								visitorId: visitorId ?? null,
+								visibility: body.item.visibility,
+								createdAt: body.item.createdAt
+									? new Date(body.item.createdAt)
+									: undefined,
+								tool: body.item.tool ?? null,
+							},
+						}),
+						actor: null,
+					};
 
-                const resolvedActor: ConversationActor | null = resolveTimelineActor({
-                        actor,
-                        userId: resolvedUserId,
-                        aiAgentId: resolvedAiAgentId,
-                        visitorId: visitorId ?? null,
-                });
+		const resolvedActor: ConversationActor | null = resolveTimelineActor({
+			actor,
+			userId: resolvedUserId,
+			aiAgentId: resolvedAiAgentId,
+			visitorId: visitorId ?? null,
+		});
 
 		// Build promises for realtime events and presence tracking
 		const promises: Promise<unknown>[] = [];
 
-                // Mark conversations as seen for users and AI agents when sending timeline items.
-                // For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
-                // This prevents conversations from being marked as seen when the widget is closed.
+		// Mark conversations as seen for users and AI agents when sending timeline items.
+		// For visitors, we rely on the frontend auto-seen mechanism which checks widget visibility.
+		// This prevents conversations from being marked as seen when the widget is closed.
 		let lastSeenAt: string | undefined;
 		if (resolvedActor && resolvedActor.type !== "visitor") {
 			lastSeenAt = await markConversationAsSeen(db, {
