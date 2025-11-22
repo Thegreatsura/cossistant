@@ -54,14 +54,18 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	const resolvedPlaceholder =
 		placeholder ?? text("component.multimodalInput.placeholder");
 
-	const handleSubmit = () => {
-		if (!canSubmit) {
-			return;
-		}
+        const handleSubmit = () => {
+                if (!canSubmit) {
+                        return;
+                }
 
-		onSubmit();
-		focusComposer();
-	};
+                onSubmit();
+                // Ensure the composer regains focus after sending, even when
+                // the submit action shifts focus to the send button.
+                setTimeout(() => {
+                        focusComposer();
+                });
+        };
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
