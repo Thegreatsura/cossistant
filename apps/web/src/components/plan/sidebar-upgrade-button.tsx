@@ -2,9 +2,7 @@
 
 import { type FeatureKey, PLAN_CONFIG } from "@api/lib/plans/config";
 import type { RouterOutputs } from "@cossistant/api/types";
-import { ArrowUpRight } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./upgrade-modal";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
@@ -111,9 +109,9 @@ export function SidebarUpgradeButton({
 
 			<UpgradeModal
 				currentPlan={plan}
+				initialPlanName="hobby"
 				onOpenChange={setIsModalOpen}
 				open={isModalOpen}
-				targetPlanName="hobby"
 				websiteSlug={websiteSlug}
 			/>
 		</>

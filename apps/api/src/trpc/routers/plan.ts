@@ -208,7 +208,7 @@ export const planRouter = createTRPCRouter({
 		.input(
 			z.object({
 				websiteSlug: z.string(),
-				targetPlan: z.enum(["free", "hobby"]),
+				targetPlan: z.enum(["free", "hobby", "pro"]),
 				discountId: z.string().optional(),
 			})
 		)

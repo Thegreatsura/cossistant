@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { UsageBar } from "@/components/plan/usage-bar";
+import { Button } from "@/components/ui/button";
 import {
 	SettingsHeader,
 	SettingsPage,
 	SettingsRow,
-	SettingsRowFooter,
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
 import { getQueryClient, prefetch, trpc } from "@/lib/trpc/server";
@@ -68,7 +69,7 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 				title="Current Plan"
 			>
 				<DiscountBanner className="mx-2 mt-2 mb-10" />
-				<div className="p- flex items-center justify-between p-2 pl-4">
+				<div className="flex flex-wrap items-center justify-between gap-4 p-2 pl-4">
 					<div className="flex items-center gap-2">
 						<span className="font-medium text-lg">{plan.displayName}</span>
 						{plan.price && (
@@ -77,7 +78,12 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 							</span>
 						)}
 					</div>
-					<UpgradeButton currentPlan={plan} websiteSlug={websiteSlug} />
+					<div className="flex flex-wrap items-center gap-2">
+						<UpgradeButton currentPlan={plan} websiteSlug={websiteSlug} />
+						<Button asChild variant="outline">
+							<Link href={`/${websiteSlug}/billing`}>View billing</Link>
+						</Button>
+					</div>
 				</div>
 			</SettingsRow>
 

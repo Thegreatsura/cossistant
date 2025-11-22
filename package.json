@@ -41,7 +41,6 @@
     "packages/*"
   ],
   "dependencies": {
-    "add": "^2.0.6",
     "better-auth": "^1.4.0",
     "rolldown": "^1.0.0-beta.47"
   },
