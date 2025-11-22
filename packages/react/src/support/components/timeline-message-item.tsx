@@ -45,21 +45,21 @@ export function TimelineMessageItem({
 								isSentByViewerFinal && "items-end"
 							)}
 						>
-							<TimelineItemContent
-								className={cn(
-									"block min-w-0 max-w-[300px] break-all rounded-lg px-3.5 py-2.5 text-sm",
-									{
-										"bg-co-background-300 text-co-foreground dark:bg-co-background-600":
-											!isSentByViewerFinal,
-										"bg-co-primary text-co-primary-foreground":
-											isSentByViewerFinal,
-										"rounded-br-sm": isLast && isSentByViewerFinal,
-										"rounded-bl-sm": isLast && !isSentByViewerFinal,
-									}
-								)}
-								renderMarkdown
-								text={item.text}
-							/>
+                                                        <TimelineItemContent
+                                                                className={cn(
+                                                                        "block min-w-0 max-w-[300px] break-words whitespace-pre-wrap rounded-lg px-3.5 py-2.5 text-sm",
+                                                                        {
+                                                                                "bg-co-background-300 text-co-foreground dark:bg-co-background-600":
+                                                                                        !isSentByViewerFinal,
+                                                                                "bg-co-primary text-co-primary-foreground":
+                                                                                        isSentByViewerFinal,
+                                                                                "rounded-br-sm": isLast && isSentByViewerFinal,
+                                                                                "rounded-bl-sm": isLast && !isSentByViewerFinal,
+                                                                        }
+                                                                )}
+                                                                renderMarkdown
+                                                                text={item.text}
+                                                        />
 							{isLast && (
 								<TimelineItemTimestamp
 									className="px-1 text-co-muted-foreground text-xs"
