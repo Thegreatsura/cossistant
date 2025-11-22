@@ -62,7 +62,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
                 onSubmit();
                 // Ensure the composer regains focus after sending, even when
                 // the submit action shifts focus to the send button.
-                setTimeout(() => {
+                requestAnimationFrame(() => {
                         focusComposer();
                 });
         };
