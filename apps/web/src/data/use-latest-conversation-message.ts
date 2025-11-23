@@ -1,6 +1,7 @@
 "use client";
 
 import type { InfiniteData } from "@tanstack/react-query";
+import { ConversationTimelineType } from "@cossistant/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
@@ -19,22 +20,27 @@ type UseLatestConversationMessageOptions = {
 };
 
 function findLatestTimelineItem(
-	data: InfiniteData<ConversationTimelineItemsPage> | undefined
+        data: InfiniteData<ConversationTimelineItemsPage> | undefined
 ): LastTimelineItem {
-	if (!data) {
-		return null;
-	}
+        if (!data) {
+                return null;
+        }
 
-	for (let pageIndex = data.pages.length - 1; pageIndex >= 0; pageIndex--) {
-		const page = data.pages[pageIndex];
-		const lastItem = page.items.at(-1);
+        for (let pageIndex = data.pages.length - 1; pageIndex >= 0; pageIndex--) {
+                const page = data.pages[pageIndex];
 
-		if (lastItem) {
-			return lastItem as LastTimelineItem;
-		}
-	}
+                for (let itemIndex = page.items.length - 1; itemIndex >= 0; itemIndex--) {
+                        const item = page.items[itemIndex];
 
-	return null;
+                        if (item?.type === ConversationTimelineType.MESSAGE) {
+                                return item as LastTimelineItem;
+                        }
+                }
+        }
+
+        const lastItem = data.pages.at(-1)?.items.at(-1);
+
+        return (lastItem as LastTimelineItem) ?? null;
 }
 
 export function useLatestConversationMessage({
