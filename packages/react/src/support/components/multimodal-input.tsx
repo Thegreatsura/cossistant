@@ -49,23 +49,24 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		hasContent,
 		isSubmitting,
 	});
-	const canSubmit = !(disabled || isSubmitting) && hasContent;
+	const canSubmit = !disabled && hasContent;
 	const text = useSupportText();
 	const resolvedPlaceholder =
 		placeholder ?? text("component.multimodalInput.placeholder");
 
-        const handleSubmit = () => {
-                if (!canSubmit) {
-                        return;
-                }
+	const handleSubmit = () => {
+		if (!canSubmit) {
+			return;
+		}
 
-                onSubmit();
-                // Ensure the composer regains focus after sending, even when
-                // the submit action shifts focus to the send button.
-                requestAnimationFrame(() => {
-                        focusComposer();
-                });
-        };
+		onSubmit();
+		// Try focusing immediately for optimistic submission UX, then ensure focus
+		// sticks after the submit button handles the click.
+		focusComposer();
+		requestAnimationFrame(() => {
+			focusComposer();
+		});
+	};
 
 	const handleFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -133,11 +134,12 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 			{/* Input area */}
 			<div className="group/multimodal-input flex flex-col rounded border border-co-border bg-co-background ring-offset-2 focus-within:ring-1 focus-within:ring-co-primary/10 dark:bg-co-background-200">
 				<Primitive.MultimodalInput
+					autoFocus
 					className={cn(
 						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-co-primary/50 focus-visible:outline-none",
 						className
 					)}
-					disabled={disabled || isSubmitting}
+					disabled={disabled}
 					error={error}
 					onChange={onChange}
 					onFileSelect={onFileSelect}

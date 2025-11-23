@@ -43,7 +43,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const hasContent = value.trim().length > 0 || files.length > 0;
-	const canSubmit = !(disabled || isSubmitting) && hasContent;
+	const canSubmit = !disabled && hasContent;
 
 	// Auto-resize textarea with max height constraint
 	useLayoutEffect(() => {
@@ -69,9 +69,10 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 		onSubmit();
 		// Focus textarea after submission
-		setTimeout(() => {
+		textareaRef.current?.focus();
+		requestAnimationFrame(() => {
 			textareaRef.current?.focus();
-		}, 0);
+		});
 	};
 
 	const handleFormSubmit = (e: React.FormEvent) => {
@@ -142,11 +143,12 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 						<textarea
 							aria-describedby={error ? "multimodal-input-error" : undefined}
 							aria-invalid={error ? "true" : undefined}
+							autoFocus
 							className={cn(
 								"min-h-[20px] w-full flex-1 resize-none p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
 								className
 							)}
-							disabled={disabled || isSubmitting}
+							disabled={disabled}
 							onChange={(e) => onChange(e.target.value)}
 							onKeyDown={(e) => {
 								// Handle Cmd/Ctrl + Enter to submit

@@ -27,7 +27,7 @@ export const useComposerRefocus = ({
 		const previous = previousStateRef.current;
 
 		if (
-			!(disabled || isSubmitting || hasContent) &&
+			!(disabled || hasContent) &&
 			(previous.isSubmitting || previous.hadContent)
 		) {
 			inputRef.current?.focus();

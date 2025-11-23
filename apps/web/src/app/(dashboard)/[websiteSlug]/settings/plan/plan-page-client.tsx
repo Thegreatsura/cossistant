@@ -1,18 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Tag } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { UpgradeSuccessModal } from "@/components/plan/upgrade-success-modal";
-import {
-	calculateDiscountedPrice,
-	type DiscountInfo,
-	EARLY_BIRD_DISCOUNT_ID,
-	formatDiscountOffer,
-	isDiscountAvailable,
-} from "@/lib/discount-utils";
 import { useTRPC } from "@/lib/trpc/client";
 
 type PlanPageClientProps = {
@@ -34,13 +27,6 @@ export function PlanPageClient({
 	const { data: planInfo, refetch } = useQuery({
 		...trpc.plan.getPlanInfo.queryOptions({
 			websiteSlug,
-		}),
-	});
-
-	// Fetch discount info
-	const { data: discount } = useQuery({
-		...trpc.plan.getDiscountInfo.queryOptions({
-			discountId: EARLY_BIRD_DISCOUNT_ID,
 		}),
 	});
 
@@ -74,29 +60,17 @@ export function PlanPageClient({
 		return null;
 	}
 
-	const isDiscountValid = discount ? isDiscountAvailable(discount) : false;
-
 	return (
 		<>
-			{/* {discount && isDiscountValid && (
-        <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" />
-            <h3 className="font-semibold text-primary">Early Bird Discount</h3>
-          </div>
-          <p className="mb-2 text-primary/80">
-            {formatDiscountOffer(discount)}
-          </p>
-          <div className="flex items-center gap-2 text-primary/70 text-sm">
-            <Tag className="size-4" />
-            <span>
-              {discount.redemptionsLeft !== null
-                ? `${discount.redemptionsLeft} of ${discount.maxRedemptions} redemptions left`
-                : "Limited time offer"}
-            </span>
-          </div>
-        </div>
-      )} */}
+			<div className="mb-6 rounded-lg border border-cossistant-orange/30 bg-cossistant-orange/5 p-4">
+				<div className="flex items-center gap-2 text-cossistant-orange">
+					<Sparkles className="size-4" />
+					<p className="font-medium text-sm">
+						Early bird launch pricing is live. Upgrade now to lock in discounted
+						rates for the lifetime of your subscription.
+					</p>
+				</div>
+			</div>
 			<UpgradeSuccessModal
 				onOpenChange={setIsSuccessModalOpen}
 				open={isSuccessModalOpen}

@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
 
-const PLAN_SEQUENCE: PlanName[] = ["free", "hobby", "pro"];
-
 type UpgradeButtonProps = {
 	currentPlan: PlanInfo["plan"];
 	websiteSlug: string;
@@ -21,11 +19,9 @@ export function UpgradeButton({
 }: UpgradeButtonProps) {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
-	const currentIndex = PLAN_SEQUENCE.indexOf(currentPlan.name as PlanName);
-	const nextPlanName =
-		currentIndex >= 0 && currentIndex < PLAN_SEQUENCE.length - 1
-			? PLAN_SEQUENCE[currentIndex + 1]
-			: null;
+	const proPlan = PLAN_CONFIG.pro;
+	const nextPlanName: PlanName | null =
+		currentPlan.name === "pro" || !proPlan ? null : "pro";
 
 	const buttonLabel = nextPlanName
 		? `Upgrade to ${PLAN_CONFIG[nextPlanName].displayName}`

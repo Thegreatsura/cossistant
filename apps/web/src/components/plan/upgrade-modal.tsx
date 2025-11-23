@@ -9,8 +9,10 @@ import type { RouterOutputs } from "@cossistant/api/types";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PromoBannerOrnaments } from "@/app/(lander-docs)/pricing/promo-banner-ornaments";
+import { PromoIndicator } from "@/app/(lander-docs)/pricing/promo-indicator";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -49,15 +51,22 @@ function formatFeatureValue(value: number | null): string {
 
 function PlanPriceDisplay({
 	price,
+	promoPrice,
 	className,
 	align = "end",
 }: {
 	price?: number;
+	promoPrice?: number;
 	className?: string;
 	align?: "start" | "end";
 }) {
 	const alignmentClasses =
 		align === "start" ? "items-start text-left" : "items-end text-right";
+
+	const hasPromo =
+		typeof promoPrice === "number" &&
+		typeof price === "number" &&
+		promoPrice < price;
 
 	return (
 		<div
@@ -67,7 +76,15 @@ function PlanPriceDisplay({
 				className
 			)}
 		>
-			{price ? (
+			{hasPromo ? (
+				<div className="flex items-baseline gap-2">
+					<p className="font-semibold text-base text-cossistant-orange">
+						${promoPrice}
+					</p>
+					<p className="text-muted-foreground text-sm line-through">${price}</p>
+					<span className="text-primary/60 text-xs">/month</span>
+				</div>
+			) : price ? (
 				<p className="text-primary/70 text-sm">${price}/month</p>
 			) : (
 				<p className="text-primary/70 text-sm">Free</p>
@@ -143,14 +160,18 @@ export function UpgradeModal({
 	websiteSlug,
 }: UpgradeModalProps) {
 	const trpc = useTRPC();
+	const preferredPlanName = useMemo<PlanName>(
+		() => (PLAN_CONFIG.pro ? "pro" : initialPlanName),
+		[initialPlanName]
+	);
 	const [selectedPlanName, setSelectedPlanName] =
-		useState<PlanName>(initialPlanName);
+		useState<PlanName>(preferredPlanName);
 
 	useEffect(() => {
 		if (open) {
-			setSelectedPlanName(initialPlanName);
+			setSelectedPlanName(preferredPlanName);
 		}
-	}, [initialPlanName, open]);
+	}, [preferredPlanName, open]);
 
 	const currentPlanConfig = PLAN_CONFIG[currentPlan.name] ?? PLAN_CONFIG.free;
 	const selectedPlanConfig = PLAN_CONFIG[selectedPlanName] ?? PLAN_CONFIG.free;
@@ -167,6 +188,23 @@ export function UpgradeModal({
 
 	const billingHref = `/${websiteSlug}/billing`;
 	const hasPolarProduct = Boolean(selectedPlanConfig.polarProductId);
+
+	const launchDiscountPercent = useMemo(() => {
+		const discounts: number[] = [];
+		for (const plan of [PLAN_CONFIG.hobby, PLAN_CONFIG.pro]) {
+			if (
+				typeof plan.price === "number" &&
+				typeof plan.priceWithPromo === "number" &&
+				plan.priceWithPromo < plan.price
+			) {
+				const percent = Math.round(
+					((plan.price - plan.priceWithPromo) / plan.price) * 100
+				);
+				discounts.push(percent);
+			}
+		}
+		return discounts.length > 0 ? Math.max(...discounts) : null;
+	}, []);
 
 	const { mutateAsync: createCheckout, isPending: isLoading } = useMutation(
 		trpc.plan.createCheckout.mutationOptions({
@@ -205,15 +243,34 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="space-y-6 py-4">
+					{launchDiscountPercent && (
+						<div className="p-2">
+							<PromoBannerOrnaments>
+								<div className="flex flex-col items-center justify-center gap-1 rounded px-4 py-3 text-center">
+									<div className="flex flex-wrap items-center justify-center gap-1 text-cossistant-orange text-sm">
+										Limited launch offer – up to
+										<span className="font-semibold">
+											{launchDiscountPercent}% off
+										</span>
+										lifetime while subscribed.
+									</div>
+								</div>
+							</PromoBannerOrnaments>
+						</div>
+					)}
 					<div>
 						<p className="mb-2 font-semibold text-muted-foreground text-sm">
 							Choose a plan
 						</p>
 						<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-							{PLAN_SEQUENCE.map((planName) => {
+							{PLAN_SEQUENCE.map((planName: PlanName) => {
 								const plan = PLAN_CONFIG[planName];
 								const isSelected = selectedPlanName === planName;
 								const isCurrent = currentPlan.name === planName;
+								const hasPromo =
+									typeof plan.price === "number" &&
+									typeof plan.priceWithPromo === "number" &&
+									plan.priceWithPromo < plan.price;
 
 								return (
 									<button
@@ -227,18 +284,36 @@ export function UpgradeModal({
 										onClick={() => setSelectedPlanName(planName)}
 										type="button"
 									>
-										<div className="flex items-start justify-between gap-4">
-											<div>
-												<p className="font-semibold">{plan.displayName}</p>
+										<div className="flex h-16 items-start justify-between gap-4">
+											<div className="flex flex-1 flex-col items-start">
+												<p className="flex items-center gap-2 font-semibold">
+													{plan.displayName}
+													{hasPromo && (
+														<PromoIndicator
+															price={plan.price}
+															promoPrice={plan.priceWithPromo}
+														/>
+													)}
+												</p>
+												{planName === "pro" && (
+													<span className="z-0 font-medium text-cossistant-orange text-xs">
+														Recommended
+													</span>
+												)}
 												{isCurrent && (
 													<span className="text-primary/60 text-xs">
 														Current plan
 													</span>
 												)}
 											</div>
-											<PlanPriceDisplay align="end" price={plan.price} />
+											{/* <PlanPriceDisplay
+                        align="end"
+                        price={plan.price}
+                        promoPrice={plan.priceWithPromo}
+                        className="flex-col"
+                      /> */}
 										</div>
-										<p className="mt-2 text-muted-foreground text-xs">
+										<p className="text-muted-foreground text-xs">
 											{PLAN_DESCRIPTIONS[planName]}
 										</p>
 									</button>
@@ -256,7 +331,11 @@ export function UpgradeModal({
 								<h3 className="font-semibold text-lg">
 									{currentPlanConfig.displayName}
 								</h3>
-								<PlanPriceDisplay align="start" price={currentPlan.price} />
+								<PlanPriceDisplay
+									align="start"
+									price={currentPlan.price}
+									promoPrice={currentPlanConfig.priceWithPromo}
+								/>
 							</div>
 							<div className="text-right">
 								<p className="text-muted-foreground text-xs uppercase tracking-wide">
@@ -272,6 +351,7 @@ export function UpgradeModal({
 								<PlanPriceDisplay
 									align="end"
 									price={selectedPlanConfig.price}
+									promoPrice={selectedPlanConfig.priceWithPromo}
 								/>
 							</div>
 						</div>
