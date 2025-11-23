@@ -174,15 +174,13 @@ messageWorkflow.post(
 			} = setup;
 
 			// Step 1: Prepare data (conversation, website, participants, seen state, recipients)
-			const prepared = await context.run("prepare-data", async () =>
-				prepareNotificationData({
-					conversationId,
-					websiteId,
-					organizationId,
-					excludeUserId: senderId,
-					includeVisitorRecipient: true,
-				})
-			);
+			const prepared = await prepareNotificationData({
+				conversationId,
+				websiteId,
+				organizationId,
+				excludeUserId: senderId,
+				includeVisitorRecipient: true,
+			});
 
 			if (!prepared) {
 				return;
@@ -195,8 +193,8 @@ messageWorkflow.post(
 				await context.sleep("global-delay", globalDelaySeconds);
 			}
 
-			// Step 3: Send notifications in a single step with an internal loop
-			await context.run("send-notifications", async () => {
+			// Step 3: Send notifications and clean up within a single workflow run
+			await context.run("process-notifications", async () => {
 				// Send emails to member recipients using the shared helper
 				for (const recipient of prepared.memberRecipients) {
 					await sendMemberEmailNotification({
@@ -219,10 +217,7 @@ messageWorkflow.post(
 						workflowState,
 					});
 				}
-			});
 
-			// Step 4: Clean up workflow state after successful completion
-			await context.run("cleanup-state", async () => {
 				await clearWorkflowState(conversationId, direction);
 			});
 		},
@@ -253,14 +248,12 @@ messageWorkflow.post(
 			} = setup;
 
 			// Step 1: Prepare data (conversation, website, participants, seen state, recipients)
-			const prepared = await context.run("prepare-data", async () =>
-				prepareNotificationData({
-					conversationId,
-					websiteId,
-					organizationId,
-					includeVisitorRecipient: false,
-				})
-			);
+			const prepared = await prepareNotificationData({
+				conversationId,
+				websiteId,
+				organizationId,
+				includeVisitorRecipient: false,
+			});
 
 			if (!prepared) {
 				return;
@@ -273,8 +266,8 @@ messageWorkflow.post(
 				await context.sleep("global-delay", globalDelaySeconds);
 			}
 
-			// Step 3: Send notifications in a single step with an internal loop
-			await context.run("send-notifications", async () => {
+			// Step 3: Send notifications and clean up within a single workflow run
+			await context.run("process-notifications", async () => {
 				// Send emails to member recipients using the shared helper
 				for (const recipient of prepared.memberRecipients) {
 					await sendMemberEmailNotification({
@@ -286,10 +279,7 @@ messageWorkflow.post(
 						workflowState,
 					});
 				}
-			});
 
-			// Step 4: Clean up workflow state after successful completion
-			await context.run("cleanup-state", async () => {
 				await clearWorkflowState(conversationId, direction);
 			});
 		},
