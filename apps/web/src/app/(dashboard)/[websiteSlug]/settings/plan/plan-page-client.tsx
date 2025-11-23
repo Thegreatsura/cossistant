@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -61,22 +60,11 @@ export function PlanPageClient({
 	}
 
 	return (
-		<>
-			<div className="mb-6 rounded-lg border border-cossistant-orange/30 bg-cossistant-orange/5 p-4">
-				<div className="flex items-center gap-2 text-cossistant-orange">
-					<Sparkles className="size-4" />
-					<p className="font-medium text-sm">
-						Early bird launch pricing is live. Upgrade now to lock in discounted
-						rates for the lifetime of your subscription.
-					</p>
-				</div>
-			</div>
-			<UpgradeSuccessModal
-				onOpenChange={setIsSuccessModalOpen}
-				open={isSuccessModalOpen}
-				plan={planInfo.plan}
-				usage={planInfo.usage}
-			/>
-		</>
+		<UpgradeSuccessModal
+			onOpenChange={setIsSuccessModalOpen}
+			open={isSuccessModalOpen}
+			plan={planInfo.plan}
+			usage={planInfo.usage}
+		/>
 	);
 }

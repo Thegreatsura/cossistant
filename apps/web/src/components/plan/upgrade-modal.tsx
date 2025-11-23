@@ -286,7 +286,7 @@ export function UpgradeModal({
 									>
 										<div className="flex h-16 items-start justify-between gap-4">
 											<div className="flex flex-1 flex-col items-start">
-												<p className="flex items-center gap-2 font-semibold">
+												<p className="flex items-center gap-1 font-semibold">
 													{plan.displayName}
 													{hasPromo && (
 														<PromoIndicator
@@ -294,12 +294,12 @@ export function UpgradeModal({
 															promoPrice={plan.priceWithPromo}
 														/>
 													)}
+													{planName === "pro" && (
+														<span className="z-0 font-medium text-cossistant-orange text-xs">
+															[Best value]
+														</span>
+													)}
 												</p>
-												{planName === "pro" && (
-													<span className="z-0 font-medium text-cossistant-orange text-xs">
-														Recommended
-													</span>
-												)}
 												{isCurrent && (
 													<span className="text-primary/60 text-xs">
 														Current plan
