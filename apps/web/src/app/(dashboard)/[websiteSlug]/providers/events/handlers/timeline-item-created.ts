@@ -3,6 +3,7 @@ import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import {
 	type ConversationHeader,
+	forEachConversationHeadersQuery,
 	updateConversationHeaderInCache,
 } from "@/data/conversation-header-cache";
 import {
@@ -11,7 +12,6 @@ import {
 	upsertConversationTimelineItemInCache,
 } from "@/data/conversation-message-cache";
 import type { DashboardRealtimeContext } from "../types";
-import { forEachConversationHeadersQuery } from "./utils/conversation-headers";
 
 type TimelineItemCreatedEvent = RealtimeEvent<"timelineItemCreated">;
 

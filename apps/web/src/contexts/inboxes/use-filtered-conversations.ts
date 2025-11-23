@@ -127,10 +127,7 @@ function filterAndProcessConversations(
 			!selectedViewId || conversation.viewIds.includes(selectedViewId);
 
 		// Add to filtered list if matches all filters OR if it is the selected conversation
-		if (
-			(matchesStatus && matchesViewFilter) ||
-			conversation.id === selectedConversationId
-		) {
+		if (matchesStatus && matchesViewFilter) {
 			filteredConversations.push(conversation);
 
 			const lastActivityFromMessage = toTimestamp(conversation.lastMessageAt);

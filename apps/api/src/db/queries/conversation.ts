@@ -34,23 +34,7 @@ import {
 	isNull,
 	lt,
 	or,
-	sql,
 } from "drizzle-orm";
-
-type LastTimelineItemRow = {
-	conversation: { id: string };
-	lastTimelineItemId: string | null;
-	lastTimelineItemText: string | null;
-	lastTimelineItemType: string | null;
-	lastTimelineItemParts: unknown;
-	lastTimelineItemVisibility: TimelineItemVisibilityEnum | null;
-	lastTimelineItemOrganizationId: string | null;
-	lastTimelineItemCreatedAt: string | null;
-	lastTimelineItemUserId: string | null;
-	lastTimelineItemVisitorId: string | null;
-	lastTimelineItemAiAgentId: string | null;
-	lastTimelineItemDeletedAt: string | null;
-};
 
 const TIMELINE_ITEM_TYPES: ConversationTimelineType[] = [
 	ConversationTimelineType.MESSAGE,
@@ -65,58 +49,6 @@ function isConversationTimelineType(
 }
 
 type ConversationTimelineItemRow = typeof conversationTimelineItem.$inferSelect;
-
-/**
- * Normalize raw last timeline item fields from a conversation header row.
- *
- * Returns null when required identifiers or visibility metadata are missing,
- * or when the persisted parts payload fails validation. Timeline item text is
- * allowed to be null to support event-only entries.
- */
-function buildLastTimelineItem<T extends LastTimelineItemRow>(
-	row: T
-): TimelineItem | null {
-	if (
-		!(
-			row.lastTimelineItemId &&
-			row.lastTimelineItemType &&
-			row.lastTimelineItemOrganizationId &&
-			row.lastTimelineItemVisibility &&
-			row.lastTimelineItemCreatedAt &&
-			row.lastTimelineItemParts
-		)
-	) {
-		return null;
-	}
-
-	const parsedPartsResult = timelineItemPartsSchema.safeParse(
-		row.lastTimelineItemParts
-	);
-
-	if (!parsedPartsResult.success) {
-		return null;
-	}
-
-	if (!isConversationTimelineType(row.lastTimelineItemType)) {
-		return null;
-	}
-
-	return {
-		id: row.lastTimelineItemId,
-		conversationId: row.conversation.id,
-		text: row.lastTimelineItemText,
-		type: row.lastTimelineItemType,
-		parts: parsedPartsResult.data,
-		visibility: row.lastTimelineItemVisibility,
-		userId: row.lastTimelineItemUserId,
-		visitorId: row.lastTimelineItemVisitorId,
-		organizationId: row.lastTimelineItemOrganizationId,
-		aiAgentId: row.lastTimelineItemAiAgentId,
-		createdAt: row.lastTimelineItemCreatedAt,
-		deletedAt: row.lastTimelineItemDeletedAt,
-		tool: null,
-	};
-}
 
 function mapTimelineRowToTimelineItem(
 	row: ConversationTimelineItemRow
@@ -346,54 +278,6 @@ export async function listConversationsHeaders(
 	const limit = params.limit ?? DEFAULT_PAGE_LIMIT;
 	const orderBy = params.orderBy ?? "updatedAt";
 
-	// Create a subquery for the last timeline item per conversation using window function
-	const lastTimelineItemSubquery = db
-		.select({
-			conversationId: conversationTimelineItem.conversationId,
-			id: conversationTimelineItem.id,
-			text: conversationTimelineItem.text,
-			type: conversationTimelineItem.type,
-			parts: conversationTimelineItem.parts,
-			userId: conversationTimelineItem.userId,
-			visitorId: conversationTimelineItem.visitorId,
-			organizationId: conversationTimelineItem.organizationId,
-			aiAgentId: conversationTimelineItem.aiAgentId,
-			visibility: conversationTimelineItem.visibility,
-			createdAt: conversationTimelineItem.createdAt,
-			deletedAt: conversationTimelineItem.deletedAt,
-			// Use ROW_NUMBER() to get only the latest timeline item per conversation
-			rn: sql<number>`ROW_NUMBER() OVER (
-				PARTITION BY ${conversationTimelineItem.conversationId}
-				ORDER BY ${conversationTimelineItem.createdAt} DESC
-			)`.as("rn"),
-		})
-		.from(conversationTimelineItem)
-		.where(
-			and(
-				eq(conversationTimelineItem.organizationId, params.organizationId),
-				isNull(conversationTimelineItem.deletedAt)
-			)
-		)
-		.as("last_timeline_item");
-
-	// Create a subquery for aggregated views per conversation
-	const viewsSubquery = db
-		.select({
-			conversationId: conversationView.conversationId,
-			viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-				"view_ids"
-			),
-		})
-		.from(conversationView)
-		.where(
-			and(
-				eq(conversationView.organizationId, params.organizationId),
-				isNull(conversationView.deletedAt)
-			)
-		)
-		.groupBy(conversationView.conversationId)
-		.as("conv_views");
-
 	// Build where conditions
 	const whereConditions = [
 		eq(conversation.organizationId, params.organizationId),
@@ -439,55 +323,22 @@ export async function listConversationsHeaders(
 		}
 	}
 
-	// Main query - single execution with all data
+	// Fetch base conversation rows plus visitor/contact metadata
 	const results = await db
 		.select({
-			// All conversation fields
 			conversation,
-			// Visitor fields (only what we need for the header)
 			visitorId: visitor.id,
 			visitorLastSeenAt: visitor.lastSeenAt,
 			visitorBlockedAt: visitor.blockedAt,
 			visitorBlockedByUserId: visitor.blockedByUserId,
-			// Contact fields (if visitor is identified)
 			contactId: contact.id,
 			contactName: contact.name,
 			contactEmail: contact.email,
 			contactImage: contact.image,
-			// Last timeline item fields (filtered by ROW_NUMBER = 1)
-			lastTimelineItemId: lastTimelineItemSubquery.id,
-			lastTimelineItemText: lastTimelineItemSubquery.text,
-			lastTimelineItemType: lastTimelineItemSubquery.type,
-			lastTimelineItemParts: lastTimelineItemSubquery.parts,
-			lastTimelineItemUserId: lastTimelineItemSubquery.userId,
-			lastTimelineItemVisitorId: lastTimelineItemSubquery.visitorId,
-			lastTimelineItemOrganizationId: lastTimelineItemSubquery.organizationId,
-			lastTimelineItemAiAgentId: lastTimelineItemSubquery.aiAgentId,
-			lastTimelineItemVisibility: lastTimelineItemSubquery.visibility,
-			lastTimelineItemCreatedAt: lastTimelineItemSubquery.createdAt,
-			lastTimelineItemDeletedAt: lastTimelineItemSubquery.deletedAt,
-			// Aggregated view IDs
-			viewIds: viewsSubquery.viewIds,
-			userLastSeenAt: conversationSeen.lastSeenAt,
 		})
 		.from(conversation)
 		.innerJoin(visitor, eq(conversation.visitorId, visitor.id))
 		.leftJoin(contact, eq(visitor.contactId, contact.id))
-		.leftJoin(
-			lastTimelineItemSubquery,
-			and(
-				eq(lastTimelineItemSubquery.conversationId, conversation.id),
-				eq(lastTimelineItemSubquery.rn, 1) // Only get the first (latest) timeline item
-			)
-		)
-		.leftJoin(
-			conversationSeen,
-			and(
-				eq(conversationSeen.conversationId, conversation.id),
-				eq(conversationSeen.userId, params.userId)
-			)
-		)
-		.leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
 		.where(and(...whereConditions))
 		.orderBy(
 			desc(conversation[orderBy]),
@@ -511,46 +362,162 @@ export async function listConversationsHeaders(
 
 	const conversationIds = items.map((row) => row.conversation.id);
 
+	const lastTimelineRows =
+		conversationIds.length > 0
+			? await db
+					.select()
+					.from(conversationTimelineItem)
+					.where(
+						and(
+							eq(
+								conversationTimelineItem.organizationId,
+								params.organizationId
+							),
+							inArray(conversationTimelineItem.conversationId, conversationIds),
+							isNull(conversationTimelineItem.deletedAt)
+						)
+					)
+					.orderBy(
+						desc(conversationTimelineItem.createdAt),
+						desc(conversationTimelineItem.id)
+					)
+			: [];
+
+	const lastMessageTimelineRows =
+		conversationIds.length > 0
+			? await db
+					.select()
+					.from(conversationTimelineItem)
+					.where(
+						and(
+							eq(
+								conversationTimelineItem.organizationId,
+								params.organizationId
+							),
+							inArray(conversationTimelineItem.conversationId, conversationIds),
+							eq(
+								conversationTimelineItem.type,
+								ConversationTimelineType.MESSAGE
+							),
+							isNull(conversationTimelineItem.deletedAt)
+						)
+					)
+					.orderBy(
+						desc(conversationTimelineItem.createdAt),
+						desc(conversationTimelineItem.id)
+					)
+			: [];
+
+	const viewRows =
+		conversationIds.length > 0
+			? await db
+					.select({
+						conversationId: conversationView.conversationId,
+						viewId: conversationView.viewId,
+					})
+					.from(conversationView)
+					.where(
+						and(
+							eq(conversationView.organizationId, params.organizationId),
+							inArray(conversationView.conversationId, conversationIds),
+							isNull(conversationView.deletedAt)
+						)
+					)
+			: [];
+
+	const seenRows =
+		conversationIds.length > 0
+			? await db
+					.select({
+						id: conversationSeen.id,
+						conversationId: conversationSeen.conversationId,
+						userId: conversationSeen.userId,
+						visitorId: conversationSeen.visitorId,
+						aiAgentId: conversationSeen.aiAgentId,
+						lastSeenAt: conversationSeen.lastSeenAt,
+						createdAt: conversationSeen.createdAt,
+						updatedAt: conversationSeen.updatedAt,
+					})
+					.from(conversationSeen)
+					.where(
+						and(
+							eq(conversationSeen.organizationId, params.organizationId),
+							inArray(conversationSeen.conversationId, conversationIds)
+						)
+					)
+					.orderBy(desc(conversationSeen.lastSeenAt))
+			: [];
+
+	const lastTimelineItemsMap = new Map<string, ConversationTimelineItemRow>();
+	for (const item of lastTimelineRows) {
+		if (lastTimelineItemsMap.has(item.conversationId)) {
+			continue;
+		}
+		lastTimelineItemsMap.set(item.conversationId, item);
+	}
+
+	const lastMessageTimelineItemsMap = new Map<
+		string,
+		ConversationTimelineItemRow
+	>();
+	for (const item of lastMessageTimelineRows) {
+		if (lastMessageTimelineItemsMap.has(item.conversationId)) {
+			continue;
+		}
+		lastMessageTimelineItemsMap.set(item.conversationId, item);
+	}
+
+	const viewIdsMap = new Map<string, string[]>();
+	for (const view of viewRows) {
+		const list = viewIdsMap.get(view.conversationId) ?? [];
+		list.push(view.viewId);
+		viewIdsMap.set(view.conversationId, list);
+	}
+
 	const seenDataMap = new Map<string, ConversationSeen[]>();
+	const userLastSeenMap = new Map<string, string | null>();
 
-	if (conversationIds.length > 0) {
-		const seenRows = await db
-			.select({
-				id: conversationSeen.id,
-				conversationId: conversationSeen.conversationId,
-				userId: conversationSeen.userId,
-				visitorId: conversationSeen.visitorId,
-				aiAgentId: conversationSeen.aiAgentId,
-				lastSeenAt: conversationSeen.lastSeenAt,
-				createdAt: conversationSeen.createdAt,
-				updatedAt: conversationSeen.updatedAt,
-			})
-			.from(conversationSeen)
-			.where(
-				and(
-					eq(conversationSeen.organizationId, params.organizationId),
-					inArray(conversationSeen.conversationId, conversationIds)
-				)
-			)
-			.orderBy(desc(conversationSeen.lastSeenAt));
+	for (const seen of seenRows) {
+		const collection = seenDataMap.get(seen.conversationId) ?? [];
+		collection.push({
+			...seen,
+			deletedAt: null,
+		});
+		seenDataMap.set(seen.conversationId, collection);
 
-		for (const seen of seenRows) {
-			const collection = seenDataMap.get(seen.conversationId) ?? [];
-			collection.push({
-				...seen,
-				lastSeenAt: seen.lastSeenAt,
-				createdAt: seen.createdAt,
-				updatedAt: seen.updatedAt,
-				deletedAt: null,
-			});
-			seenDataMap.set(seen.conversationId, collection);
+		if (seen.userId === params.userId) {
+			const currentLastSeen = userLastSeenMap.get(seen.conversationId);
+			const candidate = seen.lastSeenAt ?? null;
+			if (!currentLastSeen) {
+				userLastSeenMap.set(seen.conversationId, candidate);
+			} else if (candidate) {
+				const currentDate = new Date(currentLastSeen);
+				const candidateDate = new Date(candidate);
+				if (candidateDate > currentDate) {
+					userLastSeenMap.set(seen.conversationId, candidate);
+				}
+			}
 		}
 	}
 
-	// Transform results (much simpler now!)
 	const conversationsWithDetails = items.map((row) => {
-		// Build last timeline item object if it exists
-		const lastTimelineItem = buildLastTimelineItem(row);
+		const conversationId = row.conversation.id;
+		const timelineRow = lastTimelineItemsMap.get(conversationId) ?? null;
+		const messageTimelineRow =
+			lastMessageTimelineItemsMap.get(conversationId) ?? null;
+
+		const lastTimelineItem = timelineRow
+			? mapTimelineRowToTimelineItem(timelineRow)
+			: null;
+		const lastMessageTimelineItem = messageTimelineRow
+			? mapTimelineRowToTimelineItem(messageTimelineRow)
+			: null;
+
+		const lastMessageAt =
+			messageTimelineRow?.createdAt ??
+			timelineRow?.createdAt ??
+			row.conversation.lastMessageAt ??
+			null;
 
 		return {
 			...row.conversation,
@@ -569,11 +536,12 @@ export async function listConversationsHeaders(
 						}
 					: null,
 			},
-			viewIds: row.viewIds || [],
-			lastMessageAt: row.lastTimelineItemCreatedAt ?? null,
-			lastSeenAt: row.userLastSeenAt ?? null,
+			viewIds: viewIdsMap.get(conversationId) ?? [],
+			lastMessageAt,
+			lastSeenAt: userLastSeenMap.get(conversationId) ?? null,
+			lastMessageTimelineItem,
 			lastTimelineItem,
-			seenData: seenDataMap.get(row.conversation.id) ?? [],
+			seenData: seenDataMap.get(conversationId) ?? [],
 		};
 	});
 
@@ -592,55 +560,6 @@ export async function getConversationHeader(
 		userId?: string | null;
 	}
 ): Promise<ConversationHeader | null> {
-	const lastTimelineItemSubquery = db
-		.select({
-			conversationId: conversationTimelineItem.conversationId,
-			id: conversationTimelineItem.id,
-			text: conversationTimelineItem.text,
-			type: conversationTimelineItem.type,
-			parts: conversationTimelineItem.parts,
-			userId: conversationTimelineItem.userId,
-			visitorId: conversationTimelineItem.visitorId,
-			organizationId: conversationTimelineItem.organizationId,
-			aiAgentId: conversationTimelineItem.aiAgentId,
-			visibility: conversationTimelineItem.visibility,
-			createdAt: conversationTimelineItem.createdAt,
-			deletedAt: conversationTimelineItem.deletedAt,
-		})
-		.from(conversationTimelineItem)
-		.where(
-			and(
-				eq(conversationTimelineItem.organizationId, params.organizationId),
-				eq(conversationTimelineItem.conversationId, params.conversationId),
-				isNull(conversationTimelineItem.deletedAt)
-			)
-		)
-		.orderBy(desc(conversationTimelineItem.createdAt))
-		.limit(1)
-		.as("last_timeline_item_single");
-
-	const viewsSubquery = db
-		.select({
-			conversationId: conversationView.conversationId,
-			viewIds: sql<string[]>`ARRAY_AGG(${conversationView.viewId})`.as(
-				"view_ids"
-			),
-		})
-		.from(conversationView)
-		.where(
-			and(
-				eq(conversationView.organizationId, params.organizationId),
-				eq(conversationView.conversationId, params.conversationId),
-				isNull(conversationView.deletedAt)
-			)
-		)
-		.groupBy(conversationView.conversationId)
-		.as("conv_views_single");
-
-	const userJoinCondition = params.userId
-		? eq(conversationSeen.userId, params.userId)
-		: sql`1=0`;
-
 	const [row] = await db
 		.select({
 			conversation,
@@ -652,37 +571,10 @@ export async function getConversationHeader(
 			contactName: contact.name,
 			contactEmail: contact.email,
 			contactImage: contact.image,
-			lastTimelineItemId: lastTimelineItemSubquery.id,
-			lastTimelineItemText: lastTimelineItemSubquery.text,
-			lastTimelineItemType: lastTimelineItemSubquery.type,
-			lastTimelineItemParts: lastTimelineItemSubquery.parts,
-			lastTimelineItemUserId: lastTimelineItemSubquery.userId,
-			lastTimelineItemVisitorId: lastTimelineItemSubquery.visitorId,
-			lastTimelineItemOrganizationId: lastTimelineItemSubquery.organizationId,
-			lastTimelineItemAiAgentId: lastTimelineItemSubquery.aiAgentId,
-			lastTimelineItemVisibility: lastTimelineItemSubquery.visibility,
-			lastTimelineItemCreatedAt: lastTimelineItemSubquery.createdAt,
-			lastTimelineItemDeletedAt: lastTimelineItemSubquery.deletedAt,
-			viewIds: viewsSubquery.viewIds,
-			userLastSeenAt: params.userId
-				? conversationSeen.lastSeenAt
-				: sql<string | null>`NULL`,
 		})
 		.from(conversation)
 		.innerJoin(visitor, eq(conversation.visitorId, visitor.id))
 		.leftJoin(contact, eq(visitor.contactId, contact.id))
-		.leftJoin(
-			lastTimelineItemSubquery,
-			eq(lastTimelineItemSubquery.conversationId, conversation.id)
-		)
-		.leftJoin(viewsSubquery, eq(viewsSubquery.conversationId, conversation.id))
-		.leftJoin(
-			conversationSeen,
-			and(
-				eq(conversationSeen.conversationId, conversation.id),
-				userJoinCondition
-			)
-		)
 		.where(
 			and(
 				eq(conversation.organizationId, params.organizationId),
@@ -695,6 +587,52 @@ export async function getConversationHeader(
 	if (!row) {
 		return null;
 	}
+
+	const [lastTimelineRow] = await db
+		.select()
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.orderBy(
+			desc(conversationTimelineItem.createdAt),
+			desc(conversationTimelineItem.id)
+		)
+		.limit(1);
+
+	const [lastMessageTimelineRow] = await db
+		.select()
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				eq(conversationTimelineItem.type, ConversationTimelineType.MESSAGE),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.orderBy(
+			desc(conversationTimelineItem.createdAt),
+			desc(conversationTimelineItem.id)
+		)
+		.limit(1);
+
+	const viewRows = await db
+		.select({
+			viewId: conversationView.viewId,
+		})
+		.from(conversationView)
+		.where(
+			and(
+				eq(conversationView.organizationId, params.organizationId),
+				eq(conversationView.conversationId, params.conversationId),
+				isNull(conversationView.deletedAt)
+			)
+		);
 
 	const seenRows = await db
 		.select({
@@ -721,7 +659,34 @@ export async function getConversationHeader(
 		deletedAt: null,
 	}));
 
-	const lastTimelineItem = buildLastTimelineItem(row);
+	const viewIds = viewRows.map((view) => view.viewId);
+
+	const lastTimelineItem = lastTimelineRow
+		? mapTimelineRowToTimelineItem(lastTimelineRow)
+		: null;
+	const lastMessageTimelineItem = lastMessageTimelineRow
+		? mapTimelineRowToTimelineItem(lastMessageTimelineRow)
+		: null;
+
+	const lastMessageAt =
+		lastMessageTimelineRow?.createdAt ??
+		lastTimelineRow?.createdAt ??
+		row.conversation.lastMessageAt ??
+		null;
+
+	const userLastSeenAt = params.userId
+		? seenRows.reduce<string | null>((acc, seen) => {
+				if (seen.userId !== params.userId || !seen.lastSeenAt) {
+					return acc;
+				}
+				if (!acc) {
+					return seen.lastSeenAt;
+				}
+				return new Date(seen.lastSeenAt) > new Date(acc)
+					? seen.lastSeenAt
+					: acc;
+			}, null)
+		: null;
 
 	return {
 		...row.conversation,
@@ -740,9 +705,10 @@ export async function getConversationHeader(
 					}
 				: null,
 		},
-		viewIds: row.viewIds ?? [],
-		lastMessageAt: row.conversation.lastMessageAt ?? null,
-		lastSeenAt: row.userLastSeenAt ?? null,
+		viewIds,
+		lastMessageAt,
+		lastSeenAt: userLastSeenAt ?? null,
+		lastMessageTimelineItem,
 		lastTimelineItem,
 		seenData,
 	} satisfies ConversationHeader;

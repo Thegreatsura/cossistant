@@ -20,6 +20,7 @@ import {
 	type ConversationHeader,
 	type ConversationHeadersPage,
 	createConversationHeadersInfiniteQueryKey,
+	forEachConversationHeadersQuery,
 	updateConversationHeaderInCache,
 } from "./conversation-header-cache";
 
@@ -40,7 +41,10 @@ type MutationContext = {
 	previousHeader?: ConversationHeader | null;
 	visitorQueryKey?: readonly unknown[] | null;
 	previousVisitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
-	previousHeadersData?: InfiniteData<ConversationHeadersPage> | undefined;
+	headersSnapshots?: Array<{
+		queryKey: readonly unknown[];
+		data: InfiniteData<ConversationHeadersPage> | undefined;
+	}>;
 };
 
 function cloneConversationHeader(
@@ -136,13 +140,29 @@ export function useConversationActions({
 		const existingHeader =
 			queryNormalizer.getObjectById<ConversationHeader>(conversationId);
 
+		const headersSnapshots: MutationContext["headersSnapshots"] = [];
+		forEachConversationHeadersQuery(queryClient, website.slug, (queryKey) => {
+			headersSnapshots.push({
+				queryKey,
+				data: queryClient.getQueryData<InfiniteData<ConversationHeadersPage>>(
+					queryKey
+				),
+			});
+		});
+
 		return {
 			previousHeader: existingHeader
 				? cloneConversationHeader(existingHeader)
 				: null,
-			previousHeadersData: queryClient.getQueryData(headersQueryKey),
+			headersSnapshots,
 		};
-	}, [conversationId, headersQueryKey, queryClient, queryNormalizer]);
+	}, [
+		conversationId,
+		headersQueryKey,
+		queryClient,
+		queryNormalizer,
+		website.slug,
+	]);
 
 	const restoreContext = useCallback(
 		(context?: MutationContext) => {
@@ -157,15 +177,24 @@ export function useConversationActions({
 				);
 			}
 
-			if (context?.previousHeadersData) {
-				queryClient.setQueryData(headersQueryKey, context.previousHeadersData);
+			for (const snapshot of context?.headersSnapshots ?? []) {
+				queryClient.setQueryData(snapshot.queryKey, snapshot.data);
 			}
 		},
-		[headersQueryKey, queryClient, queryNormalizer]
+		[queryClient, queryNormalizer]
 	);
 
 	const applyOptimisticUpdate = useCallback(
 		(updater: (conversation: ConversationHeader) => ConversationHeader) => {
+			forEachConversationHeadersQuery(queryClient, website.slug, (queryKey) => {
+				updateConversationHeaderInCache(
+					queryClient,
+					queryKey,
+					conversationId,
+					updater
+				);
+			});
+
 			const existing =
 				queryNormalizer.getObjectById<ConversationHeader>(conversationId);
 
@@ -173,17 +202,10 @@ export function useConversationActions({
 				return;
 			}
 
-			updateConversationHeaderInCache(
-				queryClient,
-				headersQueryKey,
-				conversationId,
-				updater
-			);
-
-			const updated = updater(existing);
+			const updated = updater(cloneConversationHeader(existing));
 			queryNormalizer.setNormalizedData(updated);
 		},
-		[conversationId, headersQueryKey, queryClient, queryNormalizer]
+		[conversationId, queryClient, queryNormalizer, website.slug]
 	);
 
 	const markResolvedMutation = useMutation<

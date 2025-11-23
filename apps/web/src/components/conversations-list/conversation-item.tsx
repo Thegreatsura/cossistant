@@ -173,8 +173,11 @@ export function ConversationItem({
 	showWaitingForReplyPill = false,
 }: Props) {
 	const queryNormalizer = useQueryNormalizer();
-	const { visitor: headerVisitor, lastTimelineItem: headerLastTimelineItem } =
-		header;
+        const {
+                visitor: headerVisitor,
+                lastTimelineItem: headerLastTimelineItem,
+                lastMessageTimelineItem: headerLastMessageTimelineItem,
+        } = header;
 	const { prefetchConversation } = usePrefetchConversationData();
 	const { user } = useUserSession();
 	const members = useWebsiteMembers();
@@ -257,8 +260,11 @@ export function ConversationItem({
 		websiteSlug,
 	});
 
-	const lastTimelineItem =
-		cachedLastTimelineItem ?? headerLastTimelineItem ?? null;
+        const lastTimelineItem =
+                cachedLastTimelineItem ??
+                headerLastMessageTimelineItem ??
+                headerLastTimelineItem ??
+                null;
 
 	const lastTimelineItemCreatedAt = lastTimelineItem?.createdAt
 		? new Date(lastTimelineItem.createdAt)

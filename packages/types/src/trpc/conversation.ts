@@ -80,11 +80,12 @@ export const conversationHeaderSchema = z.object({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	deletedAt: z.string().nullable(),
-	lastMessageAt: z.string().nullable(),
-	lastSeenAt: z.string().nullable(),
-	lastTimelineItem: timelineItemSchema.nullable(),
-	viewIds: z.array(z.string()),
-	seenData: z.array(conversationSeenSchema),
+        lastMessageAt: z.string().nullable(),
+        lastSeenAt: z.string().nullable(),
+        lastMessageTimelineItem: timelineItemSchema.nullable(),
+        lastTimelineItem: timelineItemSchema.nullable(),
+        viewIds: z.array(z.string()),
+        seenData: z.array(conversationSeenSchema),
 });
 
 export const listConversationHeadersResponseSchema = z.object({
