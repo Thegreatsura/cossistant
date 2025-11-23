@@ -4,9 +4,8 @@ import { env } from "@api/env";
 import { generateULID } from "@api/utils/db/ids";
 import { ResetPasswordEmail, sendEmail } from "@cossistant/transactional";
 import { polar, portal, usage } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
-import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { betterAuth } from "better-auth/minimal";
 import {
 	admin,
 	anonymous,

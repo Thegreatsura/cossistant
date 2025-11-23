@@ -144,20 +144,38 @@ export const useMultimodalInput = ({
 			return;
 		}
 
-		if (!message.trim() && files.length === 0) {
+		const trimmedMessage = message.trim();
+		if (!trimmedMessage && files.length === 0) {
 			const err = new Error("Please provide a message or attach files");
 			setError(err);
 			onError?.(err);
 			return;
 		}
 
+		const previousState = {
+			message,
+			files,
+			fileUrls: [...fileUrlsRef.current],
+		};
+
 		setIsSubmitting(true);
 		setError(null);
+		setMessage("");
+		setFiles([]);
+		fileUrlsRef.current = [];
 
 		try {
-			await onSubmit({ message: message.trim(), files });
+			await onSubmit({ message: trimmedMessage, files: previousState.files });
+
+			for (const url of previousState.fileUrls) {
+				URL.revokeObjectURL(url);
+			}
 			reset();
 		} catch (err) {
+			setMessage(previousState.message);
+			setFiles(previousState.files);
+			fileUrlsRef.current = previousState.fileUrls;
+
 			const _error = err instanceof Error ? err : new Error("Failed to submit");
 			setError(_error);
 			onError?.(_error);

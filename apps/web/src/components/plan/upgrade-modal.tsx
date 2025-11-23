@@ -1,9 +1,18 @@
 "use client";
 
+import {
+	type FeatureValue,
+	PLAN_CONFIG,
+	type PlanName,
+} from "@api/lib/plans/config";
 import type { RouterOutputs } from "@cossistant/api/types";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowRight, Check, Sparkles, Tag } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { ArrowRight, Check } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PromoBannerOrnaments } from "@/app/(lander-docs)/pricing/promo-banner-ornaments";
+import { PromoIndicator } from "@/app/(lander-docs)/pricing/promo-indicator";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -13,13 +22,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	calculateDiscountedPrice,
-	EARLY_BIRD_DISCOUNT_ID,
-	formatDiscountOffer,
-	isDiscountAvailable,
-} from "@/lib/discount-utils";
 import { useTRPC } from "@/lib/trpc/client";
+import { cn } from "@/lib/utils";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
 
@@ -27,8 +31,15 @@ type UpgradeModalProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	currentPlan: PlanInfo["plan"];
-	targetPlanName: "free" | "hobby";
+	initialPlanName: PlanName;
 	websiteSlug: string;
+};
+
+const PLAN_SEQUENCE: PlanName[] = ["free", "hobby", "pro"];
+const PLAN_DESCRIPTIONS: Record<PlanName, string> = {
+	free: "Perfect for getting started",
+	hobby: "For growing teams shipping faster",
+	pro: "For teams that need advanced controls",
 };
 
 function formatFeatureValue(value: number | null): string {
@@ -36,6 +47,50 @@ function formatFeatureValue(value: number | null): string {
 		return "Unlimited";
 	}
 	return value.toLocaleString();
+}
+
+function PlanPriceDisplay({
+	price,
+	promoPrice,
+	className,
+	align = "end",
+}: {
+	price?: number;
+	promoPrice?: number;
+	className?: string;
+	align?: "start" | "end";
+}) {
+	const alignmentClasses =
+		align === "start" ? "items-start text-left" : "items-end text-right";
+
+	const hasPromo =
+		typeof promoPrice === "number" &&
+		typeof price === "number" &&
+		promoPrice < price;
+
+	return (
+		<div
+			className={cn(
+				"flex min-h-[32px] flex-col justify-center",
+				alignmentClasses,
+				className
+			)}
+		>
+			{hasPromo ? (
+				<div className="flex items-baseline gap-2">
+					<p className="font-semibold text-base text-cossistant-orange">
+						${promoPrice}
+					</p>
+					<p className="text-muted-foreground text-sm line-through">${price}</p>
+					<span className="text-primary/60 text-xs">/month</span>
+				</div>
+			) : price ? (
+				<p className="text-primary/70 text-sm">${price}/month</p>
+			) : (
+				<p className="text-primary/70 text-sm">Free</p>
+			)}
+		</div>
+	);
 }
 
 function FeatureRow({
@@ -88,56 +143,68 @@ function FeatureRow({
 	);
 }
 
+function toNumericFeatureValue(value: FeatureValue): number | null {
+	if (typeof value === "number" || value === null) {
+		return value;
+	}
+
+	// Boolean feature flags shouldn't reach numeric rows; fall back to 0/Unlimited.
+	return value ? null : 0;
+}
+
 export function UpgradeModal({
 	open,
 	onOpenChange,
 	currentPlan,
-	targetPlanName,
+	initialPlanName,
 	websiteSlug,
 }: UpgradeModalProps) {
 	const trpc = useTRPC();
+	const preferredPlanName = useMemo<PlanName>(
+		() => (PLAN_CONFIG.pro ? "pro" : initialPlanName),
+		[initialPlanName]
+	);
+	const [selectedPlanName, setSelectedPlanName] =
+		useState<PlanName>(preferredPlanName);
 
-	// Fetch discount info
-	const { data: discount } = useQuery({
-		...trpc.plan.getDiscountInfo.queryOptions({
-			discountId: EARLY_BIRD_DISCOUNT_ID,
-		}),
-	});
+	useEffect(() => {
+		if (open) {
+			setSelectedPlanName(preferredPlanName);
+		}
+	}, [preferredPlanName, open]);
 
-	const isDiscountValid = discount ? isDiscountAvailable(discount) : false;
+	const currentPlanConfig = PLAN_CONFIG[currentPlan.name] ?? PLAN_CONFIG.free;
+	const selectedPlanConfig = PLAN_CONFIG[selectedPlanName] ?? PLAN_CONFIG.free;
 
-	// Get target plan config
-	const targetPlanConfig =
-		targetPlanName === "hobby"
-			? {
-					name: "hobby",
-					displayName: "Hobby",
-					price: 29,
-					features: {
-						conversations: null,
-						messages: null,
-						contacts: 2000,
-						"conversation-retention": null,
-						"team-members": 4,
-					},
-				}
-			: {
-					name: "free",
-					displayName: "Free",
-					price: undefined,
-					features: {
-						conversations: 200,
-						messages: 500,
-						contacts: 100,
-						"conversation-retention": 30,
-						"team-members": 2,
-					},
-				};
+	const currentIndex = PLAN_SEQUENCE.indexOf(currentPlan.name);
+	const selectedIndex = PLAN_SEQUENCE.indexOf(selectedPlanName);
+	const isSamePlan = currentPlan.name === selectedPlanName;
+	const isDowngrade =
+		currentIndex !== -1 && selectedIndex !== -1 && selectedIndex < currentIndex;
 
-	const discountedPrice =
-		targetPlanConfig.price && discount && isDiscountValid
-			? calculateDiscountedPrice(targetPlanConfig.price, discount)
-			: targetPlanConfig.price;
+	const actionLabel = isSamePlan
+		? "You're already on this plan"
+		: `${isDowngrade ? "Downgrade" : "Upgrade"} to ${selectedPlanConfig.displayName}`;
+
+	const billingHref = `/${websiteSlug}/billing`;
+	const hasPolarProduct = Boolean(selectedPlanConfig.polarProductId);
+
+	const launchDiscountPercent = useMemo(() => {
+		const discounts: number[] = [];
+		for (const plan of [PLAN_CONFIG.hobby, PLAN_CONFIG.pro]) {
+			if (
+				typeof plan.price === "number" &&
+				typeof plan.priceWithPromo === "number" &&
+				plan.priceWithPromo < plan.price
+			) {
+				const percent = Math.round(
+					((plan.price - plan.priceWithPromo) / plan.price) * 100
+				);
+				discounts.push(percent);
+			}
+		}
+		return discounts.length > 0 ? Math.max(...discounts) : null;
+	}, []);
 
 	const { mutateAsync: createCheckout, isPending: isLoading } = useMutation(
 		trpc.plan.createCheckout.mutationOptions({
@@ -151,12 +218,14 @@ export function UpgradeModal({
 		})
 	);
 
-	const handleUpgrade = async () => {
+	const handlePlanChange = async () => {
+		if (isSamePlan || !hasPolarProduct) {
+			return;
+		}
 		try {
 			await createCheckout({
 				websiteSlug,
-				targetPlan: targetPlanName,
-				discountId: isDiscountValid ? EARLY_BIRD_DISCOUNT_ID : undefined,
+				targetPlan: selectedPlanName,
 			});
 		} catch (error) {
 			// Error handled in onError
@@ -165,127 +234,205 @@ export function UpgradeModal({
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="sm:max-w-[600px]">
+			<DialogContent className="sm:max-w-[640px]">
 				<DialogHeader>
-					<DialogTitle>Upgrade to {targetPlanConfig.displayName}</DialogTitle>
+					<DialogTitle>Change plan</DialogTitle>
 					<DialogDescription>
-						Compare your current plan with {targetPlanConfig.displayName} and
-						see what you'll get.
+						Compare plans side-by-side and select the one that fits your team.
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="py-4">
-					{/* Discount banner with holographic effect */}
-					{discount && isDiscountValid && (
-						<div className="group relative mb-10 overflow-hidden rounded border border-transparent bg-cossistant-green/20 p-px dark:bg-cossistant-green">
-							<div className="relative z-10 flex flex-col gap-4 p-4">
-								<div className="flex items-center gap-2">
-									<h4 className="font-mono font-semibold text-black text-sm">
-										Early Bird Discount
-									</h4>
-								</div>
-								<div className="flex items-center justify-between gap-2">
-									<p className="font-medium font-mono text-black/90 text-sm">
-										{formatDiscountOffer(discount)}
-									</p>
-									<div className="flex items-center gap-2 font-mono text-black/70 text-xs">
-										<Tag className="size-3" />
-										<span>
-											{discount.redemptionsLeft !== null
-												? `${discount.redemptionsLeft} of ${discount.maxRedemptions} left`
-												: "Limited time offer"}
+				<div className="space-y-6 py-4">
+					{launchDiscountPercent && (
+						<div className="p-2">
+							<PromoBannerOrnaments>
+								<div className="flex flex-col items-center justify-center gap-1 rounded px-4 py-3 text-center">
+									<div className="flex flex-wrap items-center justify-center gap-1 text-cossistant-orange text-sm">
+										Limited launch offer – up to
+										<span className="font-semibold">
+											{launchDiscountPercent}% off
 										</span>
+										lifetime while subscribed.
 									</div>
 								</div>
-							</div>
+							</PromoBannerOrnaments>
 						</div>
 					)}
-					<div className="mb-4 p-0">
-						<div className="mb-4 flex items-center justify-between">
+					<div>
+						<p className="mb-2 font-semibold text-muted-foreground text-sm">
+							Choose a plan
+						</p>
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+							{PLAN_SEQUENCE.map((planName: PlanName) => {
+								const plan = PLAN_CONFIG[planName];
+								const isSelected = selectedPlanName === planName;
+								const isCurrent = currentPlan.name === planName;
+								const hasPromo =
+									typeof plan.price === "number" &&
+									typeof plan.priceWithPromo === "number" &&
+									plan.priceWithPromo < plan.price;
+
+								return (
+									<button
+										className={cn(
+											"rounded border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+											isSelected
+												? "border-primary bg-primary/5"
+												: "border-primary/10 hover:border-primary/40"
+										)}
+										key={plan.name}
+										onClick={() => setSelectedPlanName(planName)}
+										type="button"
+									>
+										<div className="flex h-16 items-start justify-between gap-4">
+											<div className="flex flex-1 flex-col items-start">
+												<p className="flex items-center gap-1 font-semibold">
+													{plan.displayName}
+													{hasPromo && (
+														<PromoIndicator
+															price={plan.price}
+															promoPrice={plan.priceWithPromo}
+														/>
+													)}
+													{planName === "pro" && (
+														<span className="z-0 font-medium text-cossistant-orange text-xs">
+															[Best value]
+														</span>
+													)}
+												</p>
+												{isCurrent && (
+													<span className="text-primary/60 text-xs">
+														Current plan
+													</span>
+												)}
+											</div>
+											{/* <PlanPriceDisplay
+                        align="end"
+                        price={plan.price}
+                        promoPrice={plan.priceWithPromo}
+                        className="flex-col"
+                      /> */}
+										</div>
+										<p className="text-muted-foreground text-xs">
+											{PLAN_DESCRIPTIONS[planName]}
+										</p>
+									</button>
+								);
+							})}
+						</div>
+					</div>
+
+					<div className="rounded border border-primary/10 p-4">
+						<div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
 							<div>
+								<p className="text-muted-foreground text-xs uppercase tracking-wide">
+									Current plan
+								</p>
 								<h3 className="font-semibold text-lg">
-									{currentPlan.displayName}
+									{currentPlanConfig.displayName}
 								</h3>
-								{currentPlan.price ? (
-									<p className="text-base text-primary/60">
-										${currentPlan.price}/month
-									</p>
-								) : (
-									<p className="mb-6 text-primary/60 text-sm">–</p>
-								)}
+								<PlanPriceDisplay
+									align="start"
+									price={currentPlan.price}
+									promoPrice={currentPlanConfig.priceWithPromo}
+								/>
 							</div>
 							<div className="text-right">
-								<h3 className="font-semibold text-base">
-									{targetPlanConfig.displayName}
+								<p className="text-muted-foreground text-xs uppercase tracking-wide">
+									{isSamePlan
+										? "Selected plan"
+										: isDowngrade
+											? "Downgrade to"
+											: "Upgrade to"}
+								</p>
+								<h3 className="font-semibold text-lg">
+									{selectedPlanConfig.displayName}
 								</h3>
-								{targetPlanConfig.price && (
-									<div className="flex flex-col items-end">
-										{discount && isDiscountValid ? (
-											<>
-												<p className="text-lg text-primary/40 line-through">
-													${targetPlanConfig.price}/month
-												</p>
-												<p className="font-semibold text-lg text-primary">
-													${discountedPrice}/month
-												</p>
-											</>
-										) : (
-											<p className="text-primary/60 text-sm">
-												${targetPlanConfig.price}/month
-											</p>
-										)}
-									</div>
-								)}
+								<PlanPriceDisplay
+									align="end"
+									price={selectedPlanConfig.price}
+									promoPrice={selectedPlanConfig.priceWithPromo}
+								/>
 							</div>
 						</div>
 
-						<div className="mt-10 space-y-1">
+						<div className="mt-6 space-y-1">
 							<FeatureRow
-								currentValue={currentPlan.features.conversations}
+								currentValue={toNumericFeatureValue(
+									currentPlan.features.conversations
+								)}
 								label="Conversations"
-								targetValue={targetPlanConfig.features.conversations}
+								targetValue={toNumericFeatureValue(
+									selectedPlanConfig.features.conversations
+								)}
 							/>
 							<FeatureRow
-								currentValue={currentPlan.features.messages}
+								currentValue={toNumericFeatureValue(
+									currentPlan.features.messages
+								)}
 								label="Messages"
-								targetValue={targetPlanConfig.features.messages}
+								targetValue={toNumericFeatureValue(
+									selectedPlanConfig.features.messages
+								)}
 							/>
 							<FeatureRow
-								currentValue={currentPlan.features.contacts}
+								currentValue={toNumericFeatureValue(
+									currentPlan.features.contacts
+								)}
 								label="Contacts"
-								targetValue={targetPlanConfig.features.contacts}
+								targetValue={toNumericFeatureValue(
+									selectedPlanConfig.features.contacts
+								)}
 							/>
 							<FeatureRow
-								currentValue={currentPlan.features["conversation-retention"]}
+								currentValue={toNumericFeatureValue(
+									currentPlan.features["conversation-retention"]
+								)}
 								label="Conversation Retention"
-								targetValue={
-									targetPlanConfig.features["conversation-retention"]
-								}
+								targetValue={toNumericFeatureValue(
+									selectedPlanConfig.features["conversation-retention"]
+								)}
 								valueUnitLabel="days"
 							/>
 							<FeatureRow
-								currentValue={currentPlan.features["team-members"]}
+								currentValue={toNumericFeatureValue(
+									currentPlan.features["team-members"]
+								)}
 								label="Team Members"
-								targetValue={targetPlanConfig.features["team-members"]}
+								targetValue={toNumericFeatureValue(
+									selectedPlanConfig.features["team-members"]
+								)}
 							/>
 						</div>
 					</div>
 				</div>
 
-				<DialogFooter>
-					<Button
-						disabled={isLoading}
-						onClick={() => onOpenChange(false)}
-						type="button"
-						variant="outline"
-					>
-						Cancel
+				<DialogFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<Button asChild variant="outline">
+						<Link href={billingHref}>View billing</Link>
 					</Button>
-					<Button disabled={isLoading} onClick={handleUpgrade} type="button">
-						{isLoading
-							? "Redirecting..."
-							: `Upgrade to ${targetPlanConfig.displayName}`}
-					</Button>
+					<div className="flex flex-1 flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+						{!(hasPolarProduct || isSamePlan) && (
+							<p className="text-center text-muted-foreground text-xs sm:text-right">
+								Manage this change from the billing portal.
+							</p>
+						)}
+						<Button
+							disabled={isLoading}
+							onClick={() => onOpenChange(false)}
+							type="button"
+							variant="outline"
+						>
+							Cancel
+						</Button>
+						<Button
+							disabled={isLoading || isSamePlan || !hasPolarProduct}
+							onClick={handlePlanChange}
+							type="button"
+						>
+							{isLoading ? "Redirecting..." : actionLabel}
+						</Button>
+					</div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

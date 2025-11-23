@@ -2,9 +2,7 @@
 
 import { type FeatureKey, PLAN_CONFIG } from "@api/lib/plans/config";
 import type { RouterOutputs } from "@cossistant/api/types";
-import { ArrowUpRight } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "./upgrade-modal";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
@@ -82,8 +80,8 @@ export function SidebarUpgradeButton({
 		return null;
 	}
 
-	const hobbyPlanLimit =
-		PLAN_CONFIG.hobby.features[
+	const proPlanLimit =
+		PLAN_CONFIG.pro.features[
 			closestLimit.label.toLowerCase().replace(" ", "-") as FeatureKey
 		];
 
@@ -95,13 +93,13 @@ export function SidebarUpgradeButton({
 				type="button"
 			>
 				<div className="flex flex-col gap-2">
-					<div className="font-medium text-base">Upgrade to Hobby</div>
+					<div className="font-medium text-base">Upgrade to Pro</div>
 					<div className="font-medium text-overflow-ellipsis text-xs">
 						Your {closestLimit.label.toLowerCase()} limit will go from{" "}
 						{closestLimit.limit.toLocaleString()} to{" "}
-						{hobbyPlanLimit !== null && hobbyPlanLimit !== undefined
-							? typeof hobbyPlanLimit === "number"
-								? hobbyPlanLimit.toLocaleString()
+						{proPlanLimit !== null && proPlanLimit !== undefined
+							? typeof proPlanLimit === "number"
+								? proPlanLimit.toLocaleString()
 								: "unlimited"
 							: "unlimited"}
 						.
@@ -111,9 +109,9 @@ export function SidebarUpgradeButton({
 
 			<UpgradeModal
 				currentPlan={plan}
+				initialPlanName="pro"
 				onOpenChange={setIsModalOpen}
 				open={isModalOpen}
-				targetPlanName="hobby"
 				websiteSlug={websiteSlug}
 			/>
 		</>

@@ -208,8 +208,7 @@ export const planRouter = createTRPCRouter({
 		.input(
 			z.object({
 				websiteSlug: z.string(),
-				targetPlan: z.enum(["free", "hobby"]),
-				discountId: z.string().optional(),
+				targetPlan: z.enum(["free", "hobby", "pro"]),
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -260,7 +259,6 @@ export const planRouter = createTRPCRouter({
 					metadata: { websiteId: string };
 					successUrl: string;
 					failureUrl: string;
-					discountId?: string;
 				} = {
 					products: [targetPlanConfig.polarProductId],
 					externalCustomerId: websiteData.organizationId,
@@ -270,11 +268,6 @@ export const planRouter = createTRPCRouter({
 					successUrl: `${baseUrl}${returnPath}?checkout_success=true`,
 					failureUrl: `${baseUrl}${returnPath}?checkout_error=true`,
 				};
-
-				// Add discount if provided
-				if (input.discountId) {
-					checkoutParams.discountId = input.discountId;
-				}
 
 				const checkout = await polarClient.checkouts.create(checkoutParams);
 

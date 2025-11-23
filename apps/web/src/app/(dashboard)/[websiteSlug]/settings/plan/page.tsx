@@ -1,13 +1,14 @@
+import Link from "next/link";
 import { UsageBar } from "@/components/plan/usage-bar";
+import { Button } from "@/components/ui/button";
 import {
 	SettingsHeader,
 	SettingsPage,
 	SettingsRow,
-	SettingsRowFooter,
 } from "@/components/ui/layout/settings-layout";
 import { ensureWebsiteAccess } from "@/lib/auth/website-access";
+import { getPlanPricing } from "@/lib/plan-pricing";
 import { getQueryClient, prefetch, trpc } from "@/lib/trpc/server";
-import { DiscountBanner } from "./discount-banner";
 import { PlanPageClient } from "./plan-page-client";
 import { UpgradeButton } from "./upgrade-button";
 
@@ -58,26 +59,62 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 	);
 
 	const { plan, usage } = planInfo;
+	const pricing = getPlanPricing(plan.name);
+	const effectiveMonthlyPrice =
+		typeof plan.price === "number" ? plan.price : pricing.price;
+	const displayedPrice = pricing.hasPromo
+		? pricing.promoPrice
+		: effectiveMonthlyPrice;
+	const planPriceDescription =
+		typeof displayedPrice === "number"
+			? pricing.hasPromo && typeof pricing.price === "number"
+				? ` ($${displayedPrice}/month, normally $${pricing.price})`
+				: ` ($${displayedPrice}/month)`
+			: "";
 
 	return (
 		<>
 			<SettingsRow
-				description={`You are currently on the ${plan.displayName} plan${
-					plan.price ? ` ($${plan.price}/month)` : ""
-				}.`}
+				description={`You are currently on the ${plan.displayName} plan${planPriceDescription}.`}
 				title="Current Plan"
 			>
-				<DiscountBanner className="mx-2 mt-2 mb-10" />
-				<div className="p- flex items-center justify-between p-2 pl-4">
+				<div className="flex flex-wrap items-center justify-between gap-4 p-2 pl-4">
+					{plan.name === "free" && (
+						<div className="flex items-center gap-2 text-cossistant-orange">
+							<p className="p-2 font-mono text-xs">
+								Early bird launch pricing is live. Upgrade now to lock in
+								discounted rates for the lifetime of your subscription.
+							</p>
+						</div>
+					)}
 					<div className="flex items-center gap-2">
 						<span className="font-medium text-lg">{plan.displayName}</span>
-						{plan.price && (
+						{pricing.hasPromo && typeof pricing.promoPrice === "number" ? (
+							<div className="flex items-baseline gap-2 text-sm">
+								<span className="font-semibold text-cossistant-orange">
+									${pricing.promoPrice}
+								</span>
+								{typeof pricing.price === "number" && (
+									<span className="text-primary/40 text-xs line-through">
+										${pricing.price}
+									</span>
+								)}
+								<span className="text-primary/60 text-xs">/month</span>
+							</div>
+						) : typeof displayedPrice === "number" ? (
 							<span className="text-primary/60 text-sm">
-								${plan.price}/month
+								${displayedPrice}/month
 							</span>
+						) : (
+							<span className="text-primary/60 text-sm">Free</span>
 						)}
 					</div>
-					<UpgradeButton currentPlan={plan} websiteSlug={websiteSlug} />
+					<div className="flex flex-wrap items-center gap-2">
+						<UpgradeButton currentPlan={plan} websiteSlug={websiteSlug} />
+						<Button asChild variant="outline">
+							<Link href={`/${websiteSlug}/billing`}>View billing</Link>
+						</Button>
+					</div>
 				</div>
 			</SettingsRow>
 

@@ -126,6 +126,7 @@ export async function getContactForVisitor(
 			createdAt: contact.createdAt,
 			updatedAt: contact.updatedAt,
 			deletedAt: contact.deletedAt,
+			notificationSettings: contact.notificationSettings,
 		})
 		.from(contact)
 		.innerJoin(visitor, eq(visitor.contactId, contact.id))
@@ -167,6 +168,10 @@ export async function createContact(
 			updatedAt: now,
 		})
 		.returning();
+
+	if (!newContact) {
+		throw new Error("Failed to create contact");
+	}
 
 	return newContact;
 }
@@ -376,6 +381,10 @@ export async function identifyContact(
 			.where(eq(contact.id, existingContact.id))
 			.returning();
 
+		if (!updated) {
+			throw new Error("Failed to update contact");
+		}
+
 		return updated;
 	}
 
@@ -395,6 +404,10 @@ export async function identifyContact(
 			updatedAt: now,
 		})
 		.returning();
+
+	if (!newContact) {
+		throw new Error("Failed to insert contact");
+	}
 
 	return newContact;
 }
@@ -469,7 +482,7 @@ export async function listContacts(
 		? and(baseWhereClause, visitorFilter)
 		: baseWhereClause;
 
-	const [{ totalCount }] = await db
+	const totalCountResult = await db
 		.select({ totalCount: count() })
 		.from(contact)
 		.leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
@@ -513,7 +526,7 @@ export async function listContacts(
 		.limit(limit)
 		.offset(offset);
 
-	const numericTotalCount = Number(totalCount ?? 0);
+	const numericTotalCount = Number(totalCountResult.at(0)?.totalCount ?? 0);
 
 	return {
 		items: rows.map((row) => ({
@@ -659,6 +672,10 @@ export async function createContactOrganization(
 			updatedAt: now,
 		})
 		.returning();
+
+	if (!newContactOrganization) {
+		throw new Error("Failed to create contact organization");
+	}
 
 	return newContactOrganization;
 }

@@ -27,7 +27,7 @@ type UpdateMemberNotificationSettingsParams =
 	};
 
 export async function getMemberNotificationSettings(
-	db: Database,
+	db: Pick<Database, "select">,
 	params: GetMemberNotificationSettingsParams
 ): Promise<MemberNotificationSettingsResponse> {
 	const rows = await db
@@ -63,7 +63,10 @@ export async function getMemberNotificationSettings(
 				priority: stored.priority,
 				requiresSetup: definition.requiresSetup,
 				supportsDelaySeconds: definition.supportsDelaySeconds,
-				config: stored.config ?? definition.defaultConfig ?? null,
+				config: (stored.config ?? definition.defaultConfig ?? null) as Record<
+					string,
+					unknown
+				> | null,
 			};
 		});
 

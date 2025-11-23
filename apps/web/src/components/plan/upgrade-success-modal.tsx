@@ -11,6 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { getPlanPricing } from "@/lib/plan-pricing";
 import { Logo } from "../ui/logo";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
@@ -59,6 +60,8 @@ export function UpgradeSuccessModal({
 	plan,
 	usage,
 }: UpgradeSuccessModalProps) {
+	const pricing = getPlanPricing(plan.name);
+
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="sm:max-w-[400px]">
@@ -79,8 +82,24 @@ export function UpgradeSuccessModal({
 				<div className="mt-10 py-4">
 					<div className="mb-4">
 						<h3 className="font-semibold text-lg">{plan.displayName} Plan</h3>
-						{plan.price && (
-							<p className="text-primary/60 text-sm">${plan.price}/month</p>
+						{pricing.hasPromo && typeof pricing.promoPrice === "number" ? (
+							<div className="flex items-baseline gap-2 text-sm">
+								<p className="font-semibold text-cossistant-orange">
+									${pricing.promoPrice}
+								</p>
+								{typeof pricing.price === "number" && (
+									<p className="text-muted-foreground line-through">
+										${pricing.price}
+									</p>
+								)}
+								<span className="text-primary/60 text-xs">/month</span>
+							</div>
+						) : typeof (plan.price ?? pricing.price) === "number" ? (
+							<p className="text-primary/60 text-sm">
+								${(plan.price ?? pricing.price) as number}/month
+							</p>
+						) : (
+							<p className="text-primary/60 text-sm">Free</p>
 						)}
 					</div>
 
