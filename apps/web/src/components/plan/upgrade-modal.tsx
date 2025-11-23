@@ -11,7 +11,6 @@ import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { PromoBannerOrnaments } from "@/app/(lander-docs)/pricing/promo-banner-ornaments";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -48,68 +47,30 @@ function formatFeatureValue(value: number | null): string {
 	return value.toLocaleString();
 }
 
-function getPlanDiscountPercent(plan: (typeof PLAN_CONFIG)[PlanName]): number {
-	if (!(plan.price && plan.priceWithPromo)) {
-		return 0;
-	}
-	return Math.round(((plan.price - plan.priceWithPromo) / plan.price) * 100);
-}
-
 function PlanPriceDisplay({
 	price,
-	priceWithPromo,
 	className,
 	align = "end",
 }: {
 	price?: number;
-	priceWithPromo?: number;
 	className?: string;
 	align?: "start" | "end";
 }) {
-	const showPromo = price && priceWithPromo && priceWithPromo !== price;
-
 	const alignmentClasses =
 		align === "start" ? "items-start text-left" : "items-end text-right";
 
 	return (
 		<div
 			className={cn(
-				"flex min-h-[56px] flex-col justify-center gap-1",
+				"flex min-h-[32px] flex-col justify-center",
 				alignmentClasses,
 				className
 			)}
 		>
 			{price ? (
-				showPromo ? (
-					<>
-						<span className="font-semibold text-base text-cossistant-orange underline decoration-1 underline-offset-2">
-							${priceWithPromo}
-						</span>
-						<span className="text-primary/60 text-xs line-through">
-							${price}
-						</span>
-					</>
-				) : (
-					<>
-						<p className="text-primary/70 text-sm">${price}/month</p>
-						<span
-							aria-hidden="true"
-							className="invisible text-primary/60 text-xs line-through"
-						>
-							$0
-						</span>
-					</>
-				)
+				<p className="text-primary/70 text-sm">${price}/month</p>
 			) : (
-				<>
-					<p className="text-primary/70 text-sm">Free</p>
-					<span
-						aria-hidden="true"
-						className="invisible text-primary/60 text-xs line-through"
-					>
-						$0
-					</span>
-				</>
+				<p className="text-primary/70 text-sm">Free</p>
 			)}
 		</div>
 	);
@@ -184,10 +145,6 @@ export function UpgradeModal({
 	const trpc = useTRPC();
 	const [selectedPlanName, setSelectedPlanName] =
 		useState<PlanName>(initialPlanName);
-	const launchDiscountPercentage = Math.max(
-		getPlanDiscountPercent(PLAN_CONFIG.hobby),
-		getPlanDiscountPercent(PLAN_CONFIG.pro)
-	);
 
 	useEffect(() => {
 		if (open) {
@@ -248,21 +205,6 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="space-y-6 py-4">
-					{launchDiscountPercentage > 0 && (
-						<div className="relative mx-auto mt-6 max-w-4xl px-2 py-1 text-center">
-							<PromoBannerOrnaments>
-								<div className="flex flex-col items-center justify-center gap-2 py-2">
-									<h3 className="flex items-center gap-2 text-cossistant-orange text-sm">
-										Limited launch offer – up to{" "}
-										<span className="font-bold text-cossistant-orange">
-											{launchDiscountPercentage}% off
-										</span>{" "}
-										lifetime while subscribed
-									</h3>
-								</div>
-							</PromoBannerOrnaments>
-						</div>
-					)}
 					<div>
 						<p className="mb-2 font-semibold text-muted-foreground text-sm">
 							Choose a plan
@@ -294,10 +236,7 @@ export function UpgradeModal({
 													</span>
 												)}
 											</div>
-											<PlanPriceDisplay
-												price={plan.price}
-												priceWithPromo={plan.priceWithPromo}
-											/>
+											<PlanPriceDisplay align="end" price={plan.price} />
 										</div>
 										<p className="mt-2 text-muted-foreground text-xs">
 											{PLAN_DESCRIPTIONS[planName]}
@@ -317,13 +256,7 @@ export function UpgradeModal({
 								<h3 className="font-semibold text-lg">
 									{currentPlanConfig.displayName}
 								</h3>
-								{currentPlan.price ? (
-									<p className="text-primary/70 text-sm">
-										${currentPlan.price}/month
-									</p>
-								) : (
-									<p className="text-primary/70 text-sm">Free</p>
-								)}
+								<PlanPriceDisplay align="start" price={currentPlan.price} />
 							</div>
 							<div className="text-right">
 								<p className="text-muted-foreground text-xs uppercase tracking-wide">
@@ -337,9 +270,8 @@ export function UpgradeModal({
 									{selectedPlanConfig.displayName}
 								</h3>
 								<PlanPriceDisplay
-									className="items-end text-right"
+									align="end"
 									price={selectedPlanConfig.price}
-									priceWithPromo={selectedPlanConfig.priceWithPromo}
 								/>
 							</div>
 						</div>

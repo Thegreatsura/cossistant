@@ -14,9 +14,13 @@ import { generateShortPrimaryId } from "@api/utils/db/ids";
 
 import {
 	ConversationStatus,
+	ConversationTimelineType,
 	type TimelineItemVisibility as TimelineItemVisibilityEnum,
 } from "@cossistant/types";
-import { timelineItemPartsSchema } from "@cossistant/types/api/timeline-item";
+import {
+	type TimelineItem,
+	timelineItemPartsSchema,
+} from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import type { ConversationHeader } from "@cossistant/types/trpc/conversation";
 
@@ -48,6 +52,20 @@ type LastTimelineItemRow = {
 	lastTimelineItemDeletedAt: string | null;
 };
 
+const TIMELINE_ITEM_TYPES: ConversationTimelineType[] = [
+	ConversationTimelineType.MESSAGE,
+	ConversationTimelineType.EVENT,
+	ConversationTimelineType.IDENTIFICATION,
+];
+
+function isConversationTimelineType(
+	value: unknown
+): value is ConversationTimelineType {
+	return TIMELINE_ITEM_TYPES.includes(value as ConversationTimelineType);
+}
+
+type ConversationTimelineItemRow = typeof conversationTimelineItem.$inferSelect;
+
 /**
  * Normalize raw last timeline item fields from a conversation header row.
  *
@@ -55,7 +73,9 @@ type LastTimelineItemRow = {
  * or when the persisted parts payload fails validation. Timeline item text is
  * allowed to be null to support event-only entries.
  */
-function buildLastTimelineItem<T extends LastTimelineItemRow>(row: T) {
+function buildLastTimelineItem<T extends LastTimelineItemRow>(
+	row: T
+): TimelineItem | null {
 	if (
 		!(
 			row.lastTimelineItemId &&
@@ -77,6 +97,10 @@ function buildLastTimelineItem<T extends LastTimelineItemRow>(row: T) {
 		return null;
 	}
 
+	if (!isConversationTimelineType(row.lastTimelineItemType)) {
+		return null;
+	}
+
 	return {
 		id: row.lastTimelineItemId,
 		conversationId: row.conversation.id,
@@ -90,6 +114,37 @@ function buildLastTimelineItem<T extends LastTimelineItemRow>(row: T) {
 		aiAgentId: row.lastTimelineItemAiAgentId,
 		createdAt: row.lastTimelineItemCreatedAt,
 		deletedAt: row.lastTimelineItemDeletedAt,
+		tool: null,
+	};
+}
+
+function mapTimelineRowToTimelineItem(
+	row: ConversationTimelineItemRow
+): TimelineItem | null {
+	if (!isConversationTimelineType(row.type)) {
+		return null;
+	}
+
+	const parsedPartsResult = timelineItemPartsSchema.safeParse(row.parts ?? []);
+
+	if (!parsedPartsResult.success) {
+		return null;
+	}
+
+	return {
+		id: row.id,
+		conversationId: row.conversationId,
+		organizationId: row.organizationId,
+		visibility: row.visibility,
+		type: row.type,
+		text: row.text,
+		parts: parsedPartsResult.data,
+		userId: row.userId,
+		visitorId: row.visitorId,
+		aiAgentId: row.aiAgentId,
+		createdAt: row.createdAt,
+		deletedAt: row.deletedAt,
+		tool: null,
 	};
 }
 
@@ -164,7 +219,7 @@ export async function listConversations(
 	}
 
 	// Get total count
-	const [{ totalCount }] = await db
+	const totalCountResult = await db
 		.select({ totalCount: count() })
 		.from(conversation)
 		.where(and(...whereConditions));
@@ -219,6 +274,7 @@ export async function listConversations(
 		lastTimelineItem: lastTimelineItemsMap[conv.id] || undefined,
 	}));
 
+	const totalCount = Number(totalCountResult.at(0)?.totalCount ?? 0);
 	const totalPages = Math.ceil(totalCount / limit);
 
 	return {
@@ -349,19 +405,23 @@ export async function listConversationsHeaders(
 		// Decode cursor to get the timestamp and ID (format: timestamp_id)
 		const cursorParts = params.cursor.split("_");
 		if (cursorParts.length === 2) {
-			const [cursorTimestamp, cursorId] = cursorParts;
-			const cursorDate = new Date(cursorTimestamp).toISOString();
+			const cursorTimestamp = cursorParts[0];
+			const cursorId = cursorParts[1];
 
-			// Use composite cursor for stable pagination
-			const cursorCondition = or(
-				lt(conversation[orderBy], cursorDate),
-				and(
-					eq(conversation[orderBy], cursorDate),
-					lt(conversation.id, cursorId)
-				)
-			);
-			if (cursorCondition) {
-				whereConditions.push(cursorCondition);
+			if (cursorTimestamp && cursorId) {
+				const cursorDate = new Date(cursorTimestamp).toISOString();
+
+				// Use composite cursor for stable pagination
+				const cursorCondition = or(
+					lt(conversation[orderBy], cursorDate),
+					and(
+						eq(conversation[orderBy], cursorDate),
+						lt(conversation.id, cursorId)
+					)
+				);
+				if (cursorCondition) {
+					whereConditions.push(cursorCondition);
+				}
 			}
 		} else {
 			// Fallback to old cursor format (just ID)
@@ -777,20 +837,23 @@ export async function getConversationTimelineItems(
 			typeof cursorValue === "string" ? cursorValue.split("_") : [];
 
 		if (cursorParts.length === 2) {
-			const [cursorTimestamp, cursorId] = cursorParts;
-			const cursorDate = new Date(cursorTimestamp);
+			const cursorTimestamp = cursorParts[0];
+			const cursorId = cursorParts[1];
+			if (cursorTimestamp && cursorId) {
+				const cursorDate = new Date(cursorTimestamp);
 
-			if (!Number.isNaN(cursorDate.getTime())) {
-				const cursorIso = cursorDate.toISOString();
-				whereConditions.push(
-					or(
-						lt(conversationTimelineItem.createdAt, cursorIso),
-						and(
-							eq(conversationTimelineItem.createdAt, cursorIso),
-							lt(conversationTimelineItem.id, cursorId)
-						)
-					)!
-				);
+				if (!Number.isNaN(cursorDate.getTime())) {
+					const cursorIso = cursorDate.toISOString();
+					whereConditions.push(
+						or(
+							lt(conversationTimelineItem.createdAt, cursorIso),
+							and(
+								eq(conversationTimelineItem.createdAt, cursorIso),
+								lt(conversationTimelineItem.id, cursorId)
+							)
+						)!
+					);
+				}
 			}
 		} else {
 			const cursorDate =
@@ -831,8 +894,13 @@ export async function getConversationTimelineItems(
 			})()
 		: undefined;
 
+	const timelineItems = [...limitedRows]
+		.reverse()
+		.map(mapTimelineRowToTimelineItem)
+		.filter((item): item is TimelineItem => item !== null);
+
 	return {
-		items: [...limitedRows].reverse(),
+		items: timelineItems,
 		nextCursor,
 		hasNextPage,
 	};
