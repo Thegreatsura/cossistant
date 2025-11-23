@@ -109,6 +109,7 @@ function buildLastMessageTimelineItem<T extends LastTimelineItemRow>(row: T) {
         return buildLastTimelineItem({
                 ...row,
                 lastTimelineItemId: row.lastMessageTimelineItemId ?? null,
+                lastTimelineItemText: row.lastMessageTimelineItemText ?? null,
                 lastTimelineItemType: row.lastMessageTimelineItemType ?? null,
                 lastTimelineItemParts: row.lastMessageTimelineItemParts ?? null,
                 lastTimelineItemVisibility:
@@ -601,6 +602,7 @@ export async function listConversationsHeaders(
                         lastMessageAt:
                                 row.lastMessageTimelineItemCreatedAt ??
                                 row.lastTimelineItemCreatedAt ??
+                                row.conversation?.lastMessageAt ??
                                 null,
                         lastSeenAt: row.userLastSeenAt ?? null,
                         lastMessageTimelineItem,
