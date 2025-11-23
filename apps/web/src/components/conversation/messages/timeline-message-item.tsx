@@ -34,12 +34,12 @@ export function TimelineMessageItem({
 							isSentByViewer && "items-end"
 						)}
 					>
-						<TimelineItemContent
-							className={cn(
-								"block w-fit min-w-0 max-w-full break-all rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
-								{
-									"bg-background-300 text-foreground dark:bg-background-600":
-										!isSentByViewer,
+                                                <TimelineItemContent
+                                                        className={cn(
+                                                                "block w-fit min-w-0 max-w-full break-words whitespace-pre-wrap rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+                                                                {
+                                                                        "bg-background-300 text-foreground dark:bg-background-600":
+                                                                                !isSentByViewer,
 									"bg-primary text-primary-foreground": isSentByViewer,
 									"rounded-br-[2px]": isLast && isSentByViewer,
 									"rounded-bl-[2px]": isLast && !isSentByViewer,
