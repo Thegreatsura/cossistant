@@ -20,6 +20,7 @@ import {
 	type ConversationHeader,
 	type ConversationHeadersPage,
 	createConversationHeadersInfiniteQueryKey,
+	forEachConversationHeadersQuery,
 	updateConversationHeaderInCache,
 } from "./conversation-header-cache";
 
@@ -166,6 +167,15 @@ export function useConversationActions({
 
 	const applyOptimisticUpdate = useCallback(
 		(updater: (conversation: ConversationHeader) => ConversationHeader) => {
+			forEachConversationHeadersQuery(queryClient, website.slug, (queryKey) => {
+				updateConversationHeaderInCache(
+					queryClient,
+					queryKey,
+					conversationId,
+					updater
+				);
+			});
+
 			const existing =
 				queryNormalizer.getObjectById<ConversationHeader>(conversationId);
 
@@ -173,17 +183,10 @@ export function useConversationActions({
 				return;
 			}
 
-			updateConversationHeaderInCache(
-				queryClient,
-				headersQueryKey,
-				conversationId,
-				updater
-			);
-
-			const updated = updater(existing);
+			const updated = updater(cloneConversationHeader(existing));
 			queryNormalizer.setNormalizedData(updated);
 		},
-		[conversationId, headersQueryKey, queryClient, queryNormalizer]
+		[conversationId, queryClient, queryNormalizer, website.slug]
 	);
 
 	const markResolvedMutation = useMutation<

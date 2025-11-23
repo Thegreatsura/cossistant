@@ -121,9 +121,9 @@ export function useInboxes() {
 		throw new Error("useInboxes must be used within a InboxesProvider");
 	}
 
-	if (context.isLoading) {
-		throw new Error("Conversations not found");
-	}
+	//   if (context.isLoading) {
+	//     throw new Error("Conversations not found");
+	//   }
 
 	return context;
 }

@@ -1,7 +1,9 @@
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
-import { prependConversationHeaderInCache } from "@/data/conversation-header-cache";
+import {
+	forEachConversationHeadersQuery,
+	prependConversationHeaderInCache,
+} from "@/data/conversation-header-cache";
 import type { DashboardRealtimeContext } from "../types";
-import { forEachConversationHeadersQuery } from "./utils/conversation-headers";
 
 type ConversationCreatedEvent = RealtimeEvent<"conversationCreated">;
 
