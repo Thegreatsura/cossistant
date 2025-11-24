@@ -142,26 +142,41 @@ export function ContactsNavigationSidebar() {
 						Reset
 					</Button>
 				</div>
-				<div className="space-y-2">
-					{VISITOR_FILTER_OPTIONS.map((option) => (
-						<button
-							className="flex w-full flex-col gap-0.5 rounded-md border border-primary/10 bg-background/60 px-3 py-2 text-left transition hover:border-primary/30 hover:bg-background"
-							key={option.value}
-							onClick={() => setVisitorStatus(option.value)}
-							type="button"
-						>
-							<div className="flex items-center justify-between text-xs">
-								<span className="font-medium">{option.title}</span>
-								{visitorStatus === option.value ? (
-									<ListFilter className="h-3.5 w-3.5 text-primary" />
-								) : null}
-							</div>
-							<span className="text-[11px] text-muted-foreground">
-								{option.description}
-							</span>
-						</button>
-					))}
-				</div>
+                                <div className="space-y-2">
+                                        {VISITOR_FILTER_OPTIONS.map((option) => {
+                                                const isSelected = visitorStatus === option.value;
+
+                                                return (
+                                                        <button
+                                                                aria-pressed={isSelected}
+                                                                className={`group flex w-full flex-col rounded-lg px-3 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/40 ${
+                                                                        isSelected
+                                                                                ? "bg-primary/5"
+                                                                                : "hover:bg-muted/60"
+                                                                }`}
+                                                                key={option.value}
+                                                                onClick={() => setVisitorStatus(option.value)}
+                                                                type="button"
+                                                        >
+                                                                <div className="flex items-center justify-between text-sm font-medium">
+                                                                        <span>{option.title}</span>
+                                                                        <span
+                                                                                className={`flex h-4 w-4 items-center justify-center rounded-full text-primary transition-opacity ${
+                                                                                        isSelected
+                                                                                                ? "opacity-100"
+                                                                                                : "opacity-0 group-hover:opacity-70"
+                                                                                }`}
+                                                                        >
+                                                                                <ListFilter className="h-3.5 w-3.5" />
+                                                                        </span>
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                        {option.description}
+                                                                </span>
+                                                        </button>
+                                                );
+                                        })}
+                                </div>
 
 				<div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-wide">
 					<span>Ordering</span>
