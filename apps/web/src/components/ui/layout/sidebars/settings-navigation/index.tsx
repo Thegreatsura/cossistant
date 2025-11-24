@@ -26,7 +26,7 @@ export function SettingsNavigationSidebar() {
 	});
 
 	return (
-		<ResizableSidebar position="left">
+		<ResizableSidebar position="left" sidebarTitle="Settings">
 			<SidebarContainer
 				footer={
 					<>

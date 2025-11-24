@@ -54,7 +54,11 @@ export function VisitorSidebar({
 	} = visitorData;
 
 	return (
-		<ResizableSidebar className="hidden lg:flex" position="right">
+		<ResizableSidebar
+			className="hidden lg:flex"
+			position="right"
+			sidebarTitle="Visitor"
+		>
 			<SidebarContainer>
 				<VisitorSidebarHeader
 					avatarUrl={visitor.contact?.image}

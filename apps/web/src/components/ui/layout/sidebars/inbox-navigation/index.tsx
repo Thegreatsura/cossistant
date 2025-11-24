@@ -46,7 +46,7 @@ export function InboxNavigationSidebar() {
 	};
 
 	return (
-		<ResizableSidebar position="left">
+		<ResizableSidebar position="left" sidebarTitle="Inbox navigation">
 			<SidebarContainer
 				footer={
 					<>

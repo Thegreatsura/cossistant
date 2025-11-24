@@ -94,7 +94,7 @@ export function ContactsNavigationSidebar() {
 	};
 
 	return (
-		<ResizableSidebar position="left">
+		<ResizableSidebar position="left" sidebarTitle="Contacts">
 			<SidebarContainer
 				footer={
 					<>

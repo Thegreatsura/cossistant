@@ -8,20 +8,44 @@ import {
 	useSidebar,
 } from "@/hooks/use-sidebars";
 import { cn } from "@/lib/utils";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "../../sheet";
 import { TooltipOnHover } from "../../tooltip";
 
 type ResizableSidebarProps = {
 	className?: string;
 	children: ReactNode;
 	position: SidebarPosition;
+	sidebarTitle: string;
 };
 
 export const ResizableSidebar = ({
 	className,
 	children,
 	position,
+	sidebarTitle,
 }: ResizableSidebarProps) => {
-	const { open, toggle } = useSidebar({ position });
+	const { open, setOpen, isMobile, toggle } = useSidebar({ position });
+
+	if (isMobile) {
+		return (
+			<Sheet onOpenChange={setOpen} open={open}>
+				<SheetContent
+					className="inset-0 flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col gap-0 border-none bg-background p-0 pt-10"
+					side={position}
+				>
+					<p className="px-4 pb-4 font-medium text-lg">{sidebarTitle}</p>
+
+					<div className="flex h-full flex-col overflow-y-auto">{children}</div>
+				</SheetContent>
+			</Sheet>
+		);
+	}
 
 	return (
 		<aside
