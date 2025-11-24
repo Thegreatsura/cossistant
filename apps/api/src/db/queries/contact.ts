@@ -588,13 +588,18 @@ export async function getContactWithVisitors(
 		)
 		.orderBy(desc(visitor.lastSeenAt), desc(visitor.createdAt));
 
-	return {
-		contact: contactRecord,
-		visitors: visitorsList.map((visitorRecord) => ({
-			...visitorRecord,
-			isBlocked: visitorRecord.blockedAt !== null,
-		})),
-	};
+        return {
+                contact: contactRecord,
+                visitors: visitorsList.map((visitorRecord) => ({
+                        ...visitorRecord,
+                        lastSeenAt:
+                                visitorRecord.lastSeenAt?.toISOString() ?? null,
+                        createdAt: visitorRecord.createdAt.toISOString(),
+                        blockedAt:
+                                visitorRecord.blockedAt?.toISOString() ?? null,
+                        isBlocked: visitorRecord.blockedAt !== null,
+                })),
+        };
 }
 
 // Contact Organisation queries
