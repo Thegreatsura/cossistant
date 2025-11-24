@@ -1,3 +1,4 @@
 "use client";
 
-export * from "@cossistant/react/support-config";
+export type { SupportConfigProps } from "@cossistant/react/support-config";
+export { SupportConfig } from "@cossistant/react/support-config";

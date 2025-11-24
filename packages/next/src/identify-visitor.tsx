@@ -1,3 +1,4 @@
 "use client";
 
-export * from "@cossistant/react/identify-visitor";
+export type { IdentifySupportVisitorProps } from "@cossistant/react/identify-visitor";
+export { IdentifySupportVisitor } from "@cossistant/react/identify-visitor";
