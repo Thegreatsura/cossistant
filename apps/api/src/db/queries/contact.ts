@@ -547,8 +547,22 @@ export async function getContactWithVisitors(
 		organizationId: string;
 	}
 ) {
+	// Select only the fields needed for contactResponseSchema
 	const [contactRecord] = await db
-		.select()
+		.select({
+			id: contact.id,
+			externalId: contact.externalId,
+			name: contact.name,
+			email: contact.email,
+			image: contact.image,
+			metadata: contact.metadata,
+			contactOrganizationId: contact.contactOrganizationId,
+			websiteId: contact.websiteId,
+			organizationId: contact.organizationId,
+			userId: contact.userId,
+			createdAt: contact.createdAt,
+			updatedAt: contact.updatedAt,
+		})
 		.from(contact)
 		.where(
 			and(
@@ -588,18 +602,61 @@ export async function getContactWithVisitors(
 		)
 		.orderBy(desc(visitor.lastSeenAt), desc(visitor.createdAt));
 
-        return {
-                contact: contactRecord,
-                visitors: visitorsList.map((visitorRecord) => ({
-                        ...visitorRecord,
-                        lastSeenAt:
-                                visitorRecord.lastSeenAt?.toISOString() ?? null,
-                        createdAt: visitorRecord.createdAt.toISOString(),
-                        blockedAt:
-                                visitorRecord.blockedAt?.toISOString() ?? null,
-                        isBlocked: visitorRecord.blockedAt !== null,
-                })),
-        };
+	// Helper to convert Date or string to ISO string with Z suffix
+	// z.string().datetime() requires strict ISO 8601 format ending with Z
+	const toISOString = (value: Date | string | null): string | null => {
+		if (value === null) {
+			return null;
+		}
+		if (value instanceof Date) {
+			return value.toISOString();
+		}
+		// If it's a string (e.g. from cache), re-parse to ensure correct ISO format
+		const date = new Date(value);
+		if (!Number.isNaN(date.getTime())) {
+			return date.toISOString();
+		}
+		return value;
+	};
+
+	return {
+		contact: {
+			id: contactRecord.id,
+			externalId: contactRecord.externalId || null,
+			name: contactRecord.name || null,
+			// Use || to convert empty strings to null (z.email() fails on "")
+			email: contactRecord.email || null,
+			// Use || to convert empty strings to null (z.url() fails on "")
+			image: contactRecord.image || null,
+			metadata:
+				typeof contactRecord.metadata === "object" &&
+				contactRecord.metadata !== null
+					? (contactRecord.metadata as Record<
+							string,
+							string | number | boolean | null
+						>)
+					: null,
+			contactOrganizationId: contactRecord.contactOrganizationId || null,
+			websiteId: contactRecord.websiteId,
+			organizationId: contactRecord.organizationId,
+			userId: contactRecord.userId || null,
+			createdAt: toISOString(contactRecord.createdAt) || "",
+			updatedAt: toISOString(contactRecord.updatedAt) || "",
+		},
+		visitors: visitorsList.map((visitorRecord) => ({
+			id: visitorRecord.id,
+			lastSeenAt: toISOString(visitorRecord.lastSeenAt),
+			createdAt: toISOString(visitorRecord.createdAt) || "",
+			browser: visitorRecord.browser || null,
+			device: visitorRecord.device || null,
+			country: visitorRecord.country || null,
+			city: visitorRecord.city || null,
+			language: visitorRecord.language || null,
+			blockedAt: toISOString(visitorRecord.blockedAt),
+			blockedByUserId: visitorRecord.blockedByUserId || null,
+			isBlocked: visitorRecord.blockedAt !== null,
+		})),
+	};
 }
 
 // Contact Organisation queries

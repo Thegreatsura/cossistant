@@ -1,10 +1,8 @@
 "use client";
 
 import type { ContactListVisitorStatus } from "@cossistant/types";
-import { Filter, ListFilter, Search, SortAsc, SortDesc } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { SortAsc, SortDesc } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SidebarContainer } from "@/components/ui/layout/sidebars/container";
 import { ResizableSidebar } from "@/components/ui/layout/sidebars/resizable-sidebar";
 import { SidebarItem } from "@/components/ui/layout/sidebars/sidebar-item";
@@ -18,11 +16,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-	CONTACTS_PAGE_SIZE_OPTIONS,
 	type ContactSortField,
 	useContactsTableControls,
 } from "@/contexts/contacts-table-controls";
 import { useWebsite } from "@/contexts/website";
+import { cn } from "@/lib/utils";
 import { NavigationDropdown } from "../../../../navigation-dropdown";
 
 const VISITOR_FILTER_OPTIONS: ReadonlyArray<{
@@ -57,20 +55,47 @@ const SORT_FIELD_OPTIONS: Array<{ value: ContactSortField; label: string }> = [
 	{ value: "visitorCount", label: "Visitor count" },
 ];
 
+type FilterOptionButtonProps = {
+	title: string;
+	description: string;
+	isSelected: boolean;
+	onClick: () => void;
+};
+
+function FilterOptionButton({
+	title,
+	description,
+	isSelected,
+	onClick,
+}: FilterOptionButtonProps) {
+	return (
+		<button
+			aria-pressed={isSelected}
+			className={cn(
+				"group flex w-full flex-col rounded-md border border-primary/5 px-2 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/40 focus-visible:outline-offset-2",
+				isSelected ? "bg-background-300" : "hover:bg-background-200"
+			)}
+			onClick={onClick}
+			type="button"
+		>
+			<div className="flex items-center justify-between font-medium text-sm">
+				{title}
+				<span
+					className={cn(
+						"size-1.5 rounded-full bg-cossistant-orange text-primary transition-opacity",
+						isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-70"
+					)}
+				/>
+			</div>
+			<span className="text-muted-foreground text-xs">{description}</span>
+		</button>
+	);
+}
+
 export function ContactsNavigationSidebar() {
 	const website = useWebsite();
-	const {
-		searchTerm,
-		setSearchTerm,
-		pageSize,
-		setPageSize,
-		sorting,
-		setSorting,
-		visitorStatus,
-		setVisitorStatus,
-	} = useContactsTableControls();
-
-	const basePath = `/${website.slug}/contacts`;
+	const { sorting, setSorting, visitorStatus, setVisitorStatus } =
+		useContactsTableControls();
 
 	const activeSort = sorting[0] ?? { id: "updatedAt", desc: true };
 	const sortField = (activeSort.id as ContactSortField) ?? "updatedAt";
@@ -107,81 +132,29 @@ export function ContactsNavigationSidebar() {
 					</>
 				}
 			>
-				<div className="flex items-center justify-between">
-					<span className="text-muted-foreground text-xs uppercase tracking-wide">
-						Results per page
-					</span>
-					<span className="text-muted-foreground text-xs">{pageSize}</span>
-				</div>
-				<Select
-					onValueChange={(value) => setPageSize(Number.parseInt(value, 10))}
-					value={String(pageSize)}
-				>
-					<SelectTrigger className="w-full">
-						<SelectValue placeholder={pageSize} />
-					</SelectTrigger>
-					<SelectContent>
-						{CONTACTS_PAGE_SIZE_OPTIONS.map((option) => (
-							<SelectItem key={option} value={String(option)}>
-								{option} per page
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wide">
-						<Filter className="h-3.5 w-3.5" />
-						<span>Filters</span>
-					</div>
+				<div className="flex h-10 items-center justify-between pl-2">
+					<p className="flex items-center gap-2 text-sm">Filters</p>
 					<Button
-						className="h-auto px-2 py-1 text-xs"
+						className="h-auto px-2 py-1 text-xs opacity-50 hover:opacity-100"
 						onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
 						variant="ghost"
 					>
 						Reset
 					</Button>
 				</div>
-                                <div className="space-y-2">
-                                        {VISITOR_FILTER_OPTIONS.map((option) => {
-                                                const isSelected = visitorStatus === option.value;
-
-                                                return (
-                                                        <button
-                                                                aria-pressed={isSelected}
-                                                                className={`group flex w-full flex-col rounded-lg px-3 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/40 ${
-                                                                        isSelected
-                                                                                ? "bg-primary/5"
-                                                                                : "hover:bg-muted/60"
-                                                                }`}
-                                                                key={option.value}
-                                                                onClick={() => setVisitorStatus(option.value)}
-                                                                type="button"
-                                                        >
-                                                                <div className="flex items-center justify-between text-sm font-medium">
-                                                                        <span>{option.title}</span>
-                                                                        <span
-                                                                                className={`flex h-4 w-4 items-center justify-center rounded-full text-primary transition-opacity ${
-                                                                                        isSelected
-                                                                                                ? "opacity-100"
-                                                                                                : "opacity-0 group-hover:opacity-70"
-                                                                                }`}
-                                                                        >
-                                                                                <ListFilter className="h-3.5 w-3.5" />
-                                                                        </span>
-                                                                </div>
-                                                                <span className="text-xs text-muted-foreground">
-                                                                        {option.description}
-                                                                </span>
-                                                        </button>
-                                                );
-                                        })}
-                                </div>
-
-				<div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-wide">
-					<span>Ordering</span>
-					<ListFilter className="h-3.5 w-3.5" />
+				<div className="space-y-2">
+					{VISITOR_FILTER_OPTIONS.map((option) => (
+						<FilterOptionButton
+							description={option.description}
+							isSelected={visitorStatus === option.value}
+							key={option.value}
+							onClick={() => setVisitorStatus(option.value)}
+							title={option.title}
+						/>
+					))}
 				</div>
+
+				<p className="mt-4 mb-2 px-2 text-primary text-sm">Ordering</p>
 				<Select onValueChange={handleSortFieldChange} value={sortField}>
 					<SelectTrigger className="w-full">
 						<SelectValue />
@@ -195,7 +168,7 @@ export function ContactsNavigationSidebar() {
 					</SelectContent>
 				</Select>
 				<ToggleGroup
-					className="w-full"
+					className="mt-1 w-full"
 					onValueChange={handleSortOrderChange}
 					type="single"
 					value={sortOrder}

@@ -34,14 +34,14 @@ export type ListContactsResponse = z.infer<typeof listContactsResponseSchema>;
 
 export const contactVisitorSummarySchema = z.object({
 	id: z.ulid(),
-	lastSeenAt: z.string().datetime().nullable(),
-	createdAt: z.string().datetime(),
+	lastSeenAt: z.string().nullable(),
+	createdAt: z.string(),
 	browser: z.string().nullable(),
 	device: z.string().nullable(),
 	country: z.string().nullable(),
 	city: z.string().nullable(),
 	language: z.string().nullable(),
-	blockedAt: z.string().datetime().nullable(),
+	blockedAt: z.string().nullable(),
 	blockedByUserId: z.string().nullable(),
 	isBlocked: z.boolean(),
 });

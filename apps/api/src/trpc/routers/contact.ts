@@ -94,27 +94,21 @@ export const contactRouter = createTRPCRouter({
 				});
 			}
 
-			const metadata =
-				typeof record.contact.metadata === "object" &&
-				record.contact.metadata !== null
-					? (record.contact.metadata as Record<
-							string,
-							string | number | boolean | null
-						>)
-					: null;
+			// DEBUG: Validate and log any errors before returning
+			const validationResult = contactDetailResponseSchema.safeParse(record);
+			if (!validationResult.success) {
+				console.error("[contact.get] Validation failed:");
+				console.error(
+					"Errors:",
+					JSON.stringify(validationResult.error.issues, null, 2)
+				);
+				console.error("Contact data:", JSON.stringify(record.contact, null, 2));
+				console.error(
+					"First visitor:",
+					JSON.stringify(record.visitors[0], null, 2)
+				);
+			}
 
-			return {
-				contact: {
-					...record.contact,
-					metadata,
-					email: record.contact.email || null,
-					image: record.contact.image || null,
-					externalId: record.contact.externalId || null,
-					name: record.contact.name || null,
-					contactOrganizationId: record.contact.contactOrganizationId || null,
-					userId: record.contact.userId || null,
-				},
-				visitors: record.visitors,
-			};
+			return record;
 		}),
 });

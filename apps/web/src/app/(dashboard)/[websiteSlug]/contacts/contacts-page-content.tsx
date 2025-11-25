@@ -145,7 +145,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 
 	return (
 		<Page className="relative flex flex-col gap-6 pt-12">
-			<PageHeader className="bg-background/80 backdrop-blur">
+			<PageHeader className="bg-background pr-2">
 				<PageHeaderTitle>Contacts</PageHeaderTitle>
 				<Input
 					containerClassName="max-w-xs"
@@ -510,7 +510,7 @@ function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
 
 	return (
 		<button
-			className="inline-flex items-center gap-1 font-semibold text-muted-foreground text-xs uppercase tracking-wide"
+			className="inline-flex items-center gap-1 font-semibold text-muted-foreground text-xs"
 			onClick={() => column.toggleSorting(sorted === "asc")}
 			type="button"
 		>
