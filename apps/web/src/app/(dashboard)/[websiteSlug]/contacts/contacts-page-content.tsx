@@ -349,12 +349,9 @@ function ContactsTable({
 				accessorKey: "name",
 				header: ({ column }) => <SortableHeader column={column} title="Name" />,
 				cell: ({ row }) => {
-					const { id, name, email, image } = row.original;
-					// Display name OR email, not both (like conversation items)
-					const displayName = name ?? email ?? "Unknown contact";
+					const { id, name, image } = row.original;
 					const presence = presenceByContactId.get(id);
 					const avatarUrl = image ?? presence?.image ?? null;
-					// Use presence lastSeenAt or fall back to the row's lastSeenAt from DB
 					const lastSeenAt =
 						presence?.lastSeenAt ?? row.original.lastSeenAt ?? null;
 
@@ -362,16 +359,37 @@ function ContactsTable({
 						<div className="flex items-center gap-3">
 							<Avatar
 								className="size-8"
-								fallbackName={displayName}
+								fallbackName={name ?? "Contact"}
 								lastOnlineAt={lastSeenAt}
 								status={presence?.status}
 								url={avatarUrl}
 								withBoringAvatar
 							/>
-							<span className="min-w-[120px] max-w-[200px] truncate font-medium text-sm">
-								{displayName}
-							</span>
+							{name ? (
+								<span className="min-w-[120px] max-w-[200px] truncate font-medium text-sm">
+									{name}
+								</span>
+							) : (
+								<span className="text-muted-foreground/50 text-sm">None</span>
+							)}
 						</div>
+					);
+				},
+			},
+			{
+				accessorKey: "email",
+				header: ({ column }) => (
+					<SortableHeader column={column} title="Email" />
+				),
+				cell: ({ row }) => {
+					const email = row.original.email;
+					if (!email) {
+						return (
+							<span className="text-muted-foreground/50 text-sm">None</span>
+						);
+					}
+					return (
+						<span className="max-w-[200px] truncate text-sm">{email}</span>
 					);
 				},
 			},
@@ -383,7 +401,9 @@ function ContactsTable({
 				cell: ({ row }) => {
 					const orgName = row.original.contactOrganizationName;
 					if (!orgName) {
-						return <span className="text-muted-foreground/50 text-sm">—</span>;
+						return (
+							<span className="text-muted-foreground/50 text-sm">None</span>
+						);
 					}
 					return (
 						<div className="flex items-center gap-2">
