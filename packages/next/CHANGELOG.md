@@ -1,5 +1,13 @@
 # @cossistant/next
 
+## 0.0.24
+
+### Patch Changes
+
+- c21911f: Bug fixes and improvements
+- Updated dependencies [c21911f]
+  - @cossistant/react@0.0.24
+
 ## 0.0.23
 
 ### Patch Changes

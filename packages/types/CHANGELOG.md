@@ -1,5 +1,11 @@
 # @cossistant/types
 
+## 0.0.24
+
+### Patch Changes
+
+- c21911f: Bug fixes and improvements
+
 ## 0.0.23
 
 ### Patch Changes
