@@ -77,7 +77,7 @@ export const ConversationHistoryPage: React.FC<ConversationHistoryPageProps> = (
 
 			<div className="flex flex-1 flex-col items-center justify-between gap-2 px-6 pb-4">
 				{history.conversations.length > 0 && (
-					<div className="flex flex-col items-center justify-between gap-2 pt-10">
+					<div className="flex w-full flex-col items-center justify-between gap-2 pt-4">
 						<div className="flex w-full flex-col overflow-clip rounded-md border border-co-border/80">
 							{history.visibleConversations.map((conversation) => (
 								<ConversationButtonLink

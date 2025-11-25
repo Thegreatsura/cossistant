@@ -65,7 +65,7 @@ const BubbleContent: React.FC<BubbleContentProps> = ({
 						initial={{ scale: 0.9, rotate: 45, opacity: 0 }}
 						key="chevron"
 					>
-						<Icon className="h-5 w-5" name="chevron-down" />
+						<Icon className="size-5" name="chevron-down" />
 					</motion.div>
 				) : isTyping ? (
 					<motion.span
@@ -109,7 +109,7 @@ const BubbleContent: React.FC<BubbleContentProps> = ({
 						initial={{ scale: 0.9, rotate: -45, opacity: 0 }}
 						key="chat"
 					>
-						<Icon className="h-6 w-6" name="chat" variant="filled" />
+						<Icon className="size-6.5" name="chat" variant="filled" />
 					</motion.div>
 				)}
 			</AnimatePresence>
@@ -131,18 +131,28 @@ export type BubbleProps = {
 };
 
 export const Bubble: React.FC<BubbleProps> = ({ className }) => (
-	<Primitive.Bubble
-		className={cn(
-			"relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
-			className
-		)}
-	>
+	<Primitive.Bubble asChild>
 		{({ isOpen, unreadCount, isTyping }) => (
-			<BubbleContent
-				isOpen={isOpen}
-				isTyping={isTyping}
-				unreadCount={unreadCount}
-			/>
+			<motion.button
+				className={cn(
+					"relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
+					className
+				)}
+				data-open={isOpen}
+				transition={{
+					type: "spring",
+					stiffness: 800,
+					damping: 17,
+				}}
+				type="button"
+				whileTap={{ scale: 0.95 }}
+			>
+				<BubbleContent
+					isOpen={isOpen}
+					isTyping={isTyping}
+					unreadCount={unreadCount}
+				/>
+			</motion.button>
 		)}
 	</Primitive.Bubble>
 );
