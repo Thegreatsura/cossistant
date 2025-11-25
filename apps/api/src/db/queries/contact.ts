@@ -420,7 +420,13 @@ export async function listContacts(
 		page?: number;
 		limit?: number;
 		search?: string | null;
-		sortBy?: "name" | "email" | "createdAt" | "updatedAt" | "visitorCount";
+		sortBy?:
+			| "name"
+			| "email"
+			| "createdAt"
+			| "updatedAt"
+			| "visitorCount"
+			| "lastSeenAt";
 		sortOrder?: "asc" | "desc";
 		visitorStatus?: "withVisitors" | "withoutVisitors";
 	}
@@ -447,6 +453,7 @@ export async function listContacts(
 		}
 	}
 
+	// Subquery to get visitor counts per contact
 	const visitorCounts = db
 		.select({
 			contactId: visitor.contactId,
@@ -463,6 +470,27 @@ export async function listContacts(
 		)
 		.groupBy(visitor.contactId)
 		.as("visitor_counts");
+
+	// Subquery to get max lastSeenAt per contact from all their visitors
+	const visitorLastSeen = db
+		.select({
+			contactId: visitor.contactId,
+			maxLastSeenAt: sql<string>`MAX(${visitor.lastSeenAt})`.as(
+				"max_last_seen_at"
+			),
+		})
+		.from(visitor)
+		.where(
+			and(
+				eq(visitor.websiteId, params.websiteId),
+				eq(visitor.organizationId, params.organizationId),
+				isNull(visitor.deletedAt),
+				isNotNull(visitor.contactId),
+				isNotNull(visitor.lastSeenAt)
+			)
+		)
+		.groupBy(visitor.contactId)
+		.as("visitor_last_seen");
 
 	const baseWhereClause = and(...whereConditions);
 
@@ -493,6 +521,7 @@ export async function listContacts(
 	const orderFn = sortOrder === "asc" ? asc : desc;
 
 	const visitorCountColumn = sql<number>`COALESCE(${visitorCounts.total}, 0)::int`;
+	const lastSeenAtColumn = sql<string | null>`${visitorLastSeen.maxLastSeenAt}`;
 
 	const orderColumn = (() => {
 		switch (sortBy) {
@@ -504,6 +533,8 @@ export async function listContacts(
 				return contact.createdAt;
 			case "visitorCount":
 				return visitorCountColumn;
+			case "lastSeenAt":
+				return lastSeenAtColumn;
 			default:
 				return contact.updatedAt;
 		}
@@ -518,9 +549,17 @@ export async function listContacts(
 			createdAt: contact.createdAt,
 			updatedAt: contact.updatedAt,
 			visitorCount: visitorCountColumn,
+			lastSeenAt: lastSeenAtColumn,
+			contactOrganizationId: contact.contactOrganizationId,
+			contactOrganizationName: contactOrganization.name,
 		})
 		.from(contact)
 		.leftJoin(visitorCounts, eq(visitorCounts.contactId, contact.id))
+		.leftJoin(visitorLastSeen, eq(visitorLastSeen.contactId, contact.id))
+		.leftJoin(
+			contactOrganization,
+			eq(contactOrganization.id, contact.contactOrganizationId)
+		)
 		.where(whereClause)
 		.orderBy(orderFn(orderColumn), desc(contact.id))
 		.limit(limit)
@@ -530,8 +569,16 @@ export async function listContacts(
 
 	return {
 		items: rows.map((row) => ({
-			...row,
+			id: row.id,
+			name: row.name,
+			email: row.email,
+			image: row.image,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
 			visitorCount: Number(row.visitorCount ?? 0),
+			lastSeenAt: row.lastSeenAt ?? null,
+			contactOrganizationId: row.contactOrganizationId ?? null,
+			contactOrganizationName: row.contactOrganizationName ?? null,
 		})),
 		totalCount: numericTotalCount,
 		page,

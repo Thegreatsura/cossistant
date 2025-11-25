@@ -9,6 +9,9 @@ export const contactListItemSchema = z.object({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	visitorCount: z.number().int().min(0),
+	lastSeenAt: z.string().nullable(),
+	contactOrganizationId: z.string().nullable(),
+	contactOrganizationName: z.string().nullable(),
 });
 
 export type ContactListItem = z.infer<typeof contactListItemSchema>;

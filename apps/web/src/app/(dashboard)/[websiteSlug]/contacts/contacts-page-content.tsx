@@ -14,8 +14,14 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+	ArrowDown,
+	ArrowUp,
+	ArrowUpDown,
+	Building2,
+	Search,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
@@ -45,7 +51,10 @@ import {
 	useContactsTableControls,
 } from "@/contexts/contacts-table-controls";
 import { useVisitorPresence } from "@/contexts/visitor-presence";
+import { formatTimeAgo } from "@/lib/date";
 import { useTRPC } from "@/lib/trpc/client";
+import { cn } from "@/lib/utils";
+import { useContactsKeyboardNavigation } from "./use-contacts-keyboard-navigation";
 
 type ContactsPageContentProps = {
 	websiteSlug: string;
@@ -55,9 +64,12 @@ type ContactRow = RouterOutputs["contact"]["list"]["items"][number];
 
 type ContactDetail = RouterOutputs["contact"]["get"];
 
+const ITEM_HEIGHT = 52;
+
 export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const trpc = useTRPC();
 	const queryNormalizer = useQueryNormalizer();
+	const tableContainerRef = useRef<HTMLDivElement>(null);
 	const {
 		searchTerm,
 		setSearchTerm,
@@ -68,11 +80,10 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		sorting,
 		setSorting,
 		visitorStatus,
+		selectedContactId,
+		setSelectedContactId,
+		isSheetOpen,
 	} = useContactsTableControls();
-	const [sheetOpen, setSheetOpen] = useState(false);
-	const [selectedContactId, setSelectedContactId] = useState<string | null>(
-		null
-	);
 
 	const activeSort = sorting[0];
 	const sortBy = activeSort?.id as ContactSortField | undefined;
@@ -90,8 +101,31 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		}),
 	});
 
+	const contacts = listQuery.data?.items ?? [];
 	const totalCount = listQuery.data?.totalCount ?? 0;
 	const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+	const handleSelectContact = useCallback(
+		(contactId: string) => {
+			setSelectedContactId(contactId);
+		},
+		[setSelectedContactId]
+	);
+
+	const handleCloseSheet = useCallback(() => {
+		setSelectedContactId(null);
+	}, [setSelectedContactId]);
+
+	const { focusedIndex, handleMouseEnter } = useContactsKeyboardNavigation({
+		contacts,
+		parentRef: tableContainerRef,
+		itemHeight: ITEM_HEIGHT,
+		enabled: !listQuery.isLoading,
+		onSelectContact: handleSelectContact,
+		onCloseSheet: handleCloseSheet,
+		isSheetOpen,
+		selectedContactId,
+	});
 
 	useEffect(() => {
 		if (page > totalPages) {
@@ -112,7 +146,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 			websiteSlug,
 			contactId: selectedContactId ?? "",
 		}),
-		enabled: sheetOpen && Boolean(selectedContactId),
+		enabled: isSheetOpen && Boolean(selectedContactId),
 		placeholderData: contactPlaceholder,
 	});
 
@@ -120,13 +154,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		setSorting(updater);
 	};
 
-	const handleRowClick = (contactId: string) => {
-		setSelectedContactId(contactId);
-		setSheetOpen(true);
-	};
-
 	const handleOpenChange = (nextOpen: boolean) => {
-		setSheetOpen(nextOpen);
 		if (!nextOpen) {
 			setSelectedContactId(null);
 		}
@@ -166,10 +194,14 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 					</Alert>
 				) : null}
 				<ContactsTable
-					data={listQuery.data?.items ?? []}
+					containerRef={tableContainerRef}
+					data={contacts}
+					focusedIndex={focusedIndex}
 					isLoading={listQuery.isLoading}
-					onRowClick={handleRowClick}
+					onMouseEnter={handleMouseEnter}
+					onRowClick={handleSelectContact}
 					onSortingChange={handleSortingChange}
+					selectedContactId={selectedContactId}
 					sorting={sorting}
 				/>
 				<div className="flex flex-col items-center justify-between gap-3 px-5 py-3 sm:flex-row">
@@ -201,7 +233,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 					</div>
 				</div>
 			</div>
-			<Sheet onOpenChange={handleOpenChange} open={sheetOpen}>
+			<Sheet onOpenChange={handleOpenChange} open={isSheetOpen}>
 				<SheetContent className="w-full bg-background sm:max-w-xl">
 					<SheetHeader>
 						<SheetTitle>Contact details</SheetTitle>
@@ -226,6 +258,10 @@ type ContactsTableProps = {
 	sorting: SortingState;
 	onSortingChange: OnChangeFn<SortingState>;
 	onRowClick: (contactId: string) => void;
+	onMouseEnter: (index: number) => void;
+	focusedIndex: number;
+	selectedContactId: string | null;
+	containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const LOADING_ROW_COUNT = 5;
@@ -236,6 +272,10 @@ function ContactsTable({
 	sorting,
 	onSortingChange,
 	onRowClick,
+	onMouseEnter,
+	focusedIndex,
+	selectedContactId,
+	containerRef,
 }: ContactsTableProps) {
 	const { visitors: presenceVisitors } = useVisitorPresence();
 
@@ -310,40 +350,48 @@ function ContactsTable({
 				header: ({ column }) => <SortableHeader column={column} title="Name" />,
 				cell: ({ row }) => {
 					const { id, name, email, image } = row.original;
+					// Display name OR email, not both (like conversation items)
 					const displayName = name ?? email ?? "Unknown contact";
 					const presence = presenceByContactId.get(id);
 					const avatarUrl = image ?? presence?.image ?? null;
+					// Use presence lastSeenAt or fall back to the row's lastSeenAt from DB
+					const lastSeenAt =
+						presence?.lastSeenAt ?? row.original.lastSeenAt ?? null;
 
 					return (
 						<div className="flex items-center gap-3">
 							<Avatar
-								className="size-9"
+								className="size-8"
 								fallbackName={displayName}
-								lastOnlineAt={presence?.lastSeenAt ?? null}
+								lastOnlineAt={lastSeenAt}
 								status={presence?.status}
 								url={avatarUrl}
 								withBoringAvatar
 							/>
-							<div className="flex flex-col">
-								<span className="font-medium text-sm">{displayName}</span>
-								{name && email ? (
-									<span className="text-muted-foreground text-xs">{email}</span>
-								) : null}
-							</div>
+							<span className="min-w-[120px] max-w-[200px] truncate font-medium text-sm">
+								{displayName}
+							</span>
 						</div>
 					);
 				},
 			},
 			{
-				accessorKey: "email",
+				accessorKey: "contactOrganizationName",
 				header: ({ column }) => (
-					<SortableHeader column={column} title="Email" />
+					<SortableHeader column={column} title="Company" />
 				),
-				cell: ({ row }) => (
-					<span className="text-muted-foreground text-sm">
-						{row.original.email ?? "—"}
-					</span>
-				),
+				cell: ({ row }) => {
+					const orgName = row.original.contactOrganizationName;
+					if (!orgName) {
+						return <span className="text-muted-foreground/50 text-sm">—</span>;
+					}
+					return (
+						<div className="flex items-center gap-2">
+							<Building2 className="size-3.5 text-muted-foreground" />
+							<span className="truncate text-sm">{orgName}</span>
+						</div>
+					);
+				},
 			},
 			{
 				accessorKey: "visitorCount",
@@ -355,6 +403,29 @@ function ContactsTable({
 						{row.original.visitorCount}
 					</Badge>
 				),
+			},
+			{
+				accessorKey: "lastSeenAt",
+				header: ({ column }) => (
+					<SortableHeader column={column} title="Last Seen" />
+				),
+				cell: ({ row }) => {
+					const { id, lastSeenAt: dbLastSeenAt } = row.original;
+					const presence = presenceByContactId.get(id);
+					const lastSeenAt = presence?.lastSeenAt ?? dbLastSeenAt;
+
+					if (!lastSeenAt) {
+						return (
+							<span className="text-muted-foreground/50 text-sm">Never</span>
+						);
+					}
+
+					return (
+						<span className="text-muted-foreground text-sm">
+							{formatTimeAgo(new Date(lastSeenAt))}
+						</span>
+					);
+				},
 			},
 			{
 				accessorKey: "updatedAt",
@@ -387,7 +458,7 @@ function ContactsTable({
 
 	if (isLoading) {
 		return (
-			<div className="overflow-hidden">
+			<div className="overflow-hidden" ref={containerRef}>
 				<Table>
 					<TableHeader>
 						{headerGroups.map((headerGroup) => (
@@ -424,7 +495,10 @@ function ContactsTable({
 
 	if (!rows.length) {
 		return (
-			<div className="flex flex-col items-center justify-center gap-3 px-10 py-16 text-center">
+			<div
+				className="flex flex-col items-center justify-center gap-3 px-10 py-16 text-center"
+				ref={containerRef}
+			>
 				<div className="space-y-1">
 					<h3 className="font-semibold text-base">
 						No contacts match your filters
@@ -439,7 +513,7 @@ function ContactsTable({
 	}
 
 	return (
-		<div className="overflow-hidden">
+		<div className="overflow-auto" ref={containerRef}>
 			<Table>
 				<TableHeader>
 					{headerGroups.map((headerGroup) => (
@@ -474,26 +548,38 @@ function ContactsTable({
 					))}
 				</TableHeader>
 				<TableBody>
-					{rows.map((row) => (
-						<TableRow
-							className="cursor-pointer border-transparent border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/50 focus-visible:outline-offset-2"
-							key={row.id}
-							onClick={() => onRowClick(row.original.id)}
-							onKeyDown={(event) => {
-								if (event.key === "Enter" || event.key === " ") {
-									event.preventDefault();
-									onRowClick(row.original.id);
-								}
-							}}
-							tabIndex={0}
-						>
-							{row.getVisibleCells().map((cell) => (
-								<TableCell key={cell.id}>
-									{flexRender(cell.column.columnDef.cell, cell.getContext())}
-								</TableCell>
-							))}
-						</TableRow>
-					))}
+					{rows.map((row, index) => {
+						const isFocused = index === focusedIndex;
+						const isSelected = row.original.id === selectedContactId;
+
+						return (
+							<TableRow
+								className={cn(
+									"cursor-pointer rounded-lg border-transparent border-b-0 transition-colors",
+									"focus-visible:outline-none focus-visible:ring-0",
+									isFocused &&
+										"bg-background-200 text-primary dark:bg-background-300",
+									isSelected && "bg-background-300 dark:bg-background-400"
+								)}
+								key={row.id}
+								onClick={() => onRowClick(row.original.id)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter" || event.key === " ") {
+										event.preventDefault();
+										onRowClick(row.original.id);
+									}
+								}}
+								onMouseEnter={() => onMouseEnter(index)}
+								tabIndex={isFocused ? 0 : -1}
+							>
+								{row.getVisibleCells().map((cell) => (
+									<TableCell className="py-2" key={cell.id}>
+										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+									</TableCell>
+								))}
+							</TableRow>
+						);
+					})}
 				</TableBody>
 			</Table>
 		</div>
@@ -731,7 +817,7 @@ function DetailItem({ label, value }: DetailItemProps) {
 			<dt className="text-muted-foreground text-xs uppercase tracking-wide">
 				{label}
 			</dt>
-			<dd className="break-words font-medium text-foreground text-sm">
+			<dd className="wrap-break-word font-medium text-foreground text-sm">
 				{value}
 			</dd>
 		</div>

@@ -15,6 +15,7 @@ const sortBySchema = z.enum([
 	"createdAt",
 	"updatedAt",
 	"visitorCount",
+	"lastSeenAt",
 ]);
 
 const sortOrderSchema = z.enum(["asc", "desc"]);
@@ -92,21 +93,6 @@ export const contactRouter = createTRPCRouter({
 					code: "NOT_FOUND",
 					message: "Contact not found",
 				});
-			}
-
-			// DEBUG: Validate and log any errors before returning
-			const validationResult = contactDetailResponseSchema.safeParse(record);
-			if (!validationResult.success) {
-				console.error("[contact.get] Validation failed:");
-				console.error(
-					"Errors:",
-					JSON.stringify(validationResult.error.issues, null, 2)
-				);
-				console.error("Contact data:", JSON.stringify(record.contact, null, 2));
-				console.error(
-					"First visitor:",
-					JSON.stringify(record.visitors[0], null, 2)
-				);
 			}
 
 			return record;

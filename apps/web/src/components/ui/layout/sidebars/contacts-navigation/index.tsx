@@ -50,6 +50,7 @@ const DEFAULT_VISITOR_STATUS: ContactListVisitorStatus = "all";
 const SORT_FIELD_OPTIONS: Array<{ value: ContactSortField; label: string }> = [
 	{ value: "updatedAt", label: "Last updated" },
 	{ value: "createdAt", label: "Created" },
+	{ value: "lastSeenAt", label: "Last seen" },
 	{ value: "name", label: "Name" },
 	{ value: "email", label: "Email" },
 	{ value: "visitorCount", label: "Visitor count" },

@@ -14,7 +14,8 @@ export type ContactSortField =
 	| "email"
 	| "createdAt"
 	| "updatedAt"
-	| "visitorCount";
+	| "visitorCount"
+	| "lastSeenAt";
 
 type SortingUpdater = Parameters<OnChangeFn<SortingState>>[0];
 
@@ -30,6 +31,9 @@ type ContactsTableControlsValue = {
 	setSorting: (updater: SortingUpdater) => void;
 	visitorStatus: ContactListVisitorStatus;
 	setVisitorStatus: (status: ContactListVisitorStatus) => void;
+	selectedContactId: string | null;
+	setSelectedContactId: (contactId: string | null) => void;
+	isSheetOpen: boolean;
 };
 
 const DEFAULT_SORTING: SortingState = [{ id: "updatedAt", desc: true }];
@@ -42,6 +46,7 @@ const SORT_FIELDS: ContactSortField[] = [
 	"createdAt",
 	"updatedAt",
 	"visitorCount",
+	"lastSeenAt",
 ];
 
 const SORT_ORDERS = ["asc", "desc"] as const;
@@ -138,6 +143,13 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 		? visitorStatusParam
 		: "all";
 
+	const [selectedContactIdParam, setSelectedContactIdParam] = useQueryState(
+		"contact",
+		parseAsString
+	);
+	const selectedContactId = selectedContactIdParam ?? null;
+	const isSheetOpen = selectedContactId !== null;
+
 	const sorting = useMemo<SortingState>(
 		() => [{ id: sortField, desc: sortOrder === "desc" }],
 		[sortField, sortOrder]
@@ -179,7 +191,11 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 		(updater: SortingUpdater) => {
 			const next = typeof updater === "function" ? updater(sorting) : updater;
 			const normalized = next.length > 0 ? next : DEFAULT_SORTING;
-			const [primary] = normalized;
+			const primary = normalized[0];
+
+			if (!primary) {
+				return;
+			}
 
 			const nextField = isSortField(String(primary.id))
 				? (primary.id as ContactSortField)
@@ -209,6 +225,13 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 		[setPageParam, setVisitorStatusParam]
 	);
 
+	const setSelectedContactId = useCallback(
+		(contactId: string | null) => {
+			void setSelectedContactIdParam(contactId);
+		},
+		[setSelectedContactIdParam]
+	);
+
 	return {
 		page,
 		setPage,
@@ -221,5 +244,8 @@ export function useContactsTableControls(): ContactsTableControlsValue {
 		setSorting,
 		visitorStatus,
 		setVisitorStatus,
+		selectedContactId,
+		setSelectedContactId,
+		isSheetOpen,
 	};
 }
