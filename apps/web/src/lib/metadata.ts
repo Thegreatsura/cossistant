@@ -22,6 +22,9 @@ const defaultMetadata: Metadata = {
 	metadataBase: new URL(
 		process.env.NEXT_PUBLIC_URL || "https://cossistant.com"
 	),
+	appleWebApp: {
+		title: "Cossistant",
+	},
 	icons: {
 		icon: [
 			{
