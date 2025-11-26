@@ -6,4 +6,3 @@
 ---
 
 Bug fixes and improvements
-
