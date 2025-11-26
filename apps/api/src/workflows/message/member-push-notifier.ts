@@ -1,5 +1,8 @@
 import type { Database } from "@api/db";
-import { getMemberNotificationSettings } from "@api/db/queries/member-notification-settings";
+import {
+	getMemberNotificationSettings,
+	updateMemberNotificationSettings,
+} from "@api/db/queries/member-notification-settings";
 import {
 	isValidPushSubscription,
 	type PushSubscriptionData,
@@ -110,12 +113,37 @@ export async function sendMemberPushNotification(
 		return { sent: true };
 	}
 
-	// If subscription expired, we could clean it up here
-	// For now, just log and return
+	// If subscription expired, clean it up from the database
+	// This ensures the UI shows the correct state (not enabled)
 	if (result.error === "subscription_expired") {
 		console.log(
-			`[push] Subscription expired for member ${recipient.memberId}, notification not sent`
+			`[push] Subscription expired for member ${recipient.memberId}, cleaning up and disabling push notifications`
 		);
+
+		// Clear the expired subscription from the database
+		try {
+			await updateMemberNotificationSettings(db, {
+				organizationId,
+				memberId: recipient.memberId,
+				settings: [
+					{
+						channel: MemberNotificationChannel.BROWSER_PUSH_NEW_MESSAGE,
+						enabled: false,
+						delaySeconds: 0,
+						config: null, // Clear the expired subscription
+					},
+				],
+			});
+			console.log(
+				`[push] Cleaned up expired subscription for member ${recipient.memberId}`
+			);
+		} catch (cleanupError) {
+			console.error(
+				`[push] Failed to cleanup expired subscription for member ${recipient.memberId}:`,
+				cleanupError
+			);
+		}
+
 		return { sent: false, reason: "subscription_expired" };
 	}
 
