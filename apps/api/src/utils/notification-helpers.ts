@@ -11,6 +11,7 @@ import {
 	visitor,
 	website,
 } from "@api/db/schema";
+import { generateVisitorName } from "@cossistant/core";
 import {
 	ConversationParticipationStatus,
 	MemberNotificationChannel,
@@ -317,7 +318,7 @@ export async function getMessagesForEmail(
 					senderName = visitorInfo.contactName;
 					senderImage = visitorInfo.contactImage;
 				} else {
-					senderName = "Visitor";
+					senderName = generateVisitorName(message.visitorId);
 				}
 			}
 
@@ -477,7 +478,7 @@ export async function getLatestMessageForPush(
 		if (visitorInfo?.contactName) {
 			senderName = visitorInfo.contactName;
 		} else {
-			senderName = "Visitor";
+			senderName = generateVisitorName(latestMessage.visitorId);
 		}
 	}
 

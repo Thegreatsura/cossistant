@@ -90,13 +90,16 @@ export async function sendMemberPushNotification(
 			: messagePreview;
 
 	// Send push notification
+	// Use website logo if available, otherwise fall back to default icon
+	const notificationIcon = websiteInfo.logo ?? "/web-app-manifest-192x192.png";
+
 	const result = await sendPushNotification(
 		subscription as PushSubscriptionData,
 		{
 			title: `New message from ${senderName}`,
 			body: truncatedPreview,
-			icon: "/icon-192x192.png",
-			badge: "/icon-192x192.png",
+			icon: notificationIcon,
+			badge: "/web-app-manifest-192x192.png",
 			tag: `conversation-${conversationId}`,
 			data: {
 				conversationId,

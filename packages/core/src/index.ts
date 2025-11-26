@@ -72,6 +72,10 @@ export { CossistantAPIError } from "./types";
 export { generateConversationId, generateMessageId } from "./utils";
 export { collectVisitorData, type VisitorData } from "./visitor-data";
 export {
+	generateVisitorName,
+	getVisitorNameWithFallback,
+} from "./visitor-name";
+export {
 	clearAllVisitorIds,
 	clearVisitorId,
 	getVisitorId,
