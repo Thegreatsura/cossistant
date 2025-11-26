@@ -39,15 +39,17 @@
     "superjson": "^2.2.2",
     "trpc-to-openapi": "^3.0.1",
     "ulid": "^3.0.1",
+    "web-push": "^3.6.7",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/bun": "^1.2.22",
     "@types/pg": "^8.15.5",
+    "@types/react": "^19.0.0",
+    "@types/web-push": "^3.6.4",
     "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.4",
-    "react-email": "4.2.11",
-    "@types/react": "^19.0.0"
+    "react-email": "4.2.11"
   },
   "scripts": {
     "dev": "concurrently 'bun run --hot src/index.ts' 'node $(which npx) @upstash/qstash-cli dev'",

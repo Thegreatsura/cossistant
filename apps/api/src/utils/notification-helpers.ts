@@ -419,6 +419,75 @@ export async function isVisitorEmailNotificationEnabled(
 }
 
 /**
+ * Get the latest message for push notification
+ * Returns the most recent message text and sender name
+ */
+export async function getLatestMessageForPush(
+	db: Database,
+	params: {
+		conversationId: string;
+		organizationId: string;
+	}
+): Promise<{ text: string; senderName: string } | null> {
+	// Get the latest public message in the conversation
+	const [latestMessage] = await db
+		.select({
+			text: conversationTimelineItem.text,
+			userId: conversationTimelineItem.userId,
+			visitorId: conversationTimelineItem.visitorId,
+		})
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.type, "message"),
+				eq(conversationTimelineItem.visibility, "public"),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.orderBy(desc(conversationTimelineItem.createdAt))
+		.limit(1);
+
+	if (!latestMessage?.text) {
+		return null;
+	}
+
+	// Get sender name
+	let senderName = "Someone";
+
+	if (latestMessage.userId) {
+		const [userInfo] = await db
+			.select({ name: user.name })
+			.from(user)
+			.where(eq(user.id, latestMessage.userId))
+			.limit(1);
+
+		if (userInfo?.name) {
+			senderName = userInfo.name;
+		}
+	} else if (latestMessage.visitorId) {
+		const [visitorInfo] = await db
+			.select({ contactName: contact.name })
+			.from(visitor)
+			.leftJoin(contact, eq(visitor.contactId, contact.id))
+			.where(eq(visitor.id, latestMessage.visitorId))
+			.limit(1);
+
+		if (visitorInfo?.contactName) {
+			senderName = visitorInfo.contactName;
+		} else {
+			senderName = "Visitor";
+		}
+	}
+
+	return {
+		text: latestMessage.text,
+		senderName,
+	};
+}
+
+/**
  * Fetch all notification data in one step
  * Consolidates conversation, website, and participant data fetching
  */

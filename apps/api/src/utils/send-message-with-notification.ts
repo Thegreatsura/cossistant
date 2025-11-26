@@ -1,10 +1,15 @@
 import { db } from "@api/db";
 import { getMessageMetadata } from "@api/db/queries/conversation";
+import {
+	getLatestMessageForPush,
+	getNotificationData,
+} from "@api/utils/notification-helpers";
 import { workflowClient } from "@api/utils/workflow";
 import {
 	triggerDeduplicatedWorkflow,
 	type WorkflowDirection,
 } from "@api/utils/workflow-dedup-manager";
+import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
 import {
 	type MemberSentMessageData,
 	type VisitorSentMessageData,
@@ -71,6 +76,84 @@ export async function triggerMemberSentMessageWorkflow(params: {
 }
 
 /**
+ * Send immediate push notifications to team members
+ * This is called synchronously when a visitor sends a message
+ * Uses the SAME recipient logic as email notifications (getNotificationData)
+ */
+async function sendImmediatePushNotifications(params: {
+	conversationId: string;
+	websiteId: string;
+	organizationId: string;
+}): Promise<void> {
+	try {
+		// Use the SAME function as email notifications to get recipients
+		const { websiteInfo, participants } = await getNotificationData(db, {
+			conversationId: params.conversationId,
+			websiteId: params.websiteId,
+			organizationId: params.organizationId,
+		});
+
+		if (!websiteInfo || participants.length === 0) {
+			console.log(
+				`[push] No recipients for push notifications: websiteInfo=${!!websiteInfo}, participants=${participants.length}`
+			);
+			return;
+		}
+
+		// Get latest message for the notification content
+		const latestMessage = await getLatestMessageForPush(db, {
+			conversationId: params.conversationId,
+			organizationId: params.organizationId,
+		});
+
+		if (!latestMessage) {
+			console.log("[push] No message found for push notification");
+			return;
+		}
+
+		console.log(
+			`[push] Sending push notifications to ${participants.length} participants for conversation ${params.conversationId}`
+		);
+
+		// Send push notifications to the same recipients as email would use
+		const pushPromises = participants.map((participant) =>
+			sendMemberPushNotification({
+				db,
+				recipient: {
+					kind: "member",
+					userId: participant.userId,
+					memberId: participant.memberId,
+					email: participant.userEmail,
+				},
+				conversationId: params.conversationId,
+				organizationId: params.organizationId,
+				websiteInfo: {
+					name: websiteInfo.name,
+					slug: websiteInfo.slug,
+					logo: websiteInfo.logo,
+				},
+				messagePreview: latestMessage.text,
+				senderName: latestMessage.senderName,
+			})
+		);
+
+		const results = await Promise.allSettled(pushPromises);
+		const sent = results.filter(
+			(r) => r.status === "fulfilled" && r.value.sent
+		).length;
+		console.log(
+			`[push] Push notification results: ${sent}/${participants.length} sent successfully`
+		);
+	} catch (error) {
+		// Don't throw - push notification failures shouldn't block message flow
+		console.error(
+			`[push] Failed to send immediate push notifications for conversation ${params.conversationId}:`,
+			error
+		);
+	}
+}
+
+/**
  * Trigger notification workflow when a visitor sends a message
  * This notifies all conversation participants (team members)
  */
@@ -88,6 +171,16 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 		organizationId: params.organizationId,
 		visitorId: params.visitorId,
 	};
+
+	// Send immediate push notifications (don't await - fire and forget)
+	// This ensures push notifications are sent instantly without blocking
+	sendImmediatePushNotifications({
+		conversationId: params.conversationId,
+		websiteId: params.websiteId,
+		organizationId: params.organizationId,
+	}).catch((error) => {
+		console.error("[push] Background push notification failed:", error);
+	});
 
 	try {
 		// Fetch message metadata for deduplication

@@ -63,4 +63,8 @@ export const env = {
 	),
 	S3_PUBLIC_BASE_URL: getEnvVariable("S3_PUBLIC_BASE_URL", ""),
 	S3_CDN_BASE_URL: getEnvVariable("S3_CDN_BASE_URL", ""),
+	// VAPID keys for Web Push Notifications
+	VAPID_PUBLIC_KEY: getEnvVariable("VAPID_PUBLIC_KEY"),
+	VAPID_PRIVATE_KEY: getEnvVariable("VAPID_PRIVATE_KEY"),
+	VAPID_SUBJECT: getEnvVariable("VAPID_SUBJECT"),
 };

@@ -259,14 +259,16 @@ messageWorkflow.post(
 				return;
 			}
 
-			// Step 2: Apply a single global delay for all recipients
+			// Step 2: Apply a single global delay for email notifications
+			// Note: Push notifications are sent immediately in triggerVisitorSentMessageWorkflow,
+			// this workflow only handles delayed email notifications
 			const globalDelaySeconds = MESSAGE_NOTIFICATION_DELAY_MINUTES * 60;
 
 			if (globalDelaySeconds > 0) {
 				await context.sleep("global-delay", globalDelaySeconds);
 			}
 
-			// Step 3: Send notifications and clean up within a single workflow run
+			// Step 3: Send email notifications and clean up within a single workflow run
 			await context.run("process-notifications", async () => {
 				// Send emails to member recipients using the shared helper
 				for (const recipient of prepared.memberRecipients) {
