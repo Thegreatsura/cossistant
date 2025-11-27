@@ -16,6 +16,7 @@ export default defineConfig({
 		js: ".js",
 		dts: ".d.ts",
 	}),
-	// Keep utility libraries external as they're commonly used
-	external: ["@cossistant/types", "nanoid", "ulid"],
+	// Keep utility libraries and transitive dependencies external
+	// zod and @hono/zod-openapi are needed because @cossistant/types uses them
+	external: ["@cossistant/types", "nanoid", "ulid", "zod", "@hono/zod-openapi"],
 });
