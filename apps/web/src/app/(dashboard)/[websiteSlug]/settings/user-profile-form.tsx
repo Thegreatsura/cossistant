@@ -322,22 +322,22 @@ export function UserProfileForm({
 					<FormField
 						control={form.control}
 						name="avatar"
-                                                render={({ field }) => (
-                                                        <FormItem className="flex flex-col gap-2">
-                                                                <FormLabel>Profile picture</FormLabel>
-                                                                <FormControl>
-                                                                        <AvatarInput
-                                                                                fallbackInitials={fallbackInitials}
-                                                                                name={field.name}
-                                                                                onBlur={field.onBlur}
-                                                                                onChange={(value) => {
-                                                                                        field.onChange(value);
-                                                                                        void form.trigger("avatar");
-                                                                                }}
-                                                                                onError={(error) => {
-                                                                                        if (
-                                                                                                !(
-                                                                                                        error as Error & {
+						render={({ field }) => (
+							<FormItem className="flex flex-col gap-2">
+								<FormLabel>Profile picture</FormLabel>
+								<FormControl>
+									<AvatarInput
+										fallbackInitials={fallbackInitials}
+										name={field.name}
+										onBlur={field.onBlur}
+										onChange={(value) => {
+											field.onChange(value);
+											void form.trigger("avatar");
+										}}
+										onError={(error) => {
+											if (
+												!(
+													error as Error & {
 														handledByToast?: boolean;
 													}
 												)?.handledByToast

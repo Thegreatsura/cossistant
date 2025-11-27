@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useConversationActionRunner } from "@/components/conversation/actions/use-conversation-action-runner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
 import { useVisitorData } from "./hooks";
@@ -68,27 +69,30 @@ export function VisitorSidebar({
 					lastSeenAt={presence?.lastSeenAt ?? visitor.lastSeenAt}
 					status={presence?.status}
 				/>
-				{visitor.isBlocked ? (
-					<Alert className="my-6" variant="destructive">
-						<AlertTitle>Visitor blocked</AlertTitle>
-						<AlertDescription>
-							<div className="flex flex-col gap-3">
-								<span>This visitor can't see or send messages.</span>
-								<Button
-									className="mt-4"
-									disabled={pendingAction.unblockVisitor}
-									onClick={handleUnblock}
-									size="sm"
-									type="button"
-									variant="destructive"
-								>
-									{pendingAction.unblockVisitor ? "Unblocking..." : "Unblock"}
-								</Button>
-							</div>
-						</AlertDescription>
-					</Alert>
-				) : null}
-				<div className="mt-4 flex flex-col gap-4">
+				<ScrollArea
+					className="-mr-1.5 mt-4 flex flex-1 flex-col gap-4 overflow-y-scroll pr-2"
+					scrollMask
+				>
+					{visitor.isBlocked ? (
+						<Alert className="my-6" variant="destructive">
+							<AlertTitle>Visitor blocked</AlertTitle>
+							<AlertDescription>
+								<div className="flex flex-col gap-3">
+									<span>This visitor can't see or send messages.</span>
+									<Button
+										className="mt-4"
+										disabled={pendingAction.unblockVisitor}
+										onClick={handleUnblock}
+										size="sm"
+										type="button"
+										variant="destructive"
+									>
+										{pendingAction.unblockVisitor ? "Unblocking..." : "Unblock"}
+									</Button>
+								</div>
+							</AlertDescription>
+						</Alert>
+					) : null}
 					<ValueGroup>
 						<ValueDisplay
 							placeholder="Unknown"
@@ -146,7 +150,14 @@ export function VisitorSidebar({
 							/>
 						)}
 					</ValueGroup>
-				</div>
+					<ValueGroup header="Metadata">
+						{visitor.contact?.metadata &&
+							Object.entries(visitor.contact.metadata).map(([key, value]) => (
+								<ValueDisplay autoFormat key={key} title={key} value={value} />
+							))}
+					</ValueGroup>
+					<div className="h-32" />
+				</ScrollArea>
 			</SidebarContainer>
 		</ResizableSidebar>
 	);

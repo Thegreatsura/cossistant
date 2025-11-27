@@ -3,13 +3,28 @@
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import type * as React from "react";
 
+import { useScrollMask } from "@/hooks/use-scroll-mask";
 import { cn } from "@/lib/utils";
+
+type ScrollAreaProps = React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+	scrollMask?: boolean;
+	maskHeight?: string;
+	scrollbarWidth?: string;
+};
 
 function ScrollArea({
 	className,
 	children,
+	scrollMask = false,
+	maskHeight = "54px",
+	scrollbarWidth = "8px",
 	...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: ScrollAreaProps) {
+	const { ref: maskRef, style: maskStyle } = useScrollMask({
+		maskHeight,
+		scrollbarWidth,
+	});
+
 	return (
 		<ScrollAreaPrimitive.Root
 			className={cn("relative", className)}
@@ -19,6 +34,8 @@ function ScrollArea({
 			<ScrollAreaPrimitive.Viewport
 				className="size-full rounded-[inherit] outline-none transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] focus-visible:ring-ring/50"
 				data-slot="scroll-area-viewport"
+				ref={scrollMask ? maskRef : undefined}
+				style={scrollMask ? maskStyle : undefined}
 			>
 				{children}
 			</ScrollAreaPrimitive.Viewport>
