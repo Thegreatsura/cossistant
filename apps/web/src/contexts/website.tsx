@@ -136,7 +136,6 @@ export function WebsiteProvider({
 				email={sessionData?.user?.email}
 				externalId={sessionData?.user?.id}
 				image={sessionData?.user?.image}
-				metadata={null}
 				name={sessionData?.user?.name}
 			/>
 		</WebsiteContext.Provider>

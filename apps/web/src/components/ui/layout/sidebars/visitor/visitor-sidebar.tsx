@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/nursery/noUnnecessaryConditions: ok here */
 import type { RouterOutputs } from "@api/trpc/types";
+import Link from "next/link";
 import { useCallback } from "react";
 import { useConversationActionRunner } from "@/components/conversation/actions/use-conversation-action-runner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -53,6 +54,10 @@ export function VisitorSidebar({
 		localTime,
 		timezoneTooltip,
 	} = visitorData;
+
+	const metadata =
+		(visitor.contact?.metadata && Object.entries(visitor.contact.metadata)) ||
+		[];
 
 	return (
 		<ResizableSidebar
@@ -151,10 +156,21 @@ export function VisitorSidebar({
 						)}
 					</ValueGroup>
 					<ValueGroup header="Metadata">
-						{visitor.contact?.metadata &&
-							Object.entries(visitor.contact.metadata).map(([key, value]) => (
-								<ValueDisplay autoFormat key={key} title={key} value={value} />
-							))}
+						{metadata.map(([key, value]) => (
+							<ValueDisplay autoFormat key={key} title={key} value={value} />
+						))}
+						{metadata.length === 0 && (
+							<p className="text-primary/60 text-xs">
+								No metadata yet, see our{" "}
+								<Link
+									className="text-primary/60 underline hover:text-primary/80"
+									href="/docs/concepts/contacts#contact-metadata"
+								>
+									documentation
+								</Link>{" "}
+								to learn more.
+							</p>
+						)}
 					</ValueGroup>
 					<div className="h-32" />
 				</ScrollArea>
