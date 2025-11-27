@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.26
+
+### Patch Changes
+
+- Fix bundling issue where Bun-specific module paths were hardcoded in the build output, causing "Module not found" errors for customers using npm/pnpm. Added zod and @hono/zod-openapi as external dependencies to ensure proper module resolution.
+
 ## 0.0.25
 
 ### Patch Changes

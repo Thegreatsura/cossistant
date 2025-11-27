@@ -1,5 +1,11 @@
 # @cossistant/next
 
+## 0.0.26
+
+### Patch Changes
+
+- @cossistant/react@0.0.26
+
 ## 0.0.25
 
 ### Patch Changes
