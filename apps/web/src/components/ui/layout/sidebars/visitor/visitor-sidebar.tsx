@@ -75,7 +75,7 @@ export function VisitorSidebar({
 					status={presence?.status}
 				/>
 				<ScrollArea
-					className="-mr-1.5 mt-4 flex flex-1 flex-col gap-4 overflow-y-scroll pr-2"
+					className="-mr-1.5 mt-4 flex flex-1 flex-col gap-4 pr-2 pb-32"
 					scrollMask
 				>
 					{visitor.isBlocked ? (

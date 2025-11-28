@@ -1,75 +1,58 @@
 "use client";
 
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import type * as React from "react";
+import { forwardRef, useImperativeHandle } from "react";
 
 import { useScrollMask } from "@/hooks/use-scroll-mask";
 import { cn } from "@/lib/utils";
 
-type ScrollAreaProps = React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+type ScrollAreaProps = React.HTMLAttributes<HTMLDivElement> & {
+	orientation?: "vertical" | "horizontal" | "both";
 	scrollMask?: boolean;
 	maskHeight?: string;
 	scrollbarWidth?: string;
 };
 
-function ScrollArea({
-	className,
-	children,
-	scrollMask = false,
-	maskHeight = "54px",
-	scrollbarWidth = "8px",
-	...props
-}: ScrollAreaProps) {
-	const { ref: maskRef, style: maskStyle } = useScrollMask({
-		maskHeight,
-		scrollbarWidth,
-	});
+const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(
+	(
+		{
+			className,
+			children,
+			orientation = "vertical",
+			scrollMask = false,
+			maskHeight = "54px",
+			scrollbarWidth = "8px",
+			...props
+		},
+		ref
+	) => {
+		const { ref: maskRef, style: maskStyle } = useScrollMask({
+			maskHeight,
+			scrollbarWidth,
+		});
 
-	return (
-		<ScrollAreaPrimitive.Root
-			className={cn("relative", className)}
-			data-slot="scroll-area"
-			{...props}
-		>
-			<ScrollAreaPrimitive.Viewport
-				className="size-full rounded-[inherit] outline-none transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] focus-visible:ring-ring/50"
-				data-slot="scroll-area-viewport"
-				ref={scrollMask ? maskRef : undefined}
+		useImperativeHandle(ref, () => maskRef.current as HTMLDivElement, []);
+
+		return (
+			<div
+				className={cn(
+					"scrollbar-thin scrollbar-thumb-background-300 scrollbar-track-fd-overlay",
+					orientation === "vertical" && "overflow-x-hidden overflow-y-scroll",
+					orientation === "horizontal" && "overflow-y-hidden overflow-x-scroll",
+					orientation === "both" && "overflow-scroll",
+					className
+				)}
+				data-slot="scroll-area"
+				ref={maskRef}
 				style={scrollMask ? maskStyle : undefined}
+				{...props}
 			>
 				{children}
-			</ScrollAreaPrimitive.Viewport>
-			<ScrollBar />
-			<ScrollAreaPrimitive.Corner />
-		</ScrollAreaPrimitive.Root>
-	);
-}
+			</div>
+		);
+	}
+);
 
-function ScrollBar({
-	className,
-	orientation = "vertical",
-	...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
-	return (
-		<ScrollAreaPrimitive.ScrollAreaScrollbar
-			className={cn(
-				"flex touch-none select-none p-px transition-colors",
-				orientation === "vertical" &&
-					"h-full w-2.5 border-l border-l-transparent",
-				orientation === "horizontal" &&
-					"h-2.5 flex-col border-t border-t-transparent",
-				className
-			)}
-			data-slot="scroll-area-scrollbar"
-			orientation={orientation}
-			{...props}
-		>
-			<ScrollAreaPrimitive.ScrollAreaThumb
-				className="relative flex-1 rounded-full bg-border"
-				data-slot="scroll-area-thumb"
-			/>
-		</ScrollAreaPrimitive.ScrollAreaScrollbar>
-	);
-}
+ScrollArea.displayName = "ScrollArea";
 
-export { ScrollArea, ScrollBar };
+export { ScrollArea };

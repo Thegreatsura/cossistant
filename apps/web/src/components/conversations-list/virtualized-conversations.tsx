@@ -56,24 +56,14 @@ export function VirtualizedConversations({
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const viewportRef = useRef<HTMLDivElement>(null);
 
-	// Populate viewportRef with the actual scrollable viewport element
+	// Populate viewportRef with the actual scrollable element
 	useEffect(() => {
 		if (scrollAreaRef.current) {
-			const viewport = scrollAreaRef.current.querySelector(
-				"[data-slot='scroll-area-viewport']"
-			) as HTMLDivElement | null;
-			if (viewport) {
-				viewportRef.current = viewport;
-			}
+			viewportRef.current = scrollAreaRef.current;
 		}
 	}, []);
 
-	const getScrollElement = () => {
-		// Get the viewport element from the ScrollArea
-		return scrollAreaRef.current?.querySelector(
-			"[data-slot='scroll-area-viewport']"
-		) as HTMLElement | null;
-	};
+	const getScrollElement = () => scrollAreaRef.current;
 
 	const { focusedIndex, handleMouseEnter } = useConversationKeyboardNavigation({
 		conversations,
