@@ -48,7 +48,11 @@ export function ConversationPane({
 	const playNewMessageSound = useDashboardNewMessageSound(newMessageEnabled);
 	const previousItemsRef = useRef<readonly TimelineItem[]>([]);
 
-	const { submit: submitConversationMessage } = useSendConversationMessage({
+	const {
+		submit: submitConversationMessage,
+		isUploading,
+		uploadProgress,
+	} = useSendConversationMessage({
 		conversationId,
 		websiteSlug,
 		currentUserId,
@@ -385,6 +389,8 @@ export function ConversationPane({
 			error,
 			files,
 			isSubmitting,
+			isUploading,
+			uploadProgress,
 			maxFileSize: 10 * 1024 * 1024,
 			maxFiles: 2,
 			onChange: handleMessageChange,

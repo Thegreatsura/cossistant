@@ -16,6 +16,7 @@ export * from "./use-conversation-timeline-items";
 export * from "./use-conversation-typing";
 export * from "./use-conversations";
 export * from "./use-create-conversation";
+export * from "./use-file-upload";
 export * from "./use-home-page";
 export * from "./use-message-composer";
 export * from "./use-new-message-sound";

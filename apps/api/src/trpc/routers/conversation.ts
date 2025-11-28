@@ -153,6 +153,29 @@ export const conversationRouter = createTRPCRouter({
 				text: z.string().min(1),
 				visibility: z.enum(["public", "private"]).default("public"),
 				timelineItemId: z.ulid().optional(),
+				// Optional file/image parts to include in the message
+				parts: z
+					.array(
+						z.union([
+							z.object({
+								type: z.literal("image"),
+								url: z.string().url(),
+								mediaType: z.string(),
+								fileName: z.string().optional(),
+								size: z.number().optional(),
+								width: z.number().optional(),
+								height: z.number().optional(),
+							}),
+							z.object({
+								type: z.literal("file"),
+								url: z.string().url(),
+								mediaType: z.string(),
+								fileName: z.string().optional(),
+								size: z.number().optional(),
+							}),
+						])
+					)
+					.optional(),
 			})
 		)
 		.mutation(async ({ ctx: { db, user }, input }) => {
@@ -212,6 +235,7 @@ export const conversationRouter = createTRPCRouter({
 				conversationOwnerVisitorId: conversation.visitorId,
 				id: input.timelineItemId,
 				text: input.text,
+				extraParts: input.parts ?? [],
 				visibility: input.visibility,
 				userId: user.id,
 				visitorId: null,

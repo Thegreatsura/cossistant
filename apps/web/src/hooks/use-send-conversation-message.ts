@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ulid } from "ulid";
 import {
 	type ConversationTimelineItem,
@@ -9,6 +9,7 @@ import {
 	removeConversationTimelineItemFromCache,
 	upsertConversationTimelineItemInCache,
 } from "@/data/conversation-message-cache";
+import { type FileUploadPart, useFileUpload } from "@/hooks/use-file-upload";
 import { useTRPC } from "@/lib/trpc/client";
 
 type SubmitPayload = {
@@ -26,6 +27,8 @@ type UseSendConversationMessageOptions = {
 type UseSendConversationMessageReturn = {
 	submit: (payload: SubmitPayload) => Promise<void>;
 	isPending: boolean;
+	isUploading: boolean;
+	uploadProgress: number;
 };
 
 const DEFAULT_PAGE_LIMIT = 50;
@@ -38,6 +41,13 @@ export function useSendConversationMessage({
 }: UseSendConversationMessageOptions): UseSendConversationMessageReturn {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	const {
+		uploadFiles,
+		isUploading,
+		progress: uploadProgress,
+	} = useFileUpload();
 
 	const timelineItemsQueryKey = useMemo(
 		() =>
@@ -51,7 +61,7 @@ export function useSendConversationMessage({
 		[conversationId, pageLimit, trpc, websiteSlug]
 	);
 
-	const { mutateAsync: sendMessage, isPending } = useMutation(
+	const { mutateAsync: sendMessage, isPending: isSending } = useMutation(
 		trpc.conversation.sendMessage.mutationOptions()
 	);
 
@@ -59,47 +69,59 @@ export function useSendConversationMessage({
 		async ({ message, files }: SubmitPayload) => {
 			const trimmedMessage = message.trim();
 
-			if (!trimmedMessage) {
+			// Allow empty message if there are files
+			if (!trimmedMessage && files.length === 0) {
 				return;
 			}
 
-			if (files.length > 0) {
-				throw new Error("File attachments are not supported yet.");
-			}
+			setIsSubmitting(true);
 
 			const timelineItemId = ulid();
 			const timestamp = new Date().toISOString();
 
-			const optimisticItem: ConversationTimelineItem = {
-				id: timelineItemId,
-				conversationId,
-				organizationId: "", // Will be set by backend
-				type: "message",
-				text: trimmedMessage,
-				parts: [{ type: "text", text: trimmedMessage }],
-				visibility: "public",
-				userId: currentUserId,
-				aiAgentId: null,
-				visitorId: null,
-				createdAt: timestamp,
-				deletedAt: null,
-			};
-
-			await queryClient.cancelQueries({ queryKey: timelineItemsQueryKey });
-
-			upsertConversationTimelineItemInCache(
-				queryClient,
-				timelineItemsQueryKey,
-				optimisticItem
-			);
-
 			try {
+				// Upload files FIRST before sending the message
+				let uploadedParts: FileUploadPart[] = [];
+				if (files.length > 0) {
+					uploadedParts = await uploadFiles(files, conversationId);
+				}
+
+				// Build parts for optimistic update and API call
+				const parts: ConversationTimelineItem["parts"] = [
+					{ type: "text", text: trimmedMessage },
+					...uploadedParts,
+				];
+
+				const optimisticItem: ConversationTimelineItem = {
+					id: timelineItemId,
+					conversationId,
+					organizationId: "", // Will be set by backend
+					type: "message",
+					text: trimmedMessage,
+					parts,
+					visibility: "public",
+					userId: currentUserId,
+					aiAgentId: null,
+					visitorId: null,
+					createdAt: timestamp,
+					deletedAt: null,
+				};
+
+				await queryClient.cancelQueries({ queryKey: timelineItemsQueryKey });
+
+				upsertConversationTimelineItemInCache(
+					queryClient,
+					timelineItemsQueryKey,
+					optimisticItem
+				);
+
 				const response = await sendMessage({
 					conversationId,
 					websiteSlug,
-					text: trimmedMessage,
+					text: trimmedMessage || " ", // API requires non-empty text
 					visibility: "public",
 					timelineItemId,
+					parts: uploadedParts.length > 0 ? uploadedParts : undefined,
 				});
 
 				const { item: createdItem } = response;
@@ -120,6 +142,8 @@ export function useSendConversationMessage({
 				);
 
 				throw error;
+			} finally {
+				setIsSubmitting(false);
 			}
 		},
 		[
@@ -128,12 +152,15 @@ export function useSendConversationMessage({
 			timelineItemsQueryKey,
 			queryClient,
 			sendMessage,
+			uploadFiles,
 			websiteSlug,
 		]
 	);
 
 	return {
 		submit,
-		isPending,
+		isPending: isSubmitting || isSending,
+		isUploading,
+		uploadProgress,
 	};
 }

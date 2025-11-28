@@ -173,10 +173,14 @@ export const ConversationPage: ConversationPageComponent = ({
 			) : (
 				<div className="flex-shrink-0 p-1">
 					<MultimodalInput
-						disabled={conversation.composer.isSubmitting}
+						disabled={
+							conversation.composer.isSubmitting ||
+							conversation.composer.isUploading
+						}
 						error={conversation.error}
 						files={conversation.composer.files}
 						isSubmitting={conversation.composer.isSubmitting}
+						isUploading={conversation.composer.isUploading}
 						onChange={conversation.composer.setMessage}
 						onFileSelect={conversation.composer.addFiles}
 						onRemoveFile={conversation.composer.removeFile}

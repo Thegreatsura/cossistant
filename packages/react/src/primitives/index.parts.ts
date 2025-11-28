@@ -26,6 +26,14 @@ export {
 	TimelineItemTimestamp,
 } from "./timeline-item";
 export {
+	extractFileParts,
+	extractImageParts,
+	hasAttachments,
+	TimelineItemAttachments,
+	TimelineItemFiles,
+	TimelineItemImages,
+} from "./timeline-item-attachments";
+export {
 	TimelineItemGroup,
 	TimelineItemGroupAvatar,
 	TimelineItemGroupContent,

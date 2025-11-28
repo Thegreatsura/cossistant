@@ -441,6 +441,33 @@ export class CossistantClient {
 		}
 	}
 
+	// File upload methods
+	/**
+	 * Generate a presigned URL for uploading a file to S3.
+	 */
+	async generateUploadUrl(
+		params: Omit<
+			Parameters<CossistantRestClient["generateUploadUrl"]>[0],
+			"websiteId"
+		>
+	) {
+		return this.restClient.generateUploadUrl(params);
+	}
+
+	/**
+	 * Upload a file to S3 using a presigned URL.
+	 */
+	async uploadFile(file: File, uploadUrl: string, contentType: string) {
+		return this.restClient.uploadFile(file, uploadUrl, contentType);
+	}
+
+	/**
+	 * Upload multiple files for a conversation message.
+	 */
+	async uploadFilesForMessage(files: File[], conversationId: string) {
+		return this.restClient.uploadFilesForMessage(files, conversationId);
+	}
+
 	// Cleanup method
 	destroy(): void {
 		// No cleanup needed for REST client

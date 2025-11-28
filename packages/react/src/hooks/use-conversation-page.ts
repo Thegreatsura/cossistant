@@ -55,6 +55,7 @@ export type UseConversationPageReturn = {
 		message: string;
 		files: File[];
 		isSubmitting: boolean;
+		isUploading: boolean;
 		canSubmit: boolean;
 		setMessage: (message: string) => void;
 		addFiles: (files: File[]) => void;
@@ -297,6 +298,7 @@ export function useConversationPage(
 			message: composer.message,
 			files: composer.files,
 			isSubmitting: composer.isSubmitting,
+			isUploading: composer.isUploading,
 			canSubmit: composer.canSubmit,
 			setMessage: composer.setMessage,
 			addFiles: composer.addFiles,

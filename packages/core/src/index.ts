@@ -68,6 +68,19 @@ export {
 } from "./store/website-store";
 // Core-specific exports
 export { CossistantAPIError } from "./types";
+// Upload constants and utilities
+export {
+	ALLOWED_FILE_TYPES_DESCRIPTION,
+	ALLOWED_MIME_TYPES,
+	FILE_INPUT_ACCEPT,
+	formatFileSize,
+	isAllowedMimeType,
+	isImageMimeType,
+	MAX_FILE_SIZE,
+	MAX_FILES_PER_MESSAGE,
+	validateFile,
+	validateFiles,
+} from "./upload-constants";
 // Utility exports
 export { generateConversationId, generateMessageId } from "./utils";
 export { collectVisitorData, type VisitorData } from "./visitor-data";

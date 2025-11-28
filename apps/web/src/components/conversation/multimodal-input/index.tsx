@@ -1,5 +1,11 @@
 "use client";
 
+import {
+	FILE_INPUT_ACCEPT,
+	formatFileSize,
+	MAX_FILE_SIZE,
+	MAX_FILES_PER_MESSAGE,
+} from "@cossistant/core";
 import type React from "react";
 import { useLayoutEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,12 +22,14 @@ export type MultimodalInputProps = {
 	placeholder?: string;
 	disabled?: boolean;
 	isSubmitting?: boolean;
+	isUploading?: boolean;
+	uploadProgress?: number;
 	error?: Error | null;
 	files?: File[];
 	onRemoveFile?: (index: number) => void;
 	maxFiles?: number;
 	maxFileSize?: number;
-	allowedFileTypes?: string[];
+	allowedFileTypes?: string;
 };
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
@@ -33,17 +41,19 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	placeholder = "Type your message...",
 	disabled = false,
 	isSubmitting = false,
+	isUploading = false,
+	uploadProgress = 0,
 	error,
 	files = [],
 	onRemoveFile,
-	maxFiles = 5,
-	maxFileSize = 10 * 1024 * 1024, // 10MB
-	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
+	maxFiles = MAX_FILES_PER_MESSAGE,
+	maxFileSize = MAX_FILE_SIZE,
+	allowedFileTypes = FILE_INPUT_ACCEPT,
 }) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const hasContent = value.trim().length > 0 || files.length > 0;
-	const canSubmit = !disabled && hasContent;
+	const canSubmit = !disabled && hasContent && !isUploading;
 
 	// Auto-resize textarea with max height constraint
 	useLayoutEffect(() => {
@@ -86,16 +96,6 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		}
 	};
 
-	const formatFileSize = (bytes: number) => {
-		if (bytes < 1024) {
-			return `${bytes} B`;
-		}
-		if (bytes < 1024 * 1024) {
-			return `${(bytes / 1024).toFixed(1)} KB`;
-		}
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-	};
-
 	return (
 		<div className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl">
 			<form className="flex flex-col gap-2" onSubmit={handleFormSubmit}>
@@ -108,32 +108,49 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 				{/* File attachments */}
 				{files.length > 0 && (
-					<div className="flex flex-wrap gap-2 p-2">
-						{files.map((file, index) => (
-							<div
-								className="flex items-center gap-2 rounded-md bg-muted px-2 py-1 text-xs"
-								key={`${file.name}-${index}`}
-							>
-								<Icon className="h-3 w-3" name="attachment" />
-								<span className="max-w-[150px] truncate">{file.name}</span>
-								<span className="text-muted-foreground">
-									{formatFileSize(file.size)}
-								</span>
-								{onRemoveFile && (
-									<TooltipOnHover content="Remove file">
-										<Button
-											className="ml-1"
-											onClick={() => onRemoveFile(index)}
-											size="icon-small"
-											type="button"
-											variant="ghost"
-										>
-											<Icon className="h-3 w-3" name="x" />
-										</Button>
-									</TooltipOnHover>
-								)}
+					<div className="flex flex-col gap-2 p-2">
+						{/* Upload progress indicator */}
+						{isUploading && (
+							<div className="flex items-center gap-2 text-muted-foreground text-xs">
+								<div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+									<div
+										className="h-full bg-primary transition-all duration-300"
+										style={{ width: `${uploadProgress}%` }}
+									/>
+								</div>
+								<span>Uploading {uploadProgress}%</span>
 							</div>
-						))}
+						)}
+						<div className="flex flex-wrap gap-2">
+							{files.map((file, index) => (
+								<div
+									className={cn(
+										"flex items-center gap-2 rounded-md bg-muted px-2 py-1 text-xs",
+										isUploading && "opacity-70"
+									)}
+									key={`${file.name}-${index}`}
+								>
+									<Icon className="h-3 w-3" name="attachment" />
+									<span className="max-w-[150px] truncate">{file.name}</span>
+									<span className="text-muted-foreground">
+										{formatFileSize(file.size)}
+									</span>
+									{onRemoveFile && !isUploading && (
+										<TooltipOnHover content="Remove file">
+											<Button
+												className="ml-1"
+												onClick={() => onRemoveFile(index)}
+												size="icon-small"
+												type="button"
+												variant="ghost"
+											>
+												<Icon className="h-3 w-3" name="x" />
+											</Button>
+										</TooltipOnHover>
+									)}
+								</div>
+							))}
+						</div>
 					</div>
 				)}
 
@@ -166,47 +183,47 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 					<div className="flex items-center justify-end pr-1 pb-1 pl-3">
 						<div className="flex items-center gap-0.5">
 							{/* File attachment button */}
-							{/* {onFileSelect && (
-                <>
-                  <TooltipOnHover content="Attach files">
-                    <Button
-                      className={cn(files.length >= maxFiles && "opacity-50")}
-                      disabled={
-                        disabled || isSubmitting || files.length >= maxFiles
-                      }
-                      onClick={handleAttachClick}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Icon className="h-4 w-4" name="attachment" />
-                    </Button>
-                  </TooltipOnHover>
+							{onFileSelect && (
+								<>
+									<TooltipOnHover content="Attach files">
+										<Button
+											className={cn(files.length >= maxFiles && "opacity-50")}
+											disabled={
+												disabled || isSubmitting || files.length >= maxFiles
+											}
+											onClick={handleAttachClick}
+											size="icon"
+											type="button"
+											variant="ghost"
+										>
+											<Icon className="h-4 w-4" name="attachment" />
+										</Button>
+									</TooltipOnHover>
 
-                  <input
-                    type="file"
-                    accept={allowedFileTypes.join(",")}
-                    className="hidden"
-                    disabled={
-                      disabled || isSubmitting || files.length >= maxFiles
-                    }
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length > 0 && onFileSelect) {
-                        onFileSelect(files);
-                        // Reset input to allow selecting the same file again
-                        e.target.value = "";
-                      }
-                    }}
-                    ref={fileInputRef}
-                    multiple
-                  />
-                </>
-              )} */}
+									<input
+										accept={allowedFileTypes}
+										className="hidden"
+										disabled={
+											disabled || isSubmitting || files.length >= maxFiles
+										}
+										multiple
+										onChange={(e) => {
+											const selectedFiles = Array.from(e.target.files || []);
+											if (selectedFiles.length > 0) {
+												onFileSelect(selectedFiles);
+												// Reset input to allow selecting the same file again
+												e.target.value = "";
+											}
+										}}
+										ref={fileInputRef}
+										type="file"
+									/>
+								</>
+							)}
 
 							<TooltipOnHover
-								content="Send message"
-								shortcuts={["mod", "enter"]}
+								content={isUploading ? "Uploading files..." : "Send message"}
+								shortcuts={isUploading ? undefined : ["mod", "enter"]}
 							>
 								<Button
 									className={cn(
@@ -219,11 +236,15 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 									type="submit"
 									variant="ghost"
 								>
-									<Icon
-										className={cn("size-4")}
-										name="send"
-										variant={canSubmit ? "filled" : "default"}
-									/>
+									{isUploading ? (
+										<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+									) : (
+										<Icon
+											className={cn("size-4")}
+											name="send"
+											variant={canSubmit ? "filled" : "default"}
+										/>
+									)}
 								</Button>
 							</TooltipOnHover>
 						</div>

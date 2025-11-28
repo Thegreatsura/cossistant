@@ -59,6 +59,7 @@ export type UseMessageComposerReturn = {
 
 	// Status
 	isSubmitting: boolean;
+	isUploading: boolean;
 	canSubmit: boolean;
 
 	// Actions
@@ -170,14 +171,17 @@ export function useMessageComposer(
 
 	// Combine submission states
 	const isSubmitting = multimodalInput.isSubmitting || sendMessage.isPending;
+	const isUploading = sendMessage.isUploading;
 	const error = multimodalInput.error || sendMessage.error;
-	const canSubmit = multimodalInput.canSubmit && !sendMessage.isPending;
+	const canSubmit =
+		multimodalInput.canSubmit && !sendMessage.isPending && !isUploading;
 
 	return {
 		message: multimodalInput.message,
 		files: multimodalInput.files,
 		error,
 		isSubmitting,
+		isUploading,
 		canSubmit,
 		setMessage,
 		addFiles: multimodalInput.addFiles,

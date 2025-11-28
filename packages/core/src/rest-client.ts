@@ -18,6 +18,10 @@ import type {
 	SendTimelineItemRequest,
 	SendTimelineItemResponse,
 } from "@cossistant/types/api/timeline-item";
+import type {
+	GenerateUploadUrlRequest,
+	GenerateUploadUrlResponse,
+} from "@cossistant/types/api/upload";
 import { logger } from "./logger";
 import {
 	CossistantAPIError,
@@ -27,6 +31,11 @@ import {
 	type VisitorMetadata,
 	type VisitorResponse,
 } from "./types";
+import {
+	isAllowedMimeType,
+	MAX_FILE_SIZE,
+	validateFile,
+} from "./upload-constants";
 import { generateConversationId } from "./utils";
 import { collectVisitorData } from "./visitor-data";
 import {
@@ -719,5 +728,161 @@ export class CossistantRestClient {
 			nextCursor: response.nextCursor,
 			hasNextPage: response.hasNextPage,
 		};
+	}
+
+	/**
+	 * Generate a presigned URL for uploading a file to S3.
+	 * The URL can be used to PUT a file directly to S3.
+	 */
+	async generateUploadUrl(
+		params: Omit<GenerateUploadUrlRequest, "websiteId" | "scope"> & {
+			conversationId: string;
+		}
+	): Promise<GenerateUploadUrlResponse> {
+		if (!this.websiteId) {
+			throw new Error(
+				"Website ID is required. Call getWebsite() first to initialize the client."
+			);
+		}
+
+		const visitorId = this.resolveVisitorId();
+
+		// Validate file constraints on client side
+		if (!isAllowedMimeType(params.contentType)) {
+			throw new Error(`File type "${params.contentType}" is not allowed`);
+		}
+
+		const headers: Record<string, string> = {};
+		if (visitorId) {
+			headers["X-Visitor-Id"] = visitorId;
+		}
+
+		// Get organization ID from website response (stored during getWebsite)
+		// For now, we'll make an additional call to get website info
+		const websiteResponse = await this.request<{ organizationId: string }>(
+			"/websites",
+			{ headers }
+		);
+
+		const body: GenerateUploadUrlRequest = {
+			contentType: params.contentType,
+			websiteId: this.websiteId,
+			scope: {
+				type: "conversation",
+				organizationId: websiteResponse.organizationId,
+				websiteId: this.websiteId,
+				conversationId: params.conversationId,
+			},
+			fileName: params.fileName,
+			fileExtension: params.fileExtension,
+			path: params.path,
+			useCdn: false, // Files should not go to CDN
+			expiresInSeconds: params.expiresInSeconds,
+		};
+
+		const response = await this.request<GenerateUploadUrlResponse>(
+			"/uploads/sign-url",
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers,
+			}
+		);
+
+		return response;
+	}
+
+	/**
+	 * Upload a file to S3 using a presigned URL.
+	 * @returns The public URL of the uploaded file
+	 */
+	async uploadFile(
+		file: File,
+		uploadUrl: string,
+		contentType: string
+	): Promise<void> {
+		// Validate file before upload
+		const validationError = validateFile(file);
+		if (validationError) {
+			throw new Error(validationError);
+		}
+
+		const response = await fetch(uploadUrl, {
+			method: "PUT",
+			body: file,
+			headers: {
+				"Content-Type": contentType,
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(
+				`Failed to upload file: ${response.status} ${response.statusText}`
+			);
+		}
+	}
+
+	/**
+	 * Upload multiple files for a conversation message.
+	 * Files are uploaded in parallel and the function returns timeline parts
+	 * that can be included in a message.
+	 */
+	async uploadFilesForMessage(
+		files: File[],
+		conversationId: string
+	): Promise<
+		Array<
+			| {
+					type: "image";
+					url: string;
+					mediaType: string;
+					fileName?: string;
+					size?: number;
+			  }
+			| {
+					type: "file";
+					url: string;
+					mediaType: string;
+					fileName?: string;
+					size?: number;
+			  }
+		>
+	> {
+		if (files.length === 0) {
+			return [];
+		}
+
+		// Validate all files first
+		for (const file of files) {
+			const error = validateFile(file);
+			if (error) {
+				throw new Error(error);
+			}
+		}
+
+		// Upload files in parallel
+		const uploadPromises = files.map(async (file) => {
+			// Generate presigned URL
+			const uploadInfo = await this.generateUploadUrl({
+				conversationId,
+				contentType: file.type,
+				fileName: file.name,
+			});
+
+			// Upload file to S3
+			await this.uploadFile(file, uploadInfo.uploadUrl, file.type);
+
+			// Return timeline part based on file type
+			const isImage = file.type.startsWith("image/");
+			return {
+				type: isImage ? ("image" as const) : ("file" as const),
+				url: uploadInfo.publicUrl,
+				mediaType: file.type,
+				fileName: file.name,
+				size: file.size,
+			};
+		});
+
+		return Promise.all(uploadPromises);
 	}
 }
