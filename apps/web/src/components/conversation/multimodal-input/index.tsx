@@ -30,6 +30,29 @@ export type MultimodalInputProps = {
 	maxFiles?: number;
 	maxFileSize?: number;
 	allowedFileTypes?: string;
+	/**
+	 * Render prop for custom attach button.
+	 * Receives `triggerFileInput` callback to open the file picker and
+	 * `disabled` boolean indicating if attachment is currently disabled.
+	 *
+	 * @example
+	 * ```tsx
+	 * renderAttachButton={({ triggerFileInput, disabled }) => (
+	 *   <ButtonWithPaywall
+	 *     featureKey="dashboard-file-sharing"
+	 *     websiteSlug={websiteSlug}
+	 *     onClick={triggerFileInput}
+	 *     disabled={disabled}
+	 *   >
+	 *     <Icon name="attachment" />
+	 *   </ButtonWithPaywall>
+	 * )}
+	 * ```
+	 */
+	renderAttachButton?: (props: {
+		triggerFileInput: () => void;
+		disabled: boolean;
+	}) => React.ReactNode;
 };
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
@@ -49,6 +72,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	maxFiles = MAX_FILES_PER_MESSAGE,
 	maxFileSize = MAX_FILE_SIZE,
 	allowedFileTypes = FILE_INPUT_ACCEPT,
+	renderAttachButton,
 }) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -90,11 +114,13 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		handleSubmit();
 	};
 
-	const handleAttachClick = () => {
+	const triggerFileInput = () => {
 		if (files.length < maxFiles) {
 			fileInputRef.current?.click();
 		}
 	};
+
+	const isAttachDisabled = disabled || isSubmitting || files.length >= maxFiles;
 
 	return (
 		<div className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl">
@@ -185,27 +211,31 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 							{/* File attachment button */}
 							{onFileSelect && (
 								<>
-									<TooltipOnHover content="Attach files">
-										<Button
-											className={cn(files.length >= maxFiles && "opacity-50")}
-											disabled={
-												disabled || isSubmitting || files.length >= maxFiles
-											}
-											onClick={handleAttachClick}
-											size="icon"
-											type="button"
-											variant="ghost"
-										>
-											<Icon className="h-4 w-4" name="attachment" />
-										</Button>
-									</TooltipOnHover>
+									{renderAttachButton ? (
+										// Render custom attach button (e.g., ButtonWithPaywall)
+										renderAttachButton({
+											triggerFileInput,
+											disabled: isAttachDisabled,
+										})
+									) : (
+										<TooltipOnHover content="Attach files">
+											<Button
+												className={cn(files.length >= maxFiles && "opacity-50")}
+												disabled={isAttachDisabled}
+												onClick={triggerFileInput}
+												size="icon"
+												type="button"
+												variant="ghost"
+											>
+												<Icon className="h-4 w-4" name="attachment" />
+											</Button>
+										</TooltipOnHover>
+									)}
 
 									<input
 										accept={allowedFileTypes}
 										className="hidden"
-										disabled={
-											disabled || isSubmitting || files.length >= maxFiles
-										}
+										disabled={isAttachDisabled}
 										multiple
 										onChange={(e) => {
 											const selectedFiles = Array.from(e.target.files || []);

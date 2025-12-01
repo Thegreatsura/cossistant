@@ -33,6 +33,12 @@ type UpgradeModalProps = {
 	currentPlan: PlanInfo["plan"];
 	initialPlanName: PlanName;
 	websiteSlug: string;
+	/**
+	 * Optional custom caption to display at the top of the modal.
+	 * Use this to explain why the user needs to upgrade for a specific feature.
+	 * @example "Upgrade to a paid plan to send files and images to your customers"
+	 */
+	caption?: string;
 };
 
 const PLAN_SEQUENCE: PlanName[] = ["free", "hobby", "pro"];
@@ -158,6 +164,7 @@ export function UpgradeModal({
 	currentPlan,
 	initialPlanName,
 	websiteSlug,
+	caption,
 }: UpgradeModalProps) {
 	const trpc = useTRPC();
 	const preferredPlanName = useMemo<PlanName>(
@@ -243,6 +250,13 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="space-y-6 py-4">
+					{caption && (
+						<div className="rounded-md border border-cossistant-orange/30 bg-cossistant-orange/5 p-4">
+							<p className="text-center font-medium text-cossistant-orange text-sm">
+								{caption}
+							</p>
+						</div>
+					)}
 					{launchDiscountPercent && (
 						<div className="p-2">
 							<PromoBannerOrnaments>

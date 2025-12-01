@@ -147,36 +147,49 @@ export const conversationRouter = createTRPCRouter({
 
 	sendMessage: protectedProcedure
 		.input(
-			z.object({
-				conversationId: z.string(),
-				websiteSlug: z.string(),
-				text: z.string().min(1),
-				visibility: z.enum(["public", "private"]).default("public"),
-				timelineItemId: z.ulid().optional(),
-				// Optional file/image parts to include in the message
-				parts: z
-					.array(
-						z.union([
-							z.object({
-								type: z.literal("image"),
-								url: z.string().url(),
-								mediaType: z.string(),
-								fileName: z.string().optional(),
-								size: z.number().optional(),
-								width: z.number().optional(),
-								height: z.number().optional(),
-							}),
-							z.object({
-								type: z.literal("file"),
-								url: z.string().url(),
-								mediaType: z.string(),
-								fileName: z.string().optional(),
-								size: z.number().optional(),
-							}),
-						])
-					)
-					.optional(),
-			})
+			z
+				.object({
+					conversationId: z.string(),
+					websiteSlug: z.string(),
+					text: z.string(),
+					visibility: z.enum(["public", "private"]).default("public"),
+					timelineItemId: z.ulid().optional(),
+					// Optional file/image parts to include in the message
+					parts: z
+						.array(
+							z.union([
+								z.object({
+									type: z.literal("image"),
+									url: z.string().url(),
+									mediaType: z.string(),
+									fileName: z.string().optional(),
+									size: z.number().optional(),
+									width: z.number().optional(),
+									height: z.number().optional(),
+								}),
+								z.object({
+									type: z.literal("file"),
+									url: z.string().url(),
+									mediaType: z.string(),
+									fileName: z.string().optional(),
+									size: z.number().optional(),
+								}),
+							])
+						)
+						.optional(),
+				})
+				.refine(
+					(data) => {
+						const hasText = data.text.trim().length > 0;
+						const hasParts = data.parts && data.parts.length > 0;
+						return hasText || hasParts;
+					},
+					{
+						message:
+							"Message must have either text content or file attachments",
+						path: ["text"],
+					}
+				)
 		)
 		.mutation(async ({ ctx: { db, user }, input }) => {
 			const [websiteData, conversation] = await Promise.all([

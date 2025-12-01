@@ -1,4 +1,14 @@
+import { ALLOWED_MIME_TYPES } from "@cossistant/core";
 import { useCallback, useRef, useState } from "react";
+
+// Convert ALLOWED_MIME_TYPES to validation-friendly format with wildcards for image/* and text/*
+const DEFAULT_ALLOWED_FILE_TYPES = [
+	...ALLOWED_MIME_TYPES.filter(
+		(type) => !(type.startsWith("image/") || type.startsWith("text/"))
+	),
+	"image/*",
+	"text/*",
+];
 
 export type UseMultimodalInputOptions = {
 	onSubmit?: (data: { message: string; files: File[] }) => void | Promise<void>;
@@ -38,7 +48,7 @@ export const useMultimodalInput = ({
 	onError,
 	maxFileSize = 10 * 1024 * 1024, // 10MB default
 	maxFiles = 5,
-	allowedFileTypes = ["image/*", "application/pdf", "text/*"],
+	allowedFileTypes = DEFAULT_ALLOWED_FILE_TYPES,
 }: UseMultimodalInputOptions = {}): UseMultimodalInputReturn => {
 	const [message, setMessage] = useState("");
 	const [files, setFiles] = useState<File[]>([]);

@@ -118,7 +118,7 @@ export function useSendConversationMessage({
 				const response = await sendMessage({
 					conversationId,
 					websiteSlug,
-					text: trimmedMessage || " ", // API requires non-empty text
+					text: trimmedMessage,
 					visibility: "public",
 					timelineItemId,
 					parts: uploadedParts.length > 0 ? uploadedParts : undefined,

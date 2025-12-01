@@ -8,6 +8,7 @@ export type FeatureKey =
 	| "team-members"
 	| "email-notifications"
 	| "email-reply"
+	| "dashboard-file-sharing"
 	| "slack-support"
 	| "slack-custom-channel"
 	| "pro-integrations"
@@ -94,6 +95,12 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 		key: "email-reply",
 		name: "Reply via Email",
 		description: "Reply to conversations directly from email",
+		category: "primary",
+	},
+	"dashboard-file-sharing": {
+		key: "dashboard-file-sharing",
+		name: "Dashboard File Sharing",
+		description: "Send files and images to visitors from the dashboard",
 		category: "primary",
 	},
 	"slack-support": {
@@ -223,6 +230,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"team-members": 1, // Limited team members
 			"email-notifications": true, // Included
 			"email-reply": true, // Included
+			"dashboard-file-sharing": false, // Paid only
 			"slack-support": false, // Paid only
 			"slack-custom-channel": false, // Pro only
 			"pro-integrations": false, // Pro only
@@ -254,6 +262,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"team-members": 2, // 2 team members
 			"email-notifications": true, // Included
 			"email-reply": true, // Included
+			"dashboard-file-sharing": true, // Included
 			"slack-support": true, // Included
 			"slack-custom-channel": false, // Pro only
 			"pro-integrations": false, // Pro only
@@ -285,6 +294,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"team-members": 4, // 4 team member seats
 			"email-notifications": true, // Included
 			"email-reply": true, // Included
+			"dashboard-file-sharing": true, // Included
 			"slack-support": true, // Included
 			"slack-custom-channel": true, // Custom Slack channel included
 			"pro-integrations": true, // Pro integrations included

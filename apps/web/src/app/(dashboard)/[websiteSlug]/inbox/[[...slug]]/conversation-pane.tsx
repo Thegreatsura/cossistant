@@ -11,6 +11,9 @@ import { useHotkeys } from "react-hotkeys-hook";
 import type { ConversationProps } from "@/components/conversation";
 import { Conversation } from "@/components/conversation";
 import type { ConversationHeaderNavigationProps } from "@/components/conversation/header/navigation";
+import { ButtonWithPaywall } from "@/components/plan/button-with-paywall";
+import Icon from "@/components/ui/icons";
+import { TooltipOnHover } from "@/components/ui/tooltip";
 import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
 import { useConversationActions } from "@/data/use-conversation-actions";
@@ -22,6 +25,7 @@ import { useDashboardNewMessageSound } from "@/hooks/use-dashboard-new-message-s
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { useSidebar } from "@/hooks/use-sidebars";
 import { useSoundPreferences } from "@/hooks/use-sound-preferences";
+import { cn } from "@/lib/utils";
 
 const MESSAGES_PAGE_LIMIT = 50;
 const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
@@ -399,6 +403,23 @@ export function ConversationPane({
 			onSubmit: submit,
 			placeholder: "Type your message...",
 			value: message,
+			renderAttachButton: ({ triggerFileInput, disabled }) => (
+				<TooltipOnHover content="Attach files">
+					<ButtonWithPaywall
+						className={cn(files.length >= 2 && "opacity-50")}
+						disabled={disabled}
+						featureKey="dashboard-file-sharing"
+						onClick={triggerFileInput}
+						paywallCaption="Upgrade to a paid plan to send pictures and files to your customers"
+						size="icon"
+						type="button"
+						variant="ghost"
+						websiteSlug={websiteSlug}
+					>
+						<Icon className="h-4 w-4" name="attachment" />
+					</ButtonWithPaywall>
+				</TooltipOnHover>
+			),
 		},
 		visitorSidebar: {
 			conversationId,
