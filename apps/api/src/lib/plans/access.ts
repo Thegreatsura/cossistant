@@ -75,11 +75,9 @@ export async function getPlanForWebsite(_website: Website): Promise<PlanInfo> {
 				grantedBenefits: customerState?.grantedBenefits ?? [],
 			};
 			planName = await getPlanFromCustomerState(subscriptionCustomerState);
-		} else if (customerState) {
-			// If no website-specific subscription, check for any active subscription
-			// (could be organization-level or fallback)
-			planName = await getPlanFromCustomerState(customerState);
 		}
+		// No fallback to organization-level subscriptions - each website must have its own subscription
+		// If no website-specific subscription found, planName stays null and defaults to "free" below
 
 		// If no plan found, default to free
 		const finalPlanName: PlanName = planName ?? "free";
