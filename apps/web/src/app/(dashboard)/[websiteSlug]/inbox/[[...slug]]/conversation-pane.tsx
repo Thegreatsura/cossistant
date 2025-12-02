@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/correctness/useHookAtTopLevel: ok here */
 "use client";
 
+import { FILE_INPUT_ACCEPT } from "@cossistant/core";
 import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
 import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
 import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
@@ -29,11 +30,6 @@ import { cn } from "@/lib/utils";
 
 const MESSAGES_PAGE_LIMIT = 50;
 const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
-const MULTIMODAL_ALLOWED_FILE_TYPES: string[] = [
-	"image/*",
-	"application/pdf",
-	"text/*",
-];
 
 type ConversationPaneProps = {
 	conversationId: string;
@@ -389,7 +385,7 @@ export function ConversationPane({
 			visitor,
 		},
 		input: {
-			allowedFileTypes: MULTIMODAL_ALLOWED_FILE_TYPES,
+			allowedFileTypes: FILE_INPUT_ACCEPT,
 			error,
 			files,
 			isSubmitting,
@@ -410,7 +406,6 @@ export function ConversationPane({
 						disabled={disabled}
 						featureKey="dashboard-file-sharing"
 						onClick={triggerFileInput}
-						paywallCaption="Upgrade to a paid plan to send pictures and files to your customers"
 						size="icon"
 						type="button"
 						variant="ghost"

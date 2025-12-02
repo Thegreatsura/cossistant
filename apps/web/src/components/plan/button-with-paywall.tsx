@@ -13,6 +13,7 @@ type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
 export type ButtonWithPaywallProps = Omit<ButtonProps, "onClick"> & {
 	/**
 	 * The feature key to check access for.
+	 * This is also used to highlight the specific feature in the upgrade modal.
 	 */
 	featureKey: FeatureKey;
 
@@ -20,12 +21,6 @@ export type ButtonWithPaywallProps = Omit<ButtonProps, "onClick"> & {
 	 * The website slug to check plan access for.
 	 */
 	websiteSlug: string;
-
-	/**
-	 * Custom caption to display in the upgrade modal when the feature is paywalled.
-	 * @example "Upgrade to a paid plan to be able to send pictures and files to your customers"
-	 */
-	paywallCaption?: string;
 
 	/**
 	 * The click handler to call when the feature is available.
@@ -58,14 +53,13 @@ function hasFeatureAccess(
  * behaves normally and calls the `onClick` handler.
  *
  * If the user does not have access, clicking the button opens the upgrade
- * modal with an optional custom caption explaining why they need to upgrade.
+ * modal with the feature highlighted in the comparison table.
  *
  * @example
  * ```tsx
  * <ButtonWithPaywall
  *   featureKey="dashboard-file-sharing"
  *   websiteSlug={websiteSlug}
- *   paywallCaption="Upgrade to a paid plan to send files to your customers"
  *   onClick={handleAttachFiles}
  * >
  *   <AttachIcon />
@@ -75,7 +69,6 @@ function hasFeatureAccess(
 export function ButtonWithPaywall({
 	featureKey,
 	websiteSlug,
-	paywallCaption,
 	onClick,
 	disabled,
 	...buttonProps
@@ -112,8 +105,8 @@ export function ButtonWithPaywall({
 
 			{planInfo && (
 				<UpgradeModal
-					caption={paywallCaption}
 					currentPlan={planInfo.plan}
+					highlightedFeatureKey={featureKey}
 					initialPlanName="hobby"
 					onOpenChange={setIsModalOpen}
 					open={isModalOpen}

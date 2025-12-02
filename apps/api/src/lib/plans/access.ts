@@ -1,6 +1,7 @@
 import type { website } from "@api/db/schema";
 import {
 	type FeatureKey,
+	type FeatureValue,
 	getDefaultPlan,
 	getPlanConfig,
 	type PlanName,
@@ -17,7 +18,7 @@ export type PlanInfo = {
 	planName: PlanName;
 	displayName: string;
 	price?: number;
-	features: Record<FeatureKey, number | null>;
+	features: Record<FeatureKey, FeatureValue>;
 };
 
 /**

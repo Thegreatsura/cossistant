@@ -1,6 +1,8 @@
 "use client";
 
 import {
+	FEATURE_CONFIG,
+	type FeatureKey,
 	type FeatureValue,
 	PLAN_CONFIG,
 	type PlanName,
@@ -34,11 +36,12 @@ type UpgradeModalProps = {
 	initialPlanName: PlanName;
 	websiteSlug: string;
 	/**
-	 * Optional custom caption to display at the top of the modal.
-	 * Use this to explain why the user needs to upgrade for a specific feature.
-	 * @example "Upgrade to a paid plan to send files and images to your customers"
+	 * Optional feature key to highlight in the feature comparison table.
+	 * When provided, the feature row will be displayed at the top with orange styling
+	 * to show the user exactly what they'll unlock by upgrading.
+	 * @example "dashboard-file-sharing"
 	 */
-	caption?: string;
+	highlightedFeatureKey?: FeatureKey;
 };
 
 const PLAN_SEQUENCE: PlanName[] = ["free", "hobby", "pro"];
@@ -104,11 +107,13 @@ function FeatureRow({
 	currentValue,
 	targetValue,
 	valueUnitLabel,
+	isHighlighted,
 }: {
 	label: string;
 	currentValue: number | null;
 	targetValue: number | null;
 	valueUnitLabel?: string;
+	isHighlighted?: boolean;
 }) {
 	const isUpgrade = (current: number | null, target: number | null) => {
 		if (current === null && target === null) {
@@ -128,22 +133,112 @@ function FeatureRow({
 
 	return (
 		<div className="flex items-center justify-between border-primary/5 border-b py-2 last:border-0">
-			<span className="font-medium text-sm">{label}</span>
+			<span
+				className={cn(
+					"font-medium text-sm",
+					isHighlighted && "text-cossistant-orange"
+				)}
+			>
+				{label}
+			</span>
 			<div className="flex items-center gap-3">
 				<span
-					className={`text-sm ${isSame ? "text-primary/60" : "text-primary/40"}`}
+					className={cn(
+						"text-sm",
+						isHighlighted
+							? "text-cossistant-orange/60"
+							: isSame
+								? "text-primary/60"
+								: "text-primary/40"
+					)}
 				>
 					{formatFeatureValue(currentValue)}
 					{valueUnitLabel && ` ${valueUnitLabel}`}
 				</span>
-				<ArrowRight className="mx-2 size-4 text-primary/40" />
+				<ArrowRight
+					className={cn(
+						"mx-2 size-4 text-primary/40",
+						isHighlighted && "text-cossistant-orange/60"
+					)}
+				/>
 				<span
-					className={`min-w-[100px] text-right font-semibold text-sm ${upgraded ? "text-primary" : ""}`}
+					className={cn(
+						"min-w-[100px] text-right font-semibold text-sm",
+						upgraded && "text-primary",
+						isHighlighted && "text-cossistant-orange"
+					)}
 				>
 					{formatFeatureValue(targetValue)}
 					{valueUnitLabel && ` ${valueUnitLabel}`}
 				</span>
-				{upgraded && <Check className="size-4 text-primary" />}
+				{upgraded && (
+					<Check
+						className={cn(
+							"size-4 text-primary",
+							isHighlighted && "text-cossistant-orange"
+						)}
+					/>
+				)}
+			</div>
+		</div>
+	);
+}
+
+function BooleanFeatureRow({
+	label,
+	currentValue,
+	targetValue,
+	isHighlighted,
+}: {
+	label: string;
+	currentValue: boolean;
+	targetValue: boolean;
+	isHighlighted?: boolean;
+}) {
+	const upgraded = !currentValue && targetValue;
+
+	return (
+		<div className="flex items-center justify-between border-primary/5 border-b py-2 last:border-0">
+			<span
+				className={cn(
+					"font-medium text-sm",
+					isHighlighted && "text-cossistant-orange"
+				)}
+			>
+				{label}
+			</span>
+			<div className="flex items-center gap-3">
+				<span
+					className={cn(
+						"text-primary/40 text-sm",
+						isHighlighted && "text-cossistant-orange/60"
+					)}
+				>
+					{currentValue ? "Yes" : "No"}
+				</span>
+				<ArrowRight
+					className={cn(
+						"mx-2 size-4 text-primary/40",
+						isHighlighted && "text-cossistant-orange/60"
+					)}
+				/>
+				<span
+					className={cn(
+						"min-w-[100px] text-right font-semibold text-sm",
+						upgraded && "text-primary",
+						isHighlighted && "text-cossistant-orange"
+					)}
+				>
+					{targetValue ? "Yes" : "No"}
+				</span>
+				{upgraded && (
+					<Check
+						className={cn(
+							"size-4 text-primary",
+							isHighlighted && "text-cossistant-orange"
+						)}
+					/>
+				)}
 			</div>
 		</div>
 	);
@@ -164,7 +259,7 @@ export function UpgradeModal({
 	currentPlan,
 	initialPlanName,
 	websiteSlug,
-	caption,
+	highlightedFeatureKey,
 }: UpgradeModalProps) {
 	const trpc = useTRPC();
 	const preferredPlanName = useMemo<PlanName>(
@@ -250,13 +345,6 @@ export function UpgradeModal({
 				</DialogHeader>
 
 				<div className="space-y-6 py-4">
-					{caption && (
-						<div className="rounded-md border border-cossistant-orange/30 bg-cossistant-orange/5 p-4">
-							<p className="text-center font-medium text-cossistant-orange text-sm">
-								{caption}
-							</p>
-						</div>
-					)}
 					{launchDiscountPercent && (
 						<div className="p-2">
 							<PromoBannerOrnaments>
@@ -371,6 +459,36 @@ export function UpgradeModal({
 						</div>
 
 						<div className="mt-6 space-y-1">
+							{highlightedFeatureKey &&
+								(() => {
+									const featureConfig = FEATURE_CONFIG[highlightedFeatureKey];
+									const currentValue =
+										currentPlan.features[highlightedFeatureKey];
+									const targetValue =
+										selectedPlanConfig.features[highlightedFeatureKey];
+									const isBooleanFeature = typeof currentValue === "boolean";
+
+									if (isBooleanFeature) {
+										return (
+											<BooleanFeatureRow
+												currentValue={currentValue as boolean}
+												isHighlighted
+												label={featureConfig.name}
+												targetValue={targetValue as boolean}
+											/>
+										);
+									}
+
+									return (
+										<FeatureRow
+											currentValue={toNumericFeatureValue(currentValue)}
+											isHighlighted
+											label={featureConfig.name}
+											targetValue={toNumericFeatureValue(targetValue)}
+											valueUnitLabel={featureConfig.unit}
+										/>
+									);
+								})()}
 							<FeatureRow
 								currentValue={toNumericFeatureValue(
 									currentPlan.features.conversations
