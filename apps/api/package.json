@@ -5,13 +5,18 @@
   "exports": {
     ".": "./src/client/index.ts",
     "./queries": "./src/db/queries/index.ts",
-    "./types": "./src/trpc/types.ts"
+    "./types": "./src/trpc/types.ts",
+    "./schema": "./src/db/schema/index.ts",
+    "./notification-helpers": "./src/utils/notification-helpers.ts",
+    "./db": "./src/db/index.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.913.0",
     "@aws-sdk/s3-request-presigner": "^3.913.0",
     "@cossistant/core": "workspace:*",
     "@cossistant/location": "workspace:*",
+    "@cossistant/jobs": "workspace:*",
+    "@cossistant/redis": "workspace:*",
     "@cossistant/transactional": "workspace:*",
     "@cossistant/types": "workspace:*",
     "@hono-rate-limiter/redis": "^0.1.4",

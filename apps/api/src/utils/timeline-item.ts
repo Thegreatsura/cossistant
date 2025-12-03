@@ -87,7 +87,7 @@ type TimelineItem = {
 export type MessageTimelineActor =
 	| { type: "user"; userId: string }
 	| { type: "visitor"; visitorId: string }
-	| { type: "aiAgent"; aiAgentId: string };
+	| { type: "ai_agent"; aiAgentId: string };
 
 export type CreateMessageTimelineItemOptions = {
 	db: Database;
@@ -152,7 +152,7 @@ function resolveMessageActor(
 	}
 
 	if (item.aiAgentId) {
-		return { type: "aiAgent", aiAgentId: item.aiAgentId };
+		return { type: "ai_agent", aiAgentId: item.aiAgentId };
 	}
 
 	if (item.visitorId) {

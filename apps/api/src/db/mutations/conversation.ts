@@ -434,7 +434,7 @@ export async function markConversationAsUnread(
 export type ConversationActor =
 	| { type: "visitor"; visitorId: string }
 	| { type: "user"; userId: string }
-	| { type: "aiAgent"; aiAgentId: string };
+	| { type: "ai_agent"; aiAgentId: string };
 
 export async function markConversationAsSeen(
 	db: Database,
@@ -491,7 +491,7 @@ export async function markConversationAsSeen(
 				});
 			break;
 
-		case "aiAgent":
+		case "ai_agent":
 			await db
 				.insert(conversationSeen)
 				.values({

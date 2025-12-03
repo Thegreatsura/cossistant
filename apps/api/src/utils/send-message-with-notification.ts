@@ -5,18 +5,14 @@ import {
 	getLatestMessageForPush,
 	getNotificationData,
 } from "@api/utils/notification-helpers";
+import {
+	triggerMemberMessageNotification,
+	triggerVisitorMessageNotification,
+} from "@api/utils/queue-triggers";
 import { workflowClient } from "@api/utils/workflow";
-import {
-	triggerDeduplicatedWorkflow,
-	type WorkflowDirection,
-} from "@api/utils/workflow-dedup-manager";
+import { triggerDeduplicatedWorkflow } from "@api/utils/workflow-dedup-manager";
 import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
-import {
-	type AiAgentResponseData,
-	type MemberSentMessageData,
-	type VisitorSentMessageData,
-	WORKFLOW,
-} from "@api/workflows/types";
+import { type AiAgentResponseData, WORKFLOW } from "@api/workflows/types";
 
 /**
  * Trigger notification workflow when a member sends a message
@@ -29,16 +25,8 @@ export async function triggerMemberSentMessageWorkflow(params: {
 	organizationId: string;
 	senderId: string;
 }): Promise<void> {
-	const data: MemberSentMessageData = {
-		conversationId: params.conversationId,
-		messageId: params.messageId,
-		websiteId: params.websiteId,
-		organizationId: params.organizationId,
-		senderId: params.senderId,
-	};
-
 	try {
-		// Fetch message metadata for deduplication
+		// Fetch message metadata for the initial message timestamp
 		const messageMetadata = await getMessageMetadata(db, {
 			messageId: params.messageId,
 			organizationId: params.organizationId,
@@ -46,32 +34,32 @@ export async function triggerMemberSentMessageWorkflow(params: {
 
 		if (!messageMetadata) {
 			console.error(
-				`[dev] Message ${params.messageId} not found, skipping notification workflow`
+				`[notification] Message ${params.messageId} not found, skipping notification`
 			);
 			return;
 		}
 
 		console.log(
-			`[dev] Triggering member-sent message workflow for conversation ${params.conversationId}`
+			`[notification] Triggering member-sent notification for conversation ${params.conversationId}`
 		);
 
-		const { workflowRunId, isReplacement } = await triggerDeduplicatedWorkflow({
-			client: workflowClient,
-			path: WORKFLOW.MEMBER_SENT_MESSAGE,
-			data,
+		// Use BullMQ queue with deduplication
+		await triggerMemberMessageNotification({
 			conversationId: params.conversationId,
-			direction: "member-to-visitor" as WorkflowDirection,
 			messageId: params.messageId,
-			messageCreatedAt: messageMetadata.createdAt,
+			websiteId: params.websiteId,
+			organizationId: params.organizationId,
+			senderId: params.senderId,
+			initialMessageCreatedAt: messageMetadata.createdAt,
 		});
 
 		console.log(
-			`[dev] Member-sent message workflow ${isReplacement ? "replaced" : "triggered"} successfully for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+			`[notification] Member-sent notification queued for conversation ${params.conversationId}`
 		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation
 		console.error(
-			`[dev] Failed to trigger member-sent message workflow for conversation ${params.conversationId}:`,
+			`[notification] Failed to trigger member-sent notification for conversation ${params.conversationId}:`,
 			error
 		);
 	}
@@ -166,14 +154,6 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 	organizationId: string;
 	visitorId: string;
 }): Promise<void> {
-	const data: VisitorSentMessageData = {
-		conversationId: params.conversationId,
-		messageId: params.messageId,
-		websiteId: params.websiteId,
-		organizationId: params.organizationId,
-		visitorId: params.visitorId,
-	};
-
 	// Send immediate push notifications (don't await - fire and forget)
 	// This ensures push notifications are sent instantly without blocking
 	sendImmediatePushNotifications({
@@ -185,7 +165,7 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 	});
 
 	try {
-		// Fetch message metadata for deduplication
+		// Fetch message metadata for the initial message timestamp
 		const messageMetadata = await getMessageMetadata(db, {
 			messageId: params.messageId,
 			organizationId: params.organizationId,
@@ -193,32 +173,32 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 
 		if (!messageMetadata) {
 			console.error(
-				`[dev] Message ${params.messageId} not found, skipping notification workflow`
+				`[notification] Message ${params.messageId} not found, skipping notification`
 			);
 			return;
 		}
 
 		console.log(
-			`[dev] Triggering visitor-sent message workflow for conversation ${params.conversationId}`
+			`[notification] Triggering visitor-sent notification for conversation ${params.conversationId}`
 		);
 
-		const { workflowRunId, isReplacement } = await triggerDeduplicatedWorkflow({
-			client: workflowClient,
-			path: WORKFLOW.VISITOR_SENT_MESSAGE,
-			data,
+		// Use BullMQ queue with deduplication
+		await triggerVisitorMessageNotification({
 			conversationId: params.conversationId,
-			direction: "visitor-to-member" as WorkflowDirection,
 			messageId: params.messageId,
-			messageCreatedAt: messageMetadata.createdAt,
+			websiteId: params.websiteId,
+			organizationId: params.organizationId,
+			visitorId: params.visitorId,
+			initialMessageCreatedAt: messageMetadata.createdAt,
 		});
 
 		console.log(
-			`[dev] Visitor-sent message workflow ${isReplacement ? "replaced" : "triggered"} successfully for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+			`[notification] Visitor-sent notification queued for conversation ${params.conversationId}`
 		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation
 		console.error(
-			`[dev] Failed to trigger visitor-sent message workflow for conversation ${params.conversationId}:`,
+			`[notification] Failed to trigger visitor-sent notification for conversation ${params.conversationId}:`,
 			error
 		);
 	}
@@ -278,7 +258,7 @@ export async function triggerAiAgentResponseWorkflow(params: {
 			path: WORKFLOW.AI_AGENT_RESPONSE,
 			data,
 			conversationId: params.conversationId,
-			direction: "ai-agent-response" as WorkflowDirection,
+			direction: "ai-agent-response",
 			messageId: params.messageId,
 			messageCreatedAt: messageMetadata.createdAt,
 		});
@@ -307,10 +287,10 @@ export async function triggerMessageNotificationWorkflow(params: {
 	actor:
 		| { type: "user"; userId: string }
 		| { type: "visitor"; visitorId: string }
-		| { type: "aiAgent"; aiAgentId: string };
+		| { type: "ai_agent"; aiAgentId: string };
 }): Promise<void> {
 	console.log(
-		`[dev] Triggering message notification workflow for actor type: ${params.actor.type}, messageId: ${params.messageId}, conversationId: ${params.conversationId}`
+		`[notification] Triggering message notification for actor type: ${params.actor.type}, messageId: ${params.messageId}, conversationId: ${params.conversationId}`
 	);
 
 	if (params.actor.type === "user") {
@@ -343,12 +323,12 @@ export async function triggerMessageNotificationWorkflow(params: {
 		}).catch((error) => {
 			console.error("[ai-agent] Background AI agent workflow failed:", error);
 		});
-	} else if (params.actor.type === "aiAgent") {
+	} else if (params.actor.type === "ai_agent") {
 		// AI agent sent a message -> treat as member message (notify visitor and participants)
 		// For now, we skip AI agent messages as they might not need notifications
 		// This can be implemented later if needed
 		console.log(
-			"[dev] AI agent messages are not configured for notifications yet"
+			"[notification] AI agent messages are not configured for notifications yet"
 		);
 	}
 }

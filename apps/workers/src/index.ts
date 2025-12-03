@@ -1,0 +1,98 @@
+import { createBullBoard } from "@bull-board/api";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { HonoAdapter } from "@bull-board/hono";
+import { type MessageNotificationJobData, QUEUE_NAMES } from "@cossistant/jobs";
+import {
+	createRedisConnection,
+	getBullConnectionOptions,
+	getSafeRedisUrl,
+} from "@cossistant/redis";
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { Queue } from "bullmq";
+import { Hono } from "hono";
+
+import { env } from "./env";
+import { startAllWorkers, stopAllWorkers } from "./queues";
+
+// Create Redis connection
+console.log("[workers] Creating Redis connection...");
+const redis = createRedisConnection(env.REDIS_URL);
+
+redis.on("ready", () => {
+	console.log("[workers] Redis connected, starting workers...");
+	startAllWorkers(env.REDIS_URL).catch((error) => {
+		console.error("[workers] Failed to start workers", error);
+		process.exit(1);
+	});
+});
+
+// Create Hono app for health checks
+const app = new Hono();
+
+app.get("/", (c) => c.json({ status: "ok", service: "workers" }));
+
+app.get("/health", (c) =>
+	c.json({ status: "healthy", timestamp: new Date().toISOString() })
+);
+
+const bullBoardQueues: Queue<MessageNotificationJobData>[] = [];
+if (env.BULL_BOARD_ENABLED) {
+	const boardConnection = getBullConnectionOptions(env.REDIS_URL);
+	const queue = new Queue<MessageNotificationJobData>(
+		QUEUE_NAMES.MESSAGE_NOTIFICATION,
+		{
+			connection: boardConnection,
+		}
+	);
+	bullBoardQueues.push(queue);
+
+	const serverAdapter = new HonoAdapter(serveStatic);
+	createBullBoard({
+		queues: [new BullMQAdapter(queue)],
+		serverAdapter,
+	});
+	const bullBoardBasePath = "/queues";
+	serverAdapter.setBasePath(bullBoardBasePath);
+
+	if (env.BULL_BOARD_TOKEN) {
+		app.use(`${bullBoardBasePath}/*`, async (c, next) => {
+			const headerToken =
+				c.req.header("x-bull-board-token") ??
+				c.req.header("authorization")?.replace("Bearer ", "");
+			if (headerToken !== env.BULL_BOARD_TOKEN) {
+				return c.json({ error: "Unauthorized" }, 401);
+			}
+			await next();
+		});
+	}
+
+	app.route(bullBoardBasePath, serverAdapter.registerPlugin());
+	console.log(
+		`[workers] Bull Board enabled at ${bullBoardBasePath} using redis=${getSafeRedisUrl(
+			env.REDIS_URL
+		)}`
+	);
+} else {
+	console.log("[workers] Bull Board disabled");
+}
+
+console.log(`[workers] Starting workers server on port ${env.PORT}`);
+
+const server = serve({
+	fetch: app.fetch,
+	port: env.PORT,
+});
+
+// Graceful shutdown
+const shutdown = async () => {
+	console.log("[workers] Shutting down...");
+	await stopAllWorkers();
+	await Promise.all(bullBoardQueues.map((queue) => queue.close()));
+	await redis.quit();
+	server.close();
+	process.exit(0);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

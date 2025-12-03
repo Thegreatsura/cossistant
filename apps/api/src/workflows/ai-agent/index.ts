@@ -145,7 +145,7 @@ aiAgentWorkflow.post(
 				// Mark conversation as seen by AI agent
 				const lastSeenAt = await markConversationAsSeen(db, {
 					conversation,
-					actor: { type: "aiAgent", aiAgentId: aiAgent.id },
+					actor: { type: "ai_agent", aiAgentId: aiAgent.id },
 				});
 
 				// Emit seen event

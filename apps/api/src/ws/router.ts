@@ -187,7 +187,7 @@ const eventHandlers: EventHandlers = {
 			: data.visitorId
 				? "visitor"
 				: data.aiAgentId
-					? "aiAgent"
+					? "ai_agent"
 					: "unknown";
 		const actorId = data.userId ?? data.visitorId ?? data.aiAgentId ?? null;
 	},
@@ -199,7 +199,7 @@ const eventHandlers: EventHandlers = {
 			: data.visitorId
 				? "visitor"
 				: data.aiAgentId
-					? "aiAgent"
+					? "ai_agent"
 					: "unknown";
 		const actorId = data.userId ?? data.visitorId ?? data.aiAgentId ?? null;
 	},

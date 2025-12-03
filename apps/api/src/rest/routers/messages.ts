@@ -49,7 +49,7 @@ function resolveTimelineActor(params: {
 
 	if (params.aiAgentId) {
 		return {
-			type: "aiAgent",
+			type: "ai_agent",
 			aiAgentId: params.aiAgentId,
 		} satisfies ConversationActor;
 	}
@@ -318,13 +318,7 @@ messagesRouter.openapi(
 			promises.push(
 				emitConversationSeenEvent({
 					conversation,
-					actor:
-						resolvedActor.type === "aiAgent"
-							? {
-									type: "ai_agent",
-									aiAgentId: resolvedActor.aiAgentId,
-								}
-							: resolvedActor,
+					actor: resolvedActor,
 					lastSeenAt,
 				})
 			);
