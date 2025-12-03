@@ -24,7 +24,7 @@ export function NavigationTopbar() {
 				<TopbarItem
 					active={pathname.includes(baseInboxPath)}
 					href={baseInboxPath}
-					iconName="inbox-zero"
+					//   iconName="inbox-zero"
 				>
 					Inbox
 				</TopbarItem>
@@ -33,21 +33,21 @@ export function NavigationTopbar() {
 						active={pathname.startsWith(`/${website?.slug}/contacts`)}
 						hideLabelOnMobile
 						href={`/${website?.slug}/contacts`}
-						iconName="contacts"
+						// iconName="contacts"
 					>
 						Contacts
 					</TopbarItem>
 				)}
-				{/* {process.env.NODE_ENV === "development" && (
-          <TopbarItem
-            active={pathname === `/${website?.slug}/agents`}
-            hideLabelOnMobile
-            href={`/${website?.slug}/agents`}
-            iconName="agent"
-          >
-            Agents
-          </TopbarItem>
-        )} */}
+				{process.env.NODE_ENV === "development" && (
+					<TopbarItem
+						active={pathname === `/${website?.slug}/agents`}
+						hideLabelOnMobile
+						href={`/${website?.slug}/agents`}
+						// iconName="agent"
+					>
+						Agents
+					</TopbarItem>
+				)}
 			</div>
 			<div className="mr-2 flex items-center gap-3">
 				<div className="hidden items-center gap-3 font-medium text-primary/80 text-xs md:flex">

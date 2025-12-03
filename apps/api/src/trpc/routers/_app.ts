@@ -1,6 +1,7 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { createTRPCRouter } from "../init";
+import { aiAgentRouter } from "./ai-agent";
 import { contactRouter } from "./contact";
 import { conversationRouter } from "./conversation";
 import { notificationRouter } from "./notification";
@@ -13,6 +14,7 @@ import { visitorRouter } from "./visitor";
 import { websiteRouter } from "./website";
 
 export const origamiTRPCRouter = createTRPCRouter({
+	aiAgent: aiAgentRouter,
 	resend: resendRouter,
 	user: userRouter,
 	website: websiteRouter,

@@ -13,7 +13,10 @@ import type { Client } from "@upstash/workflow";
  * Stores the initial triggering message ID to filter email notifications correctly
  */
 
-export type WorkflowDirection = "member-to-visitor" | "visitor-to-member";
+export type WorkflowDirection =
+	| "member-to-visitor"
+	| "visitor-to-member"
+	| "ai-agent-response";
 
 export type WorkflowState = {
 	workflowRunId: string;

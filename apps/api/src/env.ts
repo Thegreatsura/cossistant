@@ -67,4 +67,6 @@ export const env = {
 	VAPID_PUBLIC_KEY: getEnvVariable("VAPID_PUBLIC_KEY"),
 	VAPID_PRIVATE_KEY: getEnvVariable("VAPID_PRIVATE_KEY"),
 	VAPID_SUBJECT: getEnvVariable("VAPID_SUBJECT"),
+	// OpenRouter API key for AI agents
+	OPENROUTER_API_KEY: getEnvVariable("OPENROUTER_API_KEY", ""),
 };

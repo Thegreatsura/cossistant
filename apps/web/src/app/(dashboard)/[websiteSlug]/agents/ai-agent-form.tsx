@@ -1,0 +1,403 @@
+"use client";
+
+import { AI_MODELS, type AiAgentResponse } from "@cossistant/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+import { BaseSubmitButton } from "@/components/ui/base-submit-button";
+import {
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { useTRPC } from "@/lib/trpc/client";
+
+const aiAgentFormSchema = z.object({
+	name: z
+		.string({ message: "Enter the agent name." })
+		.trim()
+		.min(1, { message: "Enter the agent name." })
+		.max(100, { message: "Name must be 100 characters or fewer." }),
+	description: z
+		.string()
+		.max(500, { message: "Description must be 500 characters or fewer." })
+		.optional(),
+	basePrompt: z
+		.string({ message: "Enter the base prompt." })
+		.trim()
+		.min(1, { message: "Enter the base prompt." })
+		.max(10_000, {
+			message: "Base prompt must be 10,000 characters or fewer.",
+		}),
+	model: z.string().min(1, { message: "Select a model." }),
+	temperature: z
+		.number()
+		.min(0, { message: "Temperature must be at least 0." })
+		.max(2, { message: "Temperature must be at most 2." })
+		.optional(),
+	maxTokens: z
+		.number()
+		.min(100, { message: "Max tokens must be at least 100." })
+		.max(16_000, { message: "Max tokens must be at most 16,000." })
+		.optional(),
+});
+
+type AIAgentFormValues = z.infer<typeof aiAgentFormSchema>;
+
+type AIAgentFormProps = {
+	websiteSlug: string;
+	initialData: AiAgentResponse | null;
+};
+
+export function AIAgentForm({ websiteSlug, initialData }: AIAgentFormProps) {
+	const trpc = useTRPC();
+	const queryClient = useQueryClient();
+
+	const isEditing = initialData !== null;
+
+	const form = useForm<AIAgentFormValues>({
+		resolver: zodResolver(aiAgentFormSchema),
+		mode: "onChange",
+		defaultValues: {
+			name: initialData?.name ?? "",
+			description: initialData?.description ?? "",
+			basePrompt:
+				initialData?.basePrompt ??
+				"You are a helpful support assistant. Answer questions clearly and concisely. If you don't know something, say so honestly.",
+			model: initialData?.model ?? "anthropic/claude-sonnet-4-20250514",
+			temperature: initialData?.temperature ?? 0.7,
+			maxTokens: initialData?.maxTokens ?? 1024,
+		},
+	});
+
+	const { mutateAsync: createAgent, isPending: isCreating } = useMutation(
+		trpc.aiAgent.create.mutationOptions({
+			onSuccess: async () => {
+				await queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug }),
+				});
+				toast.success("AI agent created successfully.");
+			},
+			onError: (error) => {
+				toast.error(error.message || "Failed to create AI agent.");
+			},
+		})
+	);
+
+	const { mutateAsync: updateAgent, isPending: isUpdating } = useMutation(
+		trpc.aiAgent.update.mutationOptions({
+			onSuccess: async (updatedAgent) => {
+				await queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug }),
+				});
+				form.reset({
+					name: updatedAgent.name,
+					description: updatedAgent.description ?? "",
+					basePrompt: updatedAgent.basePrompt,
+					model: updatedAgent.model,
+					temperature: updatedAgent.temperature ?? 0.7,
+					maxTokens: updatedAgent.maxTokens ?? 1024,
+				});
+				toast.success("AI agent updated successfully.");
+			},
+			onError: (error) => {
+				toast.error(error.message || "Failed to update AI agent.");
+			},
+		})
+	);
+
+	const { mutateAsync: toggleActive, isPending: isTogglingActive } =
+		useMutation(
+			trpc.aiAgent.toggleActive.mutationOptions({
+				onSuccess: async (agent) => {
+					await queryClient.invalidateQueries({
+						queryKey: trpc.aiAgent.get.queryKey({ websiteSlug }),
+					});
+					toast.success(
+						agent.isActive ? "AI agent enabled." : "AI agent disabled."
+					);
+				},
+				onError: (error) => {
+					toast.error(error.message || "Failed to toggle AI agent status.");
+				},
+			})
+		);
+
+	const isPending = isCreating || isUpdating;
+
+	const onSubmit = async (values: AIAgentFormValues) => {
+		if (isEditing && initialData) {
+			await updateAgent({
+				websiteSlug,
+				aiAgentId: initialData.id,
+				name: values.name,
+				description: values.description ?? null,
+				basePrompt: values.basePrompt,
+				model: values.model,
+				temperature: values.temperature ?? null,
+				maxTokens: values.maxTokens ?? null,
+			});
+		} else {
+			await createAgent({
+				websiteSlug,
+				name: values.name,
+				description: values.description,
+				basePrompt: values.basePrompt,
+				model: values.model,
+				temperature: values.temperature,
+				maxTokens: values.maxTokens,
+			});
+		}
+	};
+
+	const handleToggleActive = async () => {
+		if (!initialData) {
+			return;
+		}
+
+		await toggleActive({
+			websiteSlug,
+			aiAgentId: initialData.id,
+			isActive: !initialData.isActive,
+		});
+	};
+
+	const hasChanges = form.formState.isDirty;
+
+	return (
+		<Form {...form}>
+			<form className="flex flex-col" onSubmit={form.handleSubmit(onSubmit)}>
+				{/* Enable/Disable toggle at the top when editing */}
+				{isEditing && initialData && (
+					<div className="flex items-center justify-between border-primary/10 border-b px-4 py-4 dark:border-primary/5">
+						<div className="flex flex-col gap-1">
+							<span className="font-medium text-sm">Agent Status</span>
+							<span className="text-muted-foreground text-xs">
+								{initialData.isActive
+									? "Agent is active and responding to visitors"
+									: "Agent is disabled and not responding"}
+							</span>
+						</div>
+						<Switch
+							checked={initialData.isActive}
+							disabled={isTogglingActive}
+							onCheckedChange={handleToggleActive}
+						/>
+					</div>
+				)}
+
+				<div className="space-y-6 px-4 py-6">
+					<FormField
+						control={form.control}
+						name="name"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Name</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="Support Assistant"
+										{...field}
+										disabled={isPending}
+									/>
+								</FormControl>
+								<FormDescription>
+									A friendly name for your AI agent.
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="description"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Description (optional)</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="Helps users with common support questions"
+										{...field}
+										disabled={isPending}
+									/>
+								</FormControl>
+								<FormDescription>
+									A brief description of what this agent does.
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="model"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Model</FormLabel>
+								<Select
+									defaultValue={field.value}
+									disabled={isPending}
+									onValueChange={field.onChange}
+								>
+									<FormControl>
+										<SelectTrigger>
+											<SelectValue placeholder="Select a model" />
+										</SelectTrigger>
+									</FormControl>
+									<SelectContent>
+										{AI_MODELS.map((model) => (
+											<SelectItem key={model.value} value={model.value}>
+												<span className="flex items-center gap-2">
+													<span>{model.label}</span>
+													<span className="text-muted-foreground text-xs">
+														({model.provider})
+													</span>
+												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<FormDescription>
+									The AI model to use for generating responses.
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="basePrompt"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Base Prompt</FormLabel>
+								<FormControl>
+									<Textarea
+										className="min-h-32"
+										placeholder="You are a helpful support assistant..."
+										{...field}
+										disabled={isPending}
+									/>
+								</FormControl>
+								<FormDescription>
+									The system prompt that defines how your AI agent behaves.
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<div className="grid grid-cols-2 gap-4">
+						<FormField
+							control={form.control}
+							name="temperature"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Temperature</FormLabel>
+									<FormControl>
+										<Input
+											disabled={isPending}
+											max={2}
+											min={0}
+											placeholder="0.7"
+											step={0.1}
+											type="number"
+											{...field}
+											onChange={(e) =>
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: Number.parseFloat(e.target.value)
+												)
+											}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormDescription>
+										Controls randomness (0 = focused, 2 = creative).
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="maxTokens"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Max Tokens</FormLabel>
+									<FormControl>
+										<Input
+											disabled={isPending}
+											max={16_000}
+											min={100}
+											placeholder="1024"
+											step={100}
+											type="number"
+											{...field}
+											onChange={(e) =>
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: Number.parseInt(e.target.value, 10)
+												)
+											}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormDescription>
+										Maximum response length (100-16,000).
+									</FormDescription>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				</div>
+
+				<SettingsRowFooter className="flex items-center justify-between gap-2">
+					{isEditing && initialData && (
+						<div className="text-muted-foreground text-xs">
+							Used {initialData.usageCount} times
+							{initialData.lastUsedAt && (
+								<>
+									{" "}
+									&middot; Last used{" "}
+									{new Date(initialData.lastUsedAt).toLocaleDateString()}
+								</>
+							)}
+						</div>
+					)}
+					<div className="flex flex-1 items-center justify-end gap-2">
+						<BaseSubmitButton
+							className="w-auto"
+							disabled={isEditing ? !hasChanges : false}
+							isSubmitting={isPending}
+						>
+							{isEditing ? "Save changes" : "Create agent"}
+						</BaseSubmitButton>
+					</div>
+				</SettingsRowFooter>
+			</form>
+		</Form>
+	);
+}

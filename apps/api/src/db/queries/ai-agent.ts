@@ -1,0 +1,202 @@
+import type { Database } from "@api/db";
+import {
+	type AiAgentInsert,
+	type AiAgentSelect,
+	aiAgent,
+} from "@api/db/schema/ai-agent";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { ulid } from "ulid";
+
+/**
+ * Get an AI agent by ID
+ */
+export async function getAiAgentById(
+	db: Database,
+	params: {
+		aiAgentId: string;
+	}
+): Promise<AiAgentSelect | null> {
+	const [agent] = await db
+		.select()
+		.from(aiAgent)
+		.where(and(eq(aiAgent.id, params.aiAgentId), isNull(aiAgent.deletedAt)))
+		.limit(1);
+
+	return agent ?? null;
+}
+
+/**
+ * Get the active AI agent for a website
+ * Returns the first active agent found for the website
+ */
+export async function getActiveAiAgentForWebsite(
+	db: Database,
+	params: {
+		websiteId: string;
+		organizationId: string;
+	}
+): Promise<AiAgentSelect | null> {
+	const [agent] = await db
+		.select()
+		.from(aiAgent)
+		.where(
+			and(
+				eq(aiAgent.websiteId, params.websiteId),
+				eq(aiAgent.organizationId, params.organizationId),
+				eq(aiAgent.isActive, true),
+				isNull(aiAgent.deletedAt)
+			)
+		)
+		.limit(1);
+
+	return agent ?? null;
+}
+
+/**
+ * Get the AI agent for a website (regardless of active status)
+ * Returns the first non-deleted agent found for the website
+ */
+export async function getAiAgentForWebsite(
+	db: Database,
+	params: {
+		websiteId: string;
+		organizationId: string;
+	}
+): Promise<AiAgentSelect | null> {
+	const [agent] = await db
+		.select()
+		.from(aiAgent)
+		.where(
+			and(
+				eq(aiAgent.websiteId, params.websiteId),
+				eq(aiAgent.organizationId, params.organizationId),
+				isNull(aiAgent.deletedAt)
+			)
+		)
+		.limit(1);
+
+	return agent ?? null;
+}
+
+/**
+ * Create a new AI agent
+ */
+export async function createAiAgent(
+	db: Database,
+	params: {
+		name: string;
+		description?: string | null;
+		basePrompt: string;
+		model: string;
+		temperature?: number | null;
+		maxTokens?: number | null;
+		organizationId: string;
+		websiteId: string;
+		isActive?: boolean;
+	}
+): Promise<AiAgentSelect> {
+	const now = new Date().toISOString();
+
+	const newAgent: AiAgentInsert = {
+		id: ulid(),
+		name: params.name,
+		description: params.description ?? null,
+		basePrompt: params.basePrompt,
+		model: params.model,
+		temperature: params.temperature ?? 0.7,
+		maxTokens: params.maxTokens ?? 1024,
+		organizationId: params.organizationId,
+		websiteId: params.websiteId,
+		isActive: params.isActive ?? true,
+		usageCount: 0,
+		createdAt: now,
+		updatedAt: now,
+	};
+
+	const [agent] = await db.insert(aiAgent).values(newAgent).returning();
+
+	if (!agent) {
+		throw new Error("Failed to create AI agent");
+	}
+
+	return agent;
+}
+
+/**
+ * Update an existing AI agent
+ */
+export async function updateAiAgent(
+	db: Database,
+	params: {
+		aiAgentId: string;
+		name: string;
+		description?: string | null;
+		basePrompt: string;
+		model: string;
+		temperature?: number | null;
+		maxTokens?: number | null;
+	}
+): Promise<AiAgentSelect | null> {
+	const now = new Date().toISOString();
+
+	const [agent] = await db
+		.update(aiAgent)
+		.set({
+			name: params.name,
+			description: params.description ?? null,
+			basePrompt: params.basePrompt,
+			model: params.model,
+			temperature: params.temperature ?? 0.7,
+			maxTokens: params.maxTokens ?? 1024,
+			updatedAt: now,
+		})
+		.where(and(eq(aiAgent.id, params.aiAgentId), isNull(aiAgent.deletedAt)))
+		.returning();
+
+	return agent ?? null;
+}
+
+/**
+ * Toggle AI agent active status
+ */
+export async function toggleAiAgentActive(
+	db: Database,
+	params: {
+		aiAgentId: string;
+		isActive: boolean;
+	}
+): Promise<AiAgentSelect | null> {
+	const now = new Date().toISOString();
+
+	const [agent] = await db
+		.update(aiAgent)
+		.set({
+			isActive: params.isActive,
+			updatedAt: now,
+		})
+		.where(and(eq(aiAgent.id, params.aiAgentId), isNull(aiAgent.deletedAt)))
+		.returning();
+
+	return agent ?? null;
+}
+
+/**
+ * Update AI agent usage statistics
+ */
+export async function updateAiAgentUsage(
+	db: Database,
+	params: {
+		aiAgentId: string;
+	}
+): Promise<void> {
+	const now = new Date().toISOString();
+
+	await db
+		.update(aiAgent)
+		.set({
+			lastUsedAt: now,
+			usageCount: sql`${aiAgent.usageCount} + 1`,
+			updatedAt: now,
+		})
+		.where(eq(aiAgent.id, params.aiAgentId));
+}

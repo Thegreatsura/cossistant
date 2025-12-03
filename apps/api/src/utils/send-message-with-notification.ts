@@ -1,4 +1,5 @@
 import { db } from "@api/db";
+import { getActiveAiAgentForWebsite } from "@api/db/queries/ai-agent";
 import { getMessageMetadata } from "@api/db/queries/conversation";
 import {
 	getLatestMessageForPush,
@@ -11,6 +12,7 @@ import {
 } from "@api/utils/workflow-dedup-manager";
 import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
 import {
+	type AiAgentResponseData,
 	type MemberSentMessageData,
 	type VisitorSentMessageData,
 	WORKFLOW,
@@ -223,6 +225,77 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 }
 
 /**
+ * Trigger AI agent response workflow when a visitor sends a message
+ * This checks if an AI agent is configured and active for the website
+ */
+export async function triggerAiAgentResponseWorkflow(params: {
+	conversationId: string;
+	messageId: string;
+	websiteId: string;
+	organizationId: string;
+	visitorId: string;
+}): Promise<void> {
+	try {
+		// Check if there's an active AI agent for this website
+		const aiAgent = await getActiveAiAgentForWebsite(db, {
+			websiteId: params.websiteId,
+			organizationId: params.organizationId,
+		});
+
+		if (!aiAgent) {
+			// No active AI agent configured, skip
+			return;
+		}
+
+		const data: AiAgentResponseData = {
+			conversationId: params.conversationId,
+			messageId: params.messageId,
+			websiteId: params.websiteId,
+			organizationId: params.organizationId,
+			aiAgentId: aiAgent.id,
+			visitorId: params.visitorId,
+		};
+
+		// Fetch message metadata for deduplication
+		const messageMetadata = await getMessageMetadata(db, {
+			messageId: params.messageId,
+			organizationId: params.organizationId,
+		});
+
+		if (!messageMetadata) {
+			console.error(
+				`[ai-agent] Message ${params.messageId} not found, skipping AI response workflow`
+			);
+			return;
+		}
+
+		console.log(
+			`[ai-agent] Triggering AI agent response workflow for conversation ${params.conversationId}`
+		);
+
+		const { workflowRunId, isReplacement } = await triggerDeduplicatedWorkflow({
+			client: workflowClient,
+			path: WORKFLOW.AI_AGENT_RESPONSE,
+			data,
+			conversationId: params.conversationId,
+			direction: "ai-agent-response" as WorkflowDirection,
+			messageId: params.messageId,
+			messageCreatedAt: messageMetadata.createdAt,
+		});
+
+		console.log(
+			`[ai-agent] AI agent response workflow ${isReplacement ? "replaced" : "triggered"} successfully for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+		);
+	} catch (error) {
+		// Log errors but don't throw - we don't want to block message creation
+		console.error(
+			`[ai-agent] Failed to trigger AI agent response workflow for conversation ${params.conversationId}:`,
+			error
+		);
+	}
+}
+
+/**
  * Main function to trigger appropriate workflow based on message sender
  * Automatically determines which workflow to trigger based on the actor type
  */
@@ -257,6 +330,18 @@ export async function triggerMessageNotificationWorkflow(params: {
 			websiteId: params.websiteId,
 			organizationId: params.organizationId,
 			visitorId: params.actor.visitorId,
+		});
+
+		// Also trigger AI agent response workflow (if configured)
+		// This runs in parallel with notifications - fire and forget
+		triggerAiAgentResponseWorkflow({
+			conversationId: params.conversationId,
+			messageId: params.messageId,
+			websiteId: params.websiteId,
+			organizationId: params.organizationId,
+			visitorId: params.actor.visitorId,
+		}).catch((error) => {
+			console.error("[ai-agent] Background AI agent workflow failed:", error);
 		});
 	} else if (params.actor.type === "aiAgent") {
 		// AI agent sent a message -> treat as member message (notify visitor and participants)
