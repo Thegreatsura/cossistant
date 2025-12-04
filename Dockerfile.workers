@@ -15,6 +15,7 @@ COPY packages/transactional/package.json ./packages/transactional/
 COPY packages/types/package.json ./packages/types/
 COPY packages/redis/package.json ./packages/redis/
 COPY packages/jobs/package.json ./packages/jobs/
+COPY packages/location/package.json ./packages/location/
 
 # Install dependencies
 RUN bun install
