@@ -12,6 +12,9 @@ COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/core/package.json ./packages/core/
 COPY packages/transactional/package.json ./packages/transactional/
 COPY packages/types/package.json ./packages/types/
+COPY packages/jobs/package.json ./packages/jobs/
+COPY packages/queues/package.json ./packages/queues/
+COPY packages/redis/package.json ./packages/redis/
 COPY packages/location/package.json ./packages/location/
 
 # Install dependencies
