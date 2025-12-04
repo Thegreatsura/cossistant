@@ -6,23 +6,38 @@
  */
 
 import { env } from "@api/env";
-import { createMessageNotificationTriggers } from "@cossistant/jobs";
+import {
+	createAiReplyTriggers,
+	createMessageNotificationTriggers,
+} from "@cossistant/jobs";
 import { getBullConnectionOptions } from "@cossistant/redis";
 
 // Lazily initialized triggers
-let triggers: ReturnType<typeof createMessageNotificationTriggers> | null =
-	null;
+let messageNotificationTriggers: ReturnType<
+	typeof createMessageNotificationTriggers
+> | null = null;
+let aiReplyTriggers: ReturnType<typeof createAiReplyTriggers> | null = null;
 
 const bullConnectionOptions = getBullConnectionOptions(env.REDIS_URL);
 
-function getTriggers() {
-	if (!triggers) {
-		triggers = createMessageNotificationTriggers({
+function getMessageNotificationTriggers() {
+	if (!messageNotificationTriggers) {
+		messageNotificationTriggers = createMessageNotificationTriggers({
 			connection: bullConnectionOptions,
 			redisUrl: env.REDIS_URL,
 		});
 	}
-	return triggers;
+	return messageNotificationTriggers;
+}
+
+export function getAiReplyQueueTriggers() {
+	if (!aiReplyTriggers) {
+		aiReplyTriggers = createAiReplyTriggers({
+			connection: bullConnectionOptions,
+			redisUrl: env.REDIS_URL,
+		});
+	}
+	return aiReplyTriggers;
 }
 
 export async function triggerMemberMessageNotification(data: {
@@ -33,7 +48,9 @@ export async function triggerMemberMessageNotification(data: {
 	senderId: string;
 	initialMessageCreatedAt: string;
 }): Promise<void> {
-	return getTriggers().triggerMemberMessageNotification(data);
+	return getMessageNotificationTriggers().triggerMemberMessageNotification(
+		data
+	);
 }
 
 export async function triggerVisitorMessageNotification(data: {
@@ -44,12 +61,24 @@ export async function triggerVisitorMessageNotification(data: {
 	visitorId: string;
 	initialMessageCreatedAt: string;
 }): Promise<void> {
-	return getTriggers().triggerVisitorMessageNotification(data);
+	return getMessageNotificationTriggers().triggerVisitorMessageNotification(
+		data
+	);
 }
 
 export async function closeQueueProducers(): Promise<void> {
-	if (triggers) {
-		await triggers.close();
-		triggers = null;
-	}
+	await Promise.all([
+		(async () => {
+			if (messageNotificationTriggers) {
+				await messageNotificationTriggers.close();
+				messageNotificationTriggers = null;
+			}
+		})(),
+		(async () => {
+			if (aiReplyTriggers) {
+				await aiReplyTriggers.close();
+				aiReplyTriggers = null;
+			}
+		})(),
+	]);
 }

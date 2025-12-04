@@ -1,6 +1,7 @@
 // Queue names registry
 export const QUEUE_NAMES = {
 	MESSAGE_NOTIFICATION: "message-notification",
+	AI_REPLY: "ai-reply",
 } as const;
 
 /**
@@ -32,4 +33,23 @@ export function generateMessageNotificationJobId(
 	direction: MessageNotificationDirection
 ): string {
 	return `msg-notif-${conversationId}-${direction}`;
+}
+
+/**
+ * Job data for AI reply queue
+ */
+export type AiReplyJobData = {
+	conversationId: string;
+	messageId: string;
+	messageCreatedAt: string;
+	websiteId: string;
+	organizationId: string;
+	visitorId: string;
+	aiAgentId: string;
+	workflowRunId: string;
+	isReplacement: boolean;
+};
+
+export function generateAiReplyJobId(conversationId: string): string {
+	return `ai-reply-${conversationId}`;
 }

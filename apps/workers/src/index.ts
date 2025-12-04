@@ -1,7 +1,11 @@
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { HonoAdapter } from "@bull-board/hono";
-import { type MessageNotificationJobData, QUEUE_NAMES } from "@cossistant/jobs";
+import {
+	type AiReplyJobData,
+	type MessageNotificationJobData,
+	QUEUE_NAMES,
+} from "@cossistant/jobs";
 import {
 	createRedisConnection,
 	getBullConnectionOptions,
@@ -21,10 +25,12 @@ const redis = createRedisConnection(env.REDIS_URL);
 
 redis.on("ready", () => {
 	console.log("[workers] Redis connected, starting workers...");
-	startAllWorkers(env.REDIS_URL).catch((error) => {
-		console.error("[workers] Failed to start workers", error);
-		process.exit(1);
-	});
+	startAllWorkers({ redisUrl: env.REDIS_URL, stateRedis: redis }).catch(
+		(error) => {
+			console.error("[workers] Failed to start workers", error);
+			process.exit(1);
+		}
+	);
 });
 
 // Create Hono app for health checks
@@ -36,20 +42,25 @@ app.get("/health", (c) =>
 	c.json({ status: "healthy", timestamp: new Date().toISOString() })
 );
 
-const bullBoardQueues: Queue<MessageNotificationJobData>[] = [];
+type ManagedQueue = Queue<MessageNotificationJobData> | Queue<AiReplyJobData>;
+
+const bullBoardQueues: ManagedQueue[] = [];
 if (env.BULL_BOARD_ENABLED) {
 	const boardConnection = getBullConnectionOptions(env.REDIS_URL);
-	const queue = new Queue<MessageNotificationJobData>(
+	const messageQueue = new Queue<MessageNotificationJobData>(
 		QUEUE_NAMES.MESSAGE_NOTIFICATION,
 		{
 			connection: boardConnection,
 		}
 	);
-	bullBoardQueues.push(queue);
+	const aiReplyQueue = new Queue<AiReplyJobData>(QUEUE_NAMES.AI_REPLY, {
+		connection: boardConnection,
+	});
+	bullBoardQueues.push(messageQueue, aiReplyQueue);
 
 	const serverAdapter = new HonoAdapter(serveStatic);
 	createBullBoard({
-		queues: [new BullMQAdapter(queue)],
+		queues: [new BullMQAdapter(messageQueue), new BullMQAdapter(aiReplyQueue)],
 		serverAdapter,
 	});
 	const bullBoardBasePath = "/queues";

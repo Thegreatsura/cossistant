@@ -6,13 +6,18 @@ import {
 	getNotificationData,
 } from "@api/utils/notification-helpers";
 import {
+	getAiReplyQueueTriggers,
 	triggerMemberMessageNotification,
 	triggerVisitorMessageNotification,
 } from "@api/utils/queue-triggers";
-import { workflowClient } from "@api/utils/workflow";
-import { triggerDeduplicatedWorkflow } from "@api/utils/workflow-dedup-manager";
+import {
+	clearWorkflowState,
+	generateWorkflowRunId,
+	getWorkflowState,
+	setWorkflowState,
+	type WorkflowDirection,
+} from "@api/utils/workflow-dedup-manager";
 import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
-import { type AiAgentResponseData, WORKFLOW } from "@api/workflows/types";
 
 /**
  * Trigger notification workflow when a member sends a message
@@ -227,16 +232,6 @@ export async function triggerAiAgentResponseWorkflow(params: {
 			return;
 		}
 
-		const data: AiAgentResponseData = {
-			conversationId: params.conversationId,
-			messageId: params.messageId,
-			websiteId: params.websiteId,
-			organizationId: params.organizationId,
-			aiAgentId: aiAgent.id,
-			visitorId: params.visitorId,
-		};
-
-		// Fetch message metadata for deduplication
 		const messageMetadata = await getMessageMetadata(db, {
 			messageId: params.messageId,
 			organizationId: params.organizationId,
@@ -244,27 +239,63 @@ export async function triggerAiAgentResponseWorkflow(params: {
 
 		if (!messageMetadata) {
 			console.error(
-				`[ai-agent] Message ${params.messageId} not found, skipping AI response workflow`
+				`[ai-agent] Message ${params.messageId} not found, skipping AI response queue`
 			);
 			return;
 		}
 
 		console.log(
-			`[ai-agent] Triggering AI agent response workflow for conversation ${params.conversationId}`
+			`[ai-agent] Queuing AI agent response job for conversation ${params.conversationId}`
 		);
 
-		const { workflowRunId, isReplacement } = await triggerDeduplicatedWorkflow({
-			client: workflowClient,
-			path: WORKFLOW.AI_AGENT_RESPONSE,
-			data,
+		const direction: WorkflowDirection = "ai-agent-response";
+		const existingState = await getWorkflowState(
+			params.conversationId,
+			direction
+		);
+		const workflowRunId = generateWorkflowRunId(
+			params.conversationId,
+			direction
+		);
+
+		const newState = {
+			workflowRunId,
+			initialMessageId: existingState?.initialMessageId ?? params.messageId,
+			initialMessageCreatedAt:
+				existingState?.initialMessageCreatedAt ?? messageMetadata.createdAt,
 			conversationId: params.conversationId,
-			direction: "ai-agent-response",
-			messageId: params.messageId,
-			messageCreatedAt: messageMetadata.createdAt,
-		});
+			direction,
+			createdAt: existingState?.createdAt ?? new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
+
+		await setWorkflowState(newState);
+
+		try {
+			await getAiReplyQueueTriggers().enqueueAiReply({
+				conversationId: params.conversationId,
+				messageId: params.messageId,
+				messageCreatedAt: messageMetadata.createdAt,
+				websiteId: params.websiteId,
+				organizationId: params.organizationId,
+				visitorId: params.visitorId,
+				aiAgentId: aiAgent.id,
+				workflowRunId,
+				isReplacement: Boolean(existingState),
+			});
+		} catch (error) {
+			if (existingState) {
+				await setWorkflowState(existingState);
+			} else {
+				await clearWorkflowState(params.conversationId, direction);
+			}
+			throw error;
+		}
 
 		console.log(
-			`[ai-agent] AI agent response workflow ${isReplacement ? "replaced" : "triggered"} successfully for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+			`[ai-agent] AI agent response job ${
+				existingState ? "replaced" : "scheduled"
+			} for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
 		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation

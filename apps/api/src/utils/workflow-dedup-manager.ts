@@ -5,87 +5,47 @@ import type {
 	VisitorSentMessageData,
 	WorkflowDataMap,
 } from "@api/workflows/types";
+import {
+	generateWorkflowRunId,
+	isWorkflowRunActive,
+	clearWorkflowState as sharedClearWorkflowState,
+	getWorkflowState as sharedGetWorkflowState,
+	setWorkflowState as sharedSetWorkflowState,
+	type WorkflowDirection,
+	type WorkflowState,
+} from "@cossistant/jobs/workflow-state";
 import type { Client } from "@upstash/workflow";
+import type { Redis } from "ioredis";
 
-/**
- * Workflow deduplication manager using Redis
- * Ensures only one workflow runs per conversation and direction at a time
- * Stores the initial triggering message ID to filter email notifications correctly
- */
+export type {
+	WorkflowDirection,
+	WorkflowState,
+} from "@cossistant/jobs/workflow-state";
+export { generateWorkflowRunId } from "@cossistant/jobs/workflow-state";
 
-export type WorkflowDirection =
-	| "member-to-visitor"
-	| "visitor-to-member"
-	| "ai-agent-response";
-
-export type WorkflowState = {
-	workflowRunId: string;
-	initialMessageId: string;
-	initialMessageCreatedAt: string;
-	conversationId: string;
-	direction: WorkflowDirection;
-	createdAt: string;
-	updatedAt: string;
-};
-
-/**
- * Generate a stable Redis key for a workflow
- */
-function getWorkflowKey(
-	conversationId: string,
-	direction: WorkflowDirection
-): string {
-	return `workflow:message:${conversationId}:${direction}`;
+function getRedisClient(): Redis {
+	return getRedis();
 }
 
-function generateWorkflowRunId(
-	conversationId: string,
-	direction: WorkflowDirection
-): string {
-	return `msg-notif-${conversationId}-${direction}-${Date.now()}`;
-}
-
-/**
- * Get the current workflow state from Redis
- */
 export async function getWorkflowState(
 	conversationId: string,
 	direction: WorkflowDirection
 ): Promise<WorkflowState | null> {
-	const redis = getRedis();
-	const key = getWorkflowKey(conversationId, direction);
-	const data = await redis.get(key);
-
-	if (!data) {
-		return null;
-	}
-
-	return JSON.parse(data as string) as WorkflowState;
+	return sharedGetWorkflowState(getRedisClient(), conversationId, direction);
 }
 
-/**
- * Set workflow state in Redis
- * TTL is set to 24 hours to auto-cleanup old workflows
- */
 export async function setWorkflowState(
 	state: WorkflowState,
-	ttlSeconds = 86_400 // 24 hours
+	ttlSeconds?: number
 ): Promise<void> {
-	const redis = getRedis();
-	const key = getWorkflowKey(state.conversationId, state.direction);
-	await redis.setex(key, ttlSeconds, JSON.stringify(state));
+	await sharedSetWorkflowState(getRedisClient(), state, ttlSeconds);
 }
 
-/**
- * Clear workflow state from Redis
- */
 export async function clearWorkflowState(
 	conversationId: string,
 	direction: WorkflowDirection
 ): Promise<void> {
-	const redis = getRedis();
-	const key = getWorkflowKey(conversationId, direction);
-	await redis.del(key);
+	await sharedClearWorkflowState(getRedisClient(), conversationId, direction);
 }
 
 /**
@@ -204,6 +164,10 @@ export async function isActiveWorkflow(
 	direction: WorkflowDirection,
 	workflowRunId: string
 ): Promise<boolean> {
-	const state = await getWorkflowState(conversationId, direction);
-	return state?.workflowRunId === workflowRunId;
+	return isWorkflowRunActive(
+		getRedisClient(),
+		conversationId,
+		direction,
+		workflowRunId
+	);
 }

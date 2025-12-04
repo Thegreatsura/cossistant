@@ -1,5 +1,6 @@
-import type { RedisOptions } from "@cossistant/redis";
+import type { Redis, RedisOptions } from "@cossistant/redis";
 import { getBullConnectionOptions } from "@cossistant/redis";
+import { createAiReplyWorker } from "./ai-reply/worker";
 import { createMessageNotificationWorker } from "./message-notification/worker";
 
 type WorkerInstance = {
@@ -12,16 +13,29 @@ const workers: WorkerInstance[] = [];
 /**
  * Start all queue workers
  */
-export async function startAllWorkers(redisUrl: string): Promise<void> {
+export async function startAllWorkers(params: {
+	redisUrl: string;
+	stateRedis: Redis;
+}): Promise<void> {
 	console.log("[workers] Starting all workers...");
-	const connectionOptions: RedisOptions = getBullConnectionOptions(redisUrl);
+	const connectionOptions: RedisOptions = getBullConnectionOptions(
+		params.redisUrl
+	);
 
 	const messageNotificationWorker = createMessageNotificationWorker({
 		connectionOptions,
-		redisUrl,
+		redisUrl: params.redisUrl,
 	});
 	await messageNotificationWorker.start();
 	workers.push(messageNotificationWorker);
+
+	const aiReplyWorker = createAiReplyWorker({
+		connectionOptions,
+		redisUrl: params.redisUrl,
+		stateRedis: params.stateRedis,
+	});
+	await aiReplyWorker.start();
+	workers.push(aiReplyWorker);
 
 	console.log("[workers] All workers started");
 }

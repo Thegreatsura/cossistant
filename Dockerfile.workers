@@ -31,3 +31,4 @@ RUN bunx turbo run build --filter=@cossistant/workers^...
 # Run with bun runtime
 CMD ["bun", "run", "apps/workers/src/index.ts"]
 
+
