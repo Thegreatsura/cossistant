@@ -172,27 +172,8 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
 	return (
-		<Page className="relative flex flex-col gap-6 pt-12">
-			<PageHeader className="bg-background pr-2">
-				<PageHeaderTitle>Contacts</PageHeaderTitle>
-				<Input
-					containerClassName="max-w-xs"
-					onChange={(event) => setSearchTerm(event.target.value)}
-					placeholder="Search by name or email"
-					prepend={<Search className="h-4 w-4 text-muted-foreground" />}
-					value={searchTerm}
-				/>
-			</PageHeader>
-			<div className="mt-2 flex flex-col gap-5">
-				{listQuery.error ? (
-					<Alert variant="destructive">
-						<AlertTitle>Unable to load contacts</AlertTitle>
-						<AlertDescription>
-							{(listQuery.error as unknown as Error).message ??
-								"An unexpected error occurred."}
-						</AlertDescription>
-					</Alert>
-				) : null}
+		<Page className="relative flex flex-col gap-6">
+			<div className="flex flex-col gap-5">
 				<ContactsTable
 					containerRef={tableContainerRef}
 					data={contacts}
@@ -478,7 +459,7 @@ function ContactsTable({
 
 	if (isLoading) {
 		return (
-			<div className="overflow-hidden" ref={containerRef}>
+			<div className="overflow-hidden px-2" ref={containerRef}>
 				<Table>
 					<TableHeader>
 						{headerGroups.map((headerGroup) => (
@@ -533,7 +514,7 @@ function ContactsTable({
 	}
 
 	return (
-		<div className="overflow-auto" ref={containerRef}>
+		<div className="mt-2 overflow-auto px-2" ref={containerRef}>
 			<Table>
 				<TableHeader>
 					{headerGroups.map((headerGroup) => (
@@ -575,7 +556,7 @@ function ContactsTable({
 						return (
 							<TableRow
 								className={cn(
-									"cursor-pointer rounded-lg border-transparent border-b-0 transition-colors",
+									"cursor-pointer border-transparent border-b-0 transition-colors",
 									"focus-visible:outline-none focus-visible:ring-0",
 									isFocused &&
 										"bg-background-200 text-primary dark:bg-background-300",
@@ -616,7 +597,7 @@ function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
 
 	return (
 		<button
-			className="inline-flex items-center gap-1 font-semibold text-muted-foreground text-xs"
+			className="inline-flex items-center gap-1 font-medium text-primary/80 text-sm"
 			onClick={() => column.toggleSorting(sorted === "asc")}
 			type="button"
 		>

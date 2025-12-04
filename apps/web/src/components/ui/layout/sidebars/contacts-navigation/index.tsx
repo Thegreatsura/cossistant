@@ -1,8 +1,9 @@
 "use client";
 
 import type { ContactListVisitorStatus } from "@cossistant/types";
-import { SortAsc, SortDesc } from "lucide-react";
+import { Search, SortAsc, SortDesc } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SidebarContainer } from "@/components/ui/layout/sidebars/container";
 import { ResizableSidebar } from "@/components/ui/layout/sidebars/resizable-sidebar";
 import { SidebarItem } from "@/components/ui/layout/sidebars/sidebar-item";
@@ -73,18 +74,18 @@ function FilterOptionButton({
 		<button
 			aria-pressed={isSelected}
 			className={cn(
-				"group flex w-full flex-col rounded-md border border-primary/5 px-2 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/40 focus-visible:outline-offset-2",
-				isSelected ? "bg-background-300" : "hover:bg-background-200"
+				"group flex w-full flex-col gap-1 rounded-md border border-input px-3 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/40 focus-visible:outline-offset-2",
+				isSelected ? "bg-background-200" : "hover:bg-background-200"
 			)}
 			onClick={onClick}
 			type="button"
 		>
-			<div className="flex items-center justify-between font-medium text-sm">
+			<div className="flex items-center gap-2 font-medium text-sm">
 				{title}
 				<span
 					className={cn(
 						"size-1.5 rounded-full bg-cossistant-orange text-primary transition-opacity",
-						isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-70"
+						isSelected ? "opacity-100" : "opacity-0"
 					)}
 				/>
 			</div>
@@ -95,8 +96,14 @@ function FilterOptionButton({
 
 export function ContactsNavigationSidebar() {
 	const website = useWebsite();
-	const { sorting, setSorting, visitorStatus, setVisitorStatus } =
-		useContactsTableControls();
+	const {
+		sorting,
+		setSorting,
+		visitorStatus,
+		setVisitorStatus,
+		searchTerm,
+		setSearchTerm,
+	} = useContactsTableControls();
 
 	const activeSort = sorting[0] ?? { id: "updatedAt", desc: true };
 	const sortField = (activeSort.id as ContactSortField) ?? "updatedAt";
@@ -133,61 +140,78 @@ export function ContactsNavigationSidebar() {
 					</>
 				}
 			>
-				<div className="flex h-10 items-center justify-between pl-2">
-					<p className="flex items-center gap-2 text-sm">Filters</p>
-					<Button
-						className="h-auto px-2 py-1 text-xs opacity-50 hover:opacity-100"
-						onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
-						variant="ghost"
-					>
-						Reset
-					</Button>
-				</div>
-				<div className="space-y-2">
-					{VISITOR_FILTER_OPTIONS.map((option) => (
-						<FilterOptionButton
-							description={option.description}
-							isSelected={visitorStatus === option.value}
-							key={option.value}
-							onClick={() => setVisitorStatus(option.value)}
-							title={option.title}
-						/>
-					))}
-				</div>
-
-				<p className="mt-4 mb-2 px-2 text-primary text-sm">Ordering</p>
-				<Select onValueChange={handleSortFieldChange} value={sortField}>
-					<SelectTrigger className="w-full">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{SORT_FIELD_OPTIONS.map((option) => (
-							<SelectItem key={option.value} value={option.value}>
-								{option.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<ToggleGroup
-					className="mt-1 w-full"
-					onValueChange={handleSortOrderChange}
-					type="single"
-					value={sortOrder}
-					variant="outline"
+				<SidebarItem
+					active={false}
+					href={`/${website.slug}/inbox`}
+					iconName="arrow-left"
 				>
-					<ToggleGroupItem className="flex-1" value="asc">
-						<div className="flex items-center justify-center gap-1 text-xs">
-							<SortAsc className="h-3.5 w-3.5" />
-							<span>Asc</span>
-						</div>
-					</ToggleGroupItem>
-					<ToggleGroupItem className="flex-1" value="desc">
-						<div className="flex items-center justify-center gap-1 text-xs">
-							<SortDesc className="h-3.5 w-3.5" />
-							<span>Desc</span>
-						</div>
-					</ToggleGroupItem>
-				</ToggleGroup>
+					Contacts
+				</SidebarItem>
+
+				<div className="mt-5 flex flex-col gap-2">
+					{/* <div className="flex h-10 items-center justify-between pl-2">
+            <p className="flex items-center gap-2 text-sm">Filters</p>
+            <Button
+              className="h-auto px-2 py-1 text-xs opacity-50 hover:opacity-100"
+              onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
+              variant="ghost"
+            >
+              Reset
+            </Button>
+          </div> */}
+					<div className="space-y-2">
+						<Input
+							containerClassName="max-w-xs"
+							onChange={(event) => setSearchTerm(event.target.value)}
+							placeholder="Search by name or email"
+							prepend={<Search className="h-4 w-4 text-muted-foreground" />}
+							value={searchTerm}
+						/>
+						{VISITOR_FILTER_OPTIONS.map((option) => (
+							<FilterOptionButton
+								description={option.description}
+								isSelected={visitorStatus === option.value}
+								key={option.value}
+								onClick={() => setVisitorStatus(option.value)}
+								title={option.title}
+							/>
+						))}
+					</div>
+
+					{/* <p className="mt-4 mb-2 px-2 text-primary text-sm">Ordering</p>
+          <Select onValueChange={handleSortFieldChange} value={sortField}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_FIELD_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select> */}
+					{/* <ToggleGroup
+            className="mt-1 w-full"
+            onValueChange={handleSortOrderChange}
+            type="single"
+            value={sortOrder}
+            variant="outline"
+          >
+            <ToggleGroupItem className="flex-1" value="asc">
+              <div className="flex items-center justify-center gap-1 text-xs">
+                <SortAsc className="h-3.5 w-3.5" />
+                <span>Asc</span>
+              </div>
+            </ToggleGroupItem>
+            <ToggleGroupItem className="flex-1" value="desc">
+              <div className="flex items-center justify-center gap-1 text-xs">
+                <SortDesc className="h-3.5 w-3.5" />
+                <span>Desc</span>
+              </div>
+            </ToggleGroupItem>
+          </ToggleGroup> */}
+				</div>
 			</SidebarContainer>
 		</ResizableSidebar>
 	);

@@ -21,7 +21,10 @@ const TableHeader = React.forwardRef<
 	React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
 	<thead
-		className={cn("[&_tr]:border-primary/5 [&_tr]:border-b", className)}
+		className={cn(
+			"border-transparent [&_tr]:border-primary/5 [&_tr]:border-b",
+			className
+		)}
 		ref={ref}
 		{...props}
 	/>
@@ -63,7 +66,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 	({ className, disableHover = false, ...props }, ref) => (
 		<tr
 			className={cn(
-				"border-primary/10 border-b transition-colors data-[state=selected]:bg-background-secondary",
+				"rounded-lg border-primary/10 border-b transition-colors data-[state=selected]:bg-background-secondary",
 				!disableHover && "hover:bg-background-secondary/50",
 				className
 			)}
@@ -80,7 +83,7 @@ const TableHead = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<th
 		className={cn(
-			"h-10 px-5 text-left align-middle font-medium text-muted-foreground",
+			"h-10 px-2 text-left align-middle font-medium text-md text-primary/80",
 			className
 		)}
 		ref={ref}
@@ -94,7 +97,7 @@ const TableCell = React.forwardRef<
 	React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
 	<td
-		className={cn("px-5 py-3 align-middle text-sm", className)}
+		className={cn("px-2 py-3 align-middle text-sm", className)}
 		ref={ref}
 		{...props}
 	/>
