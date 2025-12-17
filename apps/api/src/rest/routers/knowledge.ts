@@ -42,6 +42,49 @@ function normalizeAiAgentId(value: string | null | undefined): string | null {
 	return value;
 }
 
+const VALID_KNOWLEDGE_TYPES = ["url", "faq", "article"] as const;
+type KnowledgeType = (typeof VALID_KNOWLEDGE_TYPES)[number];
+
+/**
+ * Validates and parses the 'type' query parameter.
+ * Returns the type if valid, undefined if not provided, or an error message if invalid.
+ */
+function parseKnowledgeType(
+	value: string | undefined
+): { value: KnowledgeType | undefined } | { error: string } {
+	if (value === undefined || value === "") {
+		return { value: undefined };
+	}
+	if (VALID_KNOWLEDGE_TYPES.includes(value as KnowledgeType)) {
+		return { value: value as KnowledgeType };
+	}
+	return {
+		error: `Invalid type '${value}'. Must be one of: ${VALID_KNOWLEDGE_TYPES.join(", ")}`,
+	};
+}
+
+/**
+ * Parses a numeric query parameter with defaults and bounds.
+ * Returns the default if the value is undefined, empty, NaN, or out of bounds.
+ */
+function parsePositiveInt(
+	value: string | undefined,
+	defaultValue: number,
+	max?: number
+): number {
+	if (value === undefined || value === "") {
+		return defaultValue;
+	}
+	const parsed = Number.parseInt(value, 10);
+	if (Number.isNaN(parsed) || parsed <= 0) {
+		return defaultValue;
+	}
+	if (max !== undefined && parsed > max) {
+		return max;
+	}
+	return parsed;
+}
+
 function formatKnowledgeResponse(entry: {
 	id: string;
 	organizationId: string;
@@ -98,6 +141,17 @@ knowledgeRouter.openapi(
 					},
 				},
 			},
+			400: {
+				description: "Bad request - Invalid query parameters",
+				content: {
+					"application/json": {
+						schema: z.object({
+							error: z.string(),
+							message: z.string(),
+						}),
+					},
+				},
+			},
 			401: {
 				description: "Unauthorized - Invalid or missing private API key",
 				content: {
@@ -139,18 +193,23 @@ knowledgeRouter.openapi(
 				);
 			}
 
-			// Parse query parameters
+			// Parse and validate query parameters
 			const query = c.req.query();
-			const type = query.type as "url" | "faq" | "article" | undefined;
-			const aiAgentId = query.aiAgentId;
-			const page = query.page ? Number.parseInt(query.page, 10) : 1;
-			const limit = query.limit ? Number.parseInt(query.limit, 10) : 20;
+
+			const typeResult = parseKnowledgeType(query.type);
+			if ("error" in typeResult) {
+				return c.json({ error: "BAD_REQUEST", message: typeResult.error }, 400);
+			}
+
+			const aiAgentId = normalizeAiAgentId(query.aiAgentId);
+			const page = parsePositiveInt(query.page, 1);
+			const limit = parsePositiveInt(query.limit, 20, 100);
 
 			const result = await listKnowledge(db, {
 				organizationId: website.organizationId,
 				websiteId: website.id,
-				type,
-				aiAgentId: normalizeAiAgentId(aiAgentId),
+				type: typeResult.value,
+				aiAgentId,
 				page,
 				limit,
 			});
