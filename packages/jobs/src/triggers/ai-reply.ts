@@ -9,6 +9,11 @@ import {
 const MIN_AI_REPLY_DELAY_MS = 5000;
 const AI_REPLY_DEDUP_TTL_MS = 60_000;
 
+// Retry configuration: 5 attempts spread over ~2 hours for AI replies
+// AI replies need faster retries than email notifications
+const AI_RETRY_ATTEMPTS = 5;
+const AI_RETRY_BASE_DELAY_MS = 5 * 60 * 1000; // 5 minutes base (5min, 10min, 20min, 40min, 80min = ~2.5h)
+
 type TriggerConfig = {
 	connection: RedisOptions;
 	redisUrl: string;
@@ -34,7 +39,7 @@ export function createAiReplyTriggers({ connection, redisUrl }: TriggerConfig) {
 				connection: buildConnectionOptions(),
 				defaultJobOptions: {
 					removeOnComplete: true,
-					removeOnFail: 50,
+					removeOnFail: 500, // Keep failed jobs for investigation
 				},
 			});
 		}
@@ -69,6 +74,11 @@ export function createAiReplyTriggers({ connection, redisUrl }: TriggerConfig) {
 		const jobOptions: JobsOptions = {
 			jobId,
 			delay: MIN_AI_REPLY_DELAY_MS,
+			attempts: AI_RETRY_ATTEMPTS,
+			backoff: {
+				type: "exponential",
+				delay: AI_RETRY_BASE_DELAY_MS,
+			},
 			deduplication: {
 				id: jobId,
 				ttl: AI_REPLY_DEDUP_TTL_MS,
