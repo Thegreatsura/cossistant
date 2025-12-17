@@ -160,7 +160,7 @@ export const conversationRouter = createTRPCRouter({
 							z.union([
 								z.object({
 									type: z.literal("image"),
-									url: z.string().url(),
+									url: z.url(),
 									mediaType: z.string(),
 									fileName: z.string().optional(),
 									size: z.number().optional(),
@@ -169,7 +169,7 @@ export const conversationRouter = createTRPCRouter({
 								}),
 								z.object({
 									type: z.literal("file"),
-									url: z.string().url(),
+									url: z.url(),
 									mediaType: z.string(),
 									fileName: z.string().optional(),
 									size: z.number().optional(),

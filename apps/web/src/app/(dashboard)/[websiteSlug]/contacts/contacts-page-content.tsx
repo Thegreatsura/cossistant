@@ -172,27 +172,8 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
 	return (
-		<Page className="relative flex flex-col gap-6 pt-12">
-			<PageHeader className="bg-background pr-2">
-				<PageHeaderTitle>Contacts</PageHeaderTitle>
-				<Input
-					containerClassName="max-w-xs"
-					onChange={(event) => setSearchTerm(event.target.value)}
-					placeholder="Search by name or email"
-					prepend={<Search className="h-4 w-4 text-muted-foreground" />}
-					value={searchTerm}
-				/>
-			</PageHeader>
-			<div className="mt-2 flex flex-col gap-5">
-				{listQuery.error ? (
-					<Alert variant="destructive">
-						<AlertTitle>Unable to load contacts</AlertTitle>
-						<AlertDescription>
-							{(listQuery.error as unknown as Error).message ??
-								"An unexpected error occurred."}
-						</AlertDescription>
-					</Alert>
-				) : null}
+		<Page className="relative flex flex-col gap-6">
+			<div className="flex flex-col gap-5">
 				<ContactsTable
 					containerRef={tableContainerRef}
 					data={contacts}
@@ -476,43 +457,6 @@ function ContactsTable({
 	const headerGroups = table.getHeaderGroups();
 	const rows = table.getRowModel().rows;
 
-	if (isLoading) {
-		return (
-			<div className="overflow-hidden" ref={containerRef}>
-				<Table>
-					<TableHeader>
-						{headerGroups.map((headerGroup) => (
-							<TableRow
-								className="border-transparent border-b-0"
-								key={headerGroup.id}
-							>
-								{headerGroup.headers.map((header) => (
-									<TableHead key={header.id}>
-										{header.isPlaceholder
-											? null
-											: flexRender(
-													header.column.columnDef.header,
-													header.getContext()
-												)}
-									</TableHead>
-								))}
-							</TableRow>
-						))}
-					</TableHeader>
-					<TableBody>
-						{Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
-							<TableRow className="border-transparent border-b-0" key={index}>
-								<TableCell colSpan={columns.length}>
-									<Skeleton className="h-12 w-full" />
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			</div>
-		);
-	}
-
 	if (!rows.length) {
 		return (
 			<div
@@ -533,9 +477,9 @@ function ContactsTable({
 	}
 
 	return (
-		<div className="overflow-auto" ref={containerRef}>
+		<div className="mt-2 overflow-auto px-2" ref={containerRef}>
 			<Table>
-				<TableHeader>
+				<TableHeader className="border-transparent border-b-0">
 					{headerGroups.map((headerGroup) => (
 						<TableRow
 							className="border-transparent border-b-0"
@@ -568,38 +512,49 @@ function ContactsTable({
 					))}
 				</TableHeader>
 				<TableBody>
-					{rows.map((row, index) => {
-						const isFocused = index === focusedIndex;
-						const isSelected = row.original.id === selectedContactId;
-
-						return (
-							<TableRow
-								className={cn(
-									"cursor-pointer rounded-lg border-transparent border-b-0 transition-colors",
-									"focus-visible:outline-none focus-visible:ring-0",
-									isFocused &&
-										"bg-background-200 text-primary dark:bg-background-300",
-									isSelected && "bg-background-300 dark:bg-background-400"
-								)}
-								key={row.id}
-								onClick={() => onRowClick(row.original.id)}
-								onKeyDown={(event) => {
-									if (event.key === "Enter" || event.key === " ") {
-										event.preventDefault();
-										onRowClick(row.original.id);
-									}
-								}}
-								onMouseEnter={() => onMouseEnter(index)}
-								tabIndex={isFocused ? 0 : -1}
-							>
-								{row.getVisibleCells().map((cell) => (
-									<TableCell className="py-2" key={cell.id}>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+					{isLoading
+						? Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
+								<TableRow className="border-transparent border-b-0" key={index}>
+									<TableCell colSpan={columns.length}>
+										<Skeleton className="h-12 w-full" />
 									</TableCell>
-								))}
-							</TableRow>
-						);
-					})}
+								</TableRow>
+							))
+						: rows.map((row, index) => {
+								const isFocused = index === focusedIndex;
+								const isSelected = row.original.id === selectedContactId;
+
+								return (
+									<TableRow
+										className={cn(
+											"cursor-pointer border-transparent border-b-0 transition-colors",
+											"focus-visible:outline-none focus-visible:ring-0",
+											isFocused &&
+												"bg-background-200 text-primary dark:bg-background-300",
+											isSelected && "bg-background-300 dark:bg-background-400"
+										)}
+										key={row.id}
+										onClick={() => onRowClick(row.original.id)}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												onRowClick(row.original.id);
+											}
+										}}
+										onMouseEnter={() => onMouseEnter(index)}
+										tabIndex={isFocused ? 0 : -1}
+									>
+										{row.getVisibleCells().map((cell) => (
+											<TableCell className="py-2" key={cell.id}>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										))}
+									</TableRow>
+								);
+							})}
 				</TableBody>
 			</Table>
 		</div>
@@ -616,7 +571,7 @@ function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
 
 	return (
 		<button
-			className="inline-flex items-center gap-1 font-semibold text-muted-foreground text-xs"
+			className="inline-flex items-center gap-1 font-medium text-primary/80 text-sm"
 			onClick={() => column.toggleSorting(sorted === "asc")}
 			type="button"
 		>

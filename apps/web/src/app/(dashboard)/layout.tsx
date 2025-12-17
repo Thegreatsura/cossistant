@@ -9,7 +9,7 @@ export default function Layout({
 	return (
 		<Providers>
 			{children}
-			<Support />
+			<Support classNames={{ bubble: "hidden sm:block" }} />
 		</Providers>
 	);
 }

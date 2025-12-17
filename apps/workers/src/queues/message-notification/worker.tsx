@@ -31,12 +31,13 @@ type VisitorRecipient = {
 /**
  * Create the message notification worker
  */
-const DELAY_PROMOTION_INTERVAL_MS = 5000;
-
 type WorkerConfig = {
 	connectionOptions: RedisOptions;
 	redisUrl: string;
 };
+
+// Interval for logging queue status (every 30 seconds)
+const QUEUE_STATUS_INTERVAL_MS = 30_000;
 
 export function createMessageNotificationWorker({
 	connectionOptions,
@@ -44,9 +45,9 @@ export function createMessageNotificationWorker({
 }: WorkerConfig) {
 	const queueName = QUEUE_NAMES.MESSAGE_NOTIFICATION;
 	let worker: Worker<MessageNotificationJobData> | null = null;
-	let maintenanceQueue: Queue<MessageNotificationJobData> | null = null;
 	let events: QueueEvents | null = null;
-	let delayedPromotionInterval: ReturnType<typeof setInterval> | null = null;
+	let statusQueue: Queue<MessageNotificationJobData> | null = null;
+	let statusInterval: ReturnType<typeof setInterval> | null = null;
 	const safeRedisUrl = getSafeRedisUrl(redisUrl);
 
 	const buildConnectionOptions = (): RedisOptions => ({
@@ -63,40 +64,70 @@ export function createMessageNotificationWorker({
 			console.log(
 				`[worker:message-notification] Using queue=${queueName} redis=${safeRedisUrl}`
 			);
-			console.log(
-				"[worker:message-notification] Initializing maintenance queue"
-			);
-			maintenanceQueue = new Queue<MessageNotificationJobData>(queueName, {
+
+			// Create a queue instance for status checks
+			statusQueue = new Queue<MessageNotificationJobData>(queueName, {
 				connection: buildConnectionOptions(),
 			});
-			await maintenanceQueue.waitUntilReady();
-			console.log("[worker:message-notification] Maintenance queue ready");
+			await statusQueue.waitUntilReady();
+			console.log("[worker:message-notification] Status queue ready");
 
 			console.log("[worker:message-notification] Initializing queue events");
 			events = new QueueEvents(queueName, {
 				connection: buildConnectionOptions(),
 			});
+			// Log when jobs are added to the queue
+			events.on("added", ({ jobId, name }) => {
+				console.log(
+					`[worker:message-notification] Job ADDED: ${jobId} (name: ${name})`
+				);
+			});
 			events.on("delayed", ({ jobId, delay }) => {
 				console.log(
-					`[worker:message-notification] Job ${jobId} delayed for ${delay}ms`
+					`[worker:message-notification] Job ${jobId} DELAYED for ${delay}ms`
 				);
 			});
 			events.on("waiting", ({ jobId }) => {
-				console.log(`[worker:message-notification] Job ${jobId} waiting`);
+				console.log(
+					`[worker:message-notification] Job ${jobId} WAITING (ready to process)`
+				);
 			});
 			events.on("active", ({ jobId }) => {
-				console.log(`[worker:message-notification] Job ${jobId} active`);
+				console.log(`[worker:message-notification] Job ${jobId} ACTIVE`);
 			});
 			events.on("completed", ({ jobId }) => {
-				console.log(`[worker:message-notification] Job ${jobId} completed`);
+				console.log(`[worker:message-notification] Job ${jobId} COMPLETED`);
 			});
 			events.on("failed", ({ jobId, failedReason }) => {
 				console.error(
-					`[worker:message-notification] Job ${jobId} failed: ${failedReason}`
+					`[worker:message-notification] Job ${jobId} FAILED: ${failedReason}`
 				);
 			});
 			await events.waitUntilReady();
 			console.log("[worker:message-notification] Queue events ready");
+
+			// Periodic status logging to monitor delayed jobs
+			statusInterval = setInterval(async () => {
+				if (!statusQueue) {
+					return;
+				}
+				try {
+					const counts = await statusQueue.getJobCounts(
+						"delayed",
+						"waiting",
+						"active",
+						"completed",
+						"failed"
+					);
+					if (counts.delayed > 0 || counts.waiting > 0 || counts.active > 0) {
+						console.log(
+							`[worker:message-notification] Queue status: delayed=${counts.delayed} waiting=${counts.waiting} active=${counts.active} completed=${counts.completed} failed=${counts.failed}`
+						);
+					}
+				} catch {
+					// Ignore status check errors
+				}
+			}, QUEUE_STATUS_INTERVAL_MS);
 
 			worker = new Worker<MessageNotificationJobData>(
 				queueName,
@@ -138,34 +169,16 @@ export function createMessageNotificationWorker({
 				console.error("[worker:message-notification] Worker error:", err);
 			});
 
-			delayedPromotionInterval = setInterval(() => {
-				if (!maintenanceQueue) {
-					return;
-				}
-				maintenanceQueue
-					.getJobCounts("delayed", "waiting")
-					.then(async (counts) => {
-						if (counts.delayed === 0) {
-							return;
-						}
-						await maintenanceQueue?.promoteJobs();
-						console.log(
-							`[worker:message-notification] Promoted delayed jobs (before:${counts.delayed}) wait:${counts.waiting}`
-						);
-					})
-					.catch((error) => {
-						console.error(
-							"[worker:message-notification] Failed promoting delayed jobs",
-							error
-						);
-					});
-			}, DELAY_PROMOTION_INTERVAL_MS);
-
 			await worker.waitUntilReady();
 			console.log("[worker:message-notification] Worker started");
 		},
 
 		stop: async () => {
+			if (statusInterval) {
+				clearInterval(statusInterval);
+				statusInterval = null;
+			}
+
 			await Promise.all([
 				(async () => {
 					if (worker) {
@@ -182,21 +195,13 @@ export function createMessageNotificationWorker({
 					}
 				})(),
 				(async () => {
-					if (maintenanceQueue) {
-						await maintenanceQueue.close();
-						maintenanceQueue = null;
-						console.log(
-							"[worker:message-notification] Maintenance queue closed"
-						);
+					if (statusQueue) {
+						await statusQueue.close();
+						statusQueue = null;
+						console.log("[worker:message-notification] Status queue closed");
 					}
 				})(),
 			]);
-
-			if (delayedPromotionInterval) {
-				clearInterval(delayedPromotionInterval);
-				delayedPromotionInterval = null;
-				console.log("[worker:message-notification] Promotion loop stopped");
-			}
 		},
 	};
 }

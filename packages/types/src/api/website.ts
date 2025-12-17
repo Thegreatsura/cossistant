@@ -113,7 +113,7 @@ export const websiteSummarySchema = z
 			description: "The primary email visitors can use to reach you.",
 			example: "support@dub.co",
 		}),
-		logoUrl: z.string().url().nullable().openapi({
+		logoUrl: z.url().nullable().openapi({
 			description: "Public URL to the website's logo.",
 			example: "https://cdn.example.com/logo.png",
 		}),
@@ -215,7 +215,7 @@ const websiteUpdateDataSchema = z
 		domain: z.string().min(1).optional(),
 		contactEmail: z.string().email().nullable().optional(),
 		description: z.string().nullable().optional(),
-		logoUrl: z.string().url().nullable().optional(),
+		logoUrl: z.url().nullable().optional(),
 		whitelistedDomains: z.array(z.url()).optional(),
 		defaultParticipantIds: z.array(z.string()).nullable().optional(),
 		installationTarget: z.nativeEnum(WebsiteInstallationTarget).optional(),
@@ -419,7 +419,7 @@ export const websiteListItemSchema = z.object({
 		description: "The website's slug.",
 		example: "dub-co",
 	}),
-	logoUrl: z.string().url().nullable().openapi({
+	logoUrl: z.url().nullable().openapi({
 		description: "Public URL to the website's logo.",
 		example: "https://cdn.example.com/logo.png",
 	}),

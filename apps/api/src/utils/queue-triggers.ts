@@ -48,9 +48,23 @@ export async function triggerMemberMessageNotification(data: {
 	senderId: string;
 	initialMessageCreatedAt: string;
 }): Promise<void> {
-	return getMessageNotificationTriggers().triggerMemberMessageNotification(
-		data
+	console.log(
+		`[queue-triggers] triggerMemberMessageNotification called for conversation ${data.conversationId}, message ${data.messageId}`
 	);
+	try {
+		await getMessageNotificationTriggers().triggerMemberMessageNotification(
+			data
+		);
+		console.log(
+			`[queue-triggers] triggerMemberMessageNotification completed for conversation ${data.conversationId}`
+		);
+	} catch (error) {
+		console.error(
+			`[queue-triggers] triggerMemberMessageNotification FAILED for conversation ${data.conversationId}:`,
+			error
+		);
+		throw error;
+	}
 }
 
 export async function triggerVisitorMessageNotification(data: {
@@ -61,9 +75,23 @@ export async function triggerVisitorMessageNotification(data: {
 	visitorId: string;
 	initialMessageCreatedAt: string;
 }): Promise<void> {
-	return getMessageNotificationTriggers().triggerVisitorMessageNotification(
-		data
+	console.log(
+		`[queue-triggers] triggerVisitorMessageNotification called for conversation ${data.conversationId}, message ${data.messageId}`
 	);
+	try {
+		await getMessageNotificationTriggers().triggerVisitorMessageNotification(
+			data
+		);
+		console.log(
+			`[queue-triggers] triggerVisitorMessageNotification completed for conversation ${data.conversationId}`
+		);
+	} catch (error) {
+		console.error(
+			`[queue-triggers] triggerVisitorMessageNotification FAILED for conversation ${data.conversationId}:`,
+			error
+		);
+		throw error;
+	}
 }
 
 export async function closeQueueProducers(): Promise<void> {

@@ -16,7 +16,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const pushSubscriptionSchema = z.object({
-	endpoint: z.string().url(),
+	endpoint: z.url(),
 	keys: z.object({
 		p256dh: z.string(),
 		auth: z.string(),

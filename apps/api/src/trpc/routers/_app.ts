@@ -4,6 +4,7 @@ import { createTRPCRouter } from "../init";
 import { aiAgentRouter } from "./ai-agent";
 import { contactRouter } from "./contact";
 import { conversationRouter } from "./conversation";
+import { knowledgeRouter } from "./knowledge";
 import { notificationRouter } from "./notification";
 import { planRouter } from "./plan";
 import { resendRouter } from "./resend";
@@ -25,6 +26,7 @@ export const origamiTRPCRouter = createTRPCRouter({
 	upload: uploadRouter,
 	plan: planRouter,
 	notification: notificationRouter,
+	knowledge: knowledgeRouter,
 });
 
 // export type definition of API

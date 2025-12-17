@@ -3,6 +3,7 @@ export * from "./ai-agent";
 export * from "./common";
 export * from "./contact";
 export * from "./conversation";
+export * from "./knowledge";
 export * from "./notification";
 export * from "./organization";
 export * from "./timeline-item";

@@ -10,6 +10,11 @@ import {
 // Default delay: 1 minute (in milliseconds)
 const DEFAULT_NOTIFICATION_DELAY_MS = 60 * 1000;
 
+// Retry configuration: 6 attempts spread over ~24 hours
+// With exponential backoff (base 45 min): 45min, 1.5h, 3h, 6h, 12h = ~23 hours total
+const RETRY_ATTEMPTS = 6;
+const RETRY_BASE_DELAY_MS = 45 * 60 * 1000; // 45 minutes
+
 type TriggerConfig = {
 	connection: RedisOptions;
 	redisUrl: string;
@@ -41,7 +46,7 @@ export function createMessageNotificationTriggers({
 				connection: buildConnectionOptions(),
 				defaultJobOptions: {
 					removeOnComplete: true,
-					removeOnFail: 100,
+					removeOnFail: 1000, // Keep failed jobs for investigation (auto-cleaned when limit reached)
 				},
 			});
 		}
@@ -82,15 +87,81 @@ export function createMessageNotificationTriggers({
 			direction
 		);
 
+		// Check if a job with this ID already exists
+		const existingJob = await q.getJob(jobId);
+		let effectiveInitialMessageCreatedAt = data.initialMessageCreatedAt;
+
+		if (existingJob) {
+			const existingState = await existingJob.getState();
+			console.log(
+				`[jobs:message-notification] Found existing job ${jobId} in state: ${existingState}`
+			);
+
+			// If the existing job is in a terminal state (failed/completed), remove it
+			// so we can create a fresh delayed job for the new batch
+			if (existingState === "failed" || existingState === "completed") {
+				// Preserve the earlier initialMessageCreatedAt to ensure we don't miss messages
+				// that were part of the original failed batch
+				const existingData =
+					existingJob.data as MessageNotificationJobData | null;
+				if (existingData?.initialMessageCreatedAt) {
+					const existingTimestamp = new Date(
+						existingData.initialMessageCreatedAt
+					).getTime();
+					const newTimestamp = new Date(data.initialMessageCreatedAt).getTime();
+					if (existingTimestamp < newTimestamp) {
+						effectiveInitialMessageCreatedAt =
+							existingData.initialMessageCreatedAt;
+						console.log(
+							`[jobs:message-notification] Preserving earlier initialMessageCreatedAt from ${existingState} job: ${effectiveInitialMessageCreatedAt}`
+						);
+					}
+				}
+				await existingJob.remove();
+				console.log(
+					`[jobs:message-notification] Removed ${existingState} job ${jobId} to allow new batch`
+				);
+			} else if (existingState === "delayed" || existingState === "waiting") {
+				// Job is already queued and waiting - this is the deduplication case
+				// The existing job will pick up all messages when it runs
+				console.log(
+					`[jobs:message-notification] Job ${jobId} already ${existingState}, skipping (messages will be batched)`
+				);
+				return;
+			} else if (existingState === "active") {
+				// Job is currently being processed - treat as in-flight/deduplicated
+				// The active job will pick up messages, no need to create a duplicate
+				console.log(
+					`[jobs:message-notification] Job ${jobId} is currently active, skipping (messages will be included)`
+				);
+				return;
+			} else {
+				// Handle unexpected states (waiting-children, paused, prioritized, unknown, etc.)
+				// To be safe, skip creating a duplicate - the existing job should eventually process
+				console.warn(
+					`[jobs:message-notification] Job ${jobId} in unexpected state: ${existingState}, skipping to avoid duplicate`
+				);
+				return;
+			}
+		}
+
 		const jobOptions: JobsOptions = {
 			jobId,
 			delay: DEFAULT_NOTIFICATION_DELAY_MS,
+			attempts: RETRY_ATTEMPTS,
+			backoff: {
+				type: "exponential",
+				delay: RETRY_BASE_DELAY_MS,
+			},
 		};
 
-		// BullMQ handles deduplication via jobId - if a job with this ID already exists,
-		// it won't create a duplicate. The initialMessageCreatedAt in the job data
-		// preserves when the first message was created.
-		const job = await q.add("notification", data, jobOptions);
+		// Use the effective timestamp (may be earlier if preserving from failed job)
+		const jobData: MessageNotificationJobData = {
+			...data,
+			initialMessageCreatedAt: effectiveInitialMessageCreatedAt,
+		};
+
+		const job = await q.add("notification", jobData, jobOptions);
 
 		const [state, counts] = await Promise.all([
 			job.getState().catch(() => "unknown"),

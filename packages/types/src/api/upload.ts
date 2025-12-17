@@ -159,7 +159,7 @@ export type GenerateUploadUrlRequest = z.infer<
 
 export const generateUploadUrlResponseSchema = z
 	.object({
-		uploadUrl: z.string().url().openapi({
+		uploadUrl: z.url().openapi({
 			description:
 				"Pre-signed URL that accepts a PUT request to upload the file to S3.",
 			example:
@@ -182,7 +182,7 @@ export const generateUploadUrlResponseSchema = z
 			description: "MIME type that should be used when uploading the file.",
 			example: "image/png",
 		}),
-		publicUrl: z.string().url().openapi({
+		publicUrl: z.url().openapi({
 			description:
 				"Publicly accessible URL (or CDN URL when requested) that can be used to read the uploaded file.",
 			example: "https://cdn.example.com/org-id/file.png",
