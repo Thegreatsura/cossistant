@@ -26,6 +26,22 @@ export const knowledgeRouter = new OpenAPIHono<RestContext>();
 // Apply private API key middleware to all routes - knowledge management is sensitive
 knowledgeRouter.use("/*", ...protectedPrivateApiKeyMiddleware);
 
+/**
+ * Normalizes an aiAgentId query parameter value to either a valid ULID string or null.
+ * Treats undefined, null, empty string, and the literal string "null" as actual null.
+ */
+function normalizeAiAgentId(value: string | null | undefined): string | null {
+	if (
+		value === undefined ||
+		value === null ||
+		value === "" ||
+		value === "null"
+	) {
+		return null;
+	}
+	return value;
+}
+
 function formatKnowledgeResponse(entry: {
 	id: string;
 	organizationId: string;
@@ -134,7 +150,7 @@ knowledgeRouter.openapi(
 				organizationId: website.organizationId,
 				websiteId: website.id,
 				type,
-				aiAgentId: aiAgentId === "null" ? null : aiAgentId,
+				aiAgentId: normalizeAiAgentId(aiAgentId),
 				page,
 				limit,
 			});

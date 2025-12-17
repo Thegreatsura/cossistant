@@ -100,15 +100,15 @@ const metadataSchema = z
 	});
 
 const baseKnowledgeFields = {
-	organizationId: z.string().ulid().openapi({
+	organizationId: z.ulid().openapi({
 		description: "Owning organization identifier",
 		example: "01JG000000000000000000000",
 	}),
-	websiteId: z.string().ulid().openapi({
+	websiteId: z.ulid().openapi({
 		description: "Website identifier",
 		example: "01JG000000000000000000001",
 	}),
-	aiAgentId: z.string().ulid().nullable().optional().openapi({
+	aiAgentId: z.ulid().nullable().optional().openapi({
 		description:
 			"Optional AI agent identifier; null/omitted means the entry is shared at the website scope.",
 		example: "01JG000000000000000000002",
@@ -219,15 +219,15 @@ export const knowledgeResponseSchema = z
 			description: "Knowledge entry identifier",
 			example: "01JG00000000000000000000A",
 		}),
-		organizationId: z.string().ulid().openapi({
+		organizationId: z.ulid().openapi({
 			description: "Owning organization identifier",
 			example: "01JG000000000000000000000",
 		}),
-		websiteId: z.string().ulid().openapi({
+		websiteId: z.ulid().openapi({
 			description: "Website identifier",
 			example: "01JG000000000000000000001",
 		}),
-		aiAgentId: z.string().ulid().nullable().openapi({
+		aiAgentId: z.ulid().nullable().openapi({
 			description:
 				"Optional AI agent identifier; null means shared at website scope",
 			example: "01JG000000000000000000002",
@@ -291,7 +291,7 @@ export const listKnowledgeRequestSchema = z
 			description: "Filter by knowledge type",
 			example: "url",
 		}),
-		aiAgentId: z.string().ulid().nullable().optional().openapi({
+		aiAgentId: z.ulid().nullable().optional().openapi({
 			description:
 				"Filter by AI agent ID; null for shared entries; omit for all",
 			example: "01JG000000000000000000002",
@@ -321,11 +321,14 @@ export const listKnowledgeRestRequestSchema = z
 			description: "Filter by knowledge type",
 			example: "url",
 		}),
-		aiAgentId: z.string().ulid().nullable().optional().openapi({
-			description:
-				"Filter by AI agent ID; null for shared entries; omit for all",
-			example: "01JG000000000000000000002",
-		}),
+		aiAgentId: z
+			.union([z.ulid(), z.literal("null"), z.literal("")])
+			.optional()
+			.openapi({
+				description:
+					'Filter by AI agent ID. Pass a valid ULID to filter by agent, pass "null" or empty string to filter for shared/website-scoped entries only, or omit entirely to return all entries.',
+				example: "01JG000000000000000000002",
+			}),
 		page: z.coerce.number().int().positive().default(1).openapi({
 			description: "Page number (1-indexed)",
 			example: 1,
@@ -410,7 +413,7 @@ export const createKnowledgeRequestSchema = z
 			description: "The website slug to create knowledge for",
 			example: "my-website",
 		}),
-		aiAgentId: z.string().ulid().nullable().optional().openapi({
+		aiAgentId: z.ulid().nullable().optional().openapi({
 			description:
 				"Optional AI agent ID; null/omit for shared at website scope",
 			example: "01JG000000000000000000002",
@@ -448,7 +451,7 @@ export type CreateKnowledgeRequest = z.infer<
  */
 export const createKnowledgeRestRequestSchema = z
 	.object({
-		aiAgentId: z.string().ulid().nullable().optional().openapi({
+		aiAgentId: z.ulid().nullable().optional().openapi({
 			description:
 				"Optional AI agent ID; null/omit for shared at website scope",
 			example: "01JG000000000000000000002",
@@ -494,7 +497,7 @@ export const updateKnowledgeRequestSchema = z
 			description: "Knowledge entry ID to update",
 			example: "01JG00000000000000000000A",
 		}),
-		aiAgentId: z.string().ulid().nullable().optional().openapi({
+		aiAgentId: z.ulid().nullable().optional().openapi({
 			description: "Update AI agent association",
 			example: "01JG000000000000000000002",
 		}),
@@ -528,7 +531,7 @@ export type UpdateKnowledgeRequest = z.infer<
  */
 export const updateKnowledgeRestRequestSchema = z
 	.object({
-		aiAgentId: z.string().ulid().nullable().optional().openapi({
+		aiAgentId: z.ulid().nullable().optional().openapi({
 			description: "Update AI agent association",
 			example: "01JG000000000000000000002",
 		}),
