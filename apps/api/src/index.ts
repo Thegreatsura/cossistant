@@ -13,6 +13,7 @@ import { checkHealth } from "@api/utils/health";
 import { swaggerUI } from "@hono/swagger-ui";
 import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
@@ -31,6 +32,11 @@ const app = new OpenAPIHono<{
 		realtime: typeof realtime;
 	};
 }>();
+
+const stripSetCookie: MiddlewareHandler = async (c, next) => {
+	await next();
+	c.res.headers.delete("Set-Cookie");
+};
 
 const acceptedOrigins = [
 	"http://localhost:3000",
@@ -132,6 +138,7 @@ app.use(
 
 // REST API routes with default rate limiting
 app.use("/v1/*", defaultRateLimiter);
+app.use("/v1/*", stripSetCookie);
 app.route("/v1", routers);
 
 app.route("/polar", polarRouters);

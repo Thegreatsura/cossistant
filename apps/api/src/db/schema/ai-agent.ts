@@ -16,6 +16,7 @@ import { ulidPrimaryKey, ulidReference } from "../../utils/db/ids";
 import { isoTimestamp as timestamp } from "../../utils/db/timestamp";
 import { organization } from "./auth";
 import { conversationTimelineItem } from "./conversation";
+import { knowledge } from "./knowledge";
 import { website } from "./website";
 
 export const aiAgent = pgTable(
@@ -37,6 +38,7 @@ export const aiAgent = pgTable(
 		}),
 		isActive: boolean("is_active").default(true).notNull(),
 		lastUsedAt: timestamp("last_used_at"),
+		lastTrainedAt: timestamp("last_trained_at"),
 		usageCount: integer("usage_count").default(0).notNull(),
 		metadata: jsonb("metadata"),
 		createdAt: timestamp("created_at")
@@ -67,6 +69,7 @@ export const aiAgentRelations = relations(aiAgent, ({ one, many }) => ({
 		references: [website.id],
 	}),
 	conversationTimelineItems: many(conversationTimelineItem),
+	knowledgeEntries: many(knowledge),
 }));
 
 export type AiAgentSelect = InferSelectModel<typeof aiAgent>;

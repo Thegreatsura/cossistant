@@ -457,43 +457,6 @@ function ContactsTable({
 	const headerGroups = table.getHeaderGroups();
 	const rows = table.getRowModel().rows;
 
-	if (isLoading) {
-		return (
-			<div className="overflow-hidden px-2" ref={containerRef}>
-				<Table>
-					<TableHeader>
-						{headerGroups.map((headerGroup) => (
-							<TableRow
-								className="border-transparent border-b-0"
-								key={headerGroup.id}
-							>
-								{headerGroup.headers.map((header) => (
-									<TableHead key={header.id}>
-										{header.isPlaceholder
-											? null
-											: flexRender(
-													header.column.columnDef.header,
-													header.getContext()
-												)}
-									</TableHead>
-								))}
-							</TableRow>
-						))}
-					</TableHeader>
-					<TableBody>
-						{Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
-							<TableRow className="border-transparent border-b-0" key={index}>
-								<TableCell colSpan={columns.length}>
-									<Skeleton className="h-12 w-full" />
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			</div>
-		);
-	}
-
 	if (!rows.length) {
 		return (
 			<div
@@ -516,7 +479,7 @@ function ContactsTable({
 	return (
 		<div className="mt-2 overflow-auto px-2" ref={containerRef}>
 			<Table>
-				<TableHeader>
+				<TableHeader className="border-transparent border-b-0">
 					{headerGroups.map((headerGroup) => (
 						<TableRow
 							className="border-transparent border-b-0"
@@ -549,38 +512,49 @@ function ContactsTable({
 					))}
 				</TableHeader>
 				<TableBody>
-					{rows.map((row, index) => {
-						const isFocused = index === focusedIndex;
-						const isSelected = row.original.id === selectedContactId;
-
-						return (
-							<TableRow
-								className={cn(
-									"cursor-pointer border-transparent border-b-0 transition-colors",
-									"focus-visible:outline-none focus-visible:ring-0",
-									isFocused &&
-										"bg-background-200 text-primary dark:bg-background-300",
-									isSelected && "bg-background-300 dark:bg-background-400"
-								)}
-								key={row.id}
-								onClick={() => onRowClick(row.original.id)}
-								onKeyDown={(event) => {
-									if (event.key === "Enter" || event.key === " ") {
-										event.preventDefault();
-										onRowClick(row.original.id);
-									}
-								}}
-								onMouseEnter={() => onMouseEnter(index)}
-								tabIndex={isFocused ? 0 : -1}
-							>
-								{row.getVisibleCells().map((cell) => (
-									<TableCell className="py-2" key={cell.id}>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+					{isLoading
+						? Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
+								<TableRow className="border-transparent border-b-0" key={index}>
+									<TableCell colSpan={columns.length}>
+										<Skeleton className="h-12 w-full" />
 									</TableCell>
-								))}
-							</TableRow>
-						);
-					})}
+								</TableRow>
+							))
+						: rows.map((row, index) => {
+								const isFocused = index === focusedIndex;
+								const isSelected = row.original.id === selectedContactId;
+
+								return (
+									<TableRow
+										className={cn(
+											"cursor-pointer border-transparent border-b-0 transition-colors",
+											"focus-visible:outline-none focus-visible:ring-0",
+											isFocused &&
+												"bg-background-200 text-primary dark:bg-background-300",
+											isSelected && "bg-background-300 dark:bg-background-400"
+										)}
+										key={row.id}
+										onClick={() => onRowClick(row.original.id)}
+										onKeyDown={(event) => {
+											if (event.key === "Enter" || event.key === " ") {
+												event.preventDefault();
+												onRowClick(row.original.id);
+											}
+										}}
+										onMouseEnter={() => onMouseEnter(index)}
+										tabIndex={isFocused ? 0 : -1}
+									>
+										{row.getVisibleCells().map((cell) => (
+											<TableCell className="py-2" key={cell.id}>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										))}
+									</TableRow>
+								);
+							})}
 				</TableBody>
 			</Table>
 		</div>
