@@ -41,7 +41,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "better-auth": "^1.4.0",
+    "better-auth": "^1.4.7",
     "rolldown": "^1.0.0-beta.47"
   },
   "lint-staged": {

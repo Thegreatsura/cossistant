@@ -205,3 +205,372 @@ export type ArticleKnowledgePayload = z.infer<
 >;
 export type KnowledgeCreateInput = z.infer<typeof knowledgeCreateSchema>;
 export type Knowledge = z.infer<typeof knowledgeSchema>;
+
+// ============================================================================
+// API Request/Response Schemas
+// ============================================================================
+
+/**
+ * Knowledge response schema - used for single item responses
+ */
+export const knowledgeResponseSchema = z
+	.object({
+		id: z.ulid().openapi({
+			description: "Knowledge entry identifier",
+			example: "01JG00000000000000000000A",
+		}),
+		organizationId: z.string().ulid().openapi({
+			description: "Owning organization identifier",
+			example: "01JG000000000000000000000",
+		}),
+		websiteId: z.string().ulid().openapi({
+			description: "Website identifier",
+			example: "01JG000000000000000000001",
+		}),
+		aiAgentId: z.string().ulid().nullable().openapi({
+			description:
+				"Optional AI agent identifier; null means shared at website scope",
+			example: "01JG000000000000000000002",
+		}),
+		type: knowledgeTypeSchema,
+		sourceUrl: z.string().url().nullable().openapi({
+			description: "Origin URL for this entry",
+			example: "https://docs.cossistant.com/getting-started",
+		}),
+		sourceTitle: z.string().nullable().openapi({
+			description: "Readable title captured during scraping",
+			example: "Getting started with the Cossistant dashboard",
+		}),
+		origin: z.string().openapi({
+			description: "How this entry was created (crawl, manual, agent, etc.)",
+			example: "crawl",
+		}),
+		createdBy: z.string().openapi({
+			description: "Identifier of the actor that created this entry",
+			example: "user_01JG00000000000000000000",
+		}),
+		contentHash: z.string().openapi({
+			description: "Deterministic hash of the payload for deduping",
+			example: "5d41402abc4b2a76b9719d911017c592",
+		}),
+		payload: z.union([
+			urlKnowledgePayloadSchema,
+			faqKnowledgePayloadSchema,
+			articleKnowledgePayloadSchema,
+		]),
+		metadata: metadataSchema,
+		createdAt: z.string().openapi({
+			description: "Creation timestamp",
+			example: "2024-06-10T12:00:00.000Z",
+		}),
+		updatedAt: z.string().openapi({
+			description: "Last update timestamp",
+			example: "2024-06-11T08:00:00.000Z",
+		}),
+		deletedAt: z.string().nullable().openapi({
+			description: "Soft delete timestamp",
+			example: null,
+		}),
+	})
+	.openapi({
+		description: "Knowledge entry response",
+	});
+
+export type KnowledgeResponse = z.infer<typeof knowledgeResponseSchema>;
+
+/**
+ * List knowledge request schema (TRPC) - with websiteSlug
+ */
+export const listKnowledgeRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug to list knowledge for",
+			example: "my-website",
+		}),
+		type: knowledgeTypeSchema.optional().openapi({
+			description: "Filter by knowledge type",
+			example: "url",
+		}),
+		aiAgentId: z.string().ulid().nullable().optional().openapi({
+			description:
+				"Filter by AI agent ID; null for shared entries; omit for all",
+			example: "01JG000000000000000000002",
+		}),
+		page: z.coerce.number().int().positive().default(1).openapi({
+			description: "Page number (1-indexed)",
+			example: 1,
+		}),
+		limit: z.coerce.number().int().positive().max(100).default(20).openapi({
+			description: "Items per page (max 100)",
+			example: 20,
+		}),
+	})
+	.openapi({
+		description:
+			"Request to list knowledge entries with filters and pagination",
+	});
+
+export type ListKnowledgeRequest = z.infer<typeof listKnowledgeRequestSchema>;
+
+/**
+ * List knowledge request schema (REST) - without websiteSlug (derived from API key)
+ */
+export const listKnowledgeRestRequestSchema = z
+	.object({
+		type: knowledgeTypeSchema.optional().openapi({
+			description: "Filter by knowledge type",
+			example: "url",
+		}),
+		aiAgentId: z.string().ulid().nullable().optional().openapi({
+			description:
+				"Filter by AI agent ID; null for shared entries; omit for all",
+			example: "01JG000000000000000000002",
+		}),
+		page: z.coerce.number().int().positive().default(1).openapi({
+			description: "Page number (1-indexed)",
+			example: 1,
+		}),
+		limit: z.coerce.number().int().positive().max(100).default(20).openapi({
+			description: "Items per page (max 100)",
+			example: 20,
+		}),
+	})
+	.openapi({
+		description:
+			"Request to list knowledge entries with filters and pagination (REST)",
+	});
+
+export type ListKnowledgeRestRequest = z.infer<
+	typeof listKnowledgeRestRequestSchema
+>;
+
+/**
+ * List knowledge response schema
+ */
+export const listKnowledgeResponseSchema = z
+	.object({
+		items: z.array(knowledgeResponseSchema).openapi({
+			description: "Array of knowledge entries",
+		}),
+		pagination: z
+			.object({
+				page: z.number().int().positive().openapi({
+					description: "Current page number",
+					example: 1,
+				}),
+				limit: z.number().int().positive().openapi({
+					description: "Items per page",
+					example: 20,
+				}),
+				total: z.number().int().nonnegative().openapi({
+					description: "Total number of items",
+					example: 100,
+				}),
+				hasMore: z.boolean().openapi({
+					description: "Whether there are more items available",
+					example: true,
+				}),
+			})
+			.openapi({
+				description: "Pagination metadata",
+			}),
+	})
+	.openapi({
+		description: "Paginated list of knowledge entries",
+	});
+
+export type ListKnowledgeResponse = z.infer<typeof listKnowledgeResponseSchema>;
+
+/**
+ * Get knowledge request schema (TRPC)
+ */
+export const getKnowledgeRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug",
+			example: "my-website",
+		}),
+		id: z.ulid().openapi({
+			description: "Knowledge entry ID",
+			example: "01JG00000000000000000000A",
+		}),
+	})
+	.openapi({
+		description: "Request to get a single knowledge entry",
+	});
+
+export type GetKnowledgeRequest = z.infer<typeof getKnowledgeRequestSchema>;
+
+/**
+ * Create knowledge request schema (TRPC) - extends create input with websiteSlug
+ */
+export const createKnowledgeRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug to create knowledge for",
+			example: "my-website",
+		}),
+		aiAgentId: z.string().ulid().nullable().optional().openapi({
+			description:
+				"Optional AI agent ID; null/omit for shared at website scope",
+			example: "01JG000000000000000000002",
+		}),
+		type: knowledgeTypeSchema,
+		sourceUrl: z.string().url().nullable().optional().openapi({
+			description: "Origin URL for this entry",
+			example: "https://docs.cossistant.com/getting-started",
+		}),
+		sourceTitle: z.string().nullable().optional().openapi({
+			description: "Readable title",
+			example: "Getting started with the Cossistant dashboard",
+		}),
+		origin: z.string().min(1).openapi({
+			description: "How this entry was created (crawl, manual, agent, etc.)",
+			example: "manual",
+		}),
+		payload: z.union([
+			urlKnowledgePayloadSchema,
+			faqKnowledgePayloadSchema,
+			articleKnowledgePayloadSchema,
+		]),
+		metadata: metadataSchema,
+	})
+	.openapi({
+		description: "Request to create a new knowledge entry",
+	});
+
+export type CreateKnowledgeRequest = z.infer<
+	typeof createKnowledgeRequestSchema
+>;
+
+/**
+ * Create knowledge request schema (REST) - without websiteSlug
+ */
+export const createKnowledgeRestRequestSchema = z
+	.object({
+		aiAgentId: z.string().ulid().nullable().optional().openapi({
+			description:
+				"Optional AI agent ID; null/omit for shared at website scope",
+			example: "01JG000000000000000000002",
+		}),
+		type: knowledgeTypeSchema,
+		sourceUrl: z.string().url().nullable().optional().openapi({
+			description: "Origin URL for this entry",
+			example: "https://docs.cossistant.com/getting-started",
+		}),
+		sourceTitle: z.string().nullable().optional().openapi({
+			description: "Readable title",
+			example: "Getting started with the Cossistant dashboard",
+		}),
+		origin: z.string().min(1).openapi({
+			description: "How this entry was created (crawl, manual, agent, etc.)",
+			example: "manual",
+		}),
+		payload: z.union([
+			urlKnowledgePayloadSchema,
+			faqKnowledgePayloadSchema,
+			articleKnowledgePayloadSchema,
+		]),
+		metadata: metadataSchema,
+	})
+	.openapi({
+		description: "Request to create a new knowledge entry (REST)",
+	});
+
+export type CreateKnowledgeRestRequest = z.infer<
+	typeof createKnowledgeRestRequestSchema
+>;
+
+/**
+ * Update knowledge request schema (TRPC)
+ */
+export const updateKnowledgeRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug",
+			example: "my-website",
+		}),
+		id: z.ulid().openapi({
+			description: "Knowledge entry ID to update",
+			example: "01JG00000000000000000000A",
+		}),
+		aiAgentId: z.string().ulid().nullable().optional().openapi({
+			description: "Update AI agent association",
+			example: "01JG000000000000000000002",
+		}),
+		sourceUrl: z.string().url().nullable().optional().openapi({
+			description: "Update origin URL",
+			example: "https://docs.cossistant.com/getting-started",
+		}),
+		sourceTitle: z.string().nullable().optional().openapi({
+			description: "Update readable title",
+			example: "Getting started with the Cossistant dashboard",
+		}),
+		payload: z
+			.union([
+				urlKnowledgePayloadSchema,
+				faqKnowledgePayloadSchema,
+				articleKnowledgePayloadSchema,
+			])
+			.optional(),
+		metadata: metadataSchema,
+	})
+	.openapi({
+		description: "Request to update an existing knowledge entry",
+	});
+
+export type UpdateKnowledgeRequest = z.infer<
+	typeof updateKnowledgeRequestSchema
+>;
+
+/**
+ * Update knowledge request schema (REST) - without websiteSlug
+ */
+export const updateKnowledgeRestRequestSchema = z
+	.object({
+		aiAgentId: z.string().ulid().nullable().optional().openapi({
+			description: "Update AI agent association",
+			example: "01JG000000000000000000002",
+		}),
+		sourceUrl: z.string().url().nullable().optional().openapi({
+			description: "Update origin URL",
+			example: "https://docs.cossistant.com/getting-started",
+		}),
+		sourceTitle: z.string().nullable().optional().openapi({
+			description: "Update readable title",
+			example: "Getting started with the Cossistant dashboard",
+		}),
+		payload: z
+			.union([
+				urlKnowledgePayloadSchema,
+				faqKnowledgePayloadSchema,
+				articleKnowledgePayloadSchema,
+			])
+			.optional(),
+		metadata: metadataSchema,
+	})
+	.openapi({
+		description: "Request to update an existing knowledge entry (REST)",
+	});
+
+export type UpdateKnowledgeRestRequest = z.infer<
+	typeof updateKnowledgeRestRequestSchema
+>;
+
+/**
+ * Delete knowledge request schema (TRPC)
+ */
+export const deleteKnowledgeRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug",
+			example: "my-website",
+		}),
+		id: z.ulid().openapi({
+			description: "Knowledge entry ID to delete",
+			example: "01JG00000000000000000000A",
+		}),
+	})
+	.openapi({
+		description: "Request to delete a knowledge entry",
+	});

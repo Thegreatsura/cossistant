@@ -65,6 +65,8 @@ export const knowledge = pgTable(
 		index("knowledge_agent_type_idx").on(table.aiAgentId, table.type),
 		index("knowledge_org_site_idx").on(table.organizationId, table.websiteId),
 		index("knowledge_deleted_at_idx").on(table.deletedAt),
+		// Index for filtering by website + type (common list query pattern)
+		index("knowledge_website_type_idx").on(table.websiteId, table.type),
 		uniqueIndex("knowledge_scope_hash_idx").on(
 			table.websiteId,
 			sql`coalesce(${table.aiAgentId}, '00000000000000000000000000')`,

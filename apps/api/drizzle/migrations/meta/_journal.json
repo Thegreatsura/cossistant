@@ -176,6 +176,13 @@
       "when": 1763457678372,
       "tag": "0024_spicy_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1765962781183,
+      "tag": "0025_rare_umar",
+      "breakpoints": true
     }
   ]
 }
