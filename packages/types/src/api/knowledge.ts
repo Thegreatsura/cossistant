@@ -16,13 +16,13 @@ const headingSchema = z.object({
 	}),
 });
 
-const linkSchema = z.string().url().openapi({
+const linkSchema = z.url().openapi({
 	description: "Absolute URL discovered in the document",
 	example: "https://docs.cossistant.com/guide",
 });
 
 const imageSchema = z.object({
-	src: z.string().url().openapi({
+	src: z.url().openapi({
 		description: "Image URL captured during scraping",
 		example: "https://cdn.cossistant.com/assets/hero.png",
 	}),
@@ -113,7 +113,7 @@ const baseKnowledgeFields = {
 			"Optional AI agent identifier; null/omitted means the entry is shared at the website scope.",
 		example: "01JG000000000000000000002",
 	}),
-	sourceUrl: z.string().url().nullable().openapi({
+	sourceUrl: z.url().nullable().openapi({
 		description:
 			"Origin URL for this entry (required for url knowledge; optional for others)",
 		example: "https://docs.cossistant.com/getting-started",
@@ -143,7 +143,7 @@ const urlKnowledgeSchema = z
 	.object(baseKnowledgeFields)
 	.extend({
 		type: z.literal("url"),
-		sourceUrl: z.string().url(),
+		sourceUrl: z.url(),
 		payload: urlKnowledgePayloadSchema,
 	})
 	.openapi({ description: "URL knowledge entry" });
@@ -160,7 +160,7 @@ const articleKnowledgeSchema = z
 	.object(baseKnowledgeFields)
 	.extend({
 		type: z.literal("article"),
-		sourceUrl: z.string().url().nullable(),
+		sourceUrl: z.url().nullable(),
 		payload: articleKnowledgePayloadSchema,
 	})
 	.openapi({ description: "Article knowledge entry" });
@@ -233,7 +233,7 @@ export const knowledgeResponseSchema = z
 			example: "01JG000000000000000000002",
 		}),
 		type: knowledgeTypeSchema,
-		sourceUrl: z.string().url().nullable().openapi({
+		sourceUrl: z.url().nullable().openapi({
 			description: "Origin URL for this entry",
 			example: "https://docs.cossistant.com/getting-started",
 		}),
@@ -419,7 +419,7 @@ export const createKnowledgeRequestSchema = z
 			example: "01JG000000000000000000002",
 		}),
 		type: knowledgeTypeSchema,
-		sourceUrl: z.string().url().nullable().optional().openapi({
+		sourceUrl: z.url().nullable().optional().openapi({
 			description: "Origin URL for this entry",
 			example: "https://docs.cossistant.com/getting-started",
 		}),
@@ -457,7 +457,7 @@ export const createKnowledgeRestRequestSchema = z
 			example: "01JG000000000000000000002",
 		}),
 		type: knowledgeTypeSchema,
-		sourceUrl: z.string().url().nullable().optional().openapi({
+		sourceUrl: z.url().nullable().optional().openapi({
 			description: "Origin URL for this entry",
 			example: "https://docs.cossistant.com/getting-started",
 		}),
@@ -501,7 +501,7 @@ export const updateKnowledgeRequestSchema = z
 			description: "Update AI agent association",
 			example: "01JG000000000000000000002",
 		}),
-		sourceUrl: z.string().url().nullable().optional().openapi({
+		sourceUrl: z.url().nullable().optional().openapi({
 			description: "Update origin URL",
 			example: "https://docs.cossistant.com/getting-started",
 		}),
@@ -535,7 +535,7 @@ export const updateKnowledgeRestRequestSchema = z
 			description: "Update AI agent association",
 			example: "01JG000000000000000000002",
 		}),
-		sourceUrl: z.string().url().nullable().optional().openapi({
+		sourceUrl: z.url().nullable().optional().openapi({
 			description: "Update origin URL",
 			example: "https://docs.cossistant.com/getting-started",
 		}),
