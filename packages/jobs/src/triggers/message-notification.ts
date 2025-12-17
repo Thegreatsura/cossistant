@@ -135,6 +135,13 @@ export function createMessageNotificationTriggers({
 					`[jobs:message-notification] Job ${jobId} is currently active, skipping (messages will be included)`
 				);
 				return;
+			} else {
+				// Handle unexpected states (waiting-children, paused, prioritized, unknown, etc.)
+				// To be safe, skip creating a duplicate - the existing job should eventually process
+				console.warn(
+					`[jobs:message-notification] Job ${jobId} in unexpected state: ${existingState}, skipping to avoid duplicate`
+				);
+				return;
 			}
 		}
 
