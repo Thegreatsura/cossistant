@@ -89,6 +89,8 @@ export function createMessageNotificationTriggers({
 
 		// Check if a job with this ID already exists
 		const existingJob = await q.getJob(jobId);
+		let effectiveInitialMessageCreatedAt = data.initialMessageCreatedAt;
+
 		if (existingJob) {
 			const existingState = await existingJob.getState();
 			console.log(
@@ -98,6 +100,23 @@ export function createMessageNotificationTriggers({
 			// If the existing job is in a terminal state (failed/completed), remove it
 			// so we can create a fresh delayed job for the new batch
 			if (existingState === "failed" || existingState === "completed") {
+				// Preserve the earlier initialMessageCreatedAt to ensure we don't miss messages
+				// that were part of the original failed batch
+				const existingData =
+					existingJob.data as MessageNotificationJobData | null;
+				if (existingData?.initialMessageCreatedAt) {
+					const existingTimestamp = new Date(
+						existingData.initialMessageCreatedAt
+					).getTime();
+					const newTimestamp = new Date(data.initialMessageCreatedAt).getTime();
+					if (existingTimestamp < newTimestamp) {
+						effectiveInitialMessageCreatedAt =
+							existingData.initialMessageCreatedAt;
+						console.log(
+							`[jobs:message-notification] Preserving earlier initialMessageCreatedAt from ${existingState} job: ${effectiveInitialMessageCreatedAt}`
+						);
+					}
+				}
 				await existingJob.remove();
 				console.log(
 					`[jobs:message-notification] Removed ${existingState} job ${jobId} to allow new batch`
@@ -109,8 +128,14 @@ export function createMessageNotificationTriggers({
 					`[jobs:message-notification] Job ${jobId} already ${existingState}, skipping (messages will be batched)`
 				);
 				return;
+			} else if (existingState === "active") {
+				// Job is currently being processed - treat as in-flight/deduplicated
+				// The active job will pick up messages, no need to create a duplicate
+				console.log(
+					`[jobs:message-notification] Job ${jobId} is currently active, skipping (messages will be included)`
+				);
+				return;
 			}
-			// If active, let it complete - a new job will be needed for subsequent messages
 		}
 
 		const jobOptions: JobsOptions = {
@@ -123,7 +148,13 @@ export function createMessageNotificationTriggers({
 			},
 		};
 
-		const job = await q.add("notification", data, jobOptions);
+		// Use the effective timestamp (may be earlier if preserving from failed job)
+		const jobData: MessageNotificationJobData = {
+			...data,
+			initialMessageCreatedAt: effectiveInitialMessageCreatedAt,
+		};
+
+		const job = await q.add("notification", jobData, jobOptions);
 
 		const [state, counts] = await Promise.all([
 			job.getState().catch(() => "unknown"),
