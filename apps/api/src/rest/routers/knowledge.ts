@@ -586,7 +586,7 @@ knowledgeRouter.openapi(
 				sourceUrl: body.sourceUrl,
 				sourceTitle: body.sourceTitle,
 				payload: body.payload,
-				metadata: body.metadata ?? undefined,
+				metadata: body.metadata,
 			});
 
 			if (!entry) {
