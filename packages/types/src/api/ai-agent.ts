@@ -14,6 +14,11 @@ export const AI_MODELS = [
 		label: "GPT-5 Mini",
 		provider: "OpenAI",
 	},
+	{
+		value: "google/gemini-3-flash-preview",
+		label: "Gemini 3 Flash",
+		provider: "Google",
+	},
 ] as const;
 
 export type AIModel = (typeof AI_MODELS)[number]["value"];

@@ -192,4 +192,51 @@ describe("typing store", () => {
 		clearTypingFromTimelineItem(store, timelineItemEvent);
 		expect(getEntries("conv-1")).toHaveLength(0);
 	});
+
+	it("correctly identifies AI agent typing even when visitorId is present", () => {
+		// This tests a real scenario where the event payload includes
+		// visitorId (for routing) alongside aiAgentId (for actor identification)
+		const event: RealtimeEvent<"conversationTyping"> = {
+			type: "conversationTyping",
+			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
+				conversationId: "conv-1",
+				visitorId: "visitor-1", // Present for routing purposes
+				userId: null,
+				aiAgentId: "bot-1", // AI agent is typing
+				visitorPreview: null,
+				isTyping: true,
+			},
+		};
+
+		applyConversationTypingEvent(store, event);
+
+		const entries = getEntries("conv-1");
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.actorType).toBe("ai_agent");
+		expect(entries[0]?.actorId).toBe("bot-1");
+	});
+
+	it("respects ignoreAiAgentId filter for AI agent typing", () => {
+		const event: RealtimeEvent<"conversationTyping"> = {
+			type: "conversationTyping",
+			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
+				conversationId: "conv-1",
+				visitorId: "visitor-1",
+				userId: null,
+				aiAgentId: "bot-1",
+				visitorPreview: null,
+				isTyping: true,
+			},
+		};
+
+		applyConversationTypingEvent(store, event, {
+			ignoreAiAgentId: "bot-1",
+		});
+
+		expect(getEntries("conv-1")).toHaveLength(0);
+	});
 });

@@ -121,7 +121,7 @@ export function FakeConversationTimelineList({
 			ref={messageListRef}
 		>
 			<div className="mx-auto pr-4 pl-6 xl:max-w-xl 2xl:max-w-2xl">
-				<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
+				<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-5">
 					<AnimatePresence initial={false} mode="popLayout">
 						{items.map((item, index) => {
 							if (item.type === "timeline_event") {

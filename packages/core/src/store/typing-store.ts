@@ -218,15 +218,18 @@ export function applyConversationTypingEvent(
 	let actorType: TypingActorType | null = null;
 	let actorId: string | null = null;
 
+	// IMPORTANT: Check aiAgentId BEFORE visitorId because the event payload
+	// always includes visitorId (for routing purposes), even for AI agent typing.
+	// The presence of aiAgentId specifically identifies AI agent typing.
 	if (payload.userId) {
 		actorType = "user";
 		actorId = payload.userId;
-	} else if (payload.visitorId) {
-		actorType = "visitor";
-		actorId = payload.visitorId;
 	} else if (payload.aiAgentId) {
 		actorType = "ai_agent";
 		actorId = payload.aiAgentId;
+	} else if (payload.visitorId) {
+		actorType = "visitor";
+		actorId = payload.visitorId;
 	}
 
 	if (!(actorType && actorId)) {
@@ -271,15 +274,16 @@ export function clearTypingFromTimelineItem(
 	let actorType: TypingActorType | null = null;
 	let actorId: string | null = null;
 
+	// Check aiAgentId before visitorId for consistency with applyConversationTypingEvent
 	if (item.userId) {
 		actorType = "user";
 		actorId = item.userId;
-	} else if (item.visitorId) {
-		actorType = "visitor";
-		actorId = item.visitorId;
 	} else if (item.aiAgentId) {
 		actorType = "ai_agent";
 		actorId = item.aiAgentId;
+	} else if (item.visitorId) {
+		actorType = "visitor";
+		actorId = item.visitorId;
 	}
 
 	if (!(actorType && actorId)) {

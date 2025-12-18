@@ -22,22 +22,13 @@ export function NavigationTopbar() {
 					<Logo className="size-5.5 text-primary" />
 				</Link>
 				<TopbarItem
-					active={pathname.includes(baseInboxPath)}
-					href={baseInboxPath}
-					//   iconName="inbox-zero"
+					active={pathname.startsWith(`/${website?.slug}/contacts`)}
+					hideLabelOnMobile
+					href={`/${website?.slug}/contacts`}
+					// iconName="contacts"
 				>
-					Inbox
+					Contacts
 				</TopbarItem>
-				{process.env.NODE_ENV === "development" && (
-					<TopbarItem
-						active={pathname.startsWith(`/${website?.slug}/contacts`)}
-						hideLabelOnMobile
-						href={`/${website?.slug}/contacts`}
-						// iconName="contacts"
-					>
-						Contacts
-					</TopbarItem>
-				)}
 				{process.env.NODE_ENV === "development" && (
 					<TopbarItem
 						active={pathname === `/${website?.slug}/agents`}
@@ -45,7 +36,7 @@ export function NavigationTopbar() {
 						href={`/${website?.slug}/agents`}
 						// iconName="agent"
 					>
-						Agents
+						Agent
 					</TopbarItem>
 				)}
 			</div>

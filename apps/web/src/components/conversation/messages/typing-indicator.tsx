@@ -11,7 +11,7 @@ import type {
 import { motion } from "motion/react";
 import * as React from "react";
 import { Avatar } from "@/components/ui/avatar";
-import { TextEffect } from "@/components/ui/text-effect";
+import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
@@ -90,6 +90,39 @@ export const VisitorTypingPreview = ({
 	);
 };
 
+export const AITypingPreview = ({
+	aiAgent,
+}: {
+	aiAgent: AvailableAIAgent | undefined;
+}) => {
+	const agentName = aiAgent?.name ?? "AI Assistant";
+
+	return (
+		<div className={cn("flex w-full gap-2", "flex-row")}>
+			<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-end">
+				<div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
+					<Logo className="h-5 w-5 text-primary" />
+				</div>
+			</TimelineItemGroupAvatar>
+			<TimelineItemGroupContent className={cn("flex flex-col gap-0")}>
+				<TimelineItemGroupHeader className="mb-2 px-1 text-muted-foreground text-xs opacity-50">
+					{agentName} is thinking...
+				</TimelineItemGroupHeader>
+
+				<motion.div className="relative" key="typing-indicator-ai">
+					<div
+						className={cn(
+							"block max-w-full rounded-lg rounded-bl-[2px] bg-background-300 px-3 py-2 text-foreground text-sm md:w-max md:max-w-[420px] dark:bg-background-600"
+						)}
+					>
+						<BouncingDots />
+					</div>
+				</motion.div>
+			</TimelineItemGroupContent>
+		</div>
+	);
+};
+
 export const TypingIndicator = React.forwardRef<
 	HTMLDivElement,
 	TypingIndicatorProps
@@ -111,45 +144,15 @@ export const TypingIndicator = React.forwardRef<
 			return null;
 		}
 
-		// Separate AI and human participants
-		// const humanParticipantIds = activeTypingEntities
-		//   .filter((p) => p.type === "team_member")
-		//   .map((p) => p.id);
-
-		// const aiParticipantIds = activeTypingEntities
-		//   .filter((p) => p.type === "ai")
-		//   .map((p) => p.id);
-
-		// Get matching agents
-		// const typingHumanAgents = availableHumanAgents.filter((agent) =>
-		//   humanParticipantIds.includes(agent.id)
-		// );
-
-		// const typingAIAgents = availableAIAgents.filter((agent) =>
-		//   aiParticipantIds.includes(agent.id)
-		// );
-
+		// Find visitor typing entity
 		const typingVisitorEntity = activeTypingEntities.find(
-			(entity) => entity.id === visitor?.id
+			(entity) => entity.type === "visitor" && entity.id === visitor?.id
 		);
 
-		// Convert to protagonists format for AvatarStack
-		// const protagonists = [
-		//   ...typingHumanAgents.map((agent) => ({
-		//     id: agent.id,
-		//     name: agent.name,
-		//     image: agent.image ?? null,
-		//     lastSeenAt: agent.lastSeenAt ?? null,
-		//     type: "human" as const,
-		//   })),
-		//   ...typingAIAgents.map((agent) => ({
-		//     id: agent.id,
-		//     name: agent.name,
-		//     image: null,
-		//     lastSeenAt: null,
-		//     type: "ai" as const,
-		//   })),
-		// ];
+		// Find AI typing entities and match them with available AI agents
+		const typingAIEntities = activeTypingEntities.filter(
+			(entity) => entity.type === "ai"
+		);
 
 		return (
 			<>
@@ -160,13 +163,12 @@ export const TypingIndicator = React.forwardRef<
 						visitorPresence={visitorPresence}
 					/>
 				)}
-				{/* <div
-          className={cn("flex items-center gap-6", className)}
-          ref={ref}
-          {...props}
-        >
-          <BouncingDots />
-        </div> */}
+				{typingAIEntities.map((entity) => {
+					const aiAgent = availableAIAgents.find(
+						(agent) => agent.id === entity.id
+					);
+					return <AITypingPreview aiAgent={aiAgent} key={entity.id} />;
+				})}
 			</>
 		);
 	}

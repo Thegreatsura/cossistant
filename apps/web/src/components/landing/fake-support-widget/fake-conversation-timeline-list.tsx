@@ -170,7 +170,7 @@ export function FakeConversationTimelineList({
 			ref={messageListRef}
 			style={{ scrollbarGutter: "stable" }}
 		>
-			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-3">
+			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-5">
 				{groupedMessages.map((item, index) => {
 					if (item.type === "timeline_event") {
 						// Extract event data from parts

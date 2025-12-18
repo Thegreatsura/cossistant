@@ -20,6 +20,8 @@ type ReadIndicatorProps = {
 	visitor: ConversationHeader["visitor"];
 	messages: TimelineItem[];
 	isSentByViewer: boolean;
+	/** Whether the message group is from a visitor (used for positioning) */
+	isVisitor: boolean;
 };
 
 type ReaderInfo =
@@ -54,7 +56,7 @@ export function ReadIndicator({
 	availableAIAgents,
 	visitor,
 	messages,
-	isSentByViewer,
+	isVisitor,
 }: ReadIndicatorProps) {
 	const visitorName = getVisitorNameWithFallback(visitor);
 	const visitorParticipantIds = useMemo(() => {
@@ -80,9 +82,10 @@ export function ReadIndicator({
 			lastReadItemIds={lastReadMessageIds}
 		>
 			{({ lastReaderIds }) => {
+				// Position on right for outgoing messages (team member or AI), left for visitor messages
 				const containerClassName = cn(
 					"my-3 flex min-h-[1.5rem] items-center gap-1",
-					isSentByViewer ? "justify-end" : "justify-start"
+					isVisitor ? "justify-start" : "justify-end"
 				);
 
 				if (lastReaderIds.length === 0) {
@@ -136,7 +139,7 @@ export function ReadIndicator({
 					.filter(isReaderInfo);
 
 				if (readerInfo.length === 0) {
-					return <div aria-hidden className={containerClassName} />;
+					return null;
 				}
 
 				return (

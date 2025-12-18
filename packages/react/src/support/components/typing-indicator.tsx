@@ -90,6 +90,7 @@ export const TypingIndicator = React.forwardRef<
 				{withAvatars && (
 					<AvatarStack
 						aiAgents={typingAIAgents}
+						hideDefaultAIAgent={typingAIAgents.length === 0}
 						humanAgents={typingHumanAgents}
 						size={24}
 						spacing={16}

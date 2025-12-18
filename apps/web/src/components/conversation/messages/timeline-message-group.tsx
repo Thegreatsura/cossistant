@@ -113,91 +113,104 @@ export function TimelineMessageGroup({
 				isVisitor,
 				isAI,
 				isTeamMember,
-			}) => (
-				<div
-					className={cn(
-						"flex w-full gap-2",
-						// From dashboard POV: visitor messages are received (left side)
-						// Team member/AI messages sent by viewer are on right side
-						isSentByViewer && "flex-row-reverse",
-						isReceivedByViewer && "flex-row"
-					)}
-				>
-					{/* Avatar - only show for received messages */}
-					{isReceivedByViewer && (
-						<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-end">
-							{isVisitor ? (
-								<Avatar
-									className="size-7"
-									fallbackName={visitorName}
-									lastOnlineAt={
-										visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt
-									}
-									status={visitorPresence?.status}
-									url={visitor?.contact?.image}
-									withBoringAvatar
-								/>
-							) : isAI ? (
-								<div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
-									<Logo className="h-5 w-5 text-primary" />
-								</div>
-							) : (
-								<Avatar
-									className="size-7"
-									fallbackName={humanAgent?.name || "Team"}
-									lastOnlineAt={humanAgent?.lastSeenAt}
-									url={humanAgent?.image}
-								/>
+			}) => {
+				const lastItem = items.at(-1);
+
+				return (
+					<>
+						<div
+							className={cn(
+								"flex w-full gap-2",
+								// From dashboard POV: visitor messages are received (left side)
+								// Team member/AI messages sent by viewer are on right side
+								isSentByViewer && "flex-row-reverse",
+								isReceivedByViewer && "flex-row"
 							)}
-						</TimelineItemGroupAvatar>
-					)}
+						>
+							{/* Avatar - only show for received messages */}
+							{isReceivedByViewer && (
+								<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-end">
+									{isVisitor ? (
+										<Avatar
+											className="size-7"
+											fallbackName={visitorName}
+											lastOnlineAt={
+												visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt
+											}
+											status={visitorPresence?.status}
+											url={visitor?.contact?.image}
+											withBoringAvatar
+										/>
+									) : isAI ? (
+										<div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
+											<Logo className="h-5 w-5 text-primary" />
+										</div>
+									) : (
+										<Avatar
+											className="size-7"
+											fallbackName={humanAgent?.name || "Team"}
+											lastOnlineAt={humanAgent?.lastSeenAt}
+											url={humanAgent?.image}
+										/>
+									)}
+								</TimelineItemGroupAvatar>
+							)}
 
-					<TimelineItemGroupContent
-						className={cn("flex flex-col gap-0", isSentByViewer && "items-end")}
-					>
-						{/* Header - show sender name for received messages */}
-						{isReceivedByViewer && (
-							<TimelineItemGroupHeader className="mb-2 px-1 text-muted-foreground text-xs">
-								{isVisitor
-									? visitorName
-									: isAI
-										? aiAgent?.name || "AI Assistant"
-										: humanAgent?.name ||
-											humanAgent?.email?.split("@")[0] ||
-											"Unknown member"}
-								{isFromEmail && " via email"}
-							</TimelineItemGroupHeader>
-						)}
-
-						{/* Timeline items with read indicators */}
-						{items.map((item, index) => (
-							<motion.div
-								className="relative"
-								key={item.id}
-								{...MESSAGE_ANIMATION}
+							<TimelineItemGroupContent
+								className={cn(
+									"flex flex-col gap-1",
+									isSentByViewer && "items-end"
+								)}
 							>
-								<TimelineMessageItem
-									isLast={index === items.length - 1}
-									isSentByViewer={isSentByViewer}
-									item={item}
-								/>
-								{/* Show read indicator where users stopped reading */}
-								<ReadIndicator
-									availableAIAgents={availableAIAgents}
-									currentUserId={currentUserId}
-									firstMessage={firstItem}
-									isSentByViewer={isSentByViewer}
-									lastReadMessageIds={lastReadMessageIds}
-									messageId={item.id || ""}
-									messages={items}
-									teamMembers={teamMembers}
-									visitor={visitor}
-								/>
-							</motion.div>
-						))}
-					</TimelineItemGroupContent>
-				</div>
-			)}
+								{/* Header - show sender name for received messages */}
+								{isReceivedByViewer && (
+									<TimelineItemGroupHeader className="mb-2 px-1 text-muted-foreground text-xs">
+										{isVisitor
+											? visitorName
+											: isAI
+												? aiAgent?.name || "AI Assistant"
+												: humanAgent?.name ||
+													humanAgent?.email?.split("@")[0] ||
+													"Unknown member"}
+										{isFromEmail && " via email"}
+									</TimelineItemGroupHeader>
+								)}
+
+								{/* Timeline items */}
+								{items.map((item, index) => (
+									<motion.div
+										className="relative"
+										key={item.id}
+										{...MESSAGE_ANIMATION}
+									>
+										<TimelineMessageItem
+											isLast={index === items.length - 1}
+											isSentByViewer={isSentByViewer}
+											item={item}
+										/>
+									</motion.div>
+								))}
+							</TimelineItemGroupContent>
+						</div>
+
+						{/* Read indicator - rendered outside the flex container to not affect avatar alignment */}
+						{lastItem?.id && (
+							<ReadIndicator
+								availableAIAgents={availableAIAgents}
+								currentUserId={currentUserId}
+								firstMessage={firstItem}
+								isSentByViewer={isSentByViewer}
+								isVisitor={isVisitor}
+								lastReadMessageIds={lastReadMessageIds}
+								messageId={lastItem.id}
+								messages={items}
+								teamMembers={teamMembers}
+								visitor={visitor}
+							/>
+						)}
+					</>
+				);
+			}}
 		</PrimitiveTimelineItemGroup>
 	);
 }

@@ -1,6 +1,9 @@
 import { db } from "@api/db";
 import { getActiveAiAgentForWebsite } from "@api/db/queries/ai-agent";
-import { getMessageMetadata } from "@api/db/queries/conversation";
+import {
+	getConversationById,
+	getMessageMetadata,
+} from "@api/db/queries/conversation";
 import {
 	getLatestMessageForPush,
 	getNotificationData,
@@ -22,6 +25,7 @@ import { sendMemberPushNotification } from "@api/workflows/message/member-push-n
 /**
  * Trigger notification workflow when a member sends a message
  * This notifies other participants and the visitor
+ * Also triggers AI agent response if configured
  */
 export async function triggerMemberSentMessageWorkflow(params: {
 	conversationId: string;
@@ -61,6 +65,28 @@ export async function triggerMemberSentMessageWorkflow(params: {
 		console.log(
 			`[notification] Member-sent notification queued for conversation ${params.conversationId}`
 		);
+
+		// Also trigger AI agent response workflow (if configured)
+		// Fetch conversation to get the visitor ID
+		const conversation = await getConversationById(db, {
+			conversationId: params.conversationId,
+		});
+
+		if (conversation?.visitorId) {
+			// Fire and forget - don't block the notification workflow
+			triggerAiAgentResponseWorkflow({
+				conversationId: params.conversationId,
+				messageId: params.messageId,
+				websiteId: params.websiteId,
+				organizationId: params.organizationId,
+				visitorId: conversation.visitorId,
+			}).catch((error) => {
+				console.error(
+					"[ai-agent] Background AI agent workflow failed for member message:",
+					error
+				);
+			});
+		}
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation
 		console.error(
