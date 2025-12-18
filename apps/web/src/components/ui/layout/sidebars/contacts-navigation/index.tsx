@@ -148,7 +148,7 @@ export function ContactsNavigationSidebar() {
 					Contacts
 				</SidebarItem>
 
-				<div className="mt-5 flex flex-col gap-2">
+				<div className="mt-0.5 flex flex-col gap-2">
 					{/* <div className="flex h-10 items-center justify-between pl-2">
             <p className="flex items-center gap-2 text-sm">Filters</p>
             <Button
@@ -161,21 +161,23 @@ export function ContactsNavigationSidebar() {
           </div> */}
 					<div className="space-y-2">
 						<Input
-							containerClassName="max-w-xs"
+							containerClassName="max-w-xs pl-1"
 							onChange={(event) => setSearchTerm(event.target.value)}
 							placeholder="Search by name or email"
-							prepend={<Search className="h-4 w-4 text-muted-foreground" />}
+							prepend={
+								<Search className="ml-1 h-4 w-4 text-muted-foreground" />
+							}
 							value={searchTerm}
 						/>
-						{VISITOR_FILTER_OPTIONS.map((option) => (
-							<FilterOptionButton
-								description={option.description}
-								isSelected={visitorStatus === option.value}
-								key={option.value}
-								onClick={() => setVisitorStatus(option.value)}
-								title={option.title}
-							/>
-						))}
+						{/* {VISITOR_FILTER_OPTIONS.map((option) => (
+              <FilterOptionButton
+                description={option.description}
+                isSelected={visitorStatus === option.value}
+                key={option.value}
+                onClick={() => setVisitorStatus(option.value)}
+                title={option.title}
+              />
+            ))} */}
 					</div>
 
 					{/* <p className="mt-4 mb-2 px-2 text-primary text-sm">Ordering</p>

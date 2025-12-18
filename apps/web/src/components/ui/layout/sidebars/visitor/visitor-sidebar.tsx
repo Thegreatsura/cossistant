@@ -8,11 +8,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
+import { ValueDisplay, ValueGroup } from "../shared";
 import { useVisitorData } from "./hooks";
 import { VisitorSidebarPlaceholder } from "./placeholder";
 import { CountryFlag } from "./utils";
-import { ValueDisplay } from "./value-display";
-import { ValueGroup } from "./value-group";
 import { VisitorSidebarHeader } from "./visitor-sidebar-header";
 
 export type VisitorSidebarProps = {
@@ -112,6 +111,7 @@ export function VisitorSidebar({
 									</span>
 								) : null
 							}
+							withPaddingLeft={false}
 						/>
 						<ValueDisplay
 							placeholder="Unknown"
@@ -125,26 +125,35 @@ export function VisitorSidebar({
 									</span>
 								</>
 							}
+							withPaddingLeft={false}
 						/>
-						<ValueDisplay placeholder="Unknown" title="IP" value={visitor.ip} />
+						<ValueDisplay
+							placeholder="Unknown"
+							title="IP"
+							value={visitor.ip}
+							withPaddingLeft={false}
+						/>
 					</ValueGroup>
 					<ValueGroup>
 						{visitor.browser && (
 							<ValueDisplay
 								title="Browser"
 								value={`${visitor.browser} / ${visitor.browserVersion}`}
+								withPaddingLeft={false}
 							/>
 						)}
 						{visitor.os && (
 							<ValueDisplay
 								title="OS"
 								value={`${visitor.os} / ${visitor.osVersion}`}
+								withPaddingLeft={false}
 							/>
 						)}
 						{visitor.device && (
 							<ValueDisplay
 								title="Device"
 								value={`${visitor.device} / ${visitor.deviceType}`}
+								withPaddingLeft={false}
 							/>
 						)}
 						{visitor.viewport && (
@@ -152,6 +161,7 @@ export function VisitorSidebar({
 								title="Viewport"
 								tooltip={"The viewport is the visitor's browser window size."}
 								value={visitor.viewport}
+								withPaddingLeft={false}
 							/>
 						)}
 					</ValueGroup>

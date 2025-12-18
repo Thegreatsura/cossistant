@@ -5,7 +5,9 @@ import {
 	differenceInMonths,
 	differenceInYears,
 	format,
+	formatDistanceToNow,
 	isAfter,
+	isSameDay,
 } from "date-fns";
 
 export function formatTimeAgo(date: Date, now: Date = new Date()): string {
@@ -101,4 +103,55 @@ export function getWaitingSinceLabel(
 	const years = Math.max(1, differenceInYears(now, from));
 
 	return `${years}y`;
+}
+
+function getUserLocale(): string {
+	if (typeof navigator !== "undefined" && navigator.language) {
+		return navigator.language;
+	}
+	return "en-US";
+}
+
+/**
+ * Formats a "last seen" date with relative time for today, locale-aware format for other days.
+ * - Today: "2 hours ago", "30 minutes ago"
+ * - Other days: Locale-aware date and time (e.g., "Dec 25, 2024, 2:30 PM" or "25 déc. 2024, 14:30")
+ */
+export function formatLastSeenAt(date: Date, now: Date = new Date()): string {
+	if (isSameDay(date, now)) {
+		return formatDistanceToNow(date, { addSuffix: true });
+	}
+
+	const userLocale = getUserLocale();
+
+	try {
+		return new Intl.DateTimeFormat(userLocale, {
+			dateStyle: "medium",
+			timeStyle: "short",
+		}).format(date);
+	} catch {
+		return format(date, "MMM d, yyyy 'at' HH:mm");
+	}
+}
+
+/**
+ * Formats a date with full date and time for tooltip display.
+ * Uses locale-aware formatting with full weekday, date, and time.
+ */
+export function formatFullDateTime(date: Date): string {
+	const userLocale = getUserLocale();
+
+	try {
+		return new Intl.DateTimeFormat(userLocale, {
+			weekday: "long",
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+		}).format(date);
+	} catch {
+		return format(date, "EEEE, MMMM d, yyyy 'at' HH:mm:ss");
+	}
 }

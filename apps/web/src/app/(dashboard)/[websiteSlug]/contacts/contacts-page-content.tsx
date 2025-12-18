@@ -14,30 +14,15 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import {
-	ArrowDown,
-	ArrowUp,
-	ArrowUpDown,
-	Building2,
-	Search,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Building2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ContactSheet } from "@/components/contact-sheet";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+import { Page } from "@/components/ui/layout";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import {
 	Table,
 	TableBody,
@@ -46,12 +31,17 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { TooltipOnHover } from "@/components/ui/tooltip";
 import {
 	type ContactSortField,
 	useContactsTableControls,
 } from "@/contexts/contacts-table-controls";
 import { useVisitorPresence } from "@/contexts/visitor-presence";
-import { formatTimeAgo } from "@/lib/date";
+import {
+	formatFullDateTime,
+	formatLastSeenAt,
+	formatTimeAgo,
+} from "@/lib/date";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { useContactsKeyboardNavigation } from "./use-contacts-keyboard-navigation";
@@ -185,7 +175,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 					selectedContactId={selectedContactId}
 					sorting={sorting}
 				/>
-				<div className="flex flex-col items-center justify-between gap-3 px-5 py-3 sm:flex-row">
+				<div className="flex flex-col items-center justify-between gap-3 px-5 py-20 sm:flex-row">
 					<div className="text-muted-foreground text-sm">
 						{totalCount === 0
 							? "No contacts to display"
@@ -214,21 +204,13 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 					</div>
 				</div>
 			</div>
-			<Sheet onOpenChange={handleOpenChange} open={isSheetOpen}>
-				<SheetContent className="w-full bg-background sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>Contact details</SheetTitle>
-						<SheetDescription>
-							View the contact profile and all associated visitors.
-						</SheetDescription>
-					</SheetHeader>
-					<ContactDetails
-						data={contactDetailQuery.data ?? null}
-						isError={contactDetailQuery.isError}
-						isLoading={contactDetailQuery.isFetching}
-					/>
-				</SheetContent>
-			</Sheet>
+			<ContactSheet
+				data={contactDetailQuery.data ?? null}
+				isError={contactDetailQuery.isError}
+				isLoading={contactDetailQuery.isFetching}
+				isOpen={isSheetOpen}
+				onOpenChange={handleOpenChange}
+			/>
 		</Page>
 	);
 }
@@ -421,10 +403,14 @@ function ContactsTable({
 						);
 					}
 
+					const date = new Date(lastSeenAt);
+
 					return (
-						<span className="text-muted-foreground text-sm">
-							{formatTimeAgo(new Date(lastSeenAt))}
-						</span>
+						<TooltipOnHover content={formatFullDateTime(date)} delay={300}>
+							<span className="cursor-default text-muted-foreground text-sm">
+								{formatLastSeenAt(date)}
+							</span>
+						</TooltipOnHover>
 					);
 				},
 			},
@@ -523,15 +509,13 @@ function ContactsTable({
 						: rows.map((row, index) => {
 								const isFocused = index === focusedIndex;
 								const isSelected = row.original.id === selectedContactId;
+								const cells = row.getVisibleCells();
 
 								return (
 									<TableRow
 										className={cn(
 											"cursor-pointer border-transparent border-b-0 transition-colors",
-											"focus-visible:outline-none focus-visible:ring-0",
-											isFocused &&
-												"bg-background-200 text-primary dark:bg-background-300",
-											isSelected && "bg-background-300 dark:bg-background-400"
+											"focus-visible:outline-none focus-visible:ring-0"
 										)}
 										key={row.id}
 										onClick={() => onRowClick(row.original.id)}
@@ -544,14 +528,30 @@ function ContactsTable({
 										onMouseEnter={() => onMouseEnter(index)}
 										tabIndex={isFocused ? 0 : -1}
 									>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell className="py-2" key={cell.id}>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
+										{cells.map((cell, cellIndex) => {
+											const isFirstCell = cellIndex === 0;
+											const isLastCell = cellIndex === cells.length - 1;
+
+											return (
+												<TableCell
+													className={cn(
+														"py-2 transition-colors",
+														isFirstCell && "rounded-l-lg",
+														isLastCell && "rounded-r-lg",
+														isFocused &&
+															"bg-background-200 text-primary dark:bg-background-300",
+														isSelected &&
+															"bg-background-300 dark:bg-background-400"
+													)}
+													key={cell.id}
+												>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext()
+													)}
+												</TableCell>
+											);
+										})}
 									</TableRow>
 								);
 							})}
@@ -590,212 +590,6 @@ function SortableHeader<TData>({ column, title }: SortableHeaderProps<TData>) {
 				</ArrowUpDown>
 			)}
 		</button>
-	);
-}
-
-type ContactDetailsProps = {
-	data: ContactDetail | null;
-	isLoading: boolean;
-	isError: boolean;
-};
-
-function ContactDetails({ data, isLoading, isError }: ContactDetailsProps) {
-	if (isLoading) {
-		return (
-			<div className="flex h-full items-center justify-center">
-				<Spinner className="h-6 w-6" />
-			</div>
-		);
-	}
-
-	if (isError) {
-		return (
-			<Alert className="m-4" variant="destructive">
-				<AlertTitle>Unable to load contact</AlertTitle>
-				<AlertDescription>
-					An unexpected error occurred while retrieving this contact. Please try
-					again.
-				</AlertDescription>
-			</Alert>
-		);
-	}
-
-	if (!data) {
-		return (
-			<div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-				Select a contact to view its details.
-			</div>
-		);
-	}
-
-	const contact = data.contact;
-	const visitors = data.visitors;
-	const metadataEntries = contact.metadata
-		? Object.entries(contact.metadata)
-		: [];
-
-	return (
-		<div className="flex h-full flex-col gap-5 overflow-y-auto pr-1 pb-6">
-			<div className="flex items-center gap-3 p-4">
-				<Avatar
-					fallbackName={contact.name ?? contact.email ?? "Contact"}
-					lastOnlineAt={null}
-					url={contact.image}
-					withBoringAvatar
-				/>
-				<div className="flex flex-col">
-					<span className="font-semibold text-base">
-						{contact.name ?? contact.email ?? "Contact"}
-					</span>
-					{contact.email ? (
-						<span className="text-muted-foreground text-sm">
-							{contact.email}
-						</span>
-					) : null}
-				</div>
-			</div>
-			<section className="space-y-3 p-4">
-				<h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
-					Contact details
-				</h3>
-				<dl className="grid grid-cols-1 gap-3 text-sm">
-					{contact.externalId ? (
-						<DetailItem label="External ID" value={contact.externalId} />
-					) : null}
-					<DetailItem
-						label="Created"
-						value={formatDistanceToNow(new Date(contact.createdAt), {
-							addSuffix: true,
-						})}
-					/>
-					<DetailItem
-						label="Updated"
-						value={formatDistanceToNow(new Date(contact.updatedAt), {
-							addSuffix: true,
-						})}
-					/>
-					{contact.contactOrganizationId ? (
-						<DetailItem
-							label="Organization"
-							value={contact.contactOrganizationId}
-						/>
-					) : null}
-				</dl>
-			</section>
-			<section className="space-y-3 p-4">
-				<h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
-					Metadata
-				</h3>
-				{metadataEntries.length > 0 ? (
-					<dl className="grid grid-cols-1 gap-3 text-sm">
-						{metadataEntries.map(([key, value]) => (
-							<DetailItem
-								key={key}
-								label={key}
-								value={
-									typeof value === "object"
-										? JSON.stringify(value)
-										: String(value)
-								}
-							/>
-						))}
-					</dl>
-				) : (
-					<p className="text-muted-foreground text-sm">
-						No metadata recorded for this contact.
-					</p>
-				)}
-			</section>
-			<section className="space-y-3 p-4">
-				<div className="flex items-center justify-between">
-					<h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">
-						Associated visitors
-					</h3>
-					<Badge variant="outline">{visitors.length}</Badge>
-				</div>
-				{visitors.length === 0 ? (
-					<p className="text-muted-foreground text-sm">
-						This contact is not linked to any visitors yet.
-					</p>
-				) : (
-					<div className="space-y-3">
-						{visitors.map((visitor) => (
-							<div className="p-3" key={visitor.id}>
-								<div className="flex flex-col gap-1">
-									<div className="flex items-center justify-between gap-2">
-										<span className="font-medium text-sm">
-											Visitor {visitor.id}
-										</span>
-										<Badge
-											variant={visitor.isBlocked ? "destructive" : "secondary"}
-										>
-											{visitor.isBlocked ? "Blocked" : "Active"}
-										</Badge>
-									</div>
-									<span className="text-muted-foreground text-xs">
-										Last seen:{" "}
-										{visitor.lastSeenAt
-											? formatDistanceToNow(new Date(visitor.lastSeenAt), {
-													addSuffix: true,
-												})
-											: "Unknown"}
-									</span>
-									{visitor.isBlocked && visitor.blockedAt ? (
-										<span className="text-destructive text-xs">
-											Blocked{" "}
-											{formatDistanceToNow(new Date(visitor.blockedAt), {
-												addSuffix: true,
-											})}
-										</span>
-									) : null}
-								</div>
-								<div className="mt-2 grid grid-cols-1 gap-1 text-muted-foreground text-xs">
-									{visitor.country || visitor.city ? (
-										<span>
-											{visitor.city ? `${visitor.city}, ` : ""}
-											{visitor.country ?? "Unknown country"}
-										</span>
-									) : null}
-									{visitor.device ? (
-										<span>Device: {visitor.device}</span>
-									) : null}
-									{visitor.browser ? (
-										<span>Browser: {visitor.browser}</span>
-									) : null}
-									{visitor.language ? (
-										<span>Language: {visitor.language}</span>
-									) : null}
-									<span>
-										First seen:{" "}
-										{formatDistanceToNow(new Date(visitor.createdAt), {
-											addSuffix: true,
-										})}
-									</span>
-								</div>
-							</div>
-						))}
-					</div>
-				)}
-			</section>
-		</div>
-	);
-}
-
-type DetailItemProps = {
-	label: string;
-	value: string;
-};
-
-function DetailItem({ label, value }: DetailItemProps) {
-	return (
-		<div className="flex flex-col gap-1">
-			<dt className="text-muted-foreground text-xs uppercase tracking-wide">
-				{label}
-			</dt>
-			<dd className="wrap-break-word font-medium text-foreground text-sm">
-				{value}
-			</dd>
-		</div>
 	);
 }
 
