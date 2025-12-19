@@ -22,7 +22,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Page } from "@/components/ui/layout";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -44,6 +43,10 @@ import {
 } from "@/lib/date";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
+import {
+	CONTACTS_TABLE_COLUMN_WIDTHS,
+	ContactTableSkeletonRow,
+} from "./contacts-table-skeleton";
 import { useContactsKeyboardNavigation } from "./use-contacts-keyboard-navigation";
 
 type ContactsPageContentProps = {
@@ -443,7 +446,7 @@ function ContactsTable({
 	const headerGroups = table.getHeaderGroups();
 	const rows = table.getRowModel().rows;
 
-	if (!rows.length) {
+	if (rows.length === 0 && !isLoading) {
 		return (
 			<div
 				className="flex flex-col items-center justify-center gap-3 px-10 py-16 text-center"
@@ -464,7 +467,7 @@ function ContactsTable({
 
 	return (
 		<div className="mt-2 overflow-auto px-2" ref={containerRef}>
-			<Table>
+			<Table className="min-w-[1000px]">
 				<TableHeader className="border-transparent border-b-0">
 					{headerGroups.map((headerGroup) => (
 						<TableRow
@@ -473,6 +476,10 @@ function ContactsTable({
 						>
 							{headerGroup.headers.map((header) => {
 								const sorted = header.column.getIsSorted();
+								const columnWidthClass =
+									CONTACTS_TABLE_COLUMN_WIDTHS[
+										header.id as keyof typeof CONTACTS_TABLE_COLUMN_WIDTHS
+									];
 
 								return (
 									<TableHead
@@ -483,6 +490,7 @@ function ContactsTable({
 													? "ascending"
 													: "none"
 										}
+										className={columnWidthClass}
 										key={header.id}
 									>
 										{header.isPlaceholder
@@ -500,11 +508,7 @@ function ContactsTable({
 				<TableBody>
 					{isLoading
 						? Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
-								<TableRow className="border-transparent border-b-0" key={index}>
-									<TableCell colSpan={columns.length}>
-										<Skeleton className="h-12 w-full" />
-									</TableCell>
-								</TableRow>
+								<ContactTableSkeletonRow key={index} />
 							))
 						: rows.map((row, index) => {
 								const isFocused = index === focusedIndex;
@@ -531,11 +535,17 @@ function ContactsTable({
 										{cells.map((cell, cellIndex) => {
 											const isFirstCell = cellIndex === 0;
 											const isLastCell = cellIndex === cells.length - 1;
+											const columnWidthClass =
+												CONTACTS_TABLE_COLUMN_WIDTHS[
+													cell.column
+														.id as keyof typeof CONTACTS_TABLE_COLUMN_WIDTHS
+												];
 
 											return (
 												<TableCell
 													className={cn(
 														"py-2 transition-colors",
+														columnWidthClass,
 														isFirstCell && "rounded-l-lg",
 														isLastCell && "rounded-r-lg",
 														isFocused &&
