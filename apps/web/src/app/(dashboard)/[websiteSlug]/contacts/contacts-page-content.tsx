@@ -165,8 +165,8 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
 	return (
-		<Page className="relative flex flex-col gap-6">
-			<div className="flex flex-col gap-5">
+		<>
+			<Page className="relative flex flex-col gap-6">
 				<ContactsTable
 					containerRef={tableContainerRef}
 					data={contacts}
@@ -178,7 +178,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 					selectedContactId={selectedContactId}
 					sorting={sorting}
 				/>
-				<div className="flex flex-col items-center justify-between gap-3 px-5 py-20 sm:flex-row">
+				<div className="flex h-16 w-full items-center justify-between gap-2 px-4">
 					<div className="text-muted-foreground text-sm">
 						{totalCount === 0
 							? "No contacts to display"
@@ -206,15 +206,17 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 						</Button>
 					</div>
 				</div>
-			</div>
-			<ContactSheet
-				data={contactDetailQuery.data ?? null}
-				isError={contactDetailQuery.isError}
-				isLoading={contactDetailQuery.isFetching}
-				isOpen={isSheetOpen}
-				onOpenChange={handleOpenChange}
-			/>
-		</Page>
+			</Page>
+			{isSheetOpen && (
+				<ContactSheet
+					data={contactDetailQuery.data ?? null}
+					isError={contactDetailQuery.isError}
+					isLoading={contactDetailQuery.isFetching}
+					isOpen
+					onOpenChange={handleOpenChange}
+				/>
+			)}
+		</>
 	);
 }
 
@@ -466,8 +468,8 @@ function ContactsTable({
 	}
 
 	return (
-		<div className="mt-2 overflow-auto px-2" ref={containerRef}>
-			<Table className="min-w-[1000px]">
+		<div className="h-full overflow-auto px-2" ref={containerRef}>
+			<Table className="h-full min-w-[1000px] bg-amber-200">
 				<TableHeader className="border-transparent border-b-0">
 					{headerGroups.map((headerGroup) => (
 						<TableRow

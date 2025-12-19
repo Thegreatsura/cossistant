@@ -6,10 +6,5 @@ export default function Layout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	return (
-		<Providers>
-			{children}
-			<Support classNames={{ bubble: "hidden sm:block" }} />
-		</Providers>
-	);
+	return <Providers>{children}</Providers>;
 }

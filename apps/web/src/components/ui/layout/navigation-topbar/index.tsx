@@ -1,7 +1,9 @@
 "use client";
 
+import { Support } from "@cossistant/next/support";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CustomBubbleDashboard } from "@/components/support/custom-bubble";
 import { useVisitorPresence } from "@/contexts/visitor-presence";
 import { useWebsite } from "@/contexts/website";
 import { Logo } from "../../logo";
@@ -53,6 +55,11 @@ export function NavigationTopbar() {
 						</p>
 					</span>
 				</div>
+				<Support
+					classNames={{ bubble: "hidden sm:block" }}
+					positioning="relative"
+					slots={{ bubble: CustomBubbleDashboard }}
+				/>
 			</div>
 		</header>
 	);

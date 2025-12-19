@@ -140,25 +140,17 @@ export function ContactsNavigationSidebar() {
 					</>
 				}
 			>
-				<SidebarItem
-					active={false}
-					href={`/${website.slug}/inbox`}
-					iconName="arrow-left"
-				>
-					Contacts
-				</SidebarItem>
-
 				<div className="mt-0.5 flex flex-col gap-2">
-					{/* <div className="flex h-10 items-center justify-between pl-2">
-            <p className="flex items-center gap-2 text-sm">Filters</p>
-            <Button
-              className="h-auto px-2 py-1 text-xs opacity-50 hover:opacity-100"
-              onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
-              variant="ghost"
-            >
-              Reset
-            </Button>
-          </div> */}
+					<div className="flex h-10 items-center justify-between pl-2">
+						<p className="flex items-center gap-2 text-sm">Filters</p>
+						<Button
+							className="h-auto px-2 py-1 text-xs opacity-50 hover:opacity-100"
+							onClick={() => setVisitorStatus(DEFAULT_VISITOR_STATUS)}
+							variant="ghost"
+						>
+							Reset
+						</Button>
+					</div>
 					<div className="space-y-2">
 						<Input
 							containerClassName="max-w-xs pl-1"

@@ -22,7 +22,7 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
-	positioning?: "fixed" | "absolute";
+	positioning?: "fixed" | "absolute" | "relative";
 	quickOptions?: string[];
 	defaultMessages?: DefaultMessage[];
 	defaultOpen?: boolean;

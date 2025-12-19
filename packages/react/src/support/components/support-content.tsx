@@ -14,7 +14,7 @@ type SupportContentProps = {
 	className?: string;
 	position?: "top" | "bottom";
 	align?: "right" | "left";
-	positioning?: "fixed" | "absolute";
+	positioning?: "fixed" | "absolute" | "relative";
 	slots?: SupportProps["slots"];
 	classNames?: SupportProps["classNames"];
 	customPages?: CustomPage[];
@@ -41,7 +41,7 @@ export const SupportContent: React.FC<SupportContentProps> = ({
 
 	const containerClasses = cn(
 		"cossistant z-[9999]",
-		positioning === "fixed" ? "fixed" : "absolute",
+		positioning,
 		{
 			"bottom-4": position === "bottom",
 			"top-4": position === "top",
