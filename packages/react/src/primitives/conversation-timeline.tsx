@@ -142,7 +142,12 @@ export const ConversationTimeline = (() => {
 					(replacedLastItem && isPinnedToBottom.current);
 
 				if (shouldSnapToBottom) {
-					element.scrollTop = element.scrollHeight;
+					// Instant scroll on initial render, smooth scroll for new messages
+					if (isInitialRender.current) {
+						element.scrollTop = element.scrollHeight;
+					} else {
+						element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
+					}
 					isPinnedToBottom.current = true;
 					isAtTop.current = false;
 				}

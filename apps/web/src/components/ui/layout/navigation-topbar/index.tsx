@@ -57,7 +57,6 @@ export function NavigationTopbar() {
 					<Support.Trigger className="group/btn relative hidden h-9 cursor-pointer items-center gap-3 rounded-sm border border-primary/10 bg-background-200 px-2.5 text-primary hover:bg-background-300 sm:flex">
 						{(props) => <DashboardTriggerContent {...props} />}
 					</Support.Trigger>
-					<Support.Content className="md:fixed md:top-4 md:right-4 md:bottom-4 md:h-full" />
 				</Support>
 			</div>
 		</header>

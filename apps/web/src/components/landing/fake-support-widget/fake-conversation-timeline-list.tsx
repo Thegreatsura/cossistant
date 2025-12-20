@@ -160,7 +160,7 @@ export function FakeConversationTimelineList({
 		<PrimitiveConversationTimeline
 			autoScroll={true}
 			className={cn(
-				"overflow-y-auto overflow-x-hidden scroll-smooth px-3 py-6",
+				"overflow-y-auto overflow-x-hidden px-3 py-6",
 				"scrollbar-thin scrollbar-thumb-co-background-300 scrollbar-track-fd-overlay",
 				"h-full w-full",
 				className
