@@ -1,6 +1,6 @@
 import { Support } from "@cossistant/next";
 import { DashboardButton } from "@/app/(lander-docs)/components/topbar/dashboard-button";
-import { CustomBubbleLanding } from "@/components/support/custom-bubble";
+import { LandingTriggerContent } from "@/components/support/custom-trigger";
 import { Footer } from "./components/footer";
 import { TopBar } from "./components/topbar";
 
@@ -14,11 +14,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 				<div className="container-wrapper mx-auto">{children}</div>
 			</main>
 			<Footer />
-			<Support
-				slots={{
-					bubble: CustomBubbleLanding,
-				}}
-			/>
+			<Support>
+				<Support.Trigger className="relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-cossistant-orange text-primary-foreground transition-colors">
+					{(props) => <LandingTriggerContent {...props} />}
+				</Support.Trigger>
+			</Support>
 		</div>
 	);
 }

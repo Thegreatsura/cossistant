@@ -6,7 +6,6 @@ export {
 } from "../support/components/typing-indicator";
 export { SupportConfig as Config } from "../support-config";
 export { Avatar, AvatarFallback, AvatarImage } from "./avatar";
-export { SupportBubble as Bubble } from "./bubble";
 export { Button } from "./button";
 export {
 	ConversationTimeline,
@@ -41,4 +40,9 @@ export {
 	TimelineItemGroupReadIndicator,
 	TimelineItemGroupSeenIndicator,
 } from "./timeline-item-group";
+export {
+	SupportTrigger as Trigger,
+	type TriggerProps,
+	type TriggerRenderProps,
+} from "./trigger";
 export { SupportWindow as Window } from "./window";

@@ -1,5 +1,5 @@
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: ok*/
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: ok */
 "use client";
 
 import { formatInTimeZone } from "date-fns-tz";

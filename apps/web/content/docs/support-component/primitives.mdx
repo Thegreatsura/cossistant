@@ -31,11 +31,11 @@ import * as Primitive from "@cossistant/react/primitives";
     )}
   </Primitive.Window>
 
-  <Primitive.Bubble>
+  <Primitive.Trigger>
     {({ toggle }) => (
-      <button onClick={toggle}>Open Chat</button>
+      <button onClick={toggle} type="button">Open Chat</button>
     )}
-  </Primitive.Bubble>
+  </Primitive.Trigger>
 </Primitive.PageRegistryProvider>
 ```
 
@@ -85,25 +85,25 @@ Dialog container with open/close state and escape key handling.
   {({ isOpen, close }) => (
     <div>
       {isOpen && <p>Dialog content</p>}
-      <button onClick={close}>Close</button>
+      <button onClick={close} type="button">Close</button>
     </div>
   )}
 </Window>
 ```
 
-**`<Bubble>`**
+**`<Trigger>`**
 
-Floating action button with widget state.
+Trigger button with widget state. Can be placed anywhere in the DOM.
 
 ```tsx
-<Bubble>
+<Trigger>
   {({ isOpen, unreadCount, isTyping, toggle }) => (
-    <button onClick={toggle}>
+    <button onClick={toggle} type="button">
       {isOpen ? "×" : "💬"}
       {unreadCount > 0 && <span>{unreadCount}</span>}
     </button>
   )}
-</Bubble>
+</Trigger>
 ```
 
 ### Timeline & Messages
@@ -237,24 +237,25 @@ export function CustomSupport() {
       <Primitive.Page name="HOME" component={CustomHomePage} />
       <Primitive.Page name="CHAT" component={CustomChatPage} />
 
-      {/* Custom bubble */}
-      <Primitive.Bubble>
+      {/* Custom trigger */}
+      <Primitive.Trigger>
         {({ toggle, unreadCount }) => (
           <button
             onClick={toggle}
             className="fixed bottom-4 right-4 rounded-full bg-blue-600 p-4"
+            type="button"
           >
             💬 {unreadCount > 0 && `(${unreadCount})`}
           </button>
         )}
-      </Primitive.Bubble>
+      </Primitive.Trigger>
 
       {/* Custom window */}
       <Primitive.Window isOpen={isOpen}>
         {({ close }) => (
           <div className="fixed inset-0 flex items-end justify-end p-4">
             <div className="w-96 h-[600px] bg-white rounded-lg shadow-xl">
-              <button onClick={close}>×</button>
+              <button onClick={close} type="button">×</button>
               <Primitive.Router page={page} fallback={CustomHomePage} />
             </div>
           </div>
@@ -263,6 +264,19 @@ export function CustomSupport() {
     </Primitive.PageRegistryProvider>
   );
 }
+```
+
+## TriggerRenderProps
+
+The `<Trigger>` component provides these render props:
+
+```tsx
+type TriggerRenderProps = {
+  isOpen: boolean;      // Whether the widget is open
+  isTyping: boolean;    // Whether someone is typing
+  unreadCount: number;  // Number of unread messages
+  toggle: () => void;   // Toggle widget open/closed
+};
 ```
 
 ## Why Primitives?
@@ -274,4 +288,3 @@ export function CustomSupport() {
 **Framework-agnostic patterns.** Principles work in any React environment.
 
 Use the `<Support />` component for quick setup. Use primitives when you need **complete freedom**.
-

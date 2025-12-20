@@ -3,7 +3,7 @@
 import { Support } from "@cossistant/next/support";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CustomBubbleDashboard } from "@/components/support/custom-bubble";
+import { DashboardTriggerContent } from "@/components/support/custom-trigger";
 import { useVisitorPresence } from "@/contexts/visitor-presence";
 import { useWebsite } from "@/contexts/website";
 import { Logo } from "../../logo";
@@ -18,7 +18,7 @@ export function NavigationTopbar() {
 	const baseInboxPath = `/${website?.slug}/inbox`;
 
 	return (
-		<header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-3 pl-6.5">
+		<header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-2 pl-6.5">
 			<div className="flex flex-1 items-center gap-3">
 				<Link className="mr-2" href={baseInboxPath}>
 					<Logo className="size-5.5 text-primary" />
@@ -27,7 +27,6 @@ export function NavigationTopbar() {
 					active={pathname.startsWith(`/${website?.slug}/contacts`)}
 					hideLabelOnMobile
 					href={`/${website?.slug}/contacts`}
-					// iconName="contacts"
 				>
 					Contacts
 				</TopbarItem>
@@ -36,13 +35,12 @@ export function NavigationTopbar() {
 						active={pathname === `/${website?.slug}/agents`}
 						hideLabelOnMobile
 						href={`/${website?.slug}/agents`}
-						// iconName="agent"
 					>
 						Agent
 					</TopbarItem>
 				)}
 			</div>
-			<div className="mr-2 flex items-center gap-3">
+			<div className="flex items-center gap-3">
 				<div className="hidden items-center gap-3 font-medium text-primary/80 text-xs md:flex">
 					<span className="flex items-center gap-2">
 						<span
@@ -55,11 +53,12 @@ export function NavigationTopbar() {
 						</p>
 					</span>
 				</div>
-				<Support
-					classNames={{ bubble: "hidden sm:block" }}
-					positioning="relative"
-					slots={{ bubble: CustomBubbleDashboard }}
-				/>
+				<Support align="end" side="bottom" sideOffset={8}>
+					<Support.Trigger className="group/btn relative hidden h-9 cursor-pointer items-center gap-3 rounded-sm border border-primary/10 bg-background-200 px-2.5 text-primary hover:bg-background-300 sm:flex">
+						{(props) => <DashboardTriggerContent {...props} />}
+					</Support.Trigger>
+					<Support.Content className="md:fixed md:top-4 md:right-4 md:bottom-4 md:h-full" />
+				</Support>
 			</div>
 		</header>
 	);

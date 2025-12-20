@@ -3,6 +3,8 @@
 export type {
 	PageDefinition,
 	RouterProps,
+	TriggerProps,
+	TriggerRenderProps,
 	TypingIndicatorProps,
 	TypingParticipant,
 	TypingParticipantType,
@@ -11,7 +13,6 @@ export {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
-	Bubble,
 	Button,
 	Config,
 	ConversationTimeline,
@@ -37,6 +38,7 @@ export {
 	TimelineItemGroupSeenIndicator,
 	TimelineItemImages,
 	TimelineItemTimestamp,
+	Trigger,
 	TypingIndicator,
 	Window,
 } from "@cossistant/react/primitives";

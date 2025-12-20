@@ -5,7 +5,7 @@ description: Add custom pages and navigate between them with type-safe routing.
 
 ## Overview
 
-Add custom pages to the Support widget using **declarative `<Page>` components**. All navigation is **strongly typed** with full autocomplete for route names and parameters.
+Add custom pages to the Support widget using **declarative `<Support.Page>` components**. All navigation is **strongly typed** with full autocomplete for route names and parameters.
 
 ## Adding a Custom Page
 
@@ -47,13 +47,13 @@ const SettingsPage = ({ params }) => {
 };
 ```
 
-### Step 3: Register with `<Page>`
+### Step 3: Register with `<Support.Page>`
 
 ```tsx
-import { Support, Page } from "@cossistant/react";
+import { Support } from "@cossistant/react";
 
 <Support>
-  <Page name="SETTINGS" component={SettingsPage} />
+  <Support.Page name="SETTINGS" component={SettingsPage} />
 </Support>
 ```
 
@@ -203,7 +203,7 @@ const HelpPage = () => {
 ```tsx
 "use client";
 
-import { Support, Page, useSupportNavigation } from "@cossistant/react";
+import { Support, useSupportNavigation } from "@cossistant/react";
 
 // 1. Extend types
 declare module "@cossistant/core" {
@@ -240,8 +240,8 @@ const SettingsPage = ({ params }) => {
 export default function App() {
   return (
     <Support>
-      <Page name="FAQ" component={FAQPage} />
-      <Page name="SETTINGS" component={SettingsPage} />
+      <Support.Page name="FAQ" component={FAQPage} />
+      <Support.Page name="SETTINGS" component={SettingsPage} />
     </Support>
   );
 }

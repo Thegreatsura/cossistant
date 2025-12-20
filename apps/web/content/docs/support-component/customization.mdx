@@ -1,158 +1,281 @@
 ---
 title: Customization
-description: Style and customize the Support widget with Tailwind classes and component slots.
+description: Style and customize the Support widget with Tailwind classes and compound components.
 ---
 
 ## Overview
 
-Every part of the Support widget can be customized while keeping the **zero-config** experience intact. Style with **Tailwind classes** or replace entire components with **slots**.
+The Support widget follows **progressive disclosure**. Start with zero config, add styling, then compose your own components when needed.
 
-## Custom Styling with classNames
+## Level 1: Style Overrides
 
-Override styles for specific parts of the widget:
+Override styles with `classNames`:
 
 ```tsx
 <Support
   classNames={{
-    root: "bottom-8 right-8",
-    bubble: "bg-purple-600 hover:bg-purple-700",
-    container: "border-purple-200 shadow-2xl"
+    trigger: "bg-purple-600 hover:bg-purple-700",
+    content: "border-purple-200 shadow-2xl",
   }}
 />
 ```
 
 ### Available classNames
 
-- **`root`** - The outermost container (positioning, spacing)
-- **`bubble`** - The floating chat button
-- **`container`** - The main widget dialog
+- **`trigger`** - The floating chat button
+- **`content`** - The main widget dialog
 
-## Custom Bubble
+## Level 2: Positioning
 
-Replace the default chat bubble with your own component using **slots**:
+Control where the content appears relative to the trigger:
 
 ```tsx
-import { Support, type BubbleSlotProps } from "@cossistant/react";
-import * as Primitive from "@cossistant/react/primitives";
+<Support
+  side="bottom"    // "top" | "bottom" | "left" | "right"
+  align="end"      // "start" | "center" | "end"
+  sideOffset={16}  // Distance in pixels
+/>
+```
 
-const CustomBubble = ({ className }: BubbleSlotProps) => (
-  <Primitive.Bubble className={className}>
-    {({ isOpen, isTyping, unreadCount }) => (
-      <div className="flex items-center justify-center">
-        {isOpen ? "✕" : isTyping ? "..." : "💬"}
-        {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
-      </div>
+## Level 3: Custom Trigger
+
+Replace the default trigger with `<Support.Trigger>`:
+
+```tsx
+import { Support, type TriggerRenderProps } from "@cossistant/react";
+
+<Support side="bottom" align="end">
+  <Support.Trigger className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg">
+    {({ isOpen, unreadCount }: TriggerRenderProps) => (
+      <>
+        <span>{isOpen ? "Close" : "Help"}</span>
+        {unreadCount > 0 && (
+          <span className="bg-red-500 text-white text-xs px-1.5 rounded-full">
+            {unreadCount}
+          </span>
+        )}
+      </>
     )}
-  </Primitive.Bubble>
-);
-
-<Support slots={{ bubble: CustomBubble }} />
+  </Support.Trigger>
+</Support>
 ```
 
-### Bubble Render Props
+### Trigger Render Props
 
-The `Primitive.Bubble` component provides:
+| Prop          | Type         | Description                           |
+| ------------- | ------------ | ------------------------------------- |
+| `isOpen`      | `boolean`    | Whether the widget is currently open  |
+| `unreadCount` | `number`     | Number of unread messages             |
+| `isTyping`    | `boolean`    | Whether an agent is typing            |
+| `toggle`      | `() => void` | Function to toggle widget open/closed |
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `isOpen` | `boolean` | Whether the widget is currently open |
-| `unreadCount` | `number` | Number of unread messages |
-| `isTyping` | `boolean` | Whether an agent is typing |
-| `toggle` | `() => void` | Function to toggle widget open/closed |
+## Level 4: Custom Content
 
-## Custom Container
-
-Replace the widget container to control layout and animations:
+Control the content positioning and styling with `<Support.Content>`:
 
 ```tsx
-import { Support, type ContainerSlotProps } from "@cossistant/react";
-
-const CustomContainer = ({
-  className,
-  children,
-  position,
-  align
-}: ContainerSlotProps) => (
-  <div className={`my-custom-container ${className}`}>
-    {children}
-  </div>
-);
-
-<Support slots={{ container: CustomContainer }} />
+<Support>
+  <Support.Trigger className="...">
+    {(props) => <MyTriggerContent {...props} />}
+  </Support.Trigger>
+  <Support.Content
+    side="bottom"
+    align="end"
+    sideOffset={8}
+    className="border-2 border-purple-500"
+  >
+    <Support.Router />
+  </Support.Content>
+</Support>
 ```
 
-## Custom Router
+## Level 5: Full Composition
 
-For complete control over routing logic:
+For complete control, use `<Support.Root>`:
 
 ```tsx
-import { Support, type RouterSlotProps, useSupportNavigation } from "@cossistant/react";
-import * as Primitive from "@cossistant/react/primitives";
+import { Support } from "@cossistant/react";
 
-const CustomRouter = ({ children }: RouterSlotProps) => {
-  const { current } = useSupportNavigation();
-
+export default function App() {
   return (
-    <>
-      <Primitive.Page name="CUSTOM" component={CustomPage} />
-      {children}
-      <Primitive.Router page={current.page} params={current.params} />
-    </>
+    <Support.Root defaultOpen={false} theme="dark">
+      <Support.Trigger asChild>
+        <button className="px-4 py-2 bg-indigo-600 rounded" type="button">
+          Help
+        </button>
+      </Support.Trigger>
+      <Support.Content side="bottom" align="end" className="custom-content">
+        <Support.Router />
+      </Support.Content>
+    </Support.Root>
+  );
+}
+```
+
+## Custom Trigger in a Topbar
+
+A common use case is placing the trigger in your navigation bar:
+
+```tsx
+import { Support, type TriggerRenderProps } from "@cossistant/react";
+
+function Topbar() {
+  return (
+    <header className="flex items-center justify-between px-4 h-16">
+      <Logo />
+      <nav className="flex items-center gap-4">
+        <Link href="/settings">Settings</Link>
+        <Support side="bottom" align="end" sideOffset={8}>
+          <Support.Trigger className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100">
+            {({ isOpen, unreadCount }: TriggerRenderProps) => (
+              <>
+                <span>{isOpen ? "Close" : "Help"}</span>
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs px-1.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </>
+            )}
+          </Support.Trigger>
+        </Support>
+      </nav>
+    </header>
+  );
+}
+```
+
+## Custom Pages
+
+Add custom pages to the router:
+
+```tsx
+import { Support, useSupportNavigation } from "@cossistant/react";
+
+const FAQPage = () => {
+  const { goBack } = useSupportNavigation();
+  return (
+    <div className="p-4">
+      <button onClick={goBack} type="button">← Back</button>
+      <h1>Frequently Asked Questions</h1>
+    </div>
   );
 };
 
-<Support slots={{ router: CustomRouter }} />
+<Support>
+  <Support.Page name="FAQ" component={FAQPage} />
+</Support>
 ```
 
-## Slot Types Reference
-
-All slot components receive typed props:
+Or with the router directly:
 
 ```tsx
-type BubbleSlotProps = {
-  className?: string;
-};
+<Support>
+  <Support.Content>
+    <Support.Router>
+      <Support.Page name="FAQ" component={FAQPage} />
+      <Support.Page name="SETTINGS" component={SettingsPage} />
+    </Support.Router>
+  </Support.Content>
+</Support>
+```
 
-type ContainerSlotProps = {
-  className?: string;
-  children: React.ReactNode;
-  position?: "top" | "bottom";
-  align?: "right" | "left";
-};
+## Type Reference
 
-type RouterSlotProps = {
+### TriggerRenderProps
+
+```tsx
+type TriggerRenderProps = {
+  isOpen: boolean;
+  isTyping: boolean;
+  unreadCount: number;
+  toggle: () => void;
+};
+```
+
+### ContentProps
+
+```tsx
+type ContentProps = {
+  className?: string;
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
+  children?: React.ReactNode;
+};
+```
+
+### SupportProps
+
+```tsx
+type SupportProps = {
+  className?: string;
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
+  classNames?: {
+    trigger?: string;
+    content?: string;
+  };
+  theme?: "light" | "dark";
+  defaultOpen?: boolean;
+  locale?: string;
+  content?: SupportTextContentOverrides;
+  quickOptions?: string[];
+  defaultMessages?: DefaultMessage[];
+  customPages?: CustomPage[];
   children?: React.ReactNode;
 };
 ```
 
 ## Full Example
 
-Combine multiple customizations:
+Combining multiple customizations:
 
 ```tsx
-import { Support } from "@cossistant/react";
-import * as Primitive from "@cossistant/react/primitives";
+import { Support, type TriggerRenderProps } from "@cossistant/react";
+import { AnimatePresence, motion } from "motion/react";
+import { MessageCircle, X } from "lucide-react";
 
-const MyBubble = ({ className }) => (
-  <Primitive.Bubble className={className}>
-    {({ isOpen }) => <span>{isOpen ? "×" : "?"}</span>}
-  </Primitive.Bubble>
+const AnimatedTriggerContent = ({ isOpen, unreadCount }: TriggerRenderProps) => (
+  <>
+    <AnimatePresence mode="wait">
+      {isOpen ? (
+        <motion.div
+          key="close"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+        >
+          <X className="size-5" />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="open"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+        >
+          <MessageCircle className="size-6" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+    {unreadCount > 0 && (
+      <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
+        {unreadCount}
+      </span>
+    )}
+  </>
 );
 
 export default function App() {
   return (
-    <Support
-      theme="dark"
-      classNames={{
-        root: "bottom-8 right-8",
-        bubble: "bg-indigo-600 hover:bg-indigo-700",
-        container: "border-indigo-200"
-      }}
-      slots={{
-        bubble: MyBubble
-      }}
-    />
+    <Support theme="dark" side="top" align="end">
+      <Support.Trigger className="relative flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
+        {(props) => <AnimatedTriggerContent {...props} />}
+      </Support.Trigger>
+      <Support.Content className="border-indigo-200" />
+    </Support>
   );
 }
 ```
-

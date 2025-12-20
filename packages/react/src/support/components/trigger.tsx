@@ -1,43 +1,38 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import type React from "react";
-import { useEffect, useRef } from "react";
+import * as React from "react";
 import { useNewMessageSound } from "../../hooks/use-new-message-sound";
 import { useTypingSound } from "../../hooks/use-typing-sound";
 import * as Primitive from "../../primitives";
+import type { TriggerRenderProps } from "../types";
 import { cn } from "../utils";
 import Icon from "./icons";
 import { BouncingDots } from "./typing-indicator";
 
-type BubbleContentProps = {
+type TriggerContentProps = {
 	isOpen: boolean;
 	unreadCount: number;
 	isTyping: boolean;
 };
 
-const BubbleContent: React.FC<BubbleContentProps> = ({
+const TriggerContent: React.FC<TriggerContentProps> = ({
 	isOpen,
 	unreadCount,
 	isTyping,
 }) => {
-	// Customize playback settings here:
-	// - volume: 0.0 to 1.0+ (default varies by sound)
-	// - playbackRate: 0.5 to 2.0 (1.0 is normal speed, higher = faster)
 	const playNewMessageSound = useNewMessageSound({
 		volume: 0.7,
 		playbackRate: 1.0,
 	});
-	const previousUnreadCountRef = useRef(0);
+	const previousUnreadCountRef = React.useRef(0);
 
-	// Play typing sound when widget is closed and someone is typing
 	useTypingSound(!isOpen && isTyping, {
 		volume: 1,
 		playbackRate: 1.3,
 	});
 
-	// Play new message sound when unread count increases
-	useEffect(() => {
+	React.useEffect(() => {
 		if (unreadCount > previousUnreadCountRef.current) {
 			playNewMessageSound();
 		}
@@ -126,13 +121,19 @@ const BubbleContent: React.FC<BubbleContentProps> = ({
 	);
 };
 
-export type BubbleProps = {
+export type DefaultTriggerProps = {
 	className?: string;
 };
 
-export const Bubble: React.FC<BubbleProps> = ({ className }) => (
-	<Primitive.Bubble asChild>
-		{({ isOpen, unreadCount, isTyping }) => (
+/**
+ * Default styled trigger button.
+ * Used internally when no custom trigger is provided.
+ */
+export const DefaultTrigger: React.FC<DefaultTriggerProps> = ({
+	className,
+}) => (
+	<Primitive.Trigger asChild>
+		{({ isOpen, unreadCount, isTyping }: TriggerRenderProps) => (
 			<motion.button
 				className={cn(
 					"relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
@@ -147,12 +148,12 @@ export const Bubble: React.FC<BubbleProps> = ({ className }) => (
 				type="button"
 				whileTap={{ scale: 0.95 }}
 			>
-				<BubbleContent
+				<TriggerContent
 					isOpen={isOpen}
 					isTyping={isTyping}
 					unreadCount={unreadCount}
 				/>
 			</motion.button>
 		)}
-	</Primitive.Bubble>
+	</Primitive.Trigger>
 );

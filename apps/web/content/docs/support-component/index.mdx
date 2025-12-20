@@ -5,25 +5,40 @@ description: Basic usage of the Support component.
 
 ## Philosophy
 
-The `<Support />` component is built on the principle of **simplicity first**. Drop it into your React app and get a fully functional support system without configuration overhead.
+The `<Support />` component is built on **progressive disclosure**. Start with zero config, then customize as you grow.
 
 ## How it Works
 
 - **Zero Config**: Works out of the box with sensible defaults
 - **Progressive Enhancement**: Start simple, customize as needed
+- **Compound Components**: Radix-style API for full control when needed
 - **Real-time Chat**: Built-in WebSocket support for live conversations
-- **Smart Routing**: Automatically routes conversations to appropriate channels
 - **Headless Architecture**: Full control through primitive components when needed
 
-The component handles the complexity of modern support systems while maintaining a clean, minimal API surface.
+## Quick Start
+
+Drop `<Support />` anywhere in your app:
+
+```tsx
+import { Support } from "@cossistant/next";
+
+export default function App() {
+  return (
+    <div>
+      <Support />
+      {/* Your app */}
+    </div>
+  );
+}
+```
+
+That's it. You get a fully functional support widget.
 
 ## Customizing Messages & Quick Options
 
-Use the `<SupportConfig />` component to customize default messages and quick options per page or route. This is perfect for providing context-specific help.
+Use `<SupportConfig />` to customize messages and quick options per page:
 
-### Example: Pricing Page
-
-```tsx showLineNumbers title="app/pricing/page.tsx"
+```tsx title="app/pricing/page.tsx"
 import { SupportConfig } from "@cossistant/next";
 
 export default function PricingPage() {
@@ -37,13 +52,10 @@ export default function PricingPage() {
         ]}
       />
       <h1>Choose your plan</h1>
-      {/* rest of pricing page */}
     </>
   );
 }
 ```
-
-The `<SupportConfig />` component accepts the following props:
 
 <TypeTable
   type={{
@@ -63,13 +75,9 @@ The `<SupportConfig />` component accepts the following props:
 
 ## Identifying Visitors
 
-By default, visitors are **anonymous**. Use `<IdentifySupportVisitor />` to connect them to your authenticated users, transforming them into [contacts](/docs/concepts/contacts).
+By default, visitors are **anonymous**. Use `<IdentifySupportVisitor />` to connect them to your authenticated users:
 
-Once identified, all conversations and metadata are linked to the contact across devices.
-
-### Example: Dashboard Layout with Better Auth
-
-```tsx showLineNumbers title="app/dashboard/layout.tsx"
+```tsx title="app/dashboard/layout.tsx"
 import { IdentifySupportVisitor } from "@cossistant/next";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -150,73 +158,52 @@ export default async function DashboardLayout({
   }}
 />
 
-<Alert variant="default" className="mt-6">
-  <Icon name="code" className="size-4" />
-  <AlertTitle>Need programmatic control?</AlertTitle>
-  <AlertDescription>
-    Use the{" "}
-    <Link href="/docs/support-component/hooks#usevisitor">useVisitor</Link> hook
-    to identify visitors or update metadata from client components.
-  </AlertDescription>
-</Alert>
-
 ## Support Component Props
-
-The `<Support />` component accepts these optional props to customize its appearance and behavior:
 
 <TypeTable
   type={{
     className: {
-      description: "Additional CSS classes for the support widget container",
+      description: "Additional CSS classes for the root wrapper",
       type: "string",
       required: false,
     },
-    position: {
-      description: "Vertical position of the widget",
-      type: '"top" | "bottom"',
-      default: '"bottom"',
+    side: {
+      description: "Which side of the trigger to place the content",
+      type: '"top" | "bottom" | "left" | "right"',
+      default: '"top"',
       required: false,
     },
     align: {
-      description: "Horizontal alignment of the widget",
-      type: '"right" | "left"',
-      default: '"right"',
+      description: "Alignment along the side axis",
+      type: '"start" | "center" | "end"',
+      default: '"end"',
       required: false,
     },
-    positioning: {
-      description: "CSS positioning strategy for the widget",
-      type: '"fixed" | "absolute"',
-      default: '"fixed"',
-      required: false,
-    },
-    theme: {
-      description:
-        "Force a specific theme (light/dark). Omit for automatic detection",
-      type: '"light" | "dark"',
-      required: false,
-    },
-    slots: {
-      description:
-        "Replace core components (bubble, container, router) with custom implementations",
-      type: "object",
-      typeDescription:
-        "{ bubble?: ComponentType<BubbleSlotProps>, container?: ComponentType<ContainerSlotProps>, router?: ComponentType<RouterSlotProps> }",
+    sideOffset: {
+      description: "Distance (in pixels) between the trigger and content",
+      type: "number",
+      default: "16",
       required: false,
     },
     classNames: {
-      description:
-        "Granular className overrides for specific parts of the widget",
+      description: "Granular className overrides for specific parts",
       type: "object",
-      typeDescription: "{ root?: string, bubble?: string, container?: string }",
+      typeDescription: "{ trigger?: string, content?: string }",
       required: false,
     },
-    children: {
-      description: "Declarative Page components to register custom routes",
-      type: "React.ReactNode",
+    theme: {
+      description: "Force a specific theme. Omit for automatic detection",
+      type: '"light" | "dark"',
+      required: false,
+    },
+    defaultOpen: {
+      description: "Whether the widget should open automatically on mount",
+      type: "boolean",
+      default: "false",
       required: false,
     },
     quickOptions: {
-      description: "Quick reply options for this specific widget instance",
+      description: "Quick reply options for this widget instance",
       type: "string[]",
       required: false,
     },
@@ -226,22 +213,24 @@ The `<Support />` component accepts these optional props to customize its appear
       typeDescriptionLink: "#defaultmessage",
       required: false,
     },
-    defaultOpen: {
-      description: "Whether the widget should open automatically on mount",
-      type: "boolean",
-      required: false,
-    },
     locale: {
-      description:
-        "Locale string for widget translations (e.g., 'en', 'fr', 'es')",
+      description: "Locale string for widget translations",
       type: "string",
       required: false,
     },
     content: {
-      description: "Custom text content overrides for widget copy",
+      description: "Custom text content overrides for internationalization",
       type: "Partial<SupportTextContent>",
-      typeDescription:
-        "Partial record of all text strings used in the widget for internationalization and customization",
+      required: false,
+    },
+    customPages: {
+      description: "Custom pages to add to the router",
+      type: "CustomPage[]",
+      required: false,
+    },
+    children: {
+      description: "Composition children (Support.Trigger, Support.Content, Support.Page)",
+      type: "React.ReactNode",
       required: false,
     },
   }}
@@ -249,30 +238,34 @@ The `<Support />` component accepts these optional props to customize its appear
 
 ### Usage Examples
 
-Basic customization with theme and styling:
+Basic styling:
 
 ```tsx
 <Support
   theme="dark"
-  position="bottom"
-  align="right"
   classNames={{
-    bubble: "bg-purple-600 hover:bg-purple-700",
-    container: "border-purple-200 shadow-2xl",
+    trigger: "bg-purple-600 hover:bg-purple-700",
+    content: "border-purple-200 shadow-2xl",
   }}
 />
+```
+
+With positioning:
+
+```tsx
+<Support side="bottom" align="end" sideOffset={8} />
 ```
 
 With custom page:
 
 ```tsx
-import { Support, Page, useSupportNavigation } from "@cossistant/next";
+import { Support, useSupportNavigation } from "@cossistant/next";
 
 const HelpPage = () => {
   const { goBack } = useSupportNavigation();
   return (
     <div className="p-4">
-      <button onClick={goBack}>← Back</button>
+      <button onClick={goBack} type="button">← Back</button>
       <h1>Help Center</h1>
     </div>
   );
@@ -281,13 +274,13 @@ const HelpPage = () => {
 export default function App() {
   return (
     <Support>
-      <Page name="HELP" component={HelpPage} />
+      <Support.Page name="HELP" component={HelpPage} />
     </Support>
   );
 }
 ```
 
-For advanced customization, see the [Custom Components](/docs/support-component/custom-components) guide.
+For advanced customization, see the [Customization](/docs/support-component/customization) guide.
 
 ## Types
 
@@ -311,7 +304,7 @@ Structure for pre-conversation welcome messages.
       required: true,
     },
     senderId: {
-      description: "Optional ID of the specific sender (agent or AI)",
+      description: "Optional ID of the specific sender",
       type: "string",
       required: false,
     },
@@ -327,7 +320,7 @@ Key-value pairs for storing custom data about contacts.
   type={{
     "[key: string]": {
       description:
-        "Any string key can map to a string, number, boolean, or null value. Common examples include plan, company, role, MRR, etc.",
+        "Any string key can map to a string, number, boolean, or null value.",
       type: "string | number | boolean | null",
       required: false,
     },
@@ -362,3 +355,33 @@ Enum defining who can send messages.
 />
 
 **Type Definition:** `"visitor" | "team_member" | "ai"`
+
+### TriggerRenderProps
+
+Props provided to custom trigger render functions.
+
+<TypeTable
+  variant="property"
+  type={{
+    isOpen: {
+      description: "Whether the support window is currently open",
+      type: "boolean",
+      required: true,
+    },
+    isTyping: {
+      description: "Whether an agent or AI is currently typing",
+      type: "boolean",
+      required: true,
+    },
+    unreadCount: {
+      description: "Number of unread messages",
+      type: "number",
+      required: true,
+    },
+    toggle: {
+      description: "Toggle the support window open/closed",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
