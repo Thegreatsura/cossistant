@@ -118,6 +118,7 @@ export function useConversations(
 		Partial<ListConversationsRequest>
 	>({
 		client,
+		queryKey: `conversations:${limit ?? ""}:${page ?? ""}:${status ?? ""}:${orderBy ?? ""}:${order ?? ""}`,
 		queryFn: (instance, args) =>
 			instance.listConversations({
 				...requestDefaults,

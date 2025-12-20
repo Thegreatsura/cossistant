@@ -80,7 +80,10 @@ export function SupportRealtimeProvider({
 				}
 
 				// Update the seen store so the UI reflects who has seen messages
-				applyConversationSeenEvent(event);
+				// Ignore events from the current visitor (their own seen updates are handled optimistically)
+				applyConversationSeenEvent(event, {
+					ignoreVisitorId: context.visitorId,
+				});
 			},
 			conversationTyping: (
 				_data: unknown,

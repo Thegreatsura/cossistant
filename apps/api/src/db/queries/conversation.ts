@@ -156,21 +156,31 @@ export async function listConversations(
 		.from(conversation)
 		.where(and(...whereConditions));
 
-	// Get paginated conversations
+	// Get paginated conversations with visitor's lastSeenAt
 	const orderColumn =
 		orderBy === "createdAt" ? conversation.createdAt : conversation.updatedAt;
 	const orderFn = order === "desc" ? desc : asc;
 
-	const conversations = await db
-		.select()
+	const conversationsWithSeen = await db
+		.select({
+			conversation,
+			visitorLastSeenAt: conversationSeen.lastSeenAt,
+		})
 		.from(conversation)
+		.leftJoin(
+			conversationSeen,
+			and(
+				eq(conversationSeen.conversationId, conversation.id),
+				eq(conversationSeen.visitorId, params.visitorId)
+			)
+		)
 		.where(and(...whereConditions))
 		.orderBy(orderFn(orderColumn))
 		.limit(limit)
 		.offset(offset);
 
 	// Get conversation IDs for fetching last timeline items
-	const conversationIds = conversations.map((c) => c.id);
+	const conversationIds = conversationsWithSeen.map((c) => c.conversation.id);
 
 	// Fetch last timeline items for each conversation if there are any conversations
 	const lastTimelineItemsMap: Record<
@@ -200,11 +210,14 @@ export async function listConversations(
 		}
 	}
 
-	// Add lastTimelineItem to each conversation
-	const conversationsWithLastTimelineItem = conversations.map((conv) => ({
-		...conv,
-		lastTimelineItem: lastTimelineItemsMap[conv.id] || undefined,
-	}));
+	// Add lastTimelineItem and visitorLastSeenAt to each conversation
+	const conversationsWithLastTimelineItem = conversationsWithSeen.map(
+		({ conversation: conv, visitorLastSeenAt }) => ({
+			...conv,
+			lastTimelineItem: lastTimelineItemsMap[conv.id] || undefined,
+			visitorLastSeenAt: visitorLastSeenAt ?? null,
+		})
+	);
 
 	const totalCount = Number(totalCountResult.at(0)?.totalCount ?? 0);
 	const totalPages = Math.ceil(totalCount / limit);

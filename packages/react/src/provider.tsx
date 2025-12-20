@@ -57,6 +57,7 @@ type VisitorWithLocale = WebsiteData["visitor"] extends null | undefined
 type ConversationSnapshot = {
 	id: string;
 	lastTimelineItem: TimelineItem | null;
+	visitorLastSeenAt: string | null;
 };
 
 function areConversationSnapshotsEqual(
@@ -84,7 +85,11 @@ function areConversationSnapshotsEqual(
 
 		const aLastCreatedAt = snapshotA.lastTimelineItem?.createdAt ?? null;
 		const bLastCreatedAt = snapshotB.lastTimelineItem?.createdAt ?? null;
-		if (snapshotA.id !== snapshotB.id || aLastCreatedAt !== bLastCreatedAt) {
+		if (
+			snapshotA.id !== snapshotB.id ||
+			aLastCreatedAt !== bLastCreatedAt ||
+			snapshotA.visitorLastSeenAt !== snapshotB.visitorLastSeenAt
+		) {
 			return false;
 		}
 	}
@@ -175,6 +180,7 @@ function SupportProviderInner({
 						return {
 							id: conversation.id,
 							lastTimelineItem: conversation.lastTimelineItem ?? null,
+							visitorLastSeenAt: conversation.visitorLastSeenAt ?? null,
 						} satisfies ConversationSnapshot;
 					})
 					.filter(
@@ -195,6 +201,7 @@ function SupportProviderInner({
 		for (const {
 			id: conversationId,
 			lastTimelineItem,
+			visitorLastSeenAt,
 		} of conversationSnapshots) {
 			if (!lastTimelineItem) {
 				continue;
@@ -217,6 +224,15 @@ function SupportProviderInner({
 				continue;
 			}
 
+			// First check visitorLastSeenAt from the API response (available immediately)
+			if (visitorLastSeenAt) {
+				const lastSeenTime = Date.parse(visitorLastSeenAt);
+				if (!Number.isNaN(lastSeenTime) && createdAtTime <= lastSeenTime) {
+					continue;
+				}
+			}
+
+			// Fall back to seen store (updated via realtime events)
 			const seenEntries = seenEntriesByConversation[conversationId];
 
 			if (seenEntries) {

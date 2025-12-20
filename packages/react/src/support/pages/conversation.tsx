@@ -1,7 +1,7 @@
 import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { type ReactElement, useEffect, useMemo, useRef } from "react";
-import { useConversation } from "../../hooks/use-conversation";
+import { useStoreSelector } from "../../hooks/private/store/use-store-selector";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useNewMessageSound } from "../../hooks/use-new-message-sound";
 import { useSupport } from "../../provider";
@@ -56,7 +56,7 @@ export const ConversationPage: ConversationPageComponent = ({
 		params?.conversationId ?? legacyConversationId ?? "";
 	const initialMessage = params?.initialMessage ?? legacyInitialMessage;
 	const passedItems = params?.items ?? legacyItems ?? [];
-	const { website, availableAIAgents, availableHumanAgents, visitor } =
+	const { website, availableAIAgents, availableHumanAgents, visitor, client } =
 		useSupport();
 	const { navigate, replace, goBack, canGoBack } = useSupportNavigation();
 	const { isOpen } = useSupportConfig();
@@ -89,9 +89,11 @@ export const ConversationPage: ConversationPageComponent = ({
 		},
 	});
 
-	const { conversation: activeConversation } = useConversation(
-		conversation.isPending ? null : conversation.conversationId,
-		{ enabled: !conversation.isPending }
+	// Get conversation from store (no API call) to check status
+	const activeConversation = useStoreSelector(
+		client.conversationsStore,
+		(state) =>
+			conversation.isPending ? null : state.byId[conversation.conversationId]
 	);
 
 	const isConversationClosed = Boolean(

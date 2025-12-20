@@ -56,6 +56,7 @@ export function useConversation(
 		error,
 	} = useClientQuery<GetConversationResponse, GetConversationRequest>({
 		client,
+		queryKey: conversationId ? `conversation:${conversationId}` : undefined,
 		queryFn: (instance) => {
 			if (!request) {
 				throw new Error("Conversation ID is required");
@@ -64,7 +65,7 @@ export function useConversation(
 		},
 		enabled: Boolean(conversationId && (options.enabled ?? true)),
 		refetchInterval: options.refetchInterval ?? false,
-		refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
+		refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
 		refetchOnMount: !conversation,
 		initialArgs: request,
 		dependencies: [conversationId ?? "null"],

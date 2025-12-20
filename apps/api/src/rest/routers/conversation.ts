@@ -86,6 +86,7 @@ const serializeConversationForResponse = (
 			| (ConversationTimelineItemRow & { parts: unknown })
 			| TimelineItem
 			| undefined;
+		visitorLastSeenAt?: string | null;
 	}
 ) => {
 	const serializedConversation = conversationSchema.parse({
@@ -102,7 +103,10 @@ const serializeConversationForResponse = (
 			: undefined,
 	});
 
-	return serializedConversation;
+	return {
+		...serializedConversation,
+		visitorLastSeenAt: record.visitorLastSeenAt ?? null,
+	};
 };
 
 export const conversationRouter = new OpenAPIHono<RestContext>();

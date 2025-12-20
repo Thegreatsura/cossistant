@@ -16,54 +16,17 @@ const pendingSeenUpdates = new Map<
 	}
 >();
 
-const SEEN_UPDATE_DELAY = 2000; // 500ms delay to let message animations settle
-
-function shouldUpdateVisitorTimestamp(
-	event: ConversationSeenEvent,
-	headersVisitorId: string
-) {
-	return (
-		Boolean(event.payload.visitorId) &&
-		event.payload.visitorId === headersVisitorId
-	);
-}
+const SEEN_UPDATE_DELAY = 2000; // 2s delay to let message animations settle
 
 type UpdateResult = {
 	header: ConversationHeader;
 	changed: boolean;
 };
 
-function maybeUpdateVisitorLastSeen(
-	header: ConversationHeader,
-	event: ConversationSeenEvent,
-	lastSeenAtTime: number
-): UpdateResult {
-	if (!shouldUpdateVisitorTimestamp(event, header.visitorId)) {
-		return { header, changed: false };
-	}
-
-	const currentLastSeen = header.visitor.lastSeenAt
-		? new Date(header.visitor.lastSeenAt).getTime()
-		: null;
-
-	if (currentLastSeen === lastSeenAtTime) {
-		return { header, changed: false };
-	}
-
-	const nextDate = new Date(lastSeenAtTime).toISOString();
-
-	return {
-		header: {
-			...header,
-			visitor: {
-				...header.visitor,
-				lastSeenAt: nextDate,
-			},
-		},
-		changed: true,
-	};
-}
-
+/**
+ * Updates the current user's lastSeenAt in the conversation header.
+ * This is the user-specific "last seen" timestamp for unread indicators.
+ */
 function maybeUpdateCurrentUserLastSeen(
 	header: ConversationHeader,
 	event: ConversationSeenEvent,
@@ -82,7 +45,7 @@ function maybeUpdateCurrentUserLastSeen(
 		? new Date(header.lastSeenAt).getTime()
 		: null;
 
-	if (currentLastSeen === lastSeenAtTime) {
+	if (currentLastSeen !== null && currentLastSeen >= lastSeenAtTime) {
 		return { header, changed: false };
 	}
 
@@ -117,6 +80,10 @@ function buildActorPredicates(event: ConversationSeenEvent) {
 	return predicates;
 }
 
+/**
+ * Updates the seenData array in the conversation header.
+ * This tracks who has seen which messages in the conversation.
+ */
 function maybeUpdateSeenEntries(
 	header: ConversationHeader,
 	event: ConversationSeenEvent,
@@ -219,28 +186,22 @@ function applySeenUpdate(
 		return;
 	}
 
-	const visitorUpdate = maybeUpdateVisitorLastSeen(
-		existingHeader,
-		event,
-		lastSeenAtTime
-	);
+	// Update current user's lastSeenAt (for unread indicators)
 	const userUpdate = maybeUpdateCurrentUserLastSeen(
-		visitorUpdate.header,
+		existingHeader,
 		event,
 		context.userId,
 		lastSeenAtTime
 	);
+
+	// Update seenData entries (for read receipts)
 	const seenEntriesUpdate = maybeUpdateSeenEntries(
 		userUpdate.header,
 		event,
 		lastSeenAtTime
 	);
 
-	if (
-		visitorUpdate.changed ||
-		userUpdate.changed ||
-		seenEntriesUpdate.changed
-	) {
+	if (userUpdate.changed || seenEntriesUpdate.changed) {
 		context.queryNormalizer.setNormalizedData(seenEntriesUpdate.header);
 	}
 }
@@ -258,13 +219,21 @@ export function handleConversationSeen({
 
 	const conversationId = event.payload.conversationId;
 
-	// Update React Query cache immediately for reactive updates
-	updateConversationSeenInCache(context.queryClient, conversationId, {
-		userId: event.payload.userId || null,
-		visitorId: event.payload.visitorId || null,
-		aiAgentId: event.payload.aiAgentId || null,
-		lastSeenAt: event.payload.lastSeenAt,
-	});
+	// Skip if this is the current user's own seen event - already handled optimistically
+	// by useConversationActions.markRead mutation
+	const isOwnUserEvent =
+		event.payload.userId && event.payload.userId === context.userId;
+
+	// Update React Query cache for reactive updates (only for other users/visitors)
+	// This ensures the conversation-seen hook gets fresh data for read receipts
+	if (!isOwnUserEvent) {
+		updateConversationSeenInCache(context.queryClient, conversationId, {
+			userId: event.payload.userId || null,
+			visitorId: event.payload.visitorId || null,
+			aiAgentId: event.payload.aiAgentId || null,
+			lastSeenAt: event.payload.lastSeenAt,
+		});
+	}
 
 	// Clear any existing pending update for this conversation
 	const existing = pendingSeenUpdates.get(conversationId);

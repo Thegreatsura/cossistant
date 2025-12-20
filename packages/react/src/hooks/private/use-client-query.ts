@@ -9,6 +9,12 @@ type QueryFn<TData, TArgs> = (
 type UseClientQueryOptions<TData, TArgs> = {
 	client: CossistantClient;
 	queryFn: QueryFn<TData, TArgs>;
+	/**
+	 * Unique key to identify this query for deduplication.
+	 * When provided, concurrent requests with the same key will share a single
+	 * in-flight promise instead of making duplicate API calls.
+	 */
+	queryKey?: string;
 	enabled?: boolean;
 	refetchInterval?: number | false;
 	refetchOnWindowFocus?: boolean;
@@ -36,6 +42,41 @@ function toError(error: unknown): Error {
 const EMPTY_DEPENDENCIES: readonly unknown[] = [];
 
 /**
+ * Module-level cache for in-flight requests.
+ * Maps query keys to their pending promises for deduplication.
+ */
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
+/**
+ * Execute a query with deduplication support.
+ * If a query with the same key is already in flight, returns the existing promise.
+ */
+function executeWithDeduplication<TData>(
+	queryKey: string | undefined,
+	queryFn: () => Promise<TData>
+): Promise<TData> {
+	// No deduplication if no key provided
+	if (!queryKey) {
+		return queryFn();
+	}
+
+	// Check for existing in-flight request
+	const existing = inFlightRequests.get(queryKey);
+	if (existing) {
+		return existing as Promise<TData>;
+	}
+
+	// Create new request and track it
+	const promise = queryFn().finally(() => {
+		// Clean up after request completes (success or error)
+		inFlightRequests.delete(queryKey);
+	});
+
+	inFlightRequests.set(queryKey, promise);
+	return promise;
+}
+
+/**
  * Lightweight data-fetching abstraction that plugs into the SDK client instead
  * of React Query. It tracks loading/error state, supports polling, window
  * focus refetching and exposes a typed refetch helper.
@@ -46,9 +87,10 @@ export function useClientQuery<TData, TArgs = void>(
 	const {
 		client,
 		queryFn,
+		queryKey,
 		enabled = true,
 		refetchInterval = false,
-		refetchOnWindowFocus = true,
+		refetchOnWindowFocus = false,
 		refetchOnMount = true,
 		initialData,
 		initialArgs,
@@ -100,7 +142,10 @@ export function useClientQuery<TData, TArgs = void>(
 			setError(null);
 
 			try {
-				const result = await queryFnRef.current(client, nextArgs);
+				// Use deduplication to share in-flight requests with the same key
+				const result = await executeWithDeduplication(queryKey, () =>
+					queryFnRef.current(client, nextArgs)
+				);
 
 				if (!isMountedRef.current || fetchId !== fetchIdRef.current) {
 					return dataRef.current;
@@ -125,7 +170,7 @@ export function useClientQuery<TData, TArgs = void>(
 				throw normalized;
 			}
 		},
-		[client, enabled]
+		[client, enabled, queryKey]
 	);
 
 	useEffect(() => {

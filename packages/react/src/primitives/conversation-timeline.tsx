@@ -93,7 +93,8 @@ export const ConversationTimeline = (() => {
 				[ref, scrollMaskRef]
 			);
 
-			const isInitialRender = React.useRef(true);
+			// Track if we've done the first scroll to bottom (for instant vs smooth scroll)
+			const hasInitiallyScrolled = React.useRef(false);
 			const previousItemCount = React.useRef(items.length);
 			const previousLastItemKey = React.useRef<string | number | null>(
 				getLastItemKey(items)
@@ -120,7 +121,6 @@ export const ConversationTimeline = (() => {
 				if (!(element && autoScroll)) {
 					previousItemCount.current = items.length;
 					previousLastItemKey.current = lastItemKey;
-					isInitialRender.current = false;
 					return;
 				}
 
@@ -136,17 +136,18 @@ export const ConversationTimeline = (() => {
 					lastItemKey !== previousLastItemKey.current;
 
 				const shouldSnapToBottom =
-					isInitialRender.current ||
+					!hasInitiallyScrolled.current ||
 					(itemsRemoved && isPinnedToBottom.current) ||
 					(appendedNewItem && isPinnedToBottom.current) ||
 					(replacedLastItem && isPinnedToBottom.current);
 
 				if (shouldSnapToBottom) {
-					// Instant scroll on initial render, smooth scroll for new messages
-					if (isInitialRender.current) {
-						element.scrollTop = element.scrollHeight;
-					} else {
+					// Instant scroll until first successful scroll, then smooth for new messages
+					if (hasInitiallyScrolled.current) {
 						element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
+					} else {
+						element.scrollTop = element.scrollHeight;
+						hasInitiallyScrolled.current = true;
 					}
 					isPinnedToBottom.current = true;
 					isAtTop.current = false;
@@ -154,7 +155,6 @@ export const ConversationTimeline = (() => {
 
 				previousItemCount.current = items.length;
 				previousLastItemKey.current = lastItemKey;
-				isInitialRender.current = false;
 			}, [autoScroll, items.length, lastItemKey]);
 
 			// Handle scroll events for infinite scrolling

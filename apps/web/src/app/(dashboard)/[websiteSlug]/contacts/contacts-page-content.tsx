@@ -469,7 +469,7 @@ function ContactsTable({
 
 	return (
 		<div className="h-full overflow-auto px-2" ref={containerRef}>
-			<Table className="h-full min-w-[1000px] bg-amber-200">
+			<Table className="h-full min-w-[1000px]">
 				<TableHeader className="border-transparent border-b-0">
 					{headerGroups.map((headerGroup) => (
 						<TableRow

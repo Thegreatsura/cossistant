@@ -81,10 +81,9 @@ export function updateConversationSeenInCache(
 	// Get current data or empty array
 	const currentData =
 		queryClient.getQueryData<ConversationSeen[]>(queryKey) ?? [];
-	const updated = [...currentData];
 
-	// Find the index of the actor's seen entry
-	const index = updated.findIndex((s) => {
+	// Find the existing entry for this actor
+	const existingIndex = currentData.findIndex((s) => {
 		if (payload.userId) {
 			return s.userId === payload.userId;
 		}
@@ -97,32 +96,40 @@ export function updateConversationSeenInCache(
 		return false;
 	});
 
+	const existingEntry = existingIndex >= 0 ? currentData[existingIndex] : null;
+
+	// Skip update if the incoming lastSeenAt is not newer than existing
+	if (existingEntry) {
+		const existingTime = new Date(existingEntry.lastSeenAt).getTime();
+		const incomingTime = new Date(payload.lastSeenAt).getTime();
+
+		if (!Number.isNaN(existingTime) && existingTime >= incomingTime) {
+			return; // No change needed, existing data is same or newer
+		}
+	}
+
 	const seenEntry: ConversationSeen = {
-		id: index >= 0 && updated[index] ? updated[index].id : generateULID(),
+		id: existingEntry?.id ?? generateULID(),
 		conversationId,
 		userId: payload.userId || null,
 		visitorId: payload.visitorId || null,
 		aiAgentId: payload.aiAgentId || null,
 		lastSeenAt: payload.lastSeenAt,
-		createdAt:
-			index >= 0 && updated[index]
-				? updated[index].createdAt
-				: payload.lastSeenAt,
+		createdAt: existingEntry?.createdAt ?? payload.lastSeenAt,
 		updatedAt: payload.lastSeenAt,
 		deletedAt: null,
 	};
 
-	if (index >= 0) {
+	const updated = [...currentData];
+
+	if (existingIndex >= 0) {
 		// Update existing entry
-		updated[index] = seenEntry;
+		updated[existingIndex] = seenEntry;
 	} else {
 		// Add new entry
 		updated.push(seenEntry);
 	}
 
-	// Set the new data and invalidate the query to trigger re-renders
+	// Set the new data - this automatically triggers re-renders for subscribed components
 	queryClient.setQueryData(queryKey, updated);
-
-	// Invalidate to ensure all components using this query re-render
-	queryClient.invalidateQueries({ queryKey, exact: true });
 }

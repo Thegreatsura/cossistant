@@ -83,6 +83,9 @@ export function useConversationTimelineItems(
 		Pick<GetConversationTimelineItemsRequest, "cursor" | "limit">
 	>({
 		client,
+		queryKey: conversationId
+			? `timeline:${conversationId}:${baseArgs.limit}:${baseArgs.cursor ?? ""}`
+			: undefined,
 		queryFn: (instance, args) => {
 			if (!conversationId) {
 				return Promise.resolve({
@@ -100,7 +103,7 @@ export function useConversationTimelineItems(
 		},
 		enabled: Boolean(conversationId) && (options.enabled ?? true),
 		refetchInterval: options.refetchInterval ?? false,
-		refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
+		refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
 		refetchOnMount: selection.items.length === 0,
 		initialArgs: baseArgs,
 		dependencies: [

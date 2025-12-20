@@ -95,25 +95,32 @@ function ContactSheetContent({
 				<ContactSheetHeader contact={contact} />
 			</div>
 
-			<div className="mt-4 px-2">
-				<ValueGroup header="Details">
+			<div className="px-2">
+				<ValueGroup className="mt-0" header="Details">
 					{contact.externalId && (
-						<ValueDisplay title="External ID" value={contact.externalId} />
+						<ValueDisplay
+							title="External ID"
+							value={contact.externalId}
+							withPaddingLeft={false}
+						/>
 					)}
 					<ValueDisplay
 						autoFormat
 						title="createdAt"
 						value={contact.createdAt}
+						withPaddingLeft={false}
 					/>
 					<ValueDisplay
 						autoFormat
 						title="updatedAt"
 						value={contact.updatedAt}
+						withPaddingLeft={false}
 					/>
 					{contact.contactOrganizationId && (
 						<ValueDisplay
 							title="Organization ID"
 							value={contact.contactOrganizationId}
+							withPaddingLeft={false}
 						/>
 					)}
 				</ValueGroup>

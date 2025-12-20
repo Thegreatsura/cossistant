@@ -56,10 +56,11 @@ export function useWebsiteStore(
 
 	const query = useClientQuery<PublicWebsiteResponse, { force?: boolean }>({
 		client,
+		queryKey: "website",
 		queryFn: (instance, params) => instance.fetchWebsite(params ?? {}),
 		enabled: true,
 		refetchInterval: options.refetchInterval ?? false,
-		refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
+		refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
 		refetchOnMount: state.status === "idle",
 		initialData: state.website ?? undefined,
 	});

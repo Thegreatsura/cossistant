@@ -39,7 +39,8 @@ export type UseConversationPreviewOptions = {
 	conversation: Conversation;
 	/**
 	 * Whether the hook should fetch timeline items for the conversation.
-	 * Enabled by default.
+	 * Disabled by default to reduce API calls - conversation.lastTimelineItem
+	 * is typically sufficient for previews.
 	 */
 	includeTimelineItems?: boolean;
 	/**
@@ -93,7 +94,7 @@ export function useConversationPreview(
 ): UseConversationPreviewReturn {
 	const {
 		conversation,
-		includeTimelineItems = true,
+		includeTimelineItems = false,
 		initialTimelineItems = [],
 		typing,
 	} = options;

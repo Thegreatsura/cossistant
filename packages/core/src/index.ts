@@ -6,6 +6,7 @@ export {
 	type ConversationPagination,
 	type ConversationsState,
 	type ConversationsStore,
+	type ConversationWithSeen,
 	createConversationsStore,
 	getConversationById,
 	getConversationPagination,

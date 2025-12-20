@@ -1,12 +1,15 @@
-import type { Conversation } from "@cossistant/types";
 import type { ListConversationsResponse } from "@cossistant/types/api/conversation";
 import { createStore, type Store } from "./create-store";
 
 export type ConversationPagination = ListConversationsResponse["pagination"];
 
+// Use the conversation type from the list response which includes visitorLastSeenAt
+export type ConversationWithSeen =
+	ListConversationsResponse["conversations"][number];
+
 export type ConversationsState = {
 	ids: string[];
-	byId: Record<string, Conversation>;
+	byId: Record<string, ConversationWithSeen>;
 	pagination: ConversationPagination | null;
 };
 
@@ -27,11 +30,21 @@ function isSameDate(a: Date | string, b: Date | string): boolean {
 	return aTime === bTime;
 }
 
-function isSameConversation(a: Conversation, b: Conversation): boolean {
+function isSameConversation(
+	a: ConversationWithSeen,
+	b: ConversationWithSeen
+): boolean {
 	// Check basic fields
 	const deletedAtMatch =
 		!(a.deletedAt || b.deletedAt) ||
 		(a.deletedAt && b.deletedAt && isSameDate(a.deletedAt, b.deletedAt));
+
+	// Check visitorLastSeenAt
+	const visitorLastSeenAtMatch =
+		!(a.visitorLastSeenAt || b.visitorLastSeenAt) ||
+		(a.visitorLastSeenAt &&
+			b.visitorLastSeenAt &&
+			isSameDate(a.visitorLastSeenAt, b.visitorLastSeenAt));
 
 	const basicMatch =
 		a.id === b.id &&
@@ -41,7 +54,8 @@ function isSameConversation(a: Conversation, b: Conversation): boolean {
 		a.websiteId === b.websiteId &&
 		isSameDate(a.createdAt, b.createdAt) &&
 		isSameDate(a.updatedAt, b.updatedAt) &&
-		deletedAtMatch;
+		deletedAtMatch &&
+		visitorLastSeenAtMatch;
 
 	if (!basicMatch) {
 		return false;
@@ -66,9 +80,9 @@ function isSameConversation(a: Conversation, b: Conversation): boolean {
 }
 
 function mergeMap(
-	existing: Record<string, Conversation>,
-	incoming: Conversation[]
-): [Record<string, Conversation>, boolean] {
+	existing: Record<string, ConversationWithSeen>,
+	incoming: ConversationWithSeen[]
+): [Record<string, ConversationWithSeen>, boolean] {
 	let changed = false;
 	let next = existing;
 
@@ -167,7 +181,7 @@ function applyList(
 
 function applyConversation(
 	state: ConversationsState,
-	conversation: Conversation
+	conversation: ConversationWithSeen
 ): ConversationsState {
 	const previous = state.byId[conversation.id];
 	const sameConversation = previous
@@ -192,7 +206,7 @@ function applyConversation(
 
 export type ConversationsStore = Store<ConversationsState> & {
 	ingestList(response: ListConversationsResponse): void;
-	ingestConversation(conversation: Conversation): void;
+	ingestConversation(conversation: ConversationWithSeen): void;
 };
 
 export function createConversationsStore(
@@ -213,19 +227,20 @@ export function createConversationsStore(
 
 export function getConversations(
 	store: Store<ConversationsState>
-): Conversation[] {
+): ConversationWithSeen[] {
 	const state = store.getState();
 	return state.ids
 		.map((id) => state.byId[id])
 		.filter(
-			(conversation): conversation is Conversation => conversation !== undefined
+			(conversation): conversation is ConversationWithSeen =>
+				conversation !== undefined
 		);
 }
 
 export function getConversationById(
 	store: Store<ConversationsState>,
 	conversationId: string
-): Conversation | undefined {
+): ConversationWithSeen | undefined {
 	return store.getState().byId[conversationId];
 }
 
