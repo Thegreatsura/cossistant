@@ -61,12 +61,10 @@ uploadRouter.openapi(
 		],
 	},
 	async (c) => {
-		const { body, apiKey } = await safelyExtractRequestData(
+		const { body, organization, website } = await safelyExtractRequestData(
 			c,
 			generateUploadUrlRequestSchema
 		);
-
-		const organization = apiKey.organization;
 
 		if (!organization) {
 			return c.json(
@@ -91,7 +89,7 @@ uploadRouter.openapi(
 			);
 		}
 
-		if (apiKey.website && body.scope.websiteId !== apiKey.website.id) {
+		if (website && body.scope.websiteId !== website.id) {
 			return c.json(
 				validateResponse(
 					{

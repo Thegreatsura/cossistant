@@ -38,6 +38,10 @@ export async function createWebsite(
 			})
 			.returning();
 
+		if (!newWebsite) {
+			throw new Error("Failed to create website: no record returned");
+		}
+
 		return newWebsite;
 	} catch (error) {
 		// Re-throw with more context to help debug

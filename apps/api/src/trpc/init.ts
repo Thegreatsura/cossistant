@@ -10,9 +10,15 @@ import { withPermission } from "./middleware/auth";
 import { withPrimaryDbMiddleware } from "./middleware/db";
 import { withRateLimitMiddleware } from "./middleware/rate-limit";
 
+// Extended session type that includes custom fields from the database schema
+export type ExtendedSession = typeof auth.$Infer.Session.session & {
+	activeOrganizationId?: string | null;
+	activeTeamId?: string | null;
+};
+
 export type TRPCContext = {
 	user: typeof auth.$Infer.Session.user;
-	session: typeof auth.$Infer.Session.session;
+	session: ExtendedSession;
 	db: Database;
 	geo: ReturnType<typeof getGeoContext>;
 	headers: Headers;
@@ -23,7 +29,7 @@ export const createTRPCContext = async (
 	c: Context<AuthType>
 ): Promise<TRPCContext> => {
 	const user = c.get("user") as typeof auth.$Infer.Session.user;
-	const session = c.get("session") as typeof auth.$Infer.Session.session;
+	const session = c.get("session") as ExtendedSession;
 
 	const geo = getGeoContext(c.req);
 

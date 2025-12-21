@@ -143,8 +143,7 @@ export async function generateSlugFromEmailDomain(
 	}
 
 	// Remove everything after the first dot and clean the domain
-	let slug = domain
-		.split(".")[0]
+	let slug = (domain.split(".")[0] ?? "")
 		.replace(/[^a-zA-Z0-9]/g, "")
 		.toLowerCase();
 

@@ -23,9 +23,18 @@ type UpgradeSuccessModalProps = {
 	usage: PlanInfo["usage"];
 };
 
-function formatFeatureValue(value: number | null): string {
-	if (value === null) {
+// FeatureValue can be boolean, number, or null
+// - true or null means unlimited
+// - false means disabled
+// - number is the actual value
+type FeatureLimit = number | boolean | null;
+
+function formatFeatureValue(value: FeatureLimit): string {
+	if (value === null || value === true) {
 		return "Unlimited";
+	}
+	if (value === false) {
+		return "Disabled";
 	}
 	return value.toLocaleString();
 }
@@ -36,7 +45,7 @@ function LimitRow({
 	usage,
 }: {
 	label: string;
-	limit: number | null;
+	limit: FeatureLimit;
 	usage?: number;
 }) {
 	return (

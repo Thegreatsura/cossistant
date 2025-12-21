@@ -1,2 +1,6 @@
-export { TRPCContext } from "./init";
-export { OrigamiTRPCRouter, RouterInputs, RouterOutputs } from "./routers/_app";
+export type { TRPCContext } from "./init";
+export type {
+	OrigamiTRPCRouter,
+	RouterInputs,
+	RouterOutputs,
+} from "./routers/_app";

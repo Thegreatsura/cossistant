@@ -163,7 +163,11 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 
 					{/* Conversation Retention - at the bottom */}
 					<UsageBar
-						current={plan.features["conversation-retention"] ?? 0}
+						current={
+							typeof plan.features["conversation-retention"] === "number"
+								? plan.features["conversation-retention"]
+								: 0
+						}
 						formatValue={(current, limit) => {
 							if (limit === null && current === 0) {
 								return "Unlimited";

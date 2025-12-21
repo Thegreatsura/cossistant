@@ -143,7 +143,7 @@ function TextInner<
 	K extends SupportTextKey,
 	As extends keyof React.JSX.IntrinsicElements = "span",
 >(
-	props: TextProps<K, As>,
+	props: Omit<TextProps<K, As>, "ref">,
 	forwardedRef: React.ComponentPropsWithRef<As>["ref"]
 ) {
 	const { textKey, variables, as, ...rest } = props as TextProps<K, As>;

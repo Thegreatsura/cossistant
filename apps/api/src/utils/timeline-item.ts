@@ -29,6 +29,10 @@ function parseTextToMarkdown(text: string): string {
 	// Process matches in reverse to maintain correct positions
 	for (let i = matches.length - 1; i >= 0; i--) {
 		const match = matches[i];
+		if (!match) {
+			continue;
+		}
+
 		const markdownLink = `[${match.value}](${match.href})`;
 
 		result =
@@ -260,6 +264,10 @@ export async function createTimelineItem(
 			deletedAt: null,
 		})
 		.returning();
+
+	if (!createdItem) {
+		throw new Error("Failed to create timeline item: no record returned");
+	}
 
 	const parsedItem = timelineItemSchema.parse({
 		...createdItem,

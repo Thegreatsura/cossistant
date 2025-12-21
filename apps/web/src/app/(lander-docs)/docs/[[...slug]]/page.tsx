@@ -94,8 +94,7 @@ export default async function Page(props: {
 
 	const neighbours = await findNeighbour(source.pageTree, page.url);
 
-	// @ts-expect-error - revisit fumadocs types.
-	const links = doc.links;
+	const links = (doc as { links?: { doc?: string; api?: string } }).links;
 
 	const isMainPage = page.slugs.length === 0;
 

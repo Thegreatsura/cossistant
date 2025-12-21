@@ -3,6 +3,21 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { bunRedisCache } from "./cache/bun-redis-cache";
 import * as schema from "./schema";
 
+// Re-export drizzle operators to ensure consistent versions across packages
+export {
+	and,
+	asc,
+	desc,
+	eq,
+	inArray,
+	isNotNull,
+	isNull,
+	not,
+	notInArray,
+	or,
+	sql,
+} from "drizzle-orm";
+
 let _db: NodePgDatabase<typeof schema> | null = null;
 
 const createDb = (): NodePgDatabase<typeof schema> => {

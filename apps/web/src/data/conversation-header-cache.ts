@@ -56,6 +56,11 @@ export function prependConversationHeaderInCache(
 
 			const [firstPage, ...rest] = existing.pages;
 
+			// firstPage is guaranteed to exist since we checked pages.length > 0 above
+			if (!firstPage) {
+				return existing;
+			}
+
 			return {
 				pages: [
 					{
@@ -65,7 +70,7 @@ export function prependConversationHeaderInCache(
 					...rest,
 				],
 				pageParams: [...existing.pageParams],
-			} satisfies InfiniteData<ConversationHeadersPage>;
+			};
 		}
 	);
 }

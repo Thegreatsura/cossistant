@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@api/trpc/types";
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
 import type {
 	TimelineItem,
@@ -14,11 +13,22 @@ export type TimelineEventDisplay = {
 	avatarFallbackName: string;
 };
 
+// Minimal visitor type needed for timeline event display
+// We only use id, contact.name, contact.email, and contact.image
+type MinimalVisitorForEvent = {
+	id: string;
+	contact?: {
+		name?: string | null;
+		email?: string | null;
+		image?: string | null;
+	} | null;
+};
+
 type EventDisplayParams = {
 	event: TimelinePartEvent;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
-	visitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
+	visitor?: MinimalVisitorForEvent | null;
 };
 
 export function extractEventPart(

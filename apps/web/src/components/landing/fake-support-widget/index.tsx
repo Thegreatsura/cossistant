@@ -1,7 +1,6 @@
 "use client";
 
 import * as Primitive from "@cossistant/react/primitives";
-import { Bubble, Container } from "@cossistant/react/support/components";
 import { AvatarStack } from "@cossistant/react/support/components/avatar-stack";
 import { CoButton as Button } from "@cossistant/react/support/components/button";
 import Icon from "@cossistant/react/support/components/icons";

@@ -81,9 +81,15 @@ export function useRenderElement<
 	const computedClassName =
 		typeof classNameProp === "function" ? classNameProp(state) : classNameProp;
 
+	const propsWithClassName = props as {
+		className?: string;
+		children?: React.ReactNode;
+	};
 	const mergedProps = {
 		...props,
-		className: [props.className, computedClassName].filter(Boolean).join(" "),
+		className: [propsWithClassName.className, computedClassName]
+			.filter(Boolean)
+			.join(" "),
 		ref,
 	};
 
@@ -98,13 +104,13 @@ export function useRenderElement<
 		});
 	}
 
-	if (asChild && React.isValidElement(props.children)) {
+	if (asChild && React.isValidElement(propsWithClassName.children)) {
 		// Extract ref to pass explicitly to the forwardRef Slot component
 		// React extracts ref from spread props, so we must pass it separately
 		const { ref: slotRef, ...restMergedProps } = mergedProps;
 		return (
 			<Slot ref={slotRef} {...restMergedProps}>
-				{props.children}
+				{propsWithClassName.children}
 			</Slot>
 		);
 	}

@@ -127,9 +127,9 @@ function stripQueryFromUrl(url: string): string {
 		parsed.hash = "";
 
 		return parsed.toString();
-	} catch (error) {
+	} catch {
 		const [base] = url.split("?");
-		return base;
+		return base ?? url;
 	}
 }
 
