@@ -154,6 +154,7 @@ export const Content: React.FC<ContentPropsType> = ({
 }) => {
 	const [showScrollIndicator, setShowScrollIndicator] = React.useState(false);
 	const containerRef = React.useRef<HTMLDivElement>(null);
+	const hasEverPositionedRef = React.useRef(false);
 	const isMobile = useIsMobile();
 	const triggerRefContext = useTriggerRef();
 	const { isOpen } = useSupportConfig();
@@ -270,8 +271,16 @@ export const Content: React.FC<ContentPropsType> = ({
 		};
 	}, [checkScroll]);
 
+	// Track when Floating UI has successfully positioned at least once
+	// Using a ref to persist across renders - once positioned, always valid
+	// This avoids the bug where (0,0) was wrongly treated as invalid
+	if (isPositioned) {
+		hasEverPositionedRef.current = true;
+	}
+
 	// Check if Floating UI has successfully calculated valid positions
-	const hasValidFloatingPosition = isPositioned && (x !== 0 || y !== 0);
+	// We use the ref to handle legitimate (0,0) positions correctly
+	const hasValidFloatingPosition = hasEverPositionedRef.current;
 
 	// Compute styles based on positioning mode
 	// Use raw x, y coordinates from Floating UI when available

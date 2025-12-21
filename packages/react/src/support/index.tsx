@@ -50,9 +50,9 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	sideOffset?: number;
 
 	/**
-	 * Disable automatic collision avoidance.
-	 * When true, the content will use static CSS positioning.
-	 * @default false
+	 * Enable automatic collision avoidance.
+	 * When true, the content repositions to stay within the viewport.
+	 * @default true
 	 */
 	avoidCollisions?: boolean;
 
@@ -339,9 +339,9 @@ export type SupportContentProps = {
 	 */
 	sideOffset?: number;
 	/**
-	 * Disable automatic collision avoidance.
-	 * When true, the content will use static CSS positioning.
-	 * @default false
+	 * Enable automatic collision avoidance.
+	 * When true, the content repositions to stay within the viewport.
+	 * @default true
 	 */
 	avoidCollisions?: boolean;
 	/**
