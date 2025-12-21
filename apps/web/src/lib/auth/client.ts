@@ -1,19 +1,15 @@
 import { adminClient, organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
-function createClient() {
-	return createAuthClient({
-		baseURL: process.env.NEXT_PUBLIC_API_BASE_URL
-			? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`
-			: "http://localhost:8787/api/auth",
-		fetchOptions: {
-			credentials: "include" as const,
-		},
-		plugins: [organizationClient(), adminClient()],
-	});
-}
-
-export const authClient = createClient();
+export const authClient = createAuthClient({
+	baseURL: process.env.NEXT_PUBLIC_API_BASE_URL
+		? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`
+		: "http://localhost:8787/api/auth",
+	fetchOptions: {
+		credentials: "include" as const,
+	},
+	plugins: [organizationClient(), adminClient()],
+});
 
 // Alias requestPasswordReset as forgetPassword for backwards compatibility
 export const forgetPassword = authClient.requestPasswordReset;

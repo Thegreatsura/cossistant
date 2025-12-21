@@ -3,19 +3,26 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { bunRedisCache } from "./cache/bun-redis-cache";
 import * as schema from "./schema";
 
+export type { InferSelectModel } from "drizzle-orm";
 // Re-export drizzle operators to ensure consistent versions across packages
 export {
 	and,
 	asc,
+	count,
 	desc,
 	eq,
+	getTableName,
+	gt,
+	gte,
 	inArray,
 	isNotNull,
 	isNull,
+	ne,
 	not,
 	notInArray,
 	or,
 	sql,
+	Table,
 } from "drizzle-orm";
 
 let _db: NodePgDatabase<typeof schema> | null = null;

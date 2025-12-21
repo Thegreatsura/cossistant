@@ -7,14 +7,40 @@ type PageData = {
 	getText?: (mode: string) => Promise<string>;
 };
 
-export async function getLLMText(page: InferPageType<typeof source>) {
-	const data = page.data as PageData;
+const isPageData = (data: unknown): data is PageData => {
+	if (typeof data !== "object" || data === null) {
+		return false;
+	}
+	const obj = data as Record<string, unknown>;
+	return (
+		(obj.type === undefined || typeof obj.type === "string") &&
+		(obj.title === undefined || typeof obj.title === "string") &&
+		(obj.getText === undefined || typeof obj.getText === "function")
+	);
+};
+
+export const getLLMText = async (page: InferPageType<typeof source>) => {
+	const data: unknown = page.data;
+
+	if (!isPageData(data)) {
+		return "";
+	}
+
 	if (data.type === "openapi") {
 		return "";
 	}
 
-	const processed = data.getText ? await data.getText("processed") : "";
+	let processed = "";
+	if (data.getText) {
+		try {
+			processed = await data.getText("processed");
+		} catch (error) {
+			console.error("Failed to get processed text for LLM:", error);
+			processed = "";
+		}
+	}
+
 	return `# ${data.title ?? ""}
 URL: ${page.url}
 ${processed}`;
-}
+};
