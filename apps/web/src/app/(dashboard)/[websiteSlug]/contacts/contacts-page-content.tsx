@@ -22,6 +22,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Page } from "@/components/ui/layout";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Table,
 	TableBody,
@@ -167,18 +168,24 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	return (
 		<>
 			<Page className="relative flex flex-col gap-6">
-				<ContactsTable
-					containerRef={tableContainerRef}
-					data={contacts}
-					focusedIndex={focusedIndex}
-					isLoading={listQuery.isLoading}
-					onMouseEnter={handleMouseEnter}
-					onRowClick={handleSelectContact}
-					onSortingChange={handleSortingChange}
-					selectedContactId={selectedContactId}
-					sorting={sorting}
-				/>
-				<div className="flex h-16 w-full items-center justify-between gap-2 px-4">
+				<ScrollArea
+					className="h-full px-2 pt-14"
+					orientation="both"
+					ref={tableContainerRef}
+					scrollMask
+				>
+					<ContactsTable
+						data={contacts}
+						focusedIndex={focusedIndex}
+						isLoading={listQuery.isLoading}
+						onMouseEnter={handleMouseEnter}
+						onRowClick={handleSelectContact}
+						onSortingChange={handleSortingChange}
+						selectedContactId={selectedContactId}
+						sorting={sorting}
+					/>
+				</ScrollArea>
+				<div className="absolute right-0 bottom-0 left-0 flex h-14 w-full items-center justify-between gap-2 pr-3 pl-4">
 					<div className="text-muted-foreground text-sm">
 						{totalCount === 0
 							? "No contacts to display"
@@ -229,7 +236,6 @@ type ContactsTableProps = {
 	onMouseEnter: (index: number) => void;
 	focusedIndex: number;
 	selectedContactId: string | null;
-	containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const LOADING_ROW_COUNT = 5;
@@ -243,7 +249,6 @@ function ContactsTable({
 	onMouseEnter,
 	focusedIndex,
 	selectedContactId,
-	containerRef,
 }: ContactsTableProps) {
 	const { visitors: presenceVisitors } = useVisitorPresence();
 
@@ -450,10 +455,7 @@ function ContactsTable({
 
 	if (rows.length === 0 && !isLoading) {
 		return (
-			<div
-				className="flex flex-col items-center justify-center gap-3 px-10 py-16 text-center"
-				ref={containerRef}
-			>
+			<div className="flex flex-col items-center justify-center gap-3 px-10 py-16 text-center">
 				<div className="space-y-1">
 					<h3 className="font-semibold text-base">
 						No contacts match your filters
@@ -468,108 +470,106 @@ function ContactsTable({
 	}
 
 	return (
-		<div className="h-full overflow-auto px-2" ref={containerRef}>
-			<Table className="h-full min-w-[1000px]">
-				<TableHeader className="border-transparent border-b-0">
-					{headerGroups.map((headerGroup) => (
-						<TableRow
-							className="border-transparent border-b-0"
-							key={headerGroup.id}
-						>
-							{headerGroup.headers.map((header) => {
-								const sorted = header.column.getIsSorted();
-								const columnWidthClass =
-									CONTACTS_TABLE_COLUMN_WIDTHS[
-										header.id as keyof typeof CONTACTS_TABLE_COLUMN_WIDTHS
-									];
+		<Table className="min-w-[1000px]">
+			<TableHeader className="border-transparent border-b-0">
+				{headerGroups.map((headerGroup) => (
+					<TableRow
+						className="border-transparent border-b-0"
+						key={headerGroup.id}
+					>
+						{headerGroup.headers.map((header) => {
+							const sorted = header.column.getIsSorted();
+							const columnWidthClass =
+								CONTACTS_TABLE_COLUMN_WIDTHS[
+									header.id as keyof typeof CONTACTS_TABLE_COLUMN_WIDTHS
+								];
 
-								return (
-									<TableHead
-										aria-sort={
-											sorted === "desc"
-												? "descending"
-												: sorted === "asc"
-													? "ascending"
-													: "none"
+							return (
+								<TableHead
+									aria-sort={
+										sorted === "desc"
+											? "descending"
+											: sorted === "asc"
+												? "ascending"
+												: "none"
+									}
+									className={columnWidthClass}
+									key={header.id}
+								>
+									{header.isPlaceholder
+										? null
+										: flexRender(
+												header.column.columnDef.header,
+												header.getContext()
+											)}
+								</TableHead>
+							);
+						})}
+					</TableRow>
+				))}
+			</TableHeader>
+			<TableBody>
+				{isLoading
+					? Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
+							<ContactTableSkeletonRow key={index} />
+						))
+					: rows.map((row, index) => {
+							const isFocused = index === focusedIndex;
+							const isSelected = row.original.id === selectedContactId;
+							const cells = row.getVisibleCells();
+
+							return (
+								<TableRow
+									className={cn(
+										"cursor-pointer border-transparent border-b-0 transition-colors",
+										"focus-visible:outline-none focus-visible:ring-0"
+									)}
+									key={row.id}
+									onClick={() => onRowClick(row.original.id)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter" || event.key === " ") {
+											event.preventDefault();
+											onRowClick(row.original.id);
 										}
-										className={columnWidthClass}
-										key={header.id}
-									>
-										{header.isPlaceholder
-											? null
-											: flexRender(
-													header.column.columnDef.header,
-													header.getContext()
+									}}
+									onMouseEnter={() => onMouseEnter(index)}
+									tabIndex={isFocused ? 0 : -1}
+								>
+									{cells.map((cell, cellIndex) => {
+										const isFirstCell = cellIndex === 0;
+										const isLastCell = cellIndex === cells.length - 1;
+										const columnWidthClass =
+											CONTACTS_TABLE_COLUMN_WIDTHS[
+												cell.column
+													.id as keyof typeof CONTACTS_TABLE_COLUMN_WIDTHS
+											];
+
+										return (
+											<TableCell
+												className={cn(
+													"py-2 transition-colors",
+													columnWidthClass,
+													isFirstCell && "rounded-l-lg",
+													isLastCell && "rounded-r-lg",
+													isFocused &&
+														"bg-background-200 text-primary dark:bg-background-300",
+													isSelected &&
+														"bg-background-300 dark:bg-background-400"
 												)}
-									</TableHead>
-								);
-							})}
-						</TableRow>
-					))}
-				</TableHeader>
-				<TableBody>
-					{isLoading
-						? Array.from({ length: LOADING_ROW_COUNT }, (_, index) => (
-								<ContactTableSkeletonRow key={index} />
-							))
-						: rows.map((row, index) => {
-								const isFocused = index === focusedIndex;
-								const isSelected = row.original.id === selectedContactId;
-								const cells = row.getVisibleCells();
-
-								return (
-									<TableRow
-										className={cn(
-											"cursor-pointer border-transparent border-b-0 transition-colors",
-											"focus-visible:outline-none focus-visible:ring-0"
-										)}
-										key={row.id}
-										onClick={() => onRowClick(row.original.id)}
-										onKeyDown={(event) => {
-											if (event.key === "Enter" || event.key === " ") {
-												event.preventDefault();
-												onRowClick(row.original.id);
-											}
-										}}
-										onMouseEnter={() => onMouseEnter(index)}
-										tabIndex={isFocused ? 0 : -1}
-									>
-										{cells.map((cell, cellIndex) => {
-											const isFirstCell = cellIndex === 0;
-											const isLastCell = cellIndex === cells.length - 1;
-											const columnWidthClass =
-												CONTACTS_TABLE_COLUMN_WIDTHS[
-													cell.column
-														.id as keyof typeof CONTACTS_TABLE_COLUMN_WIDTHS
-												];
-
-											return (
-												<TableCell
-													className={cn(
-														"py-2 transition-colors",
-														columnWidthClass,
-														isFirstCell && "rounded-l-lg",
-														isLastCell && "rounded-r-lg",
-														isFocused &&
-															"bg-background-200 text-primary dark:bg-background-300",
-														isSelected &&
-															"bg-background-300 dark:bg-background-400"
-													)}
-													key={cell.id}
-												>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext()
-													)}
-												</TableCell>
-											);
-										})}
-									</TableRow>
-								);
-							})}
-				</TableBody>
-			</Table>
-		</div>
+												key={cell.id}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										);
+									})}
+								</TableRow>
+							);
+						})}
+			</TableBody>
+		</Table>
 	);
 }
 
