@@ -32,11 +32,50 @@ const connectionsByVisitorId = new Map<string, Set<string>>();
 /**
  * Adds a connection to the registry and updates indexes.
  * Should be called when a connection is established.
+ *
+ * If the connectionId already exists, cleans up stale references from
+ * previous websiteId/visitorId sets before registering the new record.
  */
 export function registerConnection(
 	connectionId: string,
 	record: LocalConnectionRecord
 ): void {
+	// Check for existing record and clean up stale index references
+	const existingRecord = localConnections.get(connectionId);
+	if (existingRecord) {
+		// Remove from previous website index if websiteId changed
+		if (
+			existingRecord.websiteId &&
+			existingRecord.websiteId !== record.websiteId
+		) {
+			const prevWebsiteConnections = connectionsByWebsiteId.get(
+				existingRecord.websiteId
+			);
+			if (prevWebsiteConnections) {
+				prevWebsiteConnections.delete(connectionId);
+				if (prevWebsiteConnections.size === 0) {
+					connectionsByWebsiteId.delete(existingRecord.websiteId);
+				}
+			}
+		}
+
+		// Remove from previous visitor index if visitorId changed
+		if (
+			existingRecord.visitorId &&
+			existingRecord.visitorId !== record.visitorId
+		) {
+			const prevVisitorConnections = connectionsByVisitorId.get(
+				existingRecord.visitorId
+			);
+			if (prevVisitorConnections) {
+				prevVisitorConnections.delete(connectionId);
+				if (prevVisitorConnections.size === 0) {
+					connectionsByVisitorId.delete(existingRecord.visitorId);
+				}
+			}
+		}
+	}
+
 	localConnections.set(connectionId, record);
 
 	// Update website index

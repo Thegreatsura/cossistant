@@ -151,8 +151,10 @@ export function useVisitorTypingReporter({
 				return;
 			}
 
-			// Need either WebSocket or HTTP client
-			if (!(realtimeSend && isRealtimeConnected && client)) {
+			// Need either WebSocket or HTTP client to be available
+			const hasWebSocket = realtimeSend && isRealtimeConnected;
+			const hasHttpClient = Boolean(client);
+			if (!(hasWebSocket || hasHttpClient)) {
 				return;
 			}
 

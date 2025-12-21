@@ -376,7 +376,21 @@ async function validateClientEvent(
 				ws
 			);
 		default:
-			return true;
+			// Unknown event type in CLIENT_ALLOWED_EVENT_TYPES without explicit handler
+			console.warn(
+				`[WebSocket] Unhandled client event type "${eventType}" for connection`,
+				{
+					eventType,
+					websiteId: connectionContext.websiteId,
+					userId: connectionContext.userId,
+					visitorId: connectionContext.visitorId,
+				}
+			);
+			sendError(ws, {
+				error: "Unhandled event type",
+				message: `Event type "${eventType}" is allowed but has no authorization handler`,
+			});
+			return false;
 	}
 }
 
