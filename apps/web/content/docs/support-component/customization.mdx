@@ -37,6 +37,24 @@ Control where the content appears relative to the trigger:
 />
 ```
 
+### Auto Collision Avoidance
+
+The widget automatically repositions itself to stay within the viewport. When there isn't enough space on the preferred side, it flips to the opposite side. It also shifts along the axis to prevent clipping at screen edges.
+
+```tsx
+// Collision avoidance is enabled by default
+<Support side="top" align="end" />
+
+// Disable collision avoidance for static positioning
+<Support avoidCollisions={false} />
+
+// Custom padding from viewport edges (default: 8px)
+<Support collisionPadding={16} />
+
+// Per-side collision padding
+<Support collisionPadding={{ top: 8, bottom: 32, left: 8, right: 8 }} />
+```
+
 ## Level 3: Custom Trigger
 
 Replace the default trigger with `<Support.Trigger>`:
@@ -196,11 +214,17 @@ type TriggerRenderProps = {
 ### ContentProps
 
 ```tsx
+type CollisionPadding =
+  | number
+  | { top?: number; right?: number; bottom?: number; left?: number };
+
 type ContentProps = {
   className?: string;
   side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;
+  avoidCollisions?: boolean;       // default: true
+  collisionPadding?: CollisionPadding; // default: 8
   children?: React.ReactNode;
 };
 ```
@@ -213,6 +237,8 @@ type SupportProps = {
   side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;
+  avoidCollisions?: boolean;       // default: true
+  collisionPadding?: CollisionPadding; // default: 8
   classNames?: {
     trigger?: string;
     content?: string;

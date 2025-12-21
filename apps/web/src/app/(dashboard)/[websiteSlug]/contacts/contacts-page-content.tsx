@@ -169,7 +169,7 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		<>
 			<Page className="relative flex flex-col gap-6">
 				<ScrollArea
-					className="h-full px-2 pt-14"
+					className="h-full px-2 pt-14 pb-32"
 					orientation="both"
 					ref={tableContainerRef}
 					scrollMask

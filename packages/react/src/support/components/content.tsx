@@ -1,18 +1,46 @@
 "use client";
 
+import {
+	autoUpdate,
+	flip,
+	offset,
+	type Placement,
+	shift,
+	useFloating,
+} from "@floating-ui/react";
 import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import * as Primitive from "../../primitives";
-import type { Align, ContentProps as ContentPropsType, Side } from "../types";
-
-export type { ContentProps } from "../types";
-
+import { useTriggerRef } from "../context/positioning";
+import type {
+	Align,
+	CollisionPadding,
+	ContentProps as ContentPropsType,
+	Side,
+} from "../types";
 import { cn } from "../utils";
 
+export type { CollisionPadding, ContentProps } from "../types";
+
+// =============================================================================
+// Utils
+// =============================================================================
+
 /**
- * Get positioning classes based on side and align props.
+ * Convert side + align props to Floating UI placement
  */
-function getPositioningClasses(side: Side, align: Align): string {
+function getPlacement(side: Side, align: Align): Placement {
+	if (align === "center") {
+		return side;
+	}
+	return `${side}-${align}` as Placement;
+}
+
+/**
+ * Get fallback positioning classes for when Floating UI is not available
+ * (e.g., trigger ref not set, or avoidCollisions is false)
+ */
+function getFallbackPositioningClasses(side: Side, align: Align): string {
 	const sideClasses: Record<Side, string> = {
 		top: "md:bottom-full md:mb-4",
 		bottom: "md:top-full md:mt-4",
@@ -47,9 +75,9 @@ function getPositioningClasses(side: Side, align: Align): string {
 }
 
 /**
- * Get offset styles based on side and sideOffset.
+ * Get fallback offset styles for static positioning
  */
-function getOffsetStyle(
+function getFallbackOffsetStyle(
 	side: Side,
 	sideOffset: number
 ): React.CSSProperties | undefined {
@@ -67,9 +95,35 @@ function getOffsetStyle(
 	return offsetMap[side];
 }
 
+// =============================================================================
+// Hook for responsive detection
+// =============================================================================
+
+function useIsMobile(): boolean {
+	const [isMobile, setIsMobile] = React.useState(false);
+
+	React.useEffect(() => {
+		const mediaQuery = window.matchMedia("(max-width: 767px)");
+		setIsMobile(mediaQuery.matches);
+
+		const handler = (event: MediaQueryListEvent) => {
+			setIsMobile(event.matches);
+		};
+
+		mediaQuery.addEventListener("change", handler);
+		return () => mediaQuery.removeEventListener("change", handler);
+	}, []);
+
+	return isMobile;
+}
+
+// =============================================================================
+// Content Component
+// =============================================================================
+
 /**
  * Content component for the support window.
- * Positioned relative to the trigger using CSS classes.
+ * Uses Floating UI for automatic collision detection on desktop.
  * Fullscreen on mobile, floating on desktop.
  *
  * @example
@@ -77,12 +131,16 @@ function getOffsetStyle(
  * <Support.Content />
  *
  * @example
- * // Custom positioning
+ * // Custom positioning with collision avoidance
  * <Support.Content side="bottom" align="start" sideOffset={24} />
  *
  * @example
- * // With custom styling
- * <Support.Content className="border-purple-200 shadow-2xl" />
+ * // Disable collision avoidance for static positioning
+ * <Support.Content avoidCollisions={false} />
+ *
+ * @example
+ * // Custom collision padding
+ * <Support.Content collisionPadding={{ top: 16, bottom: 32 }} />
  */
 export const Content: React.FC<ContentPropsType> = ({
 	className,
@@ -90,10 +148,49 @@ export const Content: React.FC<ContentPropsType> = ({
 	side = "top",
 	align = "end",
 	sideOffset = 16,
+	avoidCollisions = true,
+	collisionPadding = 8,
 }) => {
 	const [showScrollIndicator, setShowScrollIndicator] = React.useState(false);
 	const containerRef = React.useRef<HTMLDivElement>(null);
+	const isMobile = useIsMobile();
+	const triggerRefContext = useTriggerRef();
 
+	// Set up Floating UI middleware
+	const middleware = React.useMemo(() => {
+		const middlewares = [offset(sideOffset)];
+
+		if (avoidCollisions) {
+			middlewares.push(
+				flip({
+					padding: collisionPadding,
+					fallbackAxisSideDirection: "start",
+				}),
+				shift({
+					padding: collisionPadding,
+				})
+			);
+		}
+
+		return middlewares;
+	}, [sideOffset, avoidCollisions, collisionPadding]);
+
+	// Initialize Floating UI with state-based trigger element
+	// When triggerElement changes (from null to actual element), this re-renders
+	const { refs, floatingStyles, isPositioned } = useFloating({
+		placement: getPlacement(side, align),
+		middleware,
+		whileElementsMounted: autoUpdate,
+		elements: {
+			reference: triggerRefContext?.triggerElement,
+		},
+	});
+
+	// Determine if we should use Floating UI positioning
+	const useFloatingPositioning =
+		avoidCollisions && !isMobile && triggerRefContext?.triggerElement !== null;
+
+	// Scroll indicator logic
 	const checkScroll = React.useCallback(() => {
 		const container = containerRef.current;
 		if (!container) {
@@ -144,28 +241,59 @@ export const Content: React.FC<ContentPropsType> = ({
 		};
 	}, [checkScroll]);
 
+	// Compute styles based on positioning mode
+	const computedStyles = React.useMemo<React.CSSProperties>(() => {
+		if (isMobile) {
+			// Mobile: no positioning styles needed, handled by CSS classes
+			return {};
+		}
+
+		if (useFloatingPositioning && isPositioned) {
+			// Desktop with Floating UI: use computed floating styles
+			return floatingStyles;
+		}
+
+		// Desktop fallback: use static offset styles
+		return getFallbackOffsetStyle(side, sideOffset) ?? {};
+	}, [
+		isMobile,
+		useFloatingPositioning,
+		isPositioned,
+		floatingStyles,
+		side,
+		sideOffset,
+	]);
+
+	// Compute className based on positioning mode
+	const computedClassName = cn(
+		// Common base styles
+		"flex flex-col overflow-hidden overscroll-none bg-co-background",
+
+		// Mobile: fullscreen fixed
+		"max-md:fixed max-md:inset-0 max-md:z-[9999]",
+
+		// Desktop: floating window base styles
+		"md:z-[9999] md:aspect-[9/17] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-md md:border md:border-co-border md:shadow md:dark:shadow-co-background-600/50",
+
+		// Positioning mode specific styles
+		useFloatingPositioning
+			? // With Floating UI: fixed positioning
+				"md:fixed"
+			: // Fallback: absolute positioning with CSS classes
+				cn("md:absolute", getFallbackPositioningClasses(side, align)),
+
+		className
+	);
+
 	return (
 		<Primitive.Window asChild>
 			<motion.div
 				animate="visible"
-				className={cn(
-					// Common base styles
-					"flex flex-col overflow-hidden overscroll-none bg-co-background",
-
-					// Mobile: fullscreen fixed
-					"max-md:fixed max-md:inset-0 max-md:z-[9999]",
-
-					// Desktop: floating window with CSS-based positioning
-					"md:absolute md:z-[9999] md:aspect-[9/17] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-md md:border md:border-co-border md:shadow md:dark:shadow-co-background-600/50",
-
-					// Dynamic positioning classes
-					getPositioningClasses(side, align),
-
-					className
-				)}
+				className={computedClassName}
 				exit="exit"
 				initial="hidden"
-				style={getOffsetStyle(side, sideOffset)}
+				ref={refs.setFloating}
+				style={computedStyles}
 				transition={{
 					default: { ease: "anticipate" },
 					layout: { duration: 0.3 },

@@ -45,6 +45,14 @@ export type TriggerRenderProps = {
 // =============================================================================
 
 /**
+ * Padding from viewport edges when avoiding collisions.
+ * Can be a single number for all sides, or an object with per-side values.
+ */
+export type CollisionPadding =
+	| number
+	| { top?: number; right?: number; bottom?: number; left?: number };
+
+/**
  * Props for the Content component.
  */
 export type ContentProps = {
@@ -64,6 +72,18 @@ export type ContentProps = {
 	 * @default 16
 	 */
 	sideOffset?: number;
+	/**
+	 * Disable automatic collision avoidance.
+	 * When true, the content will use static CSS positioning and may overflow the viewport.
+	 * @default false
+	 */
+	avoidCollisions?: boolean;
+	/**
+	 * Padding from viewport edges when avoiding collisions.
+	 * Used by flip and shift middleware to determine when to reposition.
+	 * @default 8
+	 */
+	collisionPadding?: CollisionPadding;
 	children?: React.ReactNode;
 };
 

@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import type * as React from "react";
+import { TriggerRefProvider } from "../context/positioning";
 import { cn } from "../utils";
 
 export type RootProps = {
@@ -22,16 +23,18 @@ export type RootProps = {
  * </Support.Root>
  */
 export const Root: React.FC<RootProps> = ({ className, children }) => (
-	<motion.div
-		animate={{ opacity: 1 }}
-		className={cn("cossistant relative z-[9999]", className)}
-		initial={{ opacity: 0 }}
-		layout="position"
-		transition={{
-			default: { ease: "anticipate" },
-			layout: { duration: 0.3 },
-		}}
-	>
-		{children}
-	</motion.div>
+	<TriggerRefProvider>
+		<motion.div
+			animate={{ opacity: 1 }}
+			className={cn("cossistant relative", className)}
+			initial={{ opacity: 0 }}
+			layout="position"
+			transition={{
+				default: { ease: "anticipate" },
+				layout: { duration: 0.3 },
+			}}
+		>
+			{children}
+		</motion.div>
+	</TriggerRefProvider>
 );
