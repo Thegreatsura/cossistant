@@ -12,7 +12,102 @@ export type LocalConnectionRecord = {
 	visitorId?: string;
 };
 
+/**
+ * Primary connection store - maps connectionId to connection record
+ */
 export const localConnections = new Map<string, LocalConnectionRecord>();
+
+/**
+ * Index: websiteId -> Set of connectionIds
+ * Used for O(1) lookup when dispatching to all connections for a website
+ */
+const connectionsByWebsiteId = new Map<string, Set<string>>();
+
+/**
+ * Index: visitorId -> Set of connectionIds
+ * Used for O(1) lookup when dispatching to all connections for a visitor
+ */
+const connectionsByVisitorId = new Map<string, Set<string>>();
+
+/**
+ * Adds a connection to the registry and updates indexes.
+ * Should be called when a connection is established.
+ */
+export function registerConnection(
+	connectionId: string,
+	record: LocalConnectionRecord
+): void {
+	localConnections.set(connectionId, record);
+
+	// Update website index
+	if (record.websiteId) {
+		let websiteConnections = connectionsByWebsiteId.get(record.websiteId);
+		if (!websiteConnections) {
+			websiteConnections = new Set();
+			connectionsByWebsiteId.set(record.websiteId, websiteConnections);
+		}
+		websiteConnections.add(connectionId);
+	}
+
+	// Update visitor index
+	if (record.visitorId) {
+		let visitorConnections = connectionsByVisitorId.get(record.visitorId);
+		if (!visitorConnections) {
+			visitorConnections = new Set();
+			connectionsByVisitorId.set(record.visitorId, visitorConnections);
+		}
+		visitorConnections.add(connectionId);
+	}
+}
+
+/**
+ * Removes a connection from the registry and updates indexes.
+ * Should be called when a connection is closed.
+ */
+export function unregisterConnection(connectionId: string): void {
+	const record = localConnections.get(connectionId);
+
+	if (record) {
+		// Remove from website index
+		if (record.websiteId) {
+			const websiteConnections = connectionsByWebsiteId.get(record.websiteId);
+			if (websiteConnections) {
+				websiteConnections.delete(connectionId);
+				if (websiteConnections.size === 0) {
+					connectionsByWebsiteId.delete(record.websiteId);
+				}
+			}
+		}
+
+		// Remove from visitor index
+		if (record.visitorId) {
+			const visitorConnections = connectionsByVisitorId.get(record.visitorId);
+			if (visitorConnections) {
+				visitorConnections.delete(connectionId);
+				if (visitorConnections.size === 0) {
+					connectionsByVisitorId.delete(record.visitorId);
+				}
+			}
+		}
+	}
+
+	localConnections.delete(connectionId);
+}
+
+/**
+ * Gets the count of active connections (for monitoring/debugging)
+ */
+export function getConnectionStats(): {
+	totalConnections: number;
+	uniqueWebsites: number;
+	uniqueVisitors: number;
+} {
+	return {
+		totalConnections: localConnections.size,
+		uniqueWebsites: connectionsByWebsiteId.size,
+		uniqueVisitors: connectionsByVisitorId.size,
+	};
+}
 
 function createExcludePredicate(
 	options?: DispatchOptions
@@ -52,42 +147,65 @@ export function dispatchEventToLocalConnection(
 	sendEventToSocket(connection, serializedEvent);
 }
 
+/**
+ * Dispatches an event to all connections for a specific visitor.
+ * Uses indexed lookup for O(1) access to visitor's connections.
+ */
 export function dispatchEventToLocalVisitor(
 	visitorId: string,
 	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ): void {
+	// O(1) lookup using visitor index
+	const visitorConnectionIds = connectionsByVisitorId.get(visitorId);
+	if (!visitorConnectionIds || visitorConnectionIds.size === 0) {
+		return;
+	}
+
 	const shouldExclude = createExcludePredicate(options);
 	const serializedEvent = JSON.stringify(event);
 
-	for (const [connectionId, connection] of localConnections) {
-		if (connection.visitorId !== visitorId) {
-			continue;
-		}
-
+	for (const connectionId of visitorConnectionIds) {
 		if (shouldExclude?.(connectionId)) {
 			continue;
 		}
 
-		console.log("[WebSocket] Dispatching visitor event", {
-			visitorId,
-			connectionId,
-			eventType: event.type,
-		});
+		const connection = localConnections.get(connectionId);
+		if (!connection) {
+			// Connection was removed but index not yet cleaned up - skip
+			continue;
+		}
+
 		sendEventToSocket(connection, serializedEvent);
 	}
 }
 
+/**
+ * Dispatches an event to all dashboard/user connections for a specific website.
+ * Uses indexed lookup for O(1) access to website's connections.
+ */
 export function dispatchEventToLocalWebsite(
 	websiteId: string,
 	event: AnyRealtimeEvent,
 	options?: DispatchOptions
 ): void {
+	// O(1) lookup using website index
+	const websiteConnectionIds = connectionsByWebsiteId.get(websiteId);
+	if (!websiteConnectionIds || websiteConnectionIds.size === 0) {
+		return;
+	}
+
 	const shouldExclude = createExcludePredicate(options);
 	const serializedEvent = JSON.stringify(event);
 
-	for (const [connectionId, connection] of localConnections) {
-		if (connection.websiteId !== websiteId) {
+	for (const connectionId of websiteConnectionIds) {
+		if (shouldExclude?.(connectionId)) {
+			continue;
+		}
+
+		const connection = localConnections.get(connectionId);
+		if (!connection) {
+			// Connection was removed but index not yet cleaned up - skip
 			continue;
 		}
 
@@ -96,15 +214,6 @@ export function dispatchEventToLocalWebsite(
 			continue;
 		}
 
-		if (shouldExclude?.(connectionId)) {
-			continue;
-		}
-
-		console.log("[WebSocket] Dispatching website event", {
-			websiteId,
-			connectionId,
-			eventType: event.type,
-		});
 		sendEventToSocket(connection, serializedEvent);
 	}
 }

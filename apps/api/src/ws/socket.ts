@@ -1,5 +1,6 @@
 import { db } from "@api/db";
 import type { ApiKeyWithWebsiteAndOrganization } from "@api/db/queries/api-keys";
+import { getConversationById } from "@api/db/queries/conversation";
 import { normalizeSessionToken, resolveSession } from "@api/db/queries/session";
 import { getWebsiteByIdWithAccess } from "@api/db/queries/website";
 import { website as websiteTable } from "@api/db/schema";
@@ -39,6 +40,8 @@ import {
 	dispatchEventToLocalVisitor,
 	dispatchEventToLocalWebsite,
 	localConnections,
+	registerConnection,
+	unregisterConnection,
 } from "./connection-registry";
 import {
 	initializeRealtimePubSub,
@@ -212,6 +215,214 @@ function sendInvalidFormatResponse(ws: SocketContext, error: unknown): void {
 	);
 }
 
+/**
+ * List of event types that clients are allowed to send via WebSocket.
+ * Server-only events (like userConnected, visitorConnected, etc.) are not in this list.
+ */
+const CLIENT_ALLOWED_EVENT_TYPES = new Set([
+	"conversationTyping",
+	"conversationSeen",
+]);
+
+/**
+ * Validates that a client is authorized to send a typing event for a conversation.
+ * - Visitors can only send typing events for conversations they own
+ * - Users can send typing events for any conversation on websites they have access to
+ */
+async function validateTypingEventAuthorization(
+	payload: { conversationId: string; visitorId?: string | null },
+	connectionContext: ConnectionContextDetails,
+	ws: SocketContext
+): Promise<boolean> {
+	const { conversationId } = payload;
+	const {
+		visitorId: connectionVisitorId,
+		userId,
+		websiteId,
+	} = connectionContext;
+
+	// Get the conversation to validate ownership
+	const conversation = await getConversationById(db, { conversationId });
+
+	if (!conversation) {
+		sendError(ws, {
+			error: "Conversation not found",
+			message: `Conversation ${conversationId} does not exist`,
+		});
+		return false;
+	}
+
+	// Validate website matches
+	if (conversation.websiteId !== websiteId) {
+		sendError(ws, {
+			error: "Unauthorized",
+			message: "Conversation does not belong to this website",
+		});
+		return false;
+	}
+
+	// For visitors: verify they own the conversation
+	if (
+		connectionVisitorId &&
+		!userId &&
+		conversation.visitorId !== connectionVisitorId
+	) {
+		sendError(ws, {
+			error: "Unauthorized",
+			message: "You can only send typing events for your own conversations",
+		});
+		return false;
+	}
+
+	// For users: they're already authenticated for the website, so they can type in any conversation
+	// (Dashboard agents can respond to any conversation on their website)
+
+	return true;
+}
+
+/**
+ * Validates that a client is authorized to send a seen event for a conversation.
+ * Similar rules to typing events.
+ */
+async function validateSeenEventAuthorization(
+	payload: { conversationId: string },
+	connectionContext: ConnectionContextDetails,
+	ws: SocketContext
+): Promise<boolean> {
+	const { conversationId } = payload;
+	const {
+		visitorId: connectionVisitorId,
+		userId,
+		websiteId,
+	} = connectionContext;
+
+	const conversation = await getConversationById(db, { conversationId });
+
+	if (!conversation) {
+		sendError(ws, {
+			error: "Conversation not found",
+			message: `Conversation ${conversationId} does not exist`,
+		});
+		return false;
+	}
+
+	if (conversation.websiteId !== websiteId) {
+		sendError(ws, {
+			error: "Unauthorized",
+			message: "Conversation does not belong to this website",
+		});
+		return false;
+	}
+
+	// For visitors: verify they own the conversation
+	if (
+		connectionVisitorId &&
+		!userId &&
+		conversation.visitorId !== connectionVisitorId
+	) {
+		sendError(ws, {
+			error: "Unauthorized",
+			message: "You can only mark your own conversations as seen",
+		});
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Validates client-initiated events before routing.
+ * Returns true if the event is authorized, false otherwise.
+ */
+async function validateClientEvent(
+	eventType: string,
+	payload: unknown,
+	connectionContext: ConnectionContextDetails,
+	ws: SocketContext
+): Promise<boolean> {
+	// Check if this event type is allowed from clients
+	if (!CLIENT_ALLOWED_EVENT_TYPES.has(eventType)) {
+		sendError(ws, {
+			error: "Unauthorized event type",
+			message: `Event type "${eventType}" cannot be sent by clients`,
+		});
+		return false;
+	}
+
+	const typedPayload = payload as {
+		conversationId?: string;
+		visitorId?: string | null;
+	};
+
+	if (!typedPayload.conversationId) {
+		sendError(ws, {
+			error: "Missing conversationId",
+			message: "conversationId is required for this event type",
+		});
+		return false;
+	}
+
+	switch (eventType) {
+		case "conversationTyping":
+			return await validateTypingEventAuthorization(
+				typedPayload as { conversationId: string; visitorId?: string | null },
+				connectionContext,
+				ws
+			);
+		case "conversationSeen":
+			return await validateSeenEventAuthorization(
+				typedPayload as { conversationId: string },
+				connectionContext,
+				ws
+			);
+		default:
+			return true;
+	}
+}
+
+/**
+ * Enriches client-initiated event payloads with connection context.
+ * This ensures server-side data integrity by using the authenticated
+ * connection's context rather than trusting client-provided values.
+ */
+function enrichClientEventPayload(
+	eventType: string,
+	payload: unknown,
+	connectionContext: ConnectionContextDetails
+): unknown {
+	const basePayload = payload as Record<string, unknown>;
+	const { organizationId, websiteId, userId, visitorId } = connectionContext;
+
+	switch (eventType) {
+		case "conversationTyping":
+			return {
+				...basePayload,
+				organizationId,
+				websiteId,
+				// Use connection context for actor identification
+				userId: userId ?? null,
+				visitorId: visitorId ?? null,
+				aiAgentId: null, // Clients can't impersonate AI agents
+			};
+		case "conversationSeen":
+			return {
+				...basePayload,
+				organizationId,
+				websiteId,
+				userId: userId ?? null,
+				visitorId: visitorId ?? null,
+				aiAgentId: null,
+				lastSeenAt: new Date().toISOString(),
+			};
+		default:
+			return {
+				...basePayload,
+				organizationId,
+				websiteId,
+			};
+	}
+}
+
 type ParsedInboundEvent = {
 	type: RealtimeEventType;
 	payload: RealtimeEventData<RealtimeEventType>;
@@ -319,7 +530,7 @@ export const { websocket, upgradeWebSocket } =
  * Broadcast helpers are implemented via the router dispatch callbacks.
  */
 function cleanupConnection(connectionId: string): void {
-	localConnections.delete(connectionId);
+	unregisterConnection(connectionId);
 	console.log(`[WebSocket] Cleaned up connection: ${connectionId}`);
 }
 
@@ -886,8 +1097,8 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 				return;
 			}
 
-			// Track socket locally for this server instance
-			localConnections.set(connectionId, {
+			// Track socket locally for this server instance using indexed registry
+			registerConnection(connectionId, {
 				socket: ws.raw as RawSocket,
 				websiteId: authResult.websiteId,
 				organizationId: authResult.organizationId,
@@ -984,9 +1195,29 @@ export const upgradedWebsocket = upgradeWebSocket(async (c) => {
 
 			try {
 				if (metadata.organizationId && metadata.websiteId) {
+					// Validate client-initiated events before routing
+					const isAuthorized = await validateClientEvent(
+						parsed.type,
+						parsed.payload,
+						metadata,
+						ws
+					);
+
+					if (!isAuthorized) {
+						// Error already sent to client by validateClientEvent
+						return;
+					}
+
+					// Enrich payload with connection context for typing/seen events
+					const enrichedPayload = enrichClientEventPayload(
+						parsed.type,
+						parsed.payload,
+						metadata
+					);
+
 					const event = {
 						type: parsed.type,
-						payload: parsed.payload,
+						payload: enrichedPayload,
 					} as AnyRealtimeEvent;
 
 					await routeEvent(event, context);

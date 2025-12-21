@@ -1,4 +1,5 @@
 import type { CossistantClient } from "@cossistant/core";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import { useCallback, useEffect, useRef } from "react";
 
 const PREVIEW_MAX_LENGTH = 2000;
@@ -6,9 +7,21 @@ const SEND_INTERVAL_MS = 800;
 const KEEP_ALIVE_MS = 4000;
 const STOP_TYPING_DELAY_MS = 2000; // Send isTyping: false after 2 seconds of inactivity
 
+type RealtimeSendFn = (event: AnyRealtimeEvent) => void;
+
 type UseVisitorTypingReporterOptions = {
 	client: CossistantClient | null;
 	conversationId: string | null;
+	/**
+	 * Optional WebSocket send function. When provided and the connection is available,
+	 * typing events will be sent via WebSocket instead of HTTP for better performance.
+	 */
+	realtimeSend?: RealtimeSendFn | null;
+	/**
+	 * Whether the WebSocket connection is currently established.
+	 * Required when using realtimeSend to determine when to use HTTP fallback.
+	 */
+	isRealtimeConnected?: boolean;
 };
 
 type UseVisitorTypingReporterResult = {
@@ -22,10 +35,15 @@ type UseVisitorTypingReporterResult = {
  *
  * Handles throttling, keep-alive pings, inactivity fallbacks and ensures a
  * `stop` event is emitted when the component unmounts.
+ *
+ * When `realtimeSend` is provided and connected, typing events are sent via WebSocket
+ * for reduced latency. Falls back to HTTP when WebSocket is unavailable.
  */
 export function useVisitorTypingReporter({
 	client,
 	conversationId,
+	realtimeSend,
+	isRealtimeConnected = false,
 }: UseVisitorTypingReporterOptions): UseVisitorTypingReporterResult {
 	const typingActiveRef = useRef(false);
 	const lastSentAtRef = useRef(0);
@@ -53,7 +71,43 @@ export function useVisitorTypingReporter({
 
 	const sendTyping = useCallback(
 		async (isTyping: boolean, preview?: string | null) => {
-			if (!(client && conversationId)) {
+			if (!conversationId) {
+				return;
+			}
+
+			// Try WebSocket first if available and connected
+			if (realtimeSend && isRealtimeConnected) {
+				try {
+					const event: AnyRealtimeEvent = {
+						type: "conversationTyping",
+						payload: {
+							conversationId,
+							isTyping,
+							visitorPreview:
+								isTyping && preview
+									? preview.slice(0, PREVIEW_MAX_LENGTH)
+									: null,
+							// These will be enriched by the server with the actual values
+							websiteId: "",
+							organizationId: "",
+							visitorId: null,
+							userId: null,
+							aiAgentId: null,
+						},
+					};
+					realtimeSend(event);
+					return;
+				} catch (error) {
+					// WebSocket send failed, fall through to HTTP
+					console.warn(
+						"[Support] WebSocket typing send failed, falling back to HTTP",
+						error
+					);
+				}
+			}
+
+			// Fall back to HTTP via client
+			if (!client) {
 				return;
 			}
 
@@ -67,7 +121,7 @@ export function useVisitorTypingReporter({
 				console.error("[Support] Failed to send typing event", error);
 			}
 		},
-		[client, conversationId]
+		[client, conversationId, realtimeSend, isRealtimeConnected]
 	);
 
 	const scheduleKeepAlive = useCallback(() => {
@@ -93,7 +147,12 @@ export function useVisitorTypingReporter({
 
 	const handleInputChange = useCallback(
 		(value: string) => {
-			if (!(client && conversationId)) {
+			if (!conversationId) {
+				return;
+			}
+
+			// Need either WebSocket or HTTP client
+			if (!(realtimeSend && isRealtimeConnected && client)) {
 				return;
 			}
 
@@ -132,6 +191,8 @@ export function useVisitorTypingReporter({
 		[
 			client,
 			conversationId,
+			realtimeSend,
+			isRealtimeConnected,
 			sendTyping,
 			scheduleKeepAlive,
 			scheduleStopTyping,

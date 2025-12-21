@@ -5,6 +5,7 @@ import {
 } from "@cossistant/types/enums";
 import { useEffect, useMemo, useRef } from "react";
 import { useSupport } from "../provider";
+import { useWebSocketSafe } from "../support/context/websocket";
 import { useDefaultMessages } from "./private/use-default-messages";
 import { useConversationAutoSeen } from "./use-conversation-auto-seen";
 import { useConversationLifecycle } from "./use-conversation-lifecycle";
@@ -116,6 +117,7 @@ export function useConversationPage(
 	} = options;
 
 	const { client, visitor } = useSupport();
+	const websocket = useWebSocketSafe();
 
 	const trimmedInitialMessage = initialMessage?.trim() ?? "";
 	const hasInitialMessage = trimmedInitialMessage.length > 0;
@@ -231,6 +233,9 @@ export function useConversationPage(
 				lifecycle.setConversationId(newConversationId);
 			}
 		},
+		// Pass WebSocket connection for real-time typing events
+		realtimeSend: websocket?.send ?? null,
+		isRealtimeConnected: websocket?.isConnected ?? false,
 	});
 
 	const initialMessageSubmittedRef = useRef(false);

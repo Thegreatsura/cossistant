@@ -191,6 +191,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
 /**
  * Accessor for the support websocket context.
+ * Throws if used outside WebSocketProvider.
  */
 export const useWebSocket = (): WebSocketContextValue => {
 	const context = useContext(WebSocketContext);
@@ -199,6 +200,14 @@ export const useWebSocket = (): WebSocketContextValue => {
 	}
 	return context;
 };
+
+/**
+ * Safe accessor for the support websocket context.
+ * Returns null if used outside WebSocketProvider instead of throwing.
+ * Useful for optional WebSocket usage in hooks that may or may not have the provider.
+ */
+export const useWebSocketSafe = (): WebSocketContextValue | null =>
+	useContext(WebSocketContext);
 
 export type { WebSocketContextValue, WebSocketProviderProps };
 export type { RealtimeEvent } from "@cossistant/types/realtime-events";
