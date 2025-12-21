@@ -76,11 +76,15 @@ export const SupportTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
 		const visitorId = visitor?.id ?? null;
 		const triggerRefContext = useTriggerRef();
 
+		// Extract setTriggerElement for stable dependency (state setter has stable identity)
+		const setTriggerElement = triggerRefContext?.setTriggerElement;
+
 		// Merge the external ref with the positioning context ref
+		// Using setTriggerElement directly ensures stable ref callback identity
 		const mergedRef = React.useCallback(
 			(element: HTMLButtonElement | null) => {
 				// Set the positioning context ref
-				triggerRefContext?.setTriggerElement(element);
+				setTriggerElement?.(element);
 
 				// Handle the forwarded ref
 				if (typeof ref === "function") {
@@ -89,7 +93,7 @@ export const SupportTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
 					ref.current = element;
 				}
 			},
-			[ref, triggerRefContext]
+			[ref, setTriggerElement]
 		);
 
 		const hasTyping = useTypingStore(

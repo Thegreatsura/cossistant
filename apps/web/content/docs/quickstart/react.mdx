@@ -1,8 +1,233 @@
 ---
 title: React
-description: Setup with React.
+description: Setup with React (Vite, Create React App, or any React project).
 ---
 
-## Setup
+<Steps>
+  <Step>
+  ## Install the package
 
-The full documentation for react and other frameworks will be available as soon as possible ❤️
+Add `@cossistant/react` to your React project:
+
+```bash
+npm install @cossistant/react
+```
+
+  </Step>
+  <Step>
+  ## Configure your API key
+
+You have two options for providing your API key:
+
+<Tabs defaultValue="auto" className="mt-10">
+  <TabsList>
+    <TabsTrigger value="auto">Auto-detection</TabsTrigger>
+    <TabsTrigger value="explicit">Explicit prop</TabsTrigger>
+  </TabsList>
+  <TabsContent value="auto">
+    The library automatically detects the `COSSISTANT_API_KEY` environment variable. This works in any environment where `process.env` is available at build time:
+
+```bash title=".env"
+COSSISTANT_API_KEY=pk_test_xxxx
+```
+
+<Alert variant="info" className="mt-4">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Vite users</AlertTitle>
+  <AlertDescription>
+    Vite doesn't expose `process.env` by default. Use the "Explicit prop" tab
+    instead, or configure Vite to expose `process.env.COSSISTANT_API_KEY`.
+  </AlertDescription>
+</Alert>
+
+  </TabsContent>
+  <TabsContent value="explicit">
+    For Vite, Create React App, or when you need explicit control, pass the key via the `publicKey` prop:
+
+**Vite:**
+
+```bash title=".env"
+VITE_COSSISTANT_API_KEY=pk_test_xxxx
+```
+
+**Create React App:**
+
+```bash title=".env"
+REACT_APP_COSSISTANT_API_KEY=pk_test_xxxx
+```
+
+Then pass it to the provider (see next step).
+
+  </TabsContent>
+</Tabs>
+
+<Alert variant="info" className="mt-10">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Where to find your public API key?</AlertTitle>
+  <AlertDescription>
+    You can find your public API key at the end of your onboarding or can access
+    it anytime from the settings page.
+  </AlertDescription>
+</Alert>
+
+  </Step>
+
+  <Step>
+  ## Add the SupportProvider
+
+Wrap your app with `SupportProvider` at the root level:
+
+<Tabs defaultValue="vite" className="mt-10">
+  <TabsList>
+    <TabsTrigger value="vite">Vite</TabsTrigger>
+    <TabsTrigger value="cra">Create React App</TabsTrigger>
+    <TabsTrigger value="auto">Auto-detection</TabsTrigger>
+  </TabsList>
+  <TabsContent value="vite">
+
+```tsx {3,9} showLineNumbers title="src/main.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { SupportProvider } from "@cossistant/react";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>
+      <App />
+    </SupportProvider>
+  </React.StrictMode>
+);
+```
+
+  </TabsContent>
+  <TabsContent value="cra">
+
+```tsx {3,10} showLineNumbers title="src/index.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { SupportProvider } from "@cossistant/react";
+import App from "./App";
+import "./index.css";
+
+const root = ReactDOM.createRoot(document.getElementById("root")!);
+root.render(
+  <React.StrictMode>
+    <SupportProvider publicKey={process.env.REACT_APP_COSSISTANT_API_KEY}>
+      <App />
+    </SupportProvider>
+  </React.StrictMode>
+);
+```
+
+  </TabsContent>
+  <TabsContent value="auto">
+    If you've set `COSSISTANT_API_KEY` in your environment and it's available via `process.env`, you don't need to pass any prop:
+
+```tsx {3,9} showLineNumbers title="src/main.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { SupportProvider } from "@cossistant/react";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <SupportProvider>
+      <App />
+    </SupportProvider>
+  </React.StrictMode>
+);
+```
+
+  </TabsContent>
+</Tabs>
+
+  </Step>
+
+  <Step>
+  ## Import the CSS
+
+Import the support widget styles in your main CSS file:
+
+```css {1} showLineNumbers title="src/index.css"
+@import "@cossistant/react/support.css";
+
+/* Your existing styles */
+```
+
+Or import it directly in your entry file:
+
+```tsx {5} showLineNumbers title="src/main.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { SupportProvider } from "@cossistant/react";
+import App from "./App";
+import "@cossistant/react/support.css";
+import "./index.css";
+```
+
+  </Step>
+
+  <Step>
+  ## Add the Support widget
+
+Add the `<Support />` component anywhere in your app:
+
+```tsx {1,7} showLineNumbers title="src/App.tsx"
+import { Support } from "@cossistant/react";
+
+function App() {
+  return (
+    <div>
+      <h1>Welcome to my app!</h1>
+      <Support />
+    </div>
+  );
+}
+
+export default App;
+```
+
+  </Step>
+
+  <Step>
+  ## Done!
+
+You're ready to go! You now have a fully functional support widget in your React app.
+
+Move on to the <Link href="/docs/support-component">basic usage guide</Link> to learn how to customize your support widget.
+
+  </Step>
+
+</Steps>
+
+## Complete Example (Vite)
+
+Here's a minimal Vite + React setup:
+
+```tsx title="src/main.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { SupportProvider, Support } from "@cossistant/react";
+import "@cossistant/react/support.css";
+
+function App() {
+  return (
+    <div style={{ padding: "2rem" }}>
+      <h1>My App</h1>
+      <p>Click the chat button to get support!</p>
+      <Support />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>
+      <App />
+    </SupportProvider>
+  </React.StrictMode>
+);
+```

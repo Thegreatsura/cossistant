@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import * as Primitive from "../../primitives";
 import { useTriggerRef } from "../context/positioning";
+import { useSupportConfig } from "../store/support-store";
 import type {
 	Align,
 	CollisionPadding,
@@ -155,6 +156,7 @@ export const Content: React.FC<ContentPropsType> = ({
 	const containerRef = React.useRef<HTMLDivElement>(null);
 	const isMobile = useIsMobile();
 	const triggerRefContext = useTriggerRef();
+	const { isOpen } = useSupportConfig();
 
 	// Set up Floating UI middleware
 	const middleware = React.useMemo(() => {
@@ -175,20 +177,47 @@ export const Content: React.FC<ContentPropsType> = ({
 		return middlewares;
 	}, [sideOffset, avoidCollisions, collisionPadding]);
 
-	// Initialize Floating UI with state-based trigger element
-	// When triggerElement changes (from null to actual element), this re-renders
-	const { refs, floatingStyles, isPositioned } = useFloating({
+	// Get trigger element from context (stored in state for reactivity)
+	const triggerElement = triggerRefContext?.triggerElement ?? null;
+
+	// Initialize Floating UI with the trigger element as reference
+	// Using strategy: 'fixed' because Content uses position: fixed (md:fixed class)
+	// This ensures Floating UI calculates positions relative to the viewport
+	// The `open` prop synchronizes Floating UI with visibility state for proper autoUpdate
+	const { refs, update, x, y, isPositioned } = useFloating({
 		placement: getPlacement(side, align),
+		strategy: "fixed",
 		middleware,
 		whileElementsMounted: autoUpdate,
+		open: isOpen,
 		elements: {
-			reference: triggerRefContext?.triggerElement,
+			reference: triggerElement,
 		},
 	});
 
+	// Merge refs for the floating element - ensures proper ref forwarding with motion.div
+	const setFloatingRef = React.useCallback(
+		(node: HTMLDivElement | null) => {
+			refs.setFloating(node);
+		},
+		[refs]
+	);
+
+	// Force position recalculation when trigger element becomes available
+	// This handles the case where content mounts before trigger
+	React.useEffect(() => {
+		if (triggerElement && isOpen) {
+			// Defer update to ensure DOM is ready
+			requestAnimationFrame(() => {
+				update();
+			});
+		}
+	}, [triggerElement, isOpen, update]);
+
 	// Determine if we should use Floating UI positioning
+	// Only use Floating UI when trigger element is available
 	const useFloatingPositioning =
-		avoidCollisions && !isMobile && triggerRefContext?.triggerElement !== null;
+		avoidCollisions && !isMobile && triggerElement !== null;
 
 	// Scroll indicator logic
 	const checkScroll = React.useCallback(() => {
@@ -241,25 +270,35 @@ export const Content: React.FC<ContentPropsType> = ({
 		};
 	}, [checkScroll]);
 
+	// Check if Floating UI has successfully calculated valid positions
+	const hasValidFloatingPosition = isPositioned && (x !== 0 || y !== 0);
+
 	// Compute styles based on positioning mode
+	// Use raw x, y coordinates from Floating UI when available
 	const computedStyles = React.useMemo<React.CSSProperties>(() => {
 		if (isMobile) {
 			// Mobile: no positioning styles needed, handled by CSS classes
 			return {};
 		}
 
-		if (useFloatingPositioning && isPositioned) {
-			// Desktop with Floating UI: use computed floating styles
-			return floatingStyles;
+		if (useFloatingPositioning && hasValidFloatingPosition) {
+			// Desktop with Floating UI: use calculated coordinates
+			// Using top/left instead of transform to avoid conflicts with motion animations
+			return {
+				position: "fixed" as const,
+				left: x,
+				top: y,
+			};
 		}
 
-		// Desktop fallback: use static offset styles
+		// Desktop fallback: use static offset styles when Floating UI isn't ready
 		return getFallbackOffsetStyle(side, sideOffset) ?? {};
 	}, [
 		isMobile,
 		useFloatingPositioning,
-		isPositioned,
-		floatingStyles,
+		hasValidFloatingPosition,
+		x,
+		y,
 		side,
 		sideOffset,
 	]);
@@ -276,11 +315,11 @@ export const Content: React.FC<ContentPropsType> = ({
 		"md:z-[9999] md:aspect-[9/17] md:max-h-[calc(100vh-6rem)] md:w-[400px] md:rounded-md md:border md:border-co-border md:shadow md:dark:shadow-co-background-600/50",
 
 		// Positioning mode specific styles
-		useFloatingPositioning
-			? // With Floating UI: fixed positioning
-				"md:fixed"
-			: // Fallback: absolute positioning with CSS classes
-				cn("md:absolute", getFallbackPositioningClasses(side, align)),
+		// Use fixed positioning when Floating UI has valid coordinates,
+		// otherwise use fallback absolute positioning with CSS classes
+		useFloatingPositioning && hasValidFloatingPosition
+			? "md:fixed"
+			: cn("md:absolute", getFallbackPositioningClasses(side, align)),
 
 		className
 	);
@@ -292,16 +331,16 @@ export const Content: React.FC<ContentPropsType> = ({
 				className={computedClassName}
 				exit="exit"
 				initial="hidden"
-				ref={refs.setFloating}
+				ref={setFloatingRef}
 				style={computedStyles}
 				transition={{
 					default: { ease: "anticipate" },
 					layout: { duration: 0.3 },
 				}}
 				variants={{
-					hidden: { opacity: 0, y: 10, filter: "blur(6px)" },
-					visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-					exit: { opacity: 0, y: 10, filter: "blur(6px)" },
+					hidden: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
+					visible: { opacity: 1, scale: 1, filter: "blur(0px)" },
+					exit: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
 				}}
 			>
 				<div className="relative flex h-full w-full flex-col">
