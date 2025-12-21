@@ -33,6 +33,8 @@ export type ConversationTimelineProps = Omit<
 
 const BOTTOM_THRESHOLD_PX = 12;
 const TOP_THRESHOLD_PX = 2;
+/** Grace period after mount where all scrolls are instant (avoids animation on first render) */
+const INITIAL_SCROLL_GRACE_MS = 300;
 
 function getLastItemKey(items: TimelineItemType[]): string | number | null {
 	if (items.length === 0) {
@@ -93,8 +95,8 @@ export const ConversationTimeline = (() => {
 				[ref, scrollMaskRef]
 			);
 
-			// Track if we've done the first scroll to bottom (for instant vs smooth scroll)
-			const hasInitiallyScrolled = React.useRef(false);
+			// Track mount time for grace period (instant scroll during initial load)
+			const mountTimeRef = React.useRef(Date.now());
 			const previousItemCount = React.useRef(items.length);
 			const previousLastItemKey = React.useRef<string | number | null>(
 				getLastItemKey(items)
@@ -135,19 +137,21 @@ export const ConversationTimeline = (() => {
 					lastItemKey !== null &&
 					lastItemKey !== previousLastItemKey.current;
 
+				const isWithinGracePeriod =
+					Date.now() - mountTimeRef.current < INITIAL_SCROLL_GRACE_MS;
+
 				const shouldSnapToBottom =
-					!hasInitiallyScrolled.current ||
+					isWithinGracePeriod ||
 					(itemsRemoved && isPinnedToBottom.current) ||
 					(appendedNewItem && isPinnedToBottom.current) ||
 					(replacedLastItem && isPinnedToBottom.current);
 
 				if (shouldSnapToBottom) {
-					// Instant scroll until first successful scroll, then smooth for new messages
-					if (hasInitiallyScrolled.current) {
-						element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
-					} else {
+					// Instant scroll during grace period, smooth scroll after
+					if (isWithinGracePeriod) {
 						element.scrollTop = element.scrollHeight;
-						hasInitiallyScrolled.current = true;
+					} else {
+						element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
 					}
 					isPinnedToBottom.current = true;
 					isAtTop.current = false;
