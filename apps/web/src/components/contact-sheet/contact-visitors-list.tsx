@@ -39,7 +39,7 @@ export function ContactVisitorsList({ visitors }: ContactVisitorsListProps) {
 							<span className="font-medium text-xs">{visitor.id}</span>
 							<Badge
 								className="text-[10px]"
-								variant={visitor.isBlocked ? "destructive" : "secondary"}
+								variant={visitor.isBlocked ? "destructive" : "success"}
 							>
 								{visitor.isBlocked ? "Blocked" : "Active"}
 							</Badge>

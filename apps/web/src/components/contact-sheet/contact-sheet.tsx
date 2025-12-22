@@ -90,63 +90,67 @@ function ContactSheetContent({
 		: [];
 
 	return (
-		<ScrollArea className="-mr-1.5 flex h-full flex-col gap-4 pr-2" scrollMask>
-			<div className="mt-4 px-2">
+		<>
+			<div className="sticky top-4 mt-4 px-2">
 				<ContactSheetHeader contact={contact} />
 			</div>
-
-			<div className="px-2">
-				<ValueGroup className="mt-0" header="Details">
-					{contact.externalId && (
+			<ScrollArea
+				className="-mr-1.5 flex h-full flex-col gap-4 pr-2"
+				scrollMask
+			>
+				<div className="px-2">
+					<ValueGroup className="mt-0" header="Details">
+						{contact.externalId && (
+							<ValueDisplay
+								title="External ID"
+								value={contact.externalId}
+								withPaddingLeft={false}
+							/>
+						)}
 						<ValueDisplay
-							title="External ID"
-							value={contact.externalId}
+							autoFormat
+							title="createdAt"
+							value={contact.createdAt}
 							withPaddingLeft={false}
 						/>
-					)}
-					<ValueDisplay
-						autoFormat
-						title="createdAt"
-						value={contact.createdAt}
-						withPaddingLeft={false}
-					/>
-					<ValueDisplay
-						autoFormat
-						title="updatedAt"
-						value={contact.updatedAt}
-						withPaddingLeft={false}
-					/>
-					{contact.contactOrganizationId && (
 						<ValueDisplay
-							title="Organization ID"
-							value={contact.contactOrganizationId}
+							autoFormat
+							title="updatedAt"
+							value={contact.updatedAt}
 							withPaddingLeft={false}
 						/>
-					)}
-				</ValueGroup>
+						{contact.contactOrganizationId && (
+							<ValueDisplay
+								title="Organization ID"
+								value={contact.contactOrganizationId}
+								withPaddingLeft={false}
+							/>
+						)}
+					</ValueGroup>
 
-				<ValueGroup header="Metadata">
-					{metadataEntries.length > 0 ? (
-						metadataEntries.map(([key, value]) => (
-							<ValueDisplay autoFormat key={key} title={key} value={value} />
-						))
-					) : (
-						<p className="text-primary/60 text-xs">
-							No metadata yet, see our{" "}
-							<Link
-								className="text-primary/60 underline hover:text-primary/80"
-								href="/docs/concepts/contacts#contact-metadata"
-							>
-								documentation
-							</Link>{" "}
-							to learn more.
-						</p>
-					)}
-				</ValueGroup>
-				<ContactVisitorsList visitors={visitors} />
-			</div>
+					<ValueGroup header="Metadata">
+						{metadataEntries.length > 0 ? (
+							metadataEntries.map(([key, value]) => (
+								<ValueDisplay autoFormat key={key} title={key} value={value} />
+							))
+						) : (
+							<p className="text-primary/60 text-xs">
+								No metadata yet, see our{" "}
+								<Link
+									className="text-primary/60 underline hover:text-primary/80"
+									href="/docs/concepts/contacts#contact-metadata"
+								>
+									documentation
+								</Link>{" "}
+								to learn more.
+							</p>
+						)}
+					</ValueGroup>
+					<ContactVisitorsList visitors={visitors} />
+				</div>
 
-			<div className="h-32 min-h-32" />
-		</ScrollArea>
+				<div className="h-32 min-h-32" />
+			</ScrollArea>
+		</>
 	);
 }

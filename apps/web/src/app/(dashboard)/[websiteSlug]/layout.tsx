@@ -10,6 +10,7 @@ import {
 	prefetch,
 	trpc,
 } from "@/lib/trpc/server";
+import { ModalsAndSheets } from "./overlays/modals-and-sheets";
 import { Realtime } from "./providers/realtime";
 import { DashboardWebSocketProvider } from "./providers/websocket";
 
@@ -86,6 +87,7 @@ export default async function Layout({ children, params }: LayoutProps) {
 								<div className="h-screen w-screen overflow-hidden bg-background-100 dark:bg-background">
 									<NavigationTopbar />
 									<CentralContainer>{children}</CentralContainer>
+									<ModalsAndSheets />
 								</div>
 							</InboxesProvider>
 						</Realtime>

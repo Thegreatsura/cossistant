@@ -2,7 +2,6 @@
 "use client";
 
 import type { RouterOutputs } from "@cossistant/api/types";
-import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
 import {
 	type Column,
@@ -16,8 +15,6 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { ArrowDown, ArrowUp, ArrowUpDown, Building2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-
-import { ContactSheet } from "@/components/contact-sheet";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,11 +34,7 @@ import {
 	useContactsTableControls,
 } from "@/contexts/contacts-table-controls";
 import { useVisitorPresence } from "@/contexts/visitor-presence";
-import {
-	formatFullDateTime,
-	formatLastSeenAt,
-	formatTimeAgo,
-} from "@/lib/date";
+import { formatFullDateTime, formatLastSeenAt } from "@/lib/date";
 import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import {
@@ -56,13 +49,10 @@ type ContactsPageContentProps = {
 
 type ContactRow = RouterOutputs["contact"]["list"]["items"][number];
 
-type ContactDetail = RouterOutputs["contact"]["get"];
-
 const ITEM_HEIGHT = 52;
 
 export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const trpc = useTRPC();
-	const queryNormalizer = useQueryNormalizer();
 	const tableContainerRef = useRef<HTMLDivElement>(null);
 	const {
 		searchTerm,
@@ -127,31 +117,8 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 		}
 	}, [page, totalPages]);
 
-	const contactPlaceholder = useMemo<ContactDetail | undefined>(() => {
-		if (!selectedContactId) {
-			return;
-		}
-
-		return queryNormalizer.getObjectById<ContactDetail>(selectedContactId);
-	}, [queryNormalizer, selectedContactId]);
-
-	const contactDetailQuery = useQuery({
-		...trpc.contact.get.queryOptions({
-			websiteSlug,
-			contactId: selectedContactId ?? "",
-		}),
-		enabled: isSheetOpen && Boolean(selectedContactId),
-		placeholderData: contactPlaceholder,
-	});
-
 	const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
 		setSorting(updater);
-	};
-
-	const handleOpenChange = (nextOpen: boolean) => {
-		if (!nextOpen) {
-			setSelectedContactId(null);
-		}
 	};
 
 	const handlePageChange = (nextPage: number) => {
@@ -166,64 +133,53 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 	const pageEnd = totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize);
 
 	return (
-		<>
-			<Page className="relative flex flex-col gap-6">
-				<ScrollArea
-					className="h-full px-2 pt-14 pb-32"
-					orientation="both"
-					ref={tableContainerRef}
-					scrollMask
-				>
-					<ContactsTable
-						data={contacts}
-						focusedIndex={focusedIndex}
-						isLoading={listQuery.isLoading}
-						onMouseEnter={handleMouseEnter}
-						onRowClick={handleSelectContact}
-						onSortingChange={handleSortingChange}
-						selectedContactId={selectedContactId}
-						sorting={sorting}
-					/>
-				</ScrollArea>
-				<div className="absolute right-0 bottom-0 left-0 flex h-14 w-full items-center justify-between gap-2 pr-3 pl-4">
-					<div className="text-muted-foreground text-sm">
-						{totalCount === 0
-							? "No contacts to display"
-							: `Showing ${pageStart}-${pageEnd} of ${totalCount} contacts`}
-					</div>
-					<div className="flex items-center gap-2">
-						<Button
-							disabled={page <= 1 || listQuery.isFetching}
-							onClick={() => handlePageChange(page - 1)}
-							size="sm"
-							variant="outline"
-						>
-							Previous
-						</Button>
-						<span className="font-medium text-sm">
-							{page} / {totalPages}
-						</span>
-						<Button
-							disabled={page >= totalPages || listQuery.isFetching}
-							onClick={() => handlePageChange(page + 1)}
-							size="sm"
-							variant="outline"
-						>
-							Next
-						</Button>
-					</div>
-				</div>
-			</Page>
-			{isSheetOpen && (
-				<ContactSheet
-					data={contactDetailQuery.data ?? null}
-					isError={contactDetailQuery.isError}
-					isLoading={contactDetailQuery.isFetching}
-					isOpen
-					onOpenChange={handleOpenChange}
+		<Page className="relative flex flex-col gap-6">
+			<ScrollArea
+				className="h-full px-2 pt-14 pb-32"
+				orientation="both"
+				ref={tableContainerRef}
+				scrollMask
+			>
+				<ContactsTable
+					data={contacts}
+					focusedIndex={focusedIndex}
+					isLoading={listQuery.isLoading}
+					onMouseEnter={handleMouseEnter}
+					onRowClick={handleSelectContact}
+					onSortingChange={handleSortingChange}
+					selectedContactId={selectedContactId}
+					sorting={sorting}
 				/>
-			)}
-		</>
+			</ScrollArea>
+			<div className="absolute right-0 bottom-0 left-0 flex h-14 w-full items-center justify-between gap-2 pr-3 pl-4">
+				<div className="text-muted-foreground text-sm">
+					{totalCount === 0
+						? "No contacts to display"
+						: `Showing ${pageStart}-${pageEnd} of ${totalCount} contacts`}
+				</div>
+				<div className="flex items-center gap-2">
+					<Button
+						disabled={page <= 1 || listQuery.isFetching}
+						onClick={() => handlePageChange(page - 1)}
+						size="sm"
+						variant="outline"
+					>
+						Previous
+					</Button>
+					<span className="font-medium text-sm">
+						{page} / {totalPages}
+					</span>
+					<Button
+						disabled={page >= totalPages || listQuery.isFetching}
+						onClick={() => handlePageChange(page + 1)}
+						size="sm"
+						variant="outline"
+					>
+						Next
+					</Button>
+				</div>
+			</div>
+		</Page>
 	);
 }
 

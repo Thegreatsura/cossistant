@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/nursery/noUnnecessaryConditions: ok here */
 import type { RouterOutputs } from "@api/trpc/types";
 import Link from "next/link";
+import { parseAsString, useQueryState } from "nuqs";
 import { useCallback } from "react";
 import { useConversationActionRunner } from "@/components/conversation/actions/use-conversation-action-runner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -27,6 +28,7 @@ export function VisitorSidebar({
 	conversationId,
 	visitorId,
 }: VisitorSidebarProps) {
+	const [, setContactId] = useQueryState("contact", parseAsString);
 	const visitorData = useVisitorData({ visitor });
 	const { unblockVisitor, pendingAction, runAction } =
 		useConversationActionRunner({
@@ -40,6 +42,12 @@ export function VisitorSidebar({
 			errorMessage: "Failed to unblock visitor",
 		});
 	}, [runAction, unblockVisitor]);
+
+	const handleContactClick = useCallback(() => {
+		if (visitor?.contact?.id) {
+			void setContactId(visitor.contact.id);
+		}
+	}, [visitor?.contact?.id, setContactId]);
 
 	if (isLoading || !visitor || !visitorData) {
 		return <VisitorSidebarPlaceholder />;
@@ -71,6 +79,7 @@ export function VisitorSidebar({
 					email={visitor.contact?.email}
 					fullName={fullName}
 					lastSeenAt={presence?.lastSeenAt ?? visitor.lastSeenAt}
+					onContactClick={handleContactClick}
 					status={presence?.status}
 				/>
 				<ScrollArea
