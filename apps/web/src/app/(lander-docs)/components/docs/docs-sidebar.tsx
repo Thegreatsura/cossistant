@@ -29,7 +29,7 @@ export function DocsSidebar({
 		>
 			<SidebarContent className="no-scrollbar px-0 pb-12">
 				<div className="h-(--top-spacing) shrink-0" />
-				{tree.children.map((item) => (
+				{tree.children.map((item: (typeof tree.children)[number]) => (
 					<SidebarGroup key={item.$id}>
 						<SidebarGroupLabel className="font-medium text-muted-foreground">
 							{item.name}
@@ -38,7 +38,7 @@ export function DocsSidebar({
 							{item.type === "folder" && (
 								<SidebarMenu className="gap-0.5">
 									{item.children.map(
-										(subItem) =>
+										(subItem: (typeof item.children)[number]) =>
 											subItem.type === "page" && (
 												<SidebarMenuItem key={subItem.url}>
 													<SidebarMenuButton

@@ -344,7 +344,8 @@ describe("conversationCreated handler", () => {
 					visitorId: "visitor-created",
 					websiteId: "site-created",
 					status: "open",
-					lastMessage: undefined,
+					deletedAt: null,
+					lastTimelineItem: undefined,
 				},
 				header: {
 					id: "conv-created",
@@ -375,6 +376,7 @@ describe("conversationCreated handler", () => {
 					lastMessageAt: null,
 					lastSeenAt: null,
 					lastTimelineItem: null,
+					lastMessageTimelineItem: null,
 					viewIds: [],
 					seenData: [],
 				},

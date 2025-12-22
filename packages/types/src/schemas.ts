@@ -31,6 +31,7 @@ export const conversationSchema = z.object({
 		])
 		.default(ConversationStatus.OPEN),
 	deletedAt: z.string().nullable().default(null),
+	visitorLastSeenAt: z.string().nullable().optional(),
 	lastTimelineItem: timelineItemSchema.optional(),
 });
 

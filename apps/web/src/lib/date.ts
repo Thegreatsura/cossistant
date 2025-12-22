@@ -24,9 +24,10 @@ export function formatTimeAgo(date: Date, now: Date = new Date()): string {
 		if (typeof navigator !== "undefined" && navigator.language) {
 			userLocale = navigator.language;
 			try {
-				uses12HourFormat = new Intl.DateTimeFormat(userLocale, {
-					hour: "numeric",
-				}).resolvedOptions().hour12;
+				uses12HourFormat =
+					new Intl.DateTimeFormat(userLocale, {
+						hour: "numeric",
+					}).resolvedOptions().hour12 ?? false;
 			} catch {
 				// Fallback to 24-hour format if locale resolution fails
 				uses12HourFormat = false;

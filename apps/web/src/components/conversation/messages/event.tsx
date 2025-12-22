@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@api/trpc/types";
 import type {
 	AvailableAIAgent,
 	AvailableHumanAgent,
@@ -10,12 +9,22 @@ import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import { buildTimelineEventDisplay } from "@/lib/timeline-events";
 
+// Minimal visitor type needed for timeline event display
+type MinimalVisitorForEvent = {
+	id: string;
+	contact?: {
+		name?: string | null;
+		email?: string | null;
+		image?: string | null;
+	} | null;
+};
+
 export type ConversationEventProps = {
 	event: TimelinePartEvent;
 	createdAt?: string;
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
-	visitor?: RouterOutputs["conversation"]["getVisitorById"] | null;
+	visitor?: MinimalVisitorForEvent | null;
 };
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({

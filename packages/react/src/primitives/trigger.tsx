@@ -2,6 +2,7 @@ import * as React from "react";
 import { useSupport } from "../provider";
 import { useTypingStore } from "../realtime/typing-store";
 import { useSupportConfig } from "../support";
+import { useTriggerRef } from "../support/context/positioning";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
@@ -73,6 +74,27 @@ export const SupportTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
 		const { isOpen, toggle } = useSupportConfig();
 		const { unreadCount, visitor } = useSupport();
 		const visitorId = visitor?.id ?? null;
+		const triggerRefContext = useTriggerRef();
+
+		// Extract setTriggerElement for stable dependency (state setter has stable identity)
+		const setTriggerElement = triggerRefContext?.setTriggerElement;
+
+		// Merge the external ref with the positioning context ref
+		// Using setTriggerElement directly ensures stable ref callback identity
+		const mergedRef = React.useCallback(
+			(element: HTMLButtonElement | null) => {
+				// Set the positioning context ref
+				setTriggerElement?.(element);
+
+				// Handle the forwarded ref
+				if (typeof ref === "function") {
+					ref(element);
+				} else if (ref) {
+					ref.current = element;
+				}
+			},
+			[ref, setTriggerElement]
+		);
 
 		const hasTyping = useTypingStore(
 			React.useCallback(
@@ -111,7 +133,7 @@ export const SupportTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
 				className,
 			},
 			{
-				ref,
+				ref: mergedRef,
 				state: renderProps,
 				props: {
 					type: "button",

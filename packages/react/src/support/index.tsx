@@ -14,7 +14,12 @@ import { type CustomPage, Page, Router } from "./router";
 import { initializeSupportStore } from "./store/support-store";
 import type { SupportLocale, SupportTextContentOverrides } from "./text";
 import { SupportTextProvider } from "./text";
-import type { Align, Side, TriggerRenderProps } from "./types";
+import type {
+	Align,
+	CollisionPadding,
+	Side,
+	TriggerRenderProps,
+} from "./types";
 
 // =============================================================================
 // Support Props
@@ -43,6 +48,19 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	 * @default 16
 	 */
 	sideOffset?: number;
+
+	/**
+	 * Enable automatic collision avoidance.
+	 * When true, the content repositions to stay within the viewport.
+	 * @default true
+	 */
+	avoidCollisions?: boolean;
+
+	/**
+	 * Padding from viewport edges when avoiding collisions.
+	 * @default 8
+	 */
+	collisionPadding?: CollisionPadding;
 
 	/**
 	 * Granular className overrides for specific parts.
@@ -188,6 +206,8 @@ function SupportComponent<Locale extends string = SupportLocale>({
 	side = "top",
 	align = "end",
 	sideOffset = 16,
+	avoidCollisions = true,
+	collisionPadding = 8,
 	classNames = {},
 	theme,
 	defaultOpen,
@@ -223,7 +243,9 @@ function SupportComponent<Locale extends string = SupportLocale>({
 	const contentElement = parsed.content ?? (
 		<Content
 			align={align}
+			avoidCollisions={avoidCollisions}
 			className={classNames.content}
+			collisionPadding={collisionPadding}
 			side={side}
 			sideOffset={sideOffset}
 		>
@@ -316,6 +338,17 @@ export type SupportContentProps = {
 	 * @default 16
 	 */
 	sideOffset?: number;
+	/**
+	 * Enable automatic collision avoidance.
+	 * When true, the content repositions to stay within the viewport.
+	 * @default true
+	 */
+	avoidCollisions?: boolean;
+	/**
+	 * Padding from viewport edges when avoiding collisions.
+	 * @default 8
+	 */
+	collisionPadding?: CollisionPadding;
 	children?: React.ReactNode;
 };
 
@@ -336,11 +369,15 @@ const SupportContent: React.FC<SupportContentProps> = ({
 	side = "top",
 	align = "end",
 	sideOffset = 16,
+	avoidCollisions = true,
+	collisionPadding = 8,
 	children,
 }) => (
 	<Content
 		align={align}
+		avoidCollisions={avoidCollisions}
 		className={className}
+		collisionPadding={collisionPadding}
 		side={side}
 		sideOffset={sideOffset}
 	>
@@ -512,6 +549,7 @@ export type { CustomPage } from "./router";
 // Types from ./types.ts
 export type {
 	Align,
+	CollisionPadding,
 	ContentProps,
 	RootProps,
 	Side,

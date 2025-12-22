@@ -49,7 +49,7 @@ type ApiKeyRecord = Awaited<
 type ApiKeyLike =
 	| ApiKeyRecord
 	| Awaited<ReturnType<typeof createApiKey>>
-	| Awaited<ReturnType<typeof revokeApiKey>>;
+	| NonNullable<Awaited<ReturnType<typeof revokeApiKey>>>;
 
 const toWebsiteApiKey = (
 	key: ApiKeyLike,

@@ -8,7 +8,9 @@ export type VisitorSidebarHeaderProps = {
 	avatarUrl?: string | null;
 	lastSeenAt?: string | null;
 	status?: VisitorPresenceEntry["status"];
-	contact?: RouterOutputs["conversation"]["getVisitorById"]["contact"];
+	contact?: NonNullable<
+		RouterOutputs["conversation"]["getVisitorById"]
+	>["contact"];
 };
 
 export function VisitorSidebarHeader({

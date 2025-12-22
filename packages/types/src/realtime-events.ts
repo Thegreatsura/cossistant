@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { visitorResponseSchema } from "./api/visitor";
-import { ConversationTimelineType, TimelineItemVisibility } from "./enums";
+import {
+	ConversationEventType,
+	ConversationTimelineType,
+	TimelineItemVisibility,
+} from "./enums";
 import { conversationSchema } from "./schemas";
 import { conversationHeaderSchema } from "./trpc/conversation";
 
@@ -79,6 +83,40 @@ export const realtimeSchema = {
 	visitorIdentified: baseRealtimeEvent.extend({
 		visitorId: z.string(),
 		visitor: visitorResponseSchema,
+	}),
+	conversationEventCreated: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		aiAgentId: z.string().nullable(),
+		event: z.object({
+			id: z.string(),
+			conversationId: z.string(),
+			organizationId: z.string(),
+			type: z.enum([
+				ConversationEventType.ASSIGNED,
+				ConversationEventType.UNASSIGNED,
+				ConversationEventType.PARTICIPANT_REQUESTED,
+				ConversationEventType.PARTICIPANT_JOINED,
+				ConversationEventType.PARTICIPANT_LEFT,
+				ConversationEventType.STATUS_CHANGED,
+				ConversationEventType.PRIORITY_CHANGED,
+				ConversationEventType.TAG_ADDED,
+				ConversationEventType.TAG_REMOVED,
+				ConversationEventType.RESOLVED,
+				ConversationEventType.REOPENED,
+				ConversationEventType.VISITOR_BLOCKED,
+				ConversationEventType.VISITOR_UNBLOCKED,
+				ConversationEventType.VISITOR_IDENTIFIED,
+			]),
+			actorUserId: z.string().nullable(),
+			actorAiAgentId: z.string().nullable(),
+			targetUserId: z.string().nullable(),
+			targetAiAgentId: z.string().nullable(),
+			message: z.string().nullable(),
+			metadata: z.record(z.string(), z.unknown()).nullable(),
+			createdAt: z.string(),
+			updatedAt: z.string(),
+			deletedAt: z.string().nullable(),
+		}),
 	}),
 } as const;
 

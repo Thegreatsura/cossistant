@@ -28,6 +28,9 @@ function findLatestTimelineItem(
 
 	for (let pageIndex = data.pages.length - 1; pageIndex >= 0; pageIndex--) {
 		const page = data.pages[pageIndex];
+		if (!page) {
+			continue;
+		}
 
 		for (let itemIndex = page.items.length - 1; itemIndex >= 0; itemIndex--) {
 			const item = page.items[itemIndex];

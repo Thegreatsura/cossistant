@@ -127,6 +127,19 @@ export type PgTimestampISOStringBuilderInitial<TName extends string> =
 		columnType: "PgTimestampISOString";
 	};
 
+/**
+ * Factory function for creating a `isoTimestamp` column.
+ *
+ * This is the public-facing function that developers will use in their schema definitions.
+ * It intelligently delegates to either our custom builder or Drizzle's default `timestamp`
+ * builder based on the specified `mode`.
+ *
+ * By default, it uses `mode: 'string'` to return ISO 8601 formatted strings.
+ * To use Date objects instead, explicitly pass `{ mode: 'date' }` in the config.
+ *
+ * @param a The column name (string) or a config object.
+ * @param b The config object if the name was provided as the first argument.
+ */
 export function isoTimestamp(): PgTimestampISOStringBuilderInitial<"">;
 export function isoTimestamp<TMode extends PgTimestampConfig["mode"] & {}>(
 	config?: PgTimestampConfig<TMode>
@@ -142,24 +155,13 @@ export function isoTimestamp<
 ): Equal<TMode, "date"> extends true
 	? PgTimestampBuilderInitial<TName>
 	: PgTimestampISOStringBuilderInitial<TName>;
-/**
- * Factory function for creating a `isoTimestamp` column.
- *
- * This is the public-facing function that developers will use in their schema definitions.
- * It intelligently delegates to either our custom builder or Drizzle's default `timestamp`
- * builder based on the specified `mode`.
- *
- * By default, it uses `mode: 'string'` to return ISO 8601 formatted strings.
- * To use Date objects instead, explicitly pass `{ mode: 'date' }` in the config.
- *
- * @param a The column name (string) or a config object.
- * @param b The config object if the name was provided as the first argument.
- */
-export function isoTimestamp(
-	a?: string | PgTimestampConfig,
-	b: PgTimestampConfig = {}
-) {
-	const { name, config } = getColumnNameAndConfig(a, b);
+export function isoTimestamp<TName extends string>(
+	a?: TName | PgTimestampConfig,
+	b?: PgTimestampConfig
+):
+	| PgTimestampISOStringBuilderInitial<TName>
+	| PgTimestampBuilderInitial<TName> {
+	const { name, config } = getColumnNameAndConfig(a, b ?? {});
 
 	// Default to 'string' mode if not explicitly specified
 	const mode = config?.mode ?? "string";
@@ -170,12 +172,12 @@ export function isoTimestamp(
 			name,
 			config?.withTimezone ?? false,
 			config?.precision
-		);
+		) as unknown as PgTimestampISOStringBuilderInitial<TName>;
 	}
 
 	// For any other mode (e.g., 'date'), we fall back to Drizzle's
 	// original, unmodified `timestamp` factory function.
-	return timestamp(name, config);
+	return timestamp(name, config) as PgTimestampBuilderInitial<TName>;
 }
 
 /**

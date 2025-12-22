@@ -11,6 +11,7 @@ import {
 	anonymous,
 	organization as organizationPlugin,
 } from "better-auth/plugins";
+import type { BetterAuthPlugin } from "better-auth/types";
 import React from "react";
 import polarClient from "./polar";
 
@@ -124,11 +125,12 @@ export const auth = betterAuth({
 		}),
 		anonymous(),
 		admin(),
+		// Type assertion needed due to version mismatch between @polar-sh/better-auth and better-auth
 		polar({
 			client: polarClient,
 			createCustomerOnSignUp: false,
 			use: [portal(), usage()],
-		}),
+		}) as unknown as BetterAuthPlugin,
 	],
 	// Allow requests from the frontend development server and production domains
 	trustedOrigins: [
@@ -144,12 +146,12 @@ export const auth = betterAuth({
 		google: {
 			clientId: env.GOOGLE_CLIENT_ID,
 			clientSecret: env.GOOGLE_CLIENT_SECRET,
-			scopes: ["openid", "email", "profile"],
+			scope: ["openid", "email", "profile"],
 		},
 		github: {
 			clientId: env.GITHUB_CLIENT_ID,
 			clientSecret: env.GITHUB_CLIENT_SECRET,
-			scopes: ["user:email", "read:user"],
+			scope: ["user:email", "read:user"],
 		},
 	},
 	advanced: {

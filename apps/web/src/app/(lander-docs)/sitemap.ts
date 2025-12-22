@@ -23,19 +23,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			changeFrequency: "monthly",
 			priority: 0.9,
 		},
-		...source.getPages().flatMap((page) => {
-			if (page.data.type === "openapi") {
-				return [];
-			}
+		...source
+			.getPages()
+			.flatMap((page: ReturnType<typeof source.getPages>[number]) => {
+				if ((page.data as { type?: string }).type === "openapi") {
+					return [];
+				}
 
-			const { lastModified } = page.data;
+				const { lastModified } = page.data as { lastModified?: string };
 
-			return {
-				url: url(page.url),
-				lastModified: lastModified ? new Date(lastModified) : undefined,
-				changeFrequency: "weekly",
-				priority: 0.5,
-			} as MetadataRoute.Sitemap[number];
-		}),
+				return {
+					url: url(page.url),
+					lastModified: lastModified ? new Date(lastModified) : undefined,
+					changeFrequency: "weekly",
+					priority: 0.5,
+				} as MetadataRoute.Sitemap[number];
+			}),
 	];
 }

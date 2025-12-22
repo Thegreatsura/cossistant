@@ -103,8 +103,10 @@ export function FakeConversationListItem({
 				focused={focused}
 				hasUnreadMessage={hasUnreadMessage}
 				isTyping={isTyping}
-				lastMessageCreatedAt={lastTimelineItemCreatedAt}
-				lastMessageText={lastTimelineItem?.text ?? ""}
+				lastTimelineContent={
+					<span className="truncate">{lastTimelineItem?.text ?? ""}</span>
+				}
+				lastTimelineItemCreatedAt={lastTimelineItemCreatedAt}
 				visitorAvatarUrl={conversation.visitor?.contact?.image ?? null}
 				visitorLastSeenAt={conversation.visitor?.lastSeenAt ?? null}
 				visitorName={visitorName}

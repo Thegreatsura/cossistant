@@ -76,14 +76,7 @@ export type ListConversationsRequest = z.infer<
 
 export const listConversationsResponseSchema = z
 	.object({
-		conversations: z.array(
-			conversationSchema.extend({
-				visitorLastSeenAt: z.string().nullable().openapi({
-					description:
-						"Timestamp when the visitor last saw this conversation, or null if never seen",
-				}),
-			})
-		),
+		conversations: z.array(conversationSchema),
 		pagination: z.object({
 			page: z.number(),
 			limit: z.number(),

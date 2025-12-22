@@ -136,7 +136,7 @@ export const DefaultTrigger: React.FC<DefaultTriggerProps> = ({
 		{({ isOpen, unreadCount, isTyping }: TriggerRenderProps) => (
 			<motion.button
 				className={cn(
-					"relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
+					"relative z-[9999] flex size-14 cursor-pointer items-center justify-center rounded-full bg-co-primary text-co-primary-foreground transition-colors hover:bg-co-primary/90 data-[open=true]:bg-co-primary/90",
 					className
 				)}
 				data-open={isOpen}

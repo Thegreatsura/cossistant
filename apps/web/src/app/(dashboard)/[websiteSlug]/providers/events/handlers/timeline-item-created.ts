@@ -128,7 +128,9 @@ export const handleMessageCreated = ({
 		return;
 	}
 
-	const headerUpdater = createHeaderUpdaterFromTimelineItem(item);
+	const headerUpdater = createHeaderUpdaterFromTimelineItem(
+		item as TimelineItem
+	);
 
 	forEachConversationHeadersQuery(
 		queryClient,

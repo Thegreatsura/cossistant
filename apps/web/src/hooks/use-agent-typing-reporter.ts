@@ -1,3 +1,5 @@
+import { useRealtimeConnection } from "@cossistant/next/realtime";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { useTRPC } from "@/lib/trpc/client";
@@ -33,6 +35,10 @@ export function useAgentTypingReporter({
 		null
 	);
 
+	// Get WebSocket connection for real-time typing events
+	const { send: realtimeSend, isConnected: isRealtimeConnected } =
+		useRealtimeConnection();
+
 	const { mutateAsync: sendTypingMutation } = useMutation(
 		trpc.conversation.setTyping.mutationOptions()
 	);
@@ -57,6 +63,35 @@ export function useAgentTypingReporter({
 				return;
 			}
 
+			// Try WebSocket first if connected
+			if (realtimeSend && isRealtimeConnected) {
+				try {
+					const event: AnyRealtimeEvent = {
+						type: "conversationTyping",
+						payload: {
+							conversationId,
+							isTyping,
+							visitorPreview: null, // Agents don't send previews
+							// These will be enriched by the server with the actual values
+							websiteId: "",
+							organizationId: "",
+							visitorId: null,
+							userId: null,
+							aiAgentId: null,
+						},
+					};
+					realtimeSend(event);
+					return;
+				} catch (error) {
+					// WebSocket send failed, fall through to TRPC
+					console.warn(
+						"[Dashboard] WebSocket typing send failed, falling back to TRPC",
+						error
+					);
+				}
+			}
+
+			// Fall back to TRPC
 			try {
 				await sendTypingMutation({
 					conversationId,
@@ -67,7 +102,14 @@ export function useAgentTypingReporter({
 				console.error("[Dashboard] Failed to send typing event", error);
 			}
 		},
-		[enabled, conversationId, websiteSlug, sendTypingMutation]
+		[
+			enabled,
+			conversationId,
+			websiteSlug,
+			realtimeSend,
+			isRealtimeConnected,
+			sendTypingMutation,
+		]
 	);
 
 	const scheduleKeepAlive = useCallback(() => {

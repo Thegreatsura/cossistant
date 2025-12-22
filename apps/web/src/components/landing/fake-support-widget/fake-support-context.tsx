@@ -15,7 +15,12 @@ const MARC_VISITOR_ID = "01JGVIS22222222222222222";
 const fakeWebsite: PublicWebsiteResponse = {
 	id: "01JGWEB11111111111111111",
 	name: "Cossistant",
+	domain: "cossistant.com",
+	description: "AI-powered customer support",
+	logoUrl: null,
 	organizationId: "01JGORG11111111111111111",
+	status: "active",
+	lastOnlineAt: new Date().toISOString(),
 	visitor: {
 		id: MARC_VISITOR_ID,
 		isBlocked: false,

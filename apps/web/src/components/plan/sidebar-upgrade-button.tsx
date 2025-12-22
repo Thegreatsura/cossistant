@@ -12,6 +12,22 @@ type SidebarUpgradeButtonProps = {
 	planInfo: PlanInfo;
 };
 
+// FeatureValue can be boolean, number, or null
+// - true or null means unlimited
+// - false means disabled (0)
+// - number is the actual limit
+type FeatureLimit = number | boolean | null;
+
+function normalizeLimit(limit: FeatureLimit): number | null {
+	if (limit === true || limit === null) {
+		return null;
+	}
+	if (limit === false) {
+		return 0;
+	}
+	return limit;
+}
+
 function getClosestLimit(
 	plan: PlanInfo["plan"],
 	usage: PlanInfo["usage"]
@@ -24,7 +40,7 @@ function getClosestLimit(
 	const limits: Array<{
 		label: string;
 		current: number;
-		limit: number | null;
+		limit: FeatureLimit;
 	}> = [
 		{
 			label: "Conversations",
@@ -50,16 +66,19 @@ function getClosestLimit(
 
 	// Filter out unlimited limits and calculate percentages
 	const withPercentages = limits
-		.filter((item) => item.limit !== null && item.limit > 0)
+		.map((item) => ({ ...item, limit: normalizeLimit(item.limit) }))
+		.filter(
+			(item): item is typeof item & { limit: number } =>
+				item.limit !== null && item.limit > 0
+		)
 		.map((item) => ({
 			...item,
-			limit: item.limit as number,
-			percentage: (item.current / (item.limit as number)) * 100,
+			percentage: (item.current / item.limit) * 100,
 		}))
 		.sort((a, b) => b.percentage - a.percentage);
 
 	// Return the closest to limit
-	return withPercentages[0] || null;
+	return withPercentages[0] ?? null;
 }
 
 export function SidebarUpgradeButton({

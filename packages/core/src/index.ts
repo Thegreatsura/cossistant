@@ -69,6 +69,15 @@ export {
 } from "./store/website-store";
 // Core-specific exports
 export { CossistantAPIError } from "./types";
+export type { TypingReporter, TypingReporterConfig } from "./typing-reporter";
+// Typing reporter shared logic
+export {
+	createTypingReporter,
+	TYPING_KEEP_ALIVE_MS,
+	TYPING_PREVIEW_MAX_LENGTH,
+	TYPING_SEND_INTERVAL_MS,
+	TYPING_STOP_DELAY_MS,
+} from "./typing-reporter";
 // Upload constants and utilities
 export {
 	ALLOWED_FILE_TYPES_DESCRIPTION,

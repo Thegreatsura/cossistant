@@ -14,66 +14,77 @@ Primitives are **headless UI components** that give you complete control over st
 
 Use primitives when you need **complete control** over the support experience.
 
+## Import
+
+Access primitives via the `Primitives` namespace:
+
+```tsx
+import { Primitives } from "@cossistant/react";
+
+// Use individual primitives
+<Primitives.Trigger>...</Primitives.Trigger>
+<Primitives.Window>...</Primitives.Window>
+<Primitives.Avatar>...</Primitives.Avatar>
+```
+
+Or import the namespace with an alias:
+
+```tsx
+import { Primitives as P } from "@cossistant/react";
+
+<P.Trigger>...</P.Trigger>
+```
+
 ## Quick Example
 
 ```tsx
-import * as Primitive from "@cossistant/react/primitives";
+import { Primitives, useSupportConfig } from "@cossistant/react";
 
-<Primitive.PageRegistryProvider>
-  <Primitive.Page name="HOME" component={HomePage} />
-  <Primitive.Page name="SETTINGS" component={SettingsPage} />
+function CustomWidget() {
+  const { isOpen, toggle } = useSupportConfig();
 
-  <Primitive.Window>
-    {({ isOpen, close }) => (
-      <div className="fixed inset-0 bg-black/50">
-        <Primitive.Router page={currentPage} params={params} />
-      </div>
-    )}
-  </Primitive.Window>
+  return (
+    <>
+      <Primitives.Trigger>
+        {({ toggle, unreadCount }) => (
+          <button onClick={toggle} type="button">
+            {unreadCount > 0 ? `Help (${unreadCount})` : "Help"}
+          </button>
+        )}
+      </Primitives.Trigger>
 
-  <Primitive.Trigger>
-    {({ toggle }) => (
-      <button onClick={toggle} type="button">Open Chat</button>
-    )}
-  </Primitive.Trigger>
-</Primitive.PageRegistryProvider>
+      <Primitives.Window>
+        {({ isOpen, close }) => (
+          isOpen && (
+            <div className="fixed bottom-20 right-4 w-96 bg-white rounded-lg shadow-xl">
+              <button onClick={close} type="button">×</button>
+              <p>Custom support content</p>
+            </div>
+          )
+        )}
+      </Primitives.Window>
+    </>
+  );
+}
 ```
 
 ## Primitives Reference
 
-### Layout & Structure
+### Core Components
 
-**`<PageRegistryProvider>`**
+**`<Trigger>`**
 
-Context provider for declarative page registration. Wrap your app to enable `<Page>` and `<Router>`.
-
-```tsx
-<PageRegistryProvider>
-  <Page name="HOME" component={HomePage} />
-  <Router page={currentPage} />
-</PageRegistryProvider>
-```
-
-**`<Router>`**
-
-Generic router that renders registered pages.
+Trigger button with widget state. Can be placed anywhere in the DOM.
 
 ```tsx
-<Router
-  page={currentPage}        // Current page name
-  params={params}           // Params to pass
-  fallback={NotFoundPage}   // Optional fallback
->
-  <Page name="HOME" component={HomePage} />
-</Router>
-```
-
-**`<Page>`**
-
-Declaratively register a page component.
-
-```tsx
-<Page name="SETTINGS" component={SettingsPage} />
+<Primitives.Trigger>
+  {({ isOpen, unreadCount, isTyping, toggle }) => (
+    <button onClick={toggle} type="button">
+      {isOpen ? "×" : "💬"}
+      {unreadCount > 0 && <span>{unreadCount}</span>}
+    </button>
+  )}
+</Primitives.Trigger>
 ```
 
 **`<Window>`**
@@ -81,41 +92,36 @@ Declaratively register a page component.
 Dialog container with open/close state and escape key handling.
 
 ```tsx
-<Window isOpen={isOpen} onOpenChange={setOpen}>
+<Primitives.Window>
   {({ isOpen, close }) => (
-    <div>
-      {isOpen && <p>Dialog content</p>}
-      <button onClick={close} type="button">Close</button>
-    </div>
+    isOpen && (
+      <div className="fixed inset-0 bg-black/50">
+        <div className="bg-white p-4 rounded">
+          <button onClick={close} type="button">Close</button>
+          <p>Window content</p>
+        </div>
+      </div>
+    )
   )}
-</Window>
-```
-
-**`<Trigger>`**
-
-Trigger button with widget state. Can be placed anywhere in the DOM.
-
-```tsx
-<Trigger>
-  {({ isOpen, unreadCount, isTyping, toggle }) => (
-    <button onClick={toggle} type="button">
-      {isOpen ? "×" : "💬"}
-      {unreadCount > 0 && <span>{unreadCount}</span>}
-    </button>
-  )}
-</Trigger>
+</Primitives.Window>
 ```
 
 ### Timeline & Messages
 
 **`<ConversationTimeline>`**
 
-Message timeline with automatic scrolling and loading states.
+Message timeline container with automatic scrolling and loading states.
 
 ```tsx
-<ConversationTimeline items={messages} isLoading={loading}>
-  {(item) => <TimelineItem item={item} />}
-</ConversationTimeline>
+<Primitives.ConversationTimeline>
+  <Primitives.ConversationTimelineLoading />
+  <Primitives.ConversationTimelineEmpty />
+  <Primitives.ConversationTimelineContainer>
+    {messages.map(msg => (
+      <Primitives.TimelineItem key={msg.id} />
+    ))}
+  </Primitives.ConversationTimelineContainer>
+</Primitives.ConversationTimeline>
 ```
 
 **`<TimelineItem>`**
@@ -123,10 +129,14 @@ Message timeline with automatic scrolling and loading states.
 Individual message or event in the timeline.
 
 ```tsx
-<TimelineItem>
-  <TimelineItemContent>{message.text}</TimelineItemContent>
-  <TimelineItemTimestamp>{message.createdAt}</TimelineItemTimestamp>
-</TimelineItem>
+<Primitives.TimelineItem>
+  <Primitives.TimelineItemContent>
+    {message.text}
+  </Primitives.TimelineItemContent>
+  <Primitives.TimelineItemTimestamp>
+    {message.createdAt}
+  </Primitives.TimelineItemTimestamp>
+</Primitives.TimelineItem>
 ```
 
 **`<TimelineItemGroup>`**
@@ -134,15 +144,17 @@ Individual message or event in the timeline.
 Group consecutive messages by the same sender.
 
 ```tsx
-<TimelineItemGroup>
-  <TimelineItemGroupHeader>
-    <TimelineItemGroupAvatar src={user.image} />
+<Primitives.TimelineItemGroup>
+  <Primitives.TimelineItemGroupHeader>
+    <Primitives.TimelineItemGroupAvatar src={user.image} />
     <span>{user.name}</span>
-  </TimelineItemGroupHeader>
-  <TimelineItemGroupContent>
-    {messages.map(msg => <TimelineItem key={msg.id} {...msg} />)}
-  </TimelineItemGroupContent>
-</TimelineItemGroup>
+  </Primitives.TimelineItemGroupHeader>
+  <Primitives.TimelineItemGroupContent>
+    {messages.map(msg => (
+      <Primitives.TimelineItem key={msg.id} />
+    ))}
+  </Primitives.TimelineItemGroupContent>
+</Primitives.TimelineItemGroup>
 ```
 
 ### Input & Interaction
@@ -152,7 +164,7 @@ Group consecutive messages by the same sender.
 Rich text input with file upload support.
 
 ```tsx
-<MultimodalInput
+<Primitives.MultimodalInput
   value={text}
   onChange={setText}
   onSubmit={handleSend}
@@ -165,7 +177,7 @@ Rich text input with file upload support.
 File upload component with drag-and-drop.
 
 ```tsx
-<FileInput
+<Primitives.FileInput
   onFilesSelected={handleFiles}
   accept="image/*,application/pdf"
   maxFiles={5}
@@ -174,12 +186,12 @@ File upload component with drag-and-drop.
 
 **`<Button>`**
 
-Accessible button with variants.
+Accessible button primitive.
 
 ```tsx
-<Button variant="primary" size="large" onClick={handleClick}>
-  Click me
-</Button>
+<Primitives.Button onClick={handleClick}>
+  Send Message
+</Primitives.Button>
 ```
 
 ### Visual
@@ -189,18 +201,18 @@ Accessible button with variants.
 User avatar with image and fallback.
 
 ```tsx
-<Avatar>
-  <AvatarImage src={user.image} alt={user.name} />
-  <AvatarFallback>{user.initials}</AvatarFallback>
-</Avatar>
+<Primitives.Avatar>
+  <Primitives.AvatarImage src={user.image} alt={user.name} />
+  <Primitives.AvatarFallback>{user.initials}</Primitives.AvatarFallback>
+</Primitives.Avatar>
 ```
 
 **`<TypingIndicator>`**
 
-Animated typing indicator.
+Animated typing indicator showing who's typing.
 
 ```tsx
-<TypingIndicator
+<Primitives.TypingIndicator
   participants={[
     { id: "1", name: "Alice", type: "user" }
   ]}
@@ -214,56 +226,38 @@ Animated typing indicator.
 Configure widget behavior per route or page.
 
 ```tsx
-<Config
+<Primitives.Config
   quickOptions={["Pricing", "Features", "Support"]}
-  defaultMessages={[{ text: "Hi! How can we help?" }]}
+  defaultMessages={[
+    { content: "Hi! How can we help?", senderType: "ai" }
+  ]}
 />
 ```
 
-## Building from Scratch
+## Available Hooks
 
-Create a completely custom support experience:
+Use these hooks alongside primitives for complete control:
 
 ```tsx
-import * as Primitive from "@cossistant/react/primitives";
-import { useSupportStore } from "@cossistant/react";
+import { useSupportConfig, useSupportNavigation, useSupport } from "@cossistant/react";
+```
 
-export function CustomSupport() {
-  const { isOpen, toggle } = useSupportStore();
-  const [page, setPage] = useState("HOME");
+**`useSupportConfig()`** - Widget open/close state
 
-  return (
-    <Primitive.PageRegistryProvider>
-      <Primitive.Page name="HOME" component={CustomHomePage} />
-      <Primitive.Page name="CHAT" component={CustomChatPage} />
+```tsx
+const { isOpen, toggle, open, close } = useSupportConfig();
+```
 
-      {/* Custom trigger */}
-      <Primitive.Trigger>
-        {({ toggle, unreadCount }) => (
-          <button
-            onClick={toggle}
-            className="fixed bottom-4 right-4 rounded-full bg-blue-600 p-4"
-            type="button"
-          >
-            💬 {unreadCount > 0 && `(${unreadCount})`}
-          </button>
-        )}
-      </Primitive.Trigger>
+**`useSupportNavigation()`** - Page navigation
 
-      {/* Custom window */}
-      <Primitive.Window isOpen={isOpen}>
-        {({ close }) => (
-          <div className="fixed inset-0 flex items-end justify-end p-4">
-            <div className="w-96 h-[600px] bg-white rounded-lg shadow-xl">
-              <button onClick={close} type="button">×</button>
-              <Primitive.Router page={page} fallback={CustomHomePage} />
-            </div>
-          </div>
-        )}
-      </Primitive.Window>
-    </Primitive.PageRegistryProvider>
-  );
-}
+```tsx
+const { navigate, goBack, canGoBack, page, params } = useSupportNavigation();
+```
+
+**`useSupport()`** - Full support context
+
+```tsx
+const { visitor, website, client, unreadCount } = useSupport();
 ```
 
 ## TriggerRenderProps
@@ -279,12 +273,68 @@ type TriggerRenderProps = {
 };
 ```
 
+## Building from Scratch
+
+Create a completely custom support experience:
+
+```tsx
+import { Primitives, SupportProvider, useSupportConfig } from "@cossistant/react";
+import { useState } from "react";
+
+function CustomSupport() {
+  const { isOpen } = useSupportConfig();
+
+  return (
+    <>
+      {/* Custom trigger */}
+      <Primitives.Trigger>
+        {({ toggle, unreadCount }) => (
+          <button
+            onClick={toggle}
+            className="fixed bottom-4 right-4 rounded-full bg-blue-600 p-4 text-white"
+            type="button"
+          >
+            💬 {unreadCount > 0 && `(${unreadCount})`}
+          </button>
+        )}
+      </Primitives.Trigger>
+
+      {/* Custom window */}
+      <Primitives.Window>
+        {({ close }) => (
+          isOpen && (
+            <div className="fixed bottom-20 right-4 w-96 h-[500px] bg-white rounded-lg shadow-xl border">
+              <header className="flex items-center justify-between p-4 border-b">
+                <h2>Support</h2>
+                <button onClick={close} type="button">×</button>
+              </header>
+              <div className="p-4">
+                <p>Your custom support content here</p>
+              </div>
+            </div>
+          )
+        )}
+      </Primitives.Window>
+    </>
+  );
+}
+
+// Wrap with provider
+export function App() {
+  return (
+    <SupportProvider apiKey="pk_xxx">
+      <CustomSupport />
+    </SupportProvider>
+  );
+}
+```
+
 ## Why Primitives?
 
 **Full control.** No opinionated styles or structure—build exactly what you need.
 
 **Type-safe.** All primitives are fully typed with TypeScript.
 
-**Framework-agnostic patterns.** Principles work in any React environment.
+**Framework-agnostic patterns.** Works in any React environment.
 
 Use the `<Support />` component for quick setup. Use primitives when you need **complete freedom**.

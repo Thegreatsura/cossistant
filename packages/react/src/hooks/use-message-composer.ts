@@ -1,5 +1,6 @@
 import type { CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import { useCallback, useEffect } from "react";
 import {
 	type UseMultimodalInputOptions,
@@ -49,6 +50,17 @@ export type UseMessageComposerOptions = {
 		UseMultimodalInputOptions,
 		"maxFileSize" | "maxFiles" | "allowedFileTypes"
 	>;
+
+	/**
+	 * Optional WebSocket send function for real-time typing events.
+	 * When provided, typing indicators are sent via WebSocket for better performance.
+	 */
+	realtimeSend?: ((event: AnyRealtimeEvent) => void) | null;
+
+	/**
+	 * Whether the WebSocket connection is currently established.
+	 */
+	isRealtimeConnected?: boolean;
 };
 
 export type UseMessageComposerReturn = {
@@ -115,6 +127,8 @@ export function useMessageComposer(
 		onMessageSent,
 		onError,
 		fileOptions,
+		realtimeSend,
+		isRealtimeConnected = false,
 	} = options;
 
 	const sendMessage = useSendMessage({ client });
@@ -126,6 +140,8 @@ export function useMessageComposer(
 	} = useVisitorTypingReporter({
 		client,
 		conversationId,
+		realtimeSend,
+		isRealtimeConnected,
 	});
 
 	const multimodalInput = useMultimodalInput({
