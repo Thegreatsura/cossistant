@@ -11,7 +11,7 @@ import { LandingTriggerContent } from "./custom-trigger";
 export function LandingSupportTrigger() {
 	return (
 		<Support>
-			<Support.Trigger className="fixed right-4 bottom-4 z-[9999] flex size-14 cursor-pointer items-center justify-center rounded-full bg-cossistant-orange text-primary-foreground transition-colors">
+			<Support.Trigger className="fixed right-4 bottom-4 z-[9999] flex size-14 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors">
 				{(props) => <LandingTriggerContent {...props} />}
 			</Support.Trigger>
 		</Support>

@@ -115,7 +115,7 @@ const UnreadBadge = ({
 // =============================================================================
 
 /**
- * Content for the landing page trigger (orange circular button with logo).
+ * Content for the landing page trigger (primary circular button with logo).
  */
 export const LandingTriggerContent = ({
 	isOpen,
@@ -156,7 +156,7 @@ export const DashboardTriggerContent = ({
 		/>
 		<span className="font-medium text-xs">Need help?</span>
 		<UnreadBadge
-			className="-top-1 -right-1 bg-co-orange outline-1 outline-background"
+			className="-top-1 -right-1 bg-primary outline-1 outline-background"
 			count={unreadCount}
 		/>
 	</>

@@ -96,7 +96,7 @@ export function LogoEyesTracking({ className }: Props) {
 			{/* Eyes tracking logo */}
 			<motion.svg
 				animate={{ opacity: isClose ? 0 : 1 }}
-				className={cn(className, "text-cossistant-orange")}
+				className={cn(className, "text-primary")}
 				fill="none"
 				height="96"
 				ref={svgRef}

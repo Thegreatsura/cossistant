@@ -1,11 +1,16 @@
 ---
 title: Hooks
-description: Programmatic access to support widget state and visitor management.
+description: Programmatic access to support widget state, navigation, visitor management, and more.
 ---
 
 ## Overview
 
-Cossistant provides React hooks for programmatic control over the support widget and visitor identification. These hooks are ideal when you need to integrate support functionality into custom components or respond to application events.
+Cossistant provides React hooks for programmatic control over every aspect of the support widget. These hooks follow a layered architecture:
+
+- **Core hooks** (`useSupport`, `useVisitor`) - Primary integration points
+- **Widget state hooks** (`useSupportConfig`, `useSupportNavigation`) - Control widget behavior
+- **Page hooks** (`useHomePage`, `useConversationPage`) - Build custom pages
+- **Utility hooks** (`useFileUpload`, `useMessageComposer`) - Compose functionality
 
 ## useSupport
 
@@ -282,6 +287,715 @@ export function UpgradeButton() {
     Server Components.
   </AlertDescription>
 </Alert>
+
+## useSupportConfig
+
+Access and control widget visibility and size configuration.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/custom-toggle.tsx"
+"use client";
+
+import { useSupportConfig } from "@cossistant/react/support";
+
+export function CustomToggle() {
+  const { isOpen, open, close, toggle, size } = useSupportConfig();
+
+  return (
+    <div className="flex gap-2">
+      <button onClick={toggle}>
+        {isOpen ? "Close Support" : "Open Support"}
+      </button>
+      <span>Size: {size}</span>
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    isOpen: {
+      description: "Whether the support widget is currently open",
+      type: "boolean",
+      required: true,
+    },
+    size: {
+      description: "Current widget size configuration",
+      type: '"normal" | "larger"',
+      required: true,
+    },
+    open: {
+      description: "Function to open the widget",
+      type: "() => void",
+      required: true,
+    },
+    close: {
+      description: "Function to close the widget",
+      type: "() => void",
+      required: true,
+    },
+    toggle: {
+      description: "Function to toggle widget open/closed",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
+
+<Alert variant="info" className="mt-6">
+  <Icon name="info" className="size-4" />
+  <AlertTitle>Controlled mode support</AlertTitle>
+  <AlertDescription>
+    When using controlled mode (`open` and `onOpenChange` props on Support), these functions
+    will call `onOpenChange` instead of modifying internal state.
+  </AlertDescription>
+</Alert>
+
+## useSupportNavigation
+
+Access navigation state and routing methods for the widget.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/navigation-buttons.tsx"
+"use client";
+
+import { useSupportNavigation } from "@cossistant/react/support";
+
+export function NavigationButtons() {
+  const { page, navigate, goBack, canGoBack } = useSupportNavigation();
+
+  return (
+    <div className="flex gap-2">
+      {canGoBack && <button onClick={goBack}>← Back</button>}
+      <span>Current page: {page}</span>
+      <button onClick={() => navigate({ page: "HOME" })}>Go Home</button>
+      <button
+        onClick={() =>
+          navigate({
+            page: "CONVERSATION",
+            params: { conversationId: "conv_123" }
+          })
+        }
+      >
+        Open Conversation
+      </button>
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    current: {
+      description: "Current navigation state with page and params",
+      type: "{ page: string; params?: RouteParams }",
+      required: true,
+    },
+    page: {
+      description: "Current page name (HOME, CONVERSATION, etc.)",
+      type: "string",
+      required: true,
+    },
+    params: {
+      description: "Current page parameters (e.g., conversationId)",
+      type: "RouteParams | undefined",
+      required: true,
+    },
+    previousPages: {
+      description: "Navigation history stack",
+      type: "NavigationState[]",
+      required: true,
+    },
+    canGoBack: {
+      description: "Whether there are pages in the history to go back to",
+      type: "boolean",
+      required: true,
+    },
+    navigate: {
+      description: "Navigate to a page, pushing to history",
+      type: "(options: { page: string; params?: RouteParams }) => void",
+      required: true,
+    },
+    replace: {
+      description: "Navigate to a page, replacing current entry",
+      type: "(options: { page: string; params?: RouteParams }) => void",
+      required: true,
+    },
+    goBack: {
+      description: "Go back to the previous page in history",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
+
+## useSupportHandle
+
+Access the imperative handle from within the widget tree. Alternative to using refs on the Support component.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/help-button.tsx"
+"use client";
+
+import { useSupportHandle } from "@cossistant/react/support";
+
+export function HelpButton() {
+  const support = useSupportHandle();
+
+  const handleNeedHelp = () => {
+    // Open support and start a new conversation
+    support?.startConversation("I need help with my order");
+  };
+
+  return (
+    <button onClick={handleNeedHelp}>
+      Need Help?
+    </button>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    open: {
+      description: "Open the support widget",
+      type: "() => void",
+      required: true,
+    },
+    close: {
+      description: "Close the support widget",
+      type: "() => void",
+      required: true,
+    },
+    toggle: {
+      description: "Toggle the widget open/closed",
+      type: "() => void",
+      required: true,
+    },
+    navigate: {
+      description: "Navigate to a specific page",
+      type: "(options: { page: string; params?: RouteParams }) => void",
+      required: true,
+    },
+    goBack: {
+      description: "Go back to the previous page",
+      type: "() => void",
+      required: true,
+    },
+    openConversation: {
+      description: "Open a specific conversation and open the widget",
+      type: "(conversationId: string) => void",
+      required: true,
+    },
+    startConversation: {
+      description: "Start a new conversation with optional initial message",
+      type: "(initialMessage?: string) => void",
+      required: true,
+    },
+    goHome: {
+      description: "Navigate to the home page",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
+
+## useHomePage
+
+Logic hook for building custom home pages. Provides all state and actions needed for the home page.
+
+### Basic Example
+
+```tsx showLineNumbers title="pages/custom-home.tsx"
+"use client";
+
+import { useHomePage } from "@cossistant/react";
+
+export function CustomHomePage() {
+  const home = useHomePage({
+    onStartConversation: () => console.log("Conversation started"),
+    onOpenConversation: (id) => console.log("Opened:", id),
+  });
+
+  return (
+    <div>
+      <h1>Welcome!</h1>
+
+      {home.lastOpenConversation && (
+        <button onClick={() => home.openConversation(home.lastOpenConversation!.id)}>
+          Continue conversation
+        </button>
+      )}
+
+      <button onClick={() => home.startConversation()}>
+        Start new conversation
+      </button>
+
+      {home.availableConversationsCount > 0 && (
+        <button onClick={home.openConversationHistory}>
+          View {home.availableConversationsCount} conversations
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    conversations: {
+      description: "List of displayable conversations",
+      type: "Conversation[]",
+      required: true,
+    },
+    lastOpenConversation: {
+      description: "Most recent open conversation, if any",
+      type: "Conversation | null",
+      required: true,
+    },
+    availableConversationsCount: {
+      description: "Count of available conversations",
+      type: "number",
+      required: true,
+    },
+    isLoading: {
+      description: "Whether conversations are still loading",
+      type: "boolean",
+      required: true,
+    },
+    startConversation: {
+      description: "Start a new conversation",
+      type: "() => void",
+      required: true,
+    },
+    openConversation: {
+      description: "Open an existing conversation",
+      type: "(conversationId: string) => void",
+      required: true,
+    },
+    openConversationHistory: {
+      description: "Navigate to conversation history page",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
+
+## useConversationPage
+
+Logic hook for building custom conversation pages. Manages the conversation lifecycle, messages, and composer.
+
+### Basic Example
+
+```tsx showLineNumbers title="pages/custom-conversation.tsx"
+"use client";
+
+import { useConversationPage } from "@cossistant/react";
+
+export function CustomConversationPage({ conversationId }: { conversationId: string }) {
+  const conversation = useConversationPage({
+    conversationId,
+    onConversationCreated: (id) => console.log("Created:", id),
+  });
+
+  return (
+    <div>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto">
+        {conversation.items.map((item) => (
+          <div key={item.id}>{/* Render message */}</div>
+        ))}
+      </div>
+
+      {/* Composer */}
+      {conversation.isConversationOpen && (
+        <form onSubmit={(e) => { e.preventDefault(); conversation.composer.submit(); }}>
+          <input
+            value={conversation.composer.message}
+            onChange={(e) => conversation.composer.setMessage(e.target.value)}
+            placeholder="Type a message..."
+          />
+          <button type="submit" disabled={!conversation.composer.canSubmit}>
+            Send
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    conversationId: {
+      description: "Current conversation ID (may change if new conversation is created)",
+      type: "string | null",
+      required: true,
+    },
+    conversation: {
+      description: "Current conversation object",
+      type: "Conversation | null",
+      required: true,
+    },
+    items: {
+      description: "Timeline items (messages, events) for the conversation",
+      type: "TimelineItem[]",
+      required: true,
+    },
+    isConversationOpen: {
+      description: "Whether the conversation is still open (not resolved/closed)",
+      type: "boolean",
+      required: true,
+    },
+    isLoading: {
+      description: "Whether the conversation is loading",
+      type: "boolean",
+      required: true,
+    },
+    error: {
+      description: "Error object if loading failed",
+      type: "Error | null",
+      required: true,
+    },
+    shouldShowIdentificationTool: {
+      description: "Whether to prompt for visitor identification",
+      type: "boolean",
+      required: true,
+    },
+    composer: {
+      description: "Message composer state and actions",
+      type: "MessageComposer",
+      typeDescriptionLink: "#messagecomposer",
+      required: true,
+    },
+  }}
+/>
+
+## useMessageComposer
+
+Hook for managing message composition with file attachments.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/message-input.tsx"
+"use client";
+
+import { useMessageComposer } from "@cossistant/react";
+
+export function MessageInput({ conversationId }: { conversationId: string }) {
+  const composer = useMessageComposer({
+    conversationId,
+    onMessageSent: () => console.log("Message sent!"),
+  });
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); composer.submit(); }}>
+      <input
+        value={composer.message}
+        onChange={(e) => composer.setMessage(e.target.value)}
+        placeholder="Type a message..."
+      />
+      <input
+        type="file"
+        multiple
+        onChange={(e) => {
+          if (e.target.files) {
+            composer.addFiles(Array.from(e.target.files));
+          }
+        }}
+      />
+      {composer.attachments.map((file) => (
+        <span key={file.name}>
+          {file.name} <button onClick={() => composer.removeFile(file.name)}>×</button>
+        </span>
+      ))}
+      <button type="submit" disabled={!composer.canSubmit || composer.isSubmitting}>
+        {composer.isSubmitting ? "Sending..." : "Send"}
+      </button>
+    </form>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    message: {
+      description: "Current message text",
+      type: "string",
+      required: true,
+    },
+    setMessage: {
+      description: "Update the message text",
+      type: "(message: string) => void",
+      required: true,
+    },
+    attachments: {
+      description: "List of attached files",
+      type: "File[]",
+      required: true,
+    },
+    addFiles: {
+      description: "Add files to attachments",
+      type: "(files: File[]) => void",
+      required: true,
+    },
+    removeFile: {
+      description: "Remove a file by name",
+      type: "(fileName: string) => void",
+      required: true,
+    },
+    clearFiles: {
+      description: "Remove all attachments",
+      type: "() => void",
+      required: true,
+    },
+    submit: {
+      description: "Submit the message with attachments",
+      type: "() => Promise<void>",
+      required: true,
+    },
+    canSubmit: {
+      description: "Whether the message can be submitted (has content)",
+      type: "boolean",
+      required: true,
+    },
+    isSubmitting: {
+      description: "Whether a submission is in progress",
+      type: "boolean",
+      required: true,
+    },
+    error: {
+      description: "Error from last submission attempt",
+      type: "Error | null",
+      required: true,
+    },
+  }}
+/>
+
+## useFileUpload
+
+Hook for handling file uploads with progress tracking.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/file-uploader.tsx"
+"use client";
+
+import { useFileUpload } from "@cossistant/react";
+
+export function FileUploader() {
+  const upload = useFileUpload({
+    onUploadComplete: (result) => console.log("Uploaded:", result),
+    onError: (error) => console.error("Upload failed:", error),
+  });
+
+  return (
+    <div>
+      <input
+        type="file"
+        onChange={(e) => {
+          if (e.target.files?.[0]) {
+            upload.uploadFile(e.target.files[0]);
+          }
+        }}
+      />
+      {upload.isUploading && (
+        <div>
+          <progress value={upload.progress} max={100} />
+          <span>{upload.progress}%</span>
+        </div>
+      )}
+      {upload.error && <p className="text-red-500">{upload.error.message}</p>}
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    uploadFile: {
+      description: "Upload a single file",
+      type: "(file: File) => Promise<UploadResult>",
+      required: true,
+    },
+    uploadFiles: {
+      description: "Upload multiple files",
+      type: "(files: File[]) => Promise<UploadResult[]>",
+      required: true,
+    },
+    isUploading: {
+      description: "Whether an upload is in progress",
+      type: "boolean",
+      required: true,
+    },
+    progress: {
+      description: "Upload progress percentage (0-100)",
+      type: "number",
+      required: true,
+    },
+    error: {
+      description: "Error from last upload attempt",
+      type: "Error | null",
+      required: true,
+    },
+    reset: {
+      description: "Reset upload state",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
+
+## useSupportText
+
+Access the localization system for the support widget.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/localized-button.tsx"
+"use client";
+
+import { useSupportText } from "@cossistant/react/support";
+
+export function LocalizedButton() {
+  const text = useSupportText();
+
+  return (
+    <button>
+      {text.get("common.actions.askQuestion")}
+    </button>
+  );
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    get: {
+      description: "Get a localized string by key",
+      type: '(key: TextKey, variables?: Record<string, string>) => string',
+      required: true,
+    },
+    locale: {
+      description: "Current locale code",
+      type: "string",
+      required: true,
+    },
+  }}
+/>
+
+## useSupportEvents
+
+Access the events context for subscribing to widget lifecycle events.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/analytics-tracker.tsx"
+"use client";
+
+import { useSupportEvents } from "@cossistant/react/support";
+import { useEffect } from "react";
+
+export function AnalyticsTracker() {
+  const events = useSupportEvents();
+
+  useEffect(() => {
+    if (!events) return;
+
+    const unsubscribe = events.subscribe("messageSent", (event) => {
+      // Track in your analytics
+      analytics.track("support_message_sent", {
+        conversationId: event.conversationId,
+      });
+    });
+
+    return unsubscribe;
+  }, [events]);
+
+  return null;
+}
+```
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    emit: {
+      description: "Emit an event to all listeners",
+      type: "(event: SupportEvent) => void",
+      required: true,
+    },
+    subscribe: {
+      description: "Subscribe to a specific event type",
+      type: "(type: EventType, callback: (event) => void) => () => void",
+      required: true,
+    },
+  }}
+/>
+
+## useSupportEventEmitter
+
+Convenience hook for emitting events from within the widget.
+
+### Return Values
+
+<TypeTable
+  variant="return"
+  type={{
+    emitConversationStart: {
+      description: "Emit a conversation start event",
+      type: "(conversationId: string, conversation?: Conversation) => void",
+      required: true,
+    },
+    emitConversationEnd: {
+      description: "Emit a conversation end event",
+      type: "(conversationId: string, conversation?: Conversation) => void",
+      required: true,
+    },
+    emitMessageSent: {
+      description: "Emit a message sent event",
+      type: "(conversationId: string, message: TimelineItem) => void",
+      required: true,
+    },
+    emitMessageReceived: {
+      description: "Emit a message received event",
+      type: "(conversationId: string, message: TimelineItem) => void",
+      required: true,
+    },
+    emitError: {
+      description: "Emit an error event",
+      type: "(error: Error, context?: string) => void",
+      required: true,
+    },
+  }}
+/>
 
 ## Types
 
@@ -580,3 +1294,143 @@ Enum defining who can send messages.
 />
 
 **Type Definition:** `"visitor" | "team_member" | "ai"`
+
+### MessageComposer
+
+State and actions returned by `useConversationPage` for message composition.
+
+<TypeTable
+  variant="property"
+  type={{
+    message: {
+      description: "Current message text being composed",
+      type: "string",
+      required: true,
+    },
+    setMessage: {
+      description: "Update the message text",
+      type: "(message: string) => void",
+      required: true,
+    },
+    attachments: {
+      description: "List of attached files",
+      type: "File[]",
+      required: true,
+    },
+    addFiles: {
+      description: "Add files to the message",
+      type: "(files: File[]) => void",
+      required: true,
+    },
+    removeFile: {
+      description: "Remove an attached file by name",
+      type: "(fileName: string) => void",
+      required: true,
+    },
+    submit: {
+      description: "Send the message with attachments",
+      type: "() => Promise<void>",
+      required: true,
+    },
+    canSubmit: {
+      description: "Whether the message can be sent",
+      type: "boolean",
+      required: true,
+    },
+    isSubmitting: {
+      description: "Whether a submission is in progress",
+      type: "boolean",
+      required: true,
+    },
+  }}
+/>
+
+### SupportHandle
+
+Imperative handle for programmatic widget control via refs.
+
+<TypeTable
+  variant="property"
+  type={{
+    open: {
+      description: "Open the support widget",
+      type: "() => void",
+      required: true,
+    },
+    close: {
+      description: "Close the support widget",
+      type: "() => void",
+      required: true,
+    },
+    toggle: {
+      description: "Toggle the widget open/closed",
+      type: "() => void",
+      required: true,
+    },
+    navigate: {
+      description: "Navigate to a specific page with optional params",
+      type: "(options: { page: string; params?: RouteParams }) => void",
+      required: true,
+    },
+    goBack: {
+      description: "Go back to the previous page",
+      type: "() => void",
+      required: true,
+    },
+    openConversation: {
+      description: "Open a specific conversation by ID",
+      type: "(conversationId: string) => void",
+      required: true,
+    },
+    startConversation: {
+      description: "Start a new conversation with optional initial message",
+      type: "(initialMessage?: string) => void",
+      required: true,
+    },
+    goHome: {
+      description: "Navigate to the home page",
+      type: "() => void",
+      required: true,
+    },
+  }}
+/>
+
+### SupportEvent
+
+Union type of all possible widget events.
+
+<TypeTable
+  variant="property"
+  type={{
+    type: {
+      description: "Event type identifier",
+      type: '"conversationStart" | "conversationEnd" | "messageSent" | "messageReceived" | "error"',
+      required: true,
+    },
+    conversationId: {
+      description: "ID of the related conversation (not present on error events)",
+      type: "string",
+      required: false,
+    },
+    conversation: {
+      description: "Conversation object (on start/end events)",
+      type: "Conversation",
+      required: false,
+    },
+    message: {
+      description: "Message object (on sent/received events)",
+      type: "TimelineItem",
+      required: false,
+    },
+    error: {
+      description: "Error object (on error events)",
+      type: "Error",
+      required: false,
+    },
+    context: {
+      description: "Additional context for errors",
+      type: "string",
+      required: false,
+    },
+  }}
+/>

@@ -10,6 +10,17 @@ import { Content } from "./components/content";
 import { Root } from "./components/root";
 import { ThemeWrapper } from "./components/theme-wrapper";
 import { DefaultTrigger } from "./components/trigger";
+import { ControlledStateProvider } from "./context/controlled-state";
+import {
+	type ConversationEndEvent,
+	type ConversationStartEvent,
+	type ErrorEvent,
+	type MessageReceivedEvent,
+	type MessageSentEvent,
+	SupportEventsProvider,
+} from "./context/events";
+import { type SupportHandle, SupportHandleProvider } from "./context/handle";
+import { FooterSlot, HeaderSlot } from "./context/slots";
 import { type CustomPage, Page, Router } from "./router";
 import { initializeSupportStore } from "./store/support-store";
 import type { SupportLocale, SupportTextContentOverrides } from "./text";
@@ -76,7 +87,25 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	theme?: "light" | "dark";
 
 	/**
-	 * Whether the widget should open automatically on mount.
+	 * Controlled open state.
+	 * When provided, the widget operates in controlled mode.
+	 * Use with `onOpenChange` to manage state externally.
+	 */
+	open?: boolean;
+
+	/**
+	 * Callback fired when the open state should change.
+	 * Use with `open` prop for controlled mode.
+	 *
+	 * @example
+	 * const [isOpen, setIsOpen] = useState(false);
+	 * <Support open={isOpen} onOpenChange={setIsOpen} />
+	 */
+	onOpenChange?: (open: boolean) => void;
+
+	/**
+	 * Whether the widget should open automatically on mount (uncontrolled mode).
+	 * Ignored when `open` prop is provided (controlled mode).
 	 * @default false
 	 */
 	defaultOpen?: boolean;
@@ -105,6 +134,35 @@ export type SupportProps<Locale extends string = SupportLocale> = {
 	 * Custom pages to add to the router.
 	 */
 	customPages?: CustomPage[];
+
+	// =========================================================================
+	// Event Callbacks
+	// =========================================================================
+
+	/**
+	 * Called when a new conversation is started.
+	 */
+	onConversationStart?: (event: ConversationStartEvent) => void;
+
+	/**
+	 * Called when a conversation ends (resolved, closed, etc.).
+	 */
+	onConversationEnd?: (event: ConversationEndEvent) => void;
+
+	/**
+	 * Called when the visitor sends a message.
+	 */
+	onMessageSent?: (event: MessageSentEvent) => void;
+
+	/**
+	 * Called when a message is received from an agent (human or AI).
+	 */
+	onMessageReceived?: (event: MessageReceivedEvent) => void;
+
+	/**
+	 * Called when an error occurs within the widget.
+	 */
+	onError?: (event: ErrorEvent) => void;
 
 	/**
 	 * Children for composition. Can include:
@@ -186,6 +244,18 @@ function parseChildren(children: React.ReactNode): ParsedChildren {
  * <Support side="bottom" align="end" sideOffset={8} />
  *
  * @example
+ * // Controlled mode - external state management
+ * const [isOpen, setIsOpen] = useState(false);
+ * <Support open={isOpen} onOpenChange={setIsOpen} />
+ *
+ * @example
+ * // With imperative ref
+ * const supportRef = useRef<SupportHandle>(null);
+ * supportRef.current?.open();
+ * supportRef.current?.startConversation("Hello!");
+ * <Support ref={supportRef} />
+ *
+ * @example
  * // With custom trigger
  * <Support side="bottom" align="end">
  *   <Support.Trigger className="px-4 py-2">
@@ -201,31 +271,42 @@ function parseChildren(children: React.ReactNode): ParsedChildren {
  *   <Support.Page name="FAQ" component={FAQPage} />
  * </Support>
  */
-function SupportComponent<Locale extends string = SupportLocale>({
-	className,
-	side = "top",
-	align = "end",
-	sideOffset = 16,
-	avoidCollisions = true,
-	collisionPadding = 8,
-	classNames = {},
-	theme,
-	defaultOpen,
-	quickOptions,
-	defaultMessages,
-	locale,
-	content,
-	customPages,
-	children,
-}: SupportProps<Locale>): React.ReactElement | null {
+function SupportComponentInner<Locale extends string = SupportLocale>(
+	{
+		className,
+		side = "top",
+		align = "end",
+		sideOffset = 16,
+		avoidCollisions = true,
+		collisionPadding = 8,
+		classNames = {},
+		theme,
+		open,
+		onOpenChange,
+		defaultOpen,
+		quickOptions,
+		defaultMessages,
+		locale,
+		content,
+		customPages,
+		onConversationStart,
+		onConversationEnd,
+		onMessageSent,
+		onMessageReceived,
+		onError,
+		children,
+	}: SupportProps<Locale>,
+	ref: React.Ref<SupportHandle>
+): React.ReactElement | null {
 	const { website } = useSupport();
 	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 
+	// Initialize store for uncontrolled mode (when open prop is not provided)
 	React.useEffect(() => {
-		if (defaultOpen !== undefined) {
+		if (open === undefined && defaultOpen !== undefined) {
 			initializeSupportStore({ defaultOpen });
 		}
-	}, [defaultOpen]);
+	}, [open, defaultOpen]);
 
 	if (!website || isVisitorBlocked) {
 		return null;
@@ -254,22 +335,41 @@ function SupportComponent<Locale extends string = SupportLocale>({
 	);
 
 	return (
-		<ThemeWrapper theme={theme}>
-			<SupportRealtimeProvider>
-				<SupportTextProvider content={content} locale={locale}>
-					<Root className={className}>
-						{triggerElement}
-						{contentElement}
-					</Root>
-				</SupportTextProvider>
-			</SupportRealtimeProvider>
-			<SupportConfig
-				defaultMessages={defaultMessages}
-				quickOptions={quickOptions}
-			/>
-		</ThemeWrapper>
+		<ControlledStateProvider onOpenChange={onOpenChange} open={open}>
+			<SupportEventsProvider
+				onConversationEnd={onConversationEnd}
+				onConversationStart={onConversationStart}
+				onError={onError}
+				onMessageReceived={onMessageReceived}
+				onMessageSent={onMessageSent}
+			>
+				<SupportHandleProvider forwardedRef={ref}>
+					<ThemeWrapper theme={theme}>
+						<SupportRealtimeProvider>
+							<SupportTextProvider content={content} locale={locale}>
+								<Root className={className}>
+									{triggerElement}
+									{contentElement}
+								</Root>
+							</SupportTextProvider>
+						</SupportRealtimeProvider>
+						<SupportConfig
+							defaultMessages={defaultMessages}
+							quickOptions={quickOptions}
+						/>
+					</ThemeWrapper>
+				</SupportHandleProvider>
+			</SupportEventsProvider>
+		</ControlledStateProvider>
 	);
 }
+
+// Forward ref with proper generic typing
+const SupportComponent = React.forwardRef(SupportComponentInner) as <
+	Locale extends string = SupportLocale,
+>(
+	props: SupportProps<Locale> & { ref?: React.Ref<SupportHandle> }
+) => React.ReactElement | null;
 
 // =============================================================================
 // Trigger Compound Component
@@ -460,7 +560,18 @@ const SupportPage = Page;
 
 export type SupportRootProps = {
 	/**
-	 * Whether the widget should open automatically.
+	 * Controlled open state.
+	 * When provided, the widget operates in controlled mode.
+	 */
+	open?: boolean;
+	/**
+	 * Callback fired when the open state should change.
+	 * Use with `open` prop for controlled mode.
+	 */
+	onOpenChange?: (open: boolean) => void;
+	/**
+	 * Whether the widget should open automatically (uncontrolled mode).
+	 * Ignored when `open` prop is provided.
 	 * @default false
 	 */
 	defaultOpen?: boolean;
@@ -472,6 +583,26 @@ export type SupportRootProps = {
 	 * Additional CSS classes.
 	 */
 	className?: string;
+	/**
+	 * Called when a new conversation is started.
+	 */
+	onConversationStart?: (event: ConversationStartEvent) => void;
+	/**
+	 * Called when a conversation ends.
+	 */
+	onConversationEnd?: (event: ConversationEndEvent) => void;
+	/**
+	 * Called when the visitor sends a message.
+	 */
+	onMessageSent?: (event: MessageSentEvent) => void;
+	/**
+	 * Called when a message is received from an agent.
+	 */
+	onMessageReceived?: (event: MessageReceivedEvent) => void;
+	/**
+	 * Called when an error occurs.
+	 */
+	onError?: (event: ErrorEvent) => void;
 	children: React.ReactNode;
 };
 
@@ -480,6 +611,7 @@ export type SupportRootProps = {
  * Use when you need complete control over the widget structure.
  *
  * @example
+ * // Uncontrolled
  * <Support.Root defaultOpen={false}>
  *   <Support.Trigger asChild>
  *     <button>Help</button>
@@ -488,37 +620,75 @@ export type SupportRootProps = {
  *     <Support.Router />
  *   </Support.Content>
  * </Support.Root>
+ *
+ * @example
+ * // Controlled
+ * const [isOpen, setIsOpen] = useState(false);
+ * <Support.Root open={isOpen} onOpenChange={setIsOpen}>
+ *   ...
+ * </Support.Root>
+ *
+ * @example
+ * // With imperative ref
+ * const supportRef = useRef<SupportHandle>(null);
+ * <Support.Root ref={supportRef}>
+ *   ...
+ * </Support.Root>
  */
-const SupportRoot: React.FC<SupportRootProps> = ({
-	defaultOpen,
-	theme,
-	className,
-	children,
-}) => {
-	const { website } = useSupport();
-	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
+const SupportRoot = React.forwardRef<SupportHandle, SupportRootProps>(
+	(
+		{
+			open,
+			onOpenChange,
+			defaultOpen,
+			theme,
+			className,
+			onConversationStart,
+			onConversationEnd,
+			onMessageSent,
+			onMessageReceived,
+			onError,
+			children,
+		},
+		ref
+	) => {
+		const { website } = useSupport();
+		const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 
-	React.useEffect(() => {
-		if (defaultOpen !== undefined) {
-			initializeSupportStore({ defaultOpen });
+		// Initialize store for uncontrolled mode
+		React.useEffect(() => {
+			if (open === undefined && defaultOpen !== undefined) {
+				initializeSupportStore({ defaultOpen });
+			}
+		}, [open, defaultOpen]);
+
+		if (!website || isVisitorBlocked) {
+			return null;
 		}
-	}, [defaultOpen]);
 
-	if (!website || isVisitorBlocked) {
-		return null;
+		return (
+			<ControlledStateProvider onOpenChange={onOpenChange} open={open}>
+				<SupportEventsProvider
+					onConversationEnd={onConversationEnd}
+					onConversationStart={onConversationStart}
+					onError={onError}
+					onMessageReceived={onMessageReceived}
+					onMessageSent={onMessageSent}
+				>
+					<SupportHandleProvider forwardedRef={ref}>
+						<ThemeWrapper theme={theme}>
+							<SupportRealtimeProvider>
+								<Root className={className}>{children}</Root>
+							</SupportRealtimeProvider>
+						</ThemeWrapper>
+					</SupportHandleProvider>
+				</SupportEventsProvider>
+			</ControlledStateProvider>
+		);
 	}
+);
 
-	return (
-		<ThemeWrapper theme={theme}>
-			<SupportRealtimeProvider>
-				<Root className={className}>{children}</Root>
-			</SupportRealtimeProvider>
-		</ThemeWrapper>
-	);
-};
-
-(SupportRoot as React.FC & { displayName?: string }).displayName =
-	"Support.Root";
+SupportRoot.displayName = "Support.Root";
 
 // =============================================================================
 // Compound Component Assembly
@@ -530,6 +700,8 @@ export const Support = Object.assign(SupportComponent, {
 	Content: SupportContent,
 	Router: SupportRouter,
 	Page: SupportPage,
+	Header: HeaderSlot,
+	Footer: FooterSlot,
 });
 
 export default Support;
@@ -581,3 +753,26 @@ export {
 
 export type { SupportLocale, SupportTextContentOverrides } from "./text";
 export { Text, useSupportText } from "./text";
+
+// =============================================================================
+// Events
+// =============================================================================
+
+export type {
+	ConversationEndEvent,
+	ConversationStartEvent,
+	ErrorEvent,
+	MessageReceivedEvent,
+	MessageSentEvent,
+	SupportEvent,
+	SupportEventCallbacks,
+	SupportEventType,
+} from "./context/events";
+export { useSupportEventEmitter, useSupportEvents } from "./context/events";
+
+// =============================================================================
+// Imperative Handle
+// =============================================================================
+
+export type { SupportHandle } from "./context/handle";
+export { useSupportHandle } from "./context/handle";

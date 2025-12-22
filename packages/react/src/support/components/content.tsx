@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import * as Primitive from "../../primitives";
 import { useTriggerRef } from "../context/positioning";
+import { SlotProvider, useSlots } from "../context/slots";
 import { useSupportConfig } from "../store/support-store";
 import type {
 	Align,
@@ -334,54 +335,87 @@ export const Content: React.FC<ContentPropsType> = ({
 	);
 
 	return (
-		<Primitive.Window asChild>
-			<motion.div
-				animate="visible"
-				className={computedClassName}
-				exit="exit"
-				initial="hidden"
-				ref={setFloatingRef}
-				style={computedStyles}
-				transition={{
-					default: { ease: "anticipate" },
-					layout: { duration: 0.3 },
-				}}
-				variants={{
-					hidden: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
-					visible: { opacity: 1, scale: 1, filter: "blur(0px)" },
-					exit: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
-				}}
-			>
-				<div className="relative flex h-full w-full flex-col">
-					<div
-						className="flex flex-1 flex-col overflow-y-auto pt-18"
-						ref={containerRef}
+		<SlotProvider>
+			<Primitive.Window asChild>
+				<motion.div
+					animate="visible"
+					className={computedClassName}
+					exit="exit"
+					initial="hidden"
+					ref={setFloatingRef}
+					style={computedStyles}
+					transition={{
+						default: { ease: "anticipate" },
+						layout: { duration: 0.3 },
+					}}
+					variants={{
+						hidden: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
+						visible: { opacity: 1, scale: 1, filter: "blur(0px)" },
+						exit: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
+					}}
+				>
+					<ContentInner
+						containerRef={containerRef}
+						showScrollIndicator={showScrollIndicator}
 					>
 						{children}
-					</div>
+					</ContentInner>
+				</motion.div>
+			</Primitive.Window>
+		</SlotProvider>
+	);
+};
 
-					<AnimatePresence>
-						{showScrollIndicator && (
-							<>
-								<motion.div
-									animate={{ opacity: 1 }}
-									className="pointer-events-none absolute inset-x-0 bottom-0 z-5 h-32 bg-gradient-to-t from-co-background via-co-background/70 to-transparent"
-									exit={{ opacity: 0 }}
-									initial={{ opacity: 0 }}
-									transition={{ duration: 0.3, ease: "easeInOut" }}
-								/>
-								<motion.div
-									animate={{ opacity: 0.6 }}
-									className="pointer-events-none absolute inset-x-0 bottom-0 z-5 h-48 bg-gradient-to-t from-co-background/80 via-co-background/30 to-transparent"
-									exit={{ opacity: 0 }}
-									initial={{ opacity: 0 }}
-									transition={{ duration: 0.4, ease: "easeInOut", delay: 0.05 }}
-								/>
-							</>
-						)}
-					</AnimatePresence>
-				</div>
-			</motion.div>
-		</Primitive.Window>
+/**
+ * Inner content component that consumes slots.
+ * Separated to allow slot context to be established before consuming it.
+ */
+const ContentInner: React.FC<{
+	children: React.ReactNode;
+	containerRef: React.RefObject<HTMLDivElement | null>;
+	showScrollIndicator: boolean;
+}> = ({ children, containerRef, showScrollIndicator }) => {
+	const { header, footer, hasCustomHeader, hasCustomFooter } = useSlots();
+
+	return (
+		<div className="relative flex h-full w-full flex-col">
+			{/* Custom header slot */}
+			{hasCustomHeader && <div className="flex-shrink-0">{header}</div>}
+
+			<div
+				className={cn(
+					"flex flex-1 flex-col overflow-y-auto",
+					// Only add top padding if no custom header (default header is absolute positioned)
+					!hasCustomHeader && "pt-18"
+				)}
+				ref={containerRef}
+			>
+				{children}
+			</div>
+
+			{/* Custom footer slot */}
+			{hasCustomFooter && <div className="flex-shrink-0">{footer}</div>}
+
+			<AnimatePresence>
+				{showScrollIndicator && (
+					<>
+						<motion.div
+							animate={{ opacity: 1 }}
+							className="pointer-events-none absolute inset-x-0 bottom-0 z-5 h-32 bg-gradient-to-t from-co-background via-co-background/70 to-transparent"
+							exit={{ opacity: 0 }}
+							initial={{ opacity: 0 }}
+							transition={{ duration: 0.3, ease: "easeInOut" }}
+						/>
+						<motion.div
+							animate={{ opacity: 0.6 }}
+							className="pointer-events-none absolute inset-x-0 bottom-0 z-5 h-48 bg-gradient-to-t from-co-background/80 via-co-background/30 to-transparent"
+							exit={{ opacity: 0 }}
+							initial={{ opacity: 0 }}
+							transition={{ duration: 0.4, ease: "easeInOut", delay: 0.05 }}
+						/>
+					</>
+				)}
+			</AnimatePresence>
+		</div>
 	);
 };

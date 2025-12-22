@@ -1,5 +1,5 @@
 import type { RouteRegistry } from "@cossistant/core";
-import type React from "react";
+import * as React from "react";
 import type { PageDefinition } from "../primitives";
 import * as Primitive from "../primitives";
 import { ArticlesPage } from "./pages/articles";
@@ -40,6 +40,34 @@ const builtInPages = [
 ] as PageDefinition[];
 
 /**
+ * Extract page definitions from Support.Page children.
+ * This allows declarative page registration via JSX.
+ */
+function extractPagesFromChildren(children: React.ReactNode): CustomPage[] {
+	const pages: CustomPage[] = [];
+
+	React.Children.forEach(children, (child) => {
+		if (!React.isValidElement(child)) {
+			return;
+		}
+
+		// Check if this is a Page component by looking for name and component props
+		const props = child.props as {
+			name?: string;
+			component?: React.ComponentType;
+		};
+		if (props.name && props.component) {
+			pages.push({
+				name: props.name as keyof RouteRegistry,
+				component: props.component,
+			});
+		}
+	});
+
+	return pages;
+}
+
+/**
  * Router with default support pages (HOME, ARTICLES, CONVERSATION, CONVERSATION_HISTORY).
  * Add custom pages via the customPages prop or as children.
  *
@@ -64,20 +92,28 @@ export const Router: React.FC<RouterProps> = ({
 }) => {
 	const { current } = useSupportNavigation();
 
-	const allPages = [...builtInPages, ...customPages] as PageDefinition<
-		keyof RouteRegistry
-	>[];
+	// Extract pages from JSX children (Support.Page components)
+	const extractedPages = React.useMemo(
+		() => extractPagesFromChildren(children),
+		[children]
+	);
+
+	// Merge built-in pages, prop-based custom pages, and JSX-declared pages
+	const allPages = React.useMemo(
+		() =>
+			[...builtInPages, ...customPages, ...extractedPages] as PageDefinition<
+				keyof RouteRegistry
+			>[],
+		[customPages, extractedPages]
+	);
 
 	return (
-		<>
-			{children}
-			<Primitive.Router
-				fallback={HomePage as React.ComponentType<{ params?: unknown }>}
-				page={current.page}
-				pages={allPages}
-				params={current.params}
-			/>
-		</>
+		<Primitive.Router
+			fallback={HomePage as React.ComponentType<{ params?: unknown }>}
+			page={current.page}
+			pages={allPages}
+			params={current.params}
+		/>
 	);
 };
 

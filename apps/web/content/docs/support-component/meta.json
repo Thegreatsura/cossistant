@@ -7,7 +7,8 @@
     "routing",
     "primitives",
     "text",
-    "hooks"
+    "hooks",
+    "events"
   ],
   "title": "<Support />"
 }
