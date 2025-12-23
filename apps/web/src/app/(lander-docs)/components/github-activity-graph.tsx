@@ -151,13 +151,13 @@ export async function GitHubActivityGraph() {
 				{/* Header */}
 				<div className="flex flex-col gap-2 px-4">
 					<h2 className="font-f37-stout text-xl md:text-2xl">Changelog</h2>
-					<p className="text-muted-foreground text-sm md:text-base">
+					<p className="text-muted-foreground">
 						We&apos;re shipping a lot,{" "}
-						<span className="font-semibold text-cossistant-orange tabular-nums">
+						<span className="font-medium text-cossistant-orange tabular-nums">
 							{totalCommits.toLocaleString()} commits
 						</span>{" "}
 						and{" "}
-						<span className="font-semibold text-cossistant-orange tabular-nums">
+						<span className="font-medium text-cossistant-orange tabular-nums">
 							{prCount.toLocaleString()} PRs
 						</span>{" "}
 						in the past year.
@@ -167,7 +167,7 @@ export async function GitHubActivityGraph() {
 				{/* Activity Grid */}
 				<div className="w-full">
 					<div className="w-full p-3 md:p-4">
-						<div className="grid w-full grid-flow-col grid-cols-52 grid-rows-7 gap-0.5 md:gap-1">
+						<div className="grid w-full grid-flow-col grid-cols-52 grid-rows-7 gap-0.5 md:gap-2.5">
 							{dailyData.map((week, weekIndex) =>
 								week.map((dayCount, dayIndex) => (
 									<ActivityCell

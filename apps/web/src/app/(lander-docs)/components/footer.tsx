@@ -51,6 +51,14 @@ export function Footer() {
 									Pricing
 								</Link>
 							</li>
+							<li>
+								<Link
+									className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
+									href="/changelog"
+								>
+									Changelog
+								</Link>
+							</li>
 						</ul>
 					</div>
 

@@ -48,14 +48,14 @@ export function TopbarButton({
 				href={href}
 			>
 				{withBrackets && (
-					<span className="text-foreground/30 transition-all duration-200 group-hover:translate-x-[-1px] group-hover:rotate-[-1deg] group-hover:scale-105">
+					<span className="text-foreground/30 transition-all duration-200 group-hover:translate-x-[-1px] group-hover:text-cossistant-orange">
 						[
 					</span>
 				)}
 				{icon && <span className="mr-1">{icon}</span>}
 				{children}
 				{withBrackets && (
-					<span className="text-foreground/30 transition-all duration-200 group-hover:translate-x-[1px] group-hover:rotate-[1deg] group-hover:scale-105">
+					<span className="text-foreground/30 transition-all duration-200 group-hover:translate-x-[1px] group-hover:text-cossistant-orange">
 						]
 					</span>
 				)}

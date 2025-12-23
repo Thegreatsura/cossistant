@@ -83,7 +83,7 @@ export default async function ChangelogPage() {
 											{entry.data.version}
 										</span>
 										<time
-											className="mt-2 text-muted-foreground text-sm"
+											className="mt-2 font-mono text-muted-foreground text-sm"
 											dateTime={entry.data.date}
 										>
 											{format(date, "MMM d, yyyy")}

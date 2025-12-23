@@ -27,6 +27,7 @@ import { Step, Steps } from "@/components/ui/steps";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { openapi } from "@/lib/openapi";
 import { cn } from "@/lib/utils";
+import { HighlightLine } from "../highlight-line";
 import { ImageZoom } from "./image-zoom";
 import StyleTokenCascade from "./style-token-cascade";
 
@@ -324,7 +325,6 @@ export const mdxComponents = {
 		<div className={cn(className)} {...props} />
 	),
 	Button,
-	// Callout,
 	Accordion,
 	AccordionContent,
 	AccordionItem,
@@ -365,4 +365,5 @@ export const mdxComponents = {
 	APIPage: (props: React.ComponentProps<typeof APIPage>) => (
 		<APIPage {...openapi.getAPIPageProps(props)} />
 	),
+	HighlightLine,
 };
