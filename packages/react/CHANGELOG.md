@@ -1,5 +1,15 @@
 # @cossistant/react
 
+## 0.0.28
+
+### Patch Changes
+
+- [`0a585a0`](https://github.com/cossistantcom/cossistant/commit/0a585a0a029085b036d89c18eff8db7c71b0d33e) Thanks [@Rieranthony](https://github.com/Rieranthony)! - A lot of fixes and improvements in the React widget, does less query and better perf across the board. Also, now the dashboard displays contact information and there is a better UX around contacts in general!
+
+- Updated dependencies [[`0a585a0`](https://github.com/cossistantcom/cossistant/commit/0a585a0a029085b036d89c18eff8db7c71b0d33e)]:
+  - @cossistant/core@0.0.28
+  - @cossistant/types@0.0.28
+
 ## 0.0.27
 
 ### Patch Changes
