@@ -24,6 +24,7 @@
     "@cossistant/web",
     "@cossistant/location",
     "@cossistant/transactional",
-    "widget-next-test"
+    "widget-next-test",
+    "@cossistant/workers"
   ]
 }
