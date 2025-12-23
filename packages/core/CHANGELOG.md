@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.27
+
+### Patch Changes
+
+- [`e1735cc`](https://github.com/cossistantcom/cossistant/commit/e1735cca4042bab763a15d493ed007b958f8c189) Thanks [@Rieranthony](https://github.com/Rieranthony)! - A lot of fixes and improvements in the React widget, does less query and better perf accros the board. Also, now the dashboard display contact informations and there is a better UX around contact in general!
+
 ## 0.0.26
 
 ### Patch Changes
