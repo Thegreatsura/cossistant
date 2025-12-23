@@ -1,8 +1,23 @@
 import path from "node:path";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateObject, generateText } from "ai";
 import fs from "fs-extra";
+import { z } from "zod";
 import type { Commit } from "./git";
+
+export type FeatureQuestion = {
+	id: string;
+	feature: string;
+	question: string;
+	importance: "high" | "medium";
+};
+
+export type FeatureDetail = {
+	id: string;
+	feature: string;
+	question: string;
+	answer: string;
+};
 
 function getOpenRouterClient() {
 	const apiKey = process.env.OPENROUTER_API_KEY;
@@ -12,11 +27,74 @@ function getOpenRouterClient() {
 	return createOpenRouter({ apiKey });
 }
 
+const featureQuestionsSchema = z.object({
+	questions: z.array(
+		z.object({
+			id: z.string().describe("Unique identifier for the question"),
+			feature: z
+				.string()
+				.describe("Short name of the feature (e.g., 'New usePresence hook')"),
+			question: z
+				.string()
+				.describe(
+					"A specific question to extract more details about this feature"
+				),
+			importance: z
+				.enum(["high", "medium"])
+				.describe("How important is this feature to highlight"),
+		})
+	),
+});
+
+export async function detectImportantFeatures(options: {
+	commits: Commit[];
+	description: string;
+	releaseType: "patch" | "minor" | "major";
+}): Promise<FeatureQuestion[]> {
+	const openrouter = getOpenRouterClient();
+
+	const commitList = options.commits
+		.map((c) => `- ${c.hash}: ${c.subject} (${c.author})`)
+		.join("\n");
+
+	const result = await generateObject({
+		model: openrouter.chat("anthropic/claude-opus-4.5"),
+		schema: featureQuestionsSchema,
+		system: `You are analyzing a software release to identify the most important user-facing features that need more details for a great changelog.
+
+## Your Task
+Analyze the commits and description to find the 2-4 MOST significant changes that users would care about. For each, generate a targeted question to extract more details from the releaser.
+
+## Rules
+- Focus on USER-FACING changes only (new features, API changes, behavior changes)
+- Ignore internal refactors, tooling, CI/CD, or documentation changes
+- Ask SPECIFIC questions that will help write better release notes
+- Questions should be answerable in 1-2 sentences
+- Mark as "high" importance for new features, breaking changes, or major improvements
+- Mark as "medium" for nice-to-have details or smaller improvements
+- Return 2-4 questions maximum, sorted by importance
+- For patch releases, you may return 0-2 questions if changes are minor
+- Do NOT ask about version numbers, dates, or obvious information`,
+		prompt: `## Release Context
+- **Release type:** ${options.releaseType}
+- **User description:** ${options.description}
+
+## Git commits since last release
+${commitList}
+
+Generate targeted questions to extract more details about the most important features.`,
+		temperature: 0.3,
+	});
+
+	return result.object.questions;
+}
+
 export async function generateChangelog(options: {
 	commits: Commit[];
 	description: string;
 	version: string;
 	releaseType: "patch" | "minor" | "major";
+	featureDetails?: FeatureDetail[];
 }): Promise<string> {
 	const templatePath = path.join(import.meta.dir, "../templates/changelog.mdx");
 	const template = await fs.readFile(templatePath, "utf-8");
@@ -25,35 +103,52 @@ export async function generateChangelog(options: {
 		.map((c) => `- ${c.hash}: ${c.subject} (${c.author})`)
 		.join("\n");
 
+	const featureDetailsSection =
+		options.featureDetails && options.featureDetails.length > 0
+			? `### Additional Feature Details (from releaser)
+${options.featureDetails.map((fd) => `**${fd.feature}**: ${fd.answer}`).join("\n")}`
+			: "";
+
 	const openrouter = getOpenRouterClient();
 
 	const result = await generateText({
 		model: openrouter.chat("anthropic/claude-opus-4.1"),
-		system: `You are a technical writer creating SHORT changelog entries for Cossistant, a developer SDK to add AI/human powered support to a React or Next.js application.
+		system: `You are writing **concise, user-facing changelog entries** for **Cossistant**, a developer SDK that adds AI + human support to React and Next.js apps.
 
-RULES:
-- Be CONCISE. Each bullet point should be 1 short sentence max.
-- Focus only on user-facing changes. Skip internal refactors.
-- Use the exact template structure provided.
-- Only include sections that have actual changes. Omit empty sections entirely.
-- The Highlights section is for major features only. Skip it for patch releases with just bug fixes.
-- Output valid MDX that can be rendered.`,
-		prompt: `Generate a changelog for version ${options.version} (${options.releaseType} release).
+Your job is to communicate **what changed for users**, fast.
 
-User description: ${options.description}
+## Rules
+- Write **short bullet points** (1 sentence max).
+- Include **only user-visible changes**. Ignore internal refactors, tooling, or infra.
+- Follow the **exact template structure** provided.
+- **Omit empty sections** entirely.
+- Use **Highlights** only for major features. Skip it for patch releases.
+- Output **valid MDX** only. No commentary.
+- never use emojis and em-dashes.
+- Include the **Upgrade** section with the correct version number.
+- Include the **Example** section with a relevant code example for new features (omit for patch releases with only bug fixes).`,
+		prompt: `Generate a changelog for:
+- **Version:** ${options.version}
+- **Release type:** ${options.releaseType}
+- **Date:** ${new Date().toISOString().split("T")[0]}
 
-Git commits since last release:
+## Context
+### User description
+${options.description}
+
+${featureDetailsSection}
+
+### Git commits since last release
 ${commitList}
 
-Template structure:
+## Template
 ${template}
 
-Requirements:
-- Version: "${options.version}"
-- Date: "${new Date().toISOString().split("T")[0]}"
-- Keep it SHORT and scannable
-- One-line summary in the Callout
-- Only include sections with actual changes`,
+## Requirements
+- Keep it **short, skimmable, and factual**
+- Use the **HighlightLine** component for changes with the corresponding variant.
+- Include **only sections with real changes**
+- Use the additional feature details from the releaser to enrich the changelog with specific details`,
 		temperature: 0.5,
 	});
 
@@ -67,7 +162,7 @@ export async function refineChangelog(
 	const openrouter = getOpenRouterClient();
 
 	const result = await generateText({
-		model: openrouter.chat("google/gemini-2.5-flash-preview"),
+		model: openrouter.chat("anthropic/claude-opus-4.5"),
 		system:
 			"You are refining a changelog. Keep it SHORT and concise. Maintain the same MDX format.",
 		prompt: `Current changelog:

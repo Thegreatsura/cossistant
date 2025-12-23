@@ -9,7 +9,13 @@ config({ path: path.join(import.meta.dir, "../.env"), quiet: true });
 import kleur from "kleur";
 import ora from "ora";
 import prompts from "prompts";
-import { generateChangelog, refineChangelog } from "./ai";
+import {
+	detectImportantFeatures,
+	type FeatureDetail,
+	type FeatureQuestion,
+	generateChangelog,
+	refineChangelog,
+} from "./ai";
 import { getNextVersion, saveChangelog } from "./changelog";
 import { getCommitsSinceLastRelease, getLastReleaseTag } from "./git";
 import { runRelease } from "./release";
@@ -66,7 +72,81 @@ program
 			`Found ${commits.length} commits since ${lastTag || "beginning"}`
 		);
 
-		// Step 4: Generate changelog with AI
+		// Step 4: AI Feature Detection - Ask questions to gather more details
+		spinner.start("Analyzing release for key features...");
+		const questions = await detectImportantFeatures({
+			commits,
+			description,
+			releaseType,
+		});
+		spinner.succeed(
+			questions.length > 0
+				? `Identified ${questions.length} key feature(s) to document`
+				: "No additional details needed"
+		);
+
+		const featureDetails: FeatureDetail[] = [];
+
+		if (questions.length > 0) {
+			console.log(
+				kleur.dim(
+					"\n  The AI identified key features that could use more detail.\n"
+				)
+			);
+
+			for (const question of questions) {
+				const importanceLabel =
+					question.importance === "high"
+						? kleur.yellow("[Important]")
+						: kleur.dim("[Optional]");
+
+				console.log(`\n  ${importanceLabel} ${kleur.bold(question.feature)}\n`);
+
+				const { action } = await prompts({
+					type: "select",
+					name: "action",
+					message: question.question,
+					choices: [
+						{ title: "Answer this question", value: "answer" },
+						{ title: "Skip this question", value: "skip" },
+						{ title: "Skip all remaining questions", value: "skip_all" },
+					],
+				});
+
+				if (action === "skip_all" || !action) {
+					break;
+				}
+
+				if (action === "answer") {
+					const { answer } = await prompts({
+						type: "text",
+						name: "answer",
+						message: "Your answer:",
+						validate: (value) =>
+							value.length > 0 || "Please provide an answer or skip",
+					});
+
+					if (answer) {
+						featureDetails.push({
+							id: question.id,
+							feature: question.feature,
+							question: question.question,
+							answer,
+						});
+					}
+				}
+			}
+
+			if (featureDetails.length > 0) {
+				console.log(
+					kleur.green(
+						`\n  Collected ${featureDetails.length} detail(s) for the changelog.\n`
+					)
+				);
+			}
+		}
+
+		// Step 5: Generate changelog with AI
 		spinner.start("Generating changelog with AI...");
 		const nextVersion = getNextVersion(lastTag, releaseType);
 		let changelog = await generateChangelog({
@@ -74,10 +154,11 @@ program
 			description,
 			version: nextVersion,
 			releaseType,
+			featureDetails: featureDetails.length > 0 ? featureDetails : undefined,
 		});
 		spinner.succeed("Changelog generated");
 
-		// Step 5: Refinement loop
+		// Step 6: Refinement loop
 		while (true) {
 			console.log(kleur.dim(`\n${"─".repeat(60)}\n`));
 			console.log(changelog);
@@ -116,7 +197,7 @@ program
 			spinner.succeed("Changelog refined");
 		}
 
-		// Step 6: Save and release
+		// Step 7: Save and release
 		const savedPath = await saveChangelog(changelog, nextVersion);
 		console.log(kleur.green(`\nChangelog saved to: ${savedPath}`));
 

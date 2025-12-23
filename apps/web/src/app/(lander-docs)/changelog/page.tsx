@@ -93,7 +93,7 @@ export default async function ChangelogPage() {
 								<div className="mx-auto flex max-w-2xl flex-col gap-8 pb-16 md:flex-row md:gap-12">
 									{/* Content */}
 									<div className="min-w-0 flex-1">
-										<h2 className="mb-6 font-medium text-3xl">
+										<h2 className="mb-6 text-balance font-medium text-3xl">
 											{entry.data.description}
 										</h2>
 										<div className="prose prose-neutral dark:prose-invert max-w-none text-[0.95rem] text-primary">
