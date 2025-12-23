@@ -1,28 +1,36 @@
-# Release Playbook
+# Release Workflow
 
-Quick reference for releasing SDK packages using Changesets.
+## For Contributors
 
-## Stable Release Workflow
+1. Make your changes
+2. Run `bun changeset` and describe what changed
+3. Commit the changeset file with your PR
+4. Merge to main
+
+## What Happens Automatically
+
+When PRs with changesets merge to main:
+
+1. A "Version Packages" PR is created/updated automatically
+2. When the Version PR is merged, packages publish to npm
+3. GitHub releases are created with changelogs
+
+## Using the Release CLI
+
+For maintainers, we provide an AI-powered release CLI:
 
 ```bash
-# 1. Create a changeset
-bun changeset
-
-# 2. Version packages (converts workspace:* to semver)
-bun changeset:version
-
-# 3. Review and commit
-git diff
-git add .
-git commit -m "chore: version packages"
-git push
-
-# 4. Build and publish
-bun run release
-
-# 5. Push tags
-git push --follow-tags
+bun release create
 ```
+
+This interactive tool will:
+
+1. Ask you to select a release type (patch/minor/major)
+2. Ask for a description of the changes
+3. Fetch git commits since the last release
+4. Generate a polished changelog using AI
+5. Let you refine the changelog until you're satisfied
+6. Create the changeset, version packages, and publish to npm
 
 ## Published Packages
 
@@ -33,31 +41,9 @@ All packages use **fixed versioning** (same version number):
 - `@cossistant/react` - React SDK
 - `@cossistant/next` - Next.js bindings
 
-## Quick Commands
-
-| Command | Description |
-|---------|-------------|
-| `bun changeset` | Create a changeset |
-| `bun changeset:version` | Update versions & convert workspace:* |
-| `bun run build` | Build all packages |
-| `bun changeset:publish` | Build & publish to npm |
-| `bun run release` | Complete release (version → build → publish) |
-
-## Beta Builds (CI)
-
-1. Open a PR targeting `main`
-2. Apply the `🚀 autorelease` label
-3. Wait for **Release - Beta** workflow to complete
-4. Install with: `bun add @cossistant/react@0.0.0-beta.<sha>`
-
 ## Prerequisites
 
 - Run `bun install` to ensure dependencies are installed
 - Login to npm: `npm login`
 - Have push access to `main` branch
-
-## Detailed Documentation
-
-See [CHANGESETS_QUICKSTART.md](./CHANGESETS_QUICKSTART.md) for quick start guide.
-
-See [docs/CHANGESETS_WORKFLOW.md](./docs/CHANGESETS_WORKFLOW.md) for detailed documentation.
+- Set `OPENROUTER_API_KEY` environment variable for the release CLI

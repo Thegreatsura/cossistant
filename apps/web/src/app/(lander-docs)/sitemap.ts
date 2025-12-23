@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BASE_URL } from "@/constants";
-import { source } from "@/lib/source";
+import { changelog, source } from "@/lib/source";
 
 export const revalidate = false;
 
@@ -23,6 +23,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			changeFrequency: "monthly",
 			priority: 0.9,
 		},
+		{
+			url: url("/changelog"),
+			changeFrequency: "weekly",
+			priority: 0.7,
+		},
+		...changelog.getPages().map((page) => ({
+			url: url(page.url),
+			lastModified: page.data.date ? new Date(page.data.date) : undefined,
+			changeFrequency: "monthly" as const,
+			priority: 0.4,
+		})),
 		...source
 			.getPages()
 			.flatMap((page: ReturnType<typeof source.getPages>[number]) => {

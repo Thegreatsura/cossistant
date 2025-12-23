@@ -1,0 +1,30 @@
+{
+  "name": "@cossistant/release",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "cossistant-release": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.51.2",
+    "@openrouter/ai-sdk-provider": "^0.4.3",
+    "ai": "^4.3.16",
+    "commander": "^14.0.0",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.1",
+    "kleur": "^4.1.5",
+    "ora": "^8.2.0",
+    "prompts": "^2.4.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*",
+    "@types/bun": "^1.2.22",
+    "@types/fs-extra": "^11.0.4",
+    "@types/prompts": "^2.4.9"
+  },
+  "scripts": {
+    "release": "bun run src/index.ts"
+  }
+}

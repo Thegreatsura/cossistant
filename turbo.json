@@ -39,6 +39,7 @@
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
         "PUBLIC_APP_URL",
+        "OPENROUTER_API_KEY",
         "QSTASH_TOKEN",
         "QSTASH_URL",
         "QSTASH_CURRENT_SIGNING_KEY",

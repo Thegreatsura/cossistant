@@ -23,7 +23,10 @@ export function GitHubLink({
 	return (
 		<Link href={GITHUB_URL} rel="noreferrer" target="_blank">
 			<Button
-				className={cn("flex h-8 items-center gap-2 shadow-none", className)}
+				className={cn(
+					"flex h-8 items-center gap-2 pr-10 shadow-none",
+					className
+				)}
 				onMouseEnter={onHover}
 				size={size}
 				variant={variant}

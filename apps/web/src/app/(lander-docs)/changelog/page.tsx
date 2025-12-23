@@ -1,0 +1,133 @@
+import { format } from "date-fns";
+import Link from "next/link";
+import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import Icon from "@/components/ui/icons";
+import { changelog } from "@/lib/source";
+import { absoluteUrl } from "@/lib/utils";
+import { mdxComponents } from "../components/docs/mdx-components";
+import {
+	GitHubActivityGraph,
+	GitHubActivityGraphSkeleton,
+} from "../components/github-activity-graph";
+
+export const revalidate = false;
+export const dynamic = "force-static";
+
+const ITEMS_PER_PAGE = 10;
+
+export function generateMetadata() {
+	const title = "Changelog";
+	const description =
+		"All the latest updates, improvements, and fixes to Cossistant.";
+
+	return {
+		title,
+		description,
+		openGraph: {
+			title,
+			description,
+			type: "website",
+			url: absoluteUrl("/changelog"),
+			images: [
+				{
+					url: `/og?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+				},
+			],
+		},
+		twitter: {
+			card: "summary_large_image",
+			title,
+			description,
+			images: [
+				{
+					url: `/og?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+				},
+			],
+			creator: "@cossistant",
+		},
+	};
+}
+
+export default async function ChangelogPage() {
+	const allEntries = changelog
+		.getPages()
+		.sort(
+			(a, b) =>
+				new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
+		);
+
+	const totalPages = Math.ceil(allEntries.length / ITEMS_PER_PAGE);
+	const entries = allEntries.slice(0, ITEMS_PER_PAGE);
+	const hasNextPage = totalPages > 1;
+
+	return (
+		<div className="flex flex-col pt-20 pb-40">
+			<div className="relative flex flex-col">
+				<Suspense fallback={<GitHubActivityGraphSkeleton />}>
+					<GitHubActivityGraph />
+				</Suspense>
+				<div className="-translate-x-1/2 absolute bottom-0 left-1/2 w-screen border-primary/10 border-t border-dashed" />
+			</div>
+			<div className="mx-auto w-full px-4 md:px-0">
+				<div className="flex flex-col">
+					{entries.map((entry) => {
+						const MDX = entry.data.body;
+						const date = new Date(entry.data.date);
+
+						return (
+							<article className="relative py-16" key={entry.url}>
+								<div className="mx-auto mb-6 max-w-2xl shrink-0 md:sticky md:top-[90px] md:mx-0 md:mb-0 md:h-fit md:max-w-none md:px-4">
+									<div className="flex items-center gap-3 md:flex-col md:items-start md:gap-1">
+										<span className="inline-flex items-center border border-primary/10 border-dashed bg-background-300 px-2.5 py-1 font-mono text-sm">
+											{entry.data.version}
+										</span>
+										<time
+											className="mt-2 text-muted-foreground text-sm"
+											dateTime={entry.data.date}
+										>
+											{format(date, "MMM d, yyyy")}
+										</time>
+									</div>
+								</div>
+								<div className="mx-auto flex max-w-2xl flex-col gap-8 pb-16 md:flex-row md:gap-12">
+									{/* Content */}
+									<div className="min-w-0 flex-1">
+										<h2 className="mb-6 font-medium text-3xl">
+											{entry.data.description}
+										</h2>
+										<div className="prose prose-neutral dark:prose-invert max-w-none text-[0.95rem] text-primary">
+											<MDX components={mdxComponents} />
+										</div>
+									</div>
+								</div>
+
+								{/* Separator line */}
+								<div className="relative w-full">
+									<div className="-translate-x-1/2 absolute top-0 left-1/2 w-screen border-primary/10 border-t border-dashed" />
+								</div>
+							</article>
+						);
+					})}
+				</div>
+
+				{/* Navigation */}
+				<nav className="mt-8 flex items-center justify-between">
+					<div />
+					{hasNextPage && (
+						<Button
+							asChild
+							className="shadow-none"
+							size="sm"
+							variant="secondary"
+						>
+							<Link href="/changelog/page/2">
+								Older posts <Icon name="arrow-right" />
+							</Link>
+						</Button>
+					)}
+				</nav>
+			</div>
+		</div>
+	);
+}

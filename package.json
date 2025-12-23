@@ -13,11 +13,12 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "bun run build && changeset publish",
-    "release": "bun run changeset:version && bun run changeset:publish",
+    "release": "bun run packages/release/src/index.ts create",
     "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.6",
+    "@changesets/changelog-github": "^0.5.2",
     "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
