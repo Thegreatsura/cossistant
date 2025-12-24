@@ -96,7 +96,7 @@ export default async function ChangelogPage() {
 										<h2 className="mb-6 text-balance font-medium text-3xl">
 											{entry.data.description}
 										</h2>
-										<div className="prose prose-neutral dark:prose-invert max-w-none text-[0.95rem] text-primary">
+										<div className="w-full flex-1 *:data-[slot=alert]:first:mt-0">
 											<MDX components={mdxComponents} />
 										</div>
 									</div>

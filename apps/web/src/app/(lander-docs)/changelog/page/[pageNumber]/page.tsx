@@ -136,7 +136,7 @@ export default async function ChangelogPaginatedPage(props: {
 										<h2 className="mb-6 font-medium text-xl">
 											{entry.data.description}
 										</h2>
-										<div className="prose prose-neutral dark:prose-invert max-w-none text-[0.95rem] text-neutral-800 dark:text-neutral-300">
+										<div className="w-full flex-1 *:data-[slot=alert]:first:mt-0">
 											<MDX components={mdxComponents} />
 										</div>
 									</div>
