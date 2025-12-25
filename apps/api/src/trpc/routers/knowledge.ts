@@ -24,6 +24,7 @@ function toKnowledgeResponse(entry: {
 	organizationId: string;
 	websiteId: string;
 	aiAgentId: string | null;
+	linkSourceId: string | null;
 	type: "url" | "faq" | "article";
 	sourceUrl: string | null;
 	sourceTitle: string | null;
@@ -32,6 +33,8 @@ function toKnowledgeResponse(entry: {
 	contentHash: string;
 	payload: unknown;
 	metadata: unknown;
+	isIncluded: boolean;
+	sizeBytes: number;
 	createdAt: string;
 	updatedAt: string;
 	deletedAt: string | null;
@@ -41,6 +44,7 @@ function toKnowledgeResponse(entry: {
 		organizationId: entry.organizationId,
 		websiteId: entry.websiteId,
 		aiAgentId: entry.aiAgentId,
+		linkSourceId: entry.linkSourceId,
 		type: entry.type,
 		sourceUrl: entry.sourceUrl,
 		sourceTitle: entry.sourceTitle,
@@ -49,6 +53,8 @@ function toKnowledgeResponse(entry: {
 		contentHash: entry.contentHash,
 		payload: entry.payload as KnowledgeResponse["payload"],
 		metadata: entry.metadata as KnowledgeResponse["metadata"],
+		isIncluded: entry.isIncluded,
+		sizeBytes: entry.sizeBytes,
 		createdAt: entry.createdAt,
 		updatedAt: entry.updatedAt,
 		deletedAt: entry.deletedAt,

@@ -43,4 +43,6 @@ export const env = {
 		getEnvVariable("WORKERS_ENABLE_BULL_BOARD", defaultBullBoardEnabled) ===
 		"true",
 	BULL_BOARD_TOKEN: getEnvVariable("WORKERS_BULL_BOARD_TOKEN", ""),
+	// Firecrawl API key for web crawling
+	FIRECRAWL_API_KEY: getEnvVariable("FIRECRAWL_API_KEY", ""),
 };

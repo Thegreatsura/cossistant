@@ -2,6 +2,7 @@
 export const QUEUE_NAMES = {
 	MESSAGE_NOTIFICATION: "message-notification",
 	AI_REPLY: "ai-reply",
+	WEB_CRAWL: "web-crawl",
 } as const;
 
 /**
@@ -52,4 +53,24 @@ export type AiReplyJobData = {
 
 export function generateAiReplyJobId(conversationId: string): string {
 	return `ai-reply-${conversationId}`;
+}
+
+/**
+ * Job data for web crawl queue
+ */
+export type WebCrawlJobData = {
+	linkSourceId: string;
+	websiteId: string;
+	organizationId: string;
+	aiAgentId: string | null;
+	url: string;
+	crawlLimit: number;
+	createdBy: string; // userId who triggered
+};
+
+/**
+ * Generate a unique job ID for web crawl
+ */
+export function generateWebCrawlJobId(linkSourceId: string): string {
+	return `web-crawl-${linkSourceId}`;
 }

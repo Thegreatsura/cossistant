@@ -5,6 +5,8 @@ import {
 	sql,
 } from "drizzle-orm";
 import {
+	bigint,
+	boolean,
 	index,
 	jsonb,
 	pgEnum,
@@ -20,6 +22,7 @@ import {
 import { isoTimestamp as timestamp } from "../../utils/db/timestamp";
 import { aiAgent } from "./ai-agent";
 import { organization } from "./auth";
+// Note: linkSource is imported lazily in relations to avoid circular dependency
 import { website } from "./website";
 
 export const knowledgeTypeEnum = pgEnum("knowledge_type", [
@@ -45,6 +48,8 @@ export const knowledge = pgTable(
 				onDelete: "cascade",
 			}
 		),
+		// Reference to the link source that created this knowledge entry (for URL type)
+		linkSourceId: ulidNullableReference("link_source_id"),
 		type: knowledgeTypeEnum("type").notNull(),
 		sourceUrl: text("source_url"),
 		sourceTitle: text("source_title"),
@@ -53,6 +58,10 @@ export const knowledge = pgTable(
 		contentHash: text("content_hash").notNull(),
 		payload: jsonb("payload").notNull(),
 		metadata: jsonb("metadata"),
+		// Whether this knowledge entry is included in training (for selective inclusion)
+		isIncluded: boolean("is_included").default(true).notNull(),
+		// Size in bytes for plan limit tracking
+		sizeBytes: bigint("size_bytes", { mode: "number" }).default(0).notNull(),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date().toISOString())
 			.notNull(),
@@ -67,6 +76,10 @@ export const knowledge = pgTable(
 		index("knowledge_deleted_at_idx").on(table.deletedAt),
 		// Index for filtering by website + type (common list query pattern)
 		index("knowledge_website_type_idx").on(table.websiteId, table.type),
+		// Index for filtering by link source
+		index("knowledge_link_source_idx").on(table.linkSourceId),
+		// Index for included knowledge (for training queries)
+		index("knowledge_included_idx").on(table.isIncluded),
 		uniqueIndex("knowledge_scope_hash_idx").on(
 			table.websiteId,
 			sql`coalesce(${table.aiAgentId}, '00000000000000000000000000')`,

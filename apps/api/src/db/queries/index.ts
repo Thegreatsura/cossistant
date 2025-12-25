@@ -3,6 +3,7 @@ export * from "./api-keys";
 export * from "./contact";
 export * from "./conversation";
 export * from "./knowledge";
+export * from "./link-source";
 export * from "./member-notification-settings";
 export * from "./organization";
 export * from "./user";

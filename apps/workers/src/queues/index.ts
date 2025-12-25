@@ -2,6 +2,7 @@ import type { Redis, RedisOptions } from "@cossistant/redis";
 import { getBullConnectionOptions } from "@cossistant/redis";
 import { createAiReplyWorker } from "./ai-reply/worker";
 import { createMessageNotificationWorker } from "./message-notification/worker";
+import { createWebCrawlWorker } from "./web-crawl/worker";
 
 type WorkerInstance = {
 	start: () => Promise<void>;
@@ -36,6 +37,13 @@ export async function startAllWorkers(params: {
 	});
 	await aiReplyWorker.start();
 	workers.push(aiReplyWorker);
+
+	const webCrawlWorker = createWebCrawlWorker({
+		connectionOptions,
+		redisUrl: params.redisUrl,
+	});
+	await webCrawlWorker.start();
+	workers.push(webCrawlWorker);
 
 	console.log("[workers] All workers started");
 }

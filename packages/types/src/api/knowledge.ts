@@ -232,6 +232,10 @@ export const knowledgeResponseSchema = z
 				"Optional AI agent identifier; null means shared at website scope",
 			example: "01JG000000000000000000002",
 		}),
+		linkSourceId: z.ulid().nullable().openapi({
+			description: "Reference to the link source that created this entry",
+			example: "01JG000000000000000000003",
+		}),
 		type: knowledgeTypeSchema,
 		sourceUrl: z.url().nullable().openapi({
 			description: "Origin URL for this entry",
@@ -259,6 +263,14 @@ export const knowledgeResponseSchema = z
 			articleKnowledgePayloadSchema,
 		]),
 		metadata: metadataSchema,
+		isIncluded: z.boolean().openapi({
+			description: "Whether this entry is included in training",
+			example: true,
+		}),
+		sizeBytes: z.number().int().nonnegative().openapi({
+			description: "Size of this entry in bytes",
+			example: 4096,
+		}),
 		createdAt: z.string().openapi({
 			description: "Creation timestamp",
 			example: "2024-06-10T12:00:00.000Z",

@@ -9,6 +9,8 @@ import { env } from "@api/env";
 import {
 	createAiReplyTriggers,
 	createMessageNotificationTriggers,
+	createWebCrawlTriggers,
+	type WebCrawlJobData,
 } from "@cossistant/jobs";
 import { getBullConnectionOptions } from "@cossistant/redis";
 
@@ -17,6 +19,7 @@ let messageNotificationTriggers: ReturnType<
 	typeof createMessageNotificationTriggers
 > | null = null;
 let aiReplyTriggers: ReturnType<typeof createAiReplyTriggers> | null = null;
+let webCrawlTriggers: ReturnType<typeof createWebCrawlTriggers> | null = null;
 
 const bullConnectionOptions = getBullConnectionOptions(env.REDIS_URL);
 
@@ -38,6 +41,16 @@ export function getAiReplyQueueTriggers() {
 		});
 	}
 	return aiReplyTriggers;
+}
+
+function getWebCrawlTriggers() {
+	if (!webCrawlTriggers) {
+		webCrawlTriggers = createWebCrawlTriggers({
+			connection: bullConnectionOptions,
+			redisUrl: env.REDIS_URL,
+		});
+	}
+	return webCrawlTriggers;
 }
 
 export async function triggerMemberMessageNotification(data: {
@@ -94,6 +107,44 @@ export async function triggerVisitorMessageNotification(data: {
 	}
 }
 
+export async function triggerWebCrawl(data: WebCrawlJobData): Promise<string> {
+	console.log(
+		`[queue-triggers] triggerWebCrawl called for link source ${data.linkSourceId}, url ${data.url}`
+	);
+	try {
+		const jobId = await getWebCrawlTriggers().enqueueWebCrawl(data);
+		console.log(
+			`[queue-triggers] triggerWebCrawl completed for link source ${data.linkSourceId}, jobId ${jobId}`
+		);
+		return jobId;
+	} catch (error) {
+		console.error(
+			`[queue-triggers] triggerWebCrawl FAILED for link source ${data.linkSourceId}:`,
+			error
+		);
+		throw error;
+	}
+}
+
+export async function cancelWebCrawl(linkSourceId: string): Promise<boolean> {
+	console.log(
+		`[queue-triggers] cancelWebCrawl called for link source ${linkSourceId}`
+	);
+	try {
+		const cancelled = await getWebCrawlTriggers().cancelWebCrawl(linkSourceId);
+		console.log(
+			`[queue-triggers] cancelWebCrawl completed for link source ${linkSourceId}, cancelled: ${cancelled}`
+		);
+		return cancelled;
+	} catch (error) {
+		console.error(
+			`[queue-triggers] cancelWebCrawl FAILED for link source ${linkSourceId}:`,
+			error
+		);
+		throw error;
+	}
+}
+
 export async function closeQueueProducers(): Promise<void> {
 	await Promise.all([
 		(async () => {
@@ -106,6 +157,12 @@ export async function closeQueueProducers(): Promise<void> {
 			if (aiReplyTriggers) {
 				await aiReplyTriggers.close();
 				aiReplyTriggers = null;
+			}
+		})(),
+		(async () => {
+			if (webCrawlTriggers) {
+				await webCrawlTriggers.close();
+				webCrawlTriggers = null;
 			}
 		})(),
 	]);

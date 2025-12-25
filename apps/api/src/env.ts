@@ -69,4 +69,6 @@ export const env = {
 	VAPID_SUBJECT: getEnvVariable("VAPID_SUBJECT"),
 	// OpenRouter API key for AI agents
 	OPENROUTER_API_KEY: getEnvVariable("OPENROUTER_API_KEY", ""),
+	// Firecrawl API key for web scraping
+	FIRECRAWL_API_KEY: getEnvVariable("FIRECRAWL_API_KEY", ""),
 };

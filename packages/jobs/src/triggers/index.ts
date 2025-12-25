@@ -6,3 +6,4 @@
 
 export { createAiReplyTriggers } from "./ai-reply";
 export { createMessageNotificationTriggers } from "./message-notification";
+export { createWebCrawlTriggers } from "./web-crawl";

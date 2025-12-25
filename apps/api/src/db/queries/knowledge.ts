@@ -159,6 +159,7 @@ export async function createKnowledge(
 		organizationId: string;
 		websiteId: string;
 		aiAgentId?: string | null;
+		linkSourceId?: string | null;
 		type: KnowledgeType;
 		sourceUrl?: string | null;
 		sourceTitle?: string | null;
@@ -166,16 +167,24 @@ export async function createKnowledge(
 		createdBy: string;
 		payload: unknown;
 		metadata?: Record<string, unknown> | null;
+		isIncluded?: boolean;
+		sizeBytes?: number;
 	}
 ): Promise<KnowledgeSelect> {
 	const now = new Date().toISOString();
 	const contentHash = generateContentHash(params.payload);
+
+	// Calculate size if not provided
+	const sizeBytes =
+		params.sizeBytes ??
+		new TextEncoder().encode(JSON.stringify(params.payload)).length;
 
 	const newEntry: KnowledgeInsert = {
 		id: generateULID(),
 		organizationId: params.organizationId,
 		websiteId: params.websiteId,
 		aiAgentId: params.aiAgentId ?? null,
+		linkSourceId: params.linkSourceId ?? null,
 		type: params.type,
 		sourceUrl: params.sourceUrl ?? null,
 		sourceTitle: params.sourceTitle ?? null,
@@ -184,6 +193,8 @@ export async function createKnowledge(
 		contentHash,
 		payload: params.payload,
 		metadata: params.metadata ?? null,
+		isIncluded: params.isIncluded ?? true,
+		sizeBytes,
 		createdAt: now,
 		updatedAt: now,
 	};

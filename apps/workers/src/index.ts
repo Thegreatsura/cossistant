@@ -5,6 +5,7 @@ import {
 	type AiReplyJobData,
 	type MessageNotificationJobData,
 	QUEUE_NAMES,
+	type WebCrawlJobData,
 } from "@cossistant/jobs";
 import {
 	createRedisConnection,
@@ -42,7 +43,10 @@ app.get("/health", (c) =>
 	c.json({ status: "healthy", timestamp: new Date().toISOString() })
 );
 
-type ManagedQueue = Queue<MessageNotificationJobData> | Queue<AiReplyJobData>;
+type ManagedQueue =
+	| Queue<MessageNotificationJobData>
+	| Queue<AiReplyJobData>
+	| Queue<WebCrawlJobData>;
 
 const bullBoardQueues: ManagedQueue[] = [];
 if (env.BULL_BOARD_ENABLED) {
@@ -56,11 +60,18 @@ if (env.BULL_BOARD_ENABLED) {
 	const aiReplyQueue = new Queue<AiReplyJobData>(QUEUE_NAMES.AI_REPLY, {
 		connection: boardConnection,
 	});
-	bullBoardQueues.push(messageQueue, aiReplyQueue);
+	const webCrawlQueue = new Queue<WebCrawlJobData>(QUEUE_NAMES.WEB_CRAWL, {
+		connection: boardConnection,
+	});
+	bullBoardQueues.push(messageQueue, aiReplyQueue, webCrawlQueue);
 
 	const serverAdapter = new HonoAdapter(serveStatic);
 	createBullBoard({
-		queues: [new BullMQAdapter(messageQueue), new BullMQAdapter(aiReplyQueue)],
+		queues: [
+			new BullMQAdapter(messageQueue),
+			new BullMQAdapter(aiReplyQueue),
+			new BullMQAdapter(webCrawlQueue),
+		],
 		serverAdapter,
 	});
 	const bullBoardBasePath = "/queues";

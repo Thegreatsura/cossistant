@@ -4,4 +4,5 @@ export * from "./auth";
 export * from "./conversation";
 export * from "./email-bounce";
 export * from "./knowledge";
+export * from "./link-source";
 export * from "./website";
