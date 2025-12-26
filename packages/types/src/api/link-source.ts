@@ -244,6 +244,28 @@ export type RecrawlLinkSourceRequest = z.infer<
 >;
 
 /**
+ * Cancel link source request schema (TRPC)
+ */
+export const cancelLinkSourceRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug",
+			example: "my-website",
+		}),
+		id: z.ulid().openapi({
+			description: "Link source ID to cancel",
+			example: "01JG00000000000000000000A",
+		}),
+	})
+	.openapi({
+		description: "Request to cancel a crawl in progress",
+	});
+
+export type CancelLinkSourceRequest = z.infer<
+	typeof cancelLinkSourceRequestSchema
+>;
+
+/**
  * Get crawl status request schema (TRPC)
  */
 export const getCrawlStatusRequestSchema = z

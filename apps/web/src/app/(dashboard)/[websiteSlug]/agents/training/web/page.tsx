@@ -136,6 +136,29 @@ export default function WebSourcesPage() {
 			})
 		);
 
+	// Cancel link source mutation
+	const { mutateAsync: cancelLinkSource, isPending: isCancelling } =
+		useMutation(
+			trpc.linkSource.cancel.mutationOptions({
+				onSuccess: async () => {
+					await queryClient.invalidateQueries({
+						queryKey: trpc.linkSource.list.queryKey({
+							websiteSlug: website.slug,
+						}),
+					});
+					await queryClient.invalidateQueries({
+						queryKey: trpc.linkSource.getTrainingStats.queryKey({
+							websiteSlug: website.slug,
+						}),
+					});
+					toast.success("Crawl cancelled");
+				},
+				onError: (error) => {
+					toast.error(error.message || "Failed to cancel crawl");
+				},
+			})
+		);
+
 	// Validate URL
 	useEffect(() => {
 		try {
@@ -171,6 +194,13 @@ export default function WebSourcesPage() {
 
 	const handleRecrawl = async (id: string) => {
 		await recrawlLinkSource({
+			websiteSlug: website.slug,
+			id,
+		});
+	};
+
+	const handleCancel = async (id: string) => {
+		await cancelLinkSource({
 			websiteSlug: website.slug,
 			id,
 		});
@@ -294,9 +324,11 @@ export default function WebSourcesPage() {
 							<div className="space-y-3">
 								{linkSources?.items.map((source) => (
 									<LinkSourceCard
+										isCancelling={isCancelling}
 										isDeleting={isDeleting}
 										isRecrawling={isRecrawling}
 										key={source.id}
+										onCancel={() => handleCancel(source.id)}
 										onDelete={() => handleDelete(source.id)}
 										onRecrawl={() => handleRecrawl(source.id)}
 										source={source}
@@ -329,8 +361,10 @@ type LinkSourceCardProps = {
 	websiteSlug: string;
 	onDelete: () => void;
 	onRecrawl: () => void;
+	onCancel: () => void;
 	isDeleting: boolean;
 	isRecrawling: boolean;
+	isCancelling: boolean;
 };
 
 function LinkSourceCard({
@@ -338,8 +372,10 @@ function LinkSourceCard({
 	websiteSlug,
 	onDelete,
 	onRecrawl,
+	onCancel,
 	isDeleting,
 	isRecrawling,
+	isCancelling,
 }: LinkSourceCardProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
@@ -454,24 +490,52 @@ function LinkSourceCard({
 					</div>
 
 					<div className="flex items-center gap-2">
-						<Button
-							disabled={
-								isRecrawling || currentStatus === "crawling" || isDeleting
-							}
-							onClick={onRecrawl}
-							size="sm"
-							variant="ghost"
-						>
-							<Icon className="size-4" name="play" />
-						</Button>
-						<Button
-							disabled={isDeleting || currentStatus === "crawling"}
-							onClick={onDelete}
-							size="sm"
-							variant="ghost"
-						>
-							<Icon className="size-4" name="x" />
-						</Button>
+						{currentStatus === "crawling" || currentStatus === "pending" ? (
+							// Show Cancel button when crawling or pending
+							<Button
+								disabled={isCancelling}
+								onClick={onCancel}
+								size="sm"
+								title="Cancel crawl"
+								variant="ghost"
+							>
+								{isCancelling ? (
+									<Icon className="size-4 animate-spin" name="settings" />
+								) : (
+									<Icon className="size-4" name="cancel" />
+								)}
+							</Button>
+						) : (
+							// Show Recrawl and Delete buttons when completed or failed
+							<>
+								<Button
+									disabled={isRecrawling || isDeleting}
+									onClick={onRecrawl}
+									size="sm"
+									title="Recrawl"
+									variant="ghost"
+								>
+									{isRecrawling ? (
+										<Icon className="size-4 animate-spin" name="settings" />
+									) : (
+										<Icon className="size-4" name="play" />
+									)}
+								</Button>
+								<Button
+									disabled={isDeleting || isRecrawling}
+									onClick={onDelete}
+									size="sm"
+									title="Delete"
+									variant="ghost"
+								>
+									{isDeleting ? (
+										<Icon className="size-4 animate-spin" name="settings" />
+									) : (
+										<Icon className="size-4" name="x" />
+									)}
+								</Button>
+							</>
+						)}
 					</div>
 				</div>
 			</CardContent>

@@ -1,10 +1,11 @@
-import { createKnowledge } from "@api/db/queries/knowledge";
+import { upsertKnowledge } from "@api/db/queries/knowledge";
 import {
 	getLinkSourceById,
 	getLinkSourceTotalSize,
 	updateLinkSource,
 } from "@api/db/queries/link-source";
 import { getWebsiteById } from "@api/db/queries/website";
+import { knowledge } from "@api/db/schema/knowledge";
 import { getPlanForWebsite } from "@api/lib/plans/access";
 import { FirecrawlService } from "@api/services/firecrawl";
 import { QUEUE_NAMES, type WebCrawlJobData } from "@cossistant/jobs";
@@ -12,6 +13,7 @@ import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
 import { db } from "@workers/db";
 import { env } from "@workers/env";
 import { type Job, Queue, QueueEvents, Worker } from "bullmq";
+import { and, eq, isNull } from "drizzle-orm";
 
 // Polling configuration
 const POLL_INTERVAL_MS = 5000; // 5 seconds
@@ -249,6 +251,22 @@ async function processWebCrawlJob(
 		await sleep(POLL_INTERVAL_MS);
 		pollAttempts++;
 
+		// Check if the link source was deleted/cancelled during crawling
+		const currentLinkSource = await getLinkSourceById(db, {
+			id: linkSourceId,
+			websiteId,
+		});
+
+		// If link source was deleted, abort the crawl
+		if (!currentLinkSource || currentLinkSource.deletedAt) {
+			console.log(
+				`[worker:web-crawl] Link source ${linkSourceId} was deleted, aborting crawl`
+			);
+			// Cancel the Firecrawl job
+			await firecrawlService.cancelCrawl(crawlResult.jobId);
+			return; // Exit early - no need to process results
+		}
+
 		crawlStatus = await firecrawlService.getCrawlStatus(crawlResult.jobId);
 
 		// Update progress based on Firecrawl progress
@@ -312,7 +330,27 @@ async function processWebCrawlJob(
 		const sizeLimitBytes =
 			sizeLimitMb !== null ? sizeLimitMb * MB_TO_BYTES : null;
 
-		// Get current total size
+		// Soft delete existing knowledge entries for this link source before inserting new ones
+		// This handles the recrawl case and prevents duplicate key violations
+		const softDeleteTime = new Date().toISOString();
+		await db
+			.update(knowledge)
+			.set({
+				deletedAt: softDeleteTime,
+				updatedAt: softDeleteTime,
+			})
+			.where(
+				and(
+					eq(knowledge.linkSourceId, linkSourceId),
+					isNull(knowledge.deletedAt)
+				)
+			);
+
+		console.log(
+			`[worker:web-crawl] Soft-deleted existing knowledge entries for link source ${linkSourceId}`
+		);
+
+		// Get current total size (excluding the just-deleted entries)
 		const currentTotalSize = await getLinkSourceTotalSize(db, {
 			websiteId,
 			aiAgentId,
@@ -321,7 +359,7 @@ async function processWebCrawlJob(
 		let totalSizeBytes = 0;
 		let crawledPagesCount = 0;
 
-		// Create knowledge entries for each page
+		// Upsert knowledge entries for each page
 		for (const page of crawlStatus.pages) {
 			// Check size limit
 			const newTotalSize = currentTotalSize + totalSizeBytes + page.sizeBytes;
@@ -333,8 +371,8 @@ async function processWebCrawlJob(
 				break;
 			}
 
-			// Create knowledge entry
-			await createKnowledge(db, {
+			// Upsert knowledge entry (handles duplicates gracefully)
+			await upsertKnowledge(db, {
 				organizationId,
 				websiteId,
 				aiAgentId,

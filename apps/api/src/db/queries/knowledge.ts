@@ -51,13 +51,18 @@ export async function getKnowledgeByContentHash(
 		websiteId: string;
 		aiAgentId: string | null;
 		contentHash: string;
+		includeSoftDeleted?: boolean;
 	}
 ): Promise<KnowledgeSelect | null> {
 	const conditions = [
 		eq(knowledge.websiteId, params.websiteId),
 		eq(knowledge.contentHash, params.contentHash),
-		isNull(knowledge.deletedAt),
 	];
+
+	// Only filter out deleted entries if not explicitly including them
+	if (!params.includeSoftDeleted) {
+		conditions.push(isNull(knowledge.deletedAt));
+	}
 
 	// Handle null aiAgentId - shared knowledge
 	if (params.aiAgentId === null) {
@@ -206,6 +211,78 @@ export async function createKnowledge(
 	}
 
 	return entry;
+}
+
+/**
+ * Create or update a knowledge entry (upsert)
+ * If a knowledge entry with the same content hash already exists for the scope,
+ * it updates the existing entry with the new data.
+ *
+ * Uses a manual select-then-insert/update pattern instead of ON CONFLICT
+ * because the unique index includes a COALESCE expression that Drizzle
+ * cannot target directly.
+ */
+export async function upsertKnowledge(
+	db: Database,
+	params: {
+		organizationId: string;
+		websiteId: string;
+		aiAgentId?: string | null;
+		linkSourceId?: string | null;
+		type: KnowledgeType;
+		sourceUrl?: string | null;
+		sourceTitle?: string | null;
+		origin: string;
+		createdBy: string;
+		payload: unknown;
+		metadata?: Record<string, unknown> | null;
+		isIncluded?: boolean;
+		sizeBytes?: number;
+	}
+): Promise<KnowledgeSelect> {
+	const now = new Date().toISOString();
+	const contentHash = generateContentHash(params.payload);
+
+	// Calculate size if not provided
+	const sizeBytes =
+		params.sizeBytes ??
+		new TextEncoder().encode(JSON.stringify(params.payload)).length;
+
+	// Check if entry with same content hash exists (including soft-deleted)
+	const existing = await getKnowledgeByContentHash(db, {
+		websiteId: params.websiteId,
+		aiAgentId: params.aiAgentId ?? null,
+		contentHash,
+		includeSoftDeleted: true,
+	});
+
+	if (existing) {
+		// Update existing entry (reactivate if soft-deleted)
+		const [updated] = await db
+			.update(knowledge)
+			.set({
+				linkSourceId: params.linkSourceId ?? null,
+				sourceUrl: params.sourceUrl ?? null,
+				sourceTitle: params.sourceTitle ?? null,
+				origin: params.origin,
+				payload: params.payload,
+				metadata: params.metadata ?? null,
+				isIncluded: params.isIncluded ?? true,
+				sizeBytes,
+				updatedAt: now,
+				deletedAt: null, // Reactivate if soft-deleted
+			})
+			.where(eq(knowledge.id, existing.id))
+			.returning();
+
+		if (!updated) {
+			throw new Error("Failed to update knowledge entry");
+		}
+		return updated;
+	}
+
+	// Insert new entry
+	return createKnowledge(db, params);
 }
 
 /**

@@ -12,8 +12,10 @@ import {
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { knowledge } from "@api/db/schema/knowledge";
 import { getPlanForWebsite } from "@api/lib/plans/access";
+import { firecrawlService } from "@api/services/firecrawl";
 import { cancelWebCrawl, triggerWebCrawl } from "@api/utils/queue-triggers";
 import {
+	cancelLinkSourceRequestSchema,
 	createLinkSourceRequestSchema,
 	deleteLinkSourceRequestSchema,
 	getCrawlStatusRequestSchema,
@@ -282,19 +284,36 @@ export const linkSourceRouter = createTRPCRouter({
 				});
 			}
 
-			// If there's a pending or active crawl, try to cancel the queue job
+			// If there's a pending or active crawl, try to cancel both BullMQ job and Firecrawl job
 			if (
 				linkSourceEntry.status === "pending" ||
 				linkSourceEntry.status === "crawling"
 			) {
+				// Cancel BullMQ queue job (for pending jobs)
 				try {
 					await cancelWebCrawl(input.id);
 				} catch (error) {
 					console.error(
-						"[link-source:delete] Failed to cancel crawl job:",
+						"[link-source:delete] Failed to cancel BullMQ job:",
 						error
 					);
 					// Continue with deletion even if cancellation fails
+				}
+
+				// Cancel Firecrawl job (for active crawls)
+				if (linkSourceEntry.firecrawlJobId) {
+					try {
+						await firecrawlService.cancelCrawl(linkSourceEntry.firecrawlJobId);
+						console.log(
+							`[link-source:delete] Cancelled Firecrawl job ${linkSourceEntry.firecrawlJobId}`
+						);
+					} catch (error) {
+						console.error(
+							"[link-source:delete] Failed to cancel Firecrawl job:",
+							error
+						);
+						// Continue with deletion even if cancellation fails
+					}
 				}
 			}
 
@@ -324,6 +343,86 @@ export const linkSourceRouter = createTRPCRouter({
 			}
 
 			return { id: input.id };
+		}),
+
+	/**
+	 * Cancel a crawl in progress
+	 */
+	cancel: protectedProcedure
+		.input(cancelLinkSourceRequestSchema)
+		.output(linkSourceResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const linkSourceEntry = await getLinkSourceById(db, {
+				id: input.id,
+				websiteId: websiteData.id,
+			});
+
+			if (!linkSourceEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Link source not found",
+				});
+			}
+
+			// Only allow cancelling pending or crawling jobs
+			if (
+				linkSourceEntry.status !== "pending" &&
+				linkSourceEntry.status !== "crawling"
+			) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Cannot cancel a crawl with status "${linkSourceEntry.status}"`,
+				});
+			}
+
+			// Cancel BullMQ queue job (for pending jobs)
+			try {
+				await cancelWebCrawl(input.id);
+			} catch (error) {
+				console.error(
+					"[link-source:cancel] Failed to cancel BullMQ job:",
+					error
+				);
+				// Continue even if cancellation fails
+			}
+
+			// Cancel Firecrawl job (for active crawls)
+			if (linkSourceEntry.firecrawlJobId) {
+				try {
+					await firecrawlService.cancelCrawl(linkSourceEntry.firecrawlJobId);
+					console.log(
+						`[link-source:cancel] Cancelled Firecrawl job ${linkSourceEntry.firecrawlJobId}`
+					);
+				} catch (error) {
+					console.error(
+						"[link-source:cancel] Failed to cancel Firecrawl job:",
+						error
+					);
+					// Continue even if cancellation fails
+				}
+			}
+
+			// Update status to failed with cancellation message
+			const updatedEntry = await updateLinkSource(db, {
+				id: input.id,
+				websiteId: websiteData.id,
+				status: "failed",
+				errorMessage: "Cancelled by user",
+			});
+
+			return toLinkSourceResponse(updatedEntry ?? linkSourceEntry);
 		}),
 
 	/**
