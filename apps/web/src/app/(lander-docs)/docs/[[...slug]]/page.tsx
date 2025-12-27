@@ -1,5 +1,6 @@
 import { findNeighbour } from "fumadocs-core/page-tree";
-import { APIPage } from "fumadocs-openapi/ui";
+// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
+// import { APIPage } from "../../components/docs/api-page";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -79,15 +80,16 @@ export default async function Page(props: {
 		notFound();
 	}
 
-	if (page.data.type === "openapi") {
-		return (
-			<div>
-				<h1 className="font-semibold text-[1.75em]">{page.data.title}</h1>
-				<p className="mb-6 text-fd-muted-foreground">{page.data.description}</p>
-				<APIPage {...page.data.getAPIPageProps()} />
-			</div>
-		);
-	}
+	// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
+	// if (page.data.type === "openapi") {
+	// 	return (
+	// 		<div>
+	// 			<h1 className="font-semibold text-[1.75em]">{page.data.title}</h1>
+	// 			<p className="mb-6 text-fd-muted-foreground">{page.data.description}</p>
+	// 			<APIPage {...page.data.getAPIPageProps()} />
+	// 		</div>
+	// 	);
+	// }
 
 	const doc = page.data;
 	const MDX = doc.body;
@@ -199,7 +201,7 @@ export default async function Page(props: {
 			</div>
 			<div className="sticky top-[calc(var(--header-height)+1px)] z-30 ml-auto hidden h-[calc(100svh-var(--header-height)-var(--footer-height))] w-72 flex-col gap-4 overflow-hidden overscroll-none pb-8 xl:flex">
 				<div className="h-(--top-spacing) shrink-0" />
-				{doc.type === "docs" && doc.toc?.length ? (
+				{doc.toc?.length ? (
 					<div className="no-scrollbar overflow-y-auto px-8">
 						<div className="flex gap-1 pl-4">
 							<LLMCopyButton markdownUrl={`${page.url}.mdx`} />

@@ -10,7 +10,7 @@ const Card = ({
 }) => (
 	<div
 		className={cn(
-			"rounded-lg border border-primary/10 bg-background text-foreground shadow-sm dark:border-primary/5",
+			"rounded border border-primary/10 bg-background text-foreground dark:border-primary/5",
 			className
 		)}
 		ref={ref}

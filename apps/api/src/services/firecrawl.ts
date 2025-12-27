@@ -1,13 +1,69 @@
 import { env } from "@api/env";
 
-// Firecrawl API types based on their SDK documentation
+// Regex patterns for URL filtering (defined at top level for performance)
+const TRAILING_SLASH_REGEX = /\/$/;
+const LEADING_SLASH_REGEX = /^\//;
+
+// Firecrawl API types based on their SDK documentation (v2)
 type FirecrawlScrapeOptions = {
 	formats?: Array<"markdown" | "html">;
+	/** Only return the main content of the page (excludes nav, headers, footers) */
+	onlyMainContent?: boolean;
+	/** HTML tags to include (e.g., ["p", "h1", "article"]) */
+	includeTags?: string[];
+	/** HTML tags to exclude (e.g., ["nav", "footer", ".sidebar"]) */
+	excludeTags?: string[];
+	/** Custom parsers to use */
+	parsers?: string[];
+};
+
+/** Sitemap handling mode for v2 crawl */
+export type FirecrawlSitemapMode = "include" | "exclude" | "only";
+
+// Batch scrape API types
+type FirecrawlBatchScrapeParams = {
+	urls: string[];
+	formats?: Array<"markdown" | "html">;
+	onlyMainContent?: boolean;
+	includeTags?: string[];
+	excludeTags?: string[];
+};
+
+type FirecrawlBatchScrapeResponse = {
+	success: boolean;
+	id?: string;
+	url?: string;
+	error?: string;
+};
+
+type FirecrawlBatchScrapeStatusResponse = {
+	success: boolean;
+	status: "scraping" | "completed" | "failed";
+	completed?: number;
+	total?: number;
+	creditsUsed?: number;
+	expiresAt?: string;
+	data?: FirecrawlPageData[];
+	error?: string;
 };
 
 type FirecrawlCrawlParams = {
 	limit?: number;
+	/** Maximum depth for link discovery (v2) */
+	maxDiscoveryDepth?: number;
+	/** @deprecated Use maxDiscoveryDepth instead */
+	maxDepth?: number;
+	includePaths?: string[];
+	excludePaths?: string[];
+	allowBackwardLinks?: boolean;
+	allowExternalLinks?: boolean;
+	/** Sitemap handling: "include" (use sitemap + crawl), "exclude" (no sitemap), "only" (sitemap only) */
+	sitemap?: FirecrawlSitemapMode;
+	/** Whether to crawl the entire domain (v2) */
+	crawlEntireDomain?: boolean;
 	scrapeOptions?: FirecrawlScrapeOptions;
+	/** Skip cache - force fresh crawl */
+	skipCache?: boolean;
 };
 
 type FirecrawlCrawlResponse = {
@@ -99,7 +155,78 @@ export type BrandInfo = {
 	error?: string;
 };
 
-const FIRECRAWL_API_BASE = "https://api.firecrawl.dev/v1";
+/**
+ * Map result - discovered URLs from a website
+ */
+export type MapResult = {
+	success: boolean;
+	urls?: string[];
+	error?: string;
+};
+
+/**
+ * Batch scrape result - async job started
+ */
+export type BatchScrapeResult = {
+	success: boolean;
+	jobId?: string;
+	error?: string;
+};
+
+/**
+ * Batch scrape status - current state of batch scrape job
+ */
+export type BatchScrapeStatus = {
+	status: "pending" | "scraping" | "completed" | "failed";
+	progress?: {
+		completed: number;
+		total: number;
+	};
+	pages?: Array<{
+		url: string;
+		title: string | null;
+		markdown: string;
+		sizeBytes: number;
+	}>;
+	error?: string;
+};
+
+/**
+ * Options for batch scraping
+ */
+export type BatchScrapeOptions = {
+	/** Only return the main content of the page (excludes nav, headers, footers). Default: true */
+	onlyMainContent?: boolean;
+	/** HTML tags to include */
+	includeTags?: string[];
+	/** HTML tags to exclude */
+	excludeTags?: string[];
+};
+
+/**
+ * Options for mapSite
+ */
+export type MapOptions = {
+	/** Search query to filter URLs */
+	search?: string;
+	/** Ignore sitemap and only use links found on the page (default: false) */
+	ignoreSitemap?: boolean;
+	/** Only use URLs from sitemap, ignore discovered links */
+	sitemapOnly?: boolean;
+	/** Include URLs from subdomains */
+	includeSubdomains?: boolean;
+	/** Maximum number of URLs to return (max 5000) */
+	limit?: number;
+};
+
+// Firecrawl Map API response type
+type FirecrawlMapResponse = {
+	success: boolean;
+	links?: string[];
+	error?: string;
+};
+
+const FIRECRAWL_API_BASE = "https://api.firecrawl.dev/v2";
 
 /**
  * Firecrawl service for web crawling
@@ -124,9 +251,28 @@ export class FirecrawlService {
 	}
 
 	/**
-	 * Start an async crawl job
+	 * Start an async crawl job using v2 API
+	 * @param url - The URL to crawl
+	 * @param options - Crawl configuration options
 	 */
-	async startCrawl(url: string, limit: number): Promise<CrawlResult> {
+	async startCrawl(
+		url: string,
+		options: {
+			limit?: number;
+			/** Maximum depth for link discovery (v2 parameter) */
+			maxDiscoveryDepth?: number;
+			/** @deprecated Use maxDiscoveryDepth instead */
+			maxDepth?: number;
+			includePaths?: string[];
+			excludePaths?: string[];
+			allowBackwardLinks?: boolean;
+			allowExternalLinks?: boolean;
+			/** Sitemap handling: "include" (default, use sitemap + crawl), "exclude", or "only" */
+			sitemap?: FirecrawlSitemapMode;
+			/** Whether to crawl the entire domain (default: true) */
+			crawlEntireDomain?: boolean;
+		} = {}
+	): Promise<CrawlResult> {
 		if (!this.isConfigured()) {
 			return {
 				success: false,
@@ -134,20 +280,53 @@ export class FirecrawlService {
 			};
 		}
 
+		const {
+			limit = 100,
+			maxDiscoveryDepth = 5,
+			maxDepth,
+			includePaths,
+			excludePaths,
+			allowBackwardLinks = false,
+			allowExternalLinks = false,
+			sitemap = "include",
+			crawlEntireDomain = true,
+		} = options;
+
 		try {
+			const crawlParams: { url: string } & FirecrawlCrawlParams = {
+				url,
+				limit,
+				// Use maxDiscoveryDepth (v2) or fall back to maxDepth for backward compatibility
+				maxDiscoveryDepth: maxDiscoveryDepth ?? maxDepth ?? 5,
+				allowBackwardLinks,
+				allowExternalLinks,
+				sitemap,
+				crawlEntireDomain,
+				// Skip cache to always get fresh results
+				skipCache: true,
+				scrapeOptions: {
+					formats: ["markdown"],
+					// Enable onlyMainContent for cleaner extracts (excludes nav, headers, footers)
+					onlyMainContent: true,
+					parsers: [],
+				},
+			};
+
+			// Only include paths if they are non-empty arrays
+			if (includePaths && includePaths.length > 0) {
+				crawlParams.includePaths = includePaths;
+			}
+			if (excludePaths && excludePaths.length > 0) {
+				crawlParams.excludePaths = excludePaths;
+			}
+
 			const response = await fetch(`${FIRECRAWL_API_BASE}/crawl`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${this.apiKey}`,
 				},
-				body: JSON.stringify({
-					url,
-					limit,
-					scrapeOptions: {
-						formats: ["markdown"],
-					},
-				} satisfies { url: string } & FirecrawlCrawlParams),
+				body: JSON.stringify(crawlParams),
 			});
 
 			if (!response.ok) {
@@ -305,6 +484,221 @@ export class FirecrawlService {
 	}
 
 	/**
+	 * Start an async batch scrape job for multiple URLs
+	 * More efficient than crawl when URLs are already known (e.g., from mapSite)
+	 * Uses onlyMainContent by default for cleaner, smaller extracts
+	 *
+	 * @param urls - Array of URLs to scrape (max 1000)
+	 * @param options - Batch scrape configuration options
+	 */
+	async startBatchScrape(
+		urls: string[],
+		options: BatchScrapeOptions = {}
+	): Promise<BatchScrapeResult> {
+		if (!this.isConfigured()) {
+			return {
+				success: false,
+				error: "Firecrawl API key not configured",
+			};
+		}
+
+		if (urls.length === 0) {
+			return {
+				success: false,
+				error: "No URLs provided for batch scrape",
+			};
+		}
+
+		// Limit to 1000 URLs per batch (Firecrawl limit)
+		const urlsToScrape = urls.slice(0, 1000);
+
+		try {
+			const batchParams: FirecrawlBatchScrapeParams = {
+				urls: urlsToScrape,
+				formats: ["markdown"],
+				// Enable onlyMainContent by default for cleaner extracts
+				onlyMainContent: options.onlyMainContent ?? true,
+			};
+
+			// Only include tag filters if specified
+			if (options.includeTags && options.includeTags.length > 0) {
+				batchParams.includeTags = options.includeTags;
+			}
+			if (options.excludeTags && options.excludeTags.length > 0) {
+				batchParams.excludeTags = options.excludeTags;
+			}
+
+			const response = await fetch(`${FIRECRAWL_API_BASE}/batch/scrape`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${this.apiKey}`,
+				},
+				body: JSON.stringify(batchParams),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				return {
+					success: false,
+					error: `Firecrawl API error: ${response.status} ${errorText}`,
+				};
+			}
+
+			const data = (await response.json()) as FirecrawlBatchScrapeResponse;
+
+			if (!(data.success && data.id)) {
+				return {
+					success: false,
+					error: data.error ?? "Unknown error starting batch scrape",
+				};
+			}
+
+			return {
+				success: true,
+				jobId: data.id,
+			};
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			return {
+				success: false,
+				error: `Failed to start batch scrape: ${message}`,
+			};
+		}
+	}
+
+	/**
+	 * Get the status of a batch scrape job
+	 */
+	async getBatchScrapeStatus(jobId: string): Promise<BatchScrapeStatus> {
+		if (!this.isConfigured()) {
+			return {
+				status: "failed",
+				error: "Firecrawl API key not configured",
+			};
+		}
+
+		try {
+			const response = await fetch(
+				`${FIRECRAWL_API_BASE}/batch/scrape/${jobId}`,
+				{
+					method: "GET",
+					headers: {
+						Authorization: `Bearer ${this.apiKey}`,
+					},
+				}
+			);
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				return {
+					status: "failed",
+					error: `Firecrawl API error: ${response.status} ${errorText}`,
+				};
+			}
+
+			const data =
+				(await response.json()) as FirecrawlBatchScrapeStatusResponse;
+
+			if (!data.success) {
+				return {
+					status: "failed",
+					error: data.error ?? "Unknown error checking batch scrape status",
+				};
+			}
+
+			// Map Firecrawl status to our internal status
+			const statusMap: Record<
+				FirecrawlBatchScrapeStatusResponse["status"],
+				BatchScrapeStatus["status"]
+			> = {
+				scraping: "scraping",
+				completed: "completed",
+				failed: "failed",
+			};
+
+			const status = statusMap[data.status] ?? "pending";
+
+			const result: BatchScrapeStatus = {
+				status,
+				progress:
+					data.completed !== undefined && data.total !== undefined
+						? {
+								completed: data.completed,
+								total: data.total,
+							}
+						: undefined,
+			};
+
+			// If completed, include the scraped pages
+			if (status === "completed" && data.data) {
+				result.pages = data.data
+					.filter((page) => page.markdown && page.metadata?.sourceURL)
+					.map((page) => ({
+						url: page.metadata?.sourceURL ?? "",
+						title: page.metadata?.title ?? page.metadata?.ogTitle ?? null,
+						markdown: page.markdown ?? "",
+						sizeBytes: new TextEncoder().encode(page.markdown ?? "").length,
+					}));
+			}
+
+			if (status === "failed") {
+				result.error = data.error ?? "Batch scrape failed";
+			}
+
+			return result;
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			return {
+				status: "failed",
+				error: `Failed to get batch scrape status: ${message}`,
+			};
+		}
+	}
+
+	/**
+	 * Cancel a batch scrape job
+	 */
+	async cancelBatchScrape(
+		jobId: string
+	): Promise<{ success: boolean; error?: string }> {
+		if (!this.isConfigured()) {
+			return {
+				success: false,
+				error: "Firecrawl API key not configured",
+			};
+		}
+
+		try {
+			const response = await fetch(
+				`${FIRECRAWL_API_BASE}/batch/scrape/${jobId}`,
+				{
+					method: "DELETE",
+					headers: {
+						Authorization: `Bearer ${this.apiKey}`,
+					},
+				}
+			);
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				return {
+					success: false,
+					error: `Firecrawl API error: ${response.status} ${errorText}`,
+				};
+			}
+
+			return { success: true };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			return {
+				success: false,
+				error: `Failed to cancel batch scrape: ${message}`,
+			};
+		}
+	}
+
+	/**
 	 * Scrape a single page (synchronous, returns immediately with content)
 	 * Useful for extracting brand information from a homepage
 	 */
@@ -326,6 +720,8 @@ export class FirecrawlService {
 				body: JSON.stringify({
 					url,
 					formats: ["markdown", "html"],
+					// Skip cache to always get fresh results
+					skipCache: true,
 				}),
 			});
 
@@ -371,6 +767,144 @@ export class FirecrawlService {
 				error: `Failed to scrape page: ${message}`,
 			};
 		}
+	}
+
+	/**
+	 * Map a website to discover all URLs
+	 * Uses Firecrawl's /map endpoint to quickly discover pages without scraping content
+	 *
+	 * By default, uses the sitemap (ignoreSitemap: false) to discover more URLs
+	 */
+	async mapSite(url: string, options: MapOptions = {}): Promise<MapResult> {
+		if (!this.isConfigured()) {
+			return {
+				success: false,
+				error: "Firecrawl API key not configured",
+			};
+		}
+
+		try {
+			const response = await fetch(`${FIRECRAWL_API_BASE}/map`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${this.apiKey}`,
+				},
+				body: JSON.stringify({
+					url,
+					search: options.search,
+					// Use sitemap by default to discover more URLs
+					ignoreSitemap: options.ignoreSitemap ?? false,
+					sitemapOnly: options.sitemapOnly ?? false,
+					// Skip cache to always get fresh results
+					skipCache: true,
+					includeSubdomains: options.includeSubdomains ?? false,
+					limit: options.limit ?? 100,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				return {
+					success: false,
+					error: `Firecrawl API error: ${response.status} ${errorText}`,
+				};
+			}
+
+			const data = (await response.json()) as FirecrawlMapResponse;
+
+			if (!data.success) {
+				return {
+					success: false,
+					error: data.error ?? "Unknown error mapping site",
+				};
+			}
+
+			return {
+				success: true,
+				urls: data.links ?? [],
+			};
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			return {
+				success: false,
+				error: `Failed to map site: ${message}`,
+			};
+		}
+	}
+
+	/**
+	 * Filter URLs based on include/exclude paths
+	 * Include paths: only URLs matching at least one include path
+	 * Exclude paths: skip URLs matching any exclude path
+	 */
+	filterUrls(
+		urls: string[],
+		options: {
+			includePaths?: string[] | null;
+			excludePaths?: string[] | null;
+			maxDepth?: number;
+			baseUrl?: string;
+		} = {}
+	): string[] {
+		const { includePaths, excludePaths, maxDepth = 1, baseUrl } = options;
+
+		return urls.filter((urlStr) => {
+			try {
+				const url = new URL(urlStr);
+				const path = url.pathname;
+
+				// Filter by depth (count path segments)
+				if (baseUrl) {
+					const baseUrlObj = new URL(baseUrl);
+					const basePath = baseUrlObj.pathname.replace(
+						TRAILING_SLASH_REGEX,
+						""
+					);
+					const relativePath = path
+						.replace(basePath, "")
+						.replace(LEADING_SLASH_REGEX, "");
+					const depth = relativePath
+						? relativePath.split("/").filter(Boolean).length
+						: 0;
+
+					if (depth > maxDepth) {
+						return false;
+					}
+				}
+
+				// If include paths specified, URL must match at least one
+				if (includePaths && includePaths.length > 0) {
+					const matchesInclude = includePaths.some((pattern) => {
+						if (pattern.endsWith("*")) {
+							return path.startsWith(pattern.slice(0, -1));
+						}
+						return path === pattern || path.startsWith(`${pattern}/`);
+					});
+					if (!matchesInclude) {
+						return false;
+					}
+				}
+
+				// If exclude paths specified, URL must not match any
+				if (excludePaths && excludePaths.length > 0) {
+					const matchesExclude = excludePaths.some((pattern) => {
+						if (pattern.endsWith("*")) {
+							return path.startsWith(pattern.slice(0, -1));
+						}
+						return path === pattern || path.startsWith(`${pattern}/`);
+					});
+					if (matchesExclude) {
+						return false;
+					}
+				}
+
+				return true;
+			} catch {
+				// Invalid URL, exclude it
+				return false;
+			}
+		});
 	}
 
 	/**

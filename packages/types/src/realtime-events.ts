@@ -118,6 +118,74 @@ export const realtimeSchema = {
 			deletedAt: z.string().nullable(),
 		}),
 	}),
+	// Web crawling events
+	crawlStarted: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		url: z.string(),
+		discoveredPages: z.array(
+			z.object({
+				url: z.string(),
+				title: z.string().nullable(),
+				depth: z.number(),
+			})
+		),
+		totalPagesCount: z.number(),
+	}),
+	crawlProgress: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		url: z.string(),
+		page: z.object({
+			url: z.string(),
+			title: z.string().nullable(),
+			status: z.enum(["pending", "crawling", "completed", "failed"]),
+			sizeBytes: z.number().optional(),
+			error: z.string().nullable().optional(),
+		}),
+		completedCount: z.number(),
+		totalCount: z.number(),
+	}),
+	crawlCompleted: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		url: z.string(),
+		crawledPagesCount: z.number(),
+		totalSizeBytes: z.number(),
+		failedPagesCount: z.number(),
+	}),
+	crawlFailed: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		url: z.string(),
+		error: z.string(),
+	}),
+	// Link source updated (for status changes, etc.)
+	linkSourceUpdated: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		status: z.enum(["pending", "mapping", "crawling", "completed", "failed"]),
+		discoveredPagesCount: z.number().optional(),
+		crawledPagesCount: z.number().optional(),
+		totalSizeBytes: z.number().optional(),
+		errorMessage: z.string().nullable().optional(),
+	}),
+	// Emitted after map phase with all discovered URLs (for real-time tree display)
+	crawlPagesDiscovered: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		pages: z.array(
+			z.object({
+				url: z.string(),
+				path: z.string(),
+				depth: z.number(),
+			})
+		),
+	}),
+	// Emitted when each page completes scraping (for real-time updates)
+	crawlPageCompleted: baseRealtimeEvent.extend({
+		linkSourceId: z.string(),
+		page: z.object({
+			url: z.string(),
+			title: z.string().nullable(),
+			sizeBytes: z.number(),
+			knowledgeId: z.string(),
+		}),
+	}),
 } as const;
 
 export type RealtimeEventType = keyof typeof realtimeSchema;

@@ -77,6 +77,14 @@ const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 		conversationTyping: { website: true, visitor: true },
 		timelineItemCreated: { website: true, visitor: true },
 		visitorIdentified: { website: true, visitor: true },
+		// Web crawling events - only dispatch to website (dashboard users)
+		crawlStarted: { website: true, visitor: false },
+		crawlProgress: { website: true, visitor: false },
+		crawlCompleted: { website: true, visitor: false },
+		crawlFailed: { website: true, visitor: false },
+		linkSourceUpdated: { website: true, visitor: false },
+		crawlPagesDiscovered: { website: true, visitor: false },
+		crawlPageCompleted: { website: true, visitor: false },
 	};
 
 function resolveWebsiteDispatchOptions(
@@ -172,47 +180,60 @@ const eventHandlers: EventHandlers = {
 		});
 	},
 
-	userPresenceUpdate: (ctx, event) => {
-		const data = event.payload;
+	userPresenceUpdate: (_ctx, event) => {
+		const _data = event.payload;
 	},
 
 	timelineItemCreated: (_ctx, event) => {
-		const data = event.payload;
+		const _data = event.payload;
 	},
 
 	conversationSeen: (_ctx, event) => {
-		const data = event.payload;
-		const actorType = data.userId
-			? "user"
-			: data.visitorId
-				? "visitor"
-				: data.aiAgentId
-					? "ai_agent"
-					: "unknown";
-		const actorId = data.userId ?? data.visitorId ?? data.aiAgentId ?? null;
+		const _data = event.payload;
 	},
 
 	conversationTyping: (_ctx, event) => {
-		const data = event.payload;
-		const actorType = data.userId
-			? "user"
-			: data.visitorId
-				? "visitor"
-				: data.aiAgentId
-					? "ai_agent"
-					: "unknown";
-		const actorId = data.userId ?? data.visitorId ?? data.aiAgentId ?? null;
+		const _data = event.payload;
 	},
 
 	conversationEventCreated: (_ctx, event) => {
-		const data = event.payload;
+		const _data = event.payload;
 	},
 
 	conversationCreated: (_ctx, event) => {
-		const data = event.payload;
+		const _data = event.payload;
 	},
 	visitorIdentified: (_ctx, event) => {
-		const data = event.payload;
+		const _data = event.payload;
+	},
+	// Web crawling event handlers
+	crawlStarted: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
+	},
+	crawlProgress: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
+	},
+	crawlCompleted: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
+	},
+	crawlFailed: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
+	},
+	linkSourceUpdated: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
+	},
+	crawlPagesDiscovered: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
+	},
+	crawlPageCompleted: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website - no additional logic needed
 	},
 };
 

@@ -19,7 +19,7 @@ export function SettingsPage({ children, className }: SettingsPageProps) {
 
 export function SettingsHeader({ children }: { children: React.ReactNode }) {
 	return (
-		<PageHeader className="absolute z-10 border-primary/10 border-b bg-background pl-3.5 text-sm 2xl:border-transparent 2xl:bg-transparent dark:border-primary/5 dark:bg-background-50 dark:2xl:border-transparent 2xl:dark:bg-transparent">
+		<PageHeader className="absolute z-10 border-primary/10 border-b bg-background pr-3 pl-4 text-sm 2xl:border-transparent 2xl:bg-transparent dark:border-primary/5 dark:bg-background-50 dark:2xl:border-transparent 2xl:dark:bg-transparent">
 			{children}
 		</PageHeader>
 	);

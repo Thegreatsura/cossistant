@@ -286,6 +286,62 @@ export async function upsertKnowledge(
 }
 
 /**
+ * List knowledge entries for a specific link source
+ */
+export async function listKnowledgeByLinkSource(
+	db: Database,
+	params: {
+		linkSourceId: string;
+		page?: number;
+		limit?: number;
+	}
+): Promise<{
+	items: KnowledgeSelect[];
+	pagination: {
+		page: number;
+		limit: number;
+		total: number;
+		hasMore: boolean;
+	};
+}> {
+	const page = params.page ?? 1;
+	const limit = params.limit ?? 50;
+	const offset = (page - 1) * limit;
+
+	const whereConditions = [
+		eq(knowledge.linkSourceId, params.linkSourceId),
+		isNull(knowledge.deletedAt),
+	];
+
+	// Get total count
+	const [countResult] = await db
+		.select({ total: count() })
+		.from(knowledge)
+		.where(and(...whereConditions));
+
+	const total = Number(countResult?.total ?? 0);
+
+	// Get paginated items
+	const items = await db
+		.select()
+		.from(knowledge)
+		.where(and(...whereConditions))
+		.orderBy(knowledge.createdAt)
+		.limit(limit)
+		.offset(offset);
+
+	return {
+		items,
+		pagination: {
+			page,
+			limit,
+			total,
+			hasMore: page * limit < total,
+		},
+	};
+}
+
+/**
  * Update an existing knowledge entry
  */
 export async function updateKnowledge(
@@ -298,6 +354,7 @@ export async function updateKnowledge(
 		sourceTitle?: string | null;
 		payload?: unknown;
 		metadata?: Record<string, unknown> | null;
+		isIncluded?: boolean;
 	}
 ): Promise<KnowledgeSelect | null> {
 	const now = new Date().toISOString();
@@ -326,6 +383,10 @@ export async function updateKnowledge(
 
 	if (params.metadata !== undefined) {
 		updateData.metadata = params.metadata;
+	}
+
+	if (params.isIncluded !== undefined) {
+		updateData.isIncluded = params.isIncluded;
 	}
 
 	const [entry] = await db

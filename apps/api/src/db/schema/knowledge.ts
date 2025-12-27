@@ -1,6 +1,7 @@
 import {
 	type InferInsertModel,
 	type InferSelectModel,
+	isNull,
 	relations,
 	sql,
 } from "drizzle-orm";
@@ -80,11 +81,14 @@ export const knowledge = pgTable(
 		index("knowledge_link_source_idx").on(table.linkSourceId),
 		// Index for included knowledge (for training queries)
 		index("knowledge_included_idx").on(table.isIncluded),
-		uniqueIndex("knowledge_scope_hash_idx").on(
-			table.websiteId,
-			sql`coalesce(${table.aiAgentId}, '00000000000000000000000000')`,
-			table.contentHash
-		),
+		// Unique constraint (partial index excluding soft-deleted)
+		uniqueIndex("knowledge_scope_hash_idx")
+			.on(
+				table.websiteId,
+				sql`coalesce(${table.aiAgentId}, '00000000000000000000000000')`,
+				table.contentHash
+			)
+			.where(isNull(table.deletedAt)),
 	]
 );
 

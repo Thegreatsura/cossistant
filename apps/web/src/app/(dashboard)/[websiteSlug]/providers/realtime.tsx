@@ -12,6 +12,15 @@ import { useTRPC } from "@/lib/trpc/client";
 import { handleConversationCreated } from "./events/handlers/conversation-created";
 import { handleConversationSeen } from "./events/handlers/conversation-seen";
 import { handleConversationTyping } from "./events/handlers/conversation-typing";
+import {
+	handleCrawlCompleted,
+	handleCrawlFailed,
+	handleCrawlPageCompleted,
+	handleCrawlPagesDiscovered,
+	handleCrawlProgress,
+	handleCrawlStarted,
+	handleLinkSourceUpdated,
+} from "./events/handlers/crawl-progress";
 import { handleMessageCreated } from "./events/handlers/timeline-item-created";
 import { handleVisitorIdentified } from "./events/handlers/visitor-identified";
 import type { DashboardRealtimeContext } from "./events/types";
@@ -97,6 +106,63 @@ export function Realtime({ children }: { children: ReactNode }) {
 				(_data, meta) => {
 					void meta.context.queryClient.invalidateQueries({
 						queryKey: presenceQueryOptions.queryKey,
+					});
+				},
+			],
+			// Web crawling events
+			crawlStarted: [
+				(_data, meta) => {
+					handleCrawlStarted({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			crawlProgress: [
+				(_data, meta) => {
+					handleCrawlProgress({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			crawlCompleted: [
+				(_data, meta) => {
+					handleCrawlCompleted({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			crawlFailed: [
+				(_data, meta) => {
+					handleCrawlFailed({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			linkSourceUpdated: [
+				(_data, meta) => {
+					handleLinkSourceUpdated({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			crawlPagesDiscovered: [
+				(_data, meta) => {
+					handleCrawlPagesDiscovered({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			crawlPageCompleted: [
+				(_data, meta) => {
+					handleCrawlPageCompleted({
+						event: meta.event,
+						context: meta.context,
 					});
 				},
 			],

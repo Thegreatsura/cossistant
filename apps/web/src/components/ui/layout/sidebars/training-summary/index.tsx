@@ -65,7 +65,7 @@ export function TrainingSummarySidebar({
 		>
 			<SidebarContainer>
 				<div className="flex flex-col gap-6">
-					<div>
+					<div className="px-1 pt-2">
 						<h3 className="mb-4 font-medium text-sm">Sources</h3>
 						{isLoading ? (
 							<div className="flex flex-col gap-3">
@@ -96,7 +96,7 @@ export function TrainingSummarySidebar({
 						)}
 					</div>
 
-					<div className="border-primary/10 border-t pt-4 dark:border-primary/5">
+					<div className="border-primary/10 border-t px-1 pt-4 dark:border-primary/5">
 						<div className="mb-2 flex items-center justify-between">
 							<span className="text-muted-foreground text-xs">Total size</span>
 							<span className="font-medium text-xs">

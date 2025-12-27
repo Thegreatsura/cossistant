@@ -1,0 +1,183 @@
+"use client";
+
+import {
+	ChevronDownIcon,
+	ChevronRightIcon,
+	GlobeIcon,
+	Trash2Icon,
+} from "lucide-react";
+import { useCallback, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import type { LinkSource } from "@/data/link-source-cache";
+import { useLinkSourceMutations } from "../hooks/use-link-source-mutations";
+import { useDomainPages } from "../hooks/use-merged-domain-tree";
+import { formatBytes } from "../utils";
+import { PageTreeNode } from "./page-tree-node";
+
+type DomainNodeProps = {
+	domain: string;
+	sources: LinkSource[];
+	totalPages: number;
+	totalSizeBytes: number;
+	hasActiveCrawl: boolean;
+	websiteSlug: string;
+	aiAgentId: string | null;
+	defaultExpanded?: boolean;
+};
+
+export function DomainNode({
+	domain,
+	sources,
+	totalPages,
+	totalSizeBytes,
+	hasActiveCrawl,
+	websiteSlug,
+	aiAgentId,
+	defaultExpanded = false,
+}: DomainNodeProps) {
+	const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+	// Fetch pages lazily when expanded
+	const { tree, isLoading: isLoadingPages } = useDomainPages({
+		websiteSlug,
+		sources,
+		enabled: isExpanded,
+	});
+
+	// Mutations hook
+	const {
+		handleToggleIncluded,
+		handleScanSubpages,
+		handleDeleteMultiple,
+		handleReindexPage,
+		handleDeletePage,
+		handleIgnorePage,
+		isToggling,
+		isDeleting,
+		isReindexing,
+		isIgnoring,
+	} = useLinkSourceMutations({
+		websiteSlug,
+		aiAgentId,
+	});
+
+	const handleToggleExpand = useCallback(() => {
+		setIsExpanded((prev) => !prev);
+	}, []);
+
+	const handleDeleteDomain = useCallback(
+		(e: React.MouseEvent) => {
+			e.stopPropagation(); // Prevent card expansion
+			const sourceIds = sources.map((s) => s.id);
+			void handleDeleteMultiple(sourceIds);
+		},
+		[sources, handleDeleteMultiple]
+	);
+
+	// Get the primary link source ID for the domain (first source)
+	const primaryLinkSourceId = sources[0]?.id ?? "";
+
+	return (
+		<Collapsible onOpenChange={setIsExpanded} open={isExpanded}>
+			<Card className="group/domain-card">
+				<CollapsibleTrigger asChild>
+					<CardHeader
+						className="cursor-pointer transition-colors hover:bg-muted/50"
+						onClick={handleToggleExpand}
+					>
+						<div className="flex items-center gap-3">
+							{isExpanded ? (
+								<ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+							) : (
+								<ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+							)}
+							<GlobeIcon className="h-5 w-5 text-muted-foreground" />
+							<div className="min-w-0 flex-1">
+								<CardTitle className="truncate text-base">{domain}</CardTitle>
+								<CardDescription>
+									{sources.length} {sources.length === 1 ? "source" : "sources"}{" "}
+									• {totalPages} {totalPages === 1 ? "page" : "pages"} •{" "}
+									{formatBytes(totalSizeBytes)}
+								</CardDescription>
+							</div>
+							{hasActiveCrawl && (
+								<Badge className="shrink-0" variant="secondary">
+									<Spinner className="mr-1 h-3 w-3" />
+									Crawling
+								</Badge>
+							)}
+							{/* Delete domain button - visible on hover */}
+							<Button
+								className="shrink-0 opacity-0 transition-opacity group-hover/domain-card:opacity-100"
+								disabled={isDeleting || hasActiveCrawl}
+								onClick={handleDeleteDomain}
+								size="sm"
+								title={`Delete all ${sources.length} sources under ${domain}`}
+								variant="ghost"
+							>
+								{isDeleting ? (
+									<Spinner className="h-4 w-4" />
+								) : (
+									<Trash2Icon className="h-4 w-4 text-destructive" />
+								)}
+							</Button>
+						</div>
+					</CardHeader>
+				</CollapsibleTrigger>
+				<CollapsibleContent>
+					<CardContent className="border-t pt-4">
+						{isLoadingPages ? (
+							<div className="space-y-2">
+								<Skeleton className="h-8 w-full" />
+								<Skeleton className="h-8 w-full" />
+								<Skeleton className="h-8 w-full" />
+							</div>
+						) : tree.length === 0 ? (
+							<p className="py-4 text-center text-muted-foreground text-sm">
+								No pages found for this domain.
+							</p>
+						) : (
+							<div className="space-y-0.5">
+								{tree.map((node) => (
+									<PageTreeNode
+										depth={0}
+										isDeleting={isDeleting}
+										isIgnoring={isIgnoring}
+										isReindexing={isReindexing}
+										isToggling={isToggling}
+										key={node.knowledgeId}
+										linkSourceId={node.linkSourceId ?? primaryLinkSourceId}
+										node={node}
+										onDelete={handleDeletePage}
+										onIgnore={handleIgnorePage}
+										onReindex={handleReindexPage}
+										onScanSubpages={handleScanSubpages}
+										onToggleIncluded={handleToggleIncluded}
+										websiteSlug={websiteSlug}
+									/>
+								))}
+							</div>
+						)}
+					</CardContent>
+				</CollapsibleContent>
+			</Card>
+		</Collapsible>
+	);
+}
+
+export type { DomainNodeProps };

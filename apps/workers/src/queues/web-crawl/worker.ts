@@ -12,8 +12,13 @@ import { QUEUE_NAMES, type WebCrawlJobData } from "@cossistant/jobs";
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
 import { db } from "@workers/db";
 import { env } from "@workers/env";
+import { emitToWebsite } from "@workers/realtime";
 import { type Job, Queue, QueueEvents, Worker } from "bullmq";
 import { and, eq, isNull } from "drizzle-orm";
+
+// Regex patterns (defined at top level for performance)
+const TRAILING_SLASH_REGEX = /\/$/;
+const LEADING_SLASH_REGEX = /^\//;
 
 // Polling configuration
 const POLL_INTERVAL_MS = 5000; // 5 seconds
@@ -172,7 +177,18 @@ async function processWebCrawlJob(
 		url,
 		crawlLimit,
 		createdBy,
+		includePaths,
+		excludePaths,
+		// v2 parameters with defaults
+		maxDiscoveryDepth = 5,
+		sitemap = "include",
+		crawlEntireDomain = true,
+		// Backward compatibility
+		maxDepth,
 	} = job.data;
+
+	// Use maxDiscoveryDepth if provided, otherwise fall back to maxDepth for backward compatibility
+	const effectiveMaxDiscoveryDepth = maxDiscoveryDepth ?? maxDepth ?? 5;
 
 	// 1. Get the link source and validate it exists
 	const linkSource = await getLinkSourceById(db, {
@@ -195,16 +211,7 @@ async function processWebCrawlJob(
 		return;
 	}
 
-	// 2. Update status to crawling
-	await updateLinkSource(db, {
-		id: linkSourceId,
-		websiteId,
-		status: "crawling",
-	});
-
-	await job.updateProgress(10);
-
-	// 3. Check if Firecrawl is configured
+	// 2. Check if Firecrawl is configured
 	if (!firecrawlService.isConfigured()) {
 		await updateLinkSource(db, {
 			id: linkSourceId,
@@ -212,14 +219,45 @@ async function processWebCrawlJob(
 			status: "failed",
 			errorMessage: "Firecrawl API is not configured",
 		});
+		await emitCrawlFailed({
+			websiteId,
+			organizationId,
+			linkSourceId,
+			url,
+			error: "Firecrawl API is not configured",
+		});
 		throw new Error("Firecrawl API is not configured");
 	}
 
-	// 4. Start the crawl
+	// 3. Update status to crawling (v2 crawl API handles discovery internally)
+	await updateLinkSource(db, {
+		id: linkSourceId,
+		websiteId,
+		status: "crawling",
+	});
+
+	await emitLinkSourceUpdated({
+		websiteId,
+		organizationId,
+		linkSourceId,
+		status: "crawling",
+	});
+	await job.updateProgress(5);
+
+	// 4. Start crawl using v2 API with improved settings
+	// The v2 crawl endpoint with sitemap: "include" handles discovery intelligently
 	console.log(
-		`[worker:web-crawl] Starting crawl for ${url} with limit ${crawlLimit}`
+		`[worker:web-crawl] Starting v2 crawl for ${url} with limit=${crawlLimit}, maxDiscoveryDepth=${effectiveMaxDiscoveryDepth}, sitemap=${sitemap}, crawlEntireDomain=${crawlEntireDomain}`
 	);
-	const crawlResult = await firecrawlService.startCrawl(url, crawlLimit);
+
+	const crawlResult = await firecrawlService.startCrawl(url, {
+		limit: crawlLimit,
+		maxDiscoveryDepth: effectiveMaxDiscoveryDepth,
+		sitemap,
+		crawlEntireDomain,
+		includePaths: includePaths ?? linkSource.includePaths ?? undefined,
+		excludePaths: excludePaths ?? linkSource.excludePaths ?? undefined,
+	});
 
 	if (!(crawlResult.success && crawlResult.jobId)) {
 		await updateLinkSource(db, {
@@ -227,6 +265,13 @@ async function processWebCrawlJob(
 			websiteId,
 			status: "failed",
 			errorMessage: crawlResult.error ?? "Failed to start crawl",
+		});
+		await emitCrawlFailed({
+			websiteId,
+			organizationId,
+			linkSourceId,
+			url,
+			error: crawlResult.error ?? "Failed to start crawl",
 		});
 		throw new Error(crawlResult.error ?? "Failed to start crawl");
 	}
@@ -238,11 +283,26 @@ async function processWebCrawlJob(
 		firecrawlJobId: crawlResult.jobId,
 	});
 
-	await job.updateProgress(20);
+	// Emit crawlStarted event
+	await emitToWebsite(websiteId, "crawlStarted", {
+		websiteId,
+		organizationId,
+		visitorId: null,
+		userId: createdBy,
+		linkSourceId,
+		url,
+		discoveredPages: [],
+		totalPagesCount: crawlLimit,
+	});
 
-	// 6. Poll for completion
+	await job.updateProgress(10);
+
+	// 6. Poll for completion with incremental page updates
 	let pollAttempts = 0;
 	let crawlStatus = await firecrawlService.getCrawlStatus(crawlResult.jobId);
+	let lastCompletedCount = 0;
+	// Track which pages we've already emitted events for (by URL)
+	const emittedPageUrls = new Set<string>();
 
 	while (
 		crawlStatus.status === "crawling" &&
@@ -262,7 +322,7 @@ async function processWebCrawlJob(
 			console.log(
 				`[worker:web-crawl] Link source ${linkSourceId} was deleted, aborting crawl`
 			);
-			// Cancel the Firecrawl job
+			// Cancel the Firecrawl crawl job
 			await firecrawlService.cancelCrawl(crawlResult.jobId);
 			return; // Exit early - no need to process results
 		}
@@ -272,15 +332,100 @@ async function processWebCrawlJob(
 		// Update progress based on Firecrawl progress
 		if (crawlStatus.progress) {
 			const progressPercent =
-				20 +
+				10 +
 				Math.floor(
-					(crawlStatus.progress.completed / crawlStatus.progress.total) * 60
+					(crawlStatus.progress.completed / crawlStatus.progress.total) * 70
 				);
 			await job.updateProgress(Math.min(progressPercent, 80));
+
+			// Update discovered pages count
+			if (crawlStatus.progress.total > 0) {
+				await updateLinkSource(db, {
+					id: linkSourceId,
+					websiteId,
+					discoveredPagesCount: crawlStatus.progress.total,
+				});
+			}
+
+			// Check for newly completed pages in partial results
+			if (crawlStatus.pages && crawlStatus.pages.length > 0) {
+				// Emit crawlPagesDiscovered for real-time tree display
+				const newPages = crawlStatus.pages.filter(
+					(page) => !emittedPageUrls.has(page.url)
+				);
+				if (newPages.length > 0) {
+					const pagesForDiscoveryEvent = newPages.map((page) => {
+						try {
+							const parsedUrl = new URL(page.url);
+							return {
+								url: page.url,
+								path: parsedUrl.pathname,
+								depth: calculateDepth(url, page.url),
+							};
+						} catch {
+							return {
+								url: page.url,
+								path: page.url,
+								depth: 0,
+							};
+						}
+					});
+
+					await emitToWebsite(websiteId, "crawlPagesDiscovered", {
+						websiteId,
+						organizationId,
+						visitorId: null,
+						userId: createdBy,
+						linkSourceId,
+						pages: pagesForDiscoveryEvent,
+					});
+				}
+
+				for (const page of crawlStatus.pages) {
+					if (!emittedPageUrls.has(page.url)) {
+						emittedPageUrls.add(page.url);
+						// Emit progress for this specific page
+						await emitToWebsite(websiteId, "crawlProgress", {
+							websiteId,
+							organizationId,
+							visitorId: null,
+							userId: createdBy,
+							linkSourceId,
+							url,
+							page: {
+								url: page.url,
+								title: page.title,
+								status: "completed",
+								sizeBytes: page.sizeBytes,
+							},
+							completedCount: emittedPageUrls.size,
+							totalCount: crawlStatus.progress?.total ?? crawlLimit,
+						});
+					}
+				}
+			} else if (crawlStatus.progress.completed > lastCompletedCount) {
+				// Fallback: emit generic progress if no partial results available
+				await emitToWebsite(websiteId, "crawlProgress", {
+					websiteId,
+					organizationId,
+					visitorId: null,
+					userId: createdBy,
+					linkSourceId,
+					url,
+					page: {
+						url,
+						title: null,
+						status: "crawling",
+					},
+					completedCount: crawlStatus.progress.completed,
+					totalCount: crawlStatus.progress.total,
+				});
+			}
+			lastCompletedCount = crawlStatus.progress.completed;
 		}
 
 		console.log(
-			`[worker:web-crawl] Polling ${crawlResult.jobId} - status: ${crawlStatus.status}, attempt: ${pollAttempts}`
+			`[worker:web-crawl] Polling crawl ${crawlResult.jobId} - status: ${crawlStatus.status}, pages: ${emittedPageUrls.size}, attempt: ${pollAttempts}`
 		);
 	}
 
@@ -291,6 +436,13 @@ async function processWebCrawlJob(
 			websiteId,
 			status: "failed",
 			errorMessage: "Crawl timed out after 30 minutes",
+		});
+		await emitCrawlFailed({
+			websiteId,
+			organizationId,
+			linkSourceId,
+			url,
+			error: "Crawl timed out after 30 minutes",
 		});
 		throw new Error("Crawl timed out after 30 minutes");
 	}
@@ -303,6 +455,13 @@ async function processWebCrawlJob(
 			status: "failed",
 			errorMessage: crawlStatus.error ?? "Crawl failed",
 		});
+		await emitCrawlFailed({
+			websiteId,
+			organizationId,
+			linkSourceId,
+			url,
+			error: crawlStatus.error ?? "Crawl failed",
+		});
 		throw new Error(crawlStatus.error ?? "Crawl failed");
 	}
 
@@ -310,8 +469,14 @@ async function processWebCrawlJob(
 
 	// 9. Process results
 	if (crawlStatus.status === "completed" && crawlStatus.pages) {
+		// Filter out ignored URLs before processing
+		const ignoredUrlsSet = new Set(linkSource.ignoredUrls ?? []);
+		const validPages = crawlStatus.pages.filter(
+			(page) => !ignoredUrlsSet.has(page.url)
+		);
+
 		console.log(
-			`[worker:web-crawl] Crawl completed with ${crawlStatus.pages.length} pages`
+			`[worker:web-crawl] Crawl completed with ${crawlStatus.pages.length} pages (${validPages.length} after filtering ignored)`
 		);
 
 		// Get plan size limits
@@ -358,9 +523,10 @@ async function processWebCrawlJob(
 
 		let totalSizeBytes = 0;
 		let crawledPagesCount = 0;
+		let failedPagesCount = 0;
 
 		// Upsert knowledge entries for each page
-		for (const page of crawlStatus.pages) {
+		for (const page of validPages) {
 			// Check size limit
 			const newTotalSize = currentTotalSize + totalSizeBytes + page.sizeBytes;
 
@@ -371,33 +537,74 @@ async function processWebCrawlJob(
 				break;
 			}
 
-			// Upsert knowledge entry (handles duplicates gracefully)
-			await upsertKnowledge(db, {
-				organizationId,
-				websiteId,
-				aiAgentId,
-				linkSourceId,
-				type: "url",
-				sourceUrl: page.url,
-				sourceTitle: page.title,
-				origin: "crawl",
-				createdBy,
-				payload: {
-					markdown: page.markdown,
-					headings: [],
-					links: [],
-					images: [],
-					estimatedTokens: Math.ceil(page.markdown.length / 4),
-				},
-				metadata: {
-					source: "firecrawl",
-				},
-				sizeBytes: page.sizeBytes,
-				isIncluded: true,
-			});
+			try {
+				// Upsert knowledge entry (handles duplicates gracefully)
+				const knowledgeEntry = await upsertKnowledge(db, {
+					organizationId,
+					websiteId,
+					aiAgentId,
+					linkSourceId,
+					type: "url",
+					sourceUrl: page.url,
+					sourceTitle: page.title,
+					origin: "crawl",
+					createdBy,
+					payload: {
+						markdown: page.markdown,
+						headings: [],
+						links: [],
+						images: [],
+						estimatedTokens: Math.ceil(page.markdown.length / 4),
+					},
+					metadata: {
+						source: "firecrawl-v2",
+					},
+					sizeBytes: page.sizeBytes,
+					isIncluded: true,
+				});
 
-			totalSizeBytes += page.sizeBytes;
-			crawledPagesCount++;
+				totalSizeBytes += page.sizeBytes;
+				crawledPagesCount++;
+
+				// Emit crawlPageCompleted with the knowledge ID for real-time tree updates
+				await emitToWebsite(websiteId, "crawlPageCompleted", {
+					websiteId,
+					organizationId,
+					visitorId: null,
+					userId: createdBy,
+					linkSourceId,
+					page: {
+						url: page.url,
+						title: page.title,
+						sizeBytes: page.sizeBytes,
+						knowledgeId: knowledgeEntry.id,
+					},
+				});
+
+				// Also emit progress for backward compatibility
+				await emitToWebsite(websiteId, "crawlProgress", {
+					websiteId,
+					organizationId,
+					visitorId: null,
+					userId: createdBy,
+					linkSourceId,
+					url,
+					page: {
+						url: page.url,
+						title: page.title,
+						status: "completed",
+						sizeBytes: page.sizeBytes,
+					},
+					completedCount: crawledPagesCount,
+					totalCount: validPages.length,
+				});
+			} catch (error) {
+				console.error(
+					`[worker:web-crawl] Failed to upsert knowledge for ${page.url}`,
+					error
+				);
+				failedPagesCount++;
+			}
 		}
 
 		await job.updateProgress(95);
@@ -412,6 +619,28 @@ async function processWebCrawlJob(
 			totalSizeBytes,
 			lastCrawledAt: now,
 			errorMessage: null,
+		});
+
+		// Emit crawlCompleted event
+		await emitToWebsite(websiteId, "crawlCompleted", {
+			websiteId,
+			organizationId,
+			visitorId: null,
+			userId: createdBy,
+			linkSourceId,
+			url,
+			crawledPagesCount,
+			totalSizeBytes,
+			failedPagesCount,
+		});
+
+		await emitLinkSourceUpdated({
+			websiteId,
+			organizationId,
+			linkSourceId,
+			status: "completed",
+			crawledPagesCount,
+			totalSizeBytes,
 		});
 
 		console.log(
@@ -430,10 +659,110 @@ async function processWebCrawlJob(
 			errorMessage: null,
 		});
 
+		await emitToWebsite(websiteId, "crawlCompleted", {
+			websiteId,
+			organizationId,
+			visitorId: null,
+			userId: createdBy,
+			linkSourceId,
+			url,
+			crawledPagesCount: 0,
+			totalSizeBytes: 0,
+			failedPagesCount: 0,
+		});
+
+		await emitLinkSourceUpdated({
+			websiteId,
+			organizationId,
+			linkSourceId,
+			status: "completed",
+			crawledPagesCount: 0,
+			totalSizeBytes: 0,
+		});
+
 		console.log(
 			`[worker:web-crawl] Crawl completed with no pages for link source ${linkSourceId}`
 		);
 	}
 
 	await job.updateProgress(100);
+}
+
+/**
+ * Calculate depth of a URL relative to the base URL
+ */
+function calculateDepth(baseUrl: string, pageUrl: string): number {
+	try {
+		const base = new URL(baseUrl);
+		const page = new URL(pageUrl);
+
+		const basePath = base.pathname.replace(TRAILING_SLASH_REGEX, "");
+		const pagePath = page.pathname.replace(TRAILING_SLASH_REGEX, "");
+
+		const relativePath = pagePath
+			.replace(basePath, "")
+			.replace(LEADING_SLASH_REGEX, "");
+
+		if (!relativePath) {
+			return 0;
+		}
+
+		return relativePath.split("/").filter(Boolean).length;
+	} catch {
+		return 0;
+	}
+}
+
+type CrawlFailedParams = {
+	websiteId: string;
+	organizationId: string;
+	linkSourceId: string;
+	url: string;
+	error: string;
+};
+
+/**
+ * Helper to emit crawlFailed event
+ */
+async function emitCrawlFailed(params: CrawlFailedParams): Promise<void> {
+	const { websiteId, organizationId, linkSourceId, url, error } = params;
+	await emitToWebsite(websiteId, "crawlFailed", {
+		websiteId,
+		organizationId,
+		visitorId: null,
+		userId: null,
+		linkSourceId,
+		url,
+		error,
+	});
+}
+
+type LinkSourceUpdatedParams = {
+	websiteId: string;
+	organizationId: string;
+	linkSourceId: string;
+	status: "pending" | "mapping" | "crawling" | "completed" | "failed";
+	discoveredPagesCount?: number;
+	crawledPagesCount?: number;
+	totalSizeBytes?: number;
+	errorMessage?: string | null;
+};
+
+/**
+ * Helper to emit linkSourceUpdated event
+ */
+async function emitLinkSourceUpdated(
+	params: LinkSourceUpdatedParams
+): Promise<void> {
+	const { websiteId, organizationId, linkSourceId, status, ...additionalData } =
+		params;
+	await emitToWebsite(websiteId, "linkSourceUpdated", {
+		websiteId,
+		organizationId,
+		visitorId: null,
+		userId: null,
+		linkSourceId,
+		status,
+		...additionalData,
+	});
 }

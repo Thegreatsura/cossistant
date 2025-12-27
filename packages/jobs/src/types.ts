@@ -55,6 +55,9 @@ export function generateAiReplyJobId(conversationId: string): string {
 	return `ai-reply-${conversationId}`;
 }
 
+/** Sitemap handling mode for Firecrawl v2 */
+export type FirecrawlSitemapMode = "include" | "exclude" | "only";
+
 /**
  * Job data for web crawl queue
  */
@@ -66,6 +69,18 @@ export type WebCrawlJobData = {
 	url: string;
 	crawlLimit: number;
 	createdBy: string; // userId who triggered
+	// Path filters
+	includePaths?: string[] | null;
+	excludePaths?: string[] | null;
+	// Firecrawl v2 parameters
+	/** Maximum depth for link discovery (v2) - default: 5 */
+	maxDiscoveryDepth?: number;
+	/** Sitemap handling: "include" (default), "exclude", or "only" */
+	sitemap?: FirecrawlSitemapMode;
+	/** Whether to crawl the entire domain - default: true */
+	crawlEntireDomain?: boolean;
+	/** @deprecated Use maxDiscoveryDepth instead */
+	maxDepth?: number;
 };
 
 /**

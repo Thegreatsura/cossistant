@@ -8,6 +8,7 @@ export {
 } from "./triggers";
 export {
 	type AiReplyJobData,
+	type FirecrawlSitemapMode,
 	generateAiReplyJobId,
 	generateMessageNotificationJobId,
 	generateWebCrawlJobId,

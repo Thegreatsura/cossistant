@@ -1,4 +1,10 @@
-import { listKnowledge } from "@api/db/queries/knowledge";
+import {
+	getKnowledgeById,
+	listKnowledge,
+	listKnowledgeByLinkSource,
+	updateKnowledge,
+	upsertKnowledge,
+} from "@api/db/queries/knowledge";
 import {
 	createLinkSource,
 	deleteLinkSource,
@@ -11,6 +17,7 @@ import {
 } from "@api/db/queries/link-source";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { knowledge } from "@api/db/schema/knowledge";
+import type { LinkSourceSelect } from "@api/db/schema/link-source";
 import { getPlanForWebsite } from "@api/lib/plans/access";
 import { firecrawlService } from "@api/services/firecrawl";
 import { cancelWebCrawl, triggerWebCrawl } from "@api/utils/queue-triggers";
@@ -18,46 +25,44 @@ import {
 	cancelLinkSourceRequestSchema,
 	createLinkSourceRequestSchema,
 	deleteLinkSourceRequestSchema,
+	deletePageRequestSchema,
 	getCrawlStatusRequestSchema,
 	getLinkSourceRequestSchema,
 	getTrainingStatsRequestSchema,
+	ignorePageRequestSchema,
 	type LinkSourceResponse,
 	linkSourceResponseSchema,
+	listKnowledgeByLinkSourceRequestSchema,
 	listLinkSourcesRequestSchema,
 	listLinkSourcesResponseSchema,
 	recrawlLinkSourceRequestSchema,
+	reindexPageRequestSchema,
+	scanSubpagesRequestSchema,
+	toggleKnowledgeIncludedRequestSchema,
 	trainingStatsResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull } from "drizzle-orm";
+import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
 
-function toLinkSourceResponse(entry: {
-	id: string;
-	organizationId: string;
-	websiteId: string;
-	aiAgentId: string | null;
-	url: string;
-	status: "pending" | "crawling" | "completed" | "failed";
-	firecrawlJobId: string | null;
-	crawledPagesCount: number;
-	totalSizeBytes: number;
-	lastCrawledAt: string | null;
-	errorMessage: string | null;
-	createdAt: string;
-	updatedAt: string;
-	deletedAt: string | null;
-}): LinkSourceResponse {
+function toLinkSourceResponse(entry: LinkSourceSelect): LinkSourceResponse {
 	return {
 		id: entry.id,
 		organizationId: entry.organizationId,
 		websiteId: entry.websiteId,
 		aiAgentId: entry.aiAgentId,
+		parentLinkSourceId: entry.parentLinkSourceId,
 		url: entry.url,
 		status: entry.status,
 		firecrawlJobId: entry.firecrawlJobId,
+		depth: entry.depth,
+		discoveredPagesCount: entry.discoveredPagesCount,
 		crawledPagesCount: entry.crawledPagesCount,
 		totalSizeBytes: entry.totalSizeBytes,
+		includePaths: entry.includePaths,
+		excludePaths: entry.excludePaths,
+		ignoredUrls: entry.ignoredUrls,
 		lastCrawledAt: entry.lastCrawledAt,
 		errorMessage: entry.errorMessage,
 		createdAt: entry.createdAt,
@@ -209,14 +214,16 @@ export const linkSourceRouter = createTRPCRouter({
 				organizationId: websiteData.organizationId,
 				websiteId: websiteData.id,
 				aiAgentId: input.aiAgentId ?? null,
+				parentLinkSourceId: input.parentLinkSourceId ?? null,
 				url: input.url,
+				includePaths: input.includePaths,
+				excludePaths: input.excludePaths,
 			});
 
-			// Calculate crawl limit based on plan
-			// For now, use a reasonable default that respects plan limits
-			const crawlLimit = linkLimit === null ? 100 : Math.min(50, linkLimit * 5);
+			// Calculate crawl limit based on plan (default 100 pages per crawl for better coverage)
+			const crawlLimit = linkLimit === null ? 100 : Math.min(100, linkLimit);
 
-			// Enqueue the crawl job - worker will handle the actual crawling
+			// Enqueue the crawl job - worker will handle the actual crawling using v2 API
 			try {
 				await triggerWebCrawl({
 					linkSourceId: entry.id,
@@ -226,6 +233,12 @@ export const linkSourceRouter = createTRPCRouter({
 					url: input.url,
 					crawlLimit,
 					createdBy: user.id,
+					includePaths: input.includePaths,
+					excludePaths: input.excludePaths,
+					// v2 crawl parameters - improved defaults for better discovery
+					maxDiscoveryDepth: input.maxDepth ?? 5,
+					sitemap: "include",
+					crawlEntireDomain: true,
 				});
 			} catch (error) {
 				// If queueing fails, mark the link source as failed
@@ -300,16 +313,18 @@ export const linkSourceRouter = createTRPCRouter({
 					// Continue with deletion even if cancellation fails
 				}
 
-				// Cancel Firecrawl job (for active crawls)
+				// Cancel Firecrawl batch scrape job (for active scrapes)
 				if (linkSourceEntry.firecrawlJobId) {
 					try {
-						await firecrawlService.cancelCrawl(linkSourceEntry.firecrawlJobId);
+						await firecrawlService.cancelBatchScrape(
+							linkSourceEntry.firecrawlJobId
+						);
 						console.log(
-							`[link-source:delete] Cancelled Firecrawl job ${linkSourceEntry.firecrawlJobId}`
+							`[link-source:delete] Cancelled Firecrawl batch scrape job ${linkSourceEntry.firecrawlJobId}`
 						);
 					} catch (error) {
 						console.error(
-							"[link-source:delete] Failed to cancel Firecrawl job:",
+							"[link-source:delete] Failed to cancel Firecrawl batch scrape job:",
 							error
 						);
 						// Continue with deletion even if cancellation fails
@@ -398,16 +413,18 @@ export const linkSourceRouter = createTRPCRouter({
 				// Continue even if cancellation fails
 			}
 
-			// Cancel Firecrawl job (for active crawls)
+			// Cancel Firecrawl batch scrape job (for active scrapes)
 			if (linkSourceEntry.firecrawlJobId) {
 				try {
-					await firecrawlService.cancelCrawl(linkSourceEntry.firecrawlJobId);
+					await firecrawlService.cancelBatchScrape(
+						linkSourceEntry.firecrawlJobId
+					);
 					console.log(
-						`[link-source:cancel] Cancelled Firecrawl job ${linkSourceEntry.firecrawlJobId}`
+						`[link-source:cancel] Cancelled Firecrawl batch scrape job ${linkSourceEntry.firecrawlJobId}`
 					);
 				} catch (error) {
 					console.error(
-						"[link-source:cancel] Failed to cancel Firecrawl job:",
+						"[link-source:cancel] Failed to cancel Firecrawl batch scrape job:",
 						error
 					);
 					// Continue even if cancellation fails
@@ -467,12 +484,12 @@ export const linkSourceRouter = createTRPCRouter({
 				});
 			}
 
-			// Calculate crawl limit based on plan
+			// Calculate crawl limit based on plan (default 100 pages per crawl)
 			const planInfo = await getPlanForWebsite(websiteData);
 			const linkLimit = toNumericLimit(
 				planInfo.features["ai-agent-training-links"]
 			);
-			const crawlLimit = linkLimit === null ? 100 : Math.min(50, linkLimit * 5);
+			const crawlLimit = linkLimit === null ? 100 : Math.min(100, linkLimit);
 
 			// Reset link source to pending status
 			const updatedEntry = await updateLinkSource(db, {
@@ -483,7 +500,7 @@ export const linkSourceRouter = createTRPCRouter({
 				errorMessage: null,
 			});
 
-			// Enqueue the crawl job - worker will handle the actual crawling
+			// Enqueue the crawl job - worker will handle the actual crawling using v2 API
 			try {
 				await triggerWebCrawl({
 					linkSourceId: input.id,
@@ -493,6 +510,12 @@ export const linkSourceRouter = createTRPCRouter({
 					url: linkSourceEntry.url,
 					crawlLimit,
 					createdBy: user.id,
+					includePaths: linkSourceEntry.includePaths,
+					excludePaths: linkSourceEntry.excludePaths,
+					// v2 crawl parameters - improved defaults for better discovery
+					maxDiscoveryDepth: 5,
+					sitemap: "include",
+					crawlEntireDomain: true,
 				});
 			} catch (error) {
 				// If queueing fails, mark the link source as failed
@@ -549,6 +572,536 @@ export const linkSourceRouter = createTRPCRouter({
 
 			// Worker handles all status updates - just return current state
 			return toLinkSourceResponse(linkSourceEntry);
+		}),
+
+	/**
+	 * List knowledge entries for a specific link source
+	 */
+	listKnowledgeByLinkSource: protectedProcedure
+		.input(listKnowledgeByLinkSourceRequestSchema)
+		.output(
+			z.object({
+				items: z.array(
+					z.object({
+						id: z.string(),
+						sourceUrl: z.string().nullable(),
+						sourceTitle: z.string().nullable(),
+						type: z.string(),
+						isIncluded: z.boolean(),
+						sizeBytes: z.number(),
+						createdAt: z.string(),
+						updatedAt: z.string(),
+					})
+				),
+				pagination: z.object({
+					page: z.number(),
+					limit: z.number(),
+					total: z.number(),
+					hasMore: z.boolean(),
+				}),
+			})
+		)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const linkSourceEntry = await getLinkSourceById(db, {
+				id: input.linkSourceId,
+				websiteId: websiteData.id,
+			});
+
+			if (!linkSourceEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Link source not found",
+				});
+			}
+
+			const result = await listKnowledgeByLinkSource(db, {
+				linkSourceId: input.linkSourceId,
+				page: input.page,
+				limit: input.limit,
+			});
+
+			return {
+				items: result.items.map((item) => ({
+					id: item.id,
+					sourceUrl: item.sourceUrl,
+					sourceTitle: item.sourceTitle,
+					type: item.type,
+					isIncluded: item.isIncluded,
+					sizeBytes: Number(item.sizeBytes),
+					createdAt: item.createdAt,
+					updatedAt: item.updatedAt,
+				})),
+				pagination: result.pagination,
+			};
+		}),
+
+	/**
+	 * Toggle whether a knowledge entry is included in training
+	 */
+	toggleKnowledgeIncluded: protectedProcedure
+		.input(toggleKnowledgeIncludedRequestSchema)
+		.output(z.object({ id: z.string(), isIncluded: z.boolean() }))
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const updated = await updateKnowledge(db, {
+				id: input.knowledgeId,
+				websiteId: websiteData.id,
+				isIncluded: input.isIncluded,
+			});
+
+			if (!updated) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Knowledge entry not found",
+				});
+			}
+
+			return {
+				id: updated.id,
+				isIncluded: updated.isIncluded,
+			};
+		}),
+
+	/**
+	 * Get knowledge content (markdown) by ID
+	 */
+	getKnowledgeContent: protectedProcedure
+		.input(
+			z.object({
+				websiteSlug: z.string(),
+				knowledgeId: z.string(),
+			})
+		)
+		.output(
+			z.object({
+				id: z.string(),
+				sourceUrl: z.string().nullable(),
+				sourceTitle: z.string().nullable(),
+				markdown: z.string(),
+				sizeBytes: z.number(),
+				createdAt: z.string(),
+				updatedAt: z.string(),
+			})
+		)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const knowledgeEntry = await getKnowledgeById(db, {
+				id: input.knowledgeId,
+				websiteId: websiteData.id,
+			});
+
+			if (!knowledgeEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Knowledge entry not found",
+				});
+			}
+
+			// Extract markdown from payload
+			const payload = knowledgeEntry.payload as {
+				markdown?: string;
+			} | null;
+			const markdown = payload?.markdown ?? "";
+
+			return {
+				id: knowledgeEntry.id,
+				sourceUrl: knowledgeEntry.sourceUrl,
+				sourceTitle: knowledgeEntry.sourceTitle,
+				markdown,
+				sizeBytes: Number(knowledgeEntry.sizeBytes),
+				createdAt: knowledgeEntry.createdAt,
+				updatedAt: knowledgeEntry.updatedAt,
+			};
+		}),
+
+	/**
+	 * Scan subpages of a specific knowledge entry (scan deeper)
+	 */
+	scanSubpages: protectedProcedure
+		.input(scanSubpagesRequestSchema)
+		.output(linkSourceResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const parentLinkSource = await getLinkSourceById(db, {
+				id: input.linkSourceId,
+				websiteId: websiteData.id,
+			});
+
+			if (!parentLinkSource) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Link source not found",
+				});
+			}
+
+			// Get the knowledge entry to find its URL
+			const knowledgeList = await listKnowledgeByLinkSource(db, {
+				linkSourceId: input.linkSourceId,
+				page: 1,
+				limit: 1000,
+			});
+
+			const knowledgeEntry = knowledgeList.items.find(
+				(k) => k.id === input.knowledgeId
+			);
+
+			if (!knowledgeEntry?.sourceUrl) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Knowledge entry not found or has no source URL",
+				});
+			}
+
+			// Check if this URL already has a link source
+			const existingSource = await getLinkSourceByUrl(db, {
+				websiteId: websiteData.id,
+				aiAgentId: parentLinkSource.aiAgentId,
+				url: knowledgeEntry.sourceUrl,
+			});
+
+			if (existingSource) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "A crawl already exists for this URL",
+				});
+			}
+
+			// Calculate plan limits (default 30 pages per crawl)
+			const planInfo = await getPlanForWebsite(websiteData);
+			const linkLimit = toNumericLimit(
+				planInfo.features["ai-agent-training-links"]
+			);
+			const crawlLimit = linkLimit === null ? 100 : Math.min(100, linkLimit);
+
+			// Create a new child link source
+			const newLinkSource = await createLinkSource(db, {
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				aiAgentId: parentLinkSource.aiAgentId,
+				parentLinkSourceId: parentLinkSource.id,
+				url: knowledgeEntry.sourceUrl,
+				depth: parentLinkSource.depth + 1,
+				includePaths: parentLinkSource.includePaths,
+				excludePaths: parentLinkSource.excludePaths,
+			});
+
+			// Enqueue the crawl job using v2 API
+			try {
+				await triggerWebCrawl({
+					linkSourceId: newLinkSource.id,
+					websiteId: websiteData.id,
+					organizationId: websiteData.organizationId,
+					aiAgentId: parentLinkSource.aiAgentId,
+					url: knowledgeEntry.sourceUrl,
+					crawlLimit,
+					createdBy: user.id,
+					includePaths: parentLinkSource.includePaths,
+					excludePaths: parentLinkSource.excludePaths,
+					// v2 crawl parameters - for subpages, use shallower depth
+					maxDiscoveryDepth: 1, // Only scan direct subpages
+					sitemap: "include",
+					crawlEntireDomain: false, // Don't crawl entire domain for subpages
+				});
+			} catch (error) {
+				console.error(
+					"[link-source:scanSubpages] Failed to enqueue crawl job:",
+					error
+				);
+				await updateLinkSource(db, {
+					id: newLinkSource.id,
+					websiteId: websiteData.id,
+					status: "failed",
+					errorMessage: "Failed to queue crawl job. Please try again.",
+				});
+
+				return toLinkSourceResponse({
+					...newLinkSource,
+					status: "failed",
+					errorMessage: "Failed to queue crawl job. Please try again.",
+				});
+			}
+
+			return toLinkSourceResponse(newLinkSource);
+		}),
+
+	/**
+	 * Ignore a page - adds URL to ignoredUrls array and soft-deletes the knowledge entry
+	 */
+	ignorePage: protectedProcedure
+		.input(ignorePageRequestSchema)
+		.output(z.object({ success: z.boolean() }))
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			// Get the link source
+			const linkSourceEntry = await getLinkSourceById(db, {
+				id: input.linkSourceId,
+				websiteId: websiteData.id,
+			});
+
+			if (!linkSourceEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Link source not found",
+				});
+			}
+
+			// Get the knowledge entry
+			const knowledgeEntry = await getKnowledgeById(db, {
+				id: input.knowledgeId,
+				websiteId: websiteData.id,
+			});
+
+			if (!knowledgeEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Knowledge entry not found",
+				});
+			}
+
+			if (!knowledgeEntry.sourceUrl) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Knowledge entry has no source URL",
+				});
+			}
+
+			// Add URL to ignoredUrls
+			const currentIgnored = linkSourceEntry.ignoredUrls ?? [];
+			if (!currentIgnored.includes(knowledgeEntry.sourceUrl)) {
+				await updateLinkSource(db, {
+					id: input.linkSourceId,
+					websiteId: websiteData.id,
+					ignoredUrls: [...currentIgnored, knowledgeEntry.sourceUrl],
+				});
+			}
+
+			// Soft-delete the knowledge entry
+			const now = new Date().toISOString();
+			await db
+				.update(knowledge)
+				.set({
+					deletedAt: now,
+					updatedAt: now,
+				})
+				.where(
+					and(eq(knowledge.id, input.knowledgeId), isNull(knowledge.deletedAt))
+				);
+
+			return { success: true };
+		}),
+
+	/**
+	 * Reindex (re-scrape) a single page
+	 */
+	reindexPage: protectedProcedure
+		.input(reindexPageRequestSchema)
+		.output(
+			z.object({
+				id: z.string(),
+				sourceUrl: z.string().nullable(),
+				sourceTitle: z.string().nullable(),
+				sizeBytes: z.number(),
+			})
+		)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			// Get the link source
+			const linkSourceEntry = await getLinkSourceById(db, {
+				id: input.linkSourceId,
+				websiteId: websiteData.id,
+			});
+
+			if (!linkSourceEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Link source not found",
+				});
+			}
+
+			// Get the knowledge entry
+			const knowledgeEntry = await getKnowledgeById(db, {
+				id: input.knowledgeId,
+				websiteId: websiteData.id,
+			});
+
+			if (!knowledgeEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Knowledge entry not found",
+				});
+			}
+
+			if (!knowledgeEntry.sourceUrl) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Knowledge entry has no source URL",
+				});
+			}
+
+			// Use Firecrawl to scrape the single page
+			const scrapeResult = await firecrawlService.scrapeSinglePage(
+				knowledgeEntry.sourceUrl
+			);
+
+			if (!(scrapeResult.success && scrapeResult.data)) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: scrapeResult.error ?? "Failed to scrape page",
+				});
+			}
+
+			// Calculate size
+			const sizeBytes = new TextEncoder().encode(
+				scrapeResult.data.markdown
+			).length;
+
+			// Update the knowledge entry
+			const updatedEntry = await upsertKnowledge(db, {
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				aiAgentId: linkSourceEntry.aiAgentId,
+				linkSourceId: input.linkSourceId,
+				type: "url",
+				sourceUrl: knowledgeEntry.sourceUrl,
+				sourceTitle:
+					scrapeResult.data.title ?? scrapeResult.data.ogTitle ?? null,
+				origin: "reindex",
+				createdBy: user.id,
+				payload: {
+					markdown: scrapeResult.data.markdown,
+					headings: [],
+					links: [],
+					images: [],
+					estimatedTokens: Math.ceil(scrapeResult.data.markdown.length / 4),
+				},
+				metadata: {
+					source: "firecrawl",
+					reindexedAt: new Date().toISOString(),
+				},
+				sizeBytes,
+				isIncluded: knowledgeEntry.isIncluded,
+			});
+
+			return {
+				id: updatedEntry.id,
+				sourceUrl: updatedEntry.sourceUrl,
+				sourceTitle: updatedEntry.sourceTitle,
+				sizeBytes: Number(updatedEntry.sizeBytes),
+			};
+		}),
+
+	/**
+	 * Delete a page from knowledge base (without ignoring future crawls)
+	 */
+	deletePage: protectedProcedure
+		.input(deletePageRequestSchema)
+		.output(z.object({ success: z.boolean() }))
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			// Get the knowledge entry
+			const knowledgeEntry = await getKnowledgeById(db, {
+				id: input.knowledgeId,
+				websiteId: websiteData.id,
+			});
+
+			if (!knowledgeEntry) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Knowledge entry not found",
+				});
+			}
+
+			// Soft-delete the knowledge entry
+			const now = new Date().toISOString();
+			await db
+				.update(knowledge)
+				.set({
+					deletedAt: now,
+					updatedAt: now,
+				})
+				.where(
+					and(eq(knowledge.id, input.knowledgeId), isNull(knowledge.deletedAt))
+				);
+
+			return { success: true };
 		}),
 
 	/**

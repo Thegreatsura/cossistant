@@ -150,7 +150,11 @@ export async function createLinkSource(
 		organizationId: string;
 		websiteId: string;
 		aiAgentId?: string | null;
+		parentLinkSourceId?: string | null;
 		url: string;
+		includePaths?: string[] | null;
+		excludePaths?: string[] | null;
+		depth?: number;
 	}
 ): Promise<LinkSourceSelect> {
 	const now = new Date().toISOString();
@@ -160,10 +164,15 @@ export async function createLinkSource(
 		organizationId: params.organizationId,
 		websiteId: params.websiteId,
 		aiAgentId: params.aiAgentId ?? null,
+		parentLinkSourceId: params.parentLinkSourceId ?? null,
 		url: params.url,
 		status: "pending",
+		depth: params.depth ?? 0,
+		discoveredPagesCount: 0,
 		crawledPagesCount: 0,
 		totalSizeBytes: 0,
+		includePaths: params.includePaths ?? null,
+		excludePaths: params.excludePaths ?? null,
 		createdAt: now,
 		updatedAt: now,
 	};
@@ -187,10 +196,14 @@ export async function updateLinkSource(
 		websiteId: string;
 		status?: LinkSourceStatus;
 		firecrawlJobId?: string | null;
+		discoveredPagesCount?: number;
 		crawledPagesCount?: number;
 		totalSizeBytes?: number;
 		lastCrawledAt?: string | null;
 		errorMessage?: string | null;
+		includePaths?: string[] | null;
+		excludePaths?: string[] | null;
+		ignoredUrls?: string[] | null;
 	}
 ): Promise<LinkSourceSelect | null> {
 	const now = new Date().toISOString();
@@ -208,6 +221,10 @@ export async function updateLinkSource(
 		updateData.firecrawlJobId = params.firecrawlJobId;
 	}
 
+	if (params.discoveredPagesCount !== undefined) {
+		updateData.discoveredPagesCount = params.discoveredPagesCount;
+	}
+
 	if (params.crawledPagesCount !== undefined) {
 		updateData.crawledPagesCount = params.crawledPagesCount;
 	}
@@ -222,6 +239,18 @@ export async function updateLinkSource(
 
 	if (params.errorMessage !== undefined) {
 		updateData.errorMessage = params.errorMessage;
+	}
+
+	if (params.includePaths !== undefined) {
+		updateData.includePaths = params.includePaths;
+	}
+
+	if (params.excludePaths !== undefined) {
+		updateData.excludePaths = params.excludePaths;
+	}
+
+	if (params.ignoredUrls !== undefined) {
+		updateData.ignoredUrls = params.ignoredUrls;
 	}
 
 	const [entry] = await db

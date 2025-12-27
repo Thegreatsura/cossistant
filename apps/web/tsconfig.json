@@ -12,6 +12,7 @@
       "@/*": ["./src/*"],
       "@/docs/*": ["./src/app/(docs)/*"],
       "@/docs-source/*": ["./.source/*"],
+      "fumadocs-mdx:collections/*": ["./.source/*"],
       "@api/*": ["../api/src/*"],
       "@cossistant/react/*": ["../../packages/react/src/*"],
       "@cossistant/react": ["../../packages/react/src"],

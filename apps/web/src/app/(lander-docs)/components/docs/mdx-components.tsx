@@ -1,5 +1,6 @@
 import type { ImageProps } from "fumadocs-core/framework";
-import { APIPage } from "fumadocs-openapi/ui";
+// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
+// import { APIPage } from "./api-page";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,7 +26,6 @@ import Icon from "@/components/ui/icons";
 import { getIconForLanguageExtension } from "@/components/ui/logos";
 import { Step, Steps } from "@/components/ui/steps";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { openapi } from "@/lib/openapi";
 import { cn } from "@/lib/utils";
 import { HighlightLine } from "../highlight-line";
 import { ImageZoom } from "./image-zoom";
@@ -362,8 +362,7 @@ export const mdxComponents = {
 	TypeTable,
 	StyleTokenCascade,
 	Icon,
-	APIPage: (props: React.ComponentProps<typeof APIPage>) => (
-		<APIPage {...openapi.getAPIPageProps(props)} />
-	),
+	// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
+	// APIPage,
 	HighlightLine,
 };
