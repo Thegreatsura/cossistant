@@ -62,8 +62,14 @@ export const blog = defineCollections({
 		author: z.string(),
 		tags: z.array(z.string()),
 		image: z.string().optional(),
-		published: z.boolean().optional(),
+		published: z.boolean().default(true),
 		canonical: z.string().optional(),
+		/** Featured article eligible for hero display */
+		top: z.boolean().default(false),
+		/** Slugs of related articles for cross-linking */
+		related: z.array(z.string()).optional(),
+		/** Custom URL slug override */
+		slug: z.string().optional(),
 	}),
 });
 
