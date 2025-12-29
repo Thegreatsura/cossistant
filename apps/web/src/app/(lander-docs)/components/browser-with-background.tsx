@@ -21,6 +21,7 @@ export function BrowserWithBackground({
 			{/* Background Image */}
 			<BackgroundImage
 				alt="Cossistant Background"
+				asciiOpacity={0.3}
 				largeSrc="https://cdn.cossistant.com/landing/main-large.jpg"
 				mediumSrc="https://cdn.cossistant.com/landing/main-medium.jpg"
 				portraitOnMobile

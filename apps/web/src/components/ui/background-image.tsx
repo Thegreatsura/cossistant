@@ -1,7 +1,7 @@
 "use client";
 
 import { getImageProps } from "next/image";
-import type { ReactNode } from "react";
+import { AsciiImage } from "./ascii-image";
 
 type BackgroundImageProps = {
 	/**
@@ -68,11 +68,32 @@ type BackgroundImageProps = {
 	 * Whether to display in portrait orientation on mobile
 	 */
 	portraitOnMobile?: boolean;
+	/**
+	 * Opacity of the ASCII overlay (0-1)
+	 */
+	asciiOpacity?: number;
+	/**
+	 * Character set for ASCII rendering (sorted by visual density, dense to sparse)
+	 */
+	characters?: string;
+	/**
+	 * Resolution/density of ASCII characters (0.05 = fine, 0.3 = coarse)
+	 */
+	resolution?: number;
+	/**
+	 * Speed of the noise animation effect
+	 */
+	noiseSpeed?: number;
+	/**
+	 * Intensity of the noise animation effect
+	 */
+	noiseIntensity?: number;
 };
 
 /**
  * Reusable background image component that handles responsive image sources
- * with Next.js Image optimization. Supports portrait orientation on mobile.
+ * with Next.js Image optimization and ASCII art overlay effect.
+ * Supports portrait orientation on mobile.
  */
 export function BackgroundImage({
 	largeSrc,
@@ -91,6 +112,11 @@ export function BackgroundImage({
 	className = "",
 	imgClassName = "",
 	portraitOnMobile = false,
+	asciiOpacity = 0.25,
+	characters = "@%#*+=-:;  ",
+	resolution = 0.15,
+	noiseSpeed = 0.15,
+	noiseIntensity = 0.2,
 }: BackgroundImageProps) {
 	const common = {
 		alt,
@@ -128,20 +154,36 @@ export function BackgroundImage({
 	});
 
 	return (
-		<picture className={`absolute inset-0 z-0 ${className}`}>
-			<source media="(min-width: 1440px)" srcSet={large} />
-			<source media="(min-width: 768px)" srcSet={medium} />
-			<source media="(min-width: 320px)" srcSet={small} />
-			<img
-				{...rest}
+		<div className={`absolute inset-0 z-0 ${className}`}>
+			{/* Layer 0: Responsive picture element (fallback/base) */}
+			<picture className="absolute inset-0">
+				<source media="(min-width: 1440px)" srcSet={large} />
+				<source media="(min-width: 768px)" srcSet={medium} />
+				<source media="(min-width: 320px)" srcSet={small} />
+				<img
+					{...rest}
+					alt={alt}
+					className={`size-full object-cover grayscale-50 ${
+						portraitOnMobile ? "object-top md:object-center" : ""
+					} ${imgClassName}`}
+					height={largeHeight}
+					style={{ width: "100%", height: "100%" }}
+					width={largeWidth}
+				/>
+			</picture>
+
+			{/* Layer 1: ASCII overlay using largest image for best detail */}
+			<AsciiImage
 				alt={alt}
-				className={`size-full object-cover grayscale-50 ${
-					portraitOnMobile ? "object-top md:object-center" : ""
-				} ${imgClassName}`}
-				height={largeHeight}
-				style={{ width: "100%", height: "100%" }}
-				width={largeWidth}
+				asciiOpacity={asciiOpacity}
+				characters={characters}
+				className="absolute inset-0 size-full"
+				noiseIntensity={noiseIntensity}
+				noiseSpeed={noiseSpeed}
+				priority
+				resolution={resolution}
+				src={largeSrc}
 			/>
-		</picture>
+		</div>
 	);
 }

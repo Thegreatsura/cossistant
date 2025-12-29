@@ -151,7 +151,7 @@ export function SignupForm() {
 						</div>
 					</form>
 
-					<div className="flex flex-col text-center">
+					<div className="flex items-center gap-2">
 						<p className="text-primary/60 text-sm">Already have an account?</p>
 						<Link className="text-primary/60 text-sm underline" href="/login">
 							Log in
@@ -189,7 +189,7 @@ export function SignupForm() {
 					>
 						Use email instead
 					</Button>
-					<div className="flex flex-col text-center">
+					<div className="flex items-center gap-2">
 						<p className="text-primary/60 text-sm">Already have an account?</p>
 						<Link className="text-primary/60 text-sm underline" href="/login">
 							Log in

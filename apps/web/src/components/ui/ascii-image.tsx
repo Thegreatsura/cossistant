@@ -25,7 +25,8 @@ type AsciiImageProps = {
 };
 
 // Default character set sorted by visual density (dense to sparse)
-const DEFAULT_CHARACTERS = "@%#*+=-:;  ";
+// High-contrast set: @=very dense, #=dense, %=medium-dense, *=medium, +=medium-light, :=light, .=very light, space=empty
+const DEFAULT_CHARACTERS = "@#%*+:. ";
 
 // Luminance weights for RGB to grayscale conversion (ITU-R BT.601)
 const LUMINANCE_R = 0.299;
@@ -305,7 +306,7 @@ export function AsciiImage({
 	src,
 	alt,
 	className,
-	asciiOpacity = 0.25,
+	asciiOpacity = 0.35,
 	characters = DEFAULT_CHARACTERS,
 	resolution = 0.15,
 	noiseSpeed = 0.15,
