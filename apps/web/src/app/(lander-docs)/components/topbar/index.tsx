@@ -9,6 +9,7 @@ import { LogoText } from "@/components/ui/logo";
 import { TopbarButton } from "@/components/ui/topbar-button";
 import { DISCORD_INVITE } from "@/constants";
 import { cn } from "@/lib/utils";
+import { GitHubLink } from "../github-link";
 
 export function TopBar({
 	className,
@@ -37,18 +38,17 @@ export function TopBar({
 						<TopbarButton className="text-foreground" href="/docs">
 							Docs
 						</TopbarButton>
+						<TopbarButton href="/blog">Blog</TopbarButton>
 						<TopbarButton className="text-foreground" href="/changelog">
 							Changelog
 						</TopbarButton>
 						<TopbarButton className="text-foreground" href="/pricing">
 							Pricing
 						</TopbarButton>
-						<TopbarButton href={DISCORD_INVITE} icon={<DiscordIcon />}>
-							Discord
-						</TopbarButton>
 					</div>
 
 					<div className="flex w-60 items-center justify-end gap-4">
+						<GitHubLink className="px-1" />
 						{children}
 					</div>
 
