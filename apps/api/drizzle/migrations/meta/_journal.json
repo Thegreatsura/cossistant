@@ -211,6 +211,20 @@
       "when": 1766852456596,
       "tag": "0029_dashing_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1767225600000,
+      "tag": "0030_enable_pgvector",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1767199080996,
+      "tag": "0031_wandering_dreaming_celestial",
+      "breakpoints": true
     }
   ]
 }

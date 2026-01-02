@@ -69,6 +69,13 @@ export const env = {
 	VAPID_SUBJECT: getEnvVariable("VAPID_SUBJECT"),
 	// OpenRouter API key for AI agents
 	OPENROUTER_API_KEY: getEnvVariable("OPENROUTER_API_KEY", ""),
+	// OpenRouter embedding model (default: text-embedding-3-small)
+	OPENROUTER_EMBEDDING_MODEL: getEnvVariable(
+		"OPENROUTER_EMBEDDING_MODEL",
+		"openai/text-embedding-3-small"
+	),
+	// RAG service URL for chunking
+	RAG_SERVICE_URL: getEnvVariable("RAG_SERVICE_URL", "http://localhost:8082"),
 	// Firecrawl API key for web scraping
 	FIRECRAWL_API_KEY: getEnvVariable("FIRECRAWL_API_KEY", ""),
 };

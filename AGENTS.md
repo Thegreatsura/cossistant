@@ -38,3 +38,15 @@
   - Hook interfaces and return types (e.g., `useSupportNavigation`)
   - UI patterns and animation behaviors
 - Both fake implementations use separate animation stores (`landing-animation-store` for fake-dashboard, `widget-animation-store` for fake-support-widget) to prevent interference between animations.
+
+## RAG System Architecture
+- The RAG (Retrieval-Augmented Generation) system enables AI agents to retrieve relevant context from knowledge bases and visitor/contact memories.
+- **Components**:
+  - `apps/rag/` - Python FastAPI service using LlamaIndex for document chunking, deployed via `Dockerfile.rag`
+  - `apps/api/src/db/schema/chunk.ts` - Drizzle schema for storing chunks with pgvector embeddings
+  - `apps/api/src/lib/embedding-client.ts` - OpenRouter embedding client (TypeScript)
+  - `apps/api/src/utils/vector-search.ts` - Vector similarity search utilities
+- **Data Flow**: Knowledge entries are chunked by the RAG service, embedded via OpenRouter (OpenAI's text-embedding-3-small), and stored in PostgreSQL with pgvector for fast similarity search.
+- **Data Isolation**: All chunks are scoped by `websiteId` (required field) to ensure strict data isolation between websites.
+- **Source Types**: Chunks can be `knowledge` (from knowledge base), `visitor_memory`, or `contact_memory`.
+- See `docs/rag.md` for detailed architecture and usage documentation.

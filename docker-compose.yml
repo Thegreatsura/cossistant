@@ -1,7 +1,6 @@
-version: "3"
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg17
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -29,6 +28,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  rag:
+    build:
+      context: .
+      dockerfile: Dockerfile.rag
+    restart: unless-stopped
+    ports:
+      - "8082:8000"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_EMBEDDING_MODEL=openai/text-embedding-3-small
+      - PORT=8000
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:
