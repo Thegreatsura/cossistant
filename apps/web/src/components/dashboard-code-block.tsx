@@ -241,9 +241,10 @@ export function DashboardCodeBlock({
 				) : null}
 				<div
 					className={cn(
-						"absolute top-0 left-0 flex flex-wrap items-center justify-between gap-2 px-4 py-2",
+						"absolute top-0 flex flex-wrap items-center justify-between gap-2 px-4 py-2",
 						{
 							"right-6": showFrameworkSwitcher,
+							"left-6": !showFrameworkSwitcher,
 						}
 					)}
 				>

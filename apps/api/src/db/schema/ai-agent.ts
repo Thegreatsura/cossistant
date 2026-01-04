@@ -40,6 +40,7 @@ export const aiAgent = pgTable(
 		lastUsedAt: timestamp("last_used_at"),
 		lastTrainedAt: timestamp("last_trained_at"),
 		usageCount: integer("usage_count").default(0).notNull(),
+		goals: text("goals").array(),
 		metadata: jsonb("metadata"),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date().toISOString())

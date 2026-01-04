@@ -2,7 +2,7 @@
 
 import type { RouterOutputs } from "@cossistant/api/types";
 import { APIKeyType } from "@cossistant/types";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -113,7 +113,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
 	);
 
 	const form = useForm<CreateApiKeyFormValues>({
-		resolver: zodResolver(createApiKeyFormSchema),
+		resolver: standardSchemaResolver(createApiKeyFormSchema),
 		defaultValues: {
 			name: "",
 			keyType: APIKeyType.PUBLIC,

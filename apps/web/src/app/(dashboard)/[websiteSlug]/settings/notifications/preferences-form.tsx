@@ -5,7 +5,7 @@ import {
 	MemberNotificationChannel,
 	type MemberNotificationSettingsResponse,
 } from "@cossistant/types";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -247,7 +247,7 @@ export function MemberNotificationSettingsForm({
 	});
 
 	const form = useForm<NotificationFormValues>({
-		resolver: zodResolver(notificationFormSchema),
+		resolver: standardSchemaResolver(notificationFormSchema),
 		defaultValues: toFormValues(data),
 	});
 

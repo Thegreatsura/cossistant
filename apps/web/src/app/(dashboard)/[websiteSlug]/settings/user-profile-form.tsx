@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -73,7 +73,7 @@ export function UserProfileForm({
 	const avatarProgressToastAtRef = useRef(0);
 
 	const form = useForm<UserProfileFormValues>({
-		resolver: zodResolver(userProfileFormSchema),
+		resolver: standardSchemaResolver(userProfileFormSchema),
 		mode: "onChange",
 		defaultValues: {
 			name: initialName,

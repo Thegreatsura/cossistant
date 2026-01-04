@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -163,7 +163,7 @@ export function AllowedDomainsForm({
 		[initialDomains]
 	);
 	const form = useForm<AllowedDomainsFormValues>({
-		resolver: zodResolver(allowedDomainsSchema),
+		resolver: standardSchemaResolver(allowedDomainsSchema),
 		mode: "onChange",
 		defaultValues: {
 			domains: normalizedInitialDomains.length

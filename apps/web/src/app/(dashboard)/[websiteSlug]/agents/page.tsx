@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { copyToClipboardWithMeta } from "@/components/copy-button";
-import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icons";
 import { PageContent } from "@/components/ui/layout";
 import {
@@ -21,6 +21,7 @@ import { AIAgentForm } from "./ai-agent-form";
 
 export default function AgentsPage() {
 	const website = useWebsite();
+	const router = useRouter();
 	const trpc = useTRPC();
 	const [hasCopied, setHasCopied] = useState(false);
 
@@ -29,6 +30,40 @@ export default function AgentsPage() {
 			websiteSlug: website.slug,
 		})
 	);
+
+	// Redirect to create page if no agent exists
+	useEffect(() => {
+		// biome-ignore lint/complexity/useSimplifiedLogicExpression: we want to redirect if no agent exists
+		if (!isLoading && !aiAgent) {
+			router.replace(`/${website.slug}/agents/create`);
+		}
+	}, [aiAgent, isLoading, router, website.slug]);
+
+	// Show loading or nothing while redirecting
+	if (isLoading || !aiAgent) {
+		return (
+			<SettingsPage>
+				<SettingsHeader>General Settings</SettingsHeader>
+				<PageContent className="py-30">
+					<SettingsRow
+						description="Configure your AI assistant that automatically responds to visitor messages."
+						title="AI Agent Configuration"
+					>
+						<div className="space-y-6 px-4 py-6">
+							<Skeleton className="h-10 w-full" />
+							<Skeleton className="h-10 w-full" />
+							<Skeleton className="h-10 w-full" />
+							<Skeleton className="h-32 w-full" />
+							<div className="grid grid-cols-2 gap-4">
+								<Skeleton className="h-10 w-full" />
+								<Skeleton className="h-10 w-full" />
+							</div>
+						</div>
+					</SettingsRow>
+				</PageContent>
+			</SettingsPage>
+		);
+	}
 
 	const handleCopyAgentId = async () => {
 		if (!aiAgent?.id) {
@@ -82,23 +117,11 @@ export default function AgentsPage() {
 					description="Configure your AI assistant that automatically responds to visitor messages. When enabled, the agent will help visitors with common questions."
 					title="AI Agent Configuration"
 				>
-					{isLoading ? (
-						<div className="space-y-6 px-4 py-6">
-							<Skeleton className="h-10 w-full" />
-							<Skeleton className="h-10 w-full" />
-							<Skeleton className="h-10 w-full" />
-							<Skeleton className="h-32 w-full" />
-							<div className="grid grid-cols-2 gap-4">
-								<Skeleton className="h-10 w-full" />
-								<Skeleton className="h-10 w-full" />
-							</div>
-						</div>
-					) : (
-						<AIAgentForm
-							initialData={aiAgent ?? null}
-							websiteSlug={website.slug}
-						/>
-					)}
+					<AIAgentForm
+						initialData={aiAgent}
+						websiteName={website.name}
+						websiteSlug={website.slug}
+					/>
 				</SettingsRow>
 			</PageContent>
 		</SettingsPage>

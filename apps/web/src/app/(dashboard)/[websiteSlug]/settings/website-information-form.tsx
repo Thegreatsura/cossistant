@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -105,7 +105,7 @@ export function WebsiteInformationForm({
 	const logoProgressToastAtRef = useRef(0);
 
 	const form = useForm<WebsiteInformationFormValues>({
-		resolver: zodResolver(websiteInformationFormSchema),
+		resolver: standardSchemaResolver(websiteInformationFormSchema),
 		mode: "onChange",
 		defaultValues: {
 			name: initialName,

@@ -152,6 +152,8 @@ export type BrandInfo = {
 	favicon?: string;
 	language?: string;
 	keywords?: string;
+	/** Full markdown content from the page, used for prompt generation */
+	markdown?: string;
 	error?: string;
 };
 
@@ -700,6 +702,7 @@ export class FirecrawlService {
 
 	/**
 	 * Scrape a single page (synchronous, returns immediately with content)
+	 * Uses Firecrawl v2 API with cache disabled for fresh results
 	 * Useful for extracting brand information from a homepage
 	 */
 	async scrapeSinglePage(url: string): Promise<ScrapeResult> {
@@ -710,23 +713,35 @@ export class FirecrawlService {
 			};
 		}
 
+		console.log("[firecrawl] scrapeSinglePage called for:", url);
+
 		try {
+			// Firecrawl v2 API scrape request
+			// Note: v2 /scrape endpoint doesn't support skipCache - cache is handled differently
+			const requestBody = {
+				url,
+				formats: ["markdown", "html"],
+				// Don't use onlyMainContent - we need full page for meta tags extraction
+				onlyMainContent: false,
+			};
+
+			console.log("[firecrawl] Scrape request body:", requestBody);
+
 			const response = await fetch(`${FIRECRAWL_API_BASE}/scrape`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${this.apiKey}`,
 				},
-				body: JSON.stringify({
-					url,
-					formats: ["markdown", "html"],
-					// Skip cache to always get fresh results
-					skipCache: true,
-				}),
+				body: JSON.stringify(requestBody),
 			});
 
 			if (!response.ok) {
 				const errorText = await response.text();
+				console.error("[firecrawl] API error response:", {
+					status: response.status,
+					body: errorText,
+				});
 				return {
 					success: false,
 					error: `Firecrawl API error: ${response.status} ${errorText}`,
@@ -735,6 +750,15 @@ export class FirecrawlService {
 
 			const data = (await response.json()) as FirecrawlScrapeResponse;
 
+			// Log the raw API response for debugging
+			console.log("[firecrawl] Raw API response:", {
+				success: data.success,
+				hasData: !!data.data,
+				metadata: data.data?.metadata,
+				markdownLength: data.data?.markdown?.length ?? 0,
+				error: data.error,
+			});
+
 			if (!(data.success && data.data)) {
 				return {
 					success: false,
@@ -742,7 +766,7 @@ export class FirecrawlService {
 				};
 			}
 
-			return {
+			const result = {
 				success: true,
 				data: {
 					markdown: data.data.markdown ?? "",
@@ -760,8 +784,19 @@ export class FirecrawlService {
 					sourceUrl: data.data.metadata?.sourceURL ?? url,
 				},
 			};
+
+			console.log("[firecrawl] Parsed scrape result:", {
+				title: result.data.title,
+				description: result.data.description?.substring(0, 100),
+				ogDescription: result.data.ogDescription?.substring(0, 100),
+				hasMarkdown: !!result.data.markdown,
+				markdownLength: result.data.markdown.length,
+			});
+
+			return result;
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unknown error";
+			console.error("[firecrawl] Scrape exception:", message);
 			return {
 				success: false,
 				error: `Failed to scrape page: ${message}`,
@@ -771,7 +806,8 @@ export class FirecrawlService {
 
 	/**
 	 * Map a website to discover all URLs
-	 * Uses Firecrawl's /map endpoint to quickly discover pages without scraping content
+	 * Uses Firecrawl v2 /map endpoint to quickly discover pages without scraping content
+	 * Cache disabled for fresh results
 	 *
 	 * By default, uses the sitemap (ignoreSitemap: false) to discover more URLs
 	 */
@@ -783,28 +819,33 @@ export class FirecrawlService {
 			};
 		}
 
+		console.log("[firecrawl] mapSite called for:", url, "options:", options);
+
 		try {
+			// Firecrawl v2 API map request
+			// Note: v2 /map endpoint has different parameters than v1
+			const requestBody = {
+				url,
+				search: options.search,
+				includeSubdomains: options.includeSubdomains ?? false,
+				limit: options.limit ?? 100,
+			};
+
 			const response = await fetch(`${FIRECRAWL_API_BASE}/map`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${this.apiKey}`,
 				},
-				body: JSON.stringify({
-					url,
-					search: options.search,
-					// Use sitemap by default to discover more URLs
-					ignoreSitemap: options.ignoreSitemap ?? false,
-					sitemapOnly: options.sitemapOnly ?? false,
-					// Skip cache to always get fresh results
-					skipCache: true,
-					includeSubdomains: options.includeSubdomains ?? false,
-					limit: options.limit ?? 100,
-				}),
+				body: JSON.stringify(requestBody),
 			});
 
 			if (!response.ok) {
 				const errorText = await response.text();
+				console.error("[firecrawl] Map API error:", {
+					status: response.status,
+					body: errorText,
+				});
 				return {
 					success: false,
 					error: `Firecrawl API error: ${response.status} ${errorText}`,
@@ -812,6 +853,12 @@ export class FirecrawlService {
 			}
 
 			const data = (await response.json()) as FirecrawlMapResponse;
+
+			console.log("[firecrawl] Map API response:", {
+				success: data.success,
+				linksCount: data.links?.length ?? 0,
+				error: data.error,
+			});
 
 			if (!data.success) {
 				return {
@@ -826,6 +873,7 @@ export class FirecrawlService {
 			};
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unknown error";
+			console.error("[firecrawl] Map exception:", message);
 			return {
 				success: false,
 				error: `Failed to map site: ${message}`,
@@ -912,7 +960,20 @@ export class FirecrawlService {
 	 * Uses scrapeSinglePage and extracts relevant brand metadata
 	 */
 	async extractBrandInfo(url: string): Promise<BrandInfo> {
+		console.log("[firecrawl] extractBrandInfo called for:", url);
 		const scrapeResult = await this.scrapeSinglePage(url);
+
+		// Log raw scrape result for debugging
+		console.log("[firecrawl] Raw scrape result:", {
+			success: scrapeResult.success,
+			hasData: !!scrapeResult.data,
+			title: scrapeResult.data?.title,
+			ogTitle: scrapeResult.data?.ogTitle,
+			description: scrapeResult.data?.description?.substring(0, 100),
+			ogDescription: scrapeResult.data?.ogDescription?.substring(0, 100),
+			markdownLength: scrapeResult.data?.markdown?.length ?? 0,
+			error: scrapeResult.error,
+		});
 
 		if (!scrapeResult.success) {
 			return {
@@ -942,7 +1003,7 @@ export class FirecrawlService {
 			}
 		}
 
-		return {
+		const brandInfo = {
 			success: true,
 			companyName,
 			description:
@@ -951,7 +1012,16 @@ export class FirecrawlService {
 			favicon: scrapeResult.data.favicon,
 			language: scrapeResult.data.language,
 			keywords: scrapeResult.data.keywords,
+			markdown: scrapeResult.data.markdown,
 		};
+
+		console.log("[firecrawl] Extracted brand info:", {
+			companyName: brandInfo.companyName,
+			description: brandInfo.description?.substring(0, 100),
+			hasMarkdown: !!brandInfo.markdown,
+		});
+
+		return brandInfo;
 	}
 }
 

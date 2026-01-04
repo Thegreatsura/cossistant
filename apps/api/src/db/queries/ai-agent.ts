@@ -93,6 +93,7 @@ export async function createAiAgent(
 		organizationId: string;
 		websiteId: string;
 		isActive?: boolean;
+		goals?: string[] | null;
 	}
 ): Promise<AiAgentSelect> {
 	const now = new Date().toISOString();
@@ -109,6 +110,7 @@ export async function createAiAgent(
 		websiteId: params.websiteId,
 		isActive: params.isActive ?? true,
 		usageCount: 0,
+		goals: params.goals ?? null,
 		createdAt: now,
 		updatedAt: now,
 	};
@@ -135,6 +137,7 @@ export async function updateAiAgent(
 		model: string;
 		temperature?: number | null;
 		maxTokens?: number | null;
+		goals?: string[] | null;
 	}
 ): Promise<AiAgentSelect | null> {
 	const now = new Date().toISOString();
@@ -148,6 +151,7 @@ export async function updateAiAgent(
 			model: params.model,
 			temperature: params.temperature ?? 0.7,
 			maxTokens: params.maxTokens ?? 1024,
+			goals: params.goals,
 			updatedAt: now,
 		})
 		.where(and(eq(aiAgent.id, params.aiAgentId), isNull(aiAgent.deletedAt)))

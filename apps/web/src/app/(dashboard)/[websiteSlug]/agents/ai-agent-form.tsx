@@ -1,7 +1,7 @@
 "use client";
 
 import { AI_MODELS, type AiAgentResponse } from "@cossistant/types";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -62,21 +62,26 @@ const aiAgentFormSchema = z.object({
 type AIAgentFormValues = z.infer<typeof aiAgentFormSchema>;
 
 type AIAgentFormProps = {
+	websiteName: string;
 	websiteSlug: string;
 	initialData: AiAgentResponse | null;
 };
 
-export function AIAgentForm({ websiteSlug, initialData }: AIAgentFormProps) {
+export function AIAgentForm({
+	websiteSlug,
+	initialData,
+	websiteName,
+}: AIAgentFormProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
 	const isEditing = initialData !== null;
 
 	const form = useForm<AIAgentFormValues>({
-		resolver: zodResolver(aiAgentFormSchema),
+		resolver: standardSchemaResolver(aiAgentFormSchema),
 		mode: "onChange",
 		defaultValues: {
-			name: initialData?.name ?? "",
+			name: initialData?.name ?? `${websiteName} AI`,
 			description: initialData?.description ?? "",
 			basePrompt:
 				initialData?.basePrompt ??
@@ -108,7 +113,7 @@ export function AIAgentForm({ websiteSlug, initialData }: AIAgentFormProps) {
 					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug }),
 				});
 				form.reset({
-					name: updatedAgent.name,
+					name: updatedAgent.name ?? `${websiteName} AI`,
 					description: updatedAgent.description ?? "",
 					basePrompt: updatedAgent.basePrompt,
 					model: updatedAgent.model,
@@ -212,8 +217,9 @@ export function AIAgentForm({ websiteSlug, initialData }: AIAgentFormProps) {
 								<FormLabel>Name</FormLabel>
 								<FormControl>
 									<Input
-										placeholder="Support Assistant"
+										placeholder={`${websiteName} AI`}
 										{...field}
+										autoFocus
 										disabled={isPending}
 									/>
 								</FormControl>

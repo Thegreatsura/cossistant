@@ -6,7 +6,7 @@ import {
 	WebsiteInstallationTarget,
 } from "@cossistant/types";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { FrameworkPicker } from "@/components/framework-picker";
@@ -41,7 +41,7 @@ export default function WebsiteCreationForm({
 }: WebsiteCreationFormProps) {
 	const trpc = useTRPC();
 	const form = useForm<CreateWebsiteRequest>({
-		resolver: zodResolver(createWebsiteRequestSchema),
+		resolver: standardSchemaResolver(createWebsiteRequestSchema),
 		defaultValues: {
 			name: "",
 			domain: "",
