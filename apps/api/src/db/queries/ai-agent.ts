@@ -204,3 +204,21 @@ export async function updateAiAgentUsage(
 		})
 		.where(eq(aiAgent.id, params.aiAgentId));
 }
+
+/**
+ * Permanently delete an AI agent
+ * Related knowledge entries and link sources will be cascade deleted by the database
+ */
+export async function deleteAiAgent(
+	db: Database,
+	params: {
+		aiAgentId: string;
+	}
+): Promise<boolean> {
+	const result = await db
+		.delete(aiAgent)
+		.where(eq(aiAgent.id, params.aiAgentId))
+		.returning({ id: aiAgent.id });
+
+	return result.length > 0;
+}

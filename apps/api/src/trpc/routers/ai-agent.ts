@@ -1,5 +1,6 @@
 import {
 	createAiAgent,
+	deleteAiAgent,
 	getAiAgentForWebsite,
 	toggleAiAgentActive,
 	updateAiAgent,
@@ -13,6 +14,7 @@ import { generateAgentBasePrompt } from "@api/services/prompt-generator";
 import {
 	aiAgentResponseSchema,
 	createAiAgentRequestSchema,
+	deleteAiAgentRequestSchema,
 	generateBasePromptRequestSchema,
 	generateBasePromptResponseSchema,
 	getAiAgentRequestSchema,
@@ -207,6 +209,40 @@ export const aiAgentRouter = createTRPCRouter({
 			}
 
 			return toAiAgentResponse(agent);
+		}),
+
+	/**
+	 * Permanently delete an AI agent
+	 * This will also cascade delete all related knowledge entries and link sources
+	 */
+	delete: protectedProcedure
+		.input(deleteAiAgentRequestSchema)
+		.output(aiAgentResponseSchema.pick({ id: true }))
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const deleted = await deleteAiAgent(db, {
+				aiAgentId: input.aiAgentId,
+			});
+
+			if (!deleted) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			return { id: input.aiAgentId };
 		}),
 
 	/**

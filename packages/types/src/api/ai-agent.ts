@@ -288,6 +288,24 @@ export const toggleAiAgentActiveRequestSchema = z
 	});
 
 /**
+ * Delete AI Agent request schema
+ */
+export const deleteAiAgentRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug.",
+			example: "my-website",
+		}),
+		aiAgentId: z.ulid().openapi({
+			description: "The AI agent's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+	})
+	.openapi({
+		description: "Payload used to permanently delete an AI agent.",
+	});
+
+/**
  * Get AI Agent request schema
  */
 export const getAiAgentRequestSchema = z
@@ -396,6 +414,7 @@ export type UpdateAiAgentRequest = z.infer<typeof updateAiAgentRequestSchema>;
 export type ToggleAiAgentActiveRequest = z.infer<
 	typeof toggleAiAgentActiveRequestSchema
 >;
+export type DeleteAiAgentRequest = z.infer<typeof deleteAiAgentRequestSchema>;
 export type GetAiAgentRequest = z.infer<typeof getAiAgentRequestSchema>;
 export type GenerateBasePromptRequest = z.infer<
 	typeof generateBasePromptRequestSchema

@@ -47,7 +47,7 @@ export function AgentOnboardingFlow() {
 
 	// Form state
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>("basics");
-	const [name, setName] = useState("");
+	const [name, setName] = useState(`${website.name} AI`);
 	const [sourceUrl, setSourceUrl] = useState(`https://${website.domain}`);
 	const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 	const [basePrompt, setBasePrompt] = useState(DEFAULT_BASE_PROMPT);

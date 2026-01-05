@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { PageContent } from "@/components/ui/layout";
 import {
 	SettingsHeader,
@@ -13,11 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import { AIAgentForm } from "./ai-agent-form";
+import { DeleteAgentDialog } from "./delete-agent-dialog";
 
 export default function AgentsPage() {
 	const website = useWebsite();
 	const router = useRouter();
 	const trpc = useTRPC();
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
 	const { data: aiAgent, isLoading } = useQuery(
 		trpc.aiAgent.get.queryOptions({
@@ -73,7 +76,38 @@ export default function AgentsPage() {
 						websiteSlug={website.slug}
 					/>
 				</SettingsRow>
+
+				<SettingsRow
+					description="Permanently delete this AI agent and all associated data. This action cannot be undone."
+					title="Danger Zone"
+					variant="danger"
+				>
+					<div className="flex items-center justify-between p-4">
+						<div className="space-y-1">
+							<p className="font-medium text-sm">Delete AI Agent</p>
+							<p className="text-muted-foreground text-xs">
+								All knowledge base entries, web sources, and settings will be
+								permanently deleted.
+							</p>
+						</div>
+						<Button
+							onClick={() => setShowDeleteDialog(true)}
+							type="button"
+							variant="destructive"
+						>
+							Delete Agent
+						</Button>
+					</div>
+				</SettingsRow>
 			</PageContent>
+
+			<DeleteAgentDialog
+				agentId={aiAgent.id}
+				agentName={aiAgent.name}
+				onOpenChange={setShowDeleteDialog}
+				open={showDeleteDialog}
+				websiteSlug={website.slug}
+			/>
 		</SettingsPage>
 	);
 }
