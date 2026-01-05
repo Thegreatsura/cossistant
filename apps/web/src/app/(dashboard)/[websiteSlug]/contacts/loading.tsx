@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { Page } from "@/components/ui/layout";
+import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactsTableSkeleton } from "./contacts-table-skeleton";
 
 export default function Loading() {
 	return (
 		<Page className="relative flex flex-col gap-6">
+			<PageHeader>
+				<PageHeaderTitle>Contacts</PageHeaderTitle>
+			</PageHeader>
 			<div className="flex flex-col gap-5">
 				<ContactsTableSkeleton />
 				<div className="flex flex-col items-center justify-between gap-3 px-5 py-20 sm:flex-row">

@@ -51,7 +51,7 @@ export function AgentsNavigationSidebar() {
 					Back to Inbox
 				</SidebarItem>
 
-				<div className="mt-5 flex flex-col gap-1">
+				<div className="mt-3 flex flex-col gap-1">
 					<SidebarItem
 						active={isGeneralActive}
 						href={basePath}
@@ -62,68 +62,64 @@ export function AgentsNavigationSidebar() {
 				</div>
 
 				{/* Knowledge Section */}
-				<div className="mt-4 flex flex-col gap-1">
-					<SidebarItem
-						defaultOpen={isKnowledgeActive}
-						iconName="book-open"
-						items={[
-							{
-								label: "Web Sources",
-								href: `${trainingPath}/web`,
-								active: isWebSourcesActive,
-							},
-							{
-								label: "FAQ",
-								href: `${trainingPath}/faq`,
-								active: isFaqActive,
-							},
-							{
-								label: "Files",
-								href: `${trainingPath}/files`,
-								active: isFilesActive,
-								rightItem: (
-									<Badge className="ml-auto" variant="secondary">
-										Soon
-									</Badge>
-								),
-							},
-						]}
-					>
-						Knowledge
-					</SidebarItem>
-				</div>
+				<SidebarItem
+					defaultOpen={isKnowledgeActive}
+					iconName="book-open"
+					items={[
+						{
+							label: "Web Sources",
+							href: `${trainingPath}/web`,
+							active: isWebSourcesActive,
+						},
+						{
+							label: "FAQ",
+							href: `${trainingPath}/faq`,
+							active: isFaqActive,
+						},
+						{
+							label: "Files",
+							href: `${trainingPath}/files`,
+							active: isFilesActive,
+							rightItem: (
+								<Badge className="ml-auto" variant="secondary">
+									Soon
+								</Badge>
+							),
+						},
+					]}
+				>
+					Knowledge
+				</SidebarItem>
 
 				{/* Capabilities Section */}
-				<div className="mt-2 flex flex-col gap-1">
-					<SidebarItem
-						defaultOpen={isCapabilitiesActive}
-						iconName="cli"
-						items={[
-							{
-								label: "Tools",
-								href: `${basePath}/tools`,
-								active: isToolsActive,
-								rightItem: (
-									<Badge className="ml-auto" variant="secondary">
-										Soon
-									</Badge>
-								),
-							},
-							{
-								label: "Integrations",
-								href: `${basePath}/integrations`,
-								active: isIntegrationsActive,
-								rightItem: (
-									<Badge className="ml-auto" variant="secondary">
-										Soon
-									</Badge>
-								),
-							},
-						]}
-					>
-						Capabilities
-					</SidebarItem>
-				</div>
+				<SidebarItem
+					defaultOpen={isCapabilitiesActive}
+					iconName="cli"
+					items={[
+						{
+							label: "Tools",
+							href: `${basePath}/tools`,
+							active: isToolsActive,
+							rightItem: (
+								<Badge className="ml-auto" variant="secondary">
+									Soon
+								</Badge>
+							),
+						},
+						{
+							label: "Integrations",
+							href: `${basePath}/integrations`,
+							active: isIntegrationsActive,
+							rightItem: (
+								<Badge className="ml-auto" variant="secondary">
+									Soon
+								</Badge>
+							),
+						},
+					]}
+				>
+					Capabilities
+				</SidebarItem>
 			</SidebarContainer>
 		</ResizableSidebar>
 	);

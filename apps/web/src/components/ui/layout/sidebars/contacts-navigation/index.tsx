@@ -147,7 +147,7 @@ export function ContactsNavigationSidebar() {
 				>
 					Back to Inbox
 				</SidebarItem>
-				<div className="flex flex-col gap-2">
+				<div className="mt-1 flex flex-col gap-2">
 					<div className="flex h-10 items-center justify-between pl-2">
 						<p className="flex items-center gap-2 text-sm">Filters</p>
 						<Button

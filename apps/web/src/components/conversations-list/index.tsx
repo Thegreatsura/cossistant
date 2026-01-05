@@ -31,7 +31,7 @@ export function ConversationsList({
 
 	return (
 		<Page className="px-0">
-			<PageHeader className="px-4">
+			<PageHeader className="px-4 pl-5">
 				<div className="flex items-center gap-2">
 					{!isLeftSidebarOpen && (
 						<TooltipOnHover

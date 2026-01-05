@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Page } from "@/components/ui/layout";
+import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Table,
@@ -134,8 +134,12 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 
 	return (
 		<Page className="relative flex flex-col gap-6">
+			<PageHeader>
+				<PageHeaderTitle>Contacts</PageHeaderTitle>
+			</PageHeader>
+
 			<ScrollArea
-				className="h-full px-2 pt-14 pb-32"
+				className="h-full px-4 pt-14 pb-32"
 				orientation="both"
 				ref={tableContainerRef}
 				scrollMask

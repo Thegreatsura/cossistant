@@ -28,7 +28,7 @@ export const PageHeader = ({
 }) => (
 	<div
 		className={cn(
-			"absolute inset-x-0 top-0 z-10 flex h-14 w-full items-center justify-between gap-4 bg-background px-5 dark:bg-background-50",
+			"absolute inset-x-0 top-0 z-10 flex h-14 w-full items-center justify-between gap-4 bg-background px-5 pr-3 dark:bg-background-50",
 			className
 		)}
 	>
