@@ -84,45 +84,43 @@ export function VirtualizedConversations({
 	const virtualItems = virtualizer.getVirtualItems();
 
 	return (
-		<PageContent className="h-full pr-0 contain-strict">
-			<ScrollArea className="h-full pr-3" ref={scrollAreaRef}>
-				<div
-					style={{
-						height: `${virtualizer.getTotalSize()}px`,
-						width: "100%",
-						position: "relative",
-					}}
-				>
-					{virtualItems.map((virtualItem) => {
-						// biome-ignore lint/style/noNonNullAssertion: should never happen
-						const conversation = conversations[virtualItem.index]!;
-						const href = `${basePath}/${conversation.id}`;
+		<PageContent className="h-full pr-3 contain-strict" ref={scrollAreaRef}>
+			<div
+				style={{
+					height: `${virtualizer.getTotalSize()}px`,
+					width: "100%",
+					position: "relative",
+				}}
+			>
+				{virtualItems.map((virtualItem) => {
+					// biome-ignore lint/style/noNonNullAssertion: should never happen
+					const conversation = conversations[virtualItem.index]!;
+					const href = `${basePath}/${conversation.id}`;
 
-						return (
-							<div
-								key={virtualItem.key}
-								style={{
-									position: "absolute",
-									top: 0,
-									left: 0,
-									width: "100%",
-									height: `${virtualItem.size}px`,
-									transform: `translateY(${virtualItem.start}px)`,
-								}}
-							>
-								<VirtualConversationItem
-									conversation={conversation}
-									focused={focusedIndex === virtualItem.index}
-									href={href}
-									onMouseEnter={() => handleMouseEnter(virtualItem.index)}
-									showWaitingForReplyPill={showWaitingForReplyPill}
-									websiteSlug={websiteSlug}
-								/>
-							</div>
-						);
-					})}
-				</div>
-			</ScrollArea>
+					return (
+						<div
+							key={virtualItem.key}
+							style={{
+								position: "absolute",
+								top: 0,
+								left: 0,
+								width: "100%",
+								height: `${virtualItem.size}px`,
+								transform: `translateY(${virtualItem.start}px)`,
+							}}
+						>
+							<VirtualConversationItem
+								conversation={conversation}
+								focused={focusedIndex === virtualItem.index}
+								href={href}
+								onMouseEnter={() => handleMouseEnter(virtualItem.index)}
+								showWaitingForReplyPill={showWaitingForReplyPill}
+								websiteSlug={websiteSlug}
+							/>
+						</div>
+					);
+				})}
+			</div>
 		</PageContent>
 	);
 }

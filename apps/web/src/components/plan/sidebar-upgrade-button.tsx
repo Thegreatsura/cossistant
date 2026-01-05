@@ -3,6 +3,7 @@
 import { type FeatureKey, PLAN_CONFIG } from "@api/lib/plans/config";
 import type { RouterOutputs } from "@cossistant/api/types";
 import { useState } from "react";
+import { BackgroundImage } from "../ui/background-image";
 import { UpgradeModal } from "./upgrade-modal";
 
 type PlanInfo = RouterOutputs["plan"]["getPlanInfo"];
@@ -107,12 +108,14 @@ export function SidebarUpgradeButton({
 	return (
 		<>
 			<button
-				className="flex h-auto w-full flex-col justify-start gap-2 border border-primary/10 border-dashed bg-background-100 p-4 text-left hover:bg-background-200"
+				className="relative flex h-auto w-full flex-col justify-start gap-2 overflow-clip border border-cossistant-orange/10 border-dashed bg-background-100 p-4 text-left hover:bg-background-200"
 				onClick={() => setIsModalOpen(true)}
 				type="button"
 			>
 				<div className="flex flex-col gap-2">
-					<div className="font-medium text-base">Upgrade to Pro</div>
+					<div className="font-medium text-base text-cossistant-orange">
+						Upgrade to Pro
+					</div>
 					<div className="font-medium text-overflow-ellipsis text-xs">
 						Your {closestLimit.label.toLowerCase()} limit will go from{" "}
 						{closestLimit.limit.toLocaleString()} to{" "}

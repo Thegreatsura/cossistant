@@ -1,9 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { SidebarUpgradeButton } from "@/components/plan/sidebar-upgrade-button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useWebsite } from "@/contexts/website";
+import { useTRPC } from "@/lib/trpc/client";
 import { NavigationDropdown } from "../../../../navigation-dropdown";
 import { SidebarContainer } from "../container";
 import { ResizableSidebar } from "../resizable-sidebar";
@@ -12,9 +15,16 @@ import { SidebarItem } from "../sidebar-item";
 export function AgentsNavigationSidebar() {
 	const website = useWebsite();
 	const pathname = usePathname();
-
+	const trpc = useTRPC();
 	const basePath = `/${website.slug}/agents`;
 	const trainingPath = `${basePath}/training`;
+
+	// Fetch plan info for upgrade button
+	const { data: planInfo } = useQuery({
+		...trpc.plan.getPlanInfo.queryOptions({
+			websiteSlug: website.slug,
+		}),
+	});
 
 	// Check if current path matches
 	const isGeneralActive =
@@ -34,6 +44,12 @@ export function AgentsNavigationSidebar() {
 			<SidebarContainer
 				footer={
 					<>
+						{planInfo && (
+							<SidebarUpgradeButton
+								planInfo={planInfo}
+								websiteSlug={website.slug}
+							/>
+						)}
 						<SidebarItem href="/docs">Docs</SidebarItem>
 						<SidebarItem href={`/${website.slug}/settings`}>
 							Settings

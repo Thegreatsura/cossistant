@@ -14,6 +14,7 @@ type PageContentProps = {
 export const PageContent = ({ children, className, ref }: PageContentProps) => (
 	<ScrollArea
 		className={cn("relative flex h-full flex-1 flex-col p-4 pt-14", className)}
+		maskHeight="150px"
 		orientation="vertical"
 		ref={ref}
 		scrollMask

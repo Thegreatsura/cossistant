@@ -1,26 +1,21 @@
 "use client";
 
 import type { ContactListVisitorStatus } from "@cossistant/types";
+import { useQuery } from "@tanstack/react-query";
 import { Search, SortAsc, SortDesc } from "lucide-react";
+import { SidebarUpgradeButton } from "@/components/plan/sidebar-upgrade-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarContainer } from "@/components/ui/layout/sidebars/container";
 import { ResizableSidebar } from "@/components/ui/layout/sidebars/resizable-sidebar";
 import { SidebarItem } from "@/components/ui/layout/sidebars/sidebar-item";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
 	type ContactSortField,
 	useContactsTableControls,
 } from "@/contexts/contacts-table-controls";
 import { useWebsite } from "@/contexts/website";
+import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { NavigationDropdown } from "../../../../navigation-dropdown";
 
@@ -105,6 +100,13 @@ export function ContactsNavigationSidebar() {
 		setSearchTerm,
 	} = useContactsTableControls();
 
+	const trpc = useTRPC();
+	const { data: planInfo } = useQuery({
+		...trpc.plan.getPlanInfo.queryOptions({
+			websiteSlug: website.slug,
+		}),
+	});
+
 	const activeSort = sorting[0] ?? { id: "updatedAt", desc: true };
 	const sortField = (activeSort.id as ContactSortField) ?? "updatedAt";
 	const sortOrder = activeSort.desc ? "desc" : "asc";
@@ -131,6 +133,12 @@ export function ContactsNavigationSidebar() {
 			<SidebarContainer
 				footer={
 					<>
+						{planInfo && (
+							<SidebarUpgradeButton
+								planInfo={planInfo}
+								websiteSlug={website.slug}
+							/>
+						)}
 						<SidebarItem href="/docs">Docs</SidebarItem>
 						<SidebarItem href={`/${website.slug}/settings`}>
 							Settings
