@@ -1,33 +1,22 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { DEFAULT_SIDEBAR_WIDTH } from "@/hooks/use-sidebars";
 import { cn } from "@/lib/utils";
-import Icon from "../../icons";
+import { Skeleton } from "../../skeleton";
 
-type BlurredSidebarItemProps = {
-	children: React.ReactNode;
-	iconName?: string;
-	badge?: string;
+type SkeletonSidebarItemProps = {
+	hasIcon?: boolean;
+	width?: string;
 };
 
-function BlurredSidebarItem({
-	children,
-	iconName,
-	badge,
-}: BlurredSidebarItemProps) {
+function SkeletonSidebarItem({
+	hasIcon = true,
+	width = "w-24",
+}: SkeletonSidebarItemProps) {
 	return (
-		<div className="group/btn relative flex h-10 items-center gap-2.5 rounded-md px-3 py-1 text-primary/80 text-sm">
-			{iconName && (
-				<span className="relative flex size-6 shrink-0 items-center justify-center opacity-40">
-					<Icon className="size-4" name={iconName as never} />
-				</span>
-			)}
-			<span className="flex-1 truncate">{children}</span>
-			{badge && (
-				<Badge className="ml-auto" variant="secondary">
-					{badge}
-				</Badge>
-			)}
+		<div className="flex h-10 items-center gap-2.5 rounded-md px-3 py-1">
+			{hasIcon && <Skeleton className="size-4 shrink-0 rounded" />}
+			<Skeleton className={cn("h-3 rounded", width)} />
 		</div>
 	);
 }
@@ -40,58 +29,51 @@ export function BlurredAgentsSidebar({ className }: BlurredAgentsSidebarProps) {
 	return (
 		<div
 			className={cn(
-				"pointer-events-none relative flex h-full w-[240px] shrink-0 select-none flex-col border-primary/5 border-r bg-background-100/30 dark:bg-background-200/30",
+				"pointer-events-none relative flex h-full shrink-0 select-none flex-col border-primary/10 border-r dark:border-primary/5",
 				className
 			)}
+			style={{ width: DEFAULT_SIDEBAR_WIDTH }}
 		>
 			{/* Blur overlay */}
 			<div className="absolute inset-0 z-10 backdrop-blur-[2px]" />
 
 			{/* Content */}
-			<div className="relative flex w-full flex-col gap-1 px-2 py-2 opacity-50">
-				<BlurredSidebarItem iconName="arrow-left">
-					Back to Inbox
-				</BlurredSidebarItem>
+			<div className="relative flex w-full flex-col gap-1 px-2 py-2 opacity-40">
+				{/* Back to Inbox */}
+				<SkeletonSidebarItem width="w-24" />
 
+				{/* General */}
 				<div className="mt-5 flex flex-col gap-1">
-					<BlurredSidebarItem iconName="settings-2">General</BlurredSidebarItem>
+					<SkeletonSidebarItem width="w-16" />
 				</div>
 
-				{/* Training Section */}
-				<div className="mt-6">
-					<span className="mb-2 block px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-						Training
-					</span>
-					<div className="flex flex-col gap-1">
-						<BlurredSidebarItem iconName="dashboard">
-							Web Sources
-						</BlurredSidebarItem>
-						<BlurredSidebarItem iconName="help">FAQ</BlurredSidebarItem>
-						<BlurredSidebarItem badge="Soon" iconName="file">
-							Files
-						</BlurredSidebarItem>
+				{/* Knowledge Section (collapsible style) */}
+				<div className="mt-4 flex flex-col gap-1">
+					<SkeletonSidebarItem width="w-20" />
+					{/* Sub-items */}
+					<div className="ml-6 flex flex-col gap-1">
+						<SkeletonSidebarItem hasIcon={false} width="w-20" />
+						<SkeletonSidebarItem hasIcon={false} width="w-10" />
+						<SkeletonSidebarItem hasIcon={false} width="w-12" />
 					</div>
 				</div>
 
-				{/* Capabilities Section */}
-				<div className="mt-6">
-					<span className="mb-2 block px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-						Capabilities
-					</span>
-					<div className="flex flex-col gap-1">
-						<BlurredSidebarItem badge="Soon" iconName="cli">
-							Tools
-						</BlurredSidebarItem>
-						<BlurredSidebarItem badge="Soon" iconName="card">
-							Integrations
-						</BlurredSidebarItem>
+				{/* Capabilities Section (collapsible style) */}
+				<div className="mt-2 flex flex-col gap-1">
+					<SkeletonSidebarItem width="w-24" />
+					{/* Sub-items */}
+					<div className="ml-6 flex flex-col gap-1">
+						<SkeletonSidebarItem hasIcon={false} width="w-12" />
+						<SkeletonSidebarItem hasIcon={false} width="w-20" />
 					</div>
 				</div>
 
 				{/* Footer */}
-				<div className="mt-auto pt-4">
-					<BlurredSidebarItem>Docs</BlurredSidebarItem>
-					<BlurredSidebarItem>Settings</BlurredSidebarItem>
+				<div className="mt-auto flex flex-col gap-1 pt-4">
+					<SkeletonSidebarItem hasIcon={false} width="w-10" />
+					<SkeletonSidebarItem hasIcon={false} width="w-16" />
+					<div className="my-2 h-px w-full bg-border/30" />
+					<SkeletonSidebarItem width="w-28" />
 				</div>
 			</div>
 		</div>

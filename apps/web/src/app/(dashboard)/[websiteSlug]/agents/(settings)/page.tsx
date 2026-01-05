@@ -10,11 +10,10 @@ import {
 	SettingsPage,
 	SettingsRow,
 } from "@/components/ui/layout/settings-layout";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
-import { AIAgentForm } from "./ai-agent-form";
-import { DeleteAgentDialog } from "./delete-agent-dialog";
+import { AIAgentForm } from "../ai-agent-form";
+import { DeleteAgentDialog } from "../delete-agent-dialog";
 
 export default function AgentsPage() {
 	const website = useWebsite();
@@ -22,7 +21,8 @@ export default function AgentsPage() {
 	const trpc = useTRPC();
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-	const { data: aiAgent, isLoading } = useQuery(
+	// Data is pre-fetched in the layout, so it will be available immediately
+	const { data: aiAgent } = useQuery(
 		trpc.aiAgent.get.queryOptions({
 			websiteSlug: website.slug,
 		})
@@ -30,36 +30,14 @@ export default function AgentsPage() {
 
 	// Redirect to create page if no agent exists
 	useEffect(() => {
-		// biome-ignore lint/complexity/useSimplifiedLogicExpression: we want to redirect if no agent exists
-		if (!isLoading && !aiAgent) {
+		if (!aiAgent) {
 			router.replace(`/${website.slug}/agents/create`);
 		}
-	}, [aiAgent, isLoading, router, website.slug]);
+	}, [aiAgent, router, website.slug]);
 
-	// Show loading or nothing while redirecting
-	if (isLoading || !aiAgent) {
-		return (
-			<SettingsPage>
-				<SettingsHeader>General Settings</SettingsHeader>
-				<PageContent className="py-30">
-					<SettingsRow
-						description="Configure your AI assistant that automatically responds to visitor messages."
-						title="AI Agent Configuration"
-					>
-						<div className="space-y-6 px-4 py-6">
-							<Skeleton className="h-10 w-full" />
-							<Skeleton className="h-10 w-full" />
-							<Skeleton className="h-10 w-full" />
-							<Skeleton className="h-32 w-full" />
-							<div className="grid grid-cols-2 gap-4">
-								<Skeleton className="h-10 w-full" />
-								<Skeleton className="h-10 w-full" />
-							</div>
-						</div>
-					</SettingsRow>
-				</PageContent>
-			</SettingsPage>
-		);
+	// Return null while redirecting (no skeleton needed - loading.tsx handles initial load)
+	if (!aiAgent) {
+		return null;
 	}
 
 	return (

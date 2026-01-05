@@ -31,8 +31,8 @@ export default function WebSourcesPage() {
 	const trpc = useTRPC();
 	const [showAddDialog, setShowAddDialog] = useState(false);
 
-	// Get the AI agent for this website
-	const { data: aiAgent, isLoading: isLoadingAgent } = useQuery(
+	// Data is pre-fetched in the layout, so it will be available immediately
+	const { data: aiAgent } = useQuery(
 		trpc.aiAgent.get.queryOptions({
 			websiteSlug: website.slug,
 		})
@@ -45,7 +45,7 @@ export default function WebSourcesPage() {
 	});
 
 	// Get domain tree data for crawling status
-	const { hasAnyCrawling, isLoading: isLoadingTree } = useMergedDomainTree({
+	const { hasAnyCrawling } = useMergedDomainTree({
 		websiteSlug: website.slug,
 		aiAgentId: aiAgent?.id ?? null,
 	});
@@ -70,8 +70,6 @@ export default function WebSourcesPage() {
 		[handleCreate]
 	);
 
-	const isLoading = isLoadingAgent || isLoadingTree;
-
 	return (
 		<SettingsPage>
 			<SettingsHeader>
@@ -94,7 +92,7 @@ export default function WebSourcesPage() {
 			<PageContent className="py-6 pt-20">
 				<div className="space-y-6">
 					{/* Info Banner - Show when no AI agent exists */}
-					{!(aiAgent || isLoading) && (
+					{!aiAgent && (
 						<Alert>
 							<AlertTitle>Create an AI Agent first</AlertTitle>
 							<AlertDescription>

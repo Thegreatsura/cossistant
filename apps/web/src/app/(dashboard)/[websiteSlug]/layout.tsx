@@ -53,6 +53,10 @@ export default async function Layout({ children, params }: LayoutProps) {
 			trpc.user.getWebsiteMembers.queryOptions({ websiteSlug }),
 			handleAuthRedirect
 		),
+		prefetch(
+			trpc.aiAgent.get.queryOptions({ websiteSlug }),
+			handleAuthRedirect
+		),
 		// Prefetch the conversation headers as an infinite query
 		queryClient.prefetchInfiniteQuery({
 			queryKey: [
