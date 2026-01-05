@@ -134,12 +134,13 @@ export function ContactsPageContent({ websiteSlug }: ContactsPageContentProps) {
 
 	return (
 		<Page className="relative flex flex-col gap-6">
-			<PageHeader>
+			<PageHeader className="bg-transparent dark:bg-transparent">
 				<PageHeaderTitle>Contacts</PageHeaderTitle>
 			</PageHeader>
 
 			<ScrollArea
 				className="h-full px-4 pt-14 pb-32"
+				maskHeight="150px"
 				orientation="both"
 				ref={tableContainerRef}
 				scrollMask

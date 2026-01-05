@@ -110,7 +110,7 @@ export function AgentsNavigationSidebar() {
 				{/* Capabilities Section */}
 				<SidebarItem
 					defaultOpen={isCapabilitiesActive}
-					iconName="cli"
+					iconName="agent"
 					items={[
 						{
 							label: "Tools",
