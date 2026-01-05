@@ -19,12 +19,15 @@ export function AgentsNavigationSidebar() {
 	// Check if current path matches
 	const isGeneralActive =
 		pathname === basePath && !pathname.includes("/training");
-	const isTrainingActive = pathname.startsWith(trainingPath);
 	const isWebSourcesActive = pathname.startsWith(`${trainingPath}/web`);
 	const isFaqActive = pathname.startsWith(`${trainingPath}/faq`);
 	const isFilesActive = pathname.startsWith(`${trainingPath}/files`);
 	const isToolsActive = pathname.startsWith(`${basePath}/tools`);
 	const isIntegrationsActive = pathname.startsWith(`${basePath}/integrations`);
+
+	// Determine if sections should be open by default
+	const isKnowledgeActive = isWebSourcesActive || isFaqActive || isFilesActive;
+	const isCapabilitiesActive = isToolsActive || isIntegrationsActive;
 
 	return (
 		<ResizableSidebar position="left" sidebarTitle="AI Agent">
@@ -58,72 +61,68 @@ export function AgentsNavigationSidebar() {
 					</SidebarItem>
 				</div>
 
-				{/* Training Section */}
-				<div className="mt-6">
-					<span className="mb-2 block px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-						Training
-					</span>
-					<div className="flex flex-col gap-1">
-						<SidebarItem
-							active={isWebSourcesActive}
-							href={`${trainingPath}/web`}
-							iconName="dashboard"
-						>
-							Web Sources
-						</SidebarItem>
-						<SidebarItem
-							active={isFaqActive}
-							href={`${trainingPath}/faq`}
-							iconName="help"
-						>
-							FAQ
-						</SidebarItem>
-						<SidebarItem
-							active={isFilesActive}
-							href={`${trainingPath}/files`}
-							iconName="file"
-							rightItem={
-								<Badge className="ml-auto" variant="secondary">
-									Soon
-								</Badge>
-							}
-						>
-							Files
-						</SidebarItem>
-					</div>
+				{/* Knowledge Section */}
+				<div className="mt-4 flex flex-col gap-1">
+					<SidebarItem
+						defaultOpen={isKnowledgeActive}
+						iconName="book-open"
+						items={[
+							{
+								label: "Web Sources",
+								href: `${trainingPath}/web`,
+								active: isWebSourcesActive,
+							},
+							{
+								label: "FAQ",
+								href: `${trainingPath}/faq`,
+								active: isFaqActive,
+							},
+							{
+								label: "Files",
+								href: `${trainingPath}/files`,
+								active: isFilesActive,
+								rightItem: (
+									<Badge className="ml-auto" variant="secondary">
+										Soon
+									</Badge>
+								),
+							},
+						]}
+					>
+						Knowledge
+					</SidebarItem>
 				</div>
 
 				{/* Capabilities Section */}
-				<div className="mt-6">
-					<span className="mb-2 block px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+				<div className="mt-2 flex flex-col gap-1">
+					<SidebarItem
+						defaultOpen={isCapabilitiesActive}
+						iconName="cli"
+						items={[
+							{
+								label: "Tools",
+								href: `${basePath}/tools`,
+								active: isToolsActive,
+								rightItem: (
+									<Badge className="ml-auto" variant="secondary">
+										Soon
+									</Badge>
+								),
+							},
+							{
+								label: "Integrations",
+								href: `${basePath}/integrations`,
+								active: isIntegrationsActive,
+								rightItem: (
+									<Badge className="ml-auto" variant="secondary">
+										Soon
+									</Badge>
+								),
+							},
+						]}
+					>
 						Capabilities
-					</span>
-					<div className="flex flex-col gap-1">
-						<SidebarItem
-							active={isToolsActive}
-							href={`${basePath}/tools`}
-							iconName="cli"
-							rightItem={
-								<Badge className="ml-auto" variant="secondary">
-									Soon
-								</Badge>
-							}
-						>
-							Tools
-						</SidebarItem>
-						<SidebarItem
-							active={isIntegrationsActive}
-							href={`${basePath}/integrations`}
-							iconName="card"
-							rightItem={
-								<Badge className="ml-auto" variant="secondary">
-									Soon
-								</Badge>
-							}
-						>
-							Integrations
-						</SidebarItem>
-					</div>
+					</SidebarItem>
 				</div>
 			</SidebarContainer>
 		</ResizableSidebar>
