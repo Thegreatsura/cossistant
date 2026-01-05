@@ -2,10 +2,13 @@
 
 import { AI_MODELS, type AiAgentResponse } from "@cossistant/types";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { copyToClipboardWithMeta } from "@/components/copy-button";
+import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import { BaseSubmitButton } from "@/components/ui/base-submit-button";
 import {
 	Form,
@@ -16,8 +19,10 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import Icon, { type IconName } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
+import { PromptInput } from "@/components/ui/prompt-input";
 import {
 	Select,
 	SelectContent,
@@ -26,8 +31,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { TooltipOnHover } from "@/components/ui/tooltip";
 import { useTRPC } from "@/lib/trpc/client";
+import { cn } from "@/lib/utils";
 
 const aiAgentFormSchema = z.object({
 	name: z
@@ -74,6 +80,44 @@ export function AIAgentForm({
 }: AIAgentFormProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+
+	// Fetch plan info for model restrictions
+	const { data: planInfo } = useQuery(
+		trpc.plan.getPlanInfo.queryOptions({ websiteSlug })
+	);
+
+	const isFreePlan = planInfo?.plan.name === "free";
+
+	// Get available models based on plan
+	const availableModels = useMemo(() => {
+		if (isFreePlan) {
+			// Free users can only use freeOnly models
+			return AI_MODELS.filter((m) => "freeOnly" in m && m.freeOnly);
+		}
+		// Paid users get all models
+		return AI_MODELS;
+	}, [isFreePlan]);
+
+	// Upgrade modal state
+	const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+	// Copy agent ID state
+	const [hasCopied, setHasCopied] = useState(false);
+
+	const handleCopyAgentId = async () => {
+		if (!initialData?.id) {
+			return;
+		}
+
+		try {
+			await copyToClipboardWithMeta(initialData.id);
+			setHasCopied(true);
+			toast.success("Agent ID copied to clipboard");
+			setTimeout(() => setHasCopied(false), 2000);
+		} catch {
+			toast.error("Failed to copy agent ID");
+		}
+	};
 
 	const isEditing = initialData !== null;
 
@@ -191,21 +235,53 @@ export function AIAgentForm({
 			<form className="flex flex-col" onSubmit={form.handleSubmit(onSubmit)}>
 				{/* Enable/Disable toggle at the top when editing */}
 				{isEditing && initialData && (
-					<div className="flex items-center justify-between border-primary/10 border-b px-4 py-4 dark:border-primary/5">
-						<div className="flex flex-col gap-1">
-							<span className="font-medium text-sm">Agent Status</span>
-							<span className="text-muted-foreground text-xs">
-								{initialData.isActive
-									? "Agent is active and responding to visitors"
-									: "Agent is disabled and not responding"}
-							</span>
+					<>
+						<div className="flex items-center justify-between border-primary/10 border-b px-4 py-4 dark:border-primary/5">
+							<div className="flex flex-col gap-1">
+								<span className="font-medium text-sm">Agent Status</span>
+								<span className="text-muted-foreground text-xs">
+									{initialData.isActive
+										? "Agent is active and responding to visitors"
+										: "Agent is disabled and not responding"}
+								</span>
+							</div>
+							<Switch
+								checked={initialData.isActive}
+								disabled={isTogglingActive}
+								onCheckedChange={handleToggleActive}
+							/>
 						</div>
-						<Switch
-							checked={initialData.isActive}
-							disabled={isTogglingActive}
-							onCheckedChange={handleToggleActive}
-						/>
-					</div>
+
+						{/* Agent ID - copiable only */}
+						<div className="flex items-center justify-between border-primary/10 border-b px-4 py-4 dark:border-primary/5">
+							<div className="flex flex-col gap-1">
+								<span className="font-medium text-sm">Agent ID</span>
+								<span className="text-muted-foreground text-xs">
+									Unique identifier for API integrations
+								</span>
+							</div>
+							<div className="flex items-center gap-2">
+								<code className="rounded bg-background-200 px-2 py-0.5 font-mono text-xs dark:bg-background-300">
+									{initialData.id}
+								</code>
+								<TooltipOnHover content="Copy agent ID">
+									<button
+										className={cn(
+											"flex size-7 items-center justify-center rounded-md transition-colors hover:bg-background-200 dark:hover:bg-background-300",
+											hasCopied && "text-green-500"
+										)}
+										onClick={handleCopyAgentId}
+										type="button"
+									>
+										<Icon
+											className="size-4"
+											name={hasCopied ? "check" : "clipboard"}
+										/>
+									</button>
+								</TooltipOnHover>
+							</div>
+						</div>
+					</>
 				)}
 
 				<div className="space-y-6 px-4 py-6">
@@ -269,9 +345,13 @@ export function AIAgentForm({
 										</SelectTrigger>
 									</FormControl>
 									<SelectContent>
-										{AI_MODELS.map((model) => (
+										{availableModels.map((model) => (
 											<SelectItem key={model.value} value={model.value}>
 												<span className="flex items-center gap-2">
+													<Icon
+														className="size-4 text-foreground"
+														name={model.icon as IconName}
+													/>
 													<span>{model.label}</span>
 													<span className="text-muted-foreground text-xs">
 														({model.provider})
@@ -279,11 +359,48 @@ export function AIAgentForm({
 												</span>
 											</SelectItem>
 										))}
+										{/* Show locked models for free users */}
+										{isFreePlan &&
+											AI_MODELS.filter(
+												(m) => "requiresPaid" in m && m.requiresPaid
+											).map((model) => (
+												<SelectItem
+													disabled
+													key={model.value}
+													value={model.value}
+												>
+													<span className="flex items-center gap-2 opacity-50">
+														<Icon
+															className="size-4 text-muted-foreground"
+															name={model.icon as IconName}
+														/>
+														<span>{model.label}</span>
+														<span className="text-muted-foreground text-xs">
+															({model.provider})
+														</span>
+														<Icon
+															className="size-3 text-muted-foreground"
+															name="card"
+														/>
+													</span>
+												</SelectItem>
+											))}
 									</SelectContent>
 								</Select>
-								<FormDescription>
-									The AI model to use for generating responses.
-								</FormDescription>
+								<div className="flex items-center justify-between">
+									<FormDescription>
+										The AI model to use for generating responses.
+									</FormDescription>
+									{isFreePlan && (
+										<button
+											className="text-primary text-xs hover:underline"
+											onClick={() => setShowUpgradeModal(true)}
+											type="button"
+										>
+											Upgrade for more models
+										</button>
+									)}
+								</div>
 								<FormMessage />
 							</FormItem>
 						)}
@@ -292,21 +409,19 @@ export function AIAgentForm({
 					<FormField
 						control={form.control}
 						name="basePrompt"
-						render={({ field }) => (
+						render={({ field, fieldState }) => (
 							<FormItem>
-								<FormLabel>Base Prompt</FormLabel>
-								<FormControl>
-									<Textarea
-										className="min-h-32"
-										placeholder="You are a helpful support assistant..."
-										{...field}
-										disabled={isPending}
-									/>
-								</FormControl>
-								<FormDescription>
-									The system prompt that defines how your AI agent behaves.
-								</FormDescription>
-								<FormMessage />
+								<PromptInput
+									description="The system prompt that defines how your AI agent behaves."
+									disabled={isPending}
+									error={fieldState.error?.message}
+									label="Base Prompt"
+									maxLength={10_000}
+									onChange={field.onChange}
+									placeholder="You are a helpful support assistant..."
+									rows={10}
+									value={field.value}
+								/>
 							</FormItem>
 						)}
 					/>
@@ -404,6 +519,18 @@ export function AIAgentForm({
 					</div>
 				</SettingsRowFooter>
 			</form>
+
+			{/* Upgrade Modal */}
+			{planInfo && (
+				<UpgradeModal
+					currentPlan={planInfo.plan}
+					highlightedFeatureKey="latest-ai-models"
+					initialPlanName="hobby"
+					onOpenChange={setShowUpgradeModal}
+					open={showUpgradeModal}
+					websiteSlug={websiteSlug}
+				/>
+			)}
 		</Form>
 	);
 }
