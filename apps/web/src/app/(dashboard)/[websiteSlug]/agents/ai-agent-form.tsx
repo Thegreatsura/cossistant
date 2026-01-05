@@ -1,15 +1,16 @@
 "use client";
 
-import { AI_MODELS, type AiAgentResponse } from "@cossistant/types";
+import type { AiAgentResponse } from "@cossistant/types";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ModelSelect } from "@/components/agents/model-select";
 import { copyToClipboardWithMeta } from "@/components/copy-button";
-import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import { BaseSubmitButton } from "@/components/ui/base-submit-button";
+import { Button } from "@/components/ui/button";
 import {
 	Form,
 	FormControl,
@@ -19,21 +20,13 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import Icon, { type IconName } from "@/components/ui/icons";
+import Icon from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { SettingsRowFooter } from "@/components/ui/layout/settings-layout";
 import { PromptInput } from "@/components/ui/prompt-input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { useTRPC } from "@/lib/trpc/client";
-import { cn } from "@/lib/utils";
 
 const aiAgentFormSchema = z.object({
 	name: z
@@ -87,19 +80,6 @@ export function AIAgentForm({
 	);
 
 	const isFreePlan = planInfo?.plan.name === "free";
-
-	// Get available models based on plan
-	const availableModels = useMemo(() => {
-		if (isFreePlan) {
-			// Free users can only use freeOnly models
-			return AI_MODELS.filter((m) => "freeOnly" in m && m.freeOnly);
-		}
-		// Paid users get all models
-		return AI_MODELS;
-	}, [isFreePlan]);
-
-	// Upgrade modal state
-	const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
 	// Copy agent ID state
 	const [hasCopied, setHasCopied] = useState(false);
@@ -265,19 +245,18 @@ export function AIAgentForm({
 									{initialData.id}
 								</code>
 								<TooltipOnHover content="Copy agent ID">
-									<button
-										className={cn(
-											"flex size-7 items-center justify-center rounded-md transition-colors hover:bg-background-200 dark:hover:bg-background-300",
-											hasCopied && "text-green-500"
-										)}
+									<Button
 										onClick={handleCopyAgentId}
+										size="icon-small"
 										type="button"
+										variant="secondary"
 									>
 										<Icon
-											className="size-4"
+											className="size-3.5"
+											filledOnHover
 											name={hasCopied ? "check" : "clipboard"}
 										/>
-									</button>
+									</Button>
 								</TooltipOnHover>
 							</div>
 						</div>
@@ -333,74 +312,16 @@ export function AIAgentForm({
 						name="model"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Model</FormLabel>
-								<Select
-									defaultValue={field.value}
+								<ModelSelect
+									description="The AI model to use for generating responses."
 									disabled={isPending}
-									onValueChange={field.onChange}
-								>
-									<FormControl>
-										<SelectTrigger>
-											<SelectValue placeholder="Select a model" />
-										</SelectTrigger>
-									</FormControl>
-									<SelectContent>
-										{availableModels.map((model) => (
-											<SelectItem key={model.value} value={model.value}>
-												<span className="flex items-center gap-2">
-													<Icon
-														className="size-4 text-foreground"
-														name={model.icon as IconName}
-													/>
-													<span>{model.label}</span>
-													<span className="text-muted-foreground text-xs">
-														({model.provider})
-													</span>
-												</span>
-											</SelectItem>
-										))}
-										{/* Show locked models for free users */}
-										{isFreePlan &&
-											AI_MODELS.filter(
-												(m) => "requiresPaid" in m && m.requiresPaid
-											).map((model) => (
-												<SelectItem
-													disabled
-													key={model.value}
-													value={model.value}
-												>
-													<span className="flex items-center gap-2 opacity-50">
-														<Icon
-															className="size-4 text-muted-foreground"
-															name={model.icon as IconName}
-														/>
-														<span>{model.label}</span>
-														<span className="text-muted-foreground text-xs">
-															({model.provider})
-														</span>
-														<Icon
-															className="size-3 text-muted-foreground"
-															name="card"
-														/>
-													</span>
-												</SelectItem>
-											))}
-									</SelectContent>
-								</Select>
-								<div className="flex items-center justify-between">
-									<FormDescription>
-										The AI model to use for generating responses.
-									</FormDescription>
-									{isFreePlan && (
-										<button
-											className="text-primary text-xs hover:underline"
-											onClick={() => setShowUpgradeModal(true)}
-											type="button"
-										>
-											Upgrade for more models
-										</button>
-									)}
-								</div>
+									isFreePlan={isFreePlan}
+									label="Model"
+									onChange={field.onChange}
+									planInfo={planInfo}
+									value={field.value}
+									websiteSlug={websiteSlug}
+								/>
 								<FormMessage />
 							</FormItem>
 						)}
@@ -519,18 +440,6 @@ export function AIAgentForm({
 					</div>
 				</SettingsRowFooter>
 			</form>
-
-			{/* Upgrade Modal */}
-			{planInfo && (
-				<UpgradeModal
-					currentPlan={planInfo.plan}
-					highlightedFeatureKey="latest-ai-models"
-					initialPlanName="hobby"
-					onOpenChange={setShowUpgradeModal}
-					open={showUpgradeModal}
-					websiteSlug={websiteSlug}
-				/>
-			)}
 		</Form>
 	);
 }

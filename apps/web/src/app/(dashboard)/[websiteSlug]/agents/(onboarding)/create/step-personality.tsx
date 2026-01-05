@@ -1,33 +1,17 @@
 "use client";
 
-import { AI_MODELS } from "@cossistant/types";
+import type { RouterOutputs } from "@cossistant/api/types";
 import { motion } from "motion/react";
+import { ModelSelect } from "@/components/agents/model-select";
 import { Button } from "@/components/ui/button";
-import Icon, { type IconName } from "@/components/ui/icons";
-import { Label } from "@/components/ui/label";
+import Icon from "@/components/ui/icons";
 import { PromptInput } from "@/components/ui/prompt-input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { AnalysisProgress } from "./analysis-progress";
 import { ManualDescriptionInput } from "./manual-description-input";
 import { PromptGeneratedConfirmation } from "./prompt-generated-confirmation";
 
 type AnalysisStep = "crawling" | "analyzing" | "crafting" | "complete";
-
-type AIModel = {
-	readonly value: string;
-	readonly label: string;
-	readonly icon: string;
-	readonly provider: string;
-	readonly freeOnly?: boolean;
-	readonly requiresPaid?: boolean;
-};
 
 type StepPersonalityProps = {
 	isAnalyzing: boolean;
@@ -45,7 +29,6 @@ type StepPersonalityProps = {
 	needsManualDescription: boolean;
 	onGenerateWithDescription: () => void;
 	shouldShowPromptEditor: boolean;
-	availableModels: readonly AIModel[];
 	model: string;
 	setModel: (model: string) => void;
 	basePrompt: string;
@@ -53,7 +36,8 @@ type StepPersonalityProps = {
 	isSubmitting: boolean;
 	isFreePlan: boolean;
 	onFinish: () => void;
-	onShowUpgradeModal: () => void;
+	websiteSlug: string;
+	planInfo: RouterOutputs["plan"]["getPlanInfo"] | undefined;
 };
 
 export function StepPersonality({
@@ -68,7 +52,6 @@ export function StepPersonality({
 	needsManualDescription,
 	onGenerateWithDescription,
 	shouldShowPromptEditor,
-	availableModels,
 	model,
 	setModel,
 	basePrompt,
@@ -76,7 +59,8 @@ export function StepPersonality({
 	isSubmitting,
 	isFreePlan,
 	onFinish,
-	onShowUpgradeModal,
+	websiteSlug,
+	planInfo,
 }: StepPersonalityProps) {
 	return (
 		<motion.div
@@ -123,70 +107,16 @@ export function StepPersonality({
 					transition={{ duration: 0.3 }}
 				>
 					{/* Model Selection */}
-					<div className="space-y-2">
-						<Label htmlFor="model-select">AI Model</Label>
-						<Select
-							disabled={isSubmitting}
-							onValueChange={setModel}
-							value={model}
-						>
-							<SelectTrigger id="model-select">
-								<SelectValue placeholder="Select a model" />
-							</SelectTrigger>
-							<SelectContent>
-								{availableModels.map((m) => (
-									<SelectItem key={m.value} value={m.value}>
-										<span className="flex items-center gap-2">
-											<Icon
-												className="size-4 text-foreground"
-												name={m.icon as IconName}
-											/>
-											<span>{m.label}</span>
-											<span className="text-muted-foreground text-xs">
-												({m.provider})
-											</span>
-										</span>
-									</SelectItem>
-								))}
-								{/* Show locked models for free users */}
-								{isFreePlan &&
-									AI_MODELS.filter(
-										(m) => "requiresPaid" in m && m.requiresPaid
-									).map((m) => (
-										<SelectItem disabled key={m.value} value={m.value}>
-											<span className="flex items-center gap-2 opacity-50">
-												<Icon
-													className="size-4 text-muted-foreground"
-													name={m.icon as IconName}
-												/>
-												<span>{m.label}</span>
-												<span className="text-muted-foreground text-xs">
-													({m.provider})
-												</span>
-												<Icon
-													className="size-3 text-muted-foreground"
-													name="card"
-												/>
-											</span>
-										</SelectItem>
-									))}
-							</SelectContent>
-						</Select>
-						<div className="flex items-center justify-between">
-							<p className="text-muted-foreground text-xs">
-								The AI model powering your agent's responses
-							</p>
-							{isFreePlan && (
-								<button
-									className="text-primary text-xs hover:underline"
-									onClick={onShowUpgradeModal}
-									type="button"
-								>
-									Upgrade for more models
-								</button>
-							)}
-						</div>
-					</div>
+					<ModelSelect
+						description="The AI model powering your agent's responses"
+						disabled={isSubmitting}
+						isFreePlan={isFreePlan}
+						label="AI Model"
+						onChange={setModel}
+						planInfo={planInfo}
+						value={model}
+						websiteSlug={websiteSlug}
+					/>
 
 					{/* Base Prompt */}
 					<div className="space-y-2">

@@ -49,7 +49,7 @@ export function SettingsRow({
 				className={cn(
 					"mt-4 flex w-full flex-col overflow-clip rounded-md border",
 					isDanger
-						? "border-destructive/30 dark:border-destructive/20"
+						? "border-destructive/30 bg-destructive/5 dark:border-destructive/20"
 						: "border-primary/10 dark:border-primary/5 dark:bg-background-100"
 				)}
 			>

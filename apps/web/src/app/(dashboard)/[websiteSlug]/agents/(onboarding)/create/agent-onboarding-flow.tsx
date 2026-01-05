@@ -4,9 +4,8 @@ import { AI_MODELS } from "@cossistant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import { Step, Steps } from "@/components/ui/steps";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
@@ -63,34 +62,12 @@ export function AgentOnboardingFlow() {
 	// Analysis progress state
 	const [analysisStep, setAnalysisStep] = useState<AnalysisStep>("crawling");
 
-	// Upgrade modal state
-	const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
-	// Get available models based on plan
-	const availableModels = useMemo(() => {
-		if (isFreePlan) {
-			// Free users can only use freeOnly models
-			return AI_MODELS.filter((m) => "freeOnly" in m && m.freeOnly);
-		}
-		// Paid users get all models
-		return AI_MODELS;
-	}, [isFreePlan]);
-
-	// Default model based on available models
-	const defaultModel = availableModels[0]?.value ?? AI_MODELS[0].value;
+	// Default model - use first free model for free users, or first model overall
+	const defaultModel = isFreePlan
+		? (AI_MODELS.find((m) => "freeOnly" in m && m.freeOnly)?.value ??
+			AI_MODELS[0].value)
+		: AI_MODELS[0].value;
 	const [model, setModel] = useState<string>(defaultModel);
-
-	// Update model when available models change
-	useEffect(() => {
-		if (availableModels.length > 0) {
-			const currentModelAvailable = availableModels.some(
-				(m) => m.value === model
-			);
-			if (!currentModelAvailable) {
-				setModel(availableModels[0].value);
-			}
-		}
-	}, [availableModels, model]);
 
 	// Create AI agent mutation
 	const { mutateAsync: createAgent, isPending: isCreatingAgent } = useMutation(
@@ -364,7 +341,6 @@ export function AgentOnboardingFlow() {
 					{currentStep === "personality" && (
 						<StepPersonality
 							analysisStep={analysisStep}
-							availableModels={availableModels}
 							basePrompt={basePrompt}
 							crawlEnabled={crawlEnabled}
 							generatedPromptData={generatedPromptData}
@@ -376,29 +352,18 @@ export function AgentOnboardingFlow() {
 							needsManualDescription={needsManualDescription}
 							onFinish={handleFinish}
 							onGenerateWithDescription={handleGenerateWithDescription}
-							onShowUpgradeModal={() => setShowUpgradeModal(true)}
+							planInfo={planInfo}
 							promptWasGenerated={promptWasGenerated}
 							setBasePrompt={setBasePrompt}
 							setManualDescription={setManualDescription}
 							setModel={setModel}
 							shouldShowPromptEditor={shouldShowPromptEditor}
 							urlWasProvided={urlWasProvided}
+							websiteSlug={website.slug}
 						/>
 					)}
 				</Step>
 			</Steps>
-
-			{/* Upgrade Modal */}
-			{planInfo && (
-				<UpgradeModal
-					currentPlan={planInfo.plan}
-					highlightedFeatureKey="latest-ai-models"
-					initialPlanName="hobby"
-					onOpenChange={setShowUpgradeModal}
-					open={showUpgradeModal}
-					websiteSlug={website.slug}
-				/>
-			)}
 		</div>
 	);
 }

@@ -140,7 +140,14 @@ export function ContactsNavigationSidebar() {
 					</>
 				}
 			>
-				<div className="mt-0.5 flex flex-col gap-2">
+				<SidebarItem
+					active={false}
+					href={`/${website.slug}/inbox`}
+					iconName="arrow-left"
+				>
+					Back to Inbox
+				</SidebarItem>
+				<div className="flex flex-col gap-2">
 					<div className="flex h-10 items-center justify-between pl-2">
 						<p className="flex items-center gap-2 text-sm">Filters</p>
 						<Button

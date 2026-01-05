@@ -90,10 +90,12 @@ export function DeleteAgentDialog({
 						<p className="font-medium text-destructive text-sm">
 							Warning: Deleting this agent will permanently remove:
 						</p>
-						<ul className="mt-2 list-inside list-disc space-y-1 text-primary text-sm">
+						<ul className="mt-2 list-inside list-disc space-y-1 text-destructive text-sm">
 							<li>
 								All agent settings and configuration for{" "}
-								<span className="font-medium text-foreground">{agentName}</span>
+								<span className="font-medium text-destructive">
+									{agentName}
+								</span>
 							</li>
 							<li>All knowledge base entries tied to this agent</li>
 							<li>All web sources and crawl data</li>

@@ -26,11 +26,11 @@ export function PromoIndicator({
 	);
 
 	return (
-		<div className={cn("relative inline-flex items-center", className)}>
+		<span className={cn("relative inline-flex items-center", className)}>
 			{/* Label */}
 			<span className="relative z-10 inline-flex items-center gap-1 font-medium text-cossistant-orange text-xs">
 				<span>-{discountPercent}%</span>
 			</span>
-		</div>
+		</span>
 	);
 }
