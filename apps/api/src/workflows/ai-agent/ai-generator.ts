@@ -52,19 +52,19 @@ export async function generateAIResponse(
 	});
 
 	// Extract usage data if available (format varies by provider)
-	const usage = result.usage as
+	const usage = result.usage as unknown as
 		| { promptTokens?: number; completionTokens?: number; totalTokens?: number }
 		| undefined;
 
 	return {
 		text: result.text,
 		usage:
-			usage?.inputTokens !== undefined &&
-			usage?.outputTokens !== undefined &&
+			usage?.promptTokens !== undefined &&
+			usage?.completionTokens !== undefined &&
 			usage?.totalTokens !== undefined
 				? {
-						inputTokens: usage.inputTokens,
-						outputTokens: usage.outputTokens,
+						promptTokens: usage.promptTokens,
+						completionTokens: usage.completionTokens,
 						totalTokens: usage.totalTokens,
 					}
 				: undefined,

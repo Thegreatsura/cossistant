@@ -2,13 +2,16 @@
 
 // Triggers
 export {
+	createAiAgentTriggers,
 	createAiReplyTriggers,
 	createMessageNotificationTriggers,
 	createWebCrawlTriggers,
 } from "./triggers";
 export {
+	type AiAgentJobData,
 	type AiReplyJobData,
 	type FirecrawlSitemapMode,
+	generateAiAgentJobId,
 	generateAiReplyJobId,
 	generateMessageNotificationJobId,
 	generateWebCrawlJobId,

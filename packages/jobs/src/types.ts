@@ -1,7 +1,9 @@
 // Queue names registry
 export const QUEUE_NAMES = {
 	MESSAGE_NOTIFICATION: "message-notification",
-	AI_REPLY: "ai-reply",
+	AI_AGENT: "ai-agent",
+	/** @deprecated Use AI_AGENT instead */
+	AI_REPLY: "ai-agent",
 	WEB_CRAWL: "web-crawl",
 } as const;
 
@@ -37,9 +39,15 @@ export function generateMessageNotificationJobId(
 }
 
 /**
- * Job data for AI reply queue
+ * Job data for AI Agent queue
+ *
+ * The AI agent can:
+ * - Respond to visitor messages
+ * - Analyze conversations (sentiment, title)
+ * - Escalate to humans
+ * - Execute background tasks
  */
-export type AiReplyJobData = {
+export type AiAgentJobData = {
 	conversationId: string;
 	messageId: string;
 	messageCreatedAt: string;
@@ -51,8 +59,16 @@ export type AiReplyJobData = {
 	isReplacement: boolean;
 };
 
+/** @deprecated Use AiAgentJobData instead */
+export type AiReplyJobData = AiAgentJobData;
+
+export function generateAiAgentJobId(conversationId: string): string {
+	return `ai-agent-${conversationId}`;
+}
+
+/** @deprecated Use generateAiAgentJobId instead */
 export function generateAiReplyJobId(conversationId: string): string {
-	return `ai-reply-${conversationId}`;
+	return generateAiAgentJobId(conversationId);
 }
 
 /** Sitemap handling mode for Firecrawl v2 */

@@ -176,6 +176,16 @@ export const conversation = pgTable(
 		resolvedByAiAgentId: ulidNullableReference(
 			"resolved_by_ai_agent_id"
 		).references(() => aiAgent.id, { onDelete: "set null" }),
+
+		// AI Agent escalation tracking
+		escalatedAt: timestamp("escalated_at"),
+		escalatedByAiAgentId: ulidNullableReference(
+			"escalated_by_ai_agent_id"
+		).references(() => aiAgent.id, { onDelete: "set null" }),
+		escalationReason: text("escalation_reason"),
+		// AI pause control - when set, AI will not respond until this time
+		aiPausedUntil: timestamp("ai_paused_until"),
+
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date().toISOString())
 			.notNull(),
