@@ -1,13 +1,16 @@
 import type { RouterOutputs } from "@api/trpc/types";
+import type { DaySeparatorItem } from "@cossistant/next/hooks";
 import { useGroupedMessages } from "@cossistant/next/hooks";
 import {
 	ConversationTimelineContainer,
+	DaySeparator,
+	DaySeparatorLabel,
+	DaySeparatorLine,
 	ConversationTimeline as PrimitiveConversationTimeline,
 } from "@cossistant/next/primitives";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
 
 import type { AvailableAIAgent } from "@cossistant/types";
-import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { AnimatePresence } from "motion/react";
@@ -72,7 +75,6 @@ function ConversationTimelineListComponent({
 		items: timelineItems,
 		seenData,
 		currentViewerId: currentUserId,
-		viewerType: SenderType.TEAM_MEMBER,
 	});
 
 	const typingEntries = useConversationTyping(conversationId, {
@@ -150,6 +152,29 @@ function ConversationTimelineListComponent({
 				<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-5">
 					<AnimatePresence initial={false} mode="popLayout">
 						{items.map((item, index) => {
+							if (item.type === "day_separator") {
+								// Render day separator using the primitive
+								return (
+									<DaySeparator
+										className="flex items-center gap-4 py-4"
+										date={item.date}
+										dateString={item.dateString}
+										key={`day-separator-${item.dateString}`}
+									>
+										{({ formattedDate }) => (
+											<>
+												<DaySeparatorLine className="h-px flex-1 bg-fd-border" />
+												<DaySeparatorLabel
+													className="text-fd-muted-foreground text-xs"
+													formattedDate={formattedDate}
+												/>
+												<DaySeparatorLine className="h-px flex-1 bg-fd-border" />
+											</>
+										)}
+									</DaySeparator>
+								);
+							}
+
 							if (item.type === "timeline_event") {
 								// Extract event data from parts
 								const eventPart = extractEventPart(item.item);

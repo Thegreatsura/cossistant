@@ -14,6 +14,16 @@ export {
 	ConversationTimelineLoading,
 } from "./conversation-timeline";
 export {
+	DaySeparator,
+	DaySeparatorLabel,
+	type DaySeparatorLabelProps,
+	DaySeparatorLine,
+	type DaySeparatorLineProps,
+	type DaySeparatorProps,
+	type DaySeparatorRenderProps,
+	defaultFormatDate,
+} from "./day-separator";
+export {
 	FileInput,
 	MultimodalInput,
 	SupportInput as Input,

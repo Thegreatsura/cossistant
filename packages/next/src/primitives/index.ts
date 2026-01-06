@@ -1,6 +1,10 @@
 "use client";
 
 export type {
+	DaySeparatorLabelProps,
+	DaySeparatorLineProps,
+	DaySeparatorProps,
+	DaySeparatorRenderProps,
 	PageDefinition,
 	RouterProps,
 	TriggerProps,
@@ -19,6 +23,10 @@ export {
 	ConversationTimelineContainer,
 	ConversationTimelineEmpty,
 	ConversationTimelineLoading,
+	DaySeparator,
+	DaySeparatorLabel,
+	DaySeparatorLine,
+	defaultFormatDate,
 	extractFileParts,
 	extractImageParts,
 	FileInput,

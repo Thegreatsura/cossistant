@@ -8,6 +8,7 @@ export type {
 	ConversationTimelineTypingParticipant,
 	ConversationTypingParticipant,
 	CreateConversationVariables,
+	DaySeparatorItem,
 	GroupedMessage,
 	SendMessageOptions,
 	SendMessageResult,

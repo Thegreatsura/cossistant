@@ -3,6 +3,11 @@ import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 
+import type {
+	ConversationItem,
+	DaySeparatorItem,
+} from "./use-grouped-messages";
+
 // Import the internal functions we need to test
 // Since useGroupedMessages is a hook, we'll test the underlying logic directly
 const getTimestamp = (date: Date | string | null | undefined): number => {
@@ -13,6 +18,161 @@ const getTimestamp = (date: Date | string | null | undefined): number => {
 		return new Date(date).getTime();
 	}
 	return date.getTime();
+};
+
+// Helper function to safely convert to Date
+const toDate = (date: Date | string | null | undefined): Date => {
+	if (!date) {
+		return typeof window !== "undefined" ? new Date() : new Date(0);
+	}
+	if (typeof date === "string") {
+		return new Date(date);
+	}
+	return date;
+};
+
+// Helper to extract the date string (YYYY-MM-DD) from a Date for day comparison
+const getDateString = (date: Date): string => {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+};
+
+// Helper to create a Date at midnight for a given date string
+const createDayDate = (dateString: string): Date => {
+	const [year, month, day] = dateString.split("-").map(Number);
+	return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1, 0, 0, 0, 0);
+};
+
+// Helper to determine sender ID and type from a timeline item
+const getSenderIdAndTypeFromTimelineItem = (
+	item: TimelineItem
+): {
+	senderId: string;
+	senderType: (typeof SenderType)[keyof typeof SenderType];
+} => {
+	if (item.visitorId) {
+		return { senderId: item.visitorId, senderType: SenderType.VISITOR };
+	}
+	if (item.aiAgentId) {
+		return { senderId: item.aiAgentId, senderType: SenderType.AI };
+	}
+	if (item.userId) {
+		return { senderId: item.userId, senderType: SenderType.TEAM_MEMBER };
+	}
+
+	// Fallback
+	return {
+		senderId: item.id || "default-sender",
+		senderType: SenderType.TEAM_MEMBER,
+	};
+};
+
+// Copy of groupTimelineItems for testing (same as in use-grouped-messages.ts)
+const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
+	const result: ConversationItem[] = [];
+	let currentGroup: ConversationItem | null = null;
+	let currentDayString: string | null = null;
+
+	const maybeInsertDaySeparator = (itemDate: Date): void => {
+		const itemDayString = getDateString(itemDate);
+
+		if (currentDayString !== itemDayString) {
+			// Finalize any existing group before inserting day separator
+			if (currentGroup && currentGroup.type === "message_group") {
+				result.push(currentGroup);
+				currentGroup = null;
+			}
+
+			// Insert day separator
+			result.push({
+				type: "day_separator",
+				date: createDayDate(itemDayString),
+				dateString: itemDayString,
+			});
+
+			currentDayString = itemDayString;
+		}
+	};
+
+	for (const item of items) {
+		const itemDate = toDate(item.createdAt);
+
+		// Check for day boundary before processing any item
+		maybeInsertDaySeparator(itemDate);
+
+		// Events don't get grouped
+		if (item.type === "event") {
+			// Finalize any existing group
+			if (currentGroup && currentGroup.type === "message_group") {
+				result.push(currentGroup);
+				currentGroup = null;
+			}
+
+			// Add event as standalone item
+			result.push({
+				type: "timeline_event",
+				item,
+				timestamp: itemDate,
+			});
+			continue;
+		}
+
+		if (item.type === "identification") {
+			// Finalize any existing group
+			if (currentGroup && currentGroup.type === "message_group") {
+				result.push(currentGroup);
+				currentGroup = null;
+			}
+
+			// Add tool item as standalone entry
+			result.push({
+				type: "timeline_tool",
+				item,
+				tool: item.tool ?? null,
+				timestamp: itemDate,
+			});
+			continue;
+		}
+
+		// Group messages by sender
+		const { senderId, senderType } = getSenderIdAndTypeFromTimelineItem(item);
+
+		if (
+			currentGroup &&
+			currentGroup.type === "message_group" &&
+			currentGroup.senderId === senderId
+		) {
+			// Add to existing group (day boundary already handled above)
+			currentGroup.items.push(item);
+			currentGroup.lastMessageId = item.id || currentGroup.lastMessageId;
+			currentGroup.lastMessageTime = itemDate;
+		} else {
+			// Finalize previous group if exists
+			if (currentGroup && currentGroup.type === "message_group") {
+				result.push(currentGroup);
+			}
+
+			// Start new group
+			currentGroup = {
+				type: "message_group",
+				senderId,
+				senderType,
+				items: [item],
+				firstMessageId: item.id || "",
+				lastMessageId: item.id || "",
+				firstMessageTime: itemDate,
+				lastMessageTime: itemDate,
+			};
+		}
+	}
+
+	if (currentGroup && currentGroup.type === "message_group") {
+		result.push(currentGroup);
+	}
+
+	return result;
 };
 
 // Simplified version of buildTimelineReadReceiptData for testing
@@ -317,5 +477,242 @@ describe("buildTimelineReadReceiptData", () => {
 		expect(seenByMap.get("msg-2")?.has("dashboard-user-1")).toBe(true);
 		expect(seenByMap.get("msg-3")?.has("dashboard-user-1")).toBe(true);
 		expect(unreadCountMap.get("dashboard-user-1")).toBe(0);
+	});
+});
+
+describe("groupTimelineItems - day separator", () => {
+	it("does not insert day separator for messages on the same day", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T10:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T14:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-3",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T18:00:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have 1 day separator + 1 message group
+		expect(result.length).toBe(2);
+		expect(result[0]?.type).toBe("day_separator");
+		expect(result[1]?.type).toBe("message_group");
+
+		// All messages should be in the same group
+		if (result[1]?.type === "message_group") {
+			expect(result[1].items.length).toBe(3);
+		}
+	});
+
+	it("inserts day separator when day changes between messages", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T23:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-16T01:00:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have: day separator 1 + message group 1 + day separator 2 + message group 2
+		expect(result.length).toBe(4);
+		expect(result[0]?.type).toBe("day_separator");
+		expect(result[1]?.type).toBe("message_group");
+		expect(result[2]?.type).toBe("day_separator");
+		expect(result[3]?.type).toBe("message_group");
+
+		// Verify day separator dates
+		if (result[0]?.type === "day_separator") {
+			expect(result[0].dateString).toBe("2024-01-15");
+		}
+		if (result[2]?.type === "day_separator") {
+			expect(result[2].dateString).toBe("2024-01-16");
+		}
+	});
+
+	it("inserts multiple day separators for gaps spanning multiple days", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-10T10:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T10:00:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have: day separator 1 + message group 1 + day separator 2 + message group 2
+		// (Not multiple separators for each day in between, just when messages occur)
+		expect(result.length).toBe(4);
+		expect(result[0]?.type).toBe("day_separator");
+		expect(result[1]?.type).toBe("message_group");
+		expect(result[2]?.type).toBe("day_separator");
+		expect(result[3]?.type).toBe("message_group");
+
+		// Verify the dates
+		if (result[0]?.type === "day_separator") {
+			expect(result[0].dateString).toBe("2024-01-10");
+		}
+		if (result[2]?.type === "day_separator") {
+			expect(result[2].dateString).toBe("2024-01-15");
+		}
+	});
+
+	it("inserts day separator before events", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T10:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "event-1",
+				type: "event",
+				userId: null,
+				visitorId: null,
+				createdAt: new Date("2024-01-16T10:00:00.000Z").toISOString(),
+				parts: [
+					{
+						type: "event",
+						eventType: "assigned",
+						actorUserId: "user-1",
+						actorAiAgentId: null,
+						targetUserId: "user-2",
+						targetAiAgentId: null,
+					},
+				],
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have: day separator 1 + message group + day separator 2 + event
+		expect(result.length).toBe(4);
+		expect(result[0]?.type).toBe("day_separator");
+		expect(result[1]?.type).toBe("message_group");
+		expect(result[2]?.type).toBe("day_separator");
+		expect(result[3]?.type).toBe("timeline_event");
+	});
+
+	it("inserts day separator before tool items", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T10:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "tool-1",
+				type: "identification",
+				tool: "email_collector",
+				userId: null,
+				visitorId: null,
+				aiAgentId: "ai-1",
+				createdAt: new Date("2024-01-16T10:00:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have: day separator 1 + message group + day separator 2 + tool
+		expect(result.length).toBe(4);
+		expect(result[0]?.type).toBe("day_separator");
+		expect(result[1]?.type).toBe("message_group");
+		expect(result[2]?.type).toBe("day_separator");
+		expect(result[3]?.type).toBe("timeline_tool");
+	});
+
+	it("breaks message groups at day boundaries even for same sender", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T23:30:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-16T00:30:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have separate groups for each day
+		expect(result.length).toBe(4);
+		expect(result[0]?.type).toBe("day_separator");
+		expect(result[1]?.type).toBe("message_group");
+		expect(result[2]?.type).toBe("day_separator");
+		expect(result[3]?.type).toBe("message_group");
+
+		// Each message group should have exactly 1 message
+		if (result[1]?.type === "message_group") {
+			expect(result[1].items.length).toBe(1);
+			expect(result[1].items[0]?.id).toBe("msg-1");
+		}
+		if (result[3]?.type === "message_group") {
+			expect(result[3].items.length).toBe(1);
+			expect(result[3].items[0]?.id).toBe("msg-2");
+		}
+	});
+
+	it("handles empty items array", () => {
+		const result = groupTimelineItems([]);
+		expect(result.length).toBe(0);
+	});
+
+	it("creates day separator with correct date at midnight", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-06-20T15:30:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		expect(result.length).toBe(2);
+		expect(result[0]?.type).toBe("day_separator");
+
+		if (result[0]?.type === "day_separator") {
+			expect(result[0].dateString).toBe("2024-06-20");
+			// The date should be at midnight
+			expect(result[0].date.getHours()).toBe(0);
+			expect(result[0].date.getMinutes()).toBe(0);
+			expect(result[0].date.getSeconds()).toBe(0);
+		}
 	});
 });

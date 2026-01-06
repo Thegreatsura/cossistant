@@ -86,8 +86,10 @@ export function useDebouncedConversationSeen(
 	delay = 500
 ): ConversationSeen[] {
 	const seenData = useConversationSeen(conversationId, options);
-	const [debouncedSeenData, setDebouncedSeenData] =
-		useState<ConversationSeen[]>(seenData);
+	// Use lazy initialization to avoid re-computing initial state on every render
+	const [debouncedSeenData, setDebouncedSeenData] = useState<
+		ConversationSeen[]
+	>(() => seenData);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {

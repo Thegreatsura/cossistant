@@ -1,4 +1,3 @@
-import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useMemo } from "react";
 
@@ -44,7 +43,6 @@ export function useConversationTimeline({
 		items: timelineItems,
 		seenData,
 		currentViewerId: currentVisitorId,
-		viewerType: SenderType.VISITOR,
 	});
 
 	const lastVisitorMessageGroupIndex = useMemo(() => {

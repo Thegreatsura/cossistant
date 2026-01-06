@@ -5,12 +5,19 @@ import type {
 } from "@cossistant/types/api/timeline-item";
 import type React from "react";
 import { useCallback, useMemo } from "react";
+import type { DaySeparatorItem } from "../../hooks/private/use-grouped-messages";
 import { useConversationTimeline } from "../../hooks/use-conversation-timeline";
 import { useTypingSound } from "../../hooks/use-typing-sound";
 import {
 	ConversationTimelineContainer,
 	ConversationTimeline as PrimitiveConversationTimeline,
 } from "../../primitives/conversation-timeline";
+import {
+	DaySeparator,
+	DaySeparatorLabel,
+	DaySeparatorLine,
+	defaultFormatDate,
+} from "../../primitives/day-separator";
 import { cn } from "../utils";
 import { ConversationEvent } from "./conversation-event";
 import { TimelineMessageGroup } from "./timeline-message-group";
@@ -54,6 +61,10 @@ export type ConversationTimelineProps = {
 	availableHumanAgents: AvailableHumanAgent[];
 	currentVisitorId?: string;
 	tools?: ConversationTimelineTools;
+	renderDaySeparator?: (props: {
+		item: DaySeparatorItem;
+		formatDate: (date: Date) => string;
+	}) => React.ReactNode;
 };
 
 export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
@@ -64,6 +75,7 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 	availableHumanAgents = [],
 	currentVisitorId,
 	tools,
+	renderDaySeparator,
 }) => {
 	const timeline = useConversationTimeline({
 		conversationId,
@@ -146,6 +158,41 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 		>
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-5">
 				{timeline.groupedMessages.items.map((item, index) => {
+					if (item.type === "day_separator") {
+						// Render day separator - allow custom rendering via prop
+						if (renderDaySeparator) {
+							return (
+								<div key={`day-separator-${item.dateString}`}>
+									{renderDaySeparator({
+										item,
+										formatDate: defaultFormatDate,
+									})}
+								</div>
+							);
+						}
+
+						// Default day separator using the primitive
+						return (
+							<DaySeparator
+								className="flex items-center justify-center py-2"
+								date={item.date}
+								dateString={item.dateString}
+								key={`day-separator-${item.dateString}`}
+							>
+								{({ formattedDate }) => (
+									<>
+										<DaySeparatorLine className="flex-1 border-gray-200 border-t dark:border-gray-700" />
+										<DaySeparatorLabel
+											className="px-3 text-gray-500 text-xs dark:text-gray-400"
+											formattedDate={formattedDate}
+										/>
+										<DaySeparatorLine className="flex-1 border-gray-200 border-t dark:border-gray-700" />
+									</>
+								)}
+							</DaySeparator>
+						);
+					}
+
 					if (item.type === "timeline_event") {
 						// Extract event data from parts
 						const eventPart = extractEventPart(item.item);
