@@ -48,7 +48,7 @@ export async function generateAIResponse(
 		messages: conversationHistory,
 		tools,
 		temperature: aiAgent.temperature ?? 0.7,
-		maxOutputTokens: aiAgent.maxTokens ?? 1024,
+		maxOutputTokens: aiAgent.maxOutputTokens ?? 1024,
 	});
 
 	// Extract usage data if available (format varies by provider)
@@ -59,12 +59,12 @@ export async function generateAIResponse(
 	return {
 		text: result.text,
 		usage:
-			usage?.promptTokens !== undefined &&
-			usage?.completionTokens !== undefined &&
+			usage?.inputTokens !== undefined &&
+			usage?.outputTokens !== undefined &&
 			usage?.totalTokens !== undefined
 				? {
-						promptTokens: usage.promptTokens,
-						completionTokens: usage.completionTokens,
+						inputTokens: usage.inputTokens,
+						outputTokens: usage.outputTokens,
 						totalTokens: usage.totalTokens,
 					}
 				: undefined,

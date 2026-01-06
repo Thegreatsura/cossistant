@@ -28,7 +28,7 @@ export const aiAgent = pgTable(
 		basePrompt: text("base_prompt").notNull(),
 		model: text("model").notNull(),
 		temperature: doublePrecision("temperature"),
-		maxTokens: integer("max_tokens"),
+		maxOutputTokens: integer("max_tokens"),
 		organizationId: ulidReference("organization_id").references(
 			() => organization.id,
 			{ onDelete: "cascade" }

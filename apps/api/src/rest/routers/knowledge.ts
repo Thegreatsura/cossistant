@@ -250,7 +250,7 @@ knowledgeRouter.openapi(
 		path: "/:id",
 		summary: "Get a knowledge entry",
 		description: "Retrieves a single knowledge entry by ID",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -482,7 +482,7 @@ knowledgeRouter.openapi(
 		path: "/:id",
 		summary: "Update a knowledge entry",
 		description: "Updates an existing knowledge entry",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -629,7 +629,7 @@ knowledgeRouter.openapi(
 		path: "/:id",
 		summary: "Delete a knowledge entry",
 		description: "Soft deletes a knowledge entry",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",

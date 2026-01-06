@@ -89,7 +89,7 @@ export async function createAiAgent(
 		basePrompt: string;
 		model: string;
 		temperature?: number | null;
-		maxTokens?: number | null;
+		maxOutputTokens?: number | null;
 		organizationId: string;
 		websiteId: string;
 		isActive?: boolean;
@@ -105,7 +105,7 @@ export async function createAiAgent(
 		basePrompt: params.basePrompt,
 		model: params.model,
 		temperature: params.temperature ?? 0.7,
-		maxTokens: params.maxTokens ?? 1024,
+		maxOutputTokens: params.maxOutputTokens ?? 1024,
 		organizationId: params.organizationId,
 		websiteId: params.websiteId,
 		isActive: params.isActive ?? true,
@@ -136,7 +136,7 @@ export async function updateAiAgent(
 		basePrompt: string;
 		model: string;
 		temperature?: number | null;
-		maxTokens?: number | null;
+		maxOutputTokens?: number | null;
 		goals?: string[] | null;
 	}
 ): Promise<AiAgentSelect | null> {
@@ -150,7 +150,7 @@ export async function updateAiAgent(
 			basePrompt: params.basePrompt,
 			model: params.model,
 			temperature: params.temperature ?? 0.7,
-			maxTokens: params.maxTokens ?? 1024,
+			maxOutputTokens: params.maxOutputTokens ?? 1024,
 			goals: params.goals,
 			updatedAt: now,
 		})

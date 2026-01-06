@@ -11,11 +11,12 @@
     "./db": "./src/db/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.5",
     "@aws-sdk/client-s3": "^3.913.0",
     "@aws-sdk/s3-request-presigner": "^3.913.0",
     "@cossistant/core": "workspace:*",
-    "@cossistant/location": "workspace:*",
     "@cossistant/jobs": "workspace:*",
+    "@cossistant/location": "workspace:*",
     "@cossistant/redis": "workspace:*",
     "@cossistant/transactional": "workspace:*",
     "@cossistant/types": "workspace:*",
@@ -32,7 +33,7 @@
     "@trpc/server": "^11.5.1",
     "@types/node": "^24.5.0",
     "@upstash/workflow": "^0.2.22",
-    "ai": "^5.0.0",
+    "ai": "^6.0.12",
     "drizzle-orm": "^0.44.5",
     "email-reply-parser": "^2.3.3",
     "hono": "^4.10.1",

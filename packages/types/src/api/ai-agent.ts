@@ -86,7 +86,7 @@ export const aiAgentResponseSchema = z.object({
 		description: "The temperature setting for response generation (0-2).",
 		example: 0.7,
 	}),
-	maxTokens: z.number().nullable().openapi({
+	maxOutputTokens: z.number().nullable().openapi({
 		description: "Maximum tokens for response generation.",
 		example: 1024,
 	}),
@@ -167,7 +167,7 @@ export const createAiAgentRequestSchema = z
 				description: "The temperature setting for response generation (0-2).",
 				example: 0.7,
 			}),
-		maxTokens: z
+		maxOutputTokens: z
 			.number()
 			.min(100, { message: "Max tokens must be at least 100." })
 			.max(16_000, { message: "Max tokens must be at most 16,000." })
@@ -242,7 +242,7 @@ export const updateAiAgentRequestSchema = z
 				description: "The temperature setting for response generation (0-2).",
 				example: 0.7,
 			}),
-		maxTokens: z
+		maxOutputTokens: z
 			.number()
 			.min(100, { message: "Max tokens must be at least 100." })
 			.max(16_000, { message: "Max tokens must be at most 16,000." })

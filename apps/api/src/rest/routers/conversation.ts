@@ -632,7 +632,7 @@ conversationRouter.openapi(
 				"Public API Key": [],
 			},
 		],
-		parameters: [
+		inputSchema: [
 			{
 				name: "conversationId",
 				in: "path",
@@ -776,7 +776,7 @@ conversationRouter.openapi(
 				"Public API Key": [],
 			},
 		],
-		parameters: [
+		inputSchema: [
 			{
 				name: "conversationId",
 				in: "path",
@@ -915,7 +915,7 @@ conversationRouter.openapi(
 				"Public API Key": [],
 			},
 		],
-		parameters: [
+		inputSchema: [
 			{
 				name: "conversationId",
 				in: "path",
@@ -1006,7 +1006,7 @@ conversationRouter.openapi(
 				"Public API Key": [],
 			},
 		],
-		parameters: [
+		inputSchema: [
 			{
 				name: "conversationId",
 				in: "path",

@@ -267,7 +267,7 @@ visitorRouter.openapi(
 		summary: "Update existing visitor information",
 		description:
 			"Updates an existing visitor's browser, device, and location data. The visitor must already exist in the system.",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -462,7 +462,7 @@ visitorRouter.openapi(
 		summary: "Update contact metadata for a visitor",
 		description:
 			"Merges the provided metadata into the contact profile associated with the visitor. The visitor must be identified first (linked to a contact) via the /contacts/identify endpoint.",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -624,7 +624,7 @@ visitorRouter.openapi(
 		path: "/:id",
 		summary: "Get visitor information",
 		description: "Retrieves visitor information by visitor ID",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",

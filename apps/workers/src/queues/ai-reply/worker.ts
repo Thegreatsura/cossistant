@@ -78,6 +78,7 @@ export function createAiReplyWorker({
 			events.on("failed", ({ jobId, failedReason }) => {
 				console.error(`[worker:ai-reply] Job ${jobId} failed: ${failedReason}`);
 			});
+
 			await events.waitUntilReady();
 
 			worker = new Worker<AiReplyJobData>(

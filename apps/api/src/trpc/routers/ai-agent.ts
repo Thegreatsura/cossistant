@@ -31,7 +31,7 @@ function toAiAgentResponse(agent: {
 	basePrompt: string;
 	model: string;
 	temperature: number | null;
-	maxTokens: number | null;
+	maxOutputTokens: number | null;
 	isActive: boolean;
 	lastUsedAt: string | null;
 	usageCount: number;
@@ -46,7 +46,7 @@ function toAiAgentResponse(agent: {
 		basePrompt: agent.basePrompt,
 		model: agent.model,
 		temperature: agent.temperature,
-		maxTokens: agent.maxTokens,
+		maxOutputTokens: agent.maxOutputTokens,
 		isActive: agent.isActive,
 		lastUsedAt: agent.lastUsedAt,
 		usageCount: agent.usageCount,
@@ -128,7 +128,7 @@ export const aiAgentRouter = createTRPCRouter({
 				basePrompt: input.basePrompt,
 				model: input.model,
 				temperature: input.temperature,
-				maxTokens: input.maxTokens,
+				maxOutputTokens: input.maxOutputTokens,
 				goals: input.goals,
 				organizationId: websiteData.organizationId,
 				websiteId: websiteData.id,
@@ -163,7 +163,7 @@ export const aiAgentRouter = createTRPCRouter({
 				basePrompt: input.basePrompt,
 				model: input.model,
 				temperature: input.temperature,
-				maxTokens: input.maxTokens,
+				maxOutputTokens: input.maxOutputTokens,
 				goals: input.goals,
 			});
 

@@ -407,7 +407,7 @@ contactRouter.openapi(
 		path: "/:id",
 		summary: "Get a contact",
 		description: "Retrieves a contact by ID",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -521,7 +521,7 @@ contactRouter.openapi(
 		path: "/:id",
 		summary: "Update a contact",
 		description: "Updates an existing contact",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -659,7 +659,7 @@ contactRouter.openapi(
 		path: "/:id/metadata",
 		summary: "Update contact metadata",
 		description: "Merges the provided metadata into the contact profile",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -797,7 +797,7 @@ contactRouter.openapi(
 		path: "/:id",
 		summary: "Delete a contact",
 		description: "Soft deletes a contact",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -1019,7 +1019,7 @@ contactRouter.openapi(
 		path: "/organizations/:id",
 		summary: "Get a contact organization",
 		description: "Retrieves a contact organization by ID",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -1136,7 +1136,7 @@ contactRouter.openapi(
 		path: "/organizations/:id",
 		summary: "Update a contact organization",
 		description: "Updates an existing contact organization",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",
@@ -1279,7 +1279,7 @@ contactRouter.openapi(
 		path: "/organizations/:id",
 		summary: "Delete a contact organization",
 		description: "Soft deletes a contact organization",
-		parameters: [
+		inputSchema: [
 			{
 				name: "id",
 				in: "path",

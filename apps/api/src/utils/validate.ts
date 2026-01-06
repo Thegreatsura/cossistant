@@ -1,9 +1,9 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
-import type { ZodSchema, z } from "zod";
+import type { z } from "zod";
 import type { RestContext } from "../rest/types";
 
-export const validateResponse = <T>(data: T, schema: ZodSchema<T>) => {
+export const validateResponse = <T>(data: T, schema: z.ZodType<T>) => {
 	const result = schema.safeParse(data);
 
 	if (!result.success) {
@@ -46,7 +46,7 @@ type ExtractedDataWithoutQuery = BaseExtractedData & {
 // Function overloads for proper typing
 export async function safelyExtractRequestData<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema: ZodSchema<T>
+	schema: z.ZodType<T>
 ): Promise<ExtractedDataWithBody<T>>;
 
 export async function safelyExtractRequestData(
@@ -56,7 +56,7 @@ export async function safelyExtractRequestData(
 // Implementation
 export async function safelyExtractRequestData<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema?: ZodSchema<T>
+	schema?: z.ZodType<T>
 ): Promise<ExtractedDataWithBody<T> | ExtractedDataWithoutBody> {
 	const db = c.get("db");
 	const website = c.get("website");
@@ -113,7 +113,7 @@ export async function safelyExtractRequestData<T>(
 // Function overloads for query extraction
 export async function safelyExtractRequestQuery<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema: ZodSchema<T>
+	schema: z.ZodType<T>
 ): Promise<ExtractedDataWithQuery<T>>;
 
 export async function safelyExtractRequestQuery(
@@ -123,7 +123,7 @@ export async function safelyExtractRequestQuery(
 // Implementation for query extraction
 export async function safelyExtractRequestQuery<T>(
 	c: Context<RestContext, string, Record<string, unknown>>,
-	schema?: ZodSchema<T>
+	schema?: z.ZodType<T>
 ): Promise<ExtractedDataWithQuery<T> | ExtractedDataWithoutQuery> {
 	const db = c.get("db");
 	const website = c.get("website");

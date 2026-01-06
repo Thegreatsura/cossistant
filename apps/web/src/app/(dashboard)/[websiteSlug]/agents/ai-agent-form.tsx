@@ -51,7 +51,7 @@ const aiAgentFormSchema = z.object({
 		.min(0, { message: "Temperature must be at least 0." })
 		.max(2, { message: "Temperature must be at most 2." })
 		.optional(),
-	maxTokens: z
+	maxOutputTokens: z
 		.number()
 		.min(100, { message: "Max tokens must be at least 100." })
 		.max(16_000, { message: "Max tokens must be at most 16,000." })
@@ -112,7 +112,7 @@ export function AIAgentForm({
 				"You are a helpful support assistant. Answer questions clearly and concisely. If you don't know something, say so honestly.",
 			model: initialData?.model ?? "anthropic/claude-sonnet-4-20250514",
 			temperature: initialData?.temperature ?? 0.7,
-			maxTokens: initialData?.maxTokens ?? 1024,
+			maxOutputTokens: initialData?.maxOutputTokens ?? 1024,
 		},
 	});
 
@@ -142,7 +142,7 @@ export function AIAgentForm({
 					basePrompt: updatedAgent.basePrompt,
 					model: updatedAgent.model,
 					temperature: updatedAgent.temperature ?? 0.7,
-					maxTokens: updatedAgent.maxTokens ?? 1024,
+					maxOutputTokens: updatedAgent.maxOutputTokens ?? 1024,
 				});
 				toast.success("AI agent updated successfully.");
 			},
@@ -181,7 +181,7 @@ export function AIAgentForm({
 				basePrompt: values.basePrompt,
 				model: values.model,
 				temperature: values.temperature ?? null,
-				maxTokens: values.maxTokens ?? null,
+				maxOutputTokens: values.maxOutputTokens ?? null,
 			});
 		} else {
 			await createAgent({
@@ -191,7 +191,7 @@ export function AIAgentForm({
 				basePrompt: values.basePrompt,
 				model: values.model,
 				temperature: values.temperature,
-				maxTokens: values.maxTokens,
+				maxOutputTokens: values.maxOutputTokens,
 			});
 		}
 	};
