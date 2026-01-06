@@ -82,19 +82,18 @@ export async function generate(
 	});
 
 	// Extract usage data from Vercel AI SDK format
-	const usage = result.usage;
+	// Cast to expected shape - AI SDK types may vary by provider
+	const usage = result.usage as
+		| { promptTokens?: number; completionTokens?: number; totalTokens?: number }
+		| undefined;
 
 	return {
 		decision: result.object,
 		usage: usage
 			? {
-					promptTokens:
-						(usage as unknown as { promptTokens?: number }).promptTokens ?? 0,
-					completionTokens:
-						(usage as unknown as { completionTokens?: number })
-							.completionTokens ?? 0,
-					totalTokens:
-						(usage as unknown as { totalTokens?: number }).totalTokens ?? 0,
+					promptTokens: usage.promptTokens ?? 0,
+					completionTokens: usage.completionTokens ?? 0,
+					totalTokens: usage.totalTokens ?? 0,
 				}
 			: undefined,
 	};

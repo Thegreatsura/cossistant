@@ -2,11 +2,13 @@
  * Send Message Action
  *
  * Sends a visible message to the visitor.
- * Idempotent - checks for existing message with same idempotency key.
+ * Idempotent - uses idempotencyKey as message ID to prevent duplicates.
  */
 
 import type { Database } from "@api/db";
+import { conversationTimelineItem } from "@api/db/schema/conversation";
 import { createMessageTimelineItem } from "@api/utils/timeline-item";
+import { eq } from "drizzle-orm";
 
 type SendMessageParams = {
 	db: Database;
@@ -38,10 +40,22 @@ export async function sendMessage(
 		visitorId,
 		aiAgentId,
 		text,
+		idempotencyKey,
 	} = params;
 
-	// TODO: Check for existing message with idempotency key
-	// For now, we create the message directly
+	// Check for existing message with this idempotency key (used as ID)
+	const existing = await db
+		.select({ id: conversationTimelineItem.id })
+		.from(conversationTimelineItem)
+		.where(eq(conversationTimelineItem.id, idempotencyKey))
+		.limit(1);
+
+	if (existing.length > 0) {
+		return {
+			messageId: existing[0].id,
+			created: false,
+		};
+	}
 
 	const result = await createMessageTimelineItem({
 		db,
@@ -51,6 +65,7 @@ export async function sendMessage(
 		conversationOwnerVisitorId: visitorId,
 		text,
 		aiAgentId,
+		id: idempotencyKey, // Use idempotency key as ID for deduplication
 		userId: null,
 		visitorId: null,
 		triggerNotificationWorkflow: false,

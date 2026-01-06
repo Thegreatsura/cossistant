@@ -4,10 +4,7 @@
  * Provides sensible defaults for AI agent behavior.
  */
 
-import type {
-	AiAgentSelect,
-	AiAgentBehaviorSettings as SchemaSettings,
-} from "@api/db/schema/ai-agent";
+import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { AiAgentBehaviorSettings } from "./types";
 
 /**
@@ -51,9 +48,7 @@ export function getBehaviorSettings(
 	aiAgent: AiAgentSelect
 ): AiAgentBehaviorSettings {
 	const defaults = getDefaultBehaviorSettings();
-	const stored = (
-		aiAgent.metadata as { behaviorSettings?: Partial<AiAgentBehaviorSettings> }
-	)?.behaviorSettings;
+	const stored = aiAgent.behaviorSettings;
 
 	if (!stored) {
 		return defaults;
