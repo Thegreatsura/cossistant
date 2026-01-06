@@ -143,6 +143,7 @@ The AI agent processes messages through a 5-step pipeline:
 **Purpose**: Gather all context needed for decision-making.
 
 **Actions**:
+
 - Validate AI agent is active
 - Load conversation with full context
 - Build role-aware message history
@@ -156,6 +157,7 @@ The AI agent processes messages through a 5-step pipeline:
 **Purpose**: Determine if and how the AI should act.
 
 **Decision Factors**:
+
 - Response mode (always, when_no_human, on_mention, manual)
 - Human agent activity (recent replies, assignments)
 - Escalation status
@@ -163,6 +165,7 @@ The AI agent processes messages through a 5-step pipeline:
 - Pause state
 
 **Outputs**:
+
 - `shouldAct: boolean` - Whether to proceed
 - `mode: ResponseMode` - How to respond
 - `humanCommand: string | null` - Extracted command
@@ -172,6 +175,7 @@ The AI agent processes messages through a 5-step pipeline:
 **Purpose**: Generate the AI's decision using the LLM.
 
 **Process**:
+
 1. Build dynamic system prompt based on context
 2. Format conversation history with role attribution
 3. Call LLM with structured output schema
@@ -184,6 +188,7 @@ The AI agent processes messages through a 5-step pipeline:
 **Purpose**: Execute the AI's chosen actions.
 
 **Actions Supported**:
+
 - `respond` - Send visible message to visitor
 - `internal_note` - Add private note for team
 - `escalate` - Escalate to human agent
@@ -192,6 +197,7 @@ The AI agent processes messages through a 5-step pipeline:
 - `skip` - Take no action
 
 **Side Effects**:
+
 - Set priority
 - Add to views/categories
 - Request participants
@@ -201,6 +207,7 @@ The AI agent processes messages through a 5-step pipeline:
 **Purpose**: Post-processing and cleanup.
 
 **Actions**:
+
 - Clear typing indicator (always)
 - Clear workflow state
 - Update AI agent usage stats
@@ -344,17 +351,20 @@ if (shouldCheckNewFactor(input)) {
 ### Common Issues
 
 **AI not responding**:
+
 1. Check agent is active: `aiAgent.isActive`
 2. Check response mode: `settings.responseMode`
 3. Check for human activity: Recent human messages?
 4. Check escalation status: Is conversation escalated?
 
 **Duplicate messages**:
+
 1. Check idempotency key handling
 2. Check workflow state in Redis
 3. Check job deduplication settings
 
 **Slow responses**:
+
 1. Check LLM response time
 2. Check database query performance
 3. Check context size (message count)
@@ -374,6 +384,7 @@ Each step logs with prefix:
 ### Inspecting Jobs
 
 Use BullMQ admin tools to:
+
 - View pending jobs
 - Inspect failed jobs
 - Retry failed jobs
@@ -418,12 +429,12 @@ type AiAgentBehaviorSettings = {
 
 ### Response Modes
 
-| Mode | Description |
-|------|-------------|
-| `always` | Respond to every visitor message |
+| Mode            | Description                              |
+| --------------- | ---------------------------------------- |
+| `always`        | Respond to every visitor message         |
 | `when_no_human` | Only respond if no human agent is active |
-| `on_mention` | Only respond when explicitly mentioned |
-| `manual` | Only respond to human commands |
+| `on_mention`    | Only respond when explicitly mentioned   |
+| `manual`        | Only respond to human commands           |
 
 ### Human Commands
 
@@ -464,4 +475,3 @@ Commands always trigger AI processing regardless of response mode.
 3. **Multi-Agent**: Support for multiple specialized agents
 4. **Scheduled Tasks**: Background analysis on schedule
 5. **Metrics Dashboard**: Real-time agent performance metrics
-
