@@ -69,3 +69,5 @@ async def generate_embeddings(texts: list[str]) -> list[list[float]]:
         data = response.json()
         return [item["embedding"] for item in data["data"]]
 
+
+
