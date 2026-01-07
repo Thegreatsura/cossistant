@@ -69,12 +69,6 @@ export function createAiReplyWorker({
 			events = new QueueEvents(queueName, {
 				connection: buildConnectionOptions(),
 			});
-			events.on("waiting", ({ jobId }) => {
-				console.log(`[worker:ai-reply] Job ${jobId} waiting`);
-			});
-			events.on("active", ({ jobId }) => {
-				console.log(`[worker:ai-reply] Job ${jobId} active`);
-			});
 			events.on("failed", ({ jobId, failedReason }) => {
 				console.error(`[worker:ai-reply] Job ${jobId} failed: ${failedReason}`);
 			});
@@ -85,20 +79,13 @@ export function createAiReplyWorker({
 				queueName,
 				async (job: Job<AiReplyJobData>) => {
 					const start = Date.now();
-					console.log(
-						`[worker:ai-reply] Executing job ${job.id} | conversation: ${job.data.conversationId} | agent: ${job.data.aiAgentId} | replacement: ${job.data.isReplacement}`
-					);
 
 					try {
 						await processAiReplyJob(stateRedis, job);
-						const duration = Date.now() - start;
-						console.log(
-							`[worker:ai-reply] Completed job ${job.id} in ${duration}ms`
-						);
 					} catch (error) {
 						const duration = Date.now() - start;
 						console.error(
-							`[worker:ai-reply] Failed job ${job.id} after ${duration}ms`,
+							`[worker:ai-reply] Job ${job.id} failed after ${duration}ms`,
 							error
 						);
 						throw error;
@@ -166,7 +153,7 @@ export function createAiReplyWorker({
 
 		if (!active) {
 			console.log(
-				`[worker:ai-reply] Job ${job.id} is no longer active for conversation ${conversationId}, skipping`
+				`[worker:ai-reply] conv=${conversationId} | Superseded by newer job, skipping`
 			);
 			return;
 		}
@@ -174,9 +161,7 @@ export function createAiReplyWorker({
 		const aiAgent = await getAiAgentById(db, { aiAgentId });
 
 		if (!aiAgent?.isActive) {
-			console.log(
-				`[worker:ai-reply] AI agent ${aiAgentId} unavailable for conversation ${conversationId}`
-			);
+			console.log(`[worker:ai-reply] conv=${conversationId} | Agent inactive`);
 			await clearWorkflowState(redis, conversationId, AI_REPLY_DIRECTION);
 			return;
 		}
@@ -184,9 +169,7 @@ export function createAiReplyWorker({
 		const conversation = await getConversationById(db, { conversationId });
 
 		if (!conversation) {
-			console.error(
-				`[worker:ai-reply] Conversation ${conversationId} not found`
-			);
+			console.error(`[worker:ai-reply] conv=${conversationId} | Not found`);
 			await clearWorkflowState(redis, conversationId, AI_REPLY_DIRECTION);
 			return;
 		}
@@ -252,11 +235,7 @@ export function createAiReplyWorker({
 			await updateAiAgentUsage(db, { aiAgentId: aiAgent.id });
 
 			console.log(
-				`[worker:ai-reply] Generated response for conversation ${conversationId}`,
-				{
-					aiAgentId: aiAgent.id,
-					tokensUsed: result.usage?.totalTokens,
-				}
+				`[worker:ai-reply] conv=${conversationId} | Response generated | tokens=${result.usage?.totalTokens ?? "N/A"}`
 			);
 		} finally {
 			await emitConversationTypingEvent({

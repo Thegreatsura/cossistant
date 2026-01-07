@@ -96,6 +96,10 @@ export async function intake(
 		conversationHistory.find((msg) => msg.messageId === input.messageId) ??
 		null;
 
+	console.log(
+		`[ai-agent:intake] conv=${input.conversationId} | messages=${conversationHistory.length} | hasVisitor=${!!visitorContext} | trigger=${triggerMessage?.senderType ?? "unknown"}`
+	);
+
 	return {
 		status: "ready",
 		aiAgent,

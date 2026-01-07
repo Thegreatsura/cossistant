@@ -44,10 +44,14 @@ type DecisionInput = {
 export async function decide(input: DecisionInput): Promise<DecisionResult> {
 	const settings = getBehaviorSettings(input.aiAgent);
 	const { triggerMessage, conversationHistory, conversationState } = input;
+	const convId = input.conversation.id;
 
 	// Check for human command first (highest priority)
 	const humanCommand = detectHumanCommand(triggerMessage);
 	if (humanCommand) {
+		console.log(
+			`[ai-agent:decision] conv=${convId} | Human command detected: "${humanCommand.slice(0, 50)}${humanCommand.length > 50 ? "..." : ""}"`
+		);
 		return {
 			shouldAct: true,
 			reason: "Human agent issued a command",
@@ -82,6 +86,10 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 		triggerMessage,
 		conversationHistory,
 		conversationState
+	);
+
+	console.log(
+		`[ai-agent:decision] conv=${convId} | mode=${settings.responseMode} | shouldAct=${responseModeResult.shouldAct} | reason="${responseModeResult.reason}"`
 	);
 
 	return {

@@ -48,7 +48,6 @@ export function TopBar({
 					</div>
 
 					<div className="flex w-60 items-center justify-end gap-4">
-						<GitHubLink className="px-1" />
 						{children}
 					</div>
 

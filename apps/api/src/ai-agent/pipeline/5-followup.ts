@@ -82,6 +82,25 @@ async function runBackgroundAnalysis(
 	settings: ReturnType<typeof getBehaviorSettings>
 ): Promise<void> {
 	const analysisPromises: Promise<void>[] = [];
+	const convId = conversation.id;
+
+	// Log what analysis tasks will run
+	const tasks: string[] = [];
+	if (settings.autoAnalyzeSentiment) {
+		tasks.push("sentiment");
+	}
+	if (settings.autoGenerateTitle && !conversation.title) {
+		tasks.push("title");
+	}
+	if (settings.autoCategorize) {
+		tasks.push("categorize");
+	}
+
+	if (tasks.length > 0) {
+		console.log(
+			`[ai-agent:followup] conv=${convId} | Running analysis: ${tasks.join(", ")}`
+		);
+	}
 
 	// Analyze sentiment if enabled and not already analyzed recently
 	if (settings.autoAnalyzeSentiment) {

@@ -56,6 +56,11 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 		websiteId,
 		visitorId,
 	} = input;
+	const convId = conversation.id;
+
+	console.log(
+		`[ai-agent:execute] conv=${convId} | Executing action="${decision.action}"`
+	);
 
 	const result: ExecutionResult = {
 		primaryAction: {
@@ -250,6 +255,16 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 				}
 			}
 		}
+	}
+
+	if (result.primaryAction.success) {
+		console.log(
+			`[ai-agent:execute] conv=${convId} | Result: success=true | sideEffects=${result.sideEffects.length}`
+		);
+	} else {
+		console.error(
+			`[ai-agent:execute] conv=${convId} | FAILED | error="${result.primaryAction.error}"`
+		);
 	}
 
 	return result;

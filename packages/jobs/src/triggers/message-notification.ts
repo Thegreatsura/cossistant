@@ -1,11 +1,12 @@
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
-import { type JobsOptions, Queue } from "bullmq";
+import { Queue } from "bullmq";
 import {
 	generateMessageNotificationJobId,
 	type MessageNotificationDirection,
 	type MessageNotificationJobData,
 	QUEUE_NAMES,
 } from "../types";
+import { addDebouncedJob } from "../utils/debounced-job";
 
 // Default delay: 1 minute (in milliseconds)
 const DEFAULT_NOTIFICATION_DELAY_MS = 60 * 1000;
@@ -87,84 +88,58 @@ export function createMessageNotificationTriggers({
 			direction
 		);
 
-		// Check if a job with this ID already exists
+		// Check for existing job to preserve earlier timestamp (notification-specific logic)
 		const existingJob = await q.getJob(jobId);
-		let effectiveInitialMessageCreatedAt = data.initialMessageCreatedAt;
+		let effectiveData = data;
 
 		if (existingJob) {
 			const existingState = await existingJob.getState();
-			console.log(
-				`[jobs:message-notification] Found existing job ${jobId} in state: ${existingState}`
-			);
-
-			// If the existing job is in a terminal state (failed/completed), remove it
-			// so we can create a fresh delayed job for the new batch
-			if (existingState === "failed" || existingState === "completed") {
-				// Preserve the earlier initialMessageCreatedAt to ensure we don't miss messages
-				// that were part of the original failed batch
-				const existingData =
+			// If completed/failed, preserve earlier timestamp to not miss messages
+			if (existingState === "completed" || existingState === "failed") {
+				const existingJobData =
 					existingJob.data as MessageNotificationJobData | null;
-				if (existingData?.initialMessageCreatedAt) {
-					const existingTimestamp = new Date(
-						existingData.initialMessageCreatedAt
+				if (existingJobData?.initialMessageCreatedAt) {
+					const existingTs = new Date(
+						existingJobData.initialMessageCreatedAt
 					).getTime();
-					const newTimestamp = new Date(data.initialMessageCreatedAt).getTime();
-					if (existingTimestamp < newTimestamp) {
-						effectiveInitialMessageCreatedAt =
-							existingData.initialMessageCreatedAt;
+					const newTs = new Date(data.initialMessageCreatedAt).getTime();
+					if (existingTs < newTs) {
+						effectiveData = {
+							...data,
+							initialMessageCreatedAt: existingJobData.initialMessageCreatedAt,
+						};
 						console.log(
-							`[jobs:message-notification] Preserving earlier initialMessageCreatedAt from ${existingState} job: ${effectiveInitialMessageCreatedAt}`
+							`[jobs:message-notification] Preserving earlier timestamp from ${existingState} job`
 						);
 					}
 				}
-				await existingJob.remove();
-				console.log(
-					`[jobs:message-notification] Removed ${existingState} job ${jobId} to allow new batch`
-				);
-			} else if (existingState === "delayed" || existingState === "waiting") {
-				// Job is already queued and waiting - this is the deduplication case
-				// The existing job will pick up all messages when it runs
-				console.log(
-					`[jobs:message-notification] Job ${jobId} already ${existingState}, skipping (messages will be batched)`
-				);
-				return;
-			} else if (existingState === "active") {
-				// Job is currently being processed - treat as in-flight/deduplicated
-				// The active job will pick up messages, no need to create a duplicate
-				console.log(
-					`[jobs:message-notification] Job ${jobId} is currently active, skipping (messages will be included)`
-				);
-				return;
-			} else {
-				// Handle unexpected states (waiting-children, paused, prioritized, unknown, etc.)
-				// To be safe, skip creating a duplicate - the existing job should eventually process
-				console.warn(
-					`[jobs:message-notification] Job ${jobId} in unexpected state: ${existingState}, skipping to avoid duplicate`
-				);
-				return;
 			}
 		}
 
-		const jobOptions: JobsOptions = {
+		const result = await addDebouncedJob({
+			queue: q,
 			jobId,
-			delay: DEFAULT_NOTIFICATION_DELAY_MS,
-			attempts: RETRY_ATTEMPTS,
-			backoff: {
-				type: "exponential",
-				delay: RETRY_BASE_DELAY_MS,
+			jobName: "notification",
+			data: effectiveData,
+			options: {
+				delay: DEFAULT_NOTIFICATION_DELAY_MS,
+				attempts: RETRY_ATTEMPTS,
+				backoff: {
+					type: "exponential",
+					delay: RETRY_BASE_DELAY_MS,
+				},
 			},
-		};
+			logPrefix: "[jobs:message-notification]",
+		});
 
-		// Use the effective timestamp (may be earlier if preserving from failed job)
-		const jobData: MessageNotificationJobData = {
-			...data,
-			initialMessageCreatedAt: effectiveInitialMessageCreatedAt,
-		};
+		// If skipped due to debouncing, no need to log further
+		if (result.status === "skipped") {
+			return;
+		}
 
-		const job = await q.add("notification", jobData, jobOptions);
-
+		// Log job creation/replacement
 		const [state, counts] = await Promise.all([
-			job.getState().catch(() => "unknown"),
+			result.job.getState().catch(() => "unknown"),
 			q.getJobCounts("delayed", "waiting", "active").catch(() => null),
 		]);
 

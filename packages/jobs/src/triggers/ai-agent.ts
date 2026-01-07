@@ -7,23 +7,19 @@
  */
 
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
-import { type JobsOptions, Queue } from "bullmq";
+import { Queue } from "bullmq";
 import {
 	type AiAgentJobData,
 	generateAiAgentJobId,
 	QUEUE_NAMES,
 } from "../types";
+import { addDebouncedJob } from "../utils/debounced-job";
 
 /**
  * Minimum delay before AI agent processes a message (ms)
  * This prevents immediate responses that feel unnatural
  */
 const MIN_AI_AGENT_DELAY_MS = 3000;
-
-/**
- * Deduplication TTL - prevents duplicate processing of same conversation (ms)
- */
-const AI_AGENT_DEDUP_TTL_MS = 60_000;
 
 /**
  * Retry configuration for AI agent jobs
@@ -90,31 +86,41 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 	 *
 	 * The job will be processed by the AI agent worker which runs
 	 * the 5-step pipeline (intake, decision, generation, execution, followup).
+	 *
+	 * Uses debouncing: if a job for the same conversation is already queued,
+	 * the new message will be picked up when the existing job runs.
 	 */
 	async function enqueueAiAgentJob(data: AiAgentJobData): Promise<void> {
 		const q = await ensureQueueReady();
 		const jobId = generateAiAgentJobId(data.conversationId);
 
-		const jobOptions: JobsOptions = {
+		const result = await addDebouncedJob({
+			queue: q,
 			jobId,
-			delay: MIN_AI_AGENT_DELAY_MS,
-			attempts: AI_RETRY_ATTEMPTS,
-			backoff: {
-				type: "exponential",
-				delay: AI_RETRY_BASE_DELAY_MS,
+			jobName: "ai-agent",
+			data,
+			options: {
+				delay: MIN_AI_AGENT_DELAY_MS,
+				attempts: AI_RETRY_ATTEMPTS,
+				backoff: {
+					type: "exponential",
+					delay: AI_RETRY_BASE_DELAY_MS,
+				},
 			},
-			deduplication: {
-				id: jobId,
-				ttl: AI_AGENT_DEDUP_TTL_MS,
-				extend: true,
-				replace: true,
-			},
-		};
+			logPrefix: "[jobs:ai-agent]",
+		});
 
-		const job = await q.add("ai-agent", data, jobOptions);
+		// If skipped due to debouncing, no need to log further
+		if (result.status === "skipped") {
+			console.log(
+				`[jobs:ai-agent] Job ${jobId} skipped for conversation ${data.conversationId} (${result.reason}, state: ${result.existingState})`
+			);
+			return;
+		}
 
+		// Log job creation/replacement
 		const [state, counts] = await Promise.all([
-			job.getState().catch(() => "unknown"),
+			result.job.getState().catch(() => "unknown"),
 			q.getJobCounts("delayed", "waiting", "active").catch(() => null),
 		]);
 
@@ -122,8 +128,13 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 			? `| counts delayed:${counts.delayed} waiting:${counts.waiting} active:${counts.active}`
 			: "";
 
+		const action =
+			result.status === "replaced"
+				? `replaced (was ${result.previousState})`
+				: "created";
+
 		console.log(
-			`[jobs:ai-agent] Enqueued job ${jobId} for conversation ${data.conversationId} (state:${state}) ${countSummary}`
+			`[jobs:ai-agent] Job ${result.job.id} ${action} for conversation ${data.conversationId} (state:${state}) ${countSummary}`
 		);
 	}
 

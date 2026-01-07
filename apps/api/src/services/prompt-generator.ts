@@ -16,7 +16,7 @@ const MAX_CONTENT_LENGTH = 4000;
 /**
  * Model to use for prompt generation (fast and capable)
  */
-const PROMPT_GENERATION_MODEL = "openai/gpt-4o-mini";
+const PROMPT_GENERATION_MODEL = "openai/gpt-5.2";
 
 /**
  * Options for generating an AI agent base prompt

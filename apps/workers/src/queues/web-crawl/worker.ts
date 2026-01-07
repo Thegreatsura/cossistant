@@ -88,12 +88,6 @@ export function createWebCrawlWorker({
 			events = new QueueEvents(queueName, {
 				connection: buildConnectionOptions(),
 			});
-			events.on("waiting", ({ jobId }) => {
-				console.log(`[worker:web-crawl] Job ${jobId} waiting`);
-			});
-			events.on("active", ({ jobId }) => {
-				console.log(`[worker:web-crawl] Job ${jobId} active`);
-			});
 			events.on("failed", ({ jobId, failedReason }) => {
 				console.error(
 					`[worker:web-crawl] Job ${jobId} failed: ${failedReason}`
@@ -105,20 +99,17 @@ export function createWebCrawlWorker({
 				queueName,
 				async (job: Job<WebCrawlJobData>) => {
 					const start = Date.now();
-					console.log(
-						`[worker:web-crawl] Executing job ${job.id} | linkSource: ${job.data.linkSourceId} | url: ${job.data.url}`
-					);
 
 					try {
 						await processWebCrawlJob(firecrawlService, job);
 						const duration = Date.now() - start;
 						console.log(
-							`[worker:web-crawl] Completed job ${job.id} in ${duration}ms`
+							`[worker:web-crawl] Completed ${job.data.url} in ${duration}ms`
 						);
 					} catch (error) {
 						const duration = Date.now() - start;
 						console.error(
-							`[worker:web-crawl] Failed job ${job.id} after ${duration}ms`,
+							`[worker:web-crawl] Failed ${job.data.url} after ${duration}ms`,
 							error
 						);
 						throw error;
@@ -197,17 +188,12 @@ async function processWebCrawlJob(
 	});
 
 	if (!linkSource) {
-		console.log(
-			`[worker:web-crawl] Link source ${linkSourceId} not found, skipping`
-		);
+		console.log(`[worker:web-crawl] Link source not found: ${linkSourceId}`);
 		return;
 	}
 
 	// Skip if already completed or failed (could be a duplicate job)
 	if (linkSource.status === "completed" || linkSource.status === "failed") {
-		console.log(
-			`[worker:web-crawl] Link source ${linkSourceId} already ${linkSource.status}, skipping`
-		);
 		return;
 	}
 
@@ -247,7 +233,7 @@ async function processWebCrawlJob(
 	// 4. Start crawl using v2 API with improved settings
 	// The v2 crawl endpoint with sitemap: "include" handles discovery intelligently
 	console.log(
-		`[worker:web-crawl] Starting v2 crawl for ${url} with limit=${crawlLimit}, maxDiscoveryDepth=${effectiveMaxDiscoveryDepth}, sitemap=${sitemap}, crawlEntireDomain=${crawlEntireDomain}`
+		`[worker:web-crawl] Starting crawl: ${url} | limit=${crawlLimit} depth=${effectiveMaxDiscoveryDepth}`
 	);
 
 	const crawlResult = await firecrawlService.startCrawl(url, {
@@ -320,7 +306,7 @@ async function processWebCrawlJob(
 		// If link source was deleted, abort the crawl
 		if (!currentLinkSource || currentLinkSource.deletedAt) {
 			console.log(
-				`[worker:web-crawl] Link source ${linkSourceId} was deleted, aborting crawl`
+				`[worker:web-crawl] Aborting: link source ${linkSourceId} deleted`
 			);
 			// Cancel the Firecrawl crawl job
 			await firecrawlService.cancelCrawl(crawlResult.jobId);
@@ -424,9 +410,12 @@ async function processWebCrawlJob(
 			lastCompletedCount = crawlStatus.progress.completed;
 		}
 
-		console.log(
-			`[worker:web-crawl] Polling crawl ${crawlResult.jobId} - status: ${crawlStatus.status}, pages: ${emittedPageUrls.size}, attempt: ${pollAttempts}`
-		);
+		// Log every 10th poll to reduce noise
+		if (pollAttempts % 10 === 0) {
+			console.log(
+				`[worker:web-crawl] Crawling ${url} | pages=${emittedPageUrls.size} | poll=${pollAttempts}`
+			);
+		}
 	}
 
 	// 7. Handle poll timeout
@@ -475,9 +464,7 @@ async function processWebCrawlJob(
 			(page) => !ignoredUrlsSet.has(page.url)
 		);
 
-		console.log(
-			`[worker:web-crawl] Crawl completed with ${crawlStatus.pages.length} pages (${validPages.length} after filtering ignored)`
-		);
+		console.log(`[worker:web-crawl] Crawl done: ${validPages.length} pages`);
 
 		// Get plan size limits
 		const website = await getWebsiteById(db, {
@@ -511,10 +498,6 @@ async function processWebCrawlJob(
 				)
 			);
 
-		console.log(
-			`[worker:web-crawl] Soft-deleted existing knowledge entries for link source ${linkSourceId}`
-		);
-
 		// Get current total size (excluding the just-deleted entries)
 		const currentTotalSize = await getLinkSourceTotalSize(db, {
 			websiteId,
@@ -531,9 +514,7 @@ async function processWebCrawlJob(
 			const newTotalSize = currentTotalSize + totalSizeBytes + page.sizeBytes;
 
 			if (sizeLimitBytes !== null && newTotalSize > sizeLimitBytes) {
-				console.log(
-					"[worker:web-crawl] Size limit reached, skipping remaining pages"
-				);
+				console.log("[worker:web-crawl] Size limit reached, stopping");
 				break;
 			}
 
@@ -644,7 +625,7 @@ async function processWebCrawlJob(
 		});
 
 		console.log(
-			`[worker:web-crawl] Processed ${crawledPagesCount} pages (${totalSizeBytes} bytes) for link source ${linkSourceId}`
+			`[worker:web-crawl] Saved ${crawledPagesCount} pages (${Math.round(totalSizeBytes / 1024)}KB)`
 		);
 	} else {
 		// No pages found
@@ -680,9 +661,7 @@ async function processWebCrawlJob(
 			totalSizeBytes: 0,
 		});
 
-		console.log(
-			`[worker:web-crawl] Crawl completed with no pages for link source ${linkSourceId}`
-		);
+		console.log("[worker:web-crawl] Crawl completed with no pages");
 	}
 
 	await job.updateProgress(100);

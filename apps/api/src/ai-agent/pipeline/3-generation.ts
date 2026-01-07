@@ -54,6 +54,7 @@ export async function generate(
 		mode,
 		humanCommand,
 	} = input;
+	const convId = conversation.id;
 
 	// Build dynamic system prompt
 	const systemPrompt = buildSystemPrompt({
@@ -66,6 +67,13 @@ export async function generate(
 
 	// Format conversation history for LLM
 	const messages = formatMessagesForLlm(conversationHistory);
+
+	console.log(
+		`[ai-agent:generate] conv=${convId} | model=${aiAgent.model} | messages=${messages.length} | mode=${mode}`
+	);
+	console.log(
+		`[ai-agent:generate] conv=${convId} | System prompt (${systemPrompt.length} chars): "${systemPrompt.slice(0, 200).replace(/\n/g, " ")}..."`
+	);
 
 	// Get OpenRouter client
 	const openrouter = createOpenRouter({
@@ -87,8 +95,18 @@ export async function generate(
 		| { promptTokens?: number; completionTokens?: number; totalTokens?: number }
 		| undefined;
 
+	const decision = result.object;
+	console.log(
+		`[ai-agent:generate] conv=${convId} | AI decided: action=${decision.action} | reasoning="${(decision.reasoning ?? "").slice(0, 100)}${(decision.reasoning ?? "").length > 100 ? "..." : ""}"`
+	);
+	if (usage) {
+		console.log(
+			`[ai-agent:generate] conv=${convId} | Tokens: prompt=${usage.promptTokens ?? 0} completion=${usage.completionTokens ?? 0} total=${usage.totalTokens ?? 0}`
+		);
+	}
+
 	return {
-		decision: result.object,
+		decision,
 		usage: usage
 			? {
 					promptTokens: usage.promptTokens ?? 0,

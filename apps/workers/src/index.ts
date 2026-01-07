@@ -21,7 +21,6 @@ import { env } from "./env";
 import { startAllWorkers, stopAllWorkers } from "./queues";
 
 // Create Redis connection
-console.log("[workers] Creating Redis connection...");
 const redis = createRedisConnection(env.REDIS_URL);
 
 redis.on("ready", () => {

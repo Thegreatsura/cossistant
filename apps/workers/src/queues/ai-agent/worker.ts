@@ -83,18 +83,9 @@ export function createAiAgentWorker({
 			});
 			await maintenanceQueue.waitUntilReady();
 
-			// Queue events for monitoring
+			// Queue events for monitoring (only errors and stalled jobs)
 			events = new QueueEvents(queueName, {
 				connection: buildConnectionOptions(),
-			});
-			events.on("waiting", ({ jobId }) => {
-				console.log(`[worker:ai-agent] Job ${jobId} waiting`);
-			});
-			events.on("active", ({ jobId }) => {
-				console.log(`[worker:ai-agent] Job ${jobId} active`);
-			});
-			events.on("completed", ({ jobId }) => {
-				console.log(`[worker:ai-agent] Job ${jobId} completed`);
 			});
 			events.on("failed", ({ jobId, failedReason }) => {
 				console.error(`[worker:ai-agent] Job ${jobId} failed: ${failedReason}`);
@@ -110,20 +101,13 @@ export function createAiAgentWorker({
 				queueName,
 				async (job: Job<AiAgentJobData>) => {
 					const start = Date.now();
-					console.log(
-						`[worker:ai-agent] Executing job ${job.id} | conversation: ${job.data.conversationId} | agent: ${job.data.aiAgentId}`
-					);
 
 					try {
 						await processAiAgentJob(stateRedis, job);
-						const duration = Date.now() - start;
-						console.log(
-							`[worker:ai-agent] Completed job ${job.id} in ${duration}ms`
-						);
 					} catch (error) {
 						const duration = Date.now() - start;
 						console.error(
-							`[worker:ai-agent] Failed job ${job.id} after ${duration}ms`,
+							`[worker:ai-agent] Job ${job.id} failed after ${duration}ms`,
 							error
 						);
 						throw error;
@@ -202,7 +186,7 @@ export function createAiAgentWorker({
 
 		if (!active) {
 			console.log(
-				`[worker:ai-agent] Job ${job.id} superseded for conversation ${conversationId}, skipping`
+				`[worker:ai-agent] conv=${conversationId} | Superseded by newer job, skipping`
 			);
 			return;
 		}
@@ -211,9 +195,7 @@ export function createAiAgentWorker({
 		const conversation = await getConversationById(db, { conversationId });
 
 		if (!conversation) {
-			console.error(
-				`[worker:ai-agent] Conversation ${conversationId} not found`
-			);
+			console.error(`[worker:ai-agent] conv=${conversationId} | Not found`);
 			await clearWorkflowState(redis, conversationId, AI_AGENT_DIRECTION);
 			return;
 		}
@@ -254,13 +236,6 @@ export function createAiAgentWorker({
 					workflowRunId,
 					jobId: job.id ?? `job-${Date.now()}`,
 				},
-			});
-
-			console.log(`[worker:ai-agent] Pipeline result for job ${job.id}:`, {
-				status: result.status,
-				action: result.action,
-				reason: result.reason,
-				metrics: result.metrics,
 			});
 
 			if (result.status === "error") {

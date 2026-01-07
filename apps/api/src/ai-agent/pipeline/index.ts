@@ -13,6 +13,7 @@
  */
 
 import type { Database } from "@api/db";
+import { isWorkflowRunActive } from "@cossistant/jobs/workflow-state";
 import type { Redis } from "@cossistant/redis";
 import { type IntakeResult, intake } from "./1-intake";
 import { type DecisionResult, decide } from "./2-decision";
@@ -63,6 +64,7 @@ export async function runAiAgentPipeline(
 	ctx: PipelineContext
 ): Promise<AiAgentPipelineResult> {
 	const startTime = Date.now();
+	const convId = ctx.input.conversationId;
 	const metrics = {
 		intakeMs: 0,
 		decisionMs: 0,
@@ -71,6 +73,10 @@ export async function runAiAgentPipeline(
 		followupMs: 0,
 		totalMs: 0,
 	};
+
+	console.log(
+		`[ai-agent] conv=${convId} | Starting pipeline | trigger=${ctx.input.messageId}`
+	);
 
 	let intakeResult: IntakeResult | null = null;
 	let decisionResult: DecisionResult | null = null;
@@ -84,6 +90,9 @@ export async function runAiAgentPipeline(
 		metrics.intakeMs = Date.now() - intakeStart;
 
 		if (intakeResult.status !== "ready") {
+			console.log(
+				`[ai-agent] conv=${convId} | Skipped at intake | reason="${intakeResult.reason}"`
+			);
 			return {
 				status: "skipped",
 				reason: intakeResult.reason,
@@ -103,9 +112,30 @@ export async function runAiAgentPipeline(
 		metrics.decisionMs = Date.now() - decisionStart;
 
 		if (!decisionResult.shouldAct) {
+			console.log(
+				`[ai-agent] conv=${convId} | Skipped at decision | reason="${decisionResult.reason}"`
+			);
 			return {
 				status: "skipped",
 				reason: decisionResult.reason,
+				metrics: finalizeMetrics(metrics, startTime),
+			};
+		}
+
+		// CHECK: Has this job been superseded by a newer message?
+		const isActiveBeforeGeneration = await isWorkflowRunActive(
+			ctx.redis,
+			convId,
+			"ai-agent-response",
+			ctx.input.workflowRunId
+		);
+		if (!isActiveBeforeGeneration) {
+			console.log(
+				`[ai-agent] conv=${convId} | Superseded before generation, aborting`
+			);
+			return {
+				status: "skipped",
+				reason: "Superseded by newer message",
 				metrics: finalizeMetrics(metrics, startTime),
 			};
 		}
@@ -121,6 +151,24 @@ export async function runAiAgentPipeline(
 			humanCommand: decisionResult.humanCommand,
 		});
 		metrics.generationMs = Date.now() - generationStart;
+
+		// CHECK: Has this job been superseded after LLM call but before execution?
+		const isActiveBeforeExecution = await isWorkflowRunActive(
+			ctx.redis,
+			convId,
+			"ai-agent-response",
+			ctx.input.workflowRunId
+		);
+		if (!isActiveBeforeExecution) {
+			console.log(
+				`[ai-agent] conv=${convId} | Superseded before execution, aborting`
+			);
+			return {
+				status: "skipped",
+				reason: "Superseded by newer message",
+				metrics: finalizeMetrics(metrics, startTime),
+			};
+		}
 
 		// Step 4: Execution - Execute actions
 		const executionStart = Date.now();
@@ -149,10 +197,15 @@ export async function runAiAgentPipeline(
 		});
 		metrics.followupMs = Date.now() - followupStart;
 
+		const finalMetrics = finalizeMetrics(metrics, startTime);
+		console.log(
+			`[ai-agent] conv=${convId} | Completed | action=${generationResult.decision.action} | total=${finalMetrics.totalMs}ms`
+		);
+
 		return {
 			status: "completed",
 			action: generationResult.decision.action,
-			metrics: finalizeMetrics(metrics, startTime),
+			metrics: finalMetrics,
 		};
 	} catch (error) {
 		// Ensure typing indicator is cleared on error
@@ -172,9 +225,13 @@ export async function runAiAgentPipeline(
 			}
 		}
 
+		const errorMessage =
+			error instanceof Error ? error.message : "Unknown error";
+		console.error(`[ai-agent] conv=${convId} | Error | ${errorMessage}`);
+
 		return {
 			status: "error",
-			error: error instanceof Error ? error.message : "Unknown error",
+			error: errorMessage,
 			metrics: finalizeMetrics(metrics, startTime),
 		};
 	}
