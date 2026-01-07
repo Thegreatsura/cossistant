@@ -48,6 +48,14 @@ export const conversationRecordSchema = z.object({
 	lastMessageBy: z.string().nullable(),
 	resolvedByUserId: z.string().nullable(),
 	resolvedByAiAgentId: z.string().nullable(),
+	// Escalation tracking
+	escalatedAt: z.string().nullable(),
+	escalatedByAiAgentId: z.string().nullable(),
+	escalationReason: z.string().nullable(),
+	escalationHandledAt: z.string().nullable(),
+	escalationHandledByUserId: z.string().nullable(),
+	// AI pause control
+	aiPausedUntil: z.string().nullable(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	deletedAt: z.string().nullable(),
@@ -77,6 +85,14 @@ export const conversationHeaderSchema = z.object({
 	resolvedAt: z.string().nullable(),
 	resolvedByUserId: z.string().nullable(),
 	resolvedByAiAgentId: z.string().nullable(),
+	// Escalation tracking
+	escalatedAt: z.string().nullable(),
+	escalatedByAiAgentId: z.string().nullable(),
+	escalationReason: z.string().nullable(),
+	escalationHandledAt: z.string().nullable(),
+	escalationHandledByUserId: z.string().nullable(),
+	// AI pause control
+	aiPausedUntil: z.string().nullable(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	deletedAt: z.string().nullable(),

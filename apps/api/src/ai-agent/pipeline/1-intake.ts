@@ -76,20 +76,25 @@ export async function intake(
 		};
 	}
 
-	// Load all context in parallel
-	const [conversationHistory, visitorContext, conversationState] =
-		await Promise.all([
-			buildConversationHistory(db, {
-				conversationId: input.conversationId,
-				organizationId: input.organizationId,
-				websiteId: input.websiteId,
-			}),
-			getVisitorContext(db, input.visitorId),
-			getConversationState(db, {
-				conversationId: input.conversationId,
-				organizationId: input.organizationId,
-			}),
-		]);
+	// Load conversation history and visitor context in parallel
+	const [conversationHistory, visitorContext] = await Promise.all([
+		buildConversationHistory(db, {
+			conversationId: input.conversationId,
+			organizationId: input.organizationId,
+			websiteId: input.websiteId,
+		}),
+		getVisitorContext(db, input.visitorId),
+	]);
+
+	// Get conversation state (needs conversation object for escalation check)
+	const conversationState = await getConversationState(
+		db,
+		{
+			conversationId: input.conversationId,
+			organizationId: input.organizationId,
+		},
+		conversation
+	);
 
 	// Find the trigger message
 	const triggerMessage =

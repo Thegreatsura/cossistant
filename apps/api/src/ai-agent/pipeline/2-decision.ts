@@ -132,14 +132,11 @@ function detectHumanCommand(message: RoleAwareMessage | null): string | null {
  * Check if AI is paused for this conversation
  */
 function isAiPaused(conversation: ConversationSelect): boolean {
-	const pausedUntil = (conversation as { aiPausedUntil?: string | null })
-		.aiPausedUntil;
-
-	if (!pausedUntil) {
+	if (!conversation.aiPausedUntil) {
 		return false;
 	}
 
-	return new Date(pausedUntil) > new Date();
+	return new Date(conversation.aiPausedUntil) > new Date();
 }
 
 /**

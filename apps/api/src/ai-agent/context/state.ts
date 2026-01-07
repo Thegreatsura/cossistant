@@ -6,6 +6,7 @@
  */
 
 import type { Database } from "@api/db";
+import type { ConversationSelect } from "@api/db/schema/conversation";
 import {
 	conversationAssignee,
 	conversationParticipant,
@@ -33,7 +34,8 @@ type GetStateParams = {
  */
 export async function getConversationState(
 	db: Database,
-	params: GetStateParams
+	params: GetStateParams,
+	conversation: ConversationSelect
 ): Promise<ConversationState> {
 	// Get active assignees
 	const assignees = await db
@@ -62,9 +64,10 @@ export async function getConversationState(
 	const assigneeIds = assignees.map((a) => a.userId);
 	const participantIds = participants.map((p) => p.userId);
 
-	// TODO: Check escalation status from conversation table once column is added
-	const isEscalated: boolean = false;
-	const escalationReason: string | null = null;
+	// Check escalation status: escalated if escalatedAt is set but not yet handled
+	const isEscalated =
+		!!conversation.escalatedAt && !conversation.escalationHandledAt;
+	const escalationReason = conversation.escalationReason ?? null;
 
 	return {
 		hasHumanAssignee: assigneeIds.length > 0,

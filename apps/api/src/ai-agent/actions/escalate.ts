@@ -47,14 +47,13 @@ export async function escalate(params: EscalateParams): Promise<void> {
 	const now = new Date().toISOString();
 
 	// Update conversation with escalation info
-	// TODO: Use new escalation columns once migration is applied
 	await db
 		.update(conversation)
 		.set({
 			updatedAt: now,
-			// escalatedAt: now,
-			// escalatedByAiAgentId: aiAgentId,
-			// escalationReason: reason,
+			escalatedAt: now,
+			escalatedByAiAgentId: aiAgentId,
+			escalationReason: reason,
 		})
 		.where(eq(conversation.id, conv.id));
 
