@@ -232,6 +232,20 @@
       "when": 1767440308834,
       "tag": "0032_wide_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1767733468272,
+      "tag": "0033_mysterious_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1767791893285,
+      "tag": "0034_funny_praxagora",
+      "breakpoints": true
     }
   ]
 }

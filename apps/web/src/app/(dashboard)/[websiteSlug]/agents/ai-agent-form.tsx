@@ -383,7 +383,7 @@ export function AIAgentForm({
 
 						<FormField
 							control={form.control}
-							name="maxTokens"
+							name="maxOutputTokens"
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Max Tokens</FormLabel>

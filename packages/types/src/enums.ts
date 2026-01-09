@@ -51,6 +51,10 @@ export const ConversationEventType = {
 	VISITOR_BLOCKED: "visitor_blocked",
 	VISITOR_UNBLOCKED: "visitor_unblocked",
 	VISITOR_IDENTIFIED: "visitor_identified",
+	// Private AI events (team only, not visible to visitors)
+	AI_ANALYZED: "ai_analyzed",
+	TITLE_GENERATED: "title_generated",
+	AI_ESCALATED: "ai_escalated",
 } as const;
 
 export const ConversationParticipationStatus = {

@@ -28,7 +28,10 @@ export function AgentsNavigationSidebar() {
 
 	// Check if current path matches
 	const isGeneralActive =
-		pathname === basePath && !pathname.includes("/training");
+		pathname === basePath &&
+		!pathname.includes("/training") &&
+		!pathname.includes("/behavior");
+	const isBehaviorActive = pathname.startsWith(`${basePath}/behavior`);
 	const isWebSourcesActive = pathname.startsWith(`${trainingPath}/web`);
 	const isFaqActive = pathname.startsWith(`${trainingPath}/faq`);
 	const isFilesActive = pathname.startsWith(`${trainingPath}/files`);
@@ -74,6 +77,13 @@ export function AgentsNavigationSidebar() {
 						iconName="settings-2"
 					>
 						General
+					</SidebarItem>
+					<SidebarItem
+						active={isBehaviorActive}
+						href={`${basePath}/behavior`}
+						iconName="settings-2"
+					>
+						Behavior
 					</SidebarItem>
 				</div>
 

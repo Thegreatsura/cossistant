@@ -43,6 +43,7 @@ type ConversationItemViewProps = {
 	lastTimelineItemCreatedAt?: Date | null;
 	isTyping: boolean;
 	waitingSinceLabel?: string | null;
+	needsHumanIntervention?: boolean;
 	hasUnreadMessage: boolean;
 	focused?: boolean;
 	rightContent?: ReactNode;
@@ -60,6 +61,7 @@ export function ConversationItemView({
 	lastTimelineItemCreatedAt,
 	isTyping,
 	waitingSinceLabel,
+	needsHumanIntervention = false,
 	hasUnreadMessage,
 	focused = false,
 	rightContent,
@@ -100,7 +102,12 @@ export function ConversationItemView({
 				)}
 			</div>
 			<div className="flex items-center gap-3">
-				{waitingSinceLabel && (
+				{needsHumanIntervention && (
+					<span className="shrink-0 rounded border border-red-500/20 bg-red-500/10 px-2 py-1 font-medium text-[11px] text-red-500 leading-none">
+						Needs human
+					</span>
+				)}
+				{waitingSinceLabel && !needsHumanIntervention && (
 					<span className="shrink-0 rounded border border-cossistant-orange/10 bg-cossistant-orange/5 px-2 py-1 font-medium text-[11px] text-cossistant-orange leading-none">
 						Waiting for {waitingSinceLabel}
 					</span>
@@ -347,6 +354,12 @@ export function ConversationItem({
 		return getWaitingSinceLabel(messageDate);
 	}, [inboundWaitingTimelineItem]);
 
+	// Check if AI escalated and human hasn't handled it yet
+	const needsHumanIntervention = useMemo(
+		() => Boolean(header.escalatedAt && !header.escalationHandledAt),
+		[header.escalatedAt, header.escalationHandledAt]
+	);
+
 	const headerLastSeenAt = header.lastSeenAt
 		? new Date(header.lastSeenAt)
 		: null;
@@ -371,6 +384,7 @@ export function ConversationItem({
 			isTyping={Boolean(typingInfo)}
 			lastTimelineContent={lastTimelineContent}
 			lastTimelineItemCreatedAt={lastTimelineItemCreatedAt}
+			needsHumanIntervention={needsHumanIntervention}
 			onMouseEnter={() => {
 				setFocused?.();
 				prefetchConversation({

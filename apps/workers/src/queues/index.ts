@@ -1,6 +1,6 @@
 import type { Redis, RedisOptions } from "@cossistant/redis";
 import { getBullConnectionOptions } from "@cossistant/redis";
-import { createAiReplyWorker } from "./ai-reply/worker";
+import { createAiAgentWorker } from "./ai-agent/worker";
 import { createMessageNotificationWorker } from "./message-notification/worker";
 import { createWebCrawlWorker } from "./web-crawl/worker";
 
@@ -30,13 +30,13 @@ export async function startAllWorkers(params: {
 	await messageNotificationWorker.start();
 	workers.push(messageNotificationWorker);
 
-	const aiReplyWorker = createAiReplyWorker({
+	const aiAgentWorker = createAiAgentWorker({
 		connectionOptions,
 		redisUrl: params.redisUrl,
 		stateRedis: params.stateRedis,
 	});
-	await aiReplyWorker.start();
-	workers.push(aiReplyWorker);
+	await aiAgentWorker.start();
+	workers.push(aiAgentWorker);
 
 	const webCrawlWorker = createWebCrawlWorker({
 		connectionOptions,

@@ -19,6 +19,38 @@ import { conversationTimelineItem } from "./conversation";
 import { knowledge } from "./knowledge";
 import { website } from "./website";
 
+/**
+ * AI Agent Behavior Settings
+ *
+ * These settings control how the AI agent behaves in conversations.
+ */
+export type AiAgentBehaviorSettings = {
+	// Response triggers
+	responseMode: "always" | "when_no_human" | "on_mention" | "manual";
+	responseDelayMs: number;
+
+	// Human interaction
+	pauseOnHumanReply: boolean;
+	pauseDurationMinutes: number | null;
+
+	// Capability toggles
+	canResolve: boolean;
+	canMarkSpam: boolean;
+	canAssign: boolean;
+	canSetPriority: boolean;
+	canCategorize: boolean;
+	canEscalate: boolean;
+
+	// Escalation config
+	defaultEscalationUserId: string | null;
+	autoAssignOnEscalation: boolean;
+
+	// Background analysis (runs silently)
+	autoAnalyzeSentiment: boolean;
+	autoGenerateTitle: boolean;
+	autoCategorize: boolean;
+};
+
 export const aiAgent = pgTable(
 	"ai_agent",
 	{
@@ -42,6 +74,9 @@ export const aiAgent = pgTable(
 		usageCount: integer("usage_count").default(0).notNull(),
 		goals: text("goals").array(),
 		metadata: jsonb("metadata"),
+		// Behavior settings for AI agent response control
+		behaviorSettings:
+			jsonb("behavior_settings").$type<AiAgentBehaviorSettings>(),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date().toISOString())
 			.notNull(),

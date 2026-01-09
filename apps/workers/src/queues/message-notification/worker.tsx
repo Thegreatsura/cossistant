@@ -8,7 +8,7 @@ import {
 import { type MessageNotificationJobData, QUEUE_NAMES } from "@cossistant/jobs";
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
 import { NewMessageInConversation, sendEmail } from "@cossistant/transactional";
-import { type Job, Queue, QueueEvents, Worker } from "bullmq";
+import { type Job, QueueEvents, Worker } from "bullmq";
 import React from "react";
 import { db } from "../../db";
 
@@ -36,9 +36,6 @@ type WorkerConfig = {
 	redisUrl: string;
 };
 
-// Interval for logging queue status (every 30 seconds)
-const QUEUE_STATUS_INTERVAL_MS = 30_000;
-
 export function createMessageNotificationWorker({
 	connectionOptions,
 	redisUrl,
@@ -46,8 +43,6 @@ export function createMessageNotificationWorker({
 	const queueName = QUEUE_NAMES.MESSAGE_NOTIFICATION;
 	let worker: Worker<MessageNotificationJobData> | null = null;
 	let events: QueueEvents | null = null;
-	let statusQueue: Queue<MessageNotificationJobData> | null = null;
-	let statusInterval: ReturnType<typeof setInterval> | null = null;
 	const safeRedisUrl = getSafeRedisUrl(redisUrl);
 
 	const buildConnectionOptions = (): RedisOptions => ({
@@ -65,88 +60,27 @@ export function createMessageNotificationWorker({
 				`[worker:message-notification] Using queue=${queueName} redis=${safeRedisUrl}`
 			);
 
-			// Create a queue instance for status checks
-			statusQueue = new Queue<MessageNotificationJobData>(queueName, {
-				connection: buildConnectionOptions(),
-			});
-			await statusQueue.waitUntilReady();
-			console.log("[worker:message-notification] Status queue ready");
-
-			console.log("[worker:message-notification] Initializing queue events");
 			events = new QueueEvents(queueName, {
 				connection: buildConnectionOptions(),
 			});
-			// Log when jobs are added to the queue
-			events.on("added", ({ jobId, name }) => {
-				console.log(
-					`[worker:message-notification] Job ADDED: ${jobId} (name: ${name})`
-				);
-			});
-			events.on("delayed", ({ jobId, delay }) => {
-				console.log(
-					`[worker:message-notification] Job ${jobId} DELAYED for ${delay}ms`
-				);
-			});
-			events.on("waiting", ({ jobId }) => {
-				console.log(
-					`[worker:message-notification] Job ${jobId} WAITING (ready to process)`
-				);
-			});
-			events.on("active", ({ jobId }) => {
-				console.log(`[worker:message-notification] Job ${jobId} ACTIVE`);
-			});
-			events.on("completed", ({ jobId }) => {
-				console.log(`[worker:message-notification] Job ${jobId} COMPLETED`);
-			});
 			events.on("failed", ({ jobId, failedReason }) => {
 				console.error(
-					`[worker:message-notification] Job ${jobId} FAILED: ${failedReason}`
+					`[worker:message-notification] Job ${jobId} failed: ${failedReason}`
 				);
 			});
 			await events.waitUntilReady();
-			console.log("[worker:message-notification] Queue events ready");
-
-			// Periodic status logging to monitor delayed jobs
-			statusInterval = setInterval(async () => {
-				if (!statusQueue) {
-					return;
-				}
-				try {
-					const counts = await statusQueue.getJobCounts(
-						"delayed",
-						"waiting",
-						"active",
-						"completed",
-						"failed"
-					);
-					if (counts.delayed > 0 || counts.waiting > 0 || counts.active > 0) {
-						console.log(
-							`[worker:message-notification] Queue status: delayed=${counts.delayed} waiting=${counts.waiting} active=${counts.active} completed=${counts.completed} failed=${counts.failed}`
-						);
-					}
-				} catch {
-					// Ignore status check errors
-				}
-			}, QUEUE_STATUS_INTERVAL_MS);
 
 			worker = new Worker<MessageNotificationJobData>(
 				queueName,
 				async (job: Job<MessageNotificationJobData>) => {
 					const startTime = Date.now();
-					console.log(
-						`[worker:message-notification] Executing job ${job.id} | conversation: ${job.data.conversationId} | direction: ${job.data.direction} | message: ${job.data.messageId}`
-					);
 
 					try {
 						await processMessageNotification(job.data);
-						const duration = Date.now() - startTime;
-						console.log(
-							`[worker:message-notification] Completed job ${job.id} in ${duration}ms`
-						);
 					} catch (error) {
 						const duration = Date.now() - startTime;
 						console.error(
-							`[worker:message-notification] Failed job ${job.id} after ${duration}ms:`,
+							`[worker:message-notification] Job ${job.id} failed after ${duration}ms:`,
 							error
 						);
 						throw error;
@@ -174,11 +108,6 @@ export function createMessageNotificationWorker({
 		},
 
 		stop: async () => {
-			if (statusInterval) {
-				clearInterval(statusInterval);
-				statusInterval = null;
-			}
-
 			await Promise.all([
 				(async () => {
 					if (worker) {
@@ -191,14 +120,6 @@ export function createMessageNotificationWorker({
 					if (events) {
 						await events.close();
 						events = null;
-						console.log("[worker:message-notification] Queue events stopped");
-					}
-				})(),
-				(async () => {
-					if (statusQueue) {
-						await statusQueue.close();
-						statusQueue = null;
-						console.log("[worker:message-notification] Status queue closed");
 					}
 				})(),
 			]);

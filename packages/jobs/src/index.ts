@@ -2,13 +2,16 @@
 
 // Triggers
 export {
+	createAiAgentTriggers,
 	createAiReplyTriggers,
 	createMessageNotificationTriggers,
 	createWebCrawlTriggers,
 } from "./triggers";
 export {
+	type AiAgentJobData,
 	type AiReplyJobData,
 	type FirecrawlSitemapMode,
+	generateAiAgentJobId,
 	generateAiReplyJobId,
 	generateMessageNotificationJobId,
 	generateWebCrawlJobId,
@@ -17,6 +20,12 @@ export {
 	QUEUE_NAMES,
 	type WebCrawlJobData,
 } from "./types";
+// Utils
+export {
+	type AddDebouncedJobParams,
+	addDebouncedJob,
+	type DebouncedJobResult,
+} from "./utils/debounced-job";
 export {
 	clearWorkflowState,
 	generateWorkflowRunId,
