@@ -1,9 +1,11 @@
+import { getBehaviorSettings } from "@api/ai-agent/settings";
 import {
 	createAiAgent,
 	deleteAiAgent,
 	getAiAgentForWebsite,
 	toggleAiAgentActive,
 	updateAiAgent,
+	updateAiAgentBehaviorSettings,
 } from "@api/db/queries/ai-agent";
 import {
 	getWebsiteBySlugWithAccess,
@@ -18,8 +20,12 @@ import {
 	generateBasePromptRequestSchema,
 	generateBasePromptResponseSchema,
 	getAiAgentRequestSchema,
+	getBehaviorSettingsRequestSchema,
+	getBehaviorSettingsResponseSchema,
 	toggleAiAgentActiveRequestSchema,
 	updateAiAgentRequestSchema,
+	updateBehaviorSettingsRequestSchema,
+	updateBehaviorSettingsResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../init";
@@ -386,5 +392,82 @@ export const aiAgentRouter = createTRPCRouter({
 					? (mapResult.urls?.length ?? 0)
 					: 0,
 			};
+		}),
+
+	/**
+	 * Get behavior settings for an AI agent
+	 * Returns the settings merged with defaults
+	 */
+	getBehaviorSettings: protectedProcedure
+		.input(getBehaviorSettingsRequestSchema)
+		.output(getBehaviorSettingsResponseSchema)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found for this website",
+				});
+			}
+
+			// Get settings merged with defaults
+			const settings = getBehaviorSettings(agent);
+
+			return {
+				aiAgentId: agent.id,
+				...settings,
+			};
+		}),
+
+	/**
+	 * Update behavior settings for an AI agent
+	 * Merges provided settings with existing settings
+	 */
+	updateBehaviorSettings: protectedProcedure
+		.input(updateBehaviorSettingsRequestSchema)
+		.output(updateBehaviorSettingsResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await updateAiAgentBehaviorSettings(db, {
+				aiAgentId: input.aiAgentId,
+				behaviorSettings: input.settings,
+			});
+
+			if (!agent) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			// Return the updated settings merged with defaults
+			return getBehaviorSettings(agent);
 		}),
 });

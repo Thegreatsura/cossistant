@@ -13,6 +13,9 @@ This document describes the architecture, design decisions, and operation of the
 7. [Adding New Features](#adding-new-features)
 8. [Debugging Guide](#debugging-guide)
 9. [Configuration](#configuration)
+10. [Behavior Settings Persistence](#behavior-settings-persistence)
+11. [Background Analysis](#background-analysis)
+12. [Escalation Handling](#escalation-handling)
 
 ---
 
@@ -22,6 +25,7 @@ The AI Agent is an autonomous support assistant that can:
 
 - **Respond** to visitor messages
 - **Analyze** conversation sentiment
+- **Generate** conversation titles automatically
 - **Escalate** to human agents when needed
 - **Resolve** or categorize conversations
 - **Execute** commands from human agents
@@ -35,9 +39,11 @@ The AI is NOT just a "replier" - it's a decision-making agent that chooses the b
 
 2. **Role Awareness**: The AI understands who sent each message (visitor, human agent, or AI) and adjusts behavior accordingly.
 
-3. **Behavior Settings**: Each AI agent can be configured with different behaviors (response mode, capabilities, etc.).
+3. **Behavior Settings**: Each AI agent can be configured with different behaviors (response mode, capabilities, etc.). Settings are persisted in the database and configurable via dashboard.
 
 4. **BullMQ Execution**: All processing happens in BullMQ workers for reliability and scalability.
+
+5. **Response Delay**: Configurable delay before responding to make responses feel more natural.
 
 ---
 
@@ -111,11 +117,13 @@ apps/api/src/ai-agent/
 │   ├── internal-note.ts      # Private note
 │   ├── update-status.ts      # Resolve, spam
 │   ├── escalate.ts           # Escalate to human
+│   ├── update-sentiment.ts   # Update sentiment
+│   ├── update-title.ts       # Update title
 │   └── ...                   # Other actions
 │
 ├── analysis/                 # Background analysis
-│   ├── sentiment.ts          # Analyze sentiment
-│   ├── title.ts              # Generate title
+│   ├── sentiment.ts          # Analyze sentiment (LLM)
+│   ├── title.ts              # Generate title (LLM)
 │   └── categorization.ts     # Auto-categorize
 │
 ├── output/                   # Structured output
@@ -125,6 +133,7 @@ apps/api/src/ai-agent/
 ├── settings/                 # Behavior config
 │   ├── types.ts              # TypeScript types
 │   ├── defaults.ts           # Default settings
+│   ├── index.ts              # Exports
 │   └── validator.ts          # Validation
 │
 └── events/                   # Realtime events
@@ -178,10 +187,28 @@ The AI agent processes messages through a 5-step pipeline:
 
 1. Build dynamic system prompt based on context
 2. Format conversation history with role attribution
-3. Call LLM with structured output schema
-4. Parse and validate AI decision
+3. Call LLM with structured output using AI SDK v6 pattern (`generateText` + `Output.object`)
+4. Validate structured output exists (fallback to skip if null)
+5. Return validated AI decision
 
 **Key**: The AI returns a structured decision, NOT free-form text.
+
+**AI SDK v6 Pattern**:
+```typescript
+import { generateText, Output } from "ai";
+
+const result = await generateText({
+  model: openrouter.chat(model),
+  output: Output.object({
+    schema: aiDecisionSchema,
+  }),
+  system: systemPrompt,
+  messages,
+});
+
+// Access via result.output (not result.object)
+const decision = result.output;
+```
 
 ### Step 4: Execution (`pipeline/4-execution.ts`)
 
@@ -211,7 +238,7 @@ The AI agent processes messages through a 5-step pipeline:
 - Clear typing indicator (always)
 - Clear workflow state
 - Update AI agent usage stats
-- Run background analysis (sentiment, title)
+- Run background analysis (sentiment, title generation)
 
 ---
 
@@ -237,6 +264,21 @@ The AI agent processes messages through a 5-step pipeline:
   },
 }
 ```
+
+### Response Delay
+
+The worker applies a configurable response delay before running the pipeline:
+
+```typescript
+// In worker, before pipeline runs:
+if (settings.responseDelayMs > 0) {
+  await sleep(settings.responseDelayMs);
+  // Re-check if still active after delay
+  if (!stillActive) return;
+}
+```
+
+This makes AI responses feel more natural and allows for supersession if a newer message arrives during the delay.
 
 ### Failure Handling
 
@@ -355,7 +397,7 @@ if (shouldCheckNewFactor(input)) {
 1. Check agent is active: `aiAgent.isActive`
 2. Check response mode: `settings.responseMode`
 3. Check for human activity: Recent human messages?
-4. Check escalation status: Is conversation escalated?
+4. Check escalation status: Is conversation escalated but not handled?
 
 **Duplicate messages**:
 
@@ -365,9 +407,16 @@ if (shouldCheckNewFactor(input)) {
 
 **Slow responses**:
 
-1. Check LLM response time
-2. Check database query performance
-3. Check context size (message count)
+1. Check response delay setting: `settings.responseDelayMs`
+2. Check LLM response time
+3. Check database query performance
+4. Check context size (message count)
+
+**Escalated conversations not getting AI responses**:
+
+1. Check `escalatedAt` vs `escalationHandledAt`
+2. AI skips escalated conversations until a human handles them
+3. Human handling is triggered when a human agent sends a message
 
 ### Logging
 
@@ -379,6 +428,8 @@ Each step logs with prefix:
 [ai-agent:generation] ...
 [ai-agent:execution] ...
 [ai-agent:followup] ...
+[ai-agent:analysis] ...
+[worker:ai-agent] ...
 ```
 
 ### Inspecting Jobs
@@ -396,13 +447,13 @@ Use BullMQ admin tools to:
 
 ### Behavior Settings
 
-Each AI agent has configurable behavior:
+Each AI agent has configurable behavior stored in `aiAgent.behaviorSettings`:
 
 ```typescript
 type AiAgentBehaviorSettings = {
   // When to respond
   responseMode: "always" | "when_no_human" | "on_mention" | "manual";
-  responseDelayMs: number;
+  responseDelayMs: number; // 0-30000ms
 
   // Human interaction
   pauseOnHumanReply: boolean;
@@ -450,6 +501,135 @@ Commands always trigger AI processing regardless of response mode.
 
 ---
 
+## Behavior Settings Persistence
+
+### Overview
+
+Behavior settings are stored in the `aiAgent.behaviorSettings` JSONB column and can be configured via the dashboard.
+
+### API Endpoints
+
+**Get Settings**: `trpc.aiAgent.getBehaviorSettings`
+- Returns settings merged with defaults
+- Ensures all fields have values even if not stored
+
+**Update Settings**: `trpc.aiAgent.updateBehaviorSettings`
+- Accepts partial settings
+- Merges with existing settings
+- Returns updated settings
+
+### Dashboard UI
+
+The behavior settings page (`/[websiteSlug]/agents/behavior`) provides:
+- Response mode and delay configuration
+- Human interaction settings
+- Capability toggles
+- Background analysis toggles
+
+### Settings Flow
+
+```
+Dashboard Form
+    ↓
+trpc.aiAgent.updateBehaviorSettings
+    ↓
+db.updateAiAgentBehaviorSettings (merges with existing)
+    ↓
+aiAgent.behaviorSettings (JSONB column)
+    ↓
+getBehaviorSettings() (merges with defaults)
+    ↓
+Used in pipeline decision/execution
+```
+
+---
+
+## Background Analysis
+
+### Overview
+
+Background analysis runs in the followup step after the main AI action completes. These are non-blocking, fire-and-forget operations that enhance conversation data.
+
+### Sentiment Analysis (`analysis/sentiment.ts`)
+
+Analyzes visitor message sentiment using LLM (gpt-4o-mini):
+
+- **Trigger**: `settings.autoAnalyzeSentiment = true`
+- **Skips if**: Sentiment already analyzed
+- **Output**: `positive | neutral | negative` with confidence score
+- **Creates**: Private `AI_ANALYZED` timeline event
+
+### Title Generation (`analysis/title.ts`)
+
+Generates a brief title for the conversation:
+
+- **Trigger**: `settings.autoGenerateTitle = true` AND no title exists
+- **Uses**: First few messages to generate context
+- **Output**: Max 100 character title
+- **Creates**: Private `TITLE_GENERATED` timeline event
+
+### Auto-Categorization (`analysis/categorization.ts`)
+
+Automatically adds conversations to matching views (placeholder - not yet implemented).
+
+---
+
+## Escalation Handling
+
+### Overview
+
+When the AI escalates a conversation, it sets `escalatedAt`. The conversation remains "escalated" until a human agent handles it.
+
+### Escalation Flow
+
+```
+1. AI decides to escalate
+   ↓
+2. conversation.escalatedAt = now
+   conversation.escalatedByAiAgentId = aiAgent.id
+   conversation.escalationReason = "..."
+   ↓
+3. AI skips escalated conversations (decision step)
+   ↓
+4. Human agent sends a message
+   ↓
+5. conversation.escalationHandledAt = now
+   conversation.escalationHandledByUserId = user.id
+   ↓
+6. AI can respond again (escalation handled)
+```
+
+### Key Fields
+
+| Field | Description |
+|-------|-------------|
+| `escalatedAt` | When the AI escalated the conversation |
+| `escalatedByAiAgentId` | Which AI agent escalated |
+| `escalationReason` | Why the AI escalated |
+| `escalationHandledAt` | When a human handled it (null = still escalated) |
+| `escalationHandledByUserId` | Which human handled it |
+
+### Decision Logic
+
+```typescript
+// In pipeline/2-decision.ts
+const isEscalated = conv.escalatedAt && !conv.escalationHandledAt;
+if (isEscalated) {
+  return { shouldAct: false, reason: "Conversation is escalated" };
+}
+```
+
+### Auto-Handling
+
+When a human agent sends a message to an escalated conversation, the system automatically:
+1. Checks if `escalatedAt` is set and `escalationHandledAt` is null
+2. Sets `escalationHandledAt` to the current timestamp
+3. Sets `escalationHandledByUserId` to the human agent's ID
+
+This is handled in `utils/timeline-item.ts` when creating message timeline items.
+
+---
+
 ## Event Visibility
 
 ### Public Events (visible to visitors)
@@ -475,3 +655,5 @@ Commands always trigger AI processing regardless of response mode.
 3. **Multi-Agent**: Support for multiple specialized agents
 4. **Scheduled Tasks**: Background analysis on schedule
 5. **Metrics Dashboard**: Real-time agent performance metrics
+6. **Auto-Categorization**: LLM-based conversation categorization
+7. **Memory System**: Remember previous conversations with the same visitor

@@ -7,6 +7,7 @@
 
 import type { Database } from "@api/db";
 import { conversationTimelineItem } from "@api/db/schema/conversation";
+import { generateIdempotentULID } from "@api/utils/db/ids";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
@@ -42,11 +43,14 @@ export async function addInternalNote(
 		idempotencyKey,
 	} = params;
 
-	// Check for existing note with this idempotency key (used as ID)
+	// Generate a valid 26-char ULID from the idempotency key
+	const noteId = generateIdempotentULID(idempotencyKey);
+
+	// Check for existing note with this ID
 	const existing = await db
 		.select({ id: conversationTimelineItem.id })
 		.from(conversationTimelineItem)
-		.where(eq(conversationTimelineItem.id, idempotencyKey))
+		.where(eq(conversationTimelineItem.id, noteId))
 		.limit(1);
 
 	if (existing.length > 0) {
@@ -59,7 +63,7 @@ export async function addInternalNote(
 	const now = new Date().toISOString();
 
 	await db.insert(conversationTimelineItem).values({
-		id: idempotencyKey, // Use idempotency key as ID for deduplication
+		id: noteId, // Use deterministic ULID for deduplication
 		conversationId,
 		organizationId,
 		type: ConversationTimelineType.MESSAGE,
@@ -72,7 +76,7 @@ export async function addInternalNote(
 	});
 
 	return {
-		noteId: idempotencyKey,
+		noteId,
 		created: true,
 	};
 }

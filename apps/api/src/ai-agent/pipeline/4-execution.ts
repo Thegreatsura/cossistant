@@ -15,6 +15,7 @@ import type { Database } from "@api/db";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import * as actions from "../actions";
+import { validateDecisionForExecution } from "../output/parser";
 import type { AiDecision } from "../output/schemas";
 
 export type ExecutionResult = {
@@ -37,6 +38,7 @@ type ExecutionInput = {
 	conversation: ConversationSelect;
 	decision: AiDecision;
 	jobId: string;
+	messageId: string; // Trigger message ID - used for idempotency
 	organizationId: string;
 	websiteId: string;
 	visitorId: string;
@@ -52,6 +54,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 		conversation,
 		decision,
 		jobId,
+		messageId,
 		organizationId,
 		websiteId,
 		visitorId,
@@ -61,6 +64,22 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 	console.log(
 		`[ai-agent:execute] conv=${convId} | Executing action="${decision.action}"`
 	);
+
+	// Validate decision before execution
+	const validation = validateDecisionForExecution(decision);
+	if (!validation.valid) {
+		console.error(
+			`[ai-agent:execute] conv=${convId} | Invalid decision | error="${validation.error}"`
+		);
+		return {
+			primaryAction: {
+				type: decision.action,
+				success: false,
+				error: validation.error,
+			},
+			sideEffects: [],
+		};
+	}
 
 	const result: ExecutionResult = {
 		primaryAction: {
@@ -82,7 +101,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					visitorId,
 					aiAgentId: aiAgent.id,
 					text: decision.message ?? "",
-					idempotencyKey: `${jobId}-respond`,
+					idempotencyKey: `${messageId}-respond`,
 				});
 				result.primaryAction = {
 					type: "respond",
@@ -99,7 +118,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					organizationId,
 					aiAgentId: aiAgent.id,
 					text: decision.message ?? "",
-					idempotencyKey: `${jobId}-note`,
+					idempotencyKey: `${messageId}-note`,
 				});
 				result.primaryAction = {
 					type: "internal_note",

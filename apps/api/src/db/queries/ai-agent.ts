@@ -1,5 +1,6 @@
 import type { Database } from "@api/db";
 import {
+	type AiAgentBehaviorSettings,
 	type AiAgentInsert,
 	type AiAgentSelect,
 	aiAgent,
@@ -221,4 +222,45 @@ export async function deleteAiAgent(
 		.returning({ id: aiAgent.id });
 
 	return result.length > 0;
+}
+
+/**
+ * Update AI agent behavior settings
+ *
+ * Merges the provided settings with existing settings.
+ * Only updates fields that are explicitly provided.
+ */
+export async function updateAiAgentBehaviorSettings(
+	db: Database,
+	params: {
+		aiAgentId: string;
+		behaviorSettings: Partial<AiAgentBehaviorSettings>;
+	}
+): Promise<AiAgentSelect | null> {
+	const now = new Date().toISOString();
+
+	// First, get the current agent to merge settings
+	const currentAgent = await getAiAgentById(db, {
+		aiAgentId: params.aiAgentId,
+	});
+	if (!currentAgent) {
+		return null;
+	}
+
+	// Merge new settings with existing settings
+	const mergedSettings: AiAgentBehaviorSettings = {
+		...(currentAgent.behaviorSettings ?? {}),
+		...params.behaviorSettings,
+	} as AiAgentBehaviorSettings;
+
+	const [agent] = await db
+		.update(aiAgent)
+		.set({
+			behaviorSettings: mergedSettings,
+			updatedAt: now,
+		})
+		.where(and(eq(aiAgent.id, params.aiAgentId), isNull(aiAgent.deletedAt)))
+		.returning();
+
+	return agent ?? null;
 }

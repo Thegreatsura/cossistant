@@ -13,12 +13,11 @@
  */
 
 import { runAiAgentPipeline } from "@api/ai-agent";
+import { getBehaviorSettings } from "@api/ai-agent/settings";
 import { markConversationAsSeen } from "@api/db/mutations/conversation";
+import { getAiAgentById } from "@api/db/queries/ai-agent";
 import { getConversationById } from "@api/db/queries/conversation";
-import {
-	emitConversationSeenEvent,
-	emitConversationTypingEvent,
-} from "@api/utils/conversation-realtime";
+import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
 import { type AiAgentJobData, QUEUE_NAMES } from "@cossistant/jobs";
 import {
 	clearWorkflowState,
@@ -34,6 +33,13 @@ import { db } from "@workers/db";
 import { type Job, Queue, QueueEvents, Worker } from "bullmq";
 
 const AI_AGENT_DIRECTION: WorkflowDirection = "ai-agent-response";
+
+/**
+ * Sleep for a specified duration
+ */
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Worker configuration for reliability
@@ -213,41 +219,52 @@ export function createAiAgentWorker({
 			lastSeenAt,
 		});
 
-		// Emit typing start
-		await emitConversationTypingEvent({
-			conversation,
-			actor,
-			isTyping: true,
+		// Apply response delay from behavior settings (before pipeline starts)
+		const aiAgentRecord = await getAiAgentById(db, { aiAgentId });
+		if (aiAgentRecord) {
+			const settings = getBehaviorSettings(aiAgentRecord);
+			if (settings.responseDelayMs > 0) {
+				console.log(
+					`[worker:ai-agent] conv=${conversationId} | Applying response delay: ${settings.responseDelayMs}ms`
+				);
+				await sleep(settings.responseDelayMs);
+
+				// Re-check if still active after delay (a newer message might have superseded us)
+				const stillActive = await isWorkflowRunActive(
+					redis,
+					conversationId,
+					AI_AGENT_DIRECTION,
+					workflowRunId
+				);
+				if (!stillActive) {
+					console.log(
+						`[worker:ai-agent] conv=${conversationId} | Superseded during delay, aborting`
+					);
+					return;
+				}
+			}
+		}
+
+		// Run the AI agent pipeline
+		// Note: Typing events are handled inside the pipeline after decision is made
+		const result = await runAiAgentPipeline({
+			db,
+			redis,
+			input: {
+				conversationId,
+				messageId,
+				messageCreatedAt,
+				websiteId,
+				organizationId,
+				visitorId,
+				aiAgentId,
+				workflowRunId,
+				jobId: job.id ?? `job-${Date.now()}`,
+			},
 		});
 
-		try {
-			// Run the AI agent pipeline
-			const result = await runAiAgentPipeline({
-				db,
-				redis,
-				input: {
-					conversationId,
-					messageId,
-					messageCreatedAt,
-					websiteId,
-					organizationId,
-					visitorId,
-					aiAgentId,
-					workflowRunId,
-					jobId: job.id ?? `job-${Date.now()}`,
-				},
-			});
-
-			if (result.status === "error") {
-				throw new Error(result.error ?? "Pipeline failed");
-			}
-		} finally {
-			// Always clear typing indicator
-			await emitConversationTypingEvent({
-				conversation,
-				actor,
-				isTyping: false,
-			});
+		if (result.status === "error") {
+			throw new Error(result.error ?? "Pipeline failed");
 		}
 	}
 }

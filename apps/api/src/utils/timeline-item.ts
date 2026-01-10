@@ -1,6 +1,6 @@
 import type { Database } from "@api/db";
 import { getConversationById } from "@api/db/queries/conversation";
-import { conversationTimelineItem } from "@api/db/schema";
+import { conversation, conversationTimelineItem } from "@api/db/schema";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@cossistant/types";
 import { timelineItemSchema } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEventData } from "@cossistant/types/realtime-events";
+import { eq } from "drizzle-orm";
 import * as linkify from "linkifyjs";
 import { triggerMessageNotificationWorkflow } from "./send-message-with-notification";
 
@@ -40,6 +41,50 @@ function parseTextToMarkdown(text: string): string {
 	}
 
 	return result;
+}
+
+/**
+ * Handle escalation when a human agent responds to an escalated conversation.
+ * Sets escalationHandledAt and escalationHandledByUserId if the conversation
+ * was escalated but not yet handled.
+ */
+async function handleEscalationIfNeeded(
+	db: Database,
+	conversationId: string,
+	userId: string
+): Promise<void> {
+	try {
+		// Get the conversation to check escalation status
+		const conv = await getConversationById(db, { conversationId });
+
+		if (!conv) {
+			return;
+		}
+
+		// Check if escalated but not yet handled
+		if (conv.escalatedAt && !conv.escalationHandledAt) {
+			const now = new Date().toISOString();
+
+			await db
+				.update(conversation)
+				.set({
+					escalationHandledAt: now,
+					escalationHandledByUserId: userId,
+					updatedAt: now,
+				})
+				.where(eq(conversation.id, conversationId));
+
+			console.log(
+				`[timeline-item] conv=${conversationId} | Escalation handled by user=${userId}`
+			);
+		}
+	} catch (error) {
+		// Log but don't fail the message creation
+		console.error(
+			`[timeline-item] Failed to handle escalation for conv=${conversationId}:`,
+			error
+		);
+	}
 }
 
 export type CreateTimelineItemOptions = {
@@ -221,6 +266,11 @@ export async function createMessageTimelineItem(
 		createdTimelineItem,
 		conversationOwnerVisitorId ?? null
 	);
+
+	// If a human agent is sending a message, handle any pending escalation
+	if (userId) {
+		await handleEscalationIfNeeded(db, conversationId, userId);
+	}
 
 	if (triggerNotificationWorkflow && actor) {
 		triggerMessageNotificationWorkflow({

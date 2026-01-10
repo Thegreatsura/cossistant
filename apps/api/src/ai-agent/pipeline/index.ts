@@ -15,6 +15,7 @@
 import type { Database } from "@api/db";
 import { isWorkflowRunActive } from "@cossistant/jobs/workflow-state";
 import type { Redis } from "@cossistant/redis";
+import { emitTypingStart, emitTypingStop } from "../events";
 import { type IntakeResult, intake } from "./1-intake";
 import { type DecisionResult, decide } from "./2-decision";
 import { type GenerationResult, generate } from "./3-generation";
@@ -82,6 +83,7 @@ export async function runAiAgentPipeline(
 	let decisionResult: DecisionResult | null = null;
 	let generationResult: GenerationResult | null = null;
 	let executionResult: ExecutionResult | null = null;
+	let typingStarted = false;
 
 	try {
 		// Step 1: Intake - Gather context and validate
@@ -122,6 +124,13 @@ export async function runAiAgentPipeline(
 			};
 		}
 
+		// Decision says we should act - start typing indicator now
+		await emitTypingStart({
+			conversation: intakeResult.conversation,
+			aiAgentId: intakeResult.aiAgent.id,
+		});
+		typingStarted = true;
+
 		// CHECK: Has this job been superseded by a newer message?
 		const isActiveBeforeGeneration = await isWorkflowRunActive(
 			ctx.redis,
@@ -133,6 +142,12 @@ export async function runAiAgentPipeline(
 			console.log(
 				`[ai-agent] conv=${convId} | Superseded before generation, aborting`
 			);
+			// Stop typing since we started but won't respond
+			await emitTypingStop({
+				conversation: intakeResult.conversation,
+				aiAgentId: intakeResult.aiAgent.id,
+			});
+			typingStarted = false;
 			return {
 				status: "skipped",
 				reason: "Superseded by newer message",
@@ -163,6 +178,12 @@ export async function runAiAgentPipeline(
 			console.log(
 				`[ai-agent] conv=${convId} | Superseded before execution, aborting`
 			);
+			// Stop typing since we started but won't respond
+			await emitTypingStop({
+				conversation: intakeResult.conversation,
+				aiAgentId: intakeResult.aiAgent.id,
+			});
+			typingStarted = false;
 			return {
 				status: "skipped",
 				reason: "Superseded by newer message",
@@ -178,11 +199,19 @@ export async function runAiAgentPipeline(
 			conversation: intakeResult.conversation,
 			decision: generationResult.decision,
 			jobId: ctx.input.jobId,
+			messageId: ctx.input.messageId,
 			organizationId: ctx.input.organizationId,
 			websiteId: ctx.input.websiteId,
 			visitorId: ctx.input.visitorId,
 		});
 		metrics.executionMs = Date.now() - executionStart;
+
+		// Stop typing indicator after execution completes
+		await emitTypingStop({
+			conversation: intakeResult.conversation,
+			aiAgentId: intakeResult.aiAgent.id,
+		});
+		typingStarted = false;
 
 		// Step 5: Followup - Cleanup and emit events
 		const followupStart = Date.now();
@@ -193,7 +222,8 @@ export async function runAiAgentPipeline(
 			conversation: intakeResult.conversation,
 			decision: generationResult.decision,
 			executionResult,
-			workflowRunId: ctx.input.workflowRunId,
+			organizationId: ctx.input.organizationId,
+			websiteId: ctx.input.websiteId,
 		});
 		metrics.followupMs = Date.now() - followupStart;
 
@@ -208,7 +238,19 @@ export async function runAiAgentPipeline(
 			metrics: finalMetrics,
 		};
 	} catch (error) {
-		// Ensure typing indicator is cleared on error
+		// Stop typing indicator if it was started
+		if (typingStarted && intakeResult?.status === "ready") {
+			try {
+				await emitTypingStop({
+					conversation: intakeResult.conversation,
+					aiAgentId: intakeResult.aiAgent.id,
+				});
+			} catch {
+				// Ignore typing cleanup errors
+			}
+		}
+
+		// Run followup for cleanup (workflow state, etc.)
 		if (intakeResult?.status === "ready") {
 			try {
 				await followup({
@@ -218,7 +260,8 @@ export async function runAiAgentPipeline(
 					conversation: intakeResult.conversation,
 					decision: null,
 					executionResult: null,
-					workflowRunId: ctx.input.workflowRunId,
+					organizationId: ctx.input.organizationId,
+					websiteId: ctx.input.websiteId,
 				});
 			} catch {
 				// Ignore cleanup errors

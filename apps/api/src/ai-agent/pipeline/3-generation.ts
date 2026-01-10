@@ -15,7 +15,7 @@ import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { env } from "@api/env";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import type { RoleAwareMessage } from "../context/conversation";
 import type { VisitorContext } from "../context/visitor";
 import { type AiDecision, aiDecisionSchema } from "../output/schemas";
@@ -25,8 +25,8 @@ import type { ResponseMode } from "./2-decision";
 export type GenerationResult = {
 	decision: AiDecision;
 	usage?: {
-		promptTokens: number;
-		completionTokens: number;
+		inputTokens: number;
+		outputTokens: number;
 		totalTokens: number;
 	};
 };
@@ -80,28 +80,57 @@ export async function generate(
 		apiKey: env.OPENROUTER_API_KEY,
 	});
 
-	// Generate structured output
-	const result = await generateObject({
+	// Generate structured output using AI SDK v6 pattern
+	// Using generateText + Output.object instead of deprecated generateObject
+	const result = await generateText({
 		model: openrouter.chat(aiAgent.model),
-		schema: aiDecisionSchema,
+		output: Output.object({
+			schema: aiDecisionSchema,
+		}),
 		system: systemPrompt,
 		messages,
 		temperature: aiAgent.temperature ?? 0.7,
 	});
 
-	// Extract usage data from Vercel AI SDK format
-	// Cast to expected shape - AI SDK types may vary by provider
-	const usage = result.usage as
-		| { promptTokens?: number; completionTokens?: number; totalTokens?: number }
-		| undefined;
+	// Extract the structured output
+	const decision = result.output;
 
-	const decision = result.object;
+	// Validate that we got a proper decision
+	if (!decision) {
+		console.error(
+			`[ai-agent:generate] conv=${convId} | Structured output failed | text="${result.text?.slice(0, 200)}"`
+		);
+		// Return a safe fallback decision
+		return {
+			decision: {
+				action: "skip" as const,
+				reasoning:
+					"Failed to generate structured output from model. Raw response logged for debugging.",
+				confidence: 0,
+			},
+			usage: result.usage
+				? {
+						inputTokens: result.usage.inputTokens ?? 0,
+						outputTokens: result.usage.outputTokens ?? 0,
+						totalTokens: result.usage.totalTokens ?? 0,
+					}
+				: undefined,
+		};
+	}
+
+	// Extract usage data from AI SDK response
+	const usage = result.usage;
 	console.log(
 		`[ai-agent:generate] conv=${convId} | AI decided: action=${decision.action} | reasoning="${(decision.reasoning ?? "").slice(0, 100)}${(decision.reasoning ?? "").length > 100 ? "..." : ""}"`
 	);
+	if (decision.action === "respond" || decision.action === "internal_note") {
+		console.log(
+			`[ai-agent:generate] conv=${convId} | Message (${decision.message?.length ?? 0} chars): "${(decision.message ?? "").slice(0, 100)}${(decision.message ?? "").length > 100 ? "..." : ""}"`
+		);
+	}
 	if (usage) {
 		console.log(
-			`[ai-agent:generate] conv=${convId} | Tokens: prompt=${usage.promptTokens ?? 0} completion=${usage.completionTokens ?? 0} total=${usage.totalTokens ?? 0}`
+			`[ai-agent:generate] conv=${convId} | Tokens: input=${usage.inputTokens ?? 0} output=${usage.outputTokens ?? 0} total=${usage.totalTokens ?? 0}`
 		);
 	}
 
@@ -109,8 +138,8 @@ export async function generate(
 		decision,
 		usage: usage
 			? {
-					promptTokens: usage.promptTokens ?? 0,
-					completionTokens: usage.completionTokens ?? 0,
+					inputTokens: usage.inputTokens ?? 0,
+					outputTokens: usage.outputTokens ?? 0,
 					totalTokens: usage.totalTokens ?? 0,
 				}
 			: undefined,

@@ -5,17 +5,17 @@
  *
  * Responsibilities:
  * - Update AI agent usage statistics
- * - Clear typing indicator
  * - Clear workflow state
  * - Emit realtime events
  * - Run background analysis (sentiment, title generation)
+ *
+ * Note: Typing indicator is managed by the pipeline orchestrator (index.ts)
  */
 
 import type { Database } from "@api/db";
 import { updateAiAgentUsage } from "@api/db/queries/ai-agent";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
-import { emitConversationTypingEvent } from "@api/utils/conversation-realtime";
 import {
 	clearWorkflowState,
 	type WorkflowDirection,
@@ -35,7 +35,8 @@ type FollowupInput = {
 	conversation: ConversationSelect;
 	decision: AiDecision | null;
 	executionResult: ExecutionResult | null;
-	workflowRunId: string;
+	organizationId: string;
+	websiteId: string;
 };
 
 /**
@@ -49,17 +50,11 @@ export async function followup(input: FollowupInput): Promise<void> {
 		conversation,
 		decision,
 		executionResult,
-		workflowRunId,
+		organizationId,
+		websiteId,
 	} = input;
 
-	// Always clear typing indicator
-	await emitConversationTypingEvent({
-		conversation,
-		actor: { type: "ai_agent", aiAgentId: aiAgent.id },
-		isTyping: false,
-	});
-
-	// Always clear workflow state
+	// Clear workflow state
 	await clearWorkflowState(redis, conversation.id, AI_AGENT_DIRECTION);
 
 	// If there was a successful action, update usage stats
@@ -69,18 +64,33 @@ export async function followup(input: FollowupInput): Promise<void> {
 
 	// Run background analysis if configured
 	const settings = getBehaviorSettings(aiAgent);
-	await runBackgroundAnalysis(db, conversation, aiAgent, settings);
+	await runBackgroundAnalysis({
+		db,
+		conversation,
+		aiAgent,
+		settings,
+		organizationId,
+		websiteId,
+	});
 }
+
+type BackgroundAnalysisInput = {
+	db: Database;
+	conversation: ConversationSelect;
+	aiAgent: AiAgentSelect;
+	settings: ReturnType<typeof getBehaviorSettings>;
+	organizationId: string;
+	websiteId: string;
+};
 
 /**
  * Run background analysis tasks based on settings
  */
 async function runBackgroundAnalysis(
-	db: Database,
-	conversation: ConversationSelect,
-	aiAgent: AiAgentSelect,
-	settings: ReturnType<typeof getBehaviorSettings>
+	params: BackgroundAnalysisInput
 ): Promise<void> {
+	const { db, conversation, aiAgent, settings, organizationId, websiteId } =
+		params;
 	const analysisPromises: Promise<void>[] = [];
 	const convId = conversation.id;
 
@@ -109,6 +119,8 @@ async function runBackgroundAnalysis(
 				.analyzeSentiment({
 					db,
 					conversation,
+					organizationId,
+					websiteId,
 					aiAgentId: aiAgent.id,
 				})
 				.catch((error) => {
@@ -127,6 +139,8 @@ async function runBackgroundAnalysis(
 				.generateTitle({
 					db,
 					conversation,
+					organizationId,
+					websiteId,
 					aiAgentId: aiAgent.id,
 				})
 				.catch((error) => {

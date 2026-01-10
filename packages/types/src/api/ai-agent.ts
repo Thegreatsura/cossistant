@@ -422,3 +422,162 @@ export type GenerateBasePromptRequest = z.infer<
 export type GenerateBasePromptResponse = z.infer<
 	typeof generateBasePromptResponseSchema
 >;
+
+/**
+ * AI Agent Behavior Settings Schema
+ *
+ * Controls how the AI agent behaves in conversations.
+ */
+export const aiAgentBehaviorSettingsSchema = z
+	.object({
+		// Response triggers
+		responseMode: z
+			.enum(["always", "when_no_human", "on_mention", "manual"])
+			.openapi({
+				description: "When the AI agent should respond to messages.",
+				example: "always",
+			}),
+		responseDelayMs: z.number().min(0).max(30_000).openapi({
+			description:
+				"Delay in milliseconds before responding (0-30000). Makes responses feel more natural.",
+			example: 3000,
+		}),
+
+		// Human interaction
+		pauseOnHumanReply: z.boolean().openapi({
+			description: "Whether to pause AI responses when a human agent replies.",
+			example: true,
+		}),
+		pauseDurationMinutes: z.number().min(1).max(1440).nullable().openapi({
+			description:
+				"How long to pause after a human reply (1-1440 minutes). Null for indefinite.",
+			example: 60,
+		}),
+
+		// Capability toggles
+		canResolve: z.boolean().openapi({
+			description: "Whether the AI can mark conversations as resolved.",
+			example: true,
+		}),
+		canMarkSpam: z.boolean().openapi({
+			description: "Whether the AI can mark conversations as spam.",
+			example: false,
+		}),
+		canAssign: z.boolean().openapi({
+			description: "Whether the AI can assign conversations to team members.",
+			example: true,
+		}),
+		canSetPriority: z.boolean().openapi({
+			description: "Whether the AI can change conversation priority.",
+			example: true,
+		}),
+		canCategorize: z.boolean().openapi({
+			description: "Whether the AI can add conversations to views.",
+			example: true,
+		}),
+		canEscalate: z.boolean().openapi({
+			description: "Whether the AI can escalate conversations to human agents.",
+			example: true,
+		}),
+
+		// Escalation config
+		defaultEscalationUserId: z.string().nullable().openapi({
+			description: "Default user ID to assign escalated conversations to.",
+			example: null,
+		}),
+		autoAssignOnEscalation: z.boolean().openapi({
+			description:
+				"Whether to automatically assign conversations when escalating.",
+			example: true,
+		}),
+
+		// Background analysis
+		autoAnalyzeSentiment: z.boolean().openapi({
+			description: "Whether to automatically analyze conversation sentiment.",
+			example: true,
+		}),
+		autoGenerateTitle: z.boolean().openapi({
+			description: "Whether to automatically generate conversation titles.",
+			example: true,
+		}),
+		autoCategorize: z.boolean().openapi({
+			description:
+				"Whether to automatically add conversations to matching views.",
+			example: false,
+		}),
+	})
+	.openapi({
+		description: "AI agent behavior settings.",
+	});
+
+export type AiAgentBehaviorSettings = z.infer<
+	typeof aiAgentBehaviorSettingsSchema
+>;
+
+/**
+ * Get Behavior Settings request schema
+ */
+export const getBehaviorSettingsRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug.",
+			example: "my-website",
+		}),
+	})
+	.openapi({
+		description: "Request to get behavior settings for an AI agent.",
+	});
+
+/**
+ * Get Behavior Settings response schema
+ */
+export const getBehaviorSettingsResponseSchema = aiAgentBehaviorSettingsSchema
+	.extend({
+		aiAgentId: z.ulid().openapi({
+			description: "The AI agent's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+	})
+	.openapi({
+		description: "Response containing the AI agent's behavior settings.",
+	});
+
+/**
+ * Update Behavior Settings request schema
+ */
+export const updateBehaviorSettingsRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug.",
+			example: "my-website",
+		}),
+		aiAgentId: z.ulid().openapi({
+			description: "The AI agent's unique identifier.",
+			example: "01JG000000000000000000000",
+		}),
+		settings: aiAgentBehaviorSettingsSchema.partial().openapi({
+			description: "Partial behavior settings to update.",
+		}),
+	})
+	.openapi({
+		description: "Payload used to update an AI agent's behavior settings.",
+	}); /**
+ * Update Behavior Settings response schema
+ */
+export const updateBehaviorSettingsResponseSchema =
+	aiAgentBehaviorSettingsSchema.openapi({
+		description: "The updated behavior settings.",
+	});
+
+export type GetBehaviorSettingsRequest = z.infer<
+	typeof getBehaviorSettingsRequestSchema
+>;
+export type GetBehaviorSettingsResponse = z.infer<
+	typeof getBehaviorSettingsResponseSchema
+>;
+export type UpdateBehaviorSettingsRequest = z.infer<
+	typeof updateBehaviorSettingsRequestSchema
+>;
+export type UpdateBehaviorSettingsResponse = z.infer<
+	typeof updateBehaviorSettingsResponseSchema
+>;
