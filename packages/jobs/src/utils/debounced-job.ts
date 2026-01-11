@@ -5,6 +5,9 @@
  * - One job per conversation (debouncing rapid messages)
  * - Completed/failed jobs should be replaced with new ones
  * - Delayed/waiting/active jobs should be skipped or superseded
+ *
+ * IMPORTANT: When a job is skipped due to debouncing, the existing job's data
+ * is returned so callers can sync any external state (like workflow state in Redis).
  */
 
 import type { Job, JobsOptions, Queue } from "bullmq";
@@ -23,6 +26,10 @@ export type DebouncedJobResult<T> =
 			status: "skipped";
 			reason: "debouncing" | "active" | "unexpected";
 			existingState: string;
+			/** The existing job that caused the skip - use this to sync external state */
+			existingJob: SimpleJob<T>;
+			/** The existing job's data - convenient access without casting */
+			existingJobData: T;
 	  };
 
 export type AddDebouncedJobParams<T> = {
@@ -63,11 +70,18 @@ export async function addDebouncedJob<T>(
 		}
 
 		// Delayed or waiting → skip (debouncing working correctly)
+		// Return existing job data so caller can sync external state
 		if (existingState === "delayed" || existingState === "waiting") {
 			console.log(
 				`${logPrefix} Job ${jobId} already ${existingState}, skipping (debouncing)`
 			);
-			return { status: "skipped", reason: "debouncing", existingState };
+			return {
+				status: "skipped",
+				reason: "debouncing",
+				existingState,
+				existingJob: existingJob as SimpleJob<T>,
+				existingJobData: existingJob.data as T,
+			};
 		}
 
 		// Active → create new job with unique ID, active one will check isWorkflowRunActive
@@ -85,10 +99,17 @@ export async function addDebouncedJob<T>(
 		}
 
 		// Unexpected state → skip to be safe
+		// Return existing job data so caller can handle gracefully
 		console.warn(
 			`${logPrefix} Job ${jobId} in unexpected state: ${existingState}, skipping`
 		);
-		return { status: "skipped", reason: "unexpected", existingState };
+		return {
+			status: "skipped",
+			reason: "unexpected",
+			existingState,
+			existingJob: existingJob as SimpleJob<T>,
+			existingJobData: existingJob.data as T,
+		};
 	}
 
 	// No existing job → create new one

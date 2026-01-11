@@ -42,6 +42,7 @@ type ExecutionInput = {
 	organizationId: string;
 	websiteId: string;
 	visitorId: string;
+	visitorName: string;
 };
 
 /**
@@ -58,6 +59,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 		organizationId,
 		websiteId,
 		visitorId,
+		visitorName,
 	} = input;
 	const convId = conversation.id;
 
@@ -133,8 +135,14 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					db,
 					conversation,
 					organizationId,
+					websiteId,
 					aiAgentId: aiAgent.id,
+					aiAgentName: aiAgent.name,
 					reason: decision.escalation?.reason ?? "AI requested escalation",
+					visitorMessage:
+						decision.escalation?.visitorMessage ??
+						"I'm connecting you with one of our team members who can help you further. They'll be with you shortly!",
+					visitorName,
 					assignToUserId: decision.escalation?.assignToUserId,
 					urgency: decision.escalation?.urgency ?? "normal",
 				});

@@ -4,6 +4,6 @@
  * These are lightweight functions that add jobs to BullMQ queues.
  */
 
-export { createAiAgentTriggers, createAiReplyTriggers } from "./ai-agent";
+export { createAiAgentTriggers, type EnqueueAiAgentResult } from "./ai-agent";
 export { createMessageNotificationTriggers } from "./message-notification";
 export { createWebCrawlTriggers } from "./web-crawl";

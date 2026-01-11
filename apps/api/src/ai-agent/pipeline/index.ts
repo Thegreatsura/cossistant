@@ -13,6 +13,7 @@
  */
 
 import type { Database } from "@api/db";
+import { generateVisitorName } from "@cossistant/core";
 import { isWorkflowRunActive } from "@cossistant/jobs/workflow-state";
 import type { Redis } from "@cossistant/redis";
 import { emitTypingStart, emitTypingStop } from "../events";
@@ -193,6 +194,12 @@ export async function runAiAgentPipeline(
 
 		// Step 4: Execution - Execute actions
 		const executionStart = Date.now();
+
+		// Get visitor display name (from contact or generate a friendly name)
+		const visitorName =
+			intakeResult.visitorContext?.name ??
+			generateVisitorName(ctx.input.visitorId);
+
 		executionResult = await execute({
 			db: ctx.db,
 			aiAgent: intakeResult.aiAgent,
@@ -203,6 +210,7 @@ export async function runAiAgentPipeline(
 			organizationId: ctx.input.organizationId,
 			websiteId: ctx.input.websiteId,
 			visitorId: ctx.input.visitorId,
+			visitorName,
 		});
 		metrics.executionMs = Date.now() - executionStart;
 

@@ -157,6 +157,7 @@ ${messageContext}`,
 			db,
 			conversation,
 			organizationId,
+			websiteId,
 			aiAgentId,
 			title: generatedTitle,
 		});

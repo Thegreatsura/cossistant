@@ -7,7 +7,7 @@
 
 import { env } from "@api/env";
 import {
-	createAiReplyTriggers,
+	createAiAgentTriggers,
 	createMessageNotificationTriggers,
 	createWebCrawlTriggers,
 	type WebCrawlJobData,
@@ -18,7 +18,7 @@ import { getBullConnectionOptions } from "@cossistant/redis";
 let messageNotificationTriggers: ReturnType<
 	typeof createMessageNotificationTriggers
 > | null = null;
-let aiReplyTriggers: ReturnType<typeof createAiReplyTriggers> | null = null;
+let aiAgentTriggers: ReturnType<typeof createAiAgentTriggers> | null = null;
 let webCrawlTriggers: ReturnType<typeof createWebCrawlTriggers> | null = null;
 
 const bullConnectionOptions = getBullConnectionOptions(env.REDIS_URL);
@@ -33,14 +33,14 @@ function getMessageNotificationTriggers() {
 	return messageNotificationTriggers;
 }
 
-export function getAiReplyQueueTriggers() {
-	if (!aiReplyTriggers) {
-		aiReplyTriggers = createAiReplyTriggers({
+export function getAiAgentQueueTriggers() {
+	if (!aiAgentTriggers) {
+		aiAgentTriggers = createAiAgentTriggers({
 			connection: bullConnectionOptions,
 			redisUrl: env.REDIS_URL,
 		});
 	}
-	return aiReplyTriggers;
+	return aiAgentTriggers;
 }
 
 function getWebCrawlTriggers() {
@@ -154,9 +154,9 @@ export async function closeQueueProducers(): Promise<void> {
 			}
 		})(),
 		(async () => {
-			if (aiReplyTriggers) {
-				await aiReplyTriggers.close();
-				aiReplyTriggers = null;
+			if (aiAgentTriggers) {
+				await aiAgentTriggers.close();
+				aiAgentTriggers = null;
 			}
 		})(),
 		(async () => {

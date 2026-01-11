@@ -4,6 +4,9 @@
  * This module provides functions to enqueue AI agent jobs.
  * The AI agent can respond to visitors, analyze conversations,
  * escalate to humans, and execute background tasks.
+ *
+ * IMPORTANT: The enqueue functions return detailed results so callers
+ * can properly handle workflow state synchronization.
  */
 
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
@@ -13,7 +16,32 @@ import {
 	generateAiAgentJobId,
 	QUEUE_NAMES,
 } from "../types";
-import { addDebouncedJob } from "../utils/debounced-job";
+import {
+	addDebouncedJob,
+	type DebouncedJobResult,
+} from "../utils/debounced-job";
+
+/**
+ * Result of enqueueing an AI agent job
+ *
+ * - created: New job was created
+ * - replaced: Existing completed/failed job was replaced
+ * - skipped: Job was skipped because another job is already queued
+ *
+ * When skipped, `existingJobData` contains the queued job's data
+ * so callers can sync workflow state to match.
+ */
+export type EnqueueAiAgentResult =
+	| {
+			status: "created" | "replaced";
+			workflowRunId: string;
+	  }
+	| {
+			status: "skipped";
+			reason: "debouncing" | "active" | "unexpected";
+			/** The workflowRunId that will actually be processed */
+			activeWorkflowRunId: string;
+	  };
 
 /**
  * Minimum delay before AI agent processes a message (ms)
@@ -89,8 +117,14 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 	 *
 	 * Uses debouncing: if a job for the same conversation is already queued,
 	 * the new message will be picked up when the existing job runs.
+	 *
+	 * IMPORTANT: Returns the result so callers can sync workflow state.
+	 * When status is "skipped", use `activeWorkflowRunId` to sync state
+	 * with the job that will actually be processed.
 	 */
-	async function enqueueAiAgentJob(data: AiAgentJobData): Promise<void> {
+	async function enqueueAiAgentJob(
+		data: AiAgentJobData
+	): Promise<EnqueueAiAgentResult> {
 		const q = await ensureQueueReady();
 		const jobId = generateAiAgentJobId(data.conversationId);
 
@@ -110,12 +144,19 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 			logPrefix: "[jobs:ai-agent]",
 		});
 
-		// If skipped due to debouncing, no need to log further
+		// If skipped due to debouncing, return the existing job's workflowRunId
+		// so the caller can sync workflow state
 		if (result.status === "skipped") {
+			const activeWorkflowRunId = result.existingJobData.workflowRunId;
 			console.log(
-				`[jobs:ai-agent] Job ${jobId} skipped for conversation ${data.conversationId} (${result.reason}, state: ${result.existingState})`
+				`[jobs:ai-agent] Job ${jobId} skipped for conversation ${data.conversationId} ` +
+					`(${result.reason}, state: ${result.existingState}, activeWorkflowRunId: ${activeWorkflowRunId})`
 			);
-			return;
+			return {
+				status: "skipped",
+				reason: result.reason,
+				activeWorkflowRunId,
+			};
 		}
 
 		// Log job creation/replacement
@@ -136,16 +177,15 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 		console.log(
 			`[jobs:ai-agent] Job ${result.job.id} ${action} for conversation ${data.conversationId} (state:${state}) ${countSummary}`
 		);
-	}
 
-	/**
-	 * @deprecated Use enqueueAiAgentJob instead
-	 */
-	const enqueueAiReply = enqueueAiAgentJob;
+		return {
+			status: result.status,
+			workflowRunId: data.workflowRunId,
+		};
+	}
 
 	return {
 		enqueueAiAgentJob,
-		enqueueAiReply,
 		close: async (): Promise<void> => {
 			if (queue) {
 				await queue.close();
@@ -155,8 +195,3 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 		},
 	};
 }
-
-/**
- * @deprecated Use createAiAgentTriggers instead
- */
-export const createAiReplyTriggers = createAiAgentTriggers;

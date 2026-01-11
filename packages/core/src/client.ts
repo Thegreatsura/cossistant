@@ -441,6 +441,32 @@ export class CossistantClient {
 		}
 	}
 
+	/**
+	 * Handle conversationUpdated event from realtime
+	 * Updates conversation with new title (sentiment and escalation are dashboard-only)
+	 */
+	handleConversationUpdated(event: RealtimeEvent<"conversationUpdated">): void {
+		const { conversationId, updates } = event.payload;
+
+		const existingConversation =
+			this.conversationsStore.getState().byId[conversationId];
+
+		if (!existingConversation) {
+			// Conversation not in store, ignore update
+			return;
+		}
+
+		// Build the updated conversation with only the title field
+		// (sentiment and escalation are dashboard-only fields)
+		const nextConversation = {
+			...existingConversation,
+			...(updates.title !== undefined && { title: updates.title ?? undefined }),
+			updatedAt: new Date().toISOString(),
+		};
+
+		this.conversationsStore.ingestConversation(nextConversation);
+	}
+
 	// File upload methods
 	/**
 	 * Generate a presigned URL for uploading a file to S3.

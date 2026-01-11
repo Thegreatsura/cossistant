@@ -13,6 +13,12 @@ import { z } from "zod";
 export const escalationSchema = z.object({
 	/** Reason for escalation (shown to human agents) */
 	reason: z.string().describe("Brief reason for escalating to a human agent"),
+	/** Message to send to the visitor explaining the escalation */
+	visitorMessage: z
+		.string()
+		.describe(
+			"A friendly message to the visitor explaining that a human will help them soon"
+		),
 	/** Specific user to assign to (optional) */
 	assignToUserId: z
 		.string()

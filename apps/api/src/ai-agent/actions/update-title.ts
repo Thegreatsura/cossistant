@@ -3,6 +3,7 @@
  *
  * Updates the conversation title (background analysis).
  * Creates a private event - not visible to visitors.
+ * Emits real-time event for dashboard and widget updates.
  */
 
 import type { Database } from "@api/db";
@@ -11,6 +12,7 @@ import {
 	conversation,
 	conversationTimelineItem,
 } from "@api/db/schema/conversation";
+import { realtime } from "@api/realtime/emitter";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 import {
 	ConversationTimelineType,
@@ -22,6 +24,7 @@ type UpdateTitleParams = {
 	db: Database;
 	conversation: ConversationSelect;
 	organizationId: string;
+	websiteId: string;
 	aiAgentId: string;
 	title: string;
 };
@@ -30,7 +33,14 @@ type UpdateTitleParams = {
  * Update conversation title
  */
 export async function updateTitle(params: UpdateTitleParams): Promise<void> {
-	const { db, conversation: conv, organizationId, aiAgentId, title } = params;
+	const {
+		db,
+		conversation: conv,
+		organizationId,
+		websiteId,
+		aiAgentId,
+		title,
+	} = params;
 
 	// Skip if title already exists
 	if (conv.title) {
@@ -60,5 +70,18 @@ export async function updateTitle(params: UpdateTitleParams): Promise<void> {
 		userId: null,
 		visitorId: null,
 		createdAt: now,
+	});
+
+	// Emit conversationUpdated event for real-time dashboard and widget updates
+	await realtime.emit("conversationUpdated", {
+		websiteId,
+		organizationId,
+		visitorId: conv.visitorId,
+		userId: null,
+		conversationId: conv.id,
+		updates: {
+			title,
+		},
+		aiAgentId,
 	});
 }

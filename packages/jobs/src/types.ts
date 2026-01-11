@@ -2,8 +2,6 @@
 export const QUEUE_NAMES = {
 	MESSAGE_NOTIFICATION: "message-notification",
 	AI_AGENT: "ai-agent",
-	/** @deprecated Use AI_AGENT instead */
-	AI_REPLY: "ai-agent",
 	WEB_CRAWL: "web-crawl",
 } as const;
 
@@ -59,16 +57,8 @@ export type AiAgentJobData = {
 	isReplacement: boolean;
 };
 
-/** @deprecated Use AiAgentJobData instead */
-export type AiReplyJobData = AiAgentJobData;
-
 export function generateAiAgentJobId(conversationId: string): string {
 	return `ai-agent-${conversationId}`;
-}
-
-/** @deprecated Use generateAiAgentJobId instead */
-export function generateAiReplyJobId(conversationId: string): string {
-	return generateAiAgentJobId(conversationId);
 }
 
 /** Sitemap handling mode for Firecrawl v2 */

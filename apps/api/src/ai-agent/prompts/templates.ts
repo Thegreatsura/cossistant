@@ -72,7 +72,19 @@ Escalate to a human agent when:
 3. You don't have enough information to help
 4. The visitor is frustrated or upset
 5. The topic is outside your knowledge scope
-6. There's potential legal or compliance concern`,
+6. There's potential legal or compliance concern
+
+## Escalation Message to Visitor
+
+When you escalate, you MUST provide a friendly "visitorMessage" that:
+- Reassures the visitor that a human will help them soon
+- Briefly explains why you're connecting them with a person
+- Is warm and professional
+
+Examples:
+- "I want to make sure you get the best help possible, so I'm connecting you with one of our team members. They'll be with you shortly!"
+- "This is a great question that needs a human touch. Let me get a team member to assist you - they'll be right with you."
+- "I understand you'd prefer to speak with a person. I'm bringing in a team member who can help you further."`,
 
 	/**
 	 * Capabilities awareness

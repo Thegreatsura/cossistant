@@ -3,6 +3,7 @@
  *
  * Escalates a conversation to human support.
  * This is a compound action that may assign and update priority.
+ * Also sends real-time events and notifications to team members.
  */
 
 import type { Database } from "@api/db";
@@ -11,21 +12,28 @@ import {
 	conversation,
 	conversationTimelineItem,
 } from "@api/db/schema/conversation";
+import { realtime } from "@api/realtime/emitter";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
 import { eq } from "drizzle-orm";
+import { generateEscalationSummary } from "../analysis/escalation-summary";
 import { assign } from "./assign";
+import { sendEscalationNotifications } from "./send-escalation-notification";
 import { updatePriority } from "./update-priority";
 
 type EscalateParams = {
 	db: Database;
 	conversation: ConversationSelect;
 	organizationId: string;
+	websiteId: string;
 	aiAgentId: string;
+	aiAgentName: string;
 	reason: string;
+	visitorMessage: string;
+	visitorName: string;
 	assignToUserId?: string;
 	urgency?: "normal" | "high" | "urgent";
 };
@@ -38,8 +46,12 @@ export async function escalate(params: EscalateParams): Promise<void> {
 		db,
 		conversation: conv,
 		organizationId,
+		websiteId,
 		aiAgentId,
+		aiAgentName,
 		reason,
+		visitorMessage,
+		visitorName,
 		assignToUserId,
 		urgency = "normal",
 	} = params;
@@ -57,6 +69,44 @@ export async function escalate(params: EscalateParams): Promise<void> {
 		})
 		.where(eq(conversation.id, conv.id));
 
+	// Create public message to visitor explaining the escalation
+	const visitorMessageId = generateShortPrimaryId();
+	await db.insert(conversationTimelineItem).values({
+		id: visitorMessageId,
+		conversationId: conv.id,
+		organizationId,
+		type: ConversationTimelineType.MESSAGE,
+		visibility: TimelineItemVisibility.PUBLIC, // Public - visitor can see
+		text: visitorMessage,
+		aiAgentId,
+		userId: null,
+		visitorId: null,
+		createdAt: now,
+	});
+
+	// Emit timeline item created event for the visitor message
+	await realtime.emit("timelineItemCreated", {
+		websiteId,
+		organizationId,
+		visitorId: conv.visitorId,
+		userId: null,
+		conversationId: conv.id,
+		item: {
+			id: visitorMessageId,
+			conversationId: conv.id,
+			organizationId,
+			visibility: TimelineItemVisibility.PUBLIC,
+			type: ConversationTimelineType.MESSAGE,
+			text: visitorMessage,
+			parts: [],
+			userId: null,
+			visitorId: null,
+			aiAgentId,
+			createdAt: now,
+			deletedAt: null,
+		},
+	});
+
 	// Create escalation event (private - AI_ESCALATED)
 	await db.insert(conversationTimelineItem).values({
 		id: generateShortPrimaryId(),
@@ -69,6 +119,20 @@ export async function escalate(params: EscalateParams): Promise<void> {
 		userId: null,
 		visitorId: null,
 		createdAt: now,
+	});
+
+	// Emit conversationUpdated event for real-time dashboard updates
+	await realtime.emit("conversationUpdated", {
+		websiteId,
+		organizationId,
+		visitorId: conv.visitorId,
+		userId: null,
+		conversationId: conv.id,
+		updates: {
+			escalatedAt: now,
+			escalationReason: reason,
+		},
+		aiAgentId,
 	});
 
 	// Assign to specific user if provided
@@ -92,4 +156,31 @@ export async function escalate(params: EscalateParams): Promise<void> {
 			newPriority: urgency,
 		});
 	}
+
+	// Generate summary and send notifications (fire and forget)
+	generateEscalationSummary({
+		db,
+		conversation: conv,
+		organizationId,
+		websiteId,
+		escalationReason: reason,
+	})
+		.then((summary) =>
+			sendEscalationNotifications({
+				db,
+				conversationId: conv.id,
+				websiteId,
+				organizationId,
+				escalationReason: reason,
+				summary,
+				aiAgentName,
+				visitorName,
+			})
+		)
+		.catch((error) => {
+			console.error(
+				`[ai-agent:escalate] Failed to send escalation notifications for conversation ${conv.id}:`,
+				error
+			);
+		});
 }

@@ -2,7 +2,7 @@ import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { HonoAdapter } from "@bull-board/hono";
 import {
-	type AiReplyJobData,
+	type AiAgentJobData,
 	type MessageNotificationJobData,
 	QUEUE_NAMES,
 	type WebCrawlJobData,
@@ -44,7 +44,7 @@ app.get("/health", (c) =>
 
 type ManagedQueue =
 	| Queue<MessageNotificationJobData>
-	| Queue<AiReplyJobData>
+	| Queue<AiAgentJobData>
 	| Queue<WebCrawlJobData>;
 
 const bullBoardQueues: ManagedQueue[] = [];
@@ -56,19 +56,19 @@ if (env.BULL_BOARD_ENABLED) {
 			connection: boardConnection,
 		}
 	);
-	const aiReplyQueue = new Queue<AiReplyJobData>(QUEUE_NAMES.AI_REPLY, {
+	const aiAgentQueue = new Queue<AiAgentJobData>(QUEUE_NAMES.AI_AGENT, {
 		connection: boardConnection,
 	});
 	const webCrawlQueue = new Queue<WebCrawlJobData>(QUEUE_NAMES.WEB_CRAWL, {
 		connection: boardConnection,
 	});
-	bullBoardQueues.push(messageQueue, aiReplyQueue, webCrawlQueue);
+	bullBoardQueues.push(messageQueue, aiAgentQueue, webCrawlQueue);
 
 	const serverAdapter = new HonoAdapter(serveStatic);
 	createBullBoard({
 		queues: [
 			new BullMQAdapter(messageQueue),
-			new BullMQAdapter(aiReplyQueue),
+			new BullMQAdapter(aiAgentQueue),
 			new BullMQAdapter(webCrawlQueue),
 		],
 		serverAdapter,

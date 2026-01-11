@@ -3,6 +3,7 @@
  *
  * Updates the conversation sentiment (background analysis).
  * Creates a private event - not visible to visitors.
+ * Emits real-time event for dashboard updates.
  */
 
 import type { Database } from "@api/db";
@@ -11,6 +12,7 @@ import {
 	conversation,
 	conversationTimelineItem,
 } from "@api/db/schema/conversation";
+import { realtime } from "@api/realtime/emitter";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 import {
 	ConversationTimelineType,
@@ -22,6 +24,7 @@ type UpdateSentimentParams = {
 	db: Database;
 	conversation: ConversationSelect;
 	organizationId: string;
+	websiteId: string;
 	aiAgentId: string;
 	sentiment: "positive" | "negative" | "neutral";
 	confidence: number;
@@ -37,6 +40,7 @@ export async function updateSentiment(
 		db,
 		conversation: conv,
 		organizationId,
+		websiteId,
 		aiAgentId,
 		sentiment,
 		confidence,
@@ -66,5 +70,19 @@ export async function updateSentiment(
 		userId: null,
 		visitorId: null,
 		createdAt: now,
+	});
+
+	// Emit conversationUpdated event for real-time dashboard updates
+	await realtime.emit("conversationUpdated", {
+		websiteId,
+		organizationId,
+		visitorId: conv.visitorId,
+		userId: null,
+		conversationId: conv.id,
+		updates: {
+			sentiment,
+			sentimentConfidence: confidence,
+		},
+		aiAgentId,
 	});
 }

@@ -77,6 +77,8 @@ const dispatchRules: Partial<Record<RealtimeEventType, DispatchRuleOverrides>> =
 		conversationTyping: { website: true, visitor: true },
 		timelineItemCreated: { website: true, visitor: true },
 		visitorIdentified: { website: true, visitor: true },
+		// Conversation updated events (title, sentiment, escalation)
+		conversationUpdated: { website: true, visitor: true },
 		// Web crawling events - only dispatch to website (dashboard users)
 		crawlStarted: { website: true, visitor: false },
 		crawlProgress: { website: true, visitor: false },
@@ -205,6 +207,11 @@ const eventHandlers: EventHandlers = {
 	},
 	visitorIdentified: (_ctx, event) => {
 		const _data = event.payload;
+	},
+	// Conversation updated (title, sentiment, escalation)
+	conversationUpdated: (_ctx, event) => {
+		const _data = event.payload;
+		// Event is broadcast to website and visitor - no additional logic needed
 	},
 	// Web crawling event handlers
 	crawlStarted: (_ctx, event) => {

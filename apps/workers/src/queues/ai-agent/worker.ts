@@ -268,8 +268,3 @@ export function createAiAgentWorker({
 		}
 	}
 }
-
-/**
- * @deprecated Use createAiAgentWorker instead
- */
-export const createAiReplyWorker = createAiAgentWorker;

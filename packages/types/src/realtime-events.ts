@@ -118,6 +118,21 @@ export const realtimeSchema = {
 			deletedAt: z.string().nullable(),
 		}),
 	}),
+	// Conversation updated (title, sentiment, escalation status changes)
+	conversationUpdated: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		updates: z.object({
+			title: z.string().nullable().optional(),
+			sentiment: z
+				.enum(["positive", "negative", "neutral"])
+				.nullable()
+				.optional(),
+			sentimentConfidence: z.number().nullable().optional(),
+			escalatedAt: z.string().nullable().optional(),
+			escalationReason: z.string().nullable().optional(),
+		}),
+		aiAgentId: z.string().nullable(),
+	}),
 	// Web crawling events
 	crawlStarted: baseRealtimeEvent.extend({
 		linkSourceId: z.string(),

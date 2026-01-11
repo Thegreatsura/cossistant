@@ -108,6 +108,26 @@ export function SupportRealtimeProvider({
 					ignoreVisitorId: context.visitorId,
 				});
 			},
+			conversationUpdated: (
+				_data: unknown,
+				{
+					event,
+					context,
+				}: {
+					event: RealtimeEvent<"conversationUpdated">;
+					context: SupportRealtimeContext;
+				}
+			) => {
+				if (
+					context.websiteId &&
+					event.payload.websiteId !== context.websiteId
+				) {
+					return;
+				}
+
+				// Update conversation store with new title, sentiment, escalation status
+				context.client.handleConversationUpdated(event);
+			},
 		}),
 		// Empty dependencies is fine here since we use the context parameter
 		// which always has fresh data from the memoized realtimeContext
