@@ -430,14 +430,59 @@ export class CossistantClient {
 				this.conversationsStore.getState().byId[timelineItem.conversationId];
 
 			if (existingConversation) {
+				// Check if this is a status-changing event timeline item
+				const newStatus = this.extractStatusFromEventTimelineItem(timelineItem);
+
 				const nextConversation = {
 					...existingConversation,
 					updatedAt: timelineItem.createdAt,
 					lastTimelineItem: timelineItem,
+					...(newStatus && { status: newStatus }),
 				};
 
 				this.conversationsStore.ingestConversation(nextConversation);
 			}
+		}
+	}
+
+	/**
+	 * Extract conversation status from an event timeline item.
+	 * Returns the new status if this is a status-changing event, otherwise null.
+	 */
+	private extractStatusFromEventTimelineItem(
+		timelineItem: TimelineItem
+	): ConversationStatus | null {
+		if (timelineItem.type !== ConversationTimelineType.EVENT) {
+			return null;
+		}
+
+		// Find the event part in the timeline item
+		const eventPart = timelineItem.parts?.find(
+			(part) =>
+				typeof part === "object" &&
+				part !== null &&
+				"type" in part &&
+				part.type === "event"
+		);
+
+		if (
+			!eventPart ||
+			typeof eventPart !== "object" ||
+			!("eventType" in eventPart)
+		) {
+			return null;
+		}
+
+		const eventType = (eventPart as { eventType: string }).eventType;
+
+		// Map event types to conversation status
+		switch (eventType) {
+			case "resolved":
+				return ConversationStatus.RESOLVED;
+			case "reopened":
+				return ConversationStatus.OPEN;
+			default:
+				return null;
 		}
 	}
 

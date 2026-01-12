@@ -32,10 +32,9 @@ export function parseAiDecision(input: unknown): AiDecision {
 
 /**
  * Get the visitor-facing message from a decision.
- * Supports both new visitorMessage field and legacy message field.
  */
 export function getVisitorMessageFromDecision(decision: AiDecision): string {
-	return decision.visitorMessage || decision.message || "";
+	return decision.visitorMessage || "";
 }
 
 /**
@@ -47,7 +46,7 @@ export function validateDecisionForExecution(decision: AiDecision): {
 	valid: boolean;
 	error?: string;
 } {
-	// Get the visitor message (supports both new and legacy fields)
+	// Get the visitor message
 	const visitorMessage = getVisitorMessageFromDecision(decision);
 
 	switch (decision.action) {
@@ -62,15 +61,14 @@ export function validateDecisionForExecution(decision: AiDecision): {
 			break;
 
 		case "internal_note":
-			// Internal note needs either an internal note or a message
+			// Internal note needs either an internal note or a visitor message
 			if (
 				(!decision.internalNote || decision.internalNote.trim().length === 0) &&
-				(!decision.message || decision.message.trim().length === 0) &&
 				(!visitorMessage || visitorMessage.trim().length === 0)
 			) {
 				return {
 					valid: false,
-					error: `Action "internal_note" requires either internalNote or message content`,
+					error: `Action "internal_note" requires either internalNote or visitorMessage content`,
 				};
 			}
 			break;

@@ -12,6 +12,7 @@ import { useTRPC } from "@/lib/trpc/client";
 import { handleConversationCreated } from "./events/handlers/conversation-created";
 import { handleConversationSeen } from "./events/handlers/conversation-seen";
 import { handleConversationTyping } from "./events/handlers/conversation-typing";
+import { handleConversationUpdated } from "./events/handlers/conversation-updated";
 import {
 	handleCrawlCompleted,
 	handleCrawlFailed,
@@ -82,6 +83,14 @@ export function Realtime({ children }: { children: ReactNode }) {
 			conversationTyping: [
 				(_data, meta) => {
 					handleConversationTyping({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			conversationUpdated: [
+				(_data, meta) => {
+					handleConversationUpdated({
 						event: meta.event,
 						context: meta.context,
 					});

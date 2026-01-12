@@ -6,6 +6,16 @@
 
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
+import type { ToolSet } from "ai";
+import type { RoleAwareMessage } from "../context/conversation";
+import {
+	formatConversationMetaForPrompt,
+	getConversationMeta,
+} from "../context/conversation-meta";
+import {
+	formatTemporalContextForPrompt,
+	getTemporalContext,
+} from "../context/temporal";
 import type { VisitorContext } from "../context/visitor";
 import { formatVisitorContextForPrompt } from "../context/visitor";
 import type { ResponseMode } from "../pipeline/2-decision";
@@ -16,22 +26,47 @@ import { PROMPT_TEMPLATES } from "./templates";
 type BuildPromptInput = {
 	aiAgent: AiAgentSelect;
 	conversation: ConversationSelect;
+	conversationHistory: RoleAwareMessage[];
 	visitorContext: VisitorContext | null;
 	mode: ResponseMode;
 	humanCommand: string | null;
+	tools?: ToolSet;
 };
 
 /**
  * Build the complete system prompt for the AI agent
  */
 export function buildSystemPrompt(input: BuildPromptInput): string {
-	const { aiAgent, visitorContext, mode, humanCommand } = input;
+	const {
+		aiAgent,
+		conversation,
+		conversationHistory,
+		visitorContext,
+		mode,
+		humanCommand,
+		tools,
+	} = input;
 	const settings = getBehaviorSettings(aiAgent);
 
 	const parts: string[] = [];
 
 	// Base prompt from agent configuration
 	parts.push(aiAgent.basePrompt);
+
+	// Add real-time context (visitor + temporal + conversation meta)
+	const realtimeContext = buildRealtimeContext(
+		visitorContext,
+		conversation,
+		conversationHistory
+	);
+	if (realtimeContext) {
+		parts.push(realtimeContext);
+	}
+
+	// Add tool instructions if tools are available
+	if (tools && Object.keys(tools).length > 0) {
+		parts.push(buildToolInstructions(tools));
+	}
 
 	// Add structured output instructions
 	parts.push(PROMPT_TEMPLATES.STRUCTURED_OUTPUT);
@@ -49,16 +84,64 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		parts.push(PROMPT_TEMPLATES.VISITOR_RESPONSE);
 	}
 
-	// Add visitor context
-	const visitorPrompt = formatVisitorContextForPrompt(visitorContext);
-	if (visitorPrompt) {
-		parts.push(visitorPrompt);
-	}
-
 	// Add conversation context
 	parts.push(PROMPT_TEMPLATES.CONVERSATION_CONTEXT);
 
 	return parts.join("\n\n");
+}
+
+/**
+ * Build real-time context section
+ */
+function buildRealtimeContext(
+	visitorContext: VisitorContext | null,
+	conversation: ConversationSelect,
+	conversationHistory: RoleAwareMessage[]
+): string {
+	const visitorPart = formatVisitorContextForPrompt(visitorContext);
+
+	// Get temporal context (time, date, greeting)
+	const temporalContext = getTemporalContext(visitorContext?.timezone ?? null);
+	const temporalPart = formatTemporalContextForPrompt(temporalContext);
+
+	// Get conversation meta (duration, message count)
+	const conversationMeta = getConversationMeta(
+		conversation,
+		conversationHistory
+	);
+	const metaPart = formatConversationMetaForPrompt(conversationMeta);
+
+	// Build the full context section
+	const contextParts = [visitorPart, temporalPart, metaPart].filter(Boolean);
+
+	if (contextParts.length === 0) {
+		return "";
+	}
+
+	return PROMPT_TEMPLATES.REALTIME_CONTEXT.replace(
+		"{visitorContext}",
+		visitorPart || ""
+	)
+		.replace("{temporalContext}", temporalPart)
+		.replace("{conversationMeta}", metaPart);
+}
+
+/**
+ * Build tool instructions section
+ */
+function buildToolInstructions(tools: ToolSet): string {
+	const toolDescriptions = Object.entries(tools)
+		.map(([name, t]) => {
+			const description =
+				"description" in t ? (t.description as string) : "No description";
+			return `- **${name}**: ${description}`;
+		})
+		.join("\n");
+
+	return PROMPT_TEMPLATES.TOOLS_AVAILABLE.replace(
+		"{toolList}",
+		toolDescriptions
+	);
 }
 
 /**

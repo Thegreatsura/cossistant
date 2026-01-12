@@ -32,31 +32,12 @@ export const escalationSchema = z.object({
 });
 
 /**
- * Side effects that can happen alongside the primary action
- */
-export const sideEffectsSchema = z.object({
-	/** Set conversation priority */
-	setPriority: z
-		.enum(["low", "normal", "high", "urgent"])
-		.optional()
-		.describe("Set the conversation priority"),
-	/** Add to views/categories */
-	addToViews: z
-		.array(z.string())
-		.optional()
-		.describe("View IDs to add the conversation to"),
-	/** Request participants to help */
-	requestParticipants: z
-		.array(z.string())
-		.optional()
-		.describe("User IDs to request as participants"),
-});
-
-/**
  * The main AI decision schema
  *
  * The AI returns a structured decision that determines what action to take.
  * This prevents the AI from responding when it shouldn't.
+ *
+ * Note: Priority, title, and sentiment are now handled via tools during generation.
  */
 export const aiDecisionSchema = z.object({
 	/** The primary action to take */
@@ -99,21 +80,10 @@ export const aiDecisionSchema = z.object({
 			"Optional private note for the support team about this action or decision"
 		),
 
-	/** @deprecated Use visitorMessage instead. Kept for backward compatibility. */
-	message: z
-		.string()
-		.optional()
-		.describe("DEPRECATED: Use visitorMessage instead"),
-
 	/** Escalation details (required if action is escalate) */
 	escalation: escalationSchema
 		.optional()
 		.describe("Escalation details (required if action is escalate)"),
-
-	/** Side effects to execute alongside the primary action */
-	sideEffects: sideEffectsSchema
-		.optional()
-		.describe("Additional actions to take alongside the primary action"),
 
 	/** AI's reasoning for this decision (for debugging/audit) */
 	reasoning: z
@@ -130,4 +100,3 @@ export const aiDecisionSchema = z.object({
 
 export type AiDecision = z.infer<typeof aiDecisionSchema>;
 export type Escalation = z.infer<typeof escalationSchema>;
-export type SideEffects = z.infer<typeof sideEffectsSchema>;

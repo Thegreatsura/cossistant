@@ -7,9 +7,12 @@
  * - Update AI agent usage statistics
  * - Clear workflow state
  * - Emit realtime events
- * - Run background analysis (sentiment, title generation)
+ * - Run auto-categorization (if enabled)
  *
  * Note: Typing indicator is managed by the pipeline orchestrator (index.ts)
+ *
+ * Sentiment and title are now handled via SDK tools during generation,
+ * not in this followup step.
  */
 
 import type { Database } from "@api/db";
@@ -43,16 +46,7 @@ type FollowupInput = {
  * Execute post-processing tasks
  */
 export async function followup(input: FollowupInput): Promise<void> {
-	const {
-		db,
-		redis,
-		aiAgent,
-		conversation,
-		decision,
-		executionResult,
-		organizationId,
-		websiteId,
-	} = input;
+	const { db, redis, aiAgent, conversation, decision, executionResult } = input;
 
 	// Clear workflow state
 	await clearWorkflowState(redis, conversation.id, AI_AGENT_DIRECTION);
@@ -62,114 +56,20 @@ export async function followup(input: FollowupInput): Promise<void> {
 		await updateAiAgentUsage(db, { aiAgentId: aiAgent.id });
 	}
 
-	// Run background analysis if configured
+	// Run auto-categorization if enabled (not yet a tool)
 	const settings = getBehaviorSettings(aiAgent);
-	await runBackgroundAnalysis({
-		db,
-		conversation,
-		aiAgent,
-		settings,
-		organizationId,
-		websiteId,
-	});
-}
-
-type BackgroundAnalysisInput = {
-	db: Database;
-	conversation: ConversationSelect;
-	aiAgent: AiAgentSelect;
-	settings: ReturnType<typeof getBehaviorSettings>;
-	organizationId: string;
-	websiteId: string;
-};
-
-/**
- * Run background analysis tasks based on settings
- */
-async function runBackgroundAnalysis(
-	params: BackgroundAnalysisInput
-): Promise<void> {
-	const { db, conversation, aiAgent, settings, organizationId, websiteId } =
-		params;
-	const analysisPromises: Promise<void>[] = [];
-	const convId = conversation.id;
-
-	// Log what analysis tasks will run
-	const tasks: string[] = [];
-	if (settings.autoAnalyzeSentiment) {
-		tasks.push("sentiment");
-	}
-	if (settings.autoGenerateTitle && !conversation.title) {
-		tasks.push("title");
-	}
 	if (settings.autoCategorize) {
-		tasks.push("categorize");
+		analysis
+			.autoCategorize({
+				db,
+				conversation,
+				aiAgentId: aiAgent.id,
+			})
+			.catch((error) => {
+				console.error(
+					`[ai-agent:followup] conv=${conversation.id} | Auto-categorization failed:`,
+					error
+				);
+			});
 	}
-
-	if (tasks.length > 0) {
-		console.log(
-			`[ai-agent:followup] conv=${convId} | Running analysis: ${tasks.join(", ")}`
-		);
-	}
-
-	// Analyze sentiment if enabled and not already analyzed recently
-	if (settings.autoAnalyzeSentiment) {
-		analysisPromises.push(
-			analysis
-				.analyzeSentiment({
-					db,
-					conversation,
-					organizationId,
-					websiteId,
-					aiAgentId: aiAgent.id,
-				})
-				.catch((error) => {
-					console.error(
-						`[ai-agent] Sentiment analysis failed for conversation ${conversation.id}:`,
-						error
-					);
-				})
-		);
-	}
-
-	// Generate title if enabled and conversation doesn't have one
-	if (settings.autoGenerateTitle && !conversation.title) {
-		analysisPromises.push(
-			analysis
-				.generateTitle({
-					db,
-					conversation,
-					organizationId,
-					websiteId,
-					aiAgentId: aiAgent.id,
-				})
-				.catch((error) => {
-					console.error(
-						`[ai-agent] Title generation failed for conversation ${conversation.id}:`,
-						error
-					);
-				})
-		);
-	}
-
-	// Auto-categorize if enabled
-	if (settings.autoCategorize) {
-		analysisPromises.push(
-			analysis
-				.autoCategorize({
-					db,
-					conversation,
-					aiAgentId: aiAgent.id,
-				})
-				.catch((error) => {
-					console.error(
-						`[ai-agent] Auto-categorization failed for conversation ${conversation.id}:`,
-						error
-					);
-				})
-		);
-	}
-
-	// Run all analysis tasks in parallel (fire and forget)
-	await Promise.allSettled(analysisPromises);
 }

@@ -98,7 +98,7 @@ export async function escalate(params: EscalateParams): Promise<void> {
 			visibility: TimelineItemVisibility.PUBLIC,
 			type: ConversationTimelineType.MESSAGE,
 			text: visitorMessage,
-			parts: [],
+			parts: [{ type: "text", text: visitorMessage }],
 			userId: null,
 			visitorId: null,
 			aiAgentId,

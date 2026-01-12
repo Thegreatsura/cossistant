@@ -42,7 +42,8 @@
       "style": {
         "noNestedTernary": "off",
         "noMagicNumbers": "off",
-        "useReadonlyClassProperties": "off"
+        "useReadonlyClassProperties": "off",
+        "useAtIndex": "off"
       }
     }
   }

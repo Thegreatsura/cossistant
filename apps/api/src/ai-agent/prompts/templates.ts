@@ -6,6 +6,34 @@
 
 export const PROMPT_TEMPLATES = {
 	/**
+	 * Real-time context about the visitor and conversation
+	 */
+	REALTIME_CONTEXT: `## Current Context
+
+{visitorContext}
+
+{temporalContext}
+
+{conversationMeta}`,
+
+	/**
+	 * Instructions for using available tools
+	 */
+	TOOLS_AVAILABLE: `## Available Tools
+
+You have access to these tools to help during the conversation:
+
+{toolList}
+
+**How to use tools:**
+- Use \`searchKnowledgeBase\` when the visitor asks something that might be documented
+- Use \`setConversationTitle\` early when the main topic becomes clear
+- Use \`updateSentiment\` when you notice the visitor's tone changing
+- Use \`setPriority\` for urgent issues (outages, critical bugs)
+
+**Important:** After using tools, you must still provide your final response in the structured format.`,
+
+	/**
 	 * Instructions for structured output
 	 */
 	STRUCTURED_OUTPUT: `## Response Format

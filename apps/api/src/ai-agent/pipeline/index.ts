@@ -156,15 +156,19 @@ export async function runAiAgentPipeline(
 			};
 		}
 
-		// Step 3: Generation - Call LLM
+		// Step 3: Generation - Call LLM with tools
 		const generationStart = Date.now();
 		generationResult = await generate({
+			db: ctx.db,
 			aiAgent: intakeResult.aiAgent,
 			conversation: intakeResult.conversation,
 			conversationHistory: intakeResult.conversationHistory,
 			visitorContext: intakeResult.visitorContext,
 			mode: decisionResult.mode,
 			humanCommand: decisionResult.humanCommand,
+			organizationId: ctx.input.organizationId,
+			websiteId: ctx.input.websiteId,
+			visitorId: ctx.input.visitorId,
 		});
 		metrics.generationMs = Date.now() - generationStart;
 

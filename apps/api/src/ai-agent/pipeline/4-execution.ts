@@ -6,9 +6,10 @@
  *
  * Responsibilities:
  * - Execute primary action (respond, escalate, resolve, etc.)
- * - Execute side effects (set priority, categorize, etc.)
  * - Create timeline events
  * - Update conversation state
+ *
+ * Note: Priority, title, and sentiment are now handled via SDK tools during generation.
  */
 
 import type { Database } from "@api/db";
@@ -25,11 +26,6 @@ export type ExecutionResult = {
 		messageId?: string;
 		error?: string;
 	};
-	sideEffects: Array<{
-		type: string;
-		success: boolean;
-		error?: string;
-	}>;
 };
 
 type ExecutionInput = {
@@ -46,15 +42,6 @@ type ExecutionInput = {
 };
 
 /**
- * Get the visitor-facing message from the decision.
- * Supports both new visitorMessage field and legacy message field.
- */
-function getVisitorMessage(decision: AiDecision): string {
-	// Prefer visitorMessage, fall back to legacy message field
-	return decision.visitorMessage || decision.message || "";
-}
-
-/**
  * Execute the AI's chosen actions
  */
 export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
@@ -63,7 +50,6 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 		aiAgent,
 		conversation,
 		decision,
-		jobId,
 		messageId,
 		organizationId,
 		websiteId,
@@ -88,7 +74,6 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 				success: false,
 				error: validation.error,
 			},
-			sideEffects: [],
 		};
 	}
 
@@ -97,11 +82,10 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			type: decision.action,
 			success: false,
 		},
-		sideEffects: [],
 	};
 
-	// Get the visitor message for actions that need it
-	const visitorMessage = getVisitorMessage(decision);
+	// Get the visitor message
+	const visitorMessage = decision.visitorMessage || "";
 
 	// Execute primary action
 	try {
@@ -126,9 +110,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "internal_note": {
-				// For internal notes, use internalNote field or fall back to message
-				const noteText =
-					decision.internalNote || decision.message || visitorMessage;
+				const noteText = decision.internalNote || visitorMessage;
 				const noteResult = await actions.addInternalNote({
 					db,
 					conversationId: conversation.id,
@@ -160,8 +142,6 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "escalate": {
-				// Escalate already sends a visitor message via the escalation.visitorMessage
-				// But also use the top-level visitorMessage if escalation.visitorMessage is missing
 				const escalationVisitorMessage =
 					decision.escalation?.visitorMessage ||
 					visitorMessage ||
@@ -188,8 +168,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "resolve": {
-				// IMPORTANT: Send visitor message BEFORE updating status
-				// This ensures the user knows why the conversation was resolved
+				// Send visitor message BEFORE updating status
 				if (visitorMessage) {
 					await actions.sendMessage({
 						db,
@@ -218,8 +197,6 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "mark_spam": {
-				// For spam, we typically don't need to message the visitor
-				// But if a message was provided, send it
 				if (visitorMessage) {
 					await actions.sendMessage({
 						db,
@@ -248,8 +225,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "skip": {
-				// IMPORTANT: Even on skip, if there's a visitor message, send it
-				// This prevents the AI from going completely silent
+				// Even on skip, send visitor message if provided
 				if (visitorMessage) {
 					await actions.sendMessage({
 						db,
@@ -297,100 +273,16 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 				text: decision.internalNote,
 				idempotencyKey: `${messageId}-internal-note`,
 			});
-			result.sideEffects.push({
-				type: "internal_note",
-				success: true,
-			});
 		} catch (error) {
-			result.sideEffects.push({
-				type: "internal_note",
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			});
-		}
-	}
-
-	// Execute side effects
-	if (decision.sideEffects) {
-		// Set priority
-		if (decision.sideEffects.setPriority) {
-			try {
-				await actions.updatePriority({
-					db,
-					conversation,
-					organizationId,
-					aiAgentId: aiAgent.id,
-					newPriority: decision.sideEffects.setPriority,
-				});
-				result.sideEffects.push({
-					type: "set_priority",
-					success: true,
-				});
-			} catch (error) {
-				result.sideEffects.push({
-					type: "set_priority",
-					success: false,
-					error: error instanceof Error ? error.message : "Unknown error",
-				});
-			}
-		}
-
-		// Add to views (categorize)
-		if (decision.sideEffects.addToViews?.length) {
-			for (const viewId of decision.sideEffects.addToViews) {
-				try {
-					await actions.categorize({
-						db,
-						conversationId: conversation.id,
-						organizationId,
-						viewId,
-						aiAgentId: aiAgent.id,
-					});
-					result.sideEffects.push({
-						type: `add_to_view:${viewId}`,
-						success: true,
-					});
-				} catch (error) {
-					result.sideEffects.push({
-						type: `add_to_view:${viewId}`,
-						success: false,
-						error: error instanceof Error ? error.message : "Unknown error",
-					});
-				}
-			}
-		}
-
-		// Request participants
-		if (decision.sideEffects.requestParticipants?.length) {
-			for (const userId of decision.sideEffects.requestParticipants) {
-				try {
-					await actions.requestHelp({
-						db,
-						conversationId: conversation.id,
-						organizationId,
-						userId,
-						aiAgentId: aiAgent.id,
-						reason: "AI requested assistance",
-					});
-					result.sideEffects.push({
-						type: `request_participant:${userId}`,
-						success: true,
-					});
-				} catch (error) {
-					result.sideEffects.push({
-						type: `request_participant:${userId}`,
-						success: false,
-						error: error instanceof Error ? error.message : "Unknown error",
-					});
-				}
-			}
+			console.error(
+				`[ai-agent:execute] conv=${convId} | Failed to add internal note:`,
+				error
+			);
 		}
 	}
 
 	if (result.primaryAction.success) {
-		console.log(
-			`[ai-agent:execute] conv=${convId} | Result: success=true | sideEffects=${result.sideEffects.length}`
-		);
+		console.log(`[ai-agent:execute] conv=${convId} | Result: success=true`);
 	} else {
 		console.error(
 			`[ai-agent:execute] conv=${convId} | FAILED | error="${result.primaryAction.error}"`

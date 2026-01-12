@@ -11,6 +11,7 @@
  * - Parse and validate AI decision
  */
 
+import type { Database } from "@api/db";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { env } from "@api/env";
@@ -20,7 +21,7 @@ import type { RoleAwareMessage } from "../context/conversation";
 import type { VisitorContext } from "../context/visitor";
 import { type AiDecision, aiDecisionSchema } from "../output/schemas";
 import { buildSystemPrompt } from "../prompts/system";
-import { getToolsForGeneration } from "../tools";
+import { getToolsForGeneration, type ToolContext } from "../tools";
 import type { ResponseMode } from "./2-decision";
 
 export type GenerationResult = {
@@ -33,12 +34,16 @@ export type GenerationResult = {
 };
 
 type GenerationInput = {
+	db: Database;
 	aiAgent: AiAgentSelect;
 	conversation: ConversationSelect;
 	conversationHistory: RoleAwareMessage[];
 	visitorContext: VisitorContext | null;
 	mode: ResponseMode;
 	humanCommand: string | null;
+	organizationId: string;
+	websiteId: string;
+	visitorId: string;
 };
 
 /**
@@ -48,41 +53,66 @@ export async function generate(
 	input: GenerationInput
 ): Promise<GenerationResult> {
 	const {
+		db,
 		aiAgent,
 		conversation,
 		conversationHistory,
 		visitorContext,
 		mode,
 		humanCommand,
+		organizationId,
+		websiteId,
+		visitorId,
 	} = input;
 	const convId = conversation.id;
 
-	// Build dynamic system prompt
+	// Build tool context for passing to tool execute functions
+	const toolContext: ToolContext = {
+		db,
+		conversation,
+		conversationId: conversation.id,
+		organizationId,
+		websiteId,
+		visitorId,
+		aiAgentId: aiAgent.id,
+	};
+
+	// Get tools for this agent based on settings (with bound context)
+	const tools = getToolsForGeneration(aiAgent, toolContext);
+
+	// Build dynamic system prompt with real-time context and tool instructions
 	const systemPrompt = buildSystemPrompt({
 		aiAgent,
 		conversation,
+		conversationHistory,
 		visitorContext,
 		mode,
 		humanCommand,
+		tools,
 	});
 
 	// Format conversation history for LLM
 	const messages = formatMessagesForLlm(conversationHistory);
 
 	console.log(
-		`[ai-agent:generate] conv=${convId} | model=${aiAgent.model} | messages=${messages.length} | mode=${mode}`
+		`[ai-agent:generate] conv=${convId} | model=${aiAgent.model} | messages=${messages.length} | mode=${mode} | tools=${tools ? Object.keys(tools).length : 0}`
 	);
-	console.log(
-		`[ai-agent:generate] conv=${convId} | System prompt (${systemPrompt.length} chars): "${systemPrompt.slice(0, 200).replace(/\n/g, " ")}..."`
-	);
+
+	// In development, log the full system prompt for debugging
+	if (env.NODE_ENV === "development") {
+		console.log(
+			`[ai-agent:generate] conv=${convId} | FULL SYSTEM PROMPT:\n${"=".repeat(80)}\n${systemPrompt}\n${"=".repeat(80)}`
+		);
+	} else {
+		console.log(
+			`[ai-agent:generate] conv=${convId} | System prompt (${systemPrompt.length} chars): "${systemPrompt.slice(0, 200).replace(/\n/g, " ")}..."`
+		);
+	}
 
 	// Get OpenRouter client
 	const openrouter = createOpenRouter({
 		apiKey: env.OPENROUTER_API_KEY,
 	});
-
-	// Get tools if available (currently returns undefined, future-proofing for when tools are enabled)
-	const tools = getToolsForGeneration(aiAgent);
 
 	// Generate structured output using AI SDK v6 pattern
 	// Using generateText + Output.object instead of deprecated generateObject
@@ -101,6 +131,8 @@ export async function generate(
 			schema: aiDecisionSchema,
 		}),
 		tools,
+		// Pass tool context via experimental_context for tool execute functions
+		experimental_context: toolContext,
 		// stopWhen ensures multi-step execution when tools are used, so the AI
 		// generates a response after tool calls instead of going silent
 		stopWhen: tools ? stepCountIs(5) : undefined,
@@ -143,8 +175,8 @@ export async function generate(
 		`[ai-agent:generate] conv=${convId} | AI decided: action=${decision.action} | reasoning="${(decision.reasoning ?? "").slice(0, 100)}${(decision.reasoning ?? "").length > 100 ? "..." : ""}"`
 	);
 
-	// Log visitor message (the new required field)
-	const visitorMsg = decision.visitorMessage || decision.message || "";
+	// Log visitor message
+	const visitorMsg = decision.visitorMessage || "";
 	if (visitorMsg) {
 		console.log(
 			`[ai-agent:generate] conv=${convId} | Visitor message (${visitorMsg.length} chars): "${visitorMsg.slice(0, 100)}${visitorMsg.length > 100 ? "..." : ""}"`

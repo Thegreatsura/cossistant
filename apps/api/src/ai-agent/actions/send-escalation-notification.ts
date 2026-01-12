@@ -10,8 +10,7 @@ import {
 	getWebsiteForNotification,
 } from "@api/utils/notification-helpers";
 import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
-import { sendEmail } from "@cossistant/transactional";
-import EscalationNotification from "@cossistant/transactional/emails/escalation-notification";
+import { EscalationNotification, sendEmail } from "@cossistant/transactional";
 import type { EscalationSummary } from "../analysis/escalation-summary";
 
 type SendEscalationNotificationParams = {
