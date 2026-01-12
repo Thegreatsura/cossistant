@@ -15,11 +15,12 @@ import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { env } from "@api/env";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, Output } from "ai";
+import { generateText, Output, stepCountIs } from "ai";
 import type { RoleAwareMessage } from "../context/conversation";
 import type { VisitorContext } from "../context/visitor";
 import { type AiDecision, aiDecisionSchema } from "../output/schemas";
 import { buildSystemPrompt } from "../prompts/system";
+import { getToolsForGeneration } from "../tools";
 import type { ResponseMode } from "./2-decision";
 
 export type GenerationResult = {
@@ -80,13 +81,29 @@ export async function generate(
 		apiKey: env.OPENROUTER_API_KEY,
 	});
 
+	// Get tools if available (currently returns undefined, future-proofing for when tools are enabled)
+	const tools = getToolsForGeneration(aiAgent);
+
 	// Generate structured output using AI SDK v6 pattern
 	// Using generateText + Output.object instead of deprecated generateObject
+	//
+	// IMPORTANT: When tools are enabled, we use stopWhen to ensure the AI generates
+	// a final text response after tool execution. This prevents the AI from going
+	// silent after calling a tool. The step count of 5 allows for:
+	// - Step 1: Initial response (may include tool call)
+	// - Step 2: Tool execution result
+	// - Step 3: Follow-up response (may include another tool call)
+	// - Step 4: Another tool execution result
+	// - Step 5: Final structured output generation
 	const result = await generateText({
 		model: openrouter.chat(aiAgent.model),
 		output: Output.object({
 			schema: aiDecisionSchema,
 		}),
+		tools,
+		// stopWhen ensures multi-step execution when tools are used, so the AI
+		// generates a response after tool calls instead of going silent
+		stopWhen: tools ? stepCountIs(5) : undefined,
 		system: systemPrompt,
 		messages,
 		temperature: aiAgent.temperature ?? 0.7,
@@ -100,10 +117,12 @@ export async function generate(
 		console.error(
 			`[ai-agent:generate] conv=${convId} | Structured output failed | text="${result.text?.slice(0, 200)}"`
 		);
-		// Return a safe fallback decision
+		// Return a safe fallback decision with a visitor message to avoid going silent
 		return {
 			decision: {
 				action: "skip" as const,
+				visitorMessage:
+					"I'm having a moment - let me get back to you shortly, or a team member will assist you.",
 				reasoning:
 					"Failed to generate structured output from model. Raw response logged for debugging.",
 				confidence: 0,
@@ -123,9 +142,19 @@ export async function generate(
 	console.log(
 		`[ai-agent:generate] conv=${convId} | AI decided: action=${decision.action} | reasoning="${(decision.reasoning ?? "").slice(0, 100)}${(decision.reasoning ?? "").length > 100 ? "..." : ""}"`
 	);
-	if (decision.action === "respond" || decision.action === "internal_note") {
+
+	// Log visitor message (the new required field)
+	const visitorMsg = decision.visitorMessage || decision.message || "";
+	if (visitorMsg) {
 		console.log(
-			`[ai-agent:generate] conv=${convId} | Message (${decision.message?.length ?? 0} chars): "${(decision.message ?? "").slice(0, 100)}${(decision.message ?? "").length > 100 ? "..." : ""}"`
+			`[ai-agent:generate] conv=${convId} | Visitor message (${visitorMsg.length} chars): "${visitorMsg.slice(0, 100)}${visitorMsg.length > 100 ? "..." : ""}"`
+		);
+	}
+
+	// Log internal note if present
+	if (decision.internalNote) {
+		console.log(
+			`[ai-agent:generate] conv=${convId} | Internal note (${decision.internalNote.length} chars): "${decision.internalNote.slice(0, 100)}${decision.internalNote.length > 100 ? "..." : ""}"`
 		);
 	}
 	if (usage) {

@@ -36,6 +36,9 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 	// Add structured output instructions
 	parts.push(PROMPT_TEMPLATES.STRUCTURED_OUTPUT);
 
+	// Add critical instruction to never go silent
+	parts.push(PROMPT_TEMPLATES.NEVER_GO_SILENT);
+
 	// Add behavior instructions based on settings
 	parts.push(buildBehaviorInstructions(settings, mode));
 

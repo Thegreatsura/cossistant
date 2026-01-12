@@ -46,6 +46,15 @@ type ExecutionInput = {
 };
 
 /**
+ * Get the visitor-facing message from the decision.
+ * Supports both new visitorMessage field and legacy message field.
+ */
+function getVisitorMessage(decision: AiDecision): string {
+	// Prefer visitorMessage, fall back to legacy message field
+	return decision.visitorMessage || decision.message || "";
+}
+
+/**
  * Execute the AI's chosen actions
  */
 export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
@@ -91,6 +100,9 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 		sideEffects: [],
 	};
 
+	// Get the visitor message for actions that need it
+	const visitorMessage = getVisitorMessage(decision);
+
 	// Execute primary action
 	try {
 		switch (decision.action) {
@@ -102,7 +114,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					websiteId,
 					visitorId,
 					aiAgentId: aiAgent.id,
-					text: decision.message ?? "",
+					text: visitorMessage,
 					idempotencyKey: `${messageId}-respond`,
 				});
 				result.primaryAction = {
@@ -114,12 +126,15 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "internal_note": {
+				// For internal notes, use internalNote field or fall back to message
+				const noteText =
+					decision.internalNote || decision.message || visitorMessage;
 				const noteResult = await actions.addInternalNote({
 					db,
 					conversationId: conversation.id,
 					organizationId,
 					aiAgentId: aiAgent.id,
-					text: decision.message ?? "",
+					text: noteText,
 					idempotencyKey: `${messageId}-note`,
 				});
 				result.primaryAction = {
@@ -127,10 +142,31 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					success: true,
 					messageId: noteResult.noteId,
 				};
+
+				// If there's also a visitor message, send it
+				if (visitorMessage && visitorMessage !== noteText) {
+					await actions.sendMessage({
+						db,
+						conversationId: conversation.id,
+						organizationId,
+						websiteId,
+						visitorId,
+						aiAgentId: aiAgent.id,
+						text: visitorMessage,
+						idempotencyKey: `${messageId}-note-visitor`,
+					});
+				}
 				break;
 			}
 
 			case "escalate": {
+				// Escalate already sends a visitor message via the escalation.visitorMessage
+				// But also use the top-level visitorMessage if escalation.visitorMessage is missing
+				const escalationVisitorMessage =
+					decision.escalation?.visitorMessage ||
+					visitorMessage ||
+					"I'm connecting you with one of our team members who can help you further. They'll be with you shortly!";
+
 				await actions.escalate({
 					db,
 					conversation,
@@ -139,9 +175,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					aiAgentId: aiAgent.id,
 					aiAgentName: aiAgent.name,
 					reason: decision.escalation?.reason ?? "AI requested escalation",
-					visitorMessage:
-						decision.escalation?.visitorMessage ??
-						"I'm connecting you with one of our team members who can help you further. They'll be with you shortly!",
+					visitorMessage: escalationVisitorMessage,
 					visitorName,
 					assignToUserId: decision.escalation?.assignToUserId,
 					urgency: decision.escalation?.urgency ?? "normal",
@@ -154,6 +188,21 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "resolve": {
+				// IMPORTANT: Send visitor message BEFORE updating status
+				// This ensures the user knows why the conversation was resolved
+				if (visitorMessage) {
+					await actions.sendMessage({
+						db,
+						conversationId: conversation.id,
+						organizationId,
+						websiteId,
+						visitorId,
+						aiAgentId: aiAgent.id,
+						text: visitorMessage,
+						idempotencyKey: `${messageId}-resolve-msg`,
+					});
+				}
+
 				await actions.updateStatus({
 					db,
 					conversation,
@@ -169,6 +218,21 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "mark_spam": {
+				// For spam, we typically don't need to message the visitor
+				// But if a message was provided, send it
+				if (visitorMessage) {
+					await actions.sendMessage({
+						db,
+						conversationId: conversation.id,
+						organizationId,
+						websiteId,
+						visitorId,
+						aiAgentId: aiAgent.id,
+						text: visitorMessage,
+						idempotencyKey: `${messageId}-spam-msg`,
+					});
+				}
+
 				await actions.updateStatus({
 					db,
 					conversation,
@@ -184,6 +248,21 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			}
 
 			case "skip": {
+				// IMPORTANT: Even on skip, if there's a visitor message, send it
+				// This prevents the AI from going completely silent
+				if (visitorMessage) {
+					await actions.sendMessage({
+						db,
+						conversationId: conversation.id,
+						organizationId,
+						websiteId,
+						visitorId,
+						aiAgentId: aiAgent.id,
+						text: visitorMessage,
+						idempotencyKey: `${messageId}-skip-msg`,
+					});
+				}
+
 				result.primaryAction = {
 					type: "skip",
 					success: true,
@@ -205,6 +284,30 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
 		};
+	}
+
+	// Handle internal note as a side effect if provided and not the primary action
+	if (decision.internalNote && decision.action !== "internal_note") {
+		try {
+			await actions.addInternalNote({
+				db,
+				conversationId: conversation.id,
+				organizationId,
+				aiAgentId: aiAgent.id,
+				text: decision.internalNote,
+				idempotencyKey: `${messageId}-internal-note`,
+			});
+			result.sideEffects.push({
+				type: "internal_note",
+				success: true,
+			});
+		} catch (error) {
+			result.sideEffects.push({
+				type: "internal_note",
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
+		}
 	}
 
 	// Execute side effects
