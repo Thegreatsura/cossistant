@@ -5,6 +5,33 @@ import type { JSX } from "react";
 import * as React from "react";
 import { mergeRefs } from "./merge-refs";
 
+/**
+ * Gets the ref from a React element in a way that's compatible with both React 18 and React 19.
+ *
+ * - Before React 19: accessing `element.props.ref` throws a warning, use `element.ref`
+ * - After React 19: accessing `element.ref` throws a warning, use `element.props.ref`
+ *
+ * This function detects which version of React is being used by checking for the
+ * `isReactWarning` property descriptor that React adds in DEV mode.
+ *
+ * @see https://github.com/radix-ui/primitives/pull/2811
+ */
+function getElementRef(element: React.ReactElement): React.Ref<unknown> | null {
+	// React 18 in DEV mode will throw a warning when accessing `element.props.ref`
+	// and suggest using `element.ref` instead.
+	// We detect this by checking for the `isReactWarning` getter on `props.ref`.
+	const getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+	const mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+
+	if (mayWarn) {
+		// React 18: use element.ref
+		return (element as any).ref;
+	}
+
+	// React 19 or production: prefer props.ref, fallback to element.ref for older versions
+	return (element.props as any).ref ?? (element as any).ref;
+}
+
 type IntrinsicTag = keyof JSX.IntrinsicElements;
 
 type ClassName<State> = string | ((state: State) => string);
@@ -38,8 +65,8 @@ type SlotProps = {
  */
 const Slot = React.forwardRef<HTMLElement, SlotProps>(
 	({ children, ...props }, forwardedRef) => {
-		// Get the child's existing ref (if any)
-		const childRef = (children as any).ref;
+		// Get the child's existing ref using React 18/19 compatible helper
+		const childRef = getElementRef(children);
 
 		// Merge the forwarded ref with the child's ref
 		const mergedRef = mergeRefs([forwardedRef, childRef]);
@@ -100,7 +127,7 @@ export function useRenderElement<
 	if (React.isValidElement(render)) {
 		return React.cloneElement(render, {
 			...mergedProps,
-			ref: (render as any).ref || ref,
+			ref: getElementRef(render) || ref,
 		});
 	}
 
