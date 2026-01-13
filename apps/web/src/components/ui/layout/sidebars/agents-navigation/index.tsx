@@ -87,9 +87,9 @@ export function AgentsNavigationSidebar() {
 					</SidebarItem>
 				</div>
 
-				{/* Knowledge Section */}
+				{/* Knowledge Section - always open by default */}
 				<SidebarItem
-					defaultOpen={isKnowledgeActive}
+					defaultOpen={true}
 					iconName="book-open"
 					items={[
 						{

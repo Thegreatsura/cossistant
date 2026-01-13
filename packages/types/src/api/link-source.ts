@@ -388,6 +388,11 @@ export const trainingStatsResponseSchema = z
 					"Plan limit for pages crawled per source (null = unlimited)",
 				example: 1000,
 			}),
+		totalPagesLimit: z.number().int().nonnegative().nullable().openapi({
+			description:
+				"Plan limit for total pages across all sources (null = unlimited)",
+			example: 10,
+		}),
 	})
 	.openapi({
 		description: "Training statistics for the AI agent",

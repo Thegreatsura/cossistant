@@ -170,16 +170,8 @@ async function processWebCrawlJob(
 		createdBy,
 		includePaths,
 		excludePaths,
-		// v2 parameters with defaults
-		maxDiscoveryDepth = 5,
-		sitemap = "include",
-		crawlEntireDomain = true,
-		// Backward compatibility
-		maxDepth,
+		maxDepth = 5,
 	} = job.data;
-
-	// Use maxDiscoveryDepth if provided, otherwise fall back to maxDepth for backward compatibility
-	const effectiveMaxDiscoveryDepth = maxDiscoveryDepth ?? maxDepth ?? 5;
 
 	// 1. Get the link source and validate it exists
 	const linkSource = await getLinkSourceById(db, {
@@ -230,17 +222,14 @@ async function processWebCrawlJob(
 	});
 	await job.updateProgress(5);
 
-	// 4. Start crawl using v2 API with improved settings
-	// The v2 crawl endpoint with sitemap: "include" handles discovery intelligently
+	// 4. Start crawl using v2 API
 	console.log(
-		`[worker:web-crawl] Starting crawl: ${url} | limit=${crawlLimit} depth=${effectiveMaxDiscoveryDepth}`
+		`[worker:web-crawl] Starting crawl: ${url} | limit=${crawlLimit} depth=${maxDepth}`
 	);
 
 	const crawlResult = await firecrawlService.startCrawl(url, {
 		limit: crawlLimit,
-		maxDiscoveryDepth: effectiveMaxDiscoveryDepth,
-		sitemap,
-		crawlEntireDomain,
+		maxDepth,
 		includePaths: includePaths ?? linkSource.includePaths ?? undefined,
 		excludePaths: excludePaths ?? linkSource.excludePaths ?? undefined,
 	});

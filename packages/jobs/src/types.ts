@@ -61,9 +61,6 @@ export function generateAiAgentJobId(conversationId: string): string {
 	return `ai-agent-${conversationId}`;
 }
 
-/** Sitemap handling mode for Firecrawl v2 */
-export type FirecrawlSitemapMode = "include" | "exclude" | "only";
-
 /**
  * Job data for web crawl queue
  */
@@ -79,13 +76,7 @@ export type WebCrawlJobData = {
 	includePaths?: string[] | null;
 	excludePaths?: string[] | null;
 	// Firecrawl v2 parameters
-	/** Maximum depth for link discovery (v2) - default: 5 */
-	maxDiscoveryDepth?: number;
-	/** Sitemap handling: "include" (default), "exclude", or "only" */
-	sitemap?: FirecrawlSitemapMode;
-	/** Whether to crawl the entire domain - default: true */
-	crawlEntireDomain?: boolean;
-	/** @deprecated Use maxDiscoveryDepth instead */
+	/** Maximum depth of links to follow from the starting URL - default: 5 */
 	maxDepth?: number;
 };
 

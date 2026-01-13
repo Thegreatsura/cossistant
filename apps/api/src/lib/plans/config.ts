@@ -22,7 +22,8 @@ export type FeatureKey =
 	| "ai-support-agents"
 	| "ai-agent-training-links"
 	| "ai-agent-training-mb"
-	| "ai-agent-crawl-pages-per-source";
+	| "ai-agent-crawl-pages-per-source"
+	| "ai-agent-training-pages-total";
 
 export type PlanName = "free" | "hobby" | "pro";
 
@@ -199,6 +200,14 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 		unit: "pages",
 		category: "secondary",
 	},
+	"ai-agent-training-pages-total": {
+		key: "ai-agent-training-pages-total",
+		name: "Total Training Pages",
+		description:
+			"Maximum total number of pages that can be crawled across all sources",
+		unit: "pages",
+		category: "secondary",
+	},
 };
 
 // Polar product IDs by environment
@@ -253,6 +262,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-agent-training-links": 10, // 10 training links
 			"ai-agent-training-mb": 0.5, // 0.5 MB KB size
 			"ai-agent-crawl-pages-per-source": 10, // 10 pages per crawl
+			"ai-agent-training-pages-total": 10, // 10 pages total across all sources
 		},
 	},
 	hobby: {
@@ -286,6 +296,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-agent-training-links": null, // Unlimited training links
 			"ai-agent-training-mb": 10, // 10 MB KB size
 			"ai-agent-crawl-pages-per-source": 1000, // 1000 pages per crawl
+			"ai-agent-training-pages-total": null, // Unlimited total pages
 		},
 	},
 	pro: {
@@ -319,6 +330,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-agent-training-links": null, // Unlimited training links
 			"ai-agent-training-mb": 40, // 40 MB KB size
 			"ai-agent-crawl-pages-per-source": 1000, // 1000 pages per crawl
+			"ai-agent-training-pages-total": null, // Unlimited total pages
 		},
 	},
 };

@@ -17,9 +17,6 @@ type FirecrawlScrapeOptions = {
 	parsers?: string[];
 };
 
-/** Sitemap handling mode for v2 crawl */
-export type FirecrawlSitemapMode = "include" | "exclude" | "only";
-
 // Batch scrape API types
 type FirecrawlBatchScrapeParams = {
 	urls: string[];
@@ -49,21 +46,11 @@ type FirecrawlBatchScrapeStatusResponse = {
 
 type FirecrawlCrawlParams = {
 	limit?: number;
-	/** Maximum depth for link discovery (v2) */
+	/** Maximum depth of links to follow from the starting URL */
 	maxDiscoveryDepth?: number;
-	/** @deprecated Use maxDiscoveryDepth instead */
-	maxDepth?: number;
 	includePaths?: string[];
 	excludePaths?: string[];
-	allowBackwardLinks?: boolean;
-	allowExternalLinks?: boolean;
-	/** Sitemap handling: "include" (use sitemap + crawl), "exclude" (no sitemap), "only" (sitemap only) */
-	sitemap?: FirecrawlSitemapMode;
-	/** Whether to crawl the entire domain (v2) */
-	crawlEntireDomain?: boolean;
 	scrapeOptions?: FirecrawlScrapeOptions;
-	/** Skip cache - force fresh crawl */
-	skipCache?: boolean;
 };
 
 type FirecrawlCrawlResponse = {
@@ -263,18 +250,10 @@ export class FirecrawlService {
 		url: string,
 		options: {
 			limit?: number;
-			/** Maximum depth for link discovery (v2 parameter) */
-			maxDiscoveryDepth?: number;
-			/** @deprecated Use maxDiscoveryDepth instead */
+			/** Maximum depth of links to follow from the starting URL */
 			maxDepth?: number;
 			includePaths?: string[];
 			excludePaths?: string[];
-			allowBackwardLinks?: boolean;
-			allowExternalLinks?: boolean;
-			/** Sitemap handling: "include" (default, use sitemap + crawl), "exclude", or "only" */
-			sitemap?: FirecrawlSitemapMode;
-			/** Whether to crawl the entire domain (default: true) */
-			crawlEntireDomain?: boolean;
 		} = {}
 	): Promise<CrawlResult> {
 		if (!this.isConfigured()) {
@@ -284,35 +263,17 @@ export class FirecrawlService {
 			};
 		}
 
-		const {
-			limit = 100,
-			maxDiscoveryDepth = 5,
-			maxDepth,
-			includePaths,
-			excludePaths,
-			allowBackwardLinks = false,
-			allowExternalLinks = false,
-			sitemap = "include",
-			crawlEntireDomain = true,
-		} = options;
+		const { limit = 100, maxDepth = 5, includePaths, excludePaths } = options;
 
 		try {
 			const crawlParams: { url: string } & FirecrawlCrawlParams = {
 				url,
 				limit,
-				// Use maxDiscoveryDepth (v2) or fall back to maxDepth for backward compatibility
-				maxDiscoveryDepth: maxDiscoveryDepth ?? maxDepth ?? 5,
-				allowBackwardLinks,
-				allowExternalLinks,
-				sitemap,
-				crawlEntireDomain,
-				// Skip cache to always get fresh results
-				skipCache: true,
+				maxDiscoveryDepth: maxDepth,
 				scrapeOptions: {
 					formats: ["markdown"],
 					// Enable onlyMainContent for cleaner extracts (excludes nav, headers, footers)
 					onlyMainContent: true,
-					parsers: [],
 				},
 			};
 

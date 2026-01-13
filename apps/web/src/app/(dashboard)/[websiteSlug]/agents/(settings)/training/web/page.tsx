@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircleIcon } from "lucide-react";
+import { AlertCircleIcon, ZapIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -98,30 +98,30 @@ export default function WebSourcesPage() {
 			</SettingsHeader>
 			<PageContent className="py-6 pt-20">
 				<div className="space-y-6">
-					{/* Info Banner - Show when no AI agent exists */}
-					{!aiAgent && (
-						<Alert>
-							<AlertTitle>Create an AI Agent first</AlertTitle>
-							<AlertDescription>
-								Before adding web sources, you need to create an AI agent. Go to
-								the{" "}
-								<Link
-									className="font-medium underline"
-									href={`/${website.slug}/agents`}
-								>
-									General settings
-								</Link>{" "}
-								to create one.
-							</AlertDescription>
-						</Alert>
-					)}
-
 					{/* Stats Overview */}
 					{aiAgent && (
 						<UsageStatsCard aiAgentId={aiAgent.id} websiteSlug={website.slug} />
 					)}
 
-					{/* Upgrade CTA when approaching limits */}
+					{/* Always-visible upgrade banner for free plan users */}
+					{isFreePlan && stats && stats.totalPagesLimit !== null && (
+						<div className="flex items-center justify-between text-cossistant-orange text-sm">
+							<span>
+								Free Plan {stats.urlKnowledgeCount}/{stats.totalPagesLimit}{" "}
+								pages used
+							</span>
+							<span>
+								<Link
+									className="font-medium underline hover:no-underline"
+									href={`/${website.slug}/settings/plan`}
+								>
+									Upgrade for 1,000+ pages
+								</Link>
+							</span>
+						</div>
+					)}
+
+					{/* Upgrade CTA when approaching link source limits */}
 					{stats && isNearLinkLimit && stats.planLimitLinks !== null && (
 						<Alert variant={isAtLinkLimit ? "destructive" : "default"}>
 							<AlertCircleIcon className="h-4 w-4" />
@@ -150,18 +150,6 @@ export default function WebSourcesPage() {
 					{/* Domain Tree - Unified hierarchical view */}
 					{aiAgent && (
 						<DomainTree aiAgentId={aiAgent.id} websiteSlug={website.slug} />
-					)}
-
-					{/* Crawling Status Banner */}
-					{hasAnyCrawling && (
-						<Alert>
-							<Spinner className="h-4 w-4" />
-							<AlertTitle>Crawling in progress</AlertTitle>
-							<AlertDescription>
-								Some sources are being crawled. Updates will appear
-								automatically in real-time.
-							</AlertDescription>
-						</Alert>
 					)}
 				</div>
 			</PageContent>

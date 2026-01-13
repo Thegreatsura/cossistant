@@ -97,24 +97,19 @@ export function DomainNode({
 			<Card className="group/domain-card">
 				<CollapsibleTrigger asChild>
 					<CardHeader
-						className="cursor-pointer transition-colors hover:bg-muted/50"
+						className="cursor-pointer px-3 py-2 transition-colors hover:bg-muted/50"
 						onClick={handleToggleExpand}
 					>
-						<div className="flex items-center gap-3">
-							{isExpanded ? (
-								<ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
-							) : (
-								<ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
-							)}
-							<GlobeIcon className="h-5 w-5 text-muted-foreground" />
-							<div className="min-w-0 flex-1">
-								<CardTitle className="truncate text-base">{domain}</CardTitle>
-								<CardDescription>
-									{sources.length} {sources.length === 1 ? "source" : "sources"}{" "}
-									• {totalPages} {totalPages === 1 ? "page" : "pages"} •{" "}
-									{formatBytes(totalSizeBytes)}
-								</CardDescription>
-							</div>
+						<div className="flex items-center gap-2">
+							<GlobeIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+							<span className="min-w-0 flex-1 truncate font-medium text-sm">
+								{domain}
+							</span>
+							<span className="shrink-0 text-muted-foreground text-xs">
+								{sources.length} {sources.length === 1 ? "source" : "sources"} •{" "}
+								{totalPages} {totalPages === 1 ? "page" : "pages"} •{" "}
+								{formatBytes(totalSizeBytes)}
+							</span>
 							{hasActiveCrawl && (
 								<Badge className="shrink-0" variant="secondary">
 									<Spinner className="mr-1 h-3 w-3" />
@@ -123,19 +118,24 @@ export function DomainNode({
 							)}
 							{/* Delete domain button - visible on hover */}
 							<Button
-								className="shrink-0 opacity-0 transition-opacity group-hover/domain-card:opacity-100"
+								className="h-7 w-7 shrink-0 p-0 opacity-0 transition-opacity group-hover/domain-card:opacity-100"
 								disabled={isDeleting || hasActiveCrawl}
 								onClick={handleDeleteDomain}
-								size="sm"
 								title={`Delete all ${sources.length} sources under ${domain}`}
 								variant="ghost"
 							>
 								{isDeleting ? (
-									<Spinner className="h-4 w-4" />
+									<Spinner className="h-3.5 w-3.5" />
 								) : (
-									<Trash2Icon className="h-4 w-4 text-destructive" />
+									<Trash2Icon className="h-3.5 w-3.5 text-destructive" />
 								)}
 							</Button>
+							{/* Caret on the right */}
+							{isExpanded ? (
+								<ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+							) : (
+								<ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+							)}
 						</div>
 					</CardHeader>
 				</CollapsibleTrigger>

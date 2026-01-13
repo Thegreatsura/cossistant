@@ -129,22 +129,6 @@ export function PageTreeItemView({
 			)}
 			style={{ paddingLeft: `${depth * 20 + 8}px` }}
 		>
-			{/* Expand/collapse button */}
-			<button
-				className={cn(
-					"flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground",
-					!hasChildren && "invisible"
-				)}
-				onClick={onToggleExpand}
-				type="button"
-			>
-				{isExpanded ? (
-					<ChevronDownIcon className="h-3.5 w-3.5" />
-				) : (
-					<ChevronRightIcon className="h-3.5 w-3.5" />
-				)}
-			</button>
-
 			{/* Icon - folder for groups, file for leaves */}
 			<ItemIcon
 				className={cn(
@@ -282,6 +266,22 @@ export function PageTreeItemView({
 								)}
 							</DropdownMenuContent>
 						</DropdownMenu>
+
+						{/* Expand/collapse button - on the right */}
+						<button
+							className={cn(
+								"flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground",
+								!hasChildren && "invisible"
+							)}
+							onClick={onToggleExpand}
+							type="button"
+						>
+							{isExpanded ? (
+								<ChevronDownIcon className="h-3.5 w-3.5" />
+							) : (
+								<ChevronRightIcon className="h-3.5 w-3.5" />
+							)}
+						</button>
 					</div>
 				)}
 			</div>

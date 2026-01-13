@@ -110,7 +110,7 @@ export function useLinkSourceMutations({
 			},
 			onSuccess: () => {
 				onCreateSuccess?.();
-				toast.success("Link source added. Crawling started.");
+				// Don't show toast here - realtime handler shows crawl progress toast
 			},
 			onSettled: () => {
 				// Refetch after mutation

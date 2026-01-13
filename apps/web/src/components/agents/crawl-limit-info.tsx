@@ -67,13 +67,13 @@ export function CrawlLimitInfo({
 								<span className="font-medium">
 									{pagesToCrawl.toLocaleString()}
 								</span>{" "}
-								will be crawled with your current plan.{" "}
+								will be added (free plan limit: {limit} pages total).{" "}
 								<button
 									className="font-medium underline hover:no-underline"
 									onClick={() => setShowUpgradeModal(true)}
 									type="button"
 								>
-									Upgrade to crawl all {discoveredCount.toLocaleString()} pages
+									Upgrade for all {discoveredCount.toLocaleString()} pages
 								</button>
 							</p>
 						) : (
@@ -88,14 +88,14 @@ export function CrawlLimitInfo({
 						<span className="font-medium text-foreground">
 							{limit === null ? "unlimited" : limit.toLocaleString()}
 						</span>{" "}
-						pages will be crawled
-						{isFreePlan && (
+						pages total will be crawled
+						{isFreePlan && limit !== null && (
 							<button
 								className="ml-1 font-medium text-cossistant-orange hover:underline"
 								onClick={() => setShowUpgradeModal(true)}
 								type="button"
 							>
-								Upgrade for more
+								(upgrade for 1,000+)
 							</button>
 						)}
 					</p>
@@ -105,7 +105,7 @@ export function CrawlLimitInfo({
 			{planInfo && (
 				<UpgradeModal
 					currentPlan={planInfo.plan}
-					highlightedFeatureKey="ai-agent-crawl-pages-per-source"
+					highlightedFeatureKey="ai-agent-training-pages-total"
 					initialPlanName="hobby"
 					onOpenChange={setShowUpgradeModal}
 					open={showUpgradeModal}

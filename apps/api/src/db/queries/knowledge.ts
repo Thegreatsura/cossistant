@@ -433,3 +433,35 @@ export async function deleteKnowledge(
 
 	return Boolean(entry);
 }
+
+/**
+ * Get total count of URL-type knowledge entries for a website/agent
+ * Used for enforcing total pages limit
+ */
+export async function getTotalUrlKnowledgeCount(
+	db: Database,
+	params: {
+		websiteId: string;
+		aiAgentId: string | null;
+	}
+): Promise<number> {
+	const whereConditions = [
+		eq(knowledge.websiteId, params.websiteId),
+		eq(knowledge.type, "url"),
+		isNull(knowledge.deletedAt),
+	];
+
+	// Handle null aiAgentId
+	if (params.aiAgentId === null) {
+		whereConditions.push(isNull(knowledge.aiAgentId));
+	} else {
+		whereConditions.push(eq(knowledge.aiAgentId, params.aiAgentId));
+	}
+
+	const [result] = await db
+		.select({ total: count() })
+		.from(knowledge)
+		.where(and(...whereConditions));
+
+	return Number(result?.total ?? 0);
+}

@@ -107,20 +107,22 @@ export function StepBasics({
 						initial={{ opacity: 0, height: 0 }}
 						transition={{ duration: 0.2 }}
 					>
-						<p className="text-cossistant-orange text-sm">
-							Only up to{" "}
-							<span className="font-semibold">
-								{crawlPagesLimit.toLocaleString()}
-							</span>{" "}
-							pages will be analyzed with our free plan.{" "}
-							<button
-								className="font-medium underline hover:no-underline"
-								onClick={() => setShowUpgradeModal(true)}
-								type="button"
-							>
-								Upgrade for 1,000 pages
-							</button>
-						</p>
+						<div className="rounded-lg border border-cossistant-orange/30 bg-cossistant-orange/5 p-3">
+							<p className="text-cossistant-orange text-sm">
+								Free plan includes{" "}
+								<span className="font-semibold">
+									{crawlPagesLimit.toLocaleString()} pages total
+								</span>{" "}
+								across all your sources.{" "}
+								<button
+									className="font-medium underline hover:no-underline"
+									onClick={() => setShowUpgradeModal(true)}
+									type="button"
+								>
+									Upgrade for 1,000+ pages
+								</button>
+							</p>
+						</div>
 					</motion.div>
 				)}
 			</div>
@@ -182,7 +184,7 @@ export function StepBasics({
 			{planInfo && (
 				<UpgradeModal
 					currentPlan={planInfo.plan}
-					highlightedFeatureKey="ai-agent-crawl-pages-per-source"
+					highlightedFeatureKey="ai-agent-training-pages-total"
 					initialPlanName="hobby"
 					onOpenChange={setShowUpgradeModal}
 					open={showUpgradeModal}

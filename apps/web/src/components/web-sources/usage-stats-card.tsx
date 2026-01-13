@@ -56,6 +56,11 @@ export function UsageStatsCard({
 					limit={stats.planLimitLinks}
 				/>
 				<UsageBar
+					current={stats.urlKnowledgeCount}
+					label="Total Pages"
+					limit={stats.totalPagesLimit}
+				/>
+				<UsageBar
 					current={stats.totalSizeBytes}
 					formatValue={(current, limit) =>
 						limit === null
@@ -65,10 +70,6 @@ export function UsageStatsCard({
 					label="Knowledge Base Size"
 					limit={stats.planLimitBytes}
 				/>
-				<div className="pt-2">
-					<p className="text-muted-foreground text-sm">Pages Crawled</p>
-					<p className="font-semibold text-xl">{stats.urlKnowledgeCount}</p>
-				</div>
 			</div>
 		</div>
 	);

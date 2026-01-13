@@ -1,5 +1,25 @@
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
+import { toast } from "sonner";
 import type { DashboardRealtimeContext } from "../types";
+
+/**
+ * Extract domain from URL for display in toast
+ */
+function getDomainFromUrl(url: string): string {
+	try {
+		const urlObj = new URL(url);
+		return urlObj.hostname;
+	} catch {
+		return url;
+	}
+}
+
+/**
+ * Generate a consistent toast ID for a crawl operation
+ */
+function getCrawlToastId(linkSourceId: string): string {
+	return `crawl-${linkSourceId}`;
+}
 
 type CrawlStartedEvent = RealtimeEvent<"crawlStarted">;
 type CrawlProgressEvent = RealtimeEvent<"crawlProgress">;
@@ -48,6 +68,13 @@ export function handleCrawlStarted({
 			console.error("Failed to invalidate link source:", error);
 		});
 
+	// Show loading toast for crawl start
+	const domain = getDomainFromUrl(payload.url);
+	toast.loading(`Crawling ${domain}...`, {
+		id: getCrawlToastId(payload.linkSourceId),
+		description: "Discovering pages",
+	});
+
 	console.log(
 		`[crawl-progress] Crawl started for ${payload.url}, discovered ${payload.totalPagesCount} pages`
 	);
@@ -93,6 +120,13 @@ export function handleCrawlProgress({
 			};
 		}
 	);
+
+	// Update toast with progress (throttled by the worker - every 5 seconds)
+	const domain = getDomainFromUrl(payload.url);
+	toast.loading(`Crawling ${domain}...`, {
+		id: getCrawlToastId(payload.linkSourceId),
+		description: `${payload.completedCount}/${payload.totalCount} pages`,
+	});
 
 	console.log(
 		`[crawl-progress] Page progress: ${payload.completedCount}/${payload.totalCount} for ${payload.url}`
@@ -169,6 +203,13 @@ export function handleCrawlCompleted({
 			console.error("Failed to invalidate training stats:", error);
 		});
 
+	// Show success toast
+	const domain = getDomainFromUrl(payload.url);
+	toast.success(`Crawl complete for ${domain}`, {
+		id: getCrawlToastId(payload.linkSourceId),
+		description: `${payload.crawledPagesCount} pages added to knowledge base`,
+	});
+
 	console.log(
 		`[crawl-progress] Crawl completed for ${payload.url}: ${payload.crawledPagesCount} pages, ${payload.totalSizeBytes} bytes`
 	);
@@ -211,6 +252,13 @@ export function handleCrawlFailed({
 		.catch((error) => {
 			console.error("Failed to invalidate link source:", error);
 		});
+
+	// Show error toast
+	const domain = getDomainFromUrl(payload.url);
+	toast.error(`Crawl failed for ${domain}`, {
+		id: getCrawlToastId(payload.linkSourceId),
+		description: payload.error || "An unexpected error occurred",
+	});
 
 	console.error(
 		`[crawl-progress] Crawl failed for ${payload.url}: ${payload.error}`

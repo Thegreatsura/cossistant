@@ -472,6 +472,7 @@ export function AgentOnboardingFlow({
 			});
 
 			// If URL was provided and valid, create link source for knowledge base
+			// The realtime handler will show a toast for the crawl progress
 			if (urlWasProvided && isUrlValid) {
 				try {
 					await createLinkSource({
@@ -479,9 +480,7 @@ export function AgentOnboardingFlow({
 						aiAgentId: agentId,
 						url: sourceUrl.trim(),
 					});
-					toast.success(
-						"AI Agent created! Knowledge base is being built from your website."
-					);
+					// Don't show toast here - realtime handler shows crawl progress toast
 				} catch {
 					// Agent was created but link source failed - still redirect
 					toast.success(

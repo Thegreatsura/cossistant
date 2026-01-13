@@ -1,5 +1,6 @@
 import {
 	getKnowledgeById,
+	getTotalUrlKnowledgeCount,
 	listKnowledge,
 	listKnowledgeByLinkSource,
 	updateKnowledge,
@@ -209,6 +210,24 @@ export const linkSourceRouter = createTRPCRouter({
 				}
 			}
 
+			// Check total pages limit
+			const totalPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-training-pages-total"]
+			);
+
+			// Get current total pages count
+			const currentTotalPages = await getTotalUrlKnowledgeCount(db, {
+				websiteId: websiteData.id,
+				aiAgentId: input.aiAgentId ?? null,
+			});
+
+			if (totalPagesLimit !== null && currentTotalPages >= totalPagesLimit) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: `You have reached the limit of ${totalPagesLimit} total pages for your plan. Please upgrade to crawl more pages.`,
+				});
+			}
+
 			// Create the link source with pending status
 			const entry = await createLinkSource(db, {
 				organizationId: websiteData.organizationId,
@@ -224,7 +243,13 @@ export const linkSourceRouter = createTRPCRouter({
 			const crawlPagesLimit = toNumericLimit(
 				planInfo.features["ai-agent-crawl-pages-per-source"]
 			);
-			const crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
+			let crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
+
+			// If total pages limit is set, also constrain by remaining pages
+			if (totalPagesLimit !== null) {
+				const remainingPages = totalPagesLimit - currentTotalPages;
+				crawlLimit = Math.min(crawlLimit, Math.max(0, remainingPages));
+			}
 
 			// Enqueue the crawl job - worker will handle the actual crawling using v2 API
 			try {
@@ -238,10 +263,7 @@ export const linkSourceRouter = createTRPCRouter({
 					createdBy: user.id,
 					includePaths: input.includePaths,
 					excludePaths: input.excludePaths,
-					// v2 crawl parameters - improved defaults for better discovery
-					maxDiscoveryDepth: input.maxDepth ?? 5,
-					sitemap: "include",
-					crawlEntireDomain: true,
+					maxDepth: input.maxDepth ?? 5,
 				});
 			} catch (error) {
 				// If queueing fails, mark the link source as failed
@@ -492,7 +514,25 @@ export const linkSourceRouter = createTRPCRouter({
 			const crawlPagesLimit = toNumericLimit(
 				planInfo.features["ai-agent-crawl-pages-per-source"]
 			);
-			const crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
+			let crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
+
+			// Check total pages limit (for recrawl, existing pages from this source will be replaced)
+			const totalPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-training-pages-total"]
+			);
+
+			if (totalPagesLimit !== null) {
+				const currentTotalPages = await getTotalUrlKnowledgeCount(db, {
+					websiteId: websiteData.id,
+					aiAgentId: linkSourceEntry.aiAgentId,
+				});
+
+				// For recrawl, we can use the current source's page count as "free" slots
+				const existingPagesInSource = linkSourceEntry.crawledPagesCount ?? 0;
+				const otherPagesCount = currentTotalPages - existingPagesInSource;
+				const remainingPages = totalPagesLimit - otherPagesCount;
+				crawlLimit = Math.min(crawlLimit, Math.max(0, remainingPages));
+			}
 
 			// Reset link source to pending status
 			const updatedEntry = await updateLinkSource(db, {
@@ -515,10 +555,7 @@ export const linkSourceRouter = createTRPCRouter({
 					createdBy: user.id,
 					includePaths: linkSourceEntry.includePaths,
 					excludePaths: linkSourceEntry.excludePaths,
-					// v2 crawl parameters - improved defaults for better discovery
-					maxDiscoveryDepth: 5,
-					sitemap: "include",
-					crawlEntireDomain: true,
+					maxDepth: 5,
 				});
 			} catch (error) {
 				// If queueing fails, mark the link source as failed
@@ -819,7 +856,29 @@ export const linkSourceRouter = createTRPCRouter({
 			const crawlPagesLimit = toNumericLimit(
 				planInfo.features["ai-agent-crawl-pages-per-source"]
 			);
-			const crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
+			let crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
+
+			// Check total pages limit
+			const totalPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-training-pages-total"]
+			);
+
+			if (totalPagesLimit !== null) {
+				const currentTotalPages = await getTotalUrlKnowledgeCount(db, {
+					websiteId: websiteData.id,
+					aiAgentId: parentLinkSource.aiAgentId,
+				});
+
+				if (currentTotalPages >= totalPagesLimit) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: `You have reached the limit of ${totalPagesLimit} total pages for your plan. Please upgrade to scan more pages.`,
+					});
+				}
+
+				const remainingPages = totalPagesLimit - currentTotalPages;
+				crawlLimit = Math.min(crawlLimit, Math.max(0, remainingPages));
+			}
 
 			// Create a new child link source
 			const newLinkSource = await createLinkSource(db, {
@@ -845,10 +904,7 @@ export const linkSourceRouter = createTRPCRouter({
 					createdBy: user.id,
 					includePaths: parentLinkSource.includePaths,
 					excludePaths: parentLinkSource.excludePaths,
-					// v2 crawl parameters - for subpages, use shallower depth
-					maxDiscoveryDepth: 1, // Only scan direct subpages
-					sitemap: "include",
-					crawlEntireDomain: false, // Don't crawl entire domain for subpages
+					maxDepth: 1, // Only scan direct subpages
 				});
 			} catch (error) {
 				console.error(
@@ -1139,6 +1195,9 @@ export const linkSourceRouter = createTRPCRouter({
 			const crawlPagesPerSourceLimit = toNumericLimit(
 				planInfo.features["ai-agent-crawl-pages-per-source"]
 			);
+			const totalPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-training-pages-total"]
+			);
 
 			// Get link source count
 			const linkSourcesCount = await getLinkSourceCount(db, {
@@ -1190,6 +1249,7 @@ export const linkSourceRouter = createTRPCRouter({
 				planLimitBytes: sizeLimitBytes,
 				planLimitLinks: linkLimit,
 				crawlPagesPerSourceLimit,
+				totalPagesLimit,
 			};
 		}),
 });
