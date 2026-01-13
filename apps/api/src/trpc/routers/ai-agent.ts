@@ -44,6 +44,7 @@ function toAiAgentResponse(agent: {
 	goals: string[] | null;
 	createdAt: string;
 	updatedAt: string;
+	onboardingCompletedAt: string | null;
 }) {
 	return {
 		id: agent.id,
@@ -59,6 +60,7 @@ function toAiAgentResponse(agent: {
 		goals: agent.goals,
 		createdAt: agent.createdAt,
 		updatedAt: agent.updatedAt,
+		onboardingCompletedAt: agent.onboardingCompletedAt,
 	};
 }
 
@@ -171,6 +173,7 @@ export const aiAgentRouter = createTRPCRouter({
 				temperature: input.temperature,
 				maxOutputTokens: input.maxOutputTokens,
 				goals: input.goals,
+				onboardingCompletedAt: input.onboardingCompletedAt,
 			});
 
 			if (!agent) {
@@ -288,9 +291,15 @@ export const aiAgentRouter = createTRPCRouter({
 			if (input.sourceUrl) {
 				// Run brand extraction (which scrapes internally) and site mapping in parallel
 				// extractBrandInfo returns company name, description, logo, favicon, AND markdown content
+				// Use maxAge of 1 hour (3600 seconds) to enable Firecrawl caching - avoids re-paying
+				// for API calls when user refreshes the page during onboarding
+				const cacheOptions = { maxAge: 3600 };
 				[brandInfo, mapResult] = await Promise.all([
-					firecrawlService.extractBrandInfo(input.sourceUrl),
-					firecrawlService.mapSite(input.sourceUrl, { limit: 100 }),
+					firecrawlService.extractBrandInfo(input.sourceUrl, cacheOptions),
+					firecrawlService.mapSite(input.sourceUrl, {
+						limit: 100,
+						...cacheOptions,
+					}),
 				]);
 
 				// Log what Firecrawl returned for debugging

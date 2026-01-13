@@ -1,8 +1,10 @@
 "use client";
 
+import type { RouterOutputs } from "@cossistant/api/types";
 import { AI_AGENT_GOALS } from "@cossistant/types";
 import { motion } from "motion/react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import Icon from "@/components/ui/icons";
@@ -23,6 +25,14 @@ type StepBasicsProps = {
 	isStep1Valid: boolean;
 	onContinue: () => void;
 	websiteName: string;
+	/** Crawl pages limit from plan (null = unlimited) */
+	crawlPagesLimit: number | null;
+	/** Whether the user is on the free plan */
+	isFreePlan: boolean;
+	/** Website slug for upgrade modal */
+	websiteSlug: string;
+	/** Plan info for upgrade modal */
+	planInfo: RouterOutputs["plan"]["getPlanInfo"] | undefined;
 };
 
 export function StepBasics({
@@ -38,7 +48,13 @@ export function StepBasics({
 	isSubmitting,
 	isStep1Valid,
 	onContinue,
+	crawlPagesLimit,
+	isFreePlan,
+	websiteSlug,
+	planInfo,
 }: StepBasicsProps) {
+	const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
 	const handleGoalToggle = useCallback(
 		(goalValue: string) => {
 			setSelectedGoals((prev) =>
@@ -83,6 +99,30 @@ export function StepBasics({
 						onCheckedChange={setCrawlEnabled}
 					/>
 				</div>
+
+				{/* Crawl limit info for free users */}
+				{crawlEnabled && isFreePlan && crawlPagesLimit !== null && (
+					<motion.div
+						animate={{ opacity: 1, height: "auto" }}
+						initial={{ opacity: 0, height: 0 }}
+						transition={{ duration: 0.2 }}
+					>
+						<p className="text-cossistant-orange text-sm">
+							Only up to{" "}
+							<span className="font-semibold">
+								{crawlPagesLimit.toLocaleString()}
+							</span>{" "}
+							pages will be analyzed with our free plan.{" "}
+							<button
+								className="font-medium underline hover:no-underline"
+								onClick={() => setShowUpgradeModal(true)}
+								type="button"
+							>
+								Upgrade for 1,000 pages
+							</button>
+						</p>
+					</motion.div>
+				)}
 			</div>
 
 			{/* Source URL - only show if crawl is enabled */}
@@ -137,6 +177,18 @@ export function StepBasics({
 					<Icon className="ml-2 size-4" name="arrow-right" />
 				</Button>
 			</div>
+
+			{/* Upgrade Modal */}
+			{planInfo && (
+				<UpgradeModal
+					currentPlan={planInfo.plan}
+					highlightedFeatureKey="ai-agent-crawl-pages-per-source"
+					initialPlanName="hobby"
+					onOpenChange={setShowUpgradeModal}
+					open={showUpgradeModal}
+					websiteSlug={websiteSlug}
+				/>
+			)}
 		</>
 	);
 }

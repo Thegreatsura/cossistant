@@ -12,7 +12,7 @@ type StepBasicsSummaryProps = {
 	crawlEnabled: boolean;
 	selectedGoals: string[];
 	websiteDescription?: string | null;
-	onEdit: () => void;
+	onEdit?: () => void;
 };
 
 export function StepBasicsSummary({
@@ -56,15 +56,17 @@ export function StepBasicsSummary({
 						</div>
 					)}
 				</div>
-				<Button
-					className="shrink-0"
-					onClick={onEdit}
-					size="sm"
-					type="button"
-					variant="ghost"
-				>
-					Edit
-				</Button>
+				{onEdit && (
+					<Button
+						className="shrink-0"
+						onClick={onEdit}
+						size="sm"
+						type="button"
+						variant="ghost"
+					>
+						Edit
+					</Button>
+				)}
 			</div>
 		</div>
 	);

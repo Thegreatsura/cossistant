@@ -117,6 +117,11 @@ export const aiAgentResponseSchema = z.object({
 		description: "When the AI agent was last updated.",
 		example: "2024-01-01T00:00:00.000Z",
 	}),
+	onboardingCompletedAt: z.string().nullable().openapi({
+		description:
+			"When onboarding was completed. Null if still in onboarding flow.",
+		example: "2024-01-01T00:00:00.000Z",
+	}),
 });
 
 /**
@@ -260,6 +265,11 @@ export const updateAiAgentRequestSchema = z
 				description: "The goals/intents for this AI agent.",
 				example: ["support", "product_qa"],
 			}),
+		onboardingCompletedAt: z.string().nullable().optional().openapi({
+			description:
+				"Mark onboarding as complete by setting this timestamp. Set to current ISO timestamp to complete onboarding.",
+			example: "2024-01-01T00:00:00.000Z",
+		}),
 	})
 	.openapi({
 		description: "Payload used to update an existing AI agent.",

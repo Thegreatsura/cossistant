@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@cossistant/api/types";
 import { motion } from "motion/react";
+import { CrawlLimitInfo } from "@/components/agents/crawl-limit-info";
 import { ModelSelect } from "@/components/agents/model-select";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
@@ -38,6 +39,8 @@ type StepPersonalityProps = {
 	onFinish: () => void;
 	websiteSlug: string;
 	planInfo: RouterOutputs["plan"]["getPlanInfo"] | undefined;
+	/** Crawl pages limit from plan (null = unlimited) */
+	crawlPagesLimit: number | null;
 };
 
 export function StepPersonality({
@@ -61,6 +64,7 @@ export function StepPersonality({
 	onFinish,
 	websiteSlug,
 	planInfo,
+	crawlPagesLimit,
 }: StepPersonalityProps) {
 	return (
 		<motion.div
@@ -71,7 +75,10 @@ export function StepPersonality({
 		>
 			{/* Analyzing Website Progress - only show when crawling */}
 			{isAnalyzing && urlWasProvided && (
-				<AnalysisProgress analysisStep={analysisStep} />
+				<AnalysisProgress
+					analysisStep={analysisStep}
+					crawlPagesLimit={crawlPagesLimit}
+				/>
 			)}
 
 			{/* Generated Prompt Confirmation */}
@@ -83,6 +90,18 @@ export function StepPersonality({
 					websiteDescription={
 						generatedPromptData?.websiteDescription ?? undefined
 					}
+				/>
+			)}
+
+			{/* Crawl Limit Info - show when URL was provided and prompt was generated */}
+			{urlWasProvided && promptWasGenerated && (
+				<CrawlLimitInfo
+					className="rounded-lg border border-border bg-muted/30 p-3"
+					discoveredCount={generatedPromptData?.discoveredLinksCount}
+					isFreePlan={isFreePlan}
+					limit={crawlPagesLimit}
+					planInfo={planInfo}
+					websiteSlug={websiteSlug}
 				/>
 			)}
 
@@ -142,7 +161,7 @@ export function StepPersonality({
 							{isSubmitting ? (
 								<>
 									<Spinner className="mr-2 size-4" />
-									Creating agent...
+									Saving...
 								</>
 							) : (
 								<>

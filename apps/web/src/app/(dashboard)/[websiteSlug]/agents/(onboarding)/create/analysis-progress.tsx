@@ -8,6 +8,8 @@ type AnalysisStep = "crawling" | "analyzing" | "crafting" | "complete";
 
 type AnalysisProgressProps = {
 	analysisStep: AnalysisStep;
+	/** Crawl pages limit from plan (null = unlimited) */
+	crawlPagesLimit?: number | null;
 };
 
 function StepIndicator({
@@ -34,11 +36,19 @@ function StepIndicator({
 	);
 }
 
-export function AnalysisProgress({ analysisStep }: AnalysisProgressProps) {
+export function AnalysisProgress({
+	analysisStep,
+	crawlPagesLimit,
+}: AnalysisProgressProps) {
+	const crawlLimitText =
+		crawlPagesLimit === null || crawlPagesLimit === undefined
+			? ""
+			: ` (up to ${crawlPagesLimit.toLocaleString()} pages)`;
+
 	const steps = [
 		{
 			id: "crawling",
-			label: "Crawling your website...",
+			label: `Crawling your website${crawlLimitText}...`,
 		},
 		{
 			id: "analyzing",

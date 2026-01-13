@@ -219,6 +219,8 @@ export type MapOptions = {
 	includeSubdomains?: boolean;
 	/** Maximum number of URLs to return (max 5000) */
 	limit?: number;
+	/** Cache duration in seconds. Use cached results if available within this age. */
+	maxAge?: number;
 };
 
 // Firecrawl Map API response type
@@ -705,7 +707,10 @@ export class FirecrawlService {
 	 * Uses Firecrawl v2 API with cache disabled for fresh results
 	 * Useful for extracting brand information from a homepage
 	 */
-	async scrapeSinglePage(url: string): Promise<ScrapeResult> {
+	async scrapeSinglePage(
+		url: string,
+		options?: { maxAge?: number }
+	): Promise<ScrapeResult> {
 		if (!this.isConfigured()) {
 			return {
 				success: false,
@@ -717,13 +722,18 @@ export class FirecrawlService {
 
 		try {
 			// Firecrawl v2 API scrape request
-			// Note: v2 /scrape endpoint doesn't support skipCache - cache is handled differently
-			const requestBody = {
+			// maxAge enables caching - value in seconds (default 1 hour for onboarding)
+			const requestBody: Record<string, unknown> = {
 				url,
 				formats: ["markdown", "html"],
 				// Don't use onlyMainContent - we need full page for meta tags extraction
 				onlyMainContent: false,
 			};
+
+			// Add maxAge for caching if specified (in seconds)
+			if (options?.maxAge !== undefined) {
+				requestBody.maxAge = options.maxAge;
+			}
 
 			console.log("[firecrawl] Scrape request body:", requestBody);
 
@@ -824,12 +834,17 @@ export class FirecrawlService {
 		try {
 			// Firecrawl v2 API map request
 			// Note: v2 /map endpoint has different parameters than v1
-			const requestBody = {
+			const requestBody: Record<string, unknown> = {
 				url,
 				search: options.search,
 				includeSubdomains: options.includeSubdomains ?? false,
 				limit: options.limit ?? 100,
 			};
+
+			// Add maxAge for caching if specified (in seconds)
+			if (options.maxAge !== undefined) {
+				requestBody.maxAge = options.maxAge;
+			}
 
 			const response = await fetch(`${FIRECRAWL_API_BASE}/map`, {
 				method: "POST",
@@ -959,9 +974,12 @@ export class FirecrawlService {
 	 * Extract brand information from a website's homepage
 	 * Uses scrapeSinglePage and extracts relevant brand metadata
 	 */
-	async extractBrandInfo(url: string): Promise<BrandInfo> {
+	async extractBrandInfo(
+		url: string,
+		options?: { maxAge?: number }
+	): Promise<BrandInfo> {
 		console.log("[firecrawl] extractBrandInfo called for:", url);
-		const scrapeResult = await this.scrapeSinglePage(url);
+		const scrapeResult = await this.scrapeSinglePage(url, options);
 
 		// Log raw scrape result for debugging
 		console.log("[firecrawl] Raw scrape result:", {

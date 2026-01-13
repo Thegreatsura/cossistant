@@ -220,8 +220,11 @@ export const linkSourceRouter = createTRPCRouter({
 				excludePaths: input.excludePaths,
 			});
 
-			// Calculate crawl limit based on plan (default 100 pages per crawl for better coverage)
-			const crawlLimit = linkLimit === null ? 100 : Math.min(100, linkLimit);
+			// Get crawl page limit from plan (separate from link source count limit)
+			const crawlPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-crawl-pages-per-source"]
+			);
+			const crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
 
 			// Enqueue the crawl job - worker will handle the actual crawling using v2 API
 			try {
@@ -484,12 +487,12 @@ export const linkSourceRouter = createTRPCRouter({
 				});
 			}
 
-			// Calculate crawl limit based on plan (default 100 pages per crawl)
+			// Get crawl page limit from plan
 			const planInfo = await getPlanForWebsite(websiteData);
-			const linkLimit = toNumericLimit(
-				planInfo.features["ai-agent-training-links"]
+			const crawlPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-crawl-pages-per-source"]
 			);
-			const crawlLimit = linkLimit === null ? 100 : Math.min(100, linkLimit);
+			const crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
 
 			// Reset link source to pending status
 			const updatedEntry = await updateLinkSource(db, {
@@ -811,12 +814,12 @@ export const linkSourceRouter = createTRPCRouter({
 				});
 			}
 
-			// Calculate plan limits (default 30 pages per crawl)
+			// Get crawl page limit from plan
 			const planInfo = await getPlanForWebsite(websiteData);
-			const linkLimit = toNumericLimit(
-				planInfo.features["ai-agent-training-links"]
+			const crawlPagesLimit = toNumericLimit(
+				planInfo.features["ai-agent-crawl-pages-per-source"]
 			);
-			const crawlLimit = linkLimit === null ? 100 : Math.min(100, linkLimit);
+			const crawlLimit = crawlPagesLimit ?? 1000; // Default 1000 if unlimited
 
 			// Create a new child link source
 			const newLinkSource = await createLinkSource(db, {
@@ -1133,6 +1136,9 @@ export const linkSourceRouter = createTRPCRouter({
 			);
 			const sizeLimitBytes =
 				sizeLimitMb !== null ? sizeLimitMb * MB_TO_BYTES : null;
+			const crawlPagesPerSourceLimit = toNumericLimit(
+				planInfo.features["ai-agent-crawl-pages-per-source"]
+			);
 
 			// Get link source count
 			const linkSourcesCount = await getLinkSourceCount(db, {
@@ -1183,6 +1189,7 @@ export const linkSourceRouter = createTRPCRouter({
 				totalSizeBytes,
 				planLimitBytes: sizeLimitBytes,
 				planLimitLinks: linkLimit,
+				crawlPagesPerSourceLimit,
 			};
 		}),
 });

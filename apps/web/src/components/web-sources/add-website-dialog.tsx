@@ -38,6 +38,10 @@ type AddWebsiteDialogProps = {
 	isAtLinkLimit: boolean;
 	linkLimit?: number | null;
 	websiteSlug: string;
+	/** Crawl pages limit per source (null = unlimited) */
+	crawlPagesLimit?: number | null;
+	/** Whether the user is on the free plan */
+	isFreePlan?: boolean;
 };
 
 export function AddWebsiteDialog({
@@ -48,6 +52,8 @@ export function AddWebsiteDialog({
 	isAtLinkLimit,
 	linkLimit,
 	websiteSlug,
+	crawlPagesLimit,
+	isFreePlan,
 }: AddWebsiteDialogProps) {
 	const [url, setUrl] = useState("");
 	const [isValidUrl, setIsValidUrl] = useState(false);
@@ -104,7 +110,7 @@ export function AddWebsiteDialog({
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="sm:max-w-[500px]">
+			<DialogContent className="sm:max-w-125">
 				<DialogHeader>
 					<DialogTitle>Add Website</DialogTitle>
 					<DialogDescription>
@@ -180,6 +186,33 @@ export function AddWebsiteDialog({
 							</div>
 						</CollapsibleContent>
 					</Collapsible>
+
+					{/* Crawl pages limit info */}
+					{crawlPagesLimit !== undefined && (
+						<div className="rounded-lg border border-border bg-muted/30 p-3">
+							<p className="text-muted-foreground text-sm">
+								Up to{" "}
+								<span className="font-medium text-foreground">
+									{crawlPagesLimit === null
+										? "unlimited"
+										: crawlPagesLimit.toLocaleString()}
+								</span>{" "}
+								pages will be crawled
+								{isFreePlan && (
+									<>
+										{" "}
+										&middot;{" "}
+										<a
+											className="font-medium text-cossistant-orange hover:underline"
+											href={`/${websiteSlug}/settings/plan`}
+										>
+											Upgrade for more
+										</a>
+									</>
+								)}
+							</p>
+						</div>
+					)}
 
 					{isAtLinkLimit && (
 						<p className="text-destructive text-sm">

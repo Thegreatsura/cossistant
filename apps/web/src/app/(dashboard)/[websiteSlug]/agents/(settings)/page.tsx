@@ -28,15 +28,15 @@ export default function AgentsPage() {
 		})
 	);
 
-	// Redirect to create page if no agent exists
+	// Redirect to create page if no agent exists OR onboarding not complete
 	useEffect(() => {
-		if (!aiAgent) {
+		if (!aiAgent?.onboardingCompletedAt) {
 			router.replace(`/${website.slug}/agents/create`);
 		}
 	}, [aiAgent, router, website.slug]);
 
 	// Return null while redirecting (no skeleton needed - loading.tsx handles initial load)
-	if (!aiAgent) {
+	if (!aiAgent?.onboardingCompletedAt) {
 		return null;
 	}
 

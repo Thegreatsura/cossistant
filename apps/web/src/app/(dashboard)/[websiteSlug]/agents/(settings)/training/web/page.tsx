@@ -38,6 +38,13 @@ export default function WebSourcesPage() {
 		})
 	);
 
+	// Fetch plan info
+	const { data: planInfo } = useQuery(
+		trpc.plan.getPlanInfo.queryOptions({ websiteSlug: website.slug })
+	);
+
+	const isFreePlan = planInfo?.plan.name === "free";
+
 	// Get usage stats for limit checks
 	const { stats, isAtLinkLimit, isNearLinkLimit } = useUsageStats({
 		websiteSlug: website.slug,
@@ -161,7 +168,9 @@ export default function WebSourcesPage() {
 
 			{/* Add Website Dialog */}
 			<AddWebsiteDialog
+				crawlPagesLimit={stats?.crawlPagesPerSourceLimit}
 				isAtLinkLimit={isAtLinkLimit}
+				isFreePlan={isFreePlan}
 				isSubmitting={isCreating}
 				linkLimit={stats?.planLimitLinks}
 				onOpenChange={setShowAddDialog}

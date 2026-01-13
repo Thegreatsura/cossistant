@@ -1,5 +1,6 @@
 "use client";
 
+import type { AiAgentResponse } from "@cossistant/types";
 import { AI_MODELS } from "@cossistant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
@@ -31,54 +32,199 @@ const DEFAULT_BASE_PROMPT = `You are a helpful and friendly support assistant. Y
 type OnboardingStep = "basics" | "personality";
 type AnalysisStep = "crawling" | "analyzing" | "crafting" | "complete";
 
-export function AgentOnboardingFlow() {
+type AgentOnboardingFlowProps = {
+	existingAgent?: AiAgentResponse | null;
+};
+
+export function AgentOnboardingFlow({
+	existingAgent,
+}: AgentOnboardingFlowProps) {
 	const website = useWebsite();
 	const router = useRouter();
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	// Fetch plan info for model restrictions
+	// Fetch plan info for model restrictions and crawl limits
 	const { data: planInfo } = useQuery(
 		trpc.plan.getPlanInfo.queryOptions({ websiteSlug: website.slug })
 	);
 
-	const isFreePlan = planInfo?.plan.name === "free";
+	// Fetch training stats to get crawl limit
+	const { data: trainingStats } = useQuery(
+		trpc.linkSource.getTrainingStats.queryOptions({
+			websiteSlug: website.slug,
+		})
+	);
 
-	// Form state
-	const [currentStep, setCurrentStep] = useState<OnboardingStep>("basics");
-	const [name, setName] = useState(`${website.name} AI`);
+	const isFreePlan = planInfo?.plan.name === "free";
+	const crawlPagesLimit = trainingStats?.crawlPagesPerSourceLimit ?? null;
+
+	// If we have an existing agent (onboarding in progress), start at step 2
+	const [currentStep, setCurrentStep] = useState<OnboardingStep>(
+		existingAgent ? "personality" : "basics"
+	);
+
+	// Use existing agent ID if resuming onboarding
+	const [agentId, setAgentId] = useState<string | null>(
+		existingAgent?.id ?? null
+	);
+
+	// Form state - pre-fill from existing agent if resuming
+	const [name, setName] = useState(existingAgent?.name ?? `${website.name} AI`);
 	const [sourceUrl, setSourceUrl] = useState(`https://${website.domain}`);
-	const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
-	const [basePrompt, setBasePrompt] = useState(DEFAULT_BASE_PROMPT);
+	const [selectedGoals, setSelectedGoals] = useState<string[]>(
+		existingAgent?.goals ?? []
+	);
+	const [basePrompt, setBasePrompt] = useState(
+		existingAgent?.basePrompt ?? DEFAULT_BASE_PROMPT
+	);
 
 	// Crawl toggle - whether to crawl the website or skip
 	const [crawlEnabled, setCrawlEnabled] = useState(true);
 
 	// Description state - tracks if we need manual input
 	const [manualDescription, setManualDescription] = useState("");
-	const [urlWasProvided, setUrlWasProvided] = useState(false);
-	const [promptWasGenerated, setPromptWasGenerated] = useState(false);
+	// If resuming onboarding, assume URL was provided (we'll use the sourceUrl)
+	const [urlWasProvided, setUrlWasProvided] = useState(!!existingAgent);
+	// Track if prompt was generated
+	// If resuming with existing agent that has a NON-default prompt, mark as generated
+	// Otherwise we'll auto-trigger generation on resume
+	const hasCustomPrompt =
+		existingAgent?.basePrompt &&
+		existingAgent.basePrompt !== DEFAULT_BASE_PROMPT;
+	const [promptWasGenerated, setPromptWasGenerated] = useState(
+		!!hasCustomPrompt
+	);
 
 	// Analysis progress state
-	const [analysisStep, setAnalysisStep] = useState<AnalysisStep>("crawling");
+	// If resuming with custom prompt, start at complete; otherwise start at crawling
+	const [analysisStep, setAnalysisStep] = useState<AnalysisStep>(
+		hasCustomPrompt ? "complete" : "crawling"
+	);
+
+	// Track if we're about to regenerate on resume (before the mutation actually starts)
+	// This is needed because useEffect runs after first render
+	const needsRegeneration =
+		existingAgent && !hasCustomPrompt && !promptWasGenerated;
 
 	// Default model - use first free model for free users, or first model overall
 	const defaultModel = isFreePlan
 		? (AI_MODELS.find((m) => "freeOnly" in m && m.freeOnly)?.value ??
 			AI_MODELS[0].value)
 		: AI_MODELS[0].value;
-	const [model, setModel] = useState<string>(defaultModel);
+	const [model, setModel] = useState<string>(
+		existingAgent?.model ?? defaultModel
+	);
 
-	// Create AI agent mutation
+	// Create AI agent mutation with optimistic update
 	const { mutateAsync: createAgent, isPending: isCreatingAgent } = useMutation(
 		trpc.aiAgent.create.mutationOptions({
-			onSuccess: async () => {
-				await queryClient.invalidateQueries({
+			onMutate: async (newAgent) => {
+				// Cancel outgoing refetches
+				await queryClient.cancelQueries({
+					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+				});
+
+				// Snapshot previous value
+				const previousAgent = queryClient.getQueryData<AiAgentResponse | null>(
+					trpc.aiAgent.get.queryKey({ websiteSlug: website.slug })
+				);
+
+				// Optimistically set the new agent (with onboardingCompletedAt: null)
+				const optimisticAgent: AiAgentResponse = {
+					id: `optimistic-${Date.now()}`,
+					name: newAgent.name,
+					description: newAgent.description ?? null,
+					basePrompt: newAgent.basePrompt,
+					model: newAgent.model,
+					temperature: newAgent.temperature ?? null,
+					maxOutputTokens: newAgent.maxOutputTokens ?? null,
+					isActive: true,
+					lastUsedAt: null,
+					usageCount: 0,
+					goals: newAgent.goals ?? null,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					onboardingCompletedAt: null, // NOT completed yet
+				};
+
+				queryClient.setQueryData(
+					trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+					optimisticAgent
+				);
+
+				return { previousAgent };
+			},
+			onError: (_error, _variables, context) => {
+				// Rollback on error
+				if (context?.previousAgent !== undefined) {
+					queryClient.setQueryData(
+						trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+						context.previousAgent
+					);
+				}
+				toast.error(_error.message || "Failed to create AI agent.");
+			},
+			onSettled: () => {
+				// Always refetch after mutation settles
+				void queryClient.invalidateQueries({
 					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
 				});
 			},
-			onError: (error) => {
-				toast.error(error.message || "Failed to create AI agent.");
+		})
+	);
+
+	// Update AI agent mutation with optimistic update
+	const { mutateAsync: updateAgent, isPending: isUpdatingAgent } = useMutation(
+		trpc.aiAgent.update.mutationOptions({
+			onMutate: async (updatedData) => {
+				await queryClient.cancelQueries({
+					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+				});
+
+				const previousAgent = queryClient.getQueryData<AiAgentResponse | null>(
+					trpc.aiAgent.get.queryKey({ websiteSlug: website.slug })
+				);
+
+				if (previousAgent) {
+					// Optimistically update the agent
+					const optimisticAgent: AiAgentResponse = {
+						...previousAgent,
+						name: updatedData.name,
+						description: updatedData.description ?? previousAgent.description,
+						basePrompt: updatedData.basePrompt,
+						model: updatedData.model,
+						temperature: updatedData.temperature ?? previousAgent.temperature,
+						maxOutputTokens:
+							updatedData.maxOutputTokens ?? previousAgent.maxOutputTokens,
+						goals: updatedData.goals ?? previousAgent.goals,
+						onboardingCompletedAt:
+							updatedData.onboardingCompletedAt ??
+							previousAgent.onboardingCompletedAt,
+						updatedAt: new Date().toISOString(),
+					};
+
+					queryClient.setQueryData(
+						trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+						optimisticAgent
+					);
+				}
+
+				return { previousAgent };
+			},
+			onError: (_error, _variables, context) => {
+				if (context?.previousAgent !== undefined) {
+					queryClient.setQueryData(
+						trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+						context.previousAgent
+					);
+				}
+				toast.error(_error.message || "Failed to update AI agent.");
+			},
+			onSettled: () => {
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.get.queryKey({ websiteSlug: website.slug }),
+				});
 			},
 		})
 	);
@@ -108,8 +254,9 @@ export function AgentOnboardingFlow() {
 		})
 	);
 
-	const isSubmitting = isCreatingAgent || isCreatingLink;
-	const isAnalyzing = isGeneratingPrompt;
+	const isSubmitting = isCreatingAgent || isUpdatingAgent || isCreatingLink;
+	// Show analyzing state when generating prompt OR when about to regenerate on resume
+	const isAnalyzing = isGeneratingPrompt || needsRegeneration;
 
 	// Validation
 	const isStep1Valid = name.trim().length >= 1;
@@ -134,12 +281,14 @@ export function AgentOnboardingFlow() {
 	// Show if:
 	// - Crawl was disabled (need manual input immediately)
 	// - OR crawl was enabled but no description was found
+	// - But NOT if resuming (existingAgent is set)
 	const hasRequiredDescription = crawlEnabled && hasDescription;
 	const needsManualDescription =
 		currentStep === "personality" &&
 		!isAnalyzing &&
 		!promptWasGenerated &&
-		!hasRequiredDescription;
+		!hasRequiredDescription &&
+		!existingAgent;
 
 	// Should show the model selector and prompt editor?
 	// Only show after prompt has been generated
@@ -150,27 +299,44 @@ export function AgentOnboardingFlow() {
 			return;
 		}
 
-		setCurrentStep("personality");
 		const willCrawl = crawlEnabled && isUrlValid && sourceUrl.trim().length > 0;
 		setUrlWasProvided(willCrawl);
 
-		// Only scrape if crawl is enabled and URL is provided and valid
-		if (willCrawl) {
-			try {
-				const result = await generateBasePrompt({
-					websiteSlug: website.slug,
-					sourceUrl: sourceUrl.trim(),
-					agentName: name.trim(),
-					goals: selectedGoals,
-				});
+		try {
+			// Create the agent first with minimal data
+			const agent = await createAgent({
+				websiteSlug: website.slug,
+				name: name.trim(),
+				basePrompt: DEFAULT_BASE_PROMPT,
+				model: defaultModel,
+				goals: selectedGoals.length > 0 ? selectedGoals : undefined,
+			});
 
-				if (result.basePrompt) {
-					setBasePrompt(result.basePrompt);
+			// Store the agent ID for later use
+			setAgentId(agent.id);
+			setCurrentStep("personality");
+
+			// Only generate prompt if crawl is enabled and URL is provided and valid
+			if (willCrawl) {
+				try {
+					const result = await generateBasePrompt({
+						websiteSlug: website.slug,
+						sourceUrl: sourceUrl.trim(),
+						agentName: name.trim(),
+						goals: selectedGoals,
+					});
+
+					if (result.basePrompt) {
+						setBasePrompt(result.basePrompt);
+						setPromptWasGenerated(true);
+					}
+				} catch {
+					// Fall back to default prompt - already set
 					setPromptWasGenerated(true);
 				}
-			} catch {
-				// Fall back to default prompt - already set
 			}
+		} catch {
+			// Error already handled in mutation - don't transition to step 2
 		}
 	};
 
@@ -230,11 +396,53 @@ export function AgentOnboardingFlow() {
 	}, [isAnalyzing]);
 
 	// Mark analysis as complete when prompt generation finishes successfully
+	// Check !isGeneratingPrompt directly instead of isAnalyzing to avoid circular dependency
 	useEffect(() => {
-		if (!isAnalyzing && promptWasGenerated) {
+		if (!isGeneratingPrompt && promptWasGenerated) {
 			setAnalysisStep("complete");
 		}
-	}, [isAnalyzing, promptWasGenerated]);
+	}, [isGeneratingPrompt, promptWasGenerated]);
+
+	// Auto-trigger prompt generation when resuming onboarding with default prompt
+	// This handles the case where user refreshed during step 2 before prompt was generated
+	// Uses Firecrawl caching (maxAge) to avoid re-paying for API calls
+	useEffect(() => {
+		// Only run once on mount when:
+		// - We have an existing agent (resuming)
+		// - Prompt was NOT already generated (still has default)
+		// - We're on step 2 (personality)
+		// - Not already analyzing
+		if (
+			existingAgent &&
+			!hasCustomPrompt &&
+			currentStep === "personality" &&
+			!isGeneratingPrompt &&
+			!promptWasGenerated
+		) {
+			const regeneratePrompt = async () => {
+				try {
+					const result = await generateBasePrompt({
+						websiteSlug: website.slug,
+						sourceUrl: sourceUrl.trim(),
+						agentName: name.trim(),
+						goals: selectedGoals.length > 0 ? selectedGoals : undefined,
+					});
+
+					if (result.basePrompt) {
+						setBasePrompt(result.basePrompt);
+						setPromptWasGenerated(true);
+					}
+				} catch {
+					// Fall back to showing the prompt editor with default prompt
+					setPromptWasGenerated(true);
+				}
+			};
+
+			void regeneratePrompt();
+		}
+		// Only run on mount - don't re-run when dependencies change
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	// Handle editing step 1 - reset relevant state
 	const handleEditStep1 = () => {
@@ -246,22 +454,29 @@ export function AgentOnboardingFlow() {
 	};
 
 	const handleFinish = async () => {
+		if (!agentId) {
+			toast.error("Agent not found. Please try again.");
+			return;
+		}
+
 		try {
-			// Create the AI agent
-			const agent = await createAgent({
+			// Update the agent with final model, prompt, and mark onboarding complete
+			await updateAgent({
 				websiteSlug: website.slug,
+				aiAgentId: agentId,
 				name: name.trim(),
 				basePrompt,
 				model,
 				goals: selectedGoals.length > 0 ? selectedGoals : undefined,
+				onboardingCompletedAt: new Date().toISOString(), // Mark complete!
 			});
 
 			// If URL was provided and valid, create link source for knowledge base
-			if (urlWasProvided && isUrlValid && agent) {
+			if (urlWasProvided && isUrlValid) {
 				try {
 					await createLinkSource({
 						websiteSlug: website.slug,
-						aiAgentId: agent.id,
+						aiAgentId: agentId,
 						url: sourceUrl.trim(),
 					});
 					toast.success(
@@ -308,10 +523,13 @@ export function AgentOnboardingFlow() {
 						{currentStep === "basics" ? (
 							<StepBasics
 								crawlEnabled={crawlEnabled}
+								crawlPagesLimit={crawlPagesLimit}
+								isFreePlan={isFreePlan}
 								isStep1Valid={isStep1Valid}
 								isSubmitting={isSubmitting}
 								name={name}
 								onContinue={handleContinue}
+								planInfo={planInfo}
 								selectedGoals={selectedGoals}
 								setCrawlEnabled={setCrawlEnabled}
 								setName={setName}
@@ -319,13 +537,14 @@ export function AgentOnboardingFlow() {
 								setSourceUrl={setSourceUrl}
 								sourceUrl={sourceUrl}
 								websiteName={website.name}
+								websiteSlug={website.slug}
 							/>
 						) : (
 							<StepBasicsSummary
 								crawlEnabled={crawlEnabled}
 								isUrlValid={isUrlValid}
 								name={name}
-								onEdit={handleEditStep1}
+								onEdit={existingAgent ? undefined : handleEditStep1}
 								selectedGoals={selectedGoals}
 								sourceUrl={sourceUrl}
 								urlWasProvided={urlWasProvided}
@@ -343,6 +562,7 @@ export function AgentOnboardingFlow() {
 							analysisStep={analysisStep}
 							basePrompt={basePrompt}
 							crawlEnabled={crawlEnabled}
+							crawlPagesLimit={crawlPagesLimit}
 							generatedPromptData={generatedPromptData}
 							isAnalyzing={isAnalyzing}
 							isFreePlan={isFreePlan}

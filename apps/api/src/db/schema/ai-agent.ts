@@ -77,6 +77,8 @@ export const aiAgent = pgTable(
 		// Behavior settings for AI agent response control
 		behaviorSettings:
 			jsonb("behavior_settings").$type<AiAgentBehaviorSettings>(),
+		// Onboarding completion timestamp - null means onboarding not yet completed
+		onboardingCompletedAt: timestamp("onboarding_completed_at"),
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date().toISOString())
 			.notNull(),

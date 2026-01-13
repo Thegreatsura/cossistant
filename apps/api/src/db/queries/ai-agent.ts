@@ -139,22 +139,31 @@ export async function updateAiAgent(
 		temperature?: number | null;
 		maxOutputTokens?: number | null;
 		goals?: string[] | null;
+		onboardingCompletedAt?: string | null;
 	}
 ): Promise<AiAgentSelect | null> {
 	const now = new Date().toISOString();
 
+	// Build the update object, only including onboardingCompletedAt if explicitly provided
+	const updateData: Record<string, unknown> = {
+		name: params.name,
+		description: params.description ?? null,
+		basePrompt: params.basePrompt,
+		model: params.model,
+		temperature: params.temperature ?? 0.7,
+		maxOutputTokens: params.maxOutputTokens ?? 1024,
+		goals: params.goals,
+		updatedAt: now,
+	};
+
+	// Only set onboardingCompletedAt if it was explicitly provided in params
+	if (params.onboardingCompletedAt !== undefined) {
+		updateData.onboardingCompletedAt = params.onboardingCompletedAt;
+	}
+
 	const [agent] = await db
 		.update(aiAgent)
-		.set({
-			name: params.name,
-			description: params.description ?? null,
-			basePrompt: params.basePrompt,
-			model: params.model,
-			temperature: params.temperature ?? 0.7,
-			maxOutputTokens: params.maxOutputTokens ?? 1024,
-			goals: params.goals,
-			updatedAt: now,
-		})
+		.set(updateData)
 		.where(and(eq(aiAgent.id, params.aiAgentId), isNull(aiAgent.deletedAt)))
 		.returning();
 

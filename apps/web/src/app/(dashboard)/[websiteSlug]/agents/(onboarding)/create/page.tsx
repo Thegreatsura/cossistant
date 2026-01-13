@@ -20,15 +20,16 @@ export default function AgentCreatePage() {
 		})
 	);
 
-	// Redirect to agents page if an agent already exists
+	// Only redirect if agent exists AND onboarding is complete
+	// If agent exists but onboarding not complete, show the flow to continue
 	useEffect(() => {
-		if (existingAgent) {
+		if (existingAgent?.onboardingCompletedAt) {
 			router.replace(`/${website.slug}/agents`);
 		}
-	}, [existingAgent, router, website.slug]);
+	}, [existingAgent?.onboardingCompletedAt, router, website.slug]);
 
-	// Don't render if agent exists (we'll redirect)
-	if (existingAgent) {
+	// Don't render if agent exists with completed onboarding (we'll redirect)
+	if (existingAgent?.onboardingCompletedAt) {
 		return null;
 	}
 
@@ -40,7 +41,7 @@ export default function AgentCreatePage() {
 				orientation="vertical"
 				scrollMask
 			>
-				<AgentOnboardingFlow />
+				<AgentOnboardingFlow existingAgent={existingAgent} />
 			</ScrollArea>
 		</div>
 	);

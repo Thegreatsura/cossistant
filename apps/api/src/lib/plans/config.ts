@@ -21,7 +21,8 @@ export type FeatureKey =
 	| "latest-ai-models"
 	| "ai-support-agents"
 	| "ai-agent-training-links"
-	| "ai-agent-training-mb";
+	| "ai-agent-training-mb"
+	| "ai-agent-crawl-pages-per-source";
 
 export type PlanName = "free" | "hobby" | "pro";
 
@@ -191,6 +192,13 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 		unit: "MB per AI agent",
 		category: "secondary",
 	},
+	"ai-agent-crawl-pages-per-source": {
+		key: "ai-agent-crawl-pages-per-source",
+		name: "Crawl Pages Per Source",
+		description: "Maximum number of pages to crawl per website source",
+		unit: "pages",
+		category: "secondary",
+	},
 };
 
 // Polar product IDs by environment
@@ -243,7 +251,8 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"latest-ai-models": false, // Paid only
 			"ai-support-agents": 1, // 1 AI agent (coming soon)
 			"ai-agent-training-links": 10, // 10 training links
-			"ai-agent-training-mb": 0.5, // 10 MB KB size
+			"ai-agent-training-mb": 0.5, // 0.5 MB KB size
+			"ai-agent-crawl-pages-per-source": 10, // 10 pages per crawl
 		},
 	},
 	hobby: {
@@ -274,8 +283,9 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-credit": 1000, // Higher AI credits (coming soon)
 			"latest-ai-models": true, // Included
 			"ai-support-agents": 5, // 5 AI agents (coming soon)
-			"ai-agent-training-links": null, // 100 training links
-			"ai-agent-training-mb": 10, // 100 MB KB size
+			"ai-agent-training-links": null, // Unlimited training links
+			"ai-agent-training-mb": 10, // 10 MB KB size
+			"ai-agent-crawl-pages-per-source": 1000, // 1000 pages per crawl
 		},
 	},
 	pro: {
@@ -306,8 +316,9 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-credit": 3000, // Triple AI credits (coming soon)
 			"latest-ai-models": true, // Included
 			"ai-support-agents": 15, // Triple AI agents (coming soon)
-			"ai-agent-training-links": null, // Triple training links
-			"ai-agent-training-mb": 40, // Triple KB size (300 MB)
+			"ai-agent-training-links": null, // Unlimited training links
+			"ai-agent-training-mb": 40, // 40 MB KB size
+			"ai-agent-crawl-pages-per-source": 1000, // 1000 pages per crawl
 		},
 	},
 };

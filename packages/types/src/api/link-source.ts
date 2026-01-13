@@ -378,6 +378,16 @@ export const trainingStatsResponseSchema = z
 			description: "Plan limit for number of link sources (null = unlimited)",
 			example: 100,
 		}),
+		crawlPagesPerSourceLimit: z
+			.number()
+			.int()
+			.nonnegative()
+			.nullable()
+			.openapi({
+				description:
+					"Plan limit for pages crawled per source (null = unlimited)",
+				example: 1000,
+			}),
 	})
 	.openapi({
 		description: "Training statistics for the AI agent",
