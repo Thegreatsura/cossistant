@@ -17,27 +17,23 @@ export function FakeNavigationTopbar({
 				<Link className="mr-2" href="/">
 					<Logo className="size-5.5 text-primary" />
 				</Link>
-				<TopbarItem active={true} href="/" iconName="inbox-zero">
+				<TopbarItem active={true} hideLabelOnMobile href="/">
 					Inbox
 				</TopbarItem>
-				{process.env.NODE_ENV === "development" && (
-					<TopbarItem hideLabelOnMobile href="/contacts" iconName="contacts">
-						Contacts
-					</TopbarItem>
-				)}
-				{/* {process.env.NODE_ENV === "development" && (
-          <TopbarItem
-            active={pathname === `/${website?.slug}/agents`}
-            hideLabelOnMobile
-            href={`/${website?.slug}/agents`}
-            iconName="agent"
-          >
-            Agents
-          </TopbarItem>
-        )} */}
+				<TopbarItem hideLabelOnMobile href="/contacts">
+					Contacts
+				</TopbarItem>
+				<TopbarItem className="pr-1" hideLabelOnMobile href="/agent">
+					<span className="flex items-center gap-1.5">
+						Agent
+						<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
+							AI
+						</span>
+					</span>
+				</TopbarItem>
 			</div>
 			<div className="mr-2 flex items-center gap-3">
-				<div className="hidden items-center gap-3 font-medium text-primary/80 text-xs md:flex">
+				<div className="hidden items-center gap-3 font-medium text-primary/80 text-sm md:flex">
 					<span className="flex items-center gap-2">
 						<span
 							aria-hidden

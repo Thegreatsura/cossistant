@@ -16,7 +16,7 @@ export function AgentsNavigationSidebar() {
 	const website = useWebsite();
 	const pathname = usePathname();
 	const trpc = useTRPC();
-	const basePath = `/${website.slug}/agents`;
+	const basePath = `/${website.slug}/agent`;
 	const trainingPath = `${basePath}/training`;
 
 	// Fetch plan info for upgrade button
@@ -62,15 +62,7 @@ export function AgentsNavigationSidebar() {
 					</>
 				}
 			>
-				<SidebarItem
-					active={false}
-					href={`/${website.slug}/inbox`}
-					iconName="arrow-left"
-				>
-					Back to Inbox
-				</SidebarItem>
-
-				<div className="mt-3 flex flex-col gap-1">
+				<div className="flex flex-col gap-1">
 					<SidebarItem
 						active={isGeneralActive}
 						href={basePath}

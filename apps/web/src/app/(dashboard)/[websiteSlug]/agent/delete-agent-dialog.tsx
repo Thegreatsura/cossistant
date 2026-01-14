@@ -49,7 +49,7 @@ export function DeleteAgentDialog({
 				});
 				toast.success("AI agent deleted successfully.");
 				onOpenChange(false);
-				router.replace(`/${websiteSlug}/agents/create`);
+				router.replace(`/${websiteSlug}/agent/create`);
 			},
 			onError: (error) => {
 				toast.error(error.message || "Failed to delete AI agent.");

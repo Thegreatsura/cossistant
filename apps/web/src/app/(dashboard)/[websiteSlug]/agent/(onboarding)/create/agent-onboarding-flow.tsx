@@ -492,7 +492,7 @@ export function AgentOnboardingFlow({
 			}
 
 			// Redirect to agents page
-			router.push(`/${website.slug}/agents`);
+			router.push(`/${website.slug}/agent`);
 		} catch {
 			// Error already handled in mutation
 		}

@@ -31,7 +31,7 @@ export default function AgentsPage() {
 	// Redirect to create page if no agent exists OR onboarding not complete
 	useEffect(() => {
 		if (!aiAgent?.onboardingCompletedAt) {
-			router.replace(`/${website.slug}/agents/create`);
+			router.replace(`/${website.slug}/agent/create`);
 		}
 	}, [aiAgent, router, website.slug]);
 

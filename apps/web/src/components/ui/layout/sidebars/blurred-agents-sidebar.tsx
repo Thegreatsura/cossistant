@@ -39,11 +39,8 @@ export function BlurredAgentsSidebar({ className }: BlurredAgentsSidebarProps) {
 
 			{/* Content */}
 			<div className="relative flex w-full flex-col gap-1 px-2 py-2 opacity-40">
-				{/* Back to Inbox */}
-				<SkeletonSidebarItem width="w-24" />
-
 				{/* General */}
-				<div className="mt-5 flex flex-col gap-1">
+				<div className="flex flex-col gap-1">
 					<SkeletonSidebarItem width="w-16" />
 				</div>
 

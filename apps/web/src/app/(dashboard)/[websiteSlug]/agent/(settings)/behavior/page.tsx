@@ -44,7 +44,7 @@ export default function BehaviorPage() {
 	// Redirect to create page if no agent exists
 	useEffect(() => {
 		if (!(isLoadingAgent || aiAgent)) {
-			router.replace(`/${website.slug}/agents/create`);
+			router.replace(`/${website.slug}/agent/create`);
 		}
 	}, [aiAgent, isLoadingAgent, router, website.slug]);
 

@@ -24,7 +24,7 @@ export default function AgentCreatePage() {
 	// If agent exists but onboarding not complete, show the flow to continue
 	useEffect(() => {
 		if (existingAgent?.onboardingCompletedAt) {
-			router.replace(`/${website.slug}/agents`);
+			router.replace(`/${website.slug}/agent`);
 		}
 	}, [existingAgent?.onboardingCompletedAt, router, website.slug]);
 

@@ -154,7 +154,7 @@ export const DashboardTriggerContent = ({
 			isTyping={isTyping}
 			unreadCount={unreadCount}
 		/>
-		<span className="font-medium text-xs">Need help?</span>
+		<span className="font-medium text-sm">Need help?</span>
 		<UnreadBadge
 			className="-top-1 -right-1 bg-primary outline-1 outline-background"
 			count={unreadCount}
