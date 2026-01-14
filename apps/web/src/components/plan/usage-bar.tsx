@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 // FeatureValue can be boolean, number, or null
 // - true means unlimited (converted to null)
 // - false means disabled (converted to 0)
@@ -49,17 +51,32 @@ export function UsageBar({
 	const limit = normalizeLimit(rawLimit);
 	const percentage = getUsagePercentage(current, limit);
 	const barWidth = percentage === 0 ? 0 : Math.max(percentage, 2); // Minimum 2% width (5px on 250px container)
+	const isAtLimit = limit !== null && current >= limit;
 
 	return (
 		<div>
 			<div className="mb-2 flex items-center justify-between text-sm">
-				<span className="font-medium">{label}</span>
-				<span className="text-primary/60">{formatValue(current, limit)}</span>
+				<span
+					className={cn("font-medium", isAtLimit && "text-cossistant-orange")}
+				>
+					{label}
+				</span>
+				<span
+					className={cn(
+						"text-primary/60",
+						isAtLimit && "text-cossistant-orange"
+					)}
+				>
+					{formatValue(current, limit)}
+				</span>
 			</div>
 			{showBar && limit !== null && (
 				<div className="h-2 w-full overflow-hidden rounded-full bg-background-200 dark:bg-background-800">
 					<div
-						className="h-full rounded-r-3xl bg-cossistant-blue transition-all"
+						className={cn(
+							"h-full rounded-r-3xl transition-all",
+							isAtLimit ? "bg-cossistant-orange" : "bg-cossistant-blue"
+						)}
 						style={{
 							width: `${barWidth}%`,
 						}}

@@ -425,7 +425,7 @@ export function AgentOnboardingFlow({
 						websiteSlug: website.slug,
 						sourceUrl: sourceUrl.trim(),
 						agentName: name.trim(),
-						goals: selectedGoals.length > 0 ? selectedGoals : undefined,
+						goals: selectedGoals,
 					});
 
 					if (result.basePrompt) {
@@ -540,10 +540,14 @@ export function AgentOnboardingFlow({
 							/>
 						) : (
 							<StepBasicsSummary
+								companyName={generatedPromptData?.companyName ?? undefined}
 								crawlEnabled={crawlEnabled}
+								discoveredLinksCount={generatedPromptData?.discoveredLinksCount}
 								isUrlValid={isUrlValid}
+								manualDescription={manualDescription}
 								name={name}
 								onEdit={existingAgent ? undefined : handleEditStep1}
+								promptGenerated={promptWasGenerated}
 								selectedGoals={selectedGoals}
 								sourceUrl={sourceUrl}
 								urlWasProvided={urlWasProvided}
@@ -563,7 +567,7 @@ export function AgentOnboardingFlow({
 							crawlEnabled={crawlEnabled}
 							crawlPagesLimit={crawlPagesLimit}
 							generatedPromptData={generatedPromptData}
-							isAnalyzing={isAnalyzing}
+							isAnalyzing={isAnalyzing ?? false}
 							isFreePlan={isFreePlan}
 							isSubmitting={isSubmitting}
 							manualDescription={manualDescription}

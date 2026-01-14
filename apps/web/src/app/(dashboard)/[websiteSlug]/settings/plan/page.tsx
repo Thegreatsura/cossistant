@@ -80,8 +80,8 @@ async function PlanInfoContent({ websiteSlug }: { websiteSlug: string }) {
 			>
 				<div className="flex flex-wrap items-center justify-between gap-4 p-2 pl-4">
 					{plan.name === "free" && (
-						<div className="flex items-center gap-2 text-cossistant-orange">
-							<p className="p-2 font-mono text-xs">
+						<div className="flex gap-2 text-cossistant-orange">
+							<p className="py-2 text-sm">
 								Early bird launch pricing is live. Upgrade now to lock in
 								discounted rates for the lifetime of your subscription.
 							</p>

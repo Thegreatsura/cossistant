@@ -1,10 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircleIcon, ZapIcon } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { PageContent } from "@/components/ui/layout";
@@ -12,7 +10,6 @@ import {
 	SettingsHeader,
 	SettingsPage,
 } from "@/components/ui/layout/settings-layout";
-import { Spinner } from "@/components/ui/spinner";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import {
 	AddWebsiteDialog,
@@ -20,7 +17,6 @@ import {
 	KnowledgePreviewWrapper,
 	UsageStatsCard,
 	useLinkSourceMutations,
-	useMergedDomainTree,
 	useUsageStats,
 } from "@/components/web-sources";
 import { useWebsite } from "@/contexts/website";
@@ -30,6 +26,7 @@ export default function WebSourcesPage() {
 	const website = useWebsite();
 	const trpc = useTRPC();
 	const [showAddDialog, setShowAddDialog] = useState(false);
+	const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
 	// Data is pre-fetched in the layout, so it will be available immediately
 	const { data: aiAgent } = useQuery(
@@ -46,16 +43,19 @@ export default function WebSourcesPage() {
 	const isFreePlan = planInfo?.plan.name === "free";
 
 	// Get usage stats for limit checks
-	const { stats, isAtLinkLimit, isNearLinkLimit } = useUsageStats({
+	const { stats, isAtLinkLimit } = useUsageStats({
 		websiteSlug: website.slug,
 		aiAgentId: aiAgent?.id ?? null,
 	});
 
-	// Get domain tree data for crawling status
-	const { hasAnyCrawling } = useMergedDomainTree({
-		websiteSlug: website.slug,
-		aiAgentId: aiAgent?.id ?? null,
-	});
+	// Check if user is at pages limit
+	const isAtPagesLimit =
+		stats?.totalPagesLimit !== null &&
+		stats?.urlKnowledgeCount !== undefined &&
+		stats.urlKnowledgeCount >= (stats.totalPagesLimit ?? 0);
+
+	// User cannot add more URLs if at link limit or pages limit
+	const isAtAnyLimit = isAtLinkLimit || isAtPagesLimit;
 
 	// Mutations hook for creating link sources
 	const { handleCreate, isCreating } = useLinkSourceMutations({
@@ -85,7 +85,11 @@ export default function WebSourcesPage() {
 					<TooltipOnHover content="Add Website">
 						<Button
 							aria-label="Add Website"
-							onClick={() => setShowAddDialog(true)}
+							onClick={() =>
+								isAtAnyLimit
+									? setShowUpgradeModal(true)
+									: setShowAddDialog(true)
+							}
 							size="sm"
 							type="button"
 							variant="secondary"
@@ -107,44 +111,17 @@ export default function WebSourcesPage() {
 					{isFreePlan && stats && stats.totalPagesLimit !== null && (
 						<div className="flex items-center justify-between text-cossistant-orange text-sm">
 							<span>
-								Free Plan {stats.urlKnowledgeCount}/{stats.totalPagesLimit}{" "}
+								Free Plan: {stats.urlKnowledgeCount}/{stats.totalPagesLimit}{" "}
 								pages used
 							</span>
-							<span>
-								<Link
-									className="font-medium underline hover:no-underline"
-									href={`/${website.slug}/settings/plan`}
-								>
-									Upgrade for 1,000+ pages
-								</Link>
-							</span>
+							<button
+								className="font-medium underline hover:no-underline"
+								onClick={() => setShowUpgradeModal(true)}
+								type="button"
+							>
+								Upgrade for 1,000+ pages
+							</button>
 						</div>
-					)}
-
-					{/* Upgrade CTA when approaching link source limits */}
-					{stats && isNearLinkLimit && stats.planLimitLinks !== null && (
-						<Alert variant={isAtLinkLimit ? "destructive" : "default"}>
-							<AlertCircleIcon className="h-4 w-4" />
-							<AlertTitle>
-								{isAtLinkLimit
-									? "Link source limit reached"
-									: "Approaching limit"}
-							</AlertTitle>
-							<AlertDescription>
-								You're using{" "}
-								{Math.round(
-									(stats.linkSourcesCount / stats.planLimitLinks) * 100
-								)}
-								% of your plan's link source limit.{" "}
-								<Link
-									className="font-medium underline"
-									href={`/${website.slug}/settings/plan`}
-								>
-									Upgrade your plan
-								</Link>{" "}
-								to add more web sources.
-							</AlertDescription>
-						</Alert>
 					)}
 
 					{/* Domain Tree - Unified hierarchical view */}
@@ -163,12 +140,25 @@ export default function WebSourcesPage() {
 				linkLimit={stats?.planLimitLinks}
 				onOpenChange={setShowAddDialog}
 				onSubmit={handleAddWebsite}
+				onUpgradeClick={() => setShowUpgradeModal(true)}
 				open={showAddDialog}
 				websiteSlug={website.slug}
 			/>
 
 			{/* Knowledge Preview Modal */}
 			<KnowledgePreviewWrapper websiteSlug={website.slug} />
+
+			{/* Upgrade Modal */}
+			{planInfo && (
+				<UpgradeModal
+					currentPlan={planInfo.plan}
+					highlightedFeatureKey="ai-agent-training-pages-total"
+					initialPlanName="hobby"
+					onOpenChange={setShowUpgradeModal}
+					open={showUpgradeModal}
+					websiteSlug={website.slug}
+				/>
+			)}
 		</SettingsPage>
 	);
 }

@@ -25,6 +25,7 @@
     "@types/prompts": "^2.4.9"
   },
   "scripts": {
-    "release": "bun run src/index.ts"
+    "release": "bun run src/index.ts",
+    "check-types": "tsc --noEmit --project tsconfig.json"
   }
 }

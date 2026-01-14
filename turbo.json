@@ -83,6 +83,10 @@
     },
     "db:seed": {
       "outputs": []
+    },
+    "check-types": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }

@@ -75,6 +75,7 @@ export function useLinkSourceMutations({
 							totalSizeBytes: 0,
 							includePaths: newData.includePaths ?? null,
 							excludePaths: newData.excludePaths ?? null,
+							ignoredUrls: null,
 							lastCrawledAt: null,
 							errorMessage: null,
 							createdAt: new Date().toISOString(),

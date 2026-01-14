@@ -976,7 +976,10 @@ export class FirecrawlService {
 			const separators = [" | ", " - ", " – ", " — ", " :: "];
 			for (const sep of separators) {
 				if (companyName.includes(sep)) {
-					companyName = companyName.split(sep)[0].trim();
+					const firstPart = companyName.split(sep)[0];
+					if (firstPart) {
+						companyName = firstPart.trim();
+					}
 					break;
 				}
 			}

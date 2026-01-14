@@ -11,8 +11,13 @@ type StepBasicsSummaryProps = {
 	isUrlValid: boolean;
 	crawlEnabled: boolean;
 	selectedGoals: string[];
-	websiteDescription?: string | null;
 	onEdit?: () => void;
+	// Prompt generation info (optional - shown when prompt is generated)
+	promptGenerated?: boolean;
+	companyName?: string;
+	websiteDescription?: string | null;
+	manualDescription?: string;
+	discoveredLinksCount?: number;
 };
 
 export function StepBasicsSummary({
@@ -22,11 +27,21 @@ export function StepBasicsSummary({
 	isUrlValid,
 	crawlEnabled,
 	selectedGoals,
-	websiteDescription,
 	onEdit,
+	promptGenerated,
+	companyName,
+	websiteDescription,
+	manualDescription,
+	discoveredLinksCount,
 }: StepBasicsSummaryProps) {
+	const description = websiteDescription ?? manualDescription;
+
 	return (
-		<div className="rounded-lg border border-cossistant-green bg-cossistant-green/10 p-4">
+		<motion.div
+			animate={{ opacity: 1, y: 0 }}
+			className="rounded border border-cossistant-green bg-cossistant-green/5 p-4"
+			initial={{ opacity: 0, y: -10 }}
+		>
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex-1 space-y-2">
 					{/* Agent name and URL */}
@@ -45,9 +60,16 @@ export function StepBasicsSummary({
 						)}
 					</div>
 
-					{/* Summary row with goals only (pages available removed) */}
+					{/* Description from website or manual input */}
+					{promptGenerated && description && (
+						<p className="line-clamp-2 text-muted-foreground text-xs">
+							{description}
+						</p>
+					)}
+
+					{/* Summary row with goals */}
 					{selectedGoals.length > 0 && (
-						<div className="mt-4 flex flex-wrap items-center gap-3 text-primary text-xs">
+						<div className="flex flex-wrap items-center gap-3 text-primary text-xs">
 							<span className="flex items-center gap-1">
 								<Icon className="size-3" name="star" />
 								{selectedGoals.length} goal
@@ -68,6 +90,25 @@ export function StepBasicsSummary({
 					</Button>
 				)}
 			</div>
-		</div>
+
+			{/* Discovered links count - shown when prompt is generated and links were found */}
+			{promptGenerated &&
+				discoveredLinksCount !== undefined &&
+				discoveredLinksCount > 0 && (
+					<motion.div
+						animate={{ opacity: 1, y: 0 }}
+						className="mt-3 flex items-center gap-2 border-cossistant-green/30 border-t pt-3"
+						initial={{ opacity: 0, y: 5 }}
+						transition={{ delay: 0.2 }}
+					>
+						<span className="text-sm">
+							<span className="font-medium">{discoveredLinksCount}</span>{" "}
+							<span className="text-muted-foreground">
+								pages discovered for knowledge base
+							</span>
+						</span>
+					</motion.div>
+				)}
+		</motion.div>
 	);
 }

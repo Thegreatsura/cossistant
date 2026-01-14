@@ -67,7 +67,6 @@ export function FakeConversationTimelineList({
 		items: timelineItems,
 		seenData: [],
 		currentViewerId: currentVisitorId,
-		viewerType: SenderType.VISITOR,
 	});
 
 	// Convert fake typing visitors to typing participants
@@ -196,6 +195,10 @@ export function FakeConversationTimelineList({
 						return null;
 					}
 
+					if (item.type === "day_separator") {
+						return null;
+					}
+
 					// Only show seen indicator on the LAST message group sent by the visitor
 					const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
 					const seenByIds = EMPTY_SEEN_BY_IDS; // No seen data for fake widget
@@ -204,15 +207,15 @@ export function FakeConversationTimelineList({
 					// Use first timeline item ID as stable key
 					const groupKey =
 						item.lastMessageId ??
-						item.items?.[0]?.id ??
-						`group-${item.items?.[0]?.createdAt ?? index}`;
+						item.items[0]?.id ??
+						`group-${item.items[0]?.createdAt ?? index}`;
 
 					return (
 						<TimelineMessageGroup
 							availableAIAgents={availableAIAgents}
 							availableHumanAgents={availableHumanAgents}
 							currentVisitorId={currentVisitorId}
-							items={item.items || []}
+							items={item.items}
 							key={groupKey}
 							seenByIds={seenByIds}
 							seenByNames={seenByNames}

@@ -62,6 +62,9 @@ export const generateIdempotentULID = (idempotencyKey: string): string => {
 	let result = "";
 	for (let i = 0; i < 16 && result.length < 26; i++) {
 		const byte = hash[i];
+		if (byte === undefined) {
+			break;
+		}
 		result += CROCKFORD_ALPHABET[byte & 0x1f]; // Lower 5 bits
 		if (result.length < 26) {
 			result += CROCKFORD_ALPHABET[(byte >> 3) & 0x1f]; // Upper 5 bits

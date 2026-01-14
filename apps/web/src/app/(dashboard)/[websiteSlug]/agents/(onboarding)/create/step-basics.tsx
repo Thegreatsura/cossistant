@@ -107,22 +107,20 @@ export function StepBasics({
 						initial={{ opacity: 0, height: 0 }}
 						transition={{ duration: 0.2 }}
 					>
-						<div className="rounded-lg border border-cossistant-orange/30 bg-cossistant-orange/5 p-3">
-							<p className="text-cossistant-orange text-sm">
-								Free plan includes{" "}
-								<span className="font-semibold">
-									{crawlPagesLimit.toLocaleString()} pages total
-								</span>{" "}
-								across all your sources.{" "}
-								<button
-									className="font-medium underline hover:no-underline"
-									onClick={() => setShowUpgradeModal(true)}
-									type="button"
-								>
-									Upgrade for 1,000+ pages
-								</button>
-							</p>
-						</div>
+						<p className="text-cossistant-orange text-sm">
+							Free plan includes{" "}
+							<span className="font-semibold">
+								{crawlPagesLimit.toLocaleString()} pages total
+							</span>
+							.{" "}
+							<button
+								className="font-medium underline hover:no-underline"
+								onClick={() => setShowUpgradeModal(true)}
+								type="button"
+							>
+								Upgrade for 1,000+ pages
+							</button>
+						</p>
 					</motion.div>
 				)}
 			</div>

@@ -77,8 +77,7 @@ export const TimelineItemGroup = (() => {
 
 			// Determine sender type from first timeline item in group
 			const firstItem = items[0];
-			// biome-ignore lint/style/useAtIndex: ok
-			const lastItem = items[items.length - 1];
+			const lastItem = items.at(-1);
 
 			// Determine sender info
 			let senderId = "";

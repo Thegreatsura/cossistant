@@ -83,7 +83,6 @@ export function FakeConversationTimelineList({
 		items: timelineItems as unknown as TimelineItem[],
 		seenData: [],
 		currentViewerId: ANTHONY_RIERA_ID,
-		viewerType: SenderType.TEAM_MEMBER,
 	});
 
 	// Convert fake typing visitors to typing entities (same structure as real dashboard)
@@ -149,14 +148,18 @@ export function FakeConversationTimelineList({
 								return null;
 							}
 
+							if (item.type === "day_separator") {
+								return null;
+							}
+
 							// Use first timeline item ID as stable key (same as real dashboard)
-							const groupKey = item.items?.[0]?.id || `group-${index}`;
+							const groupKey = item.items[0]?.id || `group-${index}`;
 
 							return (
 								<TimelineMessageGroup
 									availableAIAgents={[]}
 									currentUserId={ANTHONY_RIERA_ID}
-									items={(item.items || []) as unknown as TimelineItem[]}
+									items={item.items as unknown as TimelineItem[]}
 									key={groupKey}
 									lastReadMessageIds={new Map()}
 									teamMembers={fakeTeamMembers}

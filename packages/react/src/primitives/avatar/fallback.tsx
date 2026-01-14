@@ -29,8 +29,7 @@ const getInitials = (name: string): string => {
 	}
 
 	const firstInitial = names[0]?.charAt(0) || "";
-	// biome-ignore lint/style/useAtIndex: ok here
-	const lastInitial = names[names.length - 1]?.charAt(0) || "";
+	const lastInitial = names.at(-1)?.charAt(0) || "";
 
 	return (firstInitial + lastInitial).toUpperCase();
 };

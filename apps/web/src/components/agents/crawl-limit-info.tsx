@@ -4,6 +4,7 @@ import type { RouterOutputs } from "@cossistant/api/types";
 import { useState } from "react";
 import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import Icon from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 type CrawlLimitInfoProps = {
 	/** The crawl page limit (null = unlimited) */
@@ -83,19 +84,23 @@ export function CrawlLimitInfo({
 						)}
 					</div>
 				) : (
-					<p className="text-muted-foreground text-sm">
-						Up to{" "}
-						<span className="font-medium text-foreground">
-							{limit === null ? "unlimited" : limit.toLocaleString()}
-						</span>{" "}
-						pages total will be crawled
+					<p
+						className={cn(
+							"flex items-center justify-between text-muted-foreground text-sm",
+							isFreePlan && "text-cossistant-orange"
+						)}
+					>
+						<span className="text-primary/80">
+							Up to {limit === null ? "1000+" : limit.toLocaleString()} pages
+							total will be crawled
+						</span>
 						{isFreePlan && limit !== null && (
 							<button
 								className="ml-1 font-medium text-cossistant-orange hover:underline"
 								onClick={() => setShowUpgradeModal(true)}
 								type="button"
 							>
-								(upgrade for 1,000+)
+								Upgrade for 1,000+
 							</button>
 						)}
 					</p>

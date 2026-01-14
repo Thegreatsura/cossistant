@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { UpgradeModal } from "../plan/upgrade-modal";
 
 type AddWebsiteDialogProps = {
 	open: boolean;
@@ -42,6 +44,7 @@ type AddWebsiteDialogProps = {
 	crawlPagesLimit?: number | null;
 	/** Whether the user is on the free plan */
 	isFreePlan?: boolean;
+	onUpgradeClick: () => void;
 };
 
 export function AddWebsiteDialog({
@@ -54,6 +57,7 @@ export function AddWebsiteDialog({
 	websiteSlug,
 	crawlPagesLimit,
 	isFreePlan,
+	onUpgradeClick,
 }: AddWebsiteDialogProps) {
 	const [url, setUrl] = useState("");
 	const [isValidUrl, setIsValidUrl] = useState(false);
@@ -189,28 +193,30 @@ export function AddWebsiteDialog({
 
 					{/* Crawl pages limit info */}
 					{crawlPagesLimit !== undefined && (
-						<div className="rounded-lg border border-border bg-muted/30 p-3">
-							<p className="text-muted-foreground text-sm">
+						<div className="flex w-full items-center justify-between text-sm">
+							<p
+								className={cn(
+									"text-muted-foreground",
+									isFreePlan && "text-cossistant-orange"
+								)}
+							>
 								Up to{" "}
-								<span className="font-medium text-foreground">
+								<span className="font-medium">
 									{crawlPagesLimit === null
-										? "unlimited"
+										? "1000+"
 										: crawlPagesLimit.toLocaleString()}
 								</span>{" "}
 								pages will be crawled
-								{isFreePlan && (
-									<>
-										{" "}
-										&middot;{" "}
-										<a
-											className="font-medium text-cossistant-orange hover:underline"
-											href={`/${websiteSlug}/settings/plan`}
-										>
-											Upgrade for more
-										</a>
-									</>
-								)}
 							</p>
+							{isFreePlan && (
+								<button
+									className="font-medium text-cossistant-orange hover:cursor-pointer hover:underline"
+									onClick={onUpgradeClick}
+									type="button"
+								>
+									Upgrade for 1,000+ pages
+								</button>
+							)}
 						</div>
 					)}
 

@@ -9,7 +9,6 @@ export {
 // Types
 export {
 	type AiAgentJobData,
-	type FirecrawlSitemapMode,
 	generateAiAgentJobId,
 	generateMessageNotificationJobId,
 	generateWebCrawlJobId,

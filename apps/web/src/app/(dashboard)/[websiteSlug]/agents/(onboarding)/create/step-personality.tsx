@@ -10,7 +10,6 @@ import { PromptInput } from "@/components/ui/prompt-input";
 import { Spinner } from "@/components/ui/spinner";
 import { AnalysisProgress } from "./analysis-progress";
 import { ManualDescriptionInput } from "./manual-description-input";
-import { PromptGeneratedConfirmation } from "./prompt-generated-confirmation";
 
 type AnalysisStep = "crawling" | "analyzing" | "crafting" | "complete";
 
@@ -81,22 +80,10 @@ export function StepPersonality({
 				/>
 			)}
 
-			{/* Generated Prompt Confirmation */}
-			{!isAnalyzing && promptWasGenerated && (
-				<PromptGeneratedConfirmation
-					companyName={generatedPromptData?.companyName ?? undefined}
-					discoveredLinksCount={generatedPromptData?.discoveredLinksCount}
-					manualDescription={manualDescription}
-					websiteDescription={
-						generatedPromptData?.websiteDescription ?? undefined
-					}
-				/>
-			)}
-
 			{/* Crawl Limit Info - show when URL was provided and prompt was generated */}
 			{urlWasProvided && promptWasGenerated && (
 				<CrawlLimitInfo
-					className="rounded-lg border border-border bg-muted/30 p-3"
+					className="mb-12"
 					discoveredCount={generatedPromptData?.discoveredLinksCount}
 					isFreePlan={isFreePlan}
 					limit={crawlPagesLimit}
