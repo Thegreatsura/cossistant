@@ -94,20 +94,21 @@ export function DomainNode({
 
 	return (
 		<Collapsible onOpenChange={setIsExpanded} open={isExpanded}>
-			<Card className="group/domain-card">
+			<Card className="group/domain-card border-0 bg-transparent">
 				<CollapsibleTrigger asChild>
 					<CardHeader
 						className="cursor-pointer px-3 py-2 transition-colors hover:bg-muted/50"
 						onClick={handleToggleExpand}
 					>
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 pr-1">
 							<GlobeIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
 							<span className="min-w-0 flex-1 truncate font-medium text-sm">
 								{domain}
 							</span>
-							<span className="shrink-0 text-muted-foreground text-xs">
-								{sources.length} {sources.length === 1 ? "source" : "sources"} •{" "}
-								{totalPages} {totalPages === 1 ? "page" : "pages"} •{" "}
+							<span className="shrink-0 text-muted-foreground text-sm">
+								{sources.length} {sources.length === 1 ? "source" : "sources"} •
+								{"  "}
+								{totalPages} {totalPages === 1 ? "page" : "pages"} •{"  "}
 								{formatBytes(totalSizeBytes)}
 							</span>
 							{hasActiveCrawl && (
@@ -140,7 +141,7 @@ export function DomainNode({
 					</CardHeader>
 				</CollapsibleTrigger>
 				<CollapsibleContent>
-					<CardContent className="border-t pt-4">
+					<CardContent className="px-1">
 						{isLoadingPages ? (
 							<div className="space-y-2">
 								<Skeleton className="h-8 w-full" />
@@ -152,12 +153,13 @@ export function DomainNode({
 								No pages found for this domain.
 							</p>
 						) : (
-							<div className="space-y-0.5">
-								{tree.map((node) => (
+							<div className="space-y-0 px-0.5">
+								{tree.map((node, index) => (
 									<PageTreeNode
-										depth={0}
+										ancestorsAreLastChild={[]}
 										isDeleting={isDeleting}
 										isIgnoring={isIgnoring}
+										isLast={index === tree.length - 1}
 										isReindexing={isReindexing}
 										isToggling={isToggling}
 										key={node.knowledgeId}

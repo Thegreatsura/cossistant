@@ -1,13 +1,10 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import {
 	BanIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
 	ExternalLinkIcon,
-	FileTextIcon,
-	FolderIcon,
 	MoreHorizontalIcon,
 	RefreshCwIcon,
 	ToggleLeftIcon,
@@ -15,7 +12,7 @@ import {
 	Trash2Icon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -26,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { formatBytes, getPathDisplayName } from "../utils";
+import { formatBytes } from "../utils";
 
 type PageTreeItemViewProps = {
 	// Content
@@ -36,12 +33,13 @@ type PageTreeItemViewProps = {
 	sizeBytes: number;
 	updatedAt: string;
 
+	// Tree visualization
+	treePrefix: string;
+
 	// State
 	isIncluded: boolean;
 	hasChildren: boolean;
 	isExpanded: boolean;
-	depth: number;
-	isGroup?: boolean;
 
 	// Source info
 	sourceUrl?: string;
@@ -72,11 +70,10 @@ export function PageTreeItemView({
 	url,
 	sizeBytes,
 	updatedAt,
+	treePrefix,
 	isIncluded,
 	hasChildren,
 	isExpanded,
-	depth,
-	isGroup = false,
 	sourceUrl,
 	onToggleExpand,
 	onToggleIncluded,
@@ -92,52 +89,26 @@ export function PageTreeItemView({
 	rightContent,
 	className,
 }: PageTreeItemViewProps) {
-	const [isMounted, setIsMounted] = useState(false);
-	const [formattedTime, setFormattedTime] = useState<string | null>(null);
-
-	useEffect(() => {
-		setIsMounted(true);
-		if (updatedAt) {
-			setFormattedTime(
-				formatDistanceToNow(new Date(updatedAt), { addSuffix: true })
-			);
-		}
-	}, [updatedAt]);
-
-	const displayName = useMemo(
-		() => title ?? getPathDisplayName(path),
-		[title, path]
-	);
-
 	const displayPath = useMemo(() => (path === "/" ? "/" : path), [path]);
 
 	const isAnyActionPending =
 		isToggling || isReindexing || isDeleting || isIgnoring;
 
-	// Choose icon based on whether this is a group (has children) or leaf
-	const ItemIcon = isGroup || hasChildren ? FolderIcon : FileTextIcon;
-
 	return (
 		<div
 			className={cn(
-				"group/tree-item relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm",
+				"group/tree-item relative flex items-center px-2 py-0 text-sm",
 				"transition-colors hover:bg-muted/50",
 				"focus-visible:outline-none focus-visible:ring-0",
 				focused && "bg-background-200 dark:bg-background-300",
 				!isIncluded && "opacity-50",
 				className
 			)}
-			style={{ paddingLeft: `${depth * 20 + 8}px` }}
 		>
-			{/* Icon - folder for groups, file for leaves */}
-			<ItemIcon
-				className={cn(
-					"h-4 w-4 shrink-0",
-					isGroup || hasChildren
-						? "text-amber-500 dark:text-amber-400"
-						: "text-muted-foreground"
-				)}
-			/>
+			{/* Tree prefix - ASCII art visualization */}
+			<span className="shrink-0 whitespace-pre font-mono text-muted-foreground/40 text-xl leading-tight">
+				{treePrefix}
+			</span>
 
 			{/* Page info - clickable to view content */}
 			<button
@@ -145,145 +116,127 @@ export function PageTreeItemView({
 				onClick={onViewContent}
 				type="button"
 			>
-				<span className="truncate font-medium" title={title ?? url}>
-					{displayName}
-				</span>
-				<span className="truncate text-muted-foreground text-xs" title={url}>
+				<span className="shrink-0 font-mono text-xs" title={url}>
 					{displayPath}
 				</span>
+				{title && (
+					<span
+						className="truncate text-muted-foreground text-xs"
+						title={title}
+					>
+						{title}
+					</span>
+				)}
 			</button>
 
-			{/* Right side info and actions */}
-			<div className="flex items-center gap-2">
-				{/* Training status indicator */}
+			{/* Right side - default info (hidden on hover) */}
+			<div className="flex items-center gap-2 transition-opacity group-hover/tree-item:opacity-0">
 				{!isIncluded && (
-					<span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-muted-foreground text-xs">
+					<span className="shrink-0 bg-muted px-1.5 py-0.5 text-muted-foreground text-xs">
 						Excluded
 					</span>
 				)}
-
-				{/* Size */}
 				<span className="shrink-0 text-muted-foreground text-xs">
 					{formatBytes(sizeBytes)}
 				</span>
+			</div>
 
-				{/* Last crawled time */}
-				{isMounted && formattedTime && (
-					<span className="shrink-0 text-muted-foreground/60 text-xs">
-						{formattedTime}
-					</span>
-				)}
+			{/* Actions - visible on hover (overlays the info) */}
+			<div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover/tree-item:opacity-100">
+				<Button
+					asChild
+					className="h-6 w-6 p-0"
+					size="sm"
+					title="Open page"
+					variant="ghost"
+				>
+					<a href={url} rel="noopener noreferrer" target="_blank">
+						<ExternalLinkIcon className="h-3.5 w-3.5" />
+					</a>
+				</Button>
 
-				{/* Actions - visible on hover */}
-				{rightContent || (
-					<div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/tree-item:opacity-100">
-						{/* External link */}
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
 						<Button
-							asChild
-							className="h-7 w-7 p-0"
+							className="h-6 w-6 p-0"
+							disabled={isAnyActionPending}
 							size="sm"
-							title="Open page"
+							title="More actions"
 							variant="ghost"
 						>
-							<a href={url} rel="noopener noreferrer" target="_blank">
-								<ExternalLinkIcon className="h-3.5 w-3.5" />
-							</a>
-						</Button>
-
-						{/* Actions dropdown */}
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									className="h-7 w-7 p-0"
-									disabled={isAnyActionPending}
-									size="sm"
-									title="More actions"
-									variant="ghost"
-								>
-									{isAnyActionPending ? (
-										<Spinner className="h-3.5 w-3.5" />
-									) : (
-										<MoreHorizontalIcon className="h-3.5 w-3.5" />
-									)}
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end" className="w-48">
-								{/* Reindex */}
-								{onReindex && (
-									<DropdownMenuItem
-										disabled={isAnyActionPending}
-										onClick={onReindex}
-									>
-										<RefreshCwIcon className="mr-2 h-4 w-4" />
-										Re-index
-									</DropdownMenuItem>
-								)}
-
-								{/* Toggle training inclusion */}
-								{onToggleIncluded && (
-									<DropdownMenuItem
-										disabled={isAnyActionPending}
-										onClick={onToggleIncluded}
-									>
-										{isIncluded ? (
-											<>
-												<ToggleLeftIcon className="mr-2 h-4 w-4" />
-												Exclude from training
-											</>
-										) : (
-											<>
-												<ToggleRightIcon className="mr-2 h-4 w-4" />
-												Include in training
-											</>
-										)}
-									</DropdownMenuItem>
-								)}
-
-								<DropdownMenuSeparator />
-
-								{/* Delete */}
-								{onDelete && (
-									<DropdownMenuItem
-										className="text-destructive focus:text-destructive"
-										disabled={isAnyActionPending}
-										onClick={onDelete}
-									>
-										<Trash2Icon className="mr-2 h-4 w-4" />
-										Delete
-									</DropdownMenuItem>
-								)}
-
-								{/* Ignore */}
-								{onIgnore && (
-									<DropdownMenuItem
-										className="text-destructive focus:text-destructive"
-										disabled={isAnyActionPending}
-										onClick={onIgnore}
-									>
-										<BanIcon className="mr-2 h-4 w-4" />
-										Ignore (exclude forever)
-									</DropdownMenuItem>
-								)}
-							</DropdownMenuContent>
-						</DropdownMenu>
-
-						{/* Expand/collapse button - on the right */}
-						<button
-							className={cn(
-								"flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground",
-								!hasChildren && "invisible"
-							)}
-							onClick={onToggleExpand}
-							type="button"
-						>
-							{isExpanded ? (
-								<ChevronDownIcon className="h-3.5 w-3.5" />
+							{isAnyActionPending ? (
+								<Spinner className="h-3.5 w-3.5" />
 							) : (
-								<ChevronRightIcon className="h-3.5 w-3.5" />
+								<MoreHorizontalIcon className="h-3.5 w-3.5" />
 							)}
-						</button>
-					</div>
-				)}
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-48">
+						{onReindex && (
+							<DropdownMenuItem
+								disabled={isAnyActionPending}
+								onClick={onReindex}
+							>
+								<RefreshCwIcon className="mr-2 h-4 w-4" />
+								Re-index
+							</DropdownMenuItem>
+						)}
+						{onToggleIncluded && (
+							<DropdownMenuItem
+								disabled={isAnyActionPending}
+								onClick={onToggleIncluded}
+							>
+								{isIncluded ? (
+									<>
+										<ToggleLeftIcon className="mr-2 h-4 w-4" />
+										Exclude from training
+									</>
+								) : (
+									<>
+										<ToggleRightIcon className="mr-2 h-4 w-4" />
+										Include in training
+									</>
+								)}
+							</DropdownMenuItem>
+						)}
+						<DropdownMenuSeparator />
+						{onDelete && (
+							<DropdownMenuItem
+								className="text-destructive focus:text-destructive"
+								disabled={isAnyActionPending}
+								onClick={onDelete}
+							>
+								<Trash2Icon className="mr-2 h-4 w-4" />
+								Delete
+							</DropdownMenuItem>
+						)}
+						{onIgnore && (
+							<DropdownMenuItem
+								className="text-destructive focus:text-destructive"
+								disabled={isAnyActionPending}
+								onClick={onIgnore}
+							>
+								<BanIcon className="mr-2 h-4 w-4" />
+								Ignore (exclude forever)
+							</DropdownMenuItem>
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
+
+				<button
+					className={cn(
+						"flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground",
+						!hasChildren && "invisible"
+					)}
+					onClick={onToggleExpand}
+					type="button"
+				>
+					{isExpanded ? (
+						<ChevronDownIcon className="size-4" />
+					) : (
+						<ChevronRightIcon className="size-4" />
+					)}
+				</button>
 			</div>
 		</div>
 	);

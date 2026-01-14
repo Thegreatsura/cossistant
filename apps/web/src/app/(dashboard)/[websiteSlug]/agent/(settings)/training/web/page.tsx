@@ -109,11 +109,7 @@ export default function WebSourcesPage() {
 
 					{/* Always-visible upgrade banner for free plan users */}
 					{isFreePlan && stats && stats.totalPagesLimit !== null && (
-						<div className="flex items-center justify-between text-cossistant-orange text-sm">
-							<span>
-								Free Plan: {stats.urlKnowledgeCount}/{stats.totalPagesLimit}{" "}
-								pages used
-							</span>
+						<div className="flex items-center justify-end text-cossistant-orange text-sm">
 							<button
 								className="font-medium underline hover:no-underline"
 								onClick={() => setShowUpgradeModal(true)}

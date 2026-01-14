@@ -212,3 +212,48 @@ export function isSourceActive(source: LinkSource): boolean {
 		source.status === "pending"
 	);
 }
+
+/**
+ * Tree line characters for ASCII tree visualization
+ * Uses box-drawing characters for a familiar tree command look
+ */
+const TREE_CHARS = {
+	BRANCH: "├── ", // Branch with siblings below
+	LAST_BRANCH: "└── ", // Last branch (no siblings below)
+	VERTICAL: "│   ", // Vertical continuation line
+	EMPTY: "    ", // Empty space for alignment
+} as const;
+
+/**
+ * Context for generating tree line prefixes
+ */
+export type TreeLineContext = {
+	isLast: boolean;
+	ancestorsAreLastChild: boolean[];
+};
+
+/**
+ * Generate ASCII tree prefix string for a node
+ * Creates the familiar tree command visualization:
+ *
+ * ├── /docs
+ * │   ├── /getting-started
+ * │   │   └── /installation
+ * │   └── /api
+ * └── /changelog
+ */
+export function generateTreePrefix(context: TreeLineContext): string {
+	const { isLast, ancestorsAreLastChild } = context;
+
+	let prefix = "";
+
+	// Add continuation lines for each ancestor level
+	for (const ancestorIsLast of ancestorsAreLastChild) {
+		prefix += ancestorIsLast ? TREE_CHARS.EMPTY : TREE_CHARS.VERTICAL;
+	}
+
+	// Add the branch character for current item
+	prefix += isLast ? TREE_CHARS.LAST_BRANCH : TREE_CHARS.BRANCH;
+
+	return prefix;
+}

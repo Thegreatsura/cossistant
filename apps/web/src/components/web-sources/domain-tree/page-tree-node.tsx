@@ -1,13 +1,12 @@
 "use client";
 
 import { parseAsString, useQueryState } from "nuqs";
-import { useCallback, useState } from "react";
-import type { MergedPageNode } from "../utils";
+import { useCallback, useMemo, useState } from "react";
+import { generateTreePrefix, type MergedPageNode } from "../utils";
 import { PageTreeItemView } from "./page-tree-item";
 
 type PageTreeNodeProps = {
 	node: MergedPageNode;
-	depth: number;
 	websiteSlug: string;
 	linkSourceId: string;
 	onToggleIncluded: (knowledgeId: string, isIncluded: boolean) => void;
@@ -19,11 +18,13 @@ type PageTreeNodeProps = {
 	isReindexing?: boolean;
 	isDeleting?: boolean;
 	isIgnoring?: boolean;
+	// Tree visualization context
+	isLast: boolean;
+	ancestorsAreLastChild: boolean[];
 };
 
 export function PageTreeNode({
 	node,
-	depth,
 	websiteSlug,
 	linkSourceId,
 	onToggleIncluded,
@@ -35,12 +36,20 @@ export function PageTreeNode({
 	isReindexing = false,
 	isDeleting = false,
 	isIgnoring = false,
+	isLast,
+	ancestorsAreLastChild,
 }: PageTreeNodeProps) {
+	const depth = ancestorsAreLastChild.length;
 	const [isExpanded, setIsExpanded] = useState(depth < 2);
 	const [, setKnowledgeId] = useQueryState("knowledge", parseAsString);
 
 	const hasChildren = node.children.length > 0;
-	const isGroup = hasChildren;
+
+	// Generate the ASCII tree prefix for this node
+	const treePrefix = useMemo(
+		() => generateTreePrefix({ isLast, ancestorsAreLastChild }),
+		[isLast, ancestorsAreLastChild]
+	);
 
 	const handleToggleExpand = useCallback(() => {
 		setIsExpanded((prev) => !prev);
@@ -69,11 +78,9 @@ export function PageTreeNode({
 	return (
 		<div className="select-none">
 			<PageTreeItemView
-				depth={depth}
 				hasChildren={hasChildren}
 				isDeleting={isDeleting}
 				isExpanded={isExpanded}
-				isGroup={isGroup}
 				isIgnoring={isIgnoring}
 				isIncluded={node.isIncluded}
 				isReindexing={isReindexing}
@@ -88,6 +95,7 @@ export function PageTreeNode({
 				sizeBytes={node.sizeBytes}
 				sourceUrl={node.linkSourceUrl}
 				title={node.title}
+				treePrefix={treePrefix}
 				updatedAt={node.updatedAt}
 				url={node.url}
 			/>
@@ -95,11 +103,12 @@ export function PageTreeNode({
 			{/* Children */}
 			{hasChildren && isExpanded && (
 				<div>
-					{node.children.map((child) => (
+					{node.children.map((child, index) => (
 						<PageTreeNode
-							depth={depth + 1}
+							ancestorsAreLastChild={[...ancestorsAreLastChild, isLast]}
 							isDeleting={isDeleting}
 							isIgnoring={isIgnoring}
+							isLast={index === node.children.length - 1}
 							isReindexing={isReindexing}
 							isToggling={isToggling}
 							key={child.knowledgeId}
