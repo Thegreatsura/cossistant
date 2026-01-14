@@ -7,7 +7,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 import { DashboardTriggerContent } from "@/components/support/custom-trigger";
-import { useVisitorPresence } from "@/contexts/visitor-presence";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import Icon from "../../icons";
@@ -20,8 +19,6 @@ export function NavigationTopbar() {
 	const router = useRouter();
 	const website = useWebsite();
 	const trpc = useTRPC();
-
-	const { onlineCount, isLoading } = useVisitorPresence();
 
 	// Data is pre-fetched in the layout, so it will be available immediately
 	const { data: aiAgent } = useQuery(
@@ -44,7 +41,7 @@ export function NavigationTopbar() {
 	});
 
 	return (
-		<header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-2 pl-6.5">
+		<header className="flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-5 pl-6.5">
 			<div className="flex flex-1 items-center gap-3">
 				<AnimatePresence mode="wait">
 					{isOnInboxView ? (
@@ -83,13 +80,6 @@ export function NavigationTopbar() {
 					)}
 				</AnimatePresence>
 				<TopbarItem
-					active={pathname.startsWith(`/${website?.slug}/contacts`)}
-					hideLabelOnMobile
-					href={`/${website?.slug}/contacts`}
-				>
-					Contacts
-				</TopbarItem>
-				<TopbarItem
 					active={pathname.startsWith(`/${website?.slug}/agent`)}
 					className="pr-1"
 					hideLabelOnMobile
@@ -117,20 +107,15 @@ export function NavigationTopbar() {
 				</TopbarItem>
 			</div>
 			<div className="flex items-center gap-3">
-				<div className="hidden items-center gap-3 font-medium text-primary/80 text-sm md:flex">
-					<span className="flex items-center gap-2">
-						<span
-							aria-hidden
-							className="size-2 animate-pulse rounded-full bg-cossistant-green"
-						/>
-						<p>
-							{isLoading ? "—" : onlineCount} visitor
-							{onlineCount !== 1 ? "s" : ""} online
-						</p>
-					</span>
-				</div>
+				<TopbarItem
+					active={pathname.startsWith(`/${website?.slug}/contacts`)}
+					hideLabelOnMobile
+					href={`/${website?.slug}/contacts`}
+				>
+					Contacts
+				</TopbarItem>
 				<Support side="bottom" sideOffset={8}>
-					<Support.Trigger className="group/btn relative z-0 hidden h-9 cursor-pointer items-center gap-3 rounded-sm border border-primary/10 bg-background-200 px-2.5 text-primary hover:bg-background-300 sm:flex">
+					<Support.Trigger className="group/btn relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors hover:bg-background-300 hover:text-primary">
 						{(props) => <DashboardTriggerContent {...props} />}
 					</Support.Trigger>
 				</Support>

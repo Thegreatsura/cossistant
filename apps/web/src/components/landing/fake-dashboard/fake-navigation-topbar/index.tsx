@@ -1,16 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Icon from "@/components/ui/icons";
 import { TopbarItem } from "@/components/ui/layout/navigation-topbar/topbar-item";
 import { Logo } from "@/components/ui/logo";
 
-export function FakeNavigationTopbar({
-	className,
-	amountOfVisitors = 10,
-}: {
-	className?: string;
-	amountOfVisitors?: number;
-}) {
+export function FakeNavigationTopbar({ className }: { className?: string }) {
 	return (
 		<header className="pointer-events-none flex h-16 min-h-16 w-full items-center justify-between gap-4 pr-3 pl-6.5">
 			<div className="flex flex-1 items-center gap-3">
@@ -19,9 +14,6 @@ export function FakeNavigationTopbar({
 				</Link>
 				<TopbarItem active={true} hideLabelOnMobile href="/">
 					Inbox
-				</TopbarItem>
-				<TopbarItem hideLabelOnMobile href="/contacts">
-					Contacts
 				</TopbarItem>
 				<TopbarItem className="pr-1" hideLabelOnMobile href="/agent">
 					<span className="flex items-center gap-1.5">
@@ -33,17 +25,12 @@ export function FakeNavigationTopbar({
 				</TopbarItem>
 			</div>
 			<div className="mr-2 flex items-center gap-3">
-				<div className="hidden items-center gap-3 font-medium text-primary/80 text-sm md:flex">
-					<span className="flex items-center gap-2">
-						<span
-							aria-hidden
-							className="size-2 animate-pulse rounded-full bg-cossistant-green"
-						/>
-						<p>
-							{amountOfVisitors} visitor{amountOfVisitors !== 1 ? "s" : ""}{" "}
-							online
-						</p>
-					</span>
+				<TopbarItem hideLabelOnMobile href="/contacts">
+					Contacts
+				</TopbarItem>
+				<div className="group/btn relative flex items-center gap-2 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors hover:bg-background-300 hover:text-primary">
+					<Icon className="size-4" name="chat" variant="filled" />
+					<span className="font-medium text-sm">Need help?</span>
 				</div>
 			</div>
 		</header>
