@@ -97,7 +97,7 @@ export function PageTreeItemView({
 	return (
 		<div
 			className={cn(
-				"group/tree-item relative flex items-center px-2 py-0 text-sm",
+				"group/tree-item -mx-3.5 relative flex items-center px-2 py-0 text-sm",
 				"transition-colors hover:bg-muted/50",
 				"focus-visible:outline-none focus-visible:ring-0",
 				focused && "bg-background-200 dark:bg-background-300",
@@ -116,12 +116,12 @@ export function PageTreeItemView({
 				onClick={onViewContent}
 				type="button"
 			>
-				<span className="shrink-0 font-mono text-xs" title={url}>
+				<span className="shrink-0 font-mono text-sm" title={url}>
 					{displayPath}
 				</span>
 				{title && (
 					<span
-						className="truncate text-muted-foreground text-xs"
+						className="truncate text-muted-foreground text-sm"
 						title={title}
 					>
 						{title}

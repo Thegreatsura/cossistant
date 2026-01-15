@@ -82,6 +82,7 @@
     "react-hotkeys-hook": "^5.1.0",
     "react-medium-image-zoom": "^5.4.0",
     "react-shiki": "^0.9.1",
+    "react-tweet": "^3.3.0",
     "react-use-websocket": "^4.13.0",
     "rehype-pretty-code": "^0.14.1",
     "shadcn": "^3.6.2",

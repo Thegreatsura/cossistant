@@ -97,7 +97,7 @@ export function DomainNode({
 			<Card className="group/domain-card border-0 bg-transparent">
 				<CollapsibleTrigger asChild>
 					<CardHeader
-						className="cursor-pointer px-3 py-2 transition-colors hover:bg-muted/50"
+						className="-mx-1.5 cursor-pointer px-1 py-1 transition-colors hover:bg-background-200"
 						onClick={handleToggleExpand}
 					>
 						<div className="flex items-center gap-2 pr-1">
@@ -141,7 +141,7 @@ export function DomainNode({
 					</CardHeader>
 				</CollapsibleTrigger>
 				<CollapsibleContent>
-					<CardContent className="px-1">
+					<CardContent className="px-1 pt-4">
 						{isLoadingPages ? (
 							<div className="space-y-2">
 								<Skeleton className="h-8 w-full" />

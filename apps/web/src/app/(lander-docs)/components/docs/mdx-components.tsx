@@ -13,6 +13,7 @@ import { CodeTabs } from "@/components/code-tabs";
 import { ComponentPreview } from "@/components/component-preview";
 import { ComponentSource } from "@/components/component-source";
 import { CopyButton } from "@/components/copy-button";
+import { SignUpCTA } from "@/components/sign-up-cta";
 import { TypeTable } from "@/components/type-table";
 import {
 	Accordion,
@@ -26,6 +27,7 @@ import Icon from "@/components/ui/icons";
 import { getIconForLanguageExtension } from "@/components/ui/logos";
 import { Step, Steps } from "@/components/ui/steps";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { XEmbed } from "@/components/x-embed";
 import { cn } from "@/lib/utils";
 import { HighlightLine } from "../highlight-line";
 import { ImageZoom } from "./image-zoom";
@@ -365,4 +367,6 @@ export const mdxComponents = {
 	// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
 	// APIPage,
 	HighlightLine,
+	XEmbed,
+	SignUpCTA,
 };

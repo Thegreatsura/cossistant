@@ -57,7 +57,7 @@ export function SidebarItem({
 			{iconName && (
 				<span
 					className={cn(
-						"relative flex size-6 shrink-0 items-center justify-center opacity-40 transition-all duration-100 group-hover/btn:rotate-[-4deg] group-hover/btn:opacity-80",
+						"relative flex size-5 shrink-0 items-center justify-center opacity-40 transition-all duration-100 group-hover/btn:rotate-[-4deg] group-hover/btn:opacity-80",
 						{
 							"rotate-[-2deg] opacity-90 group-hover/btn:opacity-80": active,
 						}

@@ -12,9 +12,6 @@ export function FakeNavigationTopbar({ className }: { className?: string }) {
 				<Link className="mr-2" href="/">
 					<Logo className="size-5.5 text-primary" />
 				</Link>
-				<TopbarItem active={true} hideLabelOnMobile href="/">
-					Inbox
-				</TopbarItem>
 				<TopbarItem className="pr-1" hideLabelOnMobile href="/agent">
 					<span className="flex items-center gap-1.5">
 						Agent

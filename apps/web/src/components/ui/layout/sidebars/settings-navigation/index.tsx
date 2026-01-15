@@ -43,45 +43,35 @@ export function SettingsNavigationSidebar() {
 				}
 			>
 				<SidebarItem
-					active={false}
-					href={`/${website.slug}/inbox`}
-					iconName="arrow-left"
+					active={
+						pathname.includes(basePath) && !pathname.includes(`${basePath}/`)
+					}
+					href={basePath}
+					iconName="settings-2"
 				>
-					Settings
+					General
 				</SidebarItem>
-
-				<div className="mt-5 flex flex-col gap-2">
-					<SidebarItem
-						active={
-							pathname.includes(basePath) && !pathname.includes(`${basePath}/`)
-						}
-						href={basePath}
-						iconName="settings-2"
-					>
-						General
-					</SidebarItem>
-					<SidebarItem
-						active={pathname.includes(`${basePath}/notifications`)}
-						href={`${basePath}/notifications`}
-						iconName="notifications"
-					>
-						Notifications
-					</SidebarItem>
-					<SidebarItem
-						active={pathname.includes(`${basePath}/usage`)}
-						href={`${basePath}/plan`}
-						iconName="wallet"
-					>
-						Plan & Usage
-					</SidebarItem>
-					<SidebarItem
-						active={pathname.includes(`${basePath}/developers`)}
-						href={`${basePath}/developers`}
-						iconName="cli"
-					>
-						Developers
-					</SidebarItem>
-				</div>
+				<SidebarItem
+					active={pathname.includes(`${basePath}/notifications`)}
+					href={`${basePath}/notifications`}
+					iconName="notifications"
+				>
+					Notifications
+				</SidebarItem>
+				<SidebarItem
+					active={pathname.includes(`${basePath}/usage`)}
+					href={`${basePath}/plan`}
+					iconName="wallet"
+				>
+					Plan & Usage
+				</SidebarItem>
+				<SidebarItem
+					active={pathname.includes(`${basePath}/developers`)}
+					href={`${basePath}/developers`}
+					iconName="cli"
+				>
+					Developers
+				</SidebarItem>
 			</SidebarContainer>
 		</ResizableSidebar>
 	);

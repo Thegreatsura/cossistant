@@ -24,7 +24,7 @@ export function GitHubLink({
 		<Link href={GITHUB_URL} rel="noreferrer" target="_blank">
 			<Button
 				className={cn(
-					"flex h-8 items-center gap-2 pr-10 shadow-none",
+					"flex h-8 items-center justify-between gap-2 shadow-none",
 					className
 				)}
 				onMouseEnter={onHover}
@@ -54,7 +54,7 @@ export async function StarsCount() {
 		const json = await data.json();
 
 		return (
-			<span className="flex w-8 items-center gap-2 text-muted-foreground text-xs tabular-nums">
+			<span className="flex w-auto items-center gap-2 text-muted-foreground text-xs tabular-nums">
 				<Icon
 					className="size-3 text-muted-foreground"
 					filledOnHover

@@ -8,7 +8,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="relative flex min-h-svh flex-col overflow-clip border-grid-x">
 			<TopBar>
-				<GitHubLink className="px-1" />
+				<GitHubLink className="w-auto px-1" />
 				<DashboardButton />
 			</TopBar>
 			<main className="flex flex-1 flex-col">
