@@ -12,8 +12,12 @@ export default defineConfig({
 	],
 	clean: true,
 	dts: {
-		// Resolve and bundle all type dependencies to avoid exposing third-party .d.cts files
-		resolve: true,
+		// Don't resolve/bundle types - keep @cossistant/* imports external
+		// The react package already bundles its types, consumers get types from there
+		// Note: MISSING_EXPORT warnings during build are expected and harmless -
+		// they occur because the dts bundler can't resolve type-only exports from
+		// TypeScript-generated .d.ts files in workspace packages
+		resolve: false,
 	},
 	hash: false,
 	minify: false,
