@@ -1,5 +1,11 @@
 # @cossistant/types
 
+## 0.0.29
+
+### Patch Changes
+
+- Bug fixes, new improved performences and better doc
+
 ## 0.0.28
 
 ### Patch Changes

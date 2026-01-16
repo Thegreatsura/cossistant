@@ -1,5 +1,15 @@
 # @cossistant/react
 
+## 0.0.29
+
+### Patch Changes
+
+- Bug fixes, new improved performences and better doc
+
+- Updated dependencies []:
+  - @cossistant/core@0.0.29
+  - @cossistant/types@0.0.29
+
 ## 0.0.28
 
 ### Patch Changes
