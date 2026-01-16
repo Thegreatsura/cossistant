@@ -25,11 +25,6 @@ export async function runRelease(
 	await execa("git", ["commit", "-m", "chore(release): version packages"]);
 	spinner.succeed("Changes committed");
 
-	// Build and publish
-	spinner.start("Building and publishing to npm...");
-	await execa("bun", ["run", "changeset:publish"], { stdio: "pipe" });
-	spinner.succeed("Published to npm");
-
 	// Push commits and tags
 	spinner.start("Pushing to remote...");
 	await execa("git", ["push"]);
