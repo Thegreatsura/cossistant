@@ -57,10 +57,15 @@ describe("support text locale resolution", () => {
 	});
 
 	it("provides locale-aware time of day labels", () => {
-		const { timeOfDay } = createTextUtils("fr", true);
 		const originalGetHours = Date.prototype.getHours;
+		// Mock window to simulate browser environment (timeOfDay returns SSR fallback when window is undefined)
+		const originalWindow = globalThis.window;
+		// @ts-expect-error - mocking window for test
+		globalThis.window = {};
 
 		try {
+			const { timeOfDay } = createTextUtils("fr", true);
+
 			Date.prototype.getHours = function getHours() {
 				return 9;
 			};
@@ -89,6 +94,7 @@ describe("support text locale resolution", () => {
 			expect(evening.label.length).toBeGreaterThan(0);
 		} finally {
 			Date.prototype.getHours = originalGetHours;
+			globalThis.window = originalWindow;
 		}
 	});
 
