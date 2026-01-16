@@ -102,8 +102,8 @@ const MemoizedMarkdownBlock = React.memo(
 		return (
 			<ReactMarkdown
 				components={{
-					// Customize paragraph rendering to prevent excessive spacing
-					p: ({ children }) => <span className="inline">{children}</span>,
+					// Render paragraphs as block elements to preserve multiline spacing
+					p: ({ children }) => <span className="block">{children}</span>,
 					// Ensure proper line break handling
 					br: () => <br />,
 					// Handle code blocks properly
