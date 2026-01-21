@@ -359,6 +359,12 @@ export async function updateKnowledge(
 ): Promise<KnowledgeSelect | null> {
 	const now = new Date().toISOString();
 
+	// Debug: Log full params
+	console.log(
+		"[updateKnowledge] Full params:",
+		JSON.stringify(params, null, 2)
+	);
+
 	// Build update object - only include fields that are explicitly provided
 	const updateData: Partial<KnowledgeInsert> = {
 		updatedAt: now,
@@ -377,9 +383,22 @@ export async function updateKnowledge(
 	}
 
 	if (params.payload !== undefined) {
+		console.log(
+			"[updateKnowledge] Setting payload:",
+			JSON.stringify(params.payload, null, 2)
+		);
 		updateData.payload = params.payload;
 		updateData.contentHash = generateContentHash(params.payload);
+		// Recalculate sizeBytes when payload changes
+		updateData.sizeBytes = new TextEncoder().encode(
+			JSON.stringify(params.payload)
+		).length;
 	}
+
+	console.log(
+		"[updateKnowledge] Final updateData:",
+		JSON.stringify(updateData, null, 2)
+	);
 
 	if (params.metadata !== undefined) {
 		updateData.metadata = params.metadata;

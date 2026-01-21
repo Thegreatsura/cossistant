@@ -46,16 +46,20 @@ export function EditFileDialog({
 	const [markdown, setMarkdown] = useState("");
 	const [summary, setSummary] = useState("");
 
-	// Check if form is valid
-	const isValid = title.trim().length > 0 && markdown.trim().length > 0;
+	// Check if form is valid - guard against undefined values
+	const isValid =
+		title.length > 0 &&
+		markdown.length > 0 &&
+		title.trim().length > 0 &&
+		markdown.trim().length > 0;
 
 	// Populate form when file changes
 	useEffect(() => {
 		if (file && open) {
-			const payload = file.payload as ArticleKnowledgePayload;
-			setTitle(payload.title);
-			setMarkdown(payload.markdown);
-			setSummary(payload.summary ?? "");
+			const payload = file.payload as ArticleKnowledgePayload | undefined;
+			setTitle(payload?.title ?? "");
+			setMarkdown(payload?.markdown ?? "");
+			setSummary(payload?.summary ?? "");
 		}
 	}, [file, open]);
 

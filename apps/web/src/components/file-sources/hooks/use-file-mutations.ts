@@ -1,6 +1,10 @@
 "use client";
 
-import type { ArticleKnowledgePayload } from "@cossistant/types";
+import type {
+	ArticleKnowledgePayload,
+	KnowledgeResponse,
+} from "@cossistant/types";
+import { useQueryNormalizer } from "@normy/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -8,6 +12,19 @@ import { useTRPC } from "@/lib/trpc/client";
 
 // Regex for removing file extensions
 const FILE_EXTENSION_REGEX = /\.(md|txt)$/;
+
+// Type for Normy's normalized data - derived from the hook return type
+type QueryNormalizer = ReturnType<typeof useQueryNormalizer>;
+type NormyData = Parameters<QueryNormalizer["setNormalizedData"]>[0];
+
+/**
+ * Helper to cast KnowledgeResponse to Normy's Data type.
+ * This is needed because KnowledgeResponse has union types in payload
+ * that TypeScript can't reconcile with Normy's recursive Data type.
+ */
+function toNormyData(data: KnowledgeResponse): NormyData {
+	return data as unknown as NormyData;
+}
 
 type UseFileMutationsOptions = {
 	websiteSlug: string;
@@ -26,6 +43,7 @@ export function useFileMutations({
 }: UseFileMutationsOptions) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+	const queryNormalizer = useQueryNormalizer();
 
 	// Create file mutation (manual entry) with optimistic updates
 	const createMutation = useMutation(
@@ -237,10 +255,10 @@ export function useFileMutations({
 		})
 	);
 
-	// Update file mutation
+	// Update file mutation with Normy optimistic updates
 	const updateMutation = useMutation(
 		trpc.knowledge.update.mutationOptions({
-			onMutate: async ({ id, payload }) => {
+			onMutate: async ({ id, payload, sourceTitle }) => {
 				await queryClient.cancelQueries({
 					queryKey: trpc.knowledge.list.queryKey({
 						websiteSlug,
@@ -248,64 +266,48 @@ export function useFileMutations({
 					}),
 				});
 
-				const previousData = queryClient.getQueryData(
-					trpc.knowledge.list.queryKey({
-						websiteSlug,
-						type: "article",
-						aiAgentId,
-					})
-				);
+				// Get existing item from Normy's normalized cache
+				const existingItem = queryNormalizer.getObjectById(id) as
+					| KnowledgeResponse
+					| undefined;
 
-				// Optimistically update the file
-				queryClient.setQueryData(
-					trpc.knowledge.list.queryKey({
-						websiteSlug,
-						type: "article",
-						aiAgentId,
-					}),
-					(old) => {
-						if (!old) {
-							return old;
+				// Build optimistic data with the updated fields
+				const optimisticData: KnowledgeResponse | null = existingItem
+					? {
+							...existingItem,
+							payload:
+								(payload as ArticleKnowledgePayload) ?? existingItem.payload,
+							sourceTitle: sourceTitle ?? existingItem.sourceTitle,
+							updatedAt: new Date().toISOString(),
 						}
+					: null;
 
-						return {
-							...old,
-							items: old.items.map((item) =>
-								item.id === id
-									? {
-											...item,
-											payload: payload ?? item.payload,
-											sourceTitle:
-												(payload as ArticleKnowledgePayload | undefined)
-													?.title ?? item.sourceTitle,
-											updatedAt: new Date().toISOString(),
-										}
-									: item
-							),
-						} as typeof old;
-					}
-				);
+				// Apply optimistic update via Normy - this updates all queries containing this item
+				if (optimisticData) {
+					queryNormalizer.setNormalizedData(toNormyData(optimisticData));
+				}
 
-				return { previousData };
+				// Return context for rollback
+				return {
+					optimisticData,
+					rollbackData: existingItem,
+				};
 			},
 			onError: (_error, _variables, context) => {
-				if (context?.previousData) {
-					queryClient.setQueryData(
-						trpc.knowledge.list.queryKey({
-							websiteSlug,
-							type: "article",
-							aiAgentId,
-						}),
-						context.previousData
-					);
+				// Rollback on error using Normy
+				if (context?.rollbackData) {
+					queryNormalizer.setNormalizedData(toNormyData(context.rollbackData));
 				}
 				toast.error(_error.message || "Failed to update file");
 			},
-			onSuccess: () => {
+			onSuccess: (data) => {
+				// Update normalized cache with server response
+				queryNormalizer.setNormalizedData(toNormyData(data));
 				toast.success("File updated");
 				onUpdateSuccess?.();
 			},
 			onSettled: () => {
+				// Invalidate list to ensure fresh data after update
 				void queryClient.invalidateQueries({
 					queryKey: trpc.knowledge.list.queryKey({
 						websiteSlug,
@@ -397,7 +399,7 @@ export function useFileMutations({
 		})
 	);
 
-	// Toggle included mutation
+	// Toggle included mutation with Normy optimistic updates
 	const toggleIncludedMutation = useMutation(
 		trpc.knowledge.toggleIncluded.mutationOptions({
 			onMutate: async ({ id, isIncluded }) => {
@@ -408,49 +410,49 @@ export function useFileMutations({
 					}),
 				});
 
-				const previousData = queryClient.getQueryData(
-					trpc.knowledge.list.queryKey({
-						websiteSlug,
-						type: "article",
-						aiAgentId,
-					})
-				);
+				// Get existing item from Normy's normalized cache
+				const existingItem = queryNormalizer.getObjectById(id) as
+					| KnowledgeResponse
+					| undefined;
 
-				// Optimistically toggle the inclusion
-				queryClient.setQueryData(
-					trpc.knowledge.list.queryKey({
-						websiteSlug,
-						type: "article",
-						aiAgentId,
-					}),
-					(old) => {
-						if (!old) {
-							return old;
+				// Build optimistic data
+				const optimisticData: KnowledgeResponse | null = existingItem
+					? {
+							...existingItem,
+							isIncluded,
 						}
+					: null;
 
-						return {
-							...old,
-							items: old.items.map((item) =>
-								item.id === id ? { ...item, isIncluded } : item
-							),
-						};
-					}
-				);
+				// Apply optimistic update via Normy
+				if (optimisticData) {
+					queryNormalizer.setNormalizedData(toNormyData(optimisticData));
+				}
 
-				return { previousData };
+				return {
+					optimisticData,
+					rollbackData: existingItem,
+				};
 			},
 			onError: (_error, _variables, context) => {
-				if (context?.previousData) {
-					queryClient.setQueryData(
-						trpc.knowledge.list.queryKey({
-							websiteSlug,
-							type: "article",
-							aiAgentId,
-						}),
-						context.previousData
-					);
+				// Rollback on error using Normy
+				if (context?.rollbackData) {
+					queryNormalizer.setNormalizedData(toNormyData(context.rollbackData));
 				}
 				toast.error(_error.message || "Failed to toggle inclusion");
+			},
+			onSuccess: (data) => {
+				// Get the full item and update with server response
+				const existingItem = queryNormalizer.getObjectById(data.id) as
+					| KnowledgeResponse
+					| undefined;
+				if (existingItem) {
+					queryNormalizer.setNormalizedData(
+						toNormyData({
+							...existingItem,
+							isIncluded: data.isIncluded,
+						})
+					);
+				}
 			},
 			onSettled: () => {
 				void queryClient.invalidateQueries({

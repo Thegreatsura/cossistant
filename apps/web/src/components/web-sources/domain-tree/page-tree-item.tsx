@@ -106,7 +106,7 @@ export function PageTreeItemView({
 			)}
 		>
 			{/* Tree prefix - ASCII art visualization */}
-			<span className="shrink-0 whitespace-pre font-mono text-muted-foreground/40 text-xl leading-tight">
+			<span className="shrink-0 whitespace-pre font-light font-mono text-2xl text-primary/20 leading-[1.27] tracking-[0.020em]">
 				{treePrefix}
 			</span>
 

@@ -76,11 +76,10 @@ export function TrainingSummarySidebar({
 						) : (
 							<div className="flex flex-col gap-2">
 								<SourceRow
-									count={stats?.linkSourcesCount ?? 0}
+									count={stats?.urlKnowledgeCount ?? 0}
 									icon="dashboard"
-									label="Links"
-									limit={stats?.planLimitLinks}
-									size={stats?.totalSizeBytes ?? 0}
+									label="Pages"
+									limit={stats?.totalPagesLimit}
 								/>
 								<SourceRow
 									count={stats?.faqKnowledgeCount ?? 0}

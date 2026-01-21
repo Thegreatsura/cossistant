@@ -133,6 +133,15 @@ export const knowledgeRouter = createTRPCRouter({
 				limit: input.limit,
 			});
 
+			// Debug: Log first item's payload to verify title is returned
+			if (result.items.length > 0 && input.type === "article") {
+				const firstItem = result.items[0];
+				console.log(
+					"[knowledge.list] First article item payload:",
+					JSON.stringify(firstItem?.payload, null, 2)
+				);
+			}
+
 			return {
 				items: result.items.map(toKnowledgeResponse),
 				pagination: result.pagination,
@@ -273,6 +282,12 @@ export const knowledgeRouter = createTRPCRouter({
 		.input(updateKnowledgeRequestSchema)
 		.output(knowledgeResponseSchema)
 		.mutation(async ({ ctx: { db, user }, input }) => {
+			// Debug: Log full received input
+			console.log(
+				"[knowledge.update] Full input received:",
+				JSON.stringify(input, null, 2)
+			);
+
 			const websiteData = await getWebsiteBySlugWithAccess(db, {
 				userId: user.id,
 				websiteSlug: input.websiteSlug,
@@ -294,6 +309,12 @@ export const knowledgeRouter = createTRPCRouter({
 				payload: input.payload,
 				metadata: input.metadata ?? undefined,
 			});
+
+			// Debug: Log full result
+			console.log(
+				"[knowledge.update] Full result:",
+				JSON.stringify(entry, null, 2)
+			);
 
 			if (!entry) {
 				throw new TRPCError({

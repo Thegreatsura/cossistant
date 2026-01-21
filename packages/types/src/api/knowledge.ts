@@ -90,7 +90,7 @@ export const articleKnowledgePayloadSchema = z
 
 const metadataSchema = z
 	.record(z.string(), z.unknown())
-	.optional()
+	.nullish()
 	.openapi({
 		description: "Arbitrary metadata such as locale or crawl depth",
 		example: {
@@ -257,10 +257,12 @@ export const knowledgeResponseSchema = z
 			description: "Deterministic hash of the payload for deduping",
 			example: "5d41402abc4b2a76b9719d911017c592",
 		}),
+		// Note: We use .passthrough() to prevent Zod's union validation from stripping
+		// fields when the first matching schema doesn't include all fields from other schemas.
 		payload: z.union([
-			urlKnowledgePayloadSchema,
-			faqKnowledgePayloadSchema,
-			articleKnowledgePayloadSchema,
+			urlKnowledgePayloadSchema.passthrough(),
+			faqKnowledgePayloadSchema.passthrough(),
+			articleKnowledgePayloadSchema.passthrough(),
 		]),
 		metadata: metadataSchema,
 		isIncluded: z.boolean().openapi({
@@ -498,6 +500,10 @@ export type CreateKnowledgeRestRequest = z.infer<
 
 /**
  * Update knowledge request schema (TRPC)
+ *
+ * Note: We use .passthrough() on payload schemas to prevent Zod's union validation
+ * from stripping fields when the first matching schema (urlKnowledgePayloadSchema)
+ * doesn't include all fields from other schemas (like articleKnowledgePayloadSchema's title).
  */
 export const updateKnowledgeRequestSchema = z
 	.object({
@@ -523,9 +529,9 @@ export const updateKnowledgeRequestSchema = z
 		}),
 		payload: z
 			.union([
-				urlKnowledgePayloadSchema,
-				faqKnowledgePayloadSchema,
-				articleKnowledgePayloadSchema,
+				urlKnowledgePayloadSchema.passthrough(),
+				faqKnowledgePayloadSchema.passthrough(),
+				articleKnowledgePayloadSchema.passthrough(),
 			])
 			.optional(),
 		metadata: metadataSchema,
@@ -540,6 +546,9 @@ export type UpdateKnowledgeRequest = z.infer<
 
 /**
  * Update knowledge request schema (REST) - without websiteSlug
+ *
+ * Note: We use .passthrough() on payload schemas to prevent Zod's union validation
+ * from stripping fields. See updateKnowledgeRequestSchema for details.
  */
 export const updateKnowledgeRestRequestSchema = z
 	.object({
@@ -557,9 +566,9 @@ export const updateKnowledgeRestRequestSchema = z
 		}),
 		payload: z
 			.union([
-				urlKnowledgePayloadSchema,
-				faqKnowledgePayloadSchema,
-				articleKnowledgePayloadSchema,
+				urlKnowledgePayloadSchema.passthrough(),
+				faqKnowledgePayloadSchema.passthrough(),
+				articleKnowledgePayloadSchema.passthrough(),
 			])
 			.optional(),
 		metadata: metadataSchema,

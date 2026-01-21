@@ -50,7 +50,7 @@ export function FileListItem({
 	isDeleting,
 	isToggling,
 }: FileListItemProps) {
-	const payload = file.payload as ArticleKnowledgePayload;
+	const payload = file.payload as ArticleKnowledgePayload | undefined;
 
 	return (
 		<div
@@ -66,14 +66,16 @@ export function FileListItem({
 					</div>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2">
-							<h4 className="truncate font-medium">{payload.title}</h4>
+							<h4 className="truncate font-medium">
+								{payload?.title ?? "Untitled"}
+							</h4>
 							{!file.isIncluded && (
 								<Badge className="shrink-0" variant="secondary">
 									Excluded
 								</Badge>
 							)}
 						</div>
-						{payload.summary && (
+						{payload?.summary && (
 							<p className="mt-1 line-clamp-1 text-muted-foreground text-sm">
 								{payload.summary}
 							</p>
