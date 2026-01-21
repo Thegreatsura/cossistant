@@ -12,7 +12,6 @@ import {
 } from "../../primitives/timeline-item-group";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
-import { CossistantLogo } from "./cossistant-branding";
 import { TimelineMessageItem } from "./timeline-message-item";
 
 const MESSAGE_ANIMATION = {
@@ -96,9 +95,13 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 					{isReceivedByViewer && (
 						<TimelineItemGroupAvatar className="flex flex-shrink-0 flex-col justify-end">
 							{isAI ? (
-								<div className="flex size-6 items-center justify-center rounded-full bg-co-primary/10">
-									<CossistantLogo className="h-4 w-4 text-co-primary" />
-								</div>
+								<Avatar
+									className="size-6"
+									image={aiAgent?.image}
+									isAI
+									name={aiAgent?.name || "AI Assistant"}
+									showBackground={!!aiAgent?.image}
+								/>
 							) : (
 								<Avatar
 									className="size-6"

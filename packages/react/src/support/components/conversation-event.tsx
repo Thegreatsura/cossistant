@@ -7,7 +7,6 @@ import { motion } from "motion/react";
 import type React from "react";
 import { useSupportText } from "../text";
 import { Avatar } from "./avatar";
-import { CossistantLogo } from "./cossistant-branding";
 
 export type ConversationEventProps = {
 	event: TimelinePartEvent;
@@ -112,9 +111,13 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 			<div className="flex items-center gap-2 text-co-muted-foreground text-xs">
 				<div className="flex flex-col justify-end">
 					{isAI ? (
-						<div className="flex size-5 items-center justify-center rounded-full bg-co-primary/10">
-							<CossistantLogo className="h-3 w-3 text-co-primary" />
-						</div>
+						<Avatar
+							className="size-5 flex-shrink-0"
+							image={aiAgent?.image}
+							isAI
+							name={aiAgent?.name || text("common.fallbacks.cossistant")}
+							showBackground={!!aiAgent?.image}
+						/>
 					) : (
 						<Avatar
 							className="size-5 flex-shrink-0 overflow-clip rounded-full"

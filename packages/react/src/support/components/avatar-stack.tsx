@@ -3,7 +3,6 @@ import type { ReactElement, ReactNode } from "react";
 import { useRenderElement } from "../../utils/use-render-element";
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
-import { CossistantLogo } from "./cossistant-branding";
 
 type AvatarStackProps = {
 	humanAgents: AvailableHumanAgent[];
@@ -138,9 +137,13 @@ export function AvatarStack({
 							</div>
 						)}
 						{item.type === "ai" && (
-							<div className="flex size-full items-center justify-center rounded-full bg-co-background-200 dark:bg-co-background-600">
-								<CossistantLogo className="h-[50%] min-h-4 w-[50%] min-w-4" />
-							</div>
+							<Avatar
+								className="size-full"
+								image={item.agent?.image}
+								isAI
+								name={item.agent?.name || "AI"}
+								showBackground={!!item.agent?.image}
+							/>
 						)}
 					</AvatarStackItem>
 				)),
