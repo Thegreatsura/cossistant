@@ -6,6 +6,7 @@ import * as Primitive from "../primitives";
 import { useSupport } from "../provider";
 import { SupportRealtimeProvider } from "../realtime";
 import { SupportConfig } from "../support-config";
+import { ConfigurationErrorDisplay } from "./components/configuration-error";
 import { Content } from "./components/content";
 import { Root } from "./components/root";
 import { ThemeWrapper } from "./components/theme-wrapper";
@@ -298,7 +299,7 @@ function SupportComponentInner<Locale extends string = SupportLocale>(
 	}: SupportProps<Locale>,
 	ref: React.Ref<SupportHandle>
 ): React.ReactElement | null {
-	const { website } = useSupport();
+	const { website, configurationError } = useSupport();
 	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 
 	// Initialize store for uncontrolled mode (when open prop is not provided)
@@ -308,7 +309,8 @@ function SupportComponentInner<Locale extends string = SupportLocale>(
 		}
 	}, [open, defaultOpen]);
 
-	if (!website || isVisitorBlocked) {
+	// If visitor is blocked, don't render anything
+	if (website && isVisitorBlocked) {
 		return null;
 	}
 
@@ -320,7 +322,8 @@ function SupportComponentInner<Locale extends string = SupportLocale>(
 		<DefaultTrigger className={classNames.trigger} />
 	);
 
-	// If custom content is provided, use it; otherwise create default
+	// Show configuration error inside the widget content when API key is missing
+	// This allows the user to see the widget is installed correctly and get setup instructions
 	const contentElement = parsed.content ?? (
 		<Content
 			align={align}
@@ -330,9 +333,34 @@ function SupportComponentInner<Locale extends string = SupportLocale>(
 			side={side}
 			sideOffset={sideOffset}
 		>
-			<Router customPages={customPages}>{parsed.pages}</Router>
+			{configurationError ? (
+				<ConfigurationErrorDisplay error={configurationError} />
+			) : website ? (
+				<Router customPages={customPages}>{parsed.pages}</Router>
+			) : null}
 		</Content>
 	);
+
+	// When there's a configuration error, render a minimal version without realtime/events
+	if (configurationError) {
+		return (
+			<ControlledStateProvider onOpenChange={onOpenChange} open={open}>
+				<SupportHandleProvider forwardedRef={ref}>
+					<ThemeWrapper theme={theme}>
+						<Root className={className}>
+							{triggerElement}
+							{contentElement}
+						</Root>
+					</ThemeWrapper>
+				</SupportHandleProvider>
+			</ControlledStateProvider>
+		);
+	}
+
+	// Don't render anything while loading or if no website
+	if (!website) {
+		return null;
+	}
 
 	return (
 		<ControlledStateProvider onOpenChange={onOpenChange} open={open}>
@@ -652,7 +680,7 @@ const SupportRoot = React.forwardRef<SupportHandle, SupportRootProps>(
 		},
 		ref
 	) => {
-		const { website } = useSupport();
+		const { website, configurationError } = useSupport();
 		const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 
 		// Initialize store for uncontrolled mode
@@ -662,7 +690,27 @@ const SupportRoot = React.forwardRef<SupportHandle, SupportRootProps>(
 			}
 		}, [open, defaultOpen]);
 
-		if (!website || isVisitorBlocked) {
+		// If visitor is blocked, don't render anything
+		if (website && isVisitorBlocked) {
+			return null;
+		}
+
+		// When there's a configuration error, render a minimal version without realtime/events
+		// The children (Trigger + Content) will still render, but Content should show the error
+		if (configurationError) {
+			return (
+				<ControlledStateProvider onOpenChange={onOpenChange} open={open}>
+					<SupportHandleProvider forwardedRef={ref}>
+						<ThemeWrapper theme={theme}>
+							<Root className={className}>{children}</Root>
+						</ThemeWrapper>
+					</SupportHandleProvider>
+				</ControlledStateProvider>
+			);
+		}
+
+		// Don't render anything while loading or if no website
+		if (!website) {
 			return null;
 		}
 

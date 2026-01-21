@@ -11,6 +11,11 @@ type ConversationSelection = {
 	pagination: ConversationPagination | null;
 };
 
+const EMPTY_SELECTION: ConversationSelection = {
+	conversations: [],
+	pagination: null,
+};
+
 function areSelectionsEqual(
 	a: ConversationSelection,
 	b: ConversationSelection
@@ -46,27 +51,28 @@ function areSelectionsEqual(
 /**
  * Selector hook that exposes the normalized conversations list from the
  * internal store alongside pagination metadata.
+ *
+ * Returns empty selection when client is not available (configuration error).
  */
 export function useConversationsStore(): ConversationSelection {
 	const { client } = useSupport();
 
-	if (!client) {
-		throw new Error(
-			"useConversationsStore requires a configured Cossistant client"
-		);
-	}
-
 	return useStoreSelector(
-		client.conversationsStore,
-		(state: ConversationsState) => ({
-			conversations: state.ids
-				.map((id) => state.byId[id])
-				.filter(
-					(conversation): conversation is Conversation =>
-						conversation !== undefined
-				),
-			pagination: state.pagination,
-		}),
+		client?.conversationsStore ?? null,
+		(state: ConversationsState | null) => {
+			if (!state) {
+				return EMPTY_SELECTION;
+			}
+			return {
+				conversations: state.ids
+					.map((id) => state.byId[id])
+					.filter(
+						(conversation): conversation is Conversation =>
+							conversation !== undefined
+					),
+				pagination: state.pagination,
+			};
+		},
 		areSelectionsEqual
 	);
 }
@@ -80,16 +86,13 @@ export function useConversationById(
 ): Conversation | null {
 	const { client } = useSupport();
 
-	if (!client) {
-		throw new Error(
-			"useConversationById requires a configured Cossistant client"
-		);
-	}
-
-	return useStoreSelector(client.conversationsStore, (state) => {
-		if (!conversationId) {
-			return null;
+	return useStoreSelector(
+		client?.conversationsStore ?? null,
+		(state: ConversationsState | null) => {
+			if (!(state && conversationId)) {
+				return null;
+			}
+			return state.byId[conversationId] ?? null;
 		}
-		return state.byId[conversationId] ?? null;
-	});
+	);
 }

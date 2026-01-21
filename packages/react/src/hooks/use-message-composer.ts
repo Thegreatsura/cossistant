@@ -12,8 +12,9 @@ import { useSendMessage } from "./use-send-message";
 export type UseMessageComposerOptions = {
 	/**
 	 * The Cossistant client instance.
+	 * Optional - when not provided, the composer will be disabled.
 	 */
-	client: CossistantClient;
+	client?: CossistantClient;
 
 	/**
 	 * Current conversation ID. Can be null if no real conversation exists yet.
@@ -138,7 +139,7 @@ export function useMessageComposer(
 		handleSubmit: stopTyping,
 		stop: forceStopTyping,
 	} = useVisitorTypingReporter({
-		client,
+		client: client ?? null,
 		conversationId,
 		realtimeSend,
 		isRealtimeConnected,

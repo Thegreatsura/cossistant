@@ -48,7 +48,7 @@ export function useVisitor(): UseVisitorReturn {
 		(metadata: VisitorMetadata) => Promise<VisitorResponse | null>
 	>(
 		async (metadata) => {
-			if (!visitorId) {
+			if (!(visitorId && client)) {
 				safeWarn(
 					"No visitor is associated with this session; metadata update skipped"
 				);
@@ -75,7 +75,7 @@ export function useVisitor(): UseVisitorReturn {
 		}) => Promise<{ contactId: string; visitorId: string } | null>
 	>(
 		async (params) => {
-			if (!visitorId) {
+			if (!(visitorId && client)) {
 				safeWarn(
 					"No visitor is associated with this session; identify skipped"
 				);

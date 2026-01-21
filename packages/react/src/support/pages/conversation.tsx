@@ -91,9 +91,11 @@ export const ConversationPage: ConversationPageComponent = ({
 
 	// Get conversation from store (no API call) to check status
 	const activeConversation = useStoreSelector(
-		client.conversationsStore,
+		client?.conversationsStore ?? null,
 		(state) =>
-			conversation.isPending ? null : state.byId[conversation.conversationId]
+			conversation.isPending || !state
+				? null
+				: state.byId[conversation.conversationId]
 	);
 
 	const isConversationClosed = Boolean(

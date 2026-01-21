@@ -37,10 +37,10 @@ export function useConversation(
 	options: UseConversationOptions = {}
 ): UseConversationResult {
 	const { client } = useSupport();
-	const store = client.conversationsStore;
+	const store = client?.conversationsStore ?? null;
 
 	const conversation = useStoreSelector(store, (state) => {
-		if (!conversationId) {
+		if (!(state && conversationId)) {
 			return null;
 		}
 		return state.byId[conversationId] ?? null;

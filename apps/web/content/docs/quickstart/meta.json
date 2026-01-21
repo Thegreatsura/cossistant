@@ -1,4 +1,4 @@
 {
-  "pages": ["index", "react"],
+  "pages": ["index", "react", "api-keys"],
   "title": "Quickstart"
 }

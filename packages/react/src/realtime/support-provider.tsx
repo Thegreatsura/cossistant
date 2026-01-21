@@ -13,7 +13,7 @@ import { useRealtime } from "./use-realtime";
 type SupportRealtimeContext = {
 	websiteId: string | null;
 	visitorId: string | null;
-	client: CossistantClient;
+	client: CossistantClient | null;
 };
 
 type SupportRealtimeProviderProps = {
@@ -60,7 +60,7 @@ export function SupportRealtimeProvider({
 				// Clear typing state when a timeline item is created
 				clearTypingFromTimelineItem(event);
 
-				context.client.handleRealtimeEvent(event);
+				context.client?.handleRealtimeEvent(event);
 			},
 			conversationSeen: (
 				_data: unknown,
@@ -126,7 +126,7 @@ export function SupportRealtimeProvider({
 				}
 
 				// Update conversation store with new title, sentiment, escalation status
-				context.client.handleConversationUpdated(event);
+				context.client?.handleConversationUpdated(event);
 			},
 		}),
 		// Empty dependencies is fine here since we use the context parameter

@@ -91,21 +91,24 @@ export function useConversations(
 		[limit, page, status, orderBy, order]
 	);
 
-	const store = client.conversationsStore;
+	const store = client?.conversationsStore ?? null;
 
 	const selection = useStoreSelector(
 		store,
-		(state): ConversationsSelection => ({
-			conversations: state.ids
-				.map((id) => state.byId[id])
-				.filter(
-					(
-						conversation
-					): conversation is ListConversationsResponse["conversations"][number] =>
-						Boolean(conversation)
-				),
-			pagination: state.pagination,
-		}),
+		(state): ConversationsSelection =>
+			state
+				? {
+						conversations: state.ids
+							.map((id) => state.byId[id])
+							.filter(
+								(
+									conversation
+								): conversation is ListConversationsResponse["conversations"][number] =>
+									Boolean(conversation)
+							),
+						pagination: state.pagination,
+					}
+				: { conversations: [], pagination: null },
 		areSelectionsEqual
 	);
 

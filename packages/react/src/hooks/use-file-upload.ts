@@ -116,6 +116,12 @@ export function useFileUpload(
 			setError(null);
 
 			try {
+				if (!client) {
+					throw new Error(
+						"Cossistant client is not available. Please ensure you have configured your API key."
+					);
+				}
+
 				const totalFiles = files.length;
 				let completedFiles = 0;
 

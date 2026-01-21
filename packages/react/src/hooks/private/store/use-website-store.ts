@@ -42,23 +42,25 @@ function toError(state: WebsiteState, fallback: Error | null): Error | null {
 /**
  * Subscribes to the shared website store on the SDK client and exposes
  * convenient loading/error state plus a manual refresh helper.
+ *
+ * When client is null (e.g., due to configuration error), returns an idle state.
  */
 export function useWebsiteStore(
-	client: CossistantClient,
+	client: CossistantClient | null,
 	options: UseWebsiteStoreOptions = {}
 ): UseWebsiteStoreResult {
-	const store =
-		client.websiteStore ??
-		((): WebsiteStore => {
-			throw new Error("Website store is not available on the client instance");
-		})();
-	const state = useStoreSelector(store, (current) => current);
+	// Handle null client (configuration error case)
+	const store = client?.websiteStore ?? null;
+
+	const state = useStoreSelector(store, (current) =>
+		current ? current : EMPTY_STATE
+	);
 
 	const query = useClientQuery<PublicWebsiteResponse, { force?: boolean }>({
 		client,
 		queryKey: "website",
 		queryFn: (instance, params) => instance.fetchWebsite(params ?? {}),
-		enabled: true,
+		enabled: client !== null,
 		refetchInterval: options.refetchInterval ?? false,
 		refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
 		refetchOnMount: state.status === "idle",
@@ -70,14 +72,19 @@ export function useWebsiteStore(
 		[state, query.error]
 	);
 	const isLoading =
-		query.isLoading || state.status === "loading" || state.status === "idle";
+		client !== null &&
+		(query.isLoading || state.status === "loading" || state.status === "idle");
 
-	const refresh = () =>
-		query
+	const refresh = () => {
+		if (!client) {
+			return Promise.resolve(null);
+		}
+		return query
 			.refetch({ force: true })
 			.then((result) => result ?? client.websiteStore.getState().website)
 			.catch(() => client.websiteStore.getState().website)
 			.then((website) => website ?? null);
+	};
 
 	return {
 		website: state.website,

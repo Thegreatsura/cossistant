@@ -74,6 +74,12 @@ export function useCreateConversation(
 					visitorId,
 				} = variables;
 
+				if (!client) {
+					throw new Error(
+						"Cossistant client is not available. Please ensure you have configured your API key."
+					);
+				}
+
 				const initiated = client.initiateConversation({
 					conversationId: providedConversationId ?? undefined,
 					defaultTimelineItems,

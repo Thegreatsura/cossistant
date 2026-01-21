@@ -33,8 +33,9 @@ export const coButtonVariants = cva(
 	}
 );
 
-export type CossistantButtonProps = React.ComponentProps<"button"> &
-	VariantProps<typeof coButtonVariants>;
+export type CossistantButtonProps = React.ComponentProps<"button"> & {
+	asChild?: boolean;
+} & VariantProps<typeof coButtonVariants>;
 
 /**
  * Styled button primitive that forwards variant and size props to the shared

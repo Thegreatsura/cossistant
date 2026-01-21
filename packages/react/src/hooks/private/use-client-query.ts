@@ -7,7 +7,7 @@ type QueryFn<TData, TArgs> = (
 ) => Promise<TData>;
 
 type UseClientQueryOptions<TData, TArgs> = {
-	client: CossistantClient;
+	client: CossistantClient | null;
 	queryFn: QueryFn<TData, TArgs>;
 	/**
 	 * Unique key to identify this query for deduplication.
@@ -128,6 +128,11 @@ export function useClientQuery<TData, TArgs = void>(
 
 	const execute = useCallback(
 		async (args?: TArgs, ignoreEnabled = false): Promise<TData | undefined> => {
+			// Handle null client (configuration error case)
+			if (!client) {
+				return dataRef.current;
+			}
+
 			if (!(enabled || ignoreEnabled)) {
 				return dataRef.current;
 			}

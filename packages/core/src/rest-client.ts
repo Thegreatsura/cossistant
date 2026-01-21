@@ -56,6 +56,8 @@ export class CossistantRestClient {
 		this.config = config;
 
 		// Get public key from config or environment variables
+		// Next.js: NEXT_PUBLIC_COSSISTANT_API_KEY
+		// React/other: COSSISTANT_API_KEY
 		this.publicKey =
 			config.publicKey ||
 			(typeof process !== "undefined"
@@ -64,14 +66,11 @@ export class CossistantRestClient {
 			(typeof process !== "undefined"
 				? process.env.COSSISTANT_API_KEY
 				: undefined) ||
-			(typeof process !== "undefined"
-				? process.env.NEXT_PUBLIC_COSSISTANT_KEY
-				: undefined) ||
 			"";
 
 		if (!this.publicKey) {
 			throw new Error(
-				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_API_KEY or COSSISTANT_API_KEY environment variable."
+				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_API_KEY (Next.js) or COSSISTANT_API_KEY (React) environment variable."
 			);
 		}
 

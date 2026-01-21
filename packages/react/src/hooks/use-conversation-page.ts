@@ -1,3 +1,4 @@
+import type { CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import {
 	ConversationTimelineType,
@@ -188,7 +189,7 @@ export function useConversationPage(
 
 		const organizationId =
 			baseItems.at(-1)?.organizationId ??
-			client.getConfiguration().organizationId ??
+			client?.getConfiguration().organizationId ??
 			"";
 
 		const identificationItem: TimelineItem = {
@@ -223,7 +224,7 @@ export function useConversationPage(
 
 	// 5. Set up message composer
 	const composer = useMessageComposer({
-		client,
+		client: client ?? undefined,
 		conversationId: lifecycle.realConversationId,
 		defaultTimelineItems: effectiveDefaultTimelineItems,
 		visitorId: visitor?.id,

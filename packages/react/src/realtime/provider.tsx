@@ -290,9 +290,10 @@ function resolvePublicKey(explicit?: string | null): string | null {
 		return trimmed;
 	}
 
+	// Next.js: NEXT_PUBLIC_COSSISTANT_API_KEY
+	// React/other: COSSISTANT_API_KEY
 	const fromEnv =
 		process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-		process.env.NEXT_PUBLIC_COSSISTANT_KEY ||
 		process.env.COSSISTANT_API_KEY ||
 		null;
 

@@ -2,6 +2,8 @@ import type { RouteRegistry } from "@cossistant/core";
 import * as React from "react";
 import type { PageDefinition } from "../primitives";
 import * as Primitive from "../primitives";
+import { useSupport } from "../provider";
+import { ConfigurationErrorDisplay } from "./components/configuration-error";
 import { ArticlesPage } from "./pages/articles";
 import { ConversationPage } from "./pages/conversation";
 import { ConversationHistoryPage } from "./pages/conversation-history";
@@ -91,6 +93,7 @@ export const Router: React.FC<RouterProps> = ({
 	children,
 }) => {
 	const { current } = useSupportNavigation();
+	const { configurationError } = useSupport();
 
 	// Extract pages from JSX children (Support.Page components)
 	const extractedPages = React.useMemo(
@@ -106,6 +109,11 @@ export const Router: React.FC<RouterProps> = ({
 			>[],
 		[customPages, extractedPages]
 	);
+
+	// Show configuration error when API key is missing/invalid
+	if (configurationError) {
+		return <ConfigurationErrorDisplay error={configurationError} />;
+	}
 
 	return (
 		<Primitive.Router

@@ -1,18 +1,71 @@
 import type { CossistantClient } from "@cossistant/core";
-import { normalizeLocale } from "@cossistant/core";
+import { CossistantAPIError, normalizeLocale } from "@cossistant/core";
 import type { DefaultMessage, PublicWebsiteResponse } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { ConversationTimelineType } from "@cossistant/types/enums";
 import React from "react";
 import { useStoreSelector } from "./hooks/private/store/use-store-selector";
 import { useWebsiteStore } from "./hooks/private/store/use-website-store";
-import { useClient } from "./hooks/private/use-rest-client";
+import {
+	type ConfigurationError,
+	useClient,
+} from "./hooks/private/use-rest-client";
 import { useSeenStore } from "./realtime/seen-store";
 import { WebSocketProvider } from "./support";
 import {
 	initializeSupportStore,
 	useSupportStore,
 } from "./support/store/support-store";
+
+/**
+ * Auth-related error codes that indicate API key issues.
+ */
+const AUTH_ERROR_CODES = new Set([
+	"UNAUTHORIZED",
+	"FORBIDDEN",
+	"INVALID_API_KEY",
+	"API_KEY_EXPIRED",
+	"API_KEY_MISSING",
+	"HTTP_401",
+	"HTTP_403",
+]);
+
+/**
+ * Check if an error is an authentication/authorization error.
+ */
+function isAuthError(error: Error | null): boolean {
+	if (!error) {
+		return false;
+	}
+
+	if (error instanceof CossistantAPIError) {
+		const code = error.code?.toUpperCase() ?? "";
+		return (
+			AUTH_ERROR_CODES.has(code) ||
+			code.includes("AUTH") ||
+			code.includes("API_KEY")
+		);
+	}
+
+	// Check error message as fallback
+	const message = error.message?.toLowerCase() ?? "";
+	return (
+		message.includes("api key") ||
+		message.includes("unauthorized") ||
+		message.includes("forbidden") ||
+		message.includes("not authorized")
+	);
+}
+
+/**
+ * Detect if running in a Next.js environment.
+ */
+function isNextJSEnvironment(): boolean {
+	if (typeof window !== "undefined") {
+		return "__NEXT_DATA__" in window;
+	}
+	return typeof process !== "undefined" && "__NEXT_RUNTIME" in process.env;
+}
 
 export type SupportProviderProps = {
 	children: React.ReactNode;
@@ -41,7 +94,8 @@ export type CossistantContextValue = {
 	setUnreadCount: (count: number) => void;
 	isLoading: boolean;
 	error: Error | null;
-	client: CossistantClient;
+	configurationError: ConfigurationError | null;
+	client: CossistantClient | null;
 	isOpen: boolean;
 	open: () => void;
 	close: () => void;
@@ -156,36 +210,82 @@ function SupportProviderInner({
 		}
 	}, [quickOptions]);
 
-	const { client } = useClient(publicKey, apiUrl, wsUrl);
+	const { client, configurationError: clientConfigError } = useClient(
+		publicKey,
+		apiUrl,
+		wsUrl
+	);
+
+	// Only use website store if we have a valid client
 	const { website, isLoading, error: websiteError } = useWebsiteStore(client);
 	const isVisitorBlocked = website?.visitor?.isBlocked ?? false;
 	const visitorId = website?.visitor?.id ?? null;
+
+	// Derive final configuration error from both client error and API auth errors
+	const configurationError = React.useMemo<ConfigurationError | null>(() => {
+		// Client-level config error takes precedence (missing API key)
+		if (clientConfigError) {
+			return clientConfigError;
+		}
+
+		// Check if website error is an auth error (invalid/expired API key)
+		if (websiteError && isAuthError(websiteError)) {
+			const isNextJS = isNextJSEnvironment();
+			const envVarName = isNextJS
+				? "NEXT_PUBLIC_COSSISTANT_API_KEY"
+				: "COSSISTANT_API_KEY";
+
+			return {
+				type: "invalid_api_key",
+				message: websiteError.message,
+				envVarName,
+			};
+		}
+
+		return null;
+	}, [clientConfigError, websiteError]);
 
 	const seenEntriesByConversation = useSeenStore(
 		React.useCallback((state) => state.conversations, [])
 	);
 
 	const conversationSnapshots = useStoreSelector(
-		client.conversationsStore,
+		client?.conversationsStore ?? null,
 		React.useCallback(
-			(state) =>
-				state.ids
-					.map((id) => {
-						const conversation = state.byId[id];
+			(
+				state: {
+					ids: string[];
+					byId: Record<
+						string,
+						| {
+								id: string;
+								lastTimelineItem?: TimelineItem | null;
+								visitorLastSeenAt?: string | null;
+						  }
+						| undefined
+					>;
+				} | null
+			): ConversationSnapshot[] =>
+				state
+					? state.ids
+							.map((id) => {
+								const conversation = state.byId[id];
 
-						if (!conversation) {
-							return null;
-						}
+								if (!conversation) {
+									return null;
+								}
 
-						return {
-							id: conversation.id,
-							lastTimelineItem: conversation.lastTimelineItem ?? null,
-							visitorLastSeenAt: conversation.visitorLastSeenAt ?? null,
-						} satisfies ConversationSnapshot;
-					})
-					.filter(
-						(snapshot): snapshot is ConversationSnapshot => snapshot !== null
-					),
+								return {
+									id: conversation.id,
+									lastTimelineItem: conversation.lastTimelineItem ?? null,
+									visitorLastSeenAt: conversation.visitorLastSeenAt ?? null,
+								} satisfies ConversationSnapshot;
+							})
+							.filter(
+								(snapshot): snapshot is ConversationSnapshot =>
+									snapshot !== null
+							)
+					: [],
 			[]
 		),
 		areConversationSnapshotsEqual
@@ -262,7 +362,7 @@ function SupportProviderInner({
 
 	// Prime REST client with website/visitor context so headers are sent reliably
 	React.useEffect(() => {
-		if (!website) {
+		if (!(website && client)) {
 			return;
 		}
 
@@ -270,6 +370,10 @@ function SupportProviderInner({
 	}, [client, website]);
 
 	React.useEffect(() => {
+		if (!client) {
+			return;
+		}
+
 		if (isVisitorBlocked) {
 			prefetchedVisitorRef.current = null;
 			return;
@@ -309,6 +413,9 @@ function SupportProviderInner({
 	const error = websiteError;
 
 	React.useEffect(() => {
+		if (!client) {
+			return;
+		}
 		client.setVisitorBlocked(isVisitorBlocked);
 	}, [client, isVisitorBlocked]);
 
@@ -327,6 +434,7 @@ function SupportProviderInner({
 			setUnreadCount,
 			isLoading,
 			error,
+			configurationError,
 			client,
 			defaultMessages: _defaultMessages,
 			setDefaultMessages,
@@ -342,6 +450,7 @@ function SupportProviderInner({
 			unreadCount,
 			isLoading,
 			error,
+			configurationError,
 			client,
 			_defaultMessages,
 			_quickOptions,
@@ -368,7 +477,7 @@ function SupportProviderInner({
 	return (
 		<SupportContext.Provider value={value}>
 			<WebSocketProvider
-				autoConnect={autoConnect && !isVisitorBlocked}
+				autoConnect={autoConnect && !isVisitorBlocked && !configurationError}
 				key={webSocketKey}
 				onConnect={onWsConnect}
 				onDisconnect={onWsDisconnect}
@@ -458,3 +567,6 @@ export function useSupport(): UseSupportValue {
 		size: config.size,
 	};
 }
+
+// Re-export ConfigurationError type for consumers
+export type { ConfigurationError } from "./hooks/private/use-rest-client";

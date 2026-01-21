@@ -1,0 +1,122 @@
+---
+title: API Keys
+description: Get your public API key to connect the Cossistant widget.
+---
+
+## Get Your API Key
+
+The Cossistant widget requires a **public API key** to connect to your website. You can find it in your [dashboard settings](https://cossistant.com) under **Settings > Developers**.
+
+The URL follows this pattern:
+
+```
+https://cossistant.com/{your-website-slug}/settings/developers
+```
+
+Click **New API key** and select **Public key** for client-side widget integration.
+
+## Configure Your Environment
+
+Add the key to your environment variables:
+
+**Next.js:**
+
+```bash title=".env.local"
+NEXT_PUBLIC_COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
+```
+
+**Vite:**
+
+```bash title=".env"
+VITE_COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
+```
+
+Then pass it to the provider:
+
+```tsx title="src/main.tsx"
+<SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>
+  <App />
+</SupportProvider>
+```
+
+**Create React App:**
+
+```bash title=".env"
+REACT_APP_COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
+```
+
+```tsx title="src/index.tsx"
+<SupportProvider publicKey={process.env.REACT_APP_COSSISTANT_API_KEY}>
+  <App />
+</SupportProvider>
+```
+
+<Alert variant="info" className="mt-6">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Auto-detection</AlertTitle>
+  <AlertDescription>
+    For Next.js apps, the `NEXT_PUBLIC_COSSISTANT_API_KEY` variable is automatically detected. No need to pass it as a prop.
+  </AlertDescription>
+</Alert>
+
+## Public vs Private Keys
+
+Cossistant uses two types of API keys:
+
+| Type | Prefix | Purpose | Visibility |
+|------|--------|---------|------------|
+| **Public** | `pk_live_*` or `pk_test_*` | Client-side widget | Safe to expose in browser |
+| **Private** | `sk_live_*` or `sk_test_*` | Server-to-server API | Never expose to client |
+
+Use **public keys** for the `<Support />` widget. Use **private keys** for backend integrations where you need full API access.
+
+<Alert variant="warning" className="mt-6">
+  <Icon name="alert-triangle" className="size-4" />
+  <AlertTitle>Keep private keys secret</AlertTitle>
+  <AlertDescription>
+    Never expose private keys in client-side code, Git repositories, or public environments.
+  </AlertDescription>
+</Alert>
+
+## Allowed Domains
+
+Public keys only work on **whitelisted domains**. Configure these in **Settings > Developers > Allowed domains**.
+
+- **Production keys** (`pk_live_*`) require explicit domain allowlisting
+- **Test keys** (`pk_test_*`) only work on `localhost`
+
+Add your domains with the full origin including protocol:
+
+`https://example.com` or
+`https://app.example.com` or
+`https://staging.example.com`
+
+## Troubleshooting
+
+### Configuration Required Error
+
+If the widget shows a configuration error, your API key is missing or invalid.
+
+**Check:**
+- Environment variable is set correctly
+- Variable name matches your framework
+- App was restarted after adding the variable
+- Key hasn't been revoked in the dashboard
+
+### Domain Not Allowed Error
+
+Your domain isn't in the allowlist.
+
+**Fix:**
+- Go to **Settings > Developers > Allowed domains**
+- Add your domain with the correct protocol (`https://`)
+- For local development, use a **Test key** instead
+
+### Key Not Working After Deploy
+
+Environment variables may not be loaded in production.
+
+**Check:**
+- Variable is set in your hosting platform (Vercel, Netlify, etc.)
+- Variable name includes required prefix (`NEXT_PUBLIC_` for Next.js)
+- Deployment was triggered after adding the variable

@@ -82,12 +82,12 @@ export const IdentificationTimelineTool: React.FC<
 					},
 				};
 
-				await client.sendMessage(payload);
+				await client?.sendMessage(payload);
 
 				setStatus("success");
 				setEmail("");
 
-				void client.fetchWebsite({ force: true }).catch(() => {});
+				void client?.fetchWebsite({ force: true }).catch(() => {});
 			} catch {
 				setStatus("error");
 				setErrorMessage(text("component.identificationTool.error"));

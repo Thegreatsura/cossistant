@@ -201,6 +201,12 @@ export function useSendMessage(
 			setError(null);
 
 			try {
+				if (!client) {
+					throw new Error(
+						"Cossistant client is not available. Please ensure you have configured your API key."
+					);
+				}
+
 				let conversationId = providedConversationId ?? undefined;
 				let preparedDefaultTimelineItems = defaultTimelineItems;
 				let initialConversation:

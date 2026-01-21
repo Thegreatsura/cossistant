@@ -47,19 +47,14 @@ export function useConversationTimelineItems(
 	options: UseConversationTimelineItemsOptions = {}
 ): UseConversationTimelineItemsResult {
 	const { client } = useSupport();
-	const store = client.timelineItemsStore;
-
-	if (!store) {
-		throw new Error(
-			"Timeline items store is not available on the client instance"
-		);
-	}
+	const store = client?.timelineItemsStore ?? null;
 
 	const stableConversationId = conversationId ?? NO_CONVERSATION_ID;
 
-	const selection = useStoreSelector(
-		store,
-		(state) => state.conversations[stableConversationId] ?? EMPTY_STATE
+	const selection = useStoreSelector(store, (state) =>
+		state
+			? (state.conversations[stableConversationId] ?? EMPTY_STATE)
+			: EMPTY_STATE
 	);
 
 	const baseArgs = useMemo(
