@@ -19,17 +19,17 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.6",
     "@changesets/changelog-github": "^0.5.2",
-    "@changesets/cli": "^2.29.7",
+    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.6",
-    "prettier": "^3.6.2",
-    "tsdown": "^0.16.0",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "tsdown": "^0.16.8",
     "tsx": "4.20.5",
-    "turbo": "^2.5.6",
+    "turbo": "^2.7.5",
     "typescript": "5.9.2",
     "ultracite": "5.6.4"
   },
@@ -42,8 +42,8 @@
     "packages/*"
   ],
   "dependencies": {
-    "better-auth": "^1.4.15",
-    "rolldown": "^1.0.0-beta.47"
+    "better-auth": "^1.4.17",
+    "rolldown": "^1.0.0-rc.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,md,mdx}": [
