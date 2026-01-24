@@ -66,10 +66,12 @@ type GenerationInput = {
 	triggerMessageId: string;
 	/** Optional abort signal for interruption handling */
 	abortSignal?: AbortSignal;
-	/** Callback to start typing indicator - called on first sendMessage */
-	onTypingStart?: () => Promise<void>;
 	/** Callback to check if workflow is still active - prevents duplicate messages */
 	checkWorkflowActive?: () => Promise<boolean>;
+	/** Whether conversation is currently escalated */
+	isEscalated?: boolean;
+	/** Reason for escalation if escalated */
+	escalationReason?: string | null;
 };
 
 /**
@@ -97,8 +99,9 @@ export async function generate(
 		visitorId,
 		triggerMessageId,
 		abortSignal,
-		onTypingStart,
 		checkWorkflowActive,
+		isEscalated,
+		escalationReason,
 	} = input;
 	const convId = conversation.id;
 
@@ -117,10 +120,10 @@ export async function generate(
 			sendMessage: 0,
 			sendPrivateMessage: 0,
 		},
-		// Callback to start typing - only triggered on first sendMessage
-		onTypingStart,
 		// Callback to check workflow state - prevents duplicate messages when superseded
 		checkWorkflowActive,
+		// Escalation state - prevents re-escalation
+		isEscalated,
 	};
 
 	// Reset captured action before generation
@@ -138,6 +141,8 @@ export async function generate(
 		mode,
 		humanCommand,
 		tools,
+		isEscalated,
+		escalationReason,
 	});
 
 	// Format conversation history for LLM with multi-party prefixes

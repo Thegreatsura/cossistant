@@ -279,8 +279,11 @@ export function clearTypingFromTimelineItem(
 		actorType = "user";
 		actorId = item.userId;
 	} else if (item.aiAgentId) {
-		actorType = "ai_agent";
-		actorId = item.aiAgentId;
+		// DON'T clear typing for AI agent messages here.
+		// The AI may send multiple messages with delays between them.
+		// Let the explicit typing stop event (isTyping: false) handle cleanup.
+		// The 6-second TTL provides a safety net if the stop event is lost.
+		return;
 	} else if (item.visitorId) {
 		actorType = "visitor";
 		actorId = item.visitorId;

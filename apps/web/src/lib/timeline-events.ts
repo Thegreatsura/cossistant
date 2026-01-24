@@ -104,7 +104,7 @@ export function buildTimelineEventDisplay(
 			case "unassigned":
 				return "unassigned the conversation";
 			case "participant_requested":
-				return "requested to join";
+				return "requested a team member to join";
 			case "participant_joined":
 				return "joined the conversation";
 			case "participant_left":

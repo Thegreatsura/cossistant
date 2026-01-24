@@ -28,6 +28,10 @@ export type DecisionResult = {
 	reason: string;
 	mode: ResponseMode;
 	humanCommand: string | null;
+	/** Whether conversation is currently escalated (human requested) */
+	isEscalated: boolean;
+	/** Reason for escalation if escalated */
+	escalationReason: string | null;
 };
 
 type DecisionInput = {
@@ -58,6 +62,8 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 			reason: "Human agent issued a command",
 			mode: "respond_to_command",
 			humanCommand,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
 		};
 	}
 
@@ -68,18 +74,15 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 			reason: "AI is paused for this conversation",
 			mode: "background_only",
 			humanCommand: null,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
 		};
 	}
 
-	// Check escalation status
-	if (conversationState.isEscalated) {
-		return {
-			shouldAct: false,
-			reason: "Conversation is escalated to human",
-			mode: "background_only",
-			humanCommand: null,
-		};
-	}
+	// NOTE: We no longer block AI when escalated
+	// The AI should continue helping while visitor waits for human
+	// Escalation status is passed to generation via isEscalated field
+	// The prompt will inform AI not to re-escalate
 
 	// Check for proactive scenarios (before response mode logic)
 	if (settings.proactiveMode) {
@@ -97,6 +100,8 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 				reason: proactiveResult.reason,
 				mode: "respond_to_visitor",
 				humanCommand: null,
+				isEscalated: conversationState.isEscalated,
+				escalationReason: conversationState.escalationReason,
 			};
 		}
 	}
@@ -110,12 +115,14 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 	);
 
 	console.log(
-		`[ai-agent:decision] conv=${convId} | mode=${settings.responseMode} | shouldAct=${responseModeResult.shouldAct} | reason="${responseModeResult.reason}"`
+		`[ai-agent:decision] conv=${convId} | mode=${settings.responseMode} | shouldAct=${responseModeResult.shouldAct} | reason="${responseModeResult.reason}" | isEscalated=${conversationState.isEscalated}`
 	);
 
 	return {
 		...responseModeResult,
 		humanCommand: null,
+		isEscalated: conversationState.isEscalated,
+		escalationReason: conversationState.escalationReason,
 	};
 }
 
@@ -168,7 +175,7 @@ function applyResponseMode(
 	triggerMessage: RoleAwareMessage | null,
 	conversationHistory: RoleAwareMessage[],
 	conversationState: ConversationState
-): Omit<DecisionResult, "humanCommand"> {
+): Omit<DecisionResult, "humanCommand" | "isEscalated" | "escalationReason"> {
 	// Manual mode - only respond to explicit commands
 	if (settings.responseMode === "manual") {
 		return {

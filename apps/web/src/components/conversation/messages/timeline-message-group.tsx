@@ -11,7 +11,7 @@ import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { motion } from "motion/react";
 import type React from "react";
 import { useMemo } from "react";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarContainer } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
@@ -142,8 +142,12 @@ export function TimelineMessageGroup({
 											withBoringAvatar
 										/>
 									) : isAI ? (
-										<div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
-											<Logo className="h-5 w-5 text-primary" />
+										<div
+											className={cn(
+												"flex size-8 shrink-0 items-center justify-center"
+											)}
+										>
+											<Logo className="size-6 text-primary/90" />
 										</div>
 									) : (
 										<Avatar
@@ -158,7 +162,7 @@ export function TimelineMessageGroup({
 
 							<TimelineItemGroupContent
 								className={cn(
-									"flex flex-col gap-1",
+									"flex flex-col gap-1 pb-1.5",
 									isSentByViewer && "items-end"
 								)}
 							>

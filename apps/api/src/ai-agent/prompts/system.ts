@@ -32,6 +32,10 @@ type BuildPromptInput = {
 	mode: ResponseMode;
 	humanCommand: string | null;
 	tools?: ToolSet;
+	/** Whether conversation is currently escalated */
+	isEscalated?: boolean;
+	/** Reason for escalation if escalated */
+	escalationReason?: string | null;
 };
 
 /**
@@ -54,6 +58,8 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		mode,
 		humanCommand,
 		tools,
+		isEscalated,
+		escalationReason,
 	} = input;
 	const settings = getBehaviorSettings(aiAgent);
 
@@ -101,6 +107,16 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 	// Add mode-specific instructions
 	if (mode === "respond_to_command" && humanCommand) {
 		parts.push(buildCommandModeInstructions(humanCommand));
+	}
+
+	// Add escalation context if conversation is escalated
+	// This is CRITICAL - tells AI to continue helping but not re-escalate
+	if (isEscalated) {
+		const escalatedContext = PROMPT_TEMPLATES.ESCALATED_CONTEXT.replace(
+			"{escalationReason}",
+			escalationReason || "Human support requested"
+		);
+		parts.push(escalatedContext);
 	}
 
 	// =========================================================================

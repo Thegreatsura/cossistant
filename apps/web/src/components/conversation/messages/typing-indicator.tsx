@@ -108,8 +108,8 @@ export const AITypingPreview = ({
 						url={aiAgent?.image}
 					/>
 				) : (
-					<div className="flex size-7 items-center justify-center">
-						<Logo className="size-full text-primary" />
+					<div className="flex size-8 shrink-0 items-center justify-center">
+						<Logo className="size-6 text-primary/90" />
 					</div>
 				)}
 			</TimelineItemGroupAvatar>

@@ -9,6 +9,7 @@
 
 import { tool } from "ai";
 import { z } from "zod";
+import type { ToolContext } from "./types";
 
 /**
  * Store for capturing the action result within a generation.
@@ -112,17 +113,41 @@ export function createRespondTool() {
 /**
  * Create the escalate tool - signals escalation to human
  */
-export function createEscalateTool() {
+export function createEscalateTool(ctx?: ToolContext) {
 	return tool({
 		description:
-			"FINISH action: Hand off to human support. Call AFTER sendMessage() telling the visitor you're connecting them with a team member. Also call sendPrivateMessage() to give the human agent context about the issue.",
+			"FINISH action: Hand off to human support. Call AFTER sendMessage() telling the visitor you're connecting them with a team member. Also call sendPrivateMessage() to give the human agent context about the issue. DO NOT call this if the conversation is already escalated.",
 		inputSchema: escalateSchema,
 		execute: async ({
 			reason,
 			urgency,
 			reasoning,
 			confidence,
-		}): Promise<{ success: boolean; action: string; reason: string }> => {
+		}): Promise<{
+			success: boolean;
+			action: string;
+			reason: string;
+			alreadyEscalated?: boolean;
+		}> => {
+			// Check if already escalated - prevent re-escalation
+			if (ctx?.isEscalated) {
+				console.log(
+					`[tool:escalate] conv=${ctx.conversationId} | Already escalated, skipping re-escalation`
+				);
+				// Still capture the action but mark it to be handled differently
+				capturedAction = {
+					action: "respond", // Change to respond since we can't re-escalate
+					reasoning: `Attempted to escalate but conversation is already escalated. Original reasoning: ${reasoning}`,
+					confidence,
+				};
+				return {
+					success: false,
+					action: "respond",
+					reason: "Conversation is already escalated to human support",
+					alreadyEscalated: true,
+				};
+			}
+
 			capturedAction = {
 				action: "escalate",
 				reasoning,

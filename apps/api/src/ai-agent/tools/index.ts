@@ -80,7 +80,7 @@ export function getToolsForGeneration(
 	// Action tools - AI MUST call one to signal completion
 	// These replace structured output to force tool usage
 	tools.respond = createRespondTool();
-	tools.escalate = createEscalateTool();
+	tools.escalate = createEscalateTool(toolContext); // Pass context to check escalation state
 	tools.resolve = createResolveTool();
 	tools.markSpam = createMarkSpamTool();
 	tools.skip = createSkipTool();

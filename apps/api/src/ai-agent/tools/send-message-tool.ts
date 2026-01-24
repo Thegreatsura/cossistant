@@ -2,12 +2,56 @@
  * Send Message Tool
  *
  * Sends a public message to the visitor.
+ * Includes natural delays between messages to simulate human typing.
  */
 
 import { tool } from "ai";
 import { z } from "zod";
 import { sendMessage as sendMessageAction } from "../actions/send-message";
 import type { ToolContext, ToolResult } from "./types";
+
+/**
+ * Calculate a natural typing delay based on message length.
+ * Simulates human typing speed (~50-60 WPM).
+ */
+function calculateTypingDelay(messageLength: number): number {
+	const MIN_DELAY_MS = 800; // Minimum pause between messages
+	const MAX_DELAY_MS = 2500; // Maximum pause (don't make user wait too long)
+	const CHARS_PER_SECOND = 25; // ~50 WPM, adjusted for natural reading pauses
+
+	// Base delay on message length
+	const typingTimeMs = (messageLength / CHARS_PER_SECOND) * 1000;
+
+	// Clamp between min and max
+	return Math.max(MIN_DELAY_MS, Math.min(typingTimeMs, MAX_DELAY_MS));
+}
+
+/**
+ * Sleep for a given duration, but can be interrupted by checking workflow state.
+ * Returns early if workflow is no longer active.
+ */
+async function interruptibleSleep(
+	durationMs: number,
+	checkActive?: () => Promise<boolean>
+): Promise<boolean> {
+	const POLL_INTERVAL_MS = 200; // Check every 200ms if we should abort
+	let elapsed = 0;
+
+	while (elapsed < durationMs) {
+		const sleepTime = Math.min(POLL_INTERVAL_MS, durationMs - elapsed);
+		await new Promise((resolve) => setTimeout(resolve, sleepTime));
+		elapsed += sleepTime;
+
+		// Check if workflow is still active
+		if (checkActive) {
+			const isActive = await checkActive();
+			if (!isActive) {
+				return false; // Workflow superseded, abort sleep
+			}
+		}
+	}
+	return true; // Completed full sleep
+}
 
 const inputSchema = z.object({
 	message: z
@@ -62,10 +106,29 @@ export function createSendMessageTool(ctx: ToolContext) {
 					}
 				}
 
-				// Start typing indicator on first message (if callback provided)
-				// This ensures typing only shows when AI is actually sending a message
-				if (messageNumber === 1 && ctx.onTypingStart) {
-					await ctx.onTypingStart();
+				// Add natural delay for subsequent messages (not the first one)
+				// This simulates human typing and prevents messages appearing all at once
+				if (messageNumber > 1) {
+					const delayMs = calculateTypingDelay(message.length);
+					console.log(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Adding ${delayMs}ms delay before message #${messageNumber}`
+					);
+
+					// Use interruptible sleep to abort if workflow is superseded
+					const completed = await interruptibleSleep(
+						delayMs,
+						ctx.checkWorkflowActive
+					);
+					if (!completed) {
+						console.log(
+							`[tool:sendMessage] conv=${ctx.conversationId} | Workflow superseded during delay, skipping message #${messageNumber}`
+						);
+						return {
+							success: false,
+							error: "Workflow superseded during typing delay",
+							data: { sent: false, messageId: "" },
+						};
+					}
 				}
 
 				console.log(

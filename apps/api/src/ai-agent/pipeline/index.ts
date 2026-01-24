@@ -151,23 +151,17 @@ export async function runAiAgentPipeline(
 			};
 		}
 
-		// Decision says we should act - prepare typing heartbeat
-		// DON'T start typing immediately - only when AI actually sends a message
-		// This prevents showing typing indicator during tool calls like searchKnowledgeBase
+		// Decision says we should act - start typing indicator IMMEDIATELY
+		// This provides instant feedback to the visitor while the LLM generates
 		typingHeartbeat = new TypingHeartbeat({
 			conversation: intakeResult.conversation,
 			aiAgentId: intakeResult.aiAgent.id,
 		});
 
-		// Callback to start typing - passed to tools, called on first sendMessage
-		const onTypingStart = async () => {
-			if (typingHeartbeat && !typingHeartbeat.running) {
-				console.log(
-					`[ai-agent] conv=${convId} | Starting typing (triggered by first sendMessage)`
-				);
-				await typingHeartbeat.start();
-			}
-		};
+		console.log(
+			`[ai-agent] conv=${convId} | Starting typing indicator (AI is thinking)`
+		);
+		await typingHeartbeat.start();
 
 		// Callback to check if workflow is still active - passed to tools
 		// This prevents duplicate messages when a newer message supersedes this workflow
@@ -190,8 +184,8 @@ export async function runAiAgentPipeline(
 			console.log(
 				`[ai-agent] conv=${convId} | Superseded before generation, aborting`
 			);
-			// Stop typing heartbeat if it was running (it may not have started yet)
-			if (typingHeartbeat.running) {
+			// Stop typing heartbeat if it was running
+			if (typingHeartbeat?.running) {
 				await typingHeartbeat.stop();
 			}
 			typingHeartbeat = null;
@@ -257,8 +251,9 @@ export async function runAiAgentPipeline(
 				visitorId: ctx.input.visitorId,
 				triggerMessageId: ctx.input.messageId,
 				abortSignal: abortController.signal,
-				onTypingStart, // Start typing only when sendMessage is called
 				checkWorkflowActive, // Prevent duplicate messages when superseded
+				isEscalated: decisionResult.isEscalated, // Pass escalation context
+				escalationReason: decisionResult.escalationReason,
 			});
 		} finally {
 			// Always clean up the polling interval
@@ -269,16 +264,21 @@ export async function runAiAgentPipeline(
 		}
 		metrics.generationMs = Date.now() - generationStart;
 
+		// ALWAYS stop typing immediately after generation completes
+		// The AI is done "typing" - any remaining work is internal processing
+		if (typingHeartbeat?.running) {
+			console.log(
+				`[ai-agent] conv=${convId} | Generation complete, stopping typing indicator`
+			);
+			await typingHeartbeat.stop();
+		}
+		typingHeartbeat = null;
+
 		// Handle aborted generation - new message arrived during LLM call
 		if (generationResult.aborted) {
 			console.log(
 				`[ai-agent] conv=${convId} | Generation was aborted, stopping pipeline`
 			);
-			// Stop typing if it was started
-			if (typingHeartbeat.running) {
-				await typingHeartbeat.stop();
-			}
-			typingHeartbeat = null;
 
 			await emitWorkflowCancelled({
 				conversation: intakeResult.conversation,
@@ -365,11 +365,7 @@ export async function runAiAgentPipeline(
 			console.log(
 				`[ai-agent] conv=${convId} | Superseded before execution, aborting`
 			);
-			// Stop typing heartbeat if it was started
-			if (typingHeartbeat.running) {
-				await typingHeartbeat.stop();
-			}
-			typingHeartbeat = null;
+			// Typing already stopped after generation
 
 			// Emit cancelled event (dashboard only)
 			await emitWorkflowCancelled({
@@ -407,12 +403,7 @@ export async function runAiAgentPipeline(
 			visitorName,
 		});
 		metrics.executionMs = Date.now() - executionStart;
-
-		// Stop typing heartbeat after execution completes (if it was started)
-		if (typingHeartbeat.running) {
-			await typingHeartbeat.stop();
-		}
-		typingHeartbeat = null;
+		// Typing already stopped after generation
 
 		// Step 5: Followup - Cleanup and emit events
 		const followupStart = Date.now();

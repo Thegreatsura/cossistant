@@ -102,6 +102,7 @@ export class TypingHeartbeat {
 
 	/**
 	 * Stop the typing heartbeat and emit typing stop event.
+	 * Includes retry logic to ensure the stop event is delivered.
 	 */
 	async stop(): Promise<void> {
 		if (!this.isRunning) {
@@ -112,18 +113,39 @@ export class TypingHeartbeat {
 		const convId = this.conversation.id;
 		console.log(`[ai-agent:typing] conv=${convId} | Stopping heartbeat`);
 
-		// Clear the interval
+		// Clear the interval FIRST to prevent any more heartbeats
 		if (this.intervalHandle) {
 			clearInterval(this.intervalHandle);
 			this.intervalHandle = null;
 		}
 
-		// Emit stop event
-		await emitTypingStop({
-			conversation: this.conversation,
-			aiAgentId: this.aiAgentId,
-		});
-		console.log(`[ai-agent:typing] conv=${convId} | Typing stopped`);
+		// Emit stop event with retry for reliability
+		const MAX_RETRIES = 2;
+		for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+			try {
+				await emitTypingStop({
+					conversation: this.conversation,
+					aiAgentId: this.aiAgentId,
+				});
+				console.log(
+					`[ai-agent:typing] conv=${convId} | Typing stopped (attempt ${attempt})`
+				);
+				return; // Success, exit
+			} catch (error) {
+				console.error(
+					`[ai-agent:typing] conv=${convId} | Failed to emit typing stop (attempt ${attempt}/${MAX_RETRIES}):`,
+					error
+				);
+				if (attempt < MAX_RETRIES) {
+					// Brief delay before retry
+					await new Promise((resolve) => setTimeout(resolve, 100));
+				}
+			}
+		}
+		// All retries failed - client's 6-second TTL will eventually clear it
+		console.warn(
+			`[ai-agent:typing] conv=${convId} | All stop attempts failed, relying on client TTL`
+		);
 	}
 
 	/**
@@ -137,16 +159,35 @@ export class TypingHeartbeat {
 		const convId = this.conversation.id;
 		const visitorId = this.conversation.visitorId;
 		const websiteId = this.conversation.websiteId;
+		const organizationId = this.conversation.organizationId;
+
+		// Verify required fields are present for event routing
+		if (!(visitorId && websiteId && organizationId)) {
+			console.error(
+				`[ai-agent:typing] conv=${convId} | Missing required fields for typing event | visitorId=${visitorId} | websiteId=${websiteId} | organizationId=${organizationId}`
+			);
+			return;
+		}
+
 		console.log(
-			`[ai-agent:typing] conv=${convId} | Emitting typing event | visitorId=${visitorId} | websiteId=${websiteId}`
+			`[ai-agent:typing] conv=${convId} | Emitting typing event | visitorId=${visitorId} | websiteId=${websiteId} | aiAgentId=${this.aiAgentId}`
 		);
-		await emitConversationTypingEvent({
-			conversation: this.conversation,
-			actor: { type: "ai_agent", aiAgentId: this.aiAgentId },
-			isTyping: true,
-		});
-		console.log(
-			`[ai-agent:typing] conv=${convId} | Typing event emitted successfully`
-		);
+
+		try {
+			await emitConversationTypingEvent({
+				conversation: this.conversation,
+				actor: { type: "ai_agent", aiAgentId: this.aiAgentId },
+				isTyping: true,
+			});
+			console.log(
+				`[ai-agent:typing] conv=${convId} | Typing event emitted successfully`
+			);
+		} catch (error) {
+			console.error(
+				`[ai-agent:typing] conv=${convId} | Failed to emit typing event:`,
+				error
+			);
+			throw error;
+		}
 	}
 }

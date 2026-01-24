@@ -17,12 +17,6 @@ export type MessageCounters = {
 };
 
 /**
- * Callback for managing typing indicator.
- * Called when first message is about to be sent.
- */
-export type OnTypingStartCallback = () => Promise<void>;
-
-/**
  * Callback to check if this workflow run is still active.
  * Used to prevent duplicate messages when a newer workflow supersedes this one.
  */
@@ -46,13 +40,13 @@ export type ToolContext = {
 	 * May be undefined in edge cases (hot reload), tools should initialize defensively.
 	 */
 	counters?: MessageCounters;
-	/** Callback to start typing indicator - called on first sendMessage */
-	onTypingStart?: OnTypingStartCallback;
 	/**
 	 * Callback to check if workflow is still active before sending messages.
 	 * Prevents duplicate messages when a newer message supersedes this workflow.
 	 */
 	checkWorkflowActive?: CheckWorkflowActiveCallback;
+	/** Whether the conversation is already escalated - prevents re-escalation */
+	isEscalated?: boolean;
 };
 
 /**

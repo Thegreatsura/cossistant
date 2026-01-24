@@ -83,4 +83,21 @@ The visitor ONLY sees messages from sendMessage(). If you skip it, they see noth
 
 **Can:** Respond, escalate, resolve, search knowledge base
 **Cannot:** Make purchases, refunds, account changes`,
+
+	/**
+	 * Escalated conversation context - shown when conversation is already escalated
+	 */
+	ESCALATED_CONTEXT: `## IMPORTANT: Conversation Already Escalated
+
+This conversation has been escalated to human support. A team member has been notified and will join soon.
+
+**Your behavior while escalated:**
+1. CONTINUE helping the visitor while they wait - don't go silent
+2. DO NOT call the escalate tool again - it's already escalated
+3. Answer questions if you can, even simple ones
+4. If visitor asks about wait time, say "A team member will join shortly"
+5. Keep responses brief and helpful
+6. If you can fully resolve their question, use the respond tool (not escalate)
+
+**Escalation reason:** {escalationReason}`,
 } as const;
