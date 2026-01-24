@@ -1,6 +1,5 @@
 import { env } from "@api/env";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText } from "ai";
+import { createModel, DefaultModels, generateText } from "@api/lib/ai";
 import {
 	AGENT_BASE_PROMPT_GENERATION_TEMPLATE,
 	createDefaultPromptWithCompany,
@@ -16,7 +15,7 @@ const MAX_CONTENT_LENGTH = 4000;
 /**
  * Model to use for prompt generation (fast and capable)
  */
-const PROMPT_GENERATION_MODEL = "openai/gpt-5.2";
+const PROMPT_GENERATION_MODEL = DefaultModels.promptGeneration;
 
 /**
  * Options for generating an AI agent base prompt
@@ -44,19 +43,6 @@ export type GenerateAgentPromptResult = {
 	isGenerated: boolean;
 	error?: string;
 };
-
-/**
- * Create OpenRouter client for AI generation
- */
-function getOpenRouterClient() {
-	if (!env.OPENROUTER_API_KEY) {
-		throw new Error("OPENROUTER_API_KEY is not configured");
-	}
-
-	return createOpenRouter({
-		apiKey: env.OPENROUTER_API_KEY,
-	});
-}
 
 /**
  * Format goals as a readable list
@@ -134,7 +120,6 @@ export async function generateAgentBasePrompt(
 	}
 
 	try {
-		const openrouter = getOpenRouterClient();
 		const metaPrompt = buildPrompt(options);
 
 		// Log what we're sending to OpenRouter
@@ -148,7 +133,7 @@ export async function generateAgentBasePrompt(
 		);
 
 		const result = await generateText({
-			model: openrouter.chat(PROMPT_GENERATION_MODEL),
+			model: createModel(PROMPT_GENERATION_MODEL),
 			prompt: metaPrompt,
 			temperature: 0.7,
 			maxOutputTokens: 800,

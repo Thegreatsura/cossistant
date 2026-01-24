@@ -9,21 +9,15 @@ import type { AiAgentBehaviorSettings } from "./types";
 
 /**
  * Default behavior settings for new AI agents
+ *
+ * Simplified for MVP - AI responds as fast as possible and decides
+ * when to respond based on context, not configuration.
  */
 export function getDefaultBehaviorSettings(): AiAgentBehaviorSettings {
 	return {
-		// Response triggers
-		responseMode: "always",
-		responseDelayMs: 3000, // 3 second delay feels natural
-		proactiveMode: true, // Enable proactive responses (greetings, follow-ups)
-
-		// Human interaction
-		pauseOnHumanReply: true, // Pause when human takes over
-		pauseDurationMinutes: 60, // Pause for 1 hour after human reply
-
-		// Capability toggles - conservative defaults
+		// Capability toggles
 		canResolve: true,
-		canMarkSpam: false, // Disabled by default - risky action
+		canMarkSpam: true,
 		canAssign: true,
 		canSetPriority: true,
 		canCategorize: true,
@@ -31,7 +25,6 @@ export function getDefaultBehaviorSettings(): AiAgentBehaviorSettings {
 
 		// Escalation config
 		defaultEscalationUserId: null,
-		autoAssignOnEscalation: true,
 
 		// Background analysis - all enabled by default
 		autoAnalyzeSentiment: true,

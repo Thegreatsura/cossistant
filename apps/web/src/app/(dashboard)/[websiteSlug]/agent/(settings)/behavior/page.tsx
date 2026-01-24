@@ -15,8 +15,6 @@ import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import { BackgroundAnalysisForm } from "./background-analysis-form";
 import { CapabilitiesForm } from "./capabilities-form";
-import { HumanInteractionForm } from "./human-interaction-form";
-import { ResponseBehaviorForm } from "./response-behavior-form";
 
 export default function BehaviorPage() {
 	const website = useWebsite();
@@ -60,21 +58,19 @@ export default function BehaviorPage() {
 			<PageContent className="py-30">
 				{isLoading ? (
 					<div className="space-y-8">
-						<SettingsRow
-							description="Loading settings..."
-							title="Response Behavior"
-						>
+						<SettingsRow description="Loading settings..." title="Capabilities">
 							<div className="space-y-6 p-4">
+								<Skeleton className="h-10 w-full" />
 								<Skeleton className="h-10 w-full" />
 								<Skeleton className="h-10 w-full" />
 							</div>
 						</SettingsRow>
 						<SettingsRow
 							description="Loading settings..."
-							title="Human Interaction"
+							title="Background Analysis"
 						>
 							<div className="space-y-6 p-4">
-								<Skeleton className="h-16 w-full" />
+								<Skeleton className="h-10 w-full" />
 								<Skeleton className="h-10 w-full" />
 							</div>
 						</SettingsRow>
@@ -94,28 +90,6 @@ export default function BehaviorPage() {
 					</div>
 				) : behaviorSettings ? (
 					<div className="space-y-8">
-						<SettingsRow
-							description="Control when and how the AI agent responds to visitor messages."
-							title="Response Behavior"
-						>
-							<ResponseBehaviorForm
-								aiAgentId={aiAgent.id}
-								initialData={behaviorSettings}
-								websiteSlug={website.slug}
-							/>
-						</SettingsRow>
-
-						<SettingsRow
-							description="Configure how the AI behaves when human agents are involved in conversations."
-							title="Human Interaction"
-						>
-							<HumanInteractionForm
-								aiAgentId={aiAgent.id}
-								initialData={behaviorSettings}
-								websiteSlug={website.slug}
-							/>
-						</SettingsRow>
-
 						<SettingsRow
 							description="Enable or disable specific actions the AI can take on conversations."
 							title="Capabilities"

@@ -25,7 +25,6 @@ type CapabilitiesFormData = {
 	canSetPriority: boolean;
 	canCategorize: boolean;
 	canEscalate: boolean;
-	autoAssignOnEscalation: boolean;
 };
 
 type CapabilitiesFormProps = {
@@ -50,7 +49,6 @@ export function CapabilitiesForm({
 			canSetPriority: initialData.canSetPriority,
 			canCategorize: initialData.canCategorize,
 			canEscalate: initialData.canEscalate,
-			autoAssignOnEscalation: initialData.autoAssignOnEscalation,
 		},
 	});
 
@@ -63,7 +61,6 @@ export function CapabilitiesForm({
 			canSetPriority: initialData.canSetPriority,
 			canCategorize: initialData.canCategorize,
 			canEscalate: initialData.canEscalate,
-			autoAssignOnEscalation: initialData.autoAssignOnEscalation,
 		});
 	}, [initialData, form]);
 
@@ -95,7 +92,6 @@ export function CapabilitiesForm({
 				canSetPriority: data.canSetPriority,
 				canCategorize: data.canCategorize,
 				canEscalate: data.canEscalate,
-				autoAssignOnEscalation: data.autoAssignOnEscalation,
 			},
 		});
 	};
@@ -108,7 +104,7 @@ export function CapabilitiesForm({
 						control={form.control}
 						name="canResolve"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">
 										Resolve Conversations
@@ -131,7 +127,7 @@ export function CapabilitiesForm({
 						control={form.control}
 						name="canMarkSpam"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Mark as Spam</FormLabel>
 									<FormDescription>
@@ -152,7 +148,7 @@ export function CapabilitiesForm({
 						control={form.control}
 						name="canAssign"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">
 										Assign Conversations
@@ -175,7 +171,7 @@ export function CapabilitiesForm({
 						control={form.control}
 						name="canSetPriority"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Set Priority</FormLabel>
 									<FormDescription>
@@ -196,7 +192,7 @@ export function CapabilitiesForm({
 						control={form.control}
 						name="canCategorize"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Categorize</FormLabel>
 									<FormDescription>
@@ -217,34 +213,11 @@ export function CapabilitiesForm({
 						control={form.control}
 						name="canEscalate"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Escalate to Human</FormLabel>
 									<FormDescription>
 										AI can escalate conversations to human agents
-									</FormDescription>
-								</div>
-								<FormControl>
-									<Switch
-										checked={field.value}
-										onCheckedChange={field.onChange}
-									/>
-								</FormControl>
-							</FormItem>
-						)}
-					/>
-
-					<FormField
-						control={form.control}
-						name="autoAssignOnEscalation"
-						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-								<div className="space-y-0.5">
-									<FormLabel className="text-base">
-										Auto-assign on Escalation
-									</FormLabel>
-									<FormDescription>
-										Automatically assign to team when escalating
 									</FormDescription>
 								</div>
 								<FormControl>

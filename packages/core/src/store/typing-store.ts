@@ -271,33 +271,15 @@ export function clearTypingFromTimelineItem(
 	event: RealtimeEvent<"timelineItemCreated">
 ): void {
 	const { item } = event.payload;
-	let actorType: TypingActorType | null = null;
-	let actorId: string | null = null;
 
-	// Check aiAgentId before visitorId for consistency with applyConversationTypingEvent
-	if (item.userId) {
-		actorType = "user";
-		actorId = item.userId;
-	} else if (item.aiAgentId) {
-		// DON'T clear typing for AI agent messages here.
-		// The AI may send multiple messages with delays between them.
-		// Let the explicit typing stop event (isTyping: false) handle cleanup.
-		// The 6-second TTL provides a safety net if the stop event is lost.
-		return;
-	} else if (item.visitorId) {
-		actorType = "visitor";
-		actorId = item.visitorId;
-	}
-
-	if (!(actorType && actorId)) {
-		return;
-	}
-
-	clearTypingState(store, {
-		conversationId: item.conversationId,
-		actorType,
-		actorId,
-	});
+	// Clear ALL typing entries for this conversation when any message arrives.
+	// This ensures:
+	// 1. AI typing stops immediately when an AI message is displayed
+	// 2. AI typing stops when visitor sends a new message (new workflow will start)
+	// 3. User/visitor typing stops when their message is sent
+	// Previously, we kept AI typing alive to support multiple messages with delays,
+	// but this caused typing indicators to linger after messages were already visible.
+	store.clearConversation(item.conversationId);
 }
 
 export function getConversationTyping(

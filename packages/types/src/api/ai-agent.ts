@@ -437,33 +437,11 @@ export type GenerateBasePromptResponse = z.infer<
  * AI Agent Behavior Settings Schema
  *
  * Controls how the AI agent behaves in conversations.
+ * Simplified for MVP - AI responds immediately and decides when to respond
+ * based on context, not configuration.
  */
 export const aiAgentBehaviorSettingsSchema = z
 	.object({
-		// Response triggers
-		responseMode: z
-			.enum(["always", "when_no_human", "on_mention", "manual"])
-			.openapi({
-				description: "When the AI agent should respond to messages.",
-				example: "always",
-			}),
-		responseDelayMs: z.number().min(0).max(30_000).openapi({
-			description:
-				"Delay in milliseconds before responding (0-30000). Makes responses feel more natural.",
-			example: 3000,
-		}),
-
-		// Human interaction
-		pauseOnHumanReply: z.boolean().openapi({
-			description: "Whether to pause AI responses when a human agent replies.",
-			example: true,
-		}),
-		pauseDurationMinutes: z.number().min(1).max(1440).nullable().openapi({
-			description:
-				"How long to pause after a human reply (1-1440 minutes). Null for indefinite.",
-			example: 60,
-		}),
-
 		// Capability toggles
 		canResolve: z.boolean().openapi({
 			description: "Whether the AI can mark conversations as resolved.",
@@ -471,7 +449,7 @@ export const aiAgentBehaviorSettingsSchema = z
 		}),
 		canMarkSpam: z.boolean().openapi({
 			description: "Whether the AI can mark conversations as spam.",
-			example: false,
+			example: true,
 		}),
 		canAssign: z.boolean().openapi({
 			description: "Whether the AI can assign conversations to team members.",
@@ -494,11 +472,6 @@ export const aiAgentBehaviorSettingsSchema = z
 		defaultEscalationUserId: z.string().nullable().openapi({
 			description: "Default user ID to assign escalated conversations to.",
 			example: null,
-		}),
-		autoAssignOnEscalation: z.boolean().openapi({
-			description:
-				"Whether to automatically assign conversations when escalating.",
-			example: true,
 		}),
 
 		// Background analysis

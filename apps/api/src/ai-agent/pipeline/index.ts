@@ -173,6 +173,17 @@ export async function runAiAgentPipeline(
 				ctx.input.workflowRunId
 			);
 
+		// Callback to stop typing - passed to tools
+		// Stops the typing indicator before the first message is sent
+		const stopTyping = async (): Promise<void> => {
+			if (typingHeartbeat?.running) {
+				console.log(
+					`[ai-agent] conv=${convId} | Stopping typing via tool callback`
+				);
+				await typingHeartbeat.stop();
+			}
+		};
+
 		// CHECK: Has this job been superseded by a newer message?
 		const isActiveBeforeGeneration = await isWorkflowRunActive(
 			ctx.redis,
@@ -252,6 +263,7 @@ export async function runAiAgentPipeline(
 				triggerMessageId: ctx.input.messageId,
 				abortSignal: abortController.signal,
 				checkWorkflowActive, // Prevent duplicate messages when superseded
+				stopTyping, // Stop typing before first message is sent
 				isEscalated: decisionResult.isEscalated, // Pass escalation context
 				escalationReason: decisionResult.escalationReason,
 			});

@@ -8,19 +8,17 @@
 import type { Database } from "@api/db";
 import { getConversationTimelineItems } from "@api/db/queries/conversation";
 import type { ConversationSelect } from "@api/db/schema/conversation";
-import { env } from "@api/env";
+import { createModel, DefaultModels, generateText, Output } from "@api/lib/ai";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, Output } from "ai";
 import { z } from "zod";
 
 /**
  * Model to use for summary generation (fast and cheap)
  */
-const SUMMARY_MODEL = "openai/gpt-4o-mini";
+const SUMMARY_MODEL = DefaultModels.summary;
 
 /**
  * Schema for escalation summary response
@@ -89,10 +87,6 @@ export async function generateEscalationSummary(
 			`[ai-agent:analysis] conv=${conversation.id} | Generating escalation summary from ${messages.length} messages`
 		);
 
-		const openrouter = createOpenRouter({
-			apiKey: env.OPENROUTER_API_KEY,
-		});
-
 		// Format messages for context
 		const messageContext = messages
 			.map((m) => {
@@ -102,7 +96,7 @@ export async function generateEscalationSummary(
 			.join("\n");
 
 		const result = await generateText({
-			model: openrouter.chat(SUMMARY_MODEL),
+			model: createModel(SUMMARY_MODEL),
 			output: Output.object({
 				schema: escalationSummarySchema,
 			}),

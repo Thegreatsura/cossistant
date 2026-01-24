@@ -92,7 +92,7 @@ export function BackgroundAnalysisForm({
 						control={form.control}
 						name="autoAnalyzeSentiment"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Analyze Sentiment</FormLabel>
 									<FormDescription>
@@ -113,7 +113,7 @@ export function BackgroundAnalysisForm({
 						control={form.control}
 						name="autoGenerateTitle"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Generate Titles</FormLabel>
 									<FormDescription>
@@ -134,7 +134,7 @@ export function BackgroundAnalysisForm({
 						control={form.control}
 						name="autoCategorize"
 						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+							<FormItem className="flex flex-row items-center justify-between py-2">
 								<div className="space-y-0.5">
 									<FormLabel className="text-base">Auto-categorize</FormLabel>
 									<FormDescription>

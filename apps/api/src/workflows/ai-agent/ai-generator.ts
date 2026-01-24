@@ -1,20 +1,10 @@
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
-import { env } from "@api/env";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, type ModelMessage, type ToolSet } from "ai";
-
-/**
- * Create OpenRouter client for AI generation
- */
-function getOpenRouterClient() {
-	if (!env.OPENROUTER_API_KEY) {
-		throw new Error("OPENROUTER_API_KEY is not configured");
-	}
-
-	return createOpenRouter({
-		apiKey: env.OPENROUTER_API_KEY,
-	});
-}
+import {
+	createModel,
+	generateText,
+	type ModelMessage,
+	type ToolSet,
+} from "@api/lib/ai";
 
 export type GenerateAIResponseOptions = {
 	aiAgent: AiAgentSelect;
@@ -40,10 +30,8 @@ export async function generateAIResponse(
 ): Promise<GenerateAIResponseResult> {
 	const { aiAgent, conversationHistory, tools } = options;
 
-	const openrouter = getOpenRouterClient();
-
 	const result = await generateText({
-		model: openrouter.chat(aiAgent.model),
+		model: createModel(aiAgent.model),
 		system: aiAgent.basePrompt,
 		messages: conversationHistory,
 		tools,

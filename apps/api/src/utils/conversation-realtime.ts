@@ -65,13 +65,18 @@ export async function emitConversationSeenEvent({
 }: SeenEventParams) {
 	const actorPayload = mapActor(actor);
 
+	// Use conversation's visitorId for routing so the event reaches the widget
+	// The actor's visitorId is only non-null when a visitor is the one who "saw" the message
+	// For AI agents/users, we still need to route to the conversation's visitor
+	const visitorId = actorPayload.visitorId ?? conversation.visitorId ?? null;
+
 	await realtime.emit("conversationSeen", {
 		conversationId: conversation.id,
 		organizationId: conversation.organizationId,
 		websiteId: conversation.websiteId,
 		lastSeenAt,
 		...actorPayload,
-		visitorId: actorPayload.visitorId ?? null,
+		visitorId,
 	});
 }
 

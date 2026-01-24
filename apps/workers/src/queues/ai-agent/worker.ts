@@ -14,9 +14,7 @@
 
 import { runAiAgentPipeline } from "@api/ai-agent";
 import { emitWorkflowStarted } from "@api/ai-agent/events";
-import { getBehaviorSettings } from "@api/ai-agent/settings";
 import { markConversationAsSeen } from "@api/db/mutations/conversation";
-import { getAiAgentById } from "@api/db/queries/ai-agent";
 import { getConversationById } from "@api/db/queries/conversation";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
 import { type AiAgentJobData, QUEUE_NAMES } from "@cossistant/jobs";
@@ -34,13 +32,6 @@ import { db } from "@workers/db";
 import { type Job, Queue, QueueEvents, Worker } from "bullmq";
 
 const AI_AGENT_DIRECTION: WorkflowDirection = "ai-agent-response";
-
-/**
- * Sleep for a specified duration
- */
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Worker configuration for reliability
@@ -228,33 +219,7 @@ export function createAiAgentWorker({
 			triggerMessageId: messageId,
 		});
 
-		// Apply response delay from behavior settings (before pipeline starts)
-		const aiAgentRecord = await getAiAgentById(db, { aiAgentId });
-		if (aiAgentRecord) {
-			const settings = getBehaviorSettings(aiAgentRecord);
-			if (settings.responseDelayMs > 0) {
-				console.log(
-					`[worker:ai-agent] conv=${conversationId} | Applying response delay: ${settings.responseDelayMs}ms`
-				);
-				await sleep(settings.responseDelayMs);
-
-				// Re-check if still active after delay (a newer message might have superseded us)
-				const stillActive = await isWorkflowRunActive(
-					redis,
-					conversationId,
-					AI_AGENT_DIRECTION,
-					workflowRunId
-				);
-				if (!stillActive) {
-					console.log(
-						`[worker:ai-agent] conv=${conversationId} | Superseded during delay, aborting`
-					);
-					return;
-				}
-			}
-		}
-
-		// Run the AI agent pipeline
+		// Run the AI agent pipeline (no delay - respond as fast as possible)
 		// Note: Typing events are handled inside the pipeline after decision is made
 		const result = await runAiAgentPipeline({
 			db,

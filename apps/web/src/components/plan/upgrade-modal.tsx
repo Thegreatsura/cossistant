@@ -424,7 +424,7 @@ export function UpgradeModal({
 						</div>
 					</div>
 
-					<div className="rounded border border-primary/10 p-4">
+					<div className="">
 						<div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
 							<div>
 								<p className="text-muted-foreground text-xs uppercase tracking-wide">

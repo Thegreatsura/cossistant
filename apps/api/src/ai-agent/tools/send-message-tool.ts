@@ -131,6 +131,15 @@ export function createSendMessageTool(ctx: ToolContext) {
 					}
 				}
 
+				// Stop typing indicator before first message is sent
+				// This prevents the typing indicator from lingering after the message appears
+				if (messageNumber === 1 && ctx.stopTyping) {
+					console.log(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Stopping typing before first message`
+					);
+					await ctx.stopTyping();
+				}
+
 				console.log(
 					`[tool:sendMessage] conv=${ctx.conversationId} | sending #${messageNumber}`
 				);

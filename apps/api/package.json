@@ -11,6 +11,7 @@
     "./db": "./src/db/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/devtools": "^0.0.8",
     "@ai-sdk/openai": "^3.0.18",
     "@aws-sdk/client-s3": "^3.975.0",
     "@aws-sdk/s3-request-presigner": "^3.975.0",
@@ -61,7 +62,7 @@
     "react-email": "4.2.11"
   },
   "scripts": {
-    "dev": "concurrently 'bun run --hot src/index.ts' 'node $(which npx) @upstash/qstash-cli dev'",
+    "dev": "concurrently 'bun run --hot src/index.ts' 'node $(which npx) @upstash/qstash-cli dev' 'npx @ai-sdk/devtools'",
     "build": "bun build src/index.ts --compile --outfile server",
     "start": "bun run src/index.ts",
     "build:types": "tsc --build",

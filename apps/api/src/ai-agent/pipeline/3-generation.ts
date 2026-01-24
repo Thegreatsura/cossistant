@@ -17,8 +17,12 @@ import type { Database } from "@api/db";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { env } from "@api/env";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, hasToolCall, stepCountIs } from "ai";
+import {
+	createModel,
+	generateText,
+	hasToolCall,
+	stepCountIs,
+} from "@api/lib/ai";
 import {
 	detectPromptInjection,
 	logInjectionAttempt,
@@ -68,6 +72,8 @@ type GenerationInput = {
 	abortSignal?: AbortSignal;
 	/** Callback to check if workflow is still active - prevents duplicate messages */
 	checkWorkflowActive?: () => Promise<boolean>;
+	/** Callback to stop the typing indicator before first message is sent */
+	stopTyping?: () => Promise<void>;
 	/** Whether conversation is currently escalated */
 	isEscalated?: boolean;
 	/** Reason for escalation if escalated */
@@ -100,6 +106,7 @@ export async function generate(
 		triggerMessageId,
 		abortSignal,
 		checkWorkflowActive,
+		stopTyping,
 		isEscalated,
 		escalationReason,
 	} = input;
@@ -122,6 +129,8 @@ export async function generate(
 		},
 		// Callback to check workflow state - prevents duplicate messages when superseded
 		checkWorkflowActive,
+		// Callback to stop typing indicator before first message is sent
+		stopTyping,
 		// Escalation state - prevents re-escalation
 		isEscalated,
 	};
@@ -181,11 +190,6 @@ export async function generate(
 		);
 	}
 
-	// Get OpenRouter client
-	const openrouter = createOpenRouter({
-		apiKey: env.OPENROUTER_API_KEY,
-	});
-
 	// Generate using tools-only approach (no structured output)
 	// The AI MUST call tools:
 	// 1. sendMessage() to respond to visitor
@@ -198,7 +202,7 @@ export async function generate(
 	let result: Awaited<ReturnType<typeof generateText>>;
 	try {
 		result = await generateText({
-			model: openrouter.chat(aiAgent.model),
+			model: createModel(aiAgent.model),
 			tools,
 			toolChoice: "required", // Force the model to call tools
 			stopWhen: [

@@ -37,6 +37,7 @@ yarn-error.log*
 .DS_Store
 *.pem
 apps/api/server
+.devtools
 
 # Terraform
 terraform.tfvars

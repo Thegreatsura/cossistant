@@ -23,6 +23,12 @@ export type MessageCounters = {
 export type CheckWorkflowActiveCallback = () => Promise<boolean>;
 
 /**
+ * Callback to stop the typing indicator.
+ * Called when the first message is sent so typing doesn't linger.
+ */
+export type StopTypingCallback = () => Promise<void>;
+
+/**
  * Context passed to all tools via experimental_context
  */
 export type ToolContext = {
@@ -45,6 +51,11 @@ export type ToolContext = {
 	 * Prevents duplicate messages when a newer message supersedes this workflow.
 	 */
 	checkWorkflowActive?: CheckWorkflowActiveCallback;
+	/**
+	 * Callback to stop the typing indicator when a message is sent.
+	 * Prevents typing from lingering after the message is already visible.
+	 */
+	stopTyping?: StopTypingCallback;
 	/** Whether the conversation is already escalated - prevents re-escalation */
 	isEscalated?: boolean;
 };

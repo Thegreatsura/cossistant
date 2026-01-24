@@ -10,15 +10,11 @@ import type { AiAgentBehaviorSettings } from "./types";
 
 /**
  * Zod schema for behavior settings validation
+ *
+ * Simplified for MVP - removed responseMode, responseDelayMs,
+ * pauseOnHumanReply, pauseDurationMinutes.
  */
 export const behaviorSettingsSchema = z.object({
-	responseMode: z.enum(["always", "when_no_human", "on_mention", "manual"]),
-	responseDelayMs: z.number().min(0).max(30_000),
-	proactiveMode: z.boolean(),
-
-	pauseOnHumanReply: z.boolean(),
-	pauseDurationMinutes: z.number().min(1).max(1440).nullable(), // Max 24 hours
-
 	canResolve: z.boolean(),
 	canMarkSpam: z.boolean(),
 	canAssign: z.boolean(),
@@ -27,7 +23,6 @@ export const behaviorSettingsSchema = z.object({
 	canEscalate: z.boolean(),
 
 	defaultEscalationUserId: z.string().nullable(),
-	autoAssignOnEscalation: z.boolean(),
 
 	autoAnalyzeSentiment: z.boolean(),
 	autoGenerateTitle: z.boolean(),

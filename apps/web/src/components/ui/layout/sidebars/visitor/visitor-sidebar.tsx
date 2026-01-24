@@ -115,7 +115,9 @@ export function VisitorSidebar({
 									<span className="ml-auto inline-flex items-center gap-2">
 										{countryLabel}
 										{countryDetails.code ? (
-											<CountryFlag countryCode={countryDetails.code} />
+											<div className="overflow-clip rounded-[2px] border border-primary/10 p-[1px]">
+												<CountryFlag countryCode={countryDetails.code} />
+											</div>
 										) : null}
 									</span>
 								) : null

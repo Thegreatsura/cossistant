@@ -55,6 +55,9 @@ export function useConversationTimelineItems({
 	});
 
 	const pages = query.data?.pages;
+	// dataUpdatedAt changes on every cache update (including setQueryData from WebSocket events)
+	// This ensures the useMemo re-runs when new items arrive via realtime events
+	const dataUpdatedAt = query.dataUpdatedAt;
 
 	const items = useMemo(() => {
 		if (!pages) {
@@ -63,11 +66,8 @@ export function useConversationTimelineItems({
 
 		return pages
 			.flatMap((page) => page.items)
-			.sort(
-				(a, b) =>
-					new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-			);
-	}, [pages]);
+			.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+	}, [pages, dataUpdatedAt]);
 
 	return {
 		items,

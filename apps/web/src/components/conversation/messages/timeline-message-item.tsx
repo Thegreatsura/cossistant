@@ -11,6 +11,7 @@ import type React from "react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icons";
+import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export type TimelineMessageItemProps = {
@@ -32,6 +33,7 @@ export function TimelineMessageItem({
 	const files = extractFileParts(item.parts);
 	const hasAttachments = images.length > 0 || files.length > 0;
 	const hasText = item.text && item.text.trim().length > 0;
+	const isPrivate = item.visibility === "private";
 
 	const openLightbox = (index: number) => {
 		setLightboxIndex(index);
@@ -59,22 +61,43 @@ export function TimelineMessageItem({
 						>
 							{/* Text content */}
 							{hasText && (
-								<TimelineItemContent
-									className={cn(
-										"block w-fit min-w-0 max-w-full whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
-										{
-											"bg-background-300 text-foreground dark:bg-background-600":
-												!isSentByViewer,
-											"bg-primary text-primary-foreground": isSentByViewer,
-											"rounded-br-[2px]":
-												isLast && isSentByViewer && !hasAttachments,
-											"rounded-bl-[2px]":
-												isLast && !isSentByViewer && !hasAttachments,
-										}
+								<div
+									className={cn("flex w-fit min-w-0 max-w-full flex-col", {
+										"items-end": isSentByViewer,
+									})}
+								>
+									<TimelineItemContent
+										className={cn(
+											"block w-fit min-w-0 max-w-full whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+											{
+												"bg-background-300 text-foreground dark:bg-background-600":
+													!(isSentByViewer || isPrivate),
+												"bg-primary text-primary-foreground":
+													isSentByViewer && !isPrivate,
+												"border border-cossistant-orange/30 bg-cossistant-orange/10 text-foreground":
+													isPrivate,
+												"rounded-br-[2px]":
+													isLast && isSentByViewer && !hasAttachments,
+												"rounded-bl-[2px]":
+													isLast && !isSentByViewer && !hasAttachments,
+											}
+										)}
+										renderMarkdown
+										text={item.text}
+									/>
+									{isPrivate && (
+										<TooltipOnHover
+											content="This message is only visible to you and your team"
+											delay={300}
+											side="bottom"
+										>
+											<span className="mt-1 flex cursor-default items-center gap-1 text-cossistant-orange text-xs">
+												<Icon className="size-3" name="lock" />
+												private
+											</span>
+										</TooltipOnHover>
 									)}
-									renderMarkdown
-									text={item.text}
-								/>
+								</div>
 							)}
 
 							{/* Image attachments */}

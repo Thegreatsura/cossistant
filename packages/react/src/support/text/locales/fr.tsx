@@ -63,7 +63,7 @@ const fr: SupportLocaleMessages = {
 	"component.conversationEvent.participantLeft": ({ variables }) =>
 		`${variables.actorName} a quitté la conversation`,
 	"component.conversationEvent.participantRequested": ({ variables }) =>
-		`${variables.actorName} a demandé à rejoindre`,
+		`${variables.actorName} a demandé à un membre de l'équipe de rejoindre`,
 	"component.conversationEvent.priorityChanged": ({ variables }) =>
 		`${variables.actorName} a modifié la priorité`,
 	"component.conversationEvent.reopened": ({ variables }) =>
