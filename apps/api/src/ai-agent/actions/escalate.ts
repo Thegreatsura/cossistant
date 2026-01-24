@@ -13,6 +13,7 @@ import {
 	conversationTimelineItem,
 } from "@api/db/schema/conversation";
 import { realtime } from "@api/realtime/emitter";
+import { createParticipantRequestedEvent } from "@api/utils/conversation-events";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
 import {
 	ConversationTimelineType,
@@ -32,9 +33,9 @@ type EscalateParams = {
 	aiAgentId: string;
 	aiAgentName: string;
 	reason: string;
-	visitorMessage: string;
+	visitorMessage?: string | null; // Optional - message may already be sent via tool
 	visitorName: string;
-	assignToUserId?: string;
+	assignToUserId?: string | null;
 	urgency?: "normal" | "high" | "urgent";
 };
 
@@ -69,45 +70,47 @@ export async function escalate(params: EscalateParams): Promise<void> {
 		})
 		.where(eq(conversation.id, conv.id));
 
-	// Create public message to visitor explaining the escalation
-	const visitorMessageId = generateShortPrimaryId();
-	await db.insert(conversationTimelineItem).values({
-		id: visitorMessageId,
-		conversationId: conv.id,
-		organizationId,
-		type: ConversationTimelineType.MESSAGE,
-		visibility: TimelineItemVisibility.PUBLIC, // Public - visitor can see
-		text: visitorMessage,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
-	});
-
-	// Emit timeline item created event for the visitor message
-	await realtime.emit("timelineItemCreated", {
-		websiteId,
-		organizationId,
-		visitorId: conv.visitorId,
-		userId: null,
-		conversationId: conv.id,
-		item: {
+	// Create public message to visitor if provided (may already be sent via tool)
+	if (visitorMessage) {
+		const visitorMessageId = generateShortPrimaryId();
+		await db.insert(conversationTimelineItem).values({
 			id: visitorMessageId,
 			conversationId: conv.id,
 			organizationId,
-			visibility: TimelineItemVisibility.PUBLIC,
 			type: ConversationTimelineType.MESSAGE,
+			visibility: TimelineItemVisibility.PUBLIC,
 			text: visitorMessage,
-			parts: [{ type: "text", text: visitorMessage }],
+			aiAgentId,
 			userId: null,
 			visitorId: null,
-			aiAgentId,
 			createdAt: now,
-			deletedAt: null,
-		},
-	});
+		});
 
-	// Create escalation event (private - AI_ESCALATED)
+		// Emit timeline item created event for the visitor message
+		await realtime.emit("timelineItemCreated", {
+			websiteId,
+			organizationId,
+			visitorId: conv.visitorId,
+			userId: null,
+			conversationId: conv.id,
+			item: {
+				id: visitorMessageId,
+				conversationId: conv.id,
+				organizationId,
+				visibility: TimelineItemVisibility.PUBLIC,
+				type: ConversationTimelineType.MESSAGE,
+				text: visitorMessage,
+				parts: [{ type: "text", text: visitorMessage }],
+				userId: null,
+				visitorId: null,
+				aiAgentId,
+				createdAt: now,
+				deletedAt: null,
+			},
+		});
+	}
+
+	// Create escalation event (private - AI_ESCALATED) for team visibility
 	await db.insert(conversationTimelineItem).values({
 		id: generateShortPrimaryId(),
 		conversationId: conv.id,
@@ -119,6 +122,16 @@ export async function escalate(params: EscalateParams): Promise<void> {
 		userId: null,
 		visitorId: null,
 		createdAt: now,
+	});
+
+	// Create public PARTICIPANT_REQUESTED event so visitor knows human help is coming
+	await createParticipantRequestedEvent(db, {
+		conversationId: conv.id,
+		organizationId,
+		websiteId,
+		visitorId: conv.visitorId,
+		actorAiAgentId: aiAgentId,
+		reason,
 	});
 
 	// Emit conversationUpdated event for real-time dashboard updates
