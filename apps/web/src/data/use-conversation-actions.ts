@@ -67,6 +67,7 @@ type UseConversationActionsReturn = {
 	markUnarchived: () => Promise<ConversationMutationResponse>;
 	markRead: () => Promise<ConversationMutationResponse>;
 	markUnread: () => Promise<ConversationMutationResponse>;
+	joinEscalation: () => Promise<ConversationMutationResponse>;
 	blockVisitor: () => Promise<BlockVisitorResponse>;
 	unblockVisitor: () => Promise<BlockVisitorResponse>;
 	isAnyPending: boolean;
@@ -79,6 +80,7 @@ type UseConversationActionsReturn = {
 		markUnarchived: boolean;
 		markRead: boolean;
 		markUnread: boolean;
+		joinEscalation: boolean;
 		blockVisitor: boolean;
 		unblockVisitor: boolean;
 	};
@@ -137,8 +139,11 @@ export function useConversationActions({
 	const prepareContext = useCallback(async (): Promise<MutationContext> => {
 		await queryClient.cancelQueries({ queryKey: headersQueryKey });
 
-		const existingHeader =
-			queryNormalizer.getObjectById<ConversationHeader>(conversationId);
+		// Type assertion needed because TimelineItemParts contains complex union types
+		// that don't fit @normy/react-query's simpler Data type constraints
+		const existingHeader = queryNormalizer.getObjectById(conversationId) as
+			| ConversationHeader
+			| undefined;
 
 		const headersSnapshots: MutationContext["headersSnapshots"] = [];
 		forEachConversationHeadersQuery(queryClient, website.slug, (queryKey) => {
@@ -167,7 +172,11 @@ export function useConversationActions({
 	const restoreContext = useCallback(
 		(context?: MutationContext) => {
 			if (context?.previousHeader) {
-				queryNormalizer.setNormalizedData(context.previousHeader);
+				queryNormalizer.setNormalizedData(
+					context.previousHeader as Parameters<
+						typeof queryNormalizer.setNormalizedData
+					>[0]
+				);
 			}
 
 			if (context?.visitorQueryKey) {
@@ -195,15 +204,18 @@ export function useConversationActions({
 				);
 			});
 
-			const existing =
-				queryNormalizer.getObjectById<ConversationHeader>(conversationId);
+			const existing = queryNormalizer.getObjectById(conversationId) as
+				| ConversationHeader
+				| undefined;
 
 			if (!existing) {
 				return;
 			}
 
 			const updated = updater(cloneConversationHeader(existing));
-			queryNormalizer.setNormalizedData(updated);
+			queryNormalizer.setNormalizedData(
+				updated as Parameters<typeof queryNormalizer.setNormalizedData>[0]
+			);
 		},
 		[conversationId, queryClient, queryNormalizer, website.slug]
 	);
@@ -438,6 +450,36 @@ export function useConversationActions({
 			applyOptimisticUpdate((existing) => ({
 				...existing,
 				lastSeenAt: null,
+			}));
+
+			return context;
+		},
+		onError: (_error, _variables, context) => {
+			restoreContext(context);
+		},
+		onSuccess: (data) => {
+			applyOptimisticUpdate((existing) =>
+				mergeWithServerConversation(existing, data.conversation)
+			);
+		},
+	});
+
+	const joinEscalationMutation = useMutation<
+		ConversationMutationResponse,
+		TRPCError,
+		BaseConversationMutationVariables,
+		MutationContext
+	>({
+		...trpc.conversation.joinEscalation.mutationOptions(),
+		onMutate: async () => {
+			const context = await prepareContext();
+			const now = new Date().toISOString();
+
+			applyOptimisticUpdate((existing) => ({
+				...existing,
+				escalationHandledAt: now,
+				escalationHandledByUserId: user.id,
+				updatedAt: now,
 			}));
 
 			return context;
@@ -712,6 +754,15 @@ export function useConversationActions({
 		[conversationId, markUnreadMutation, website.slug]
 	);
 
+	const joinEscalation = useCallback(
+		() =>
+			joinEscalationMutation.mutateAsync({
+				conversationId,
+				websiteSlug: website.slug,
+			}),
+		[conversationId, joinEscalationMutation, website.slug]
+	);
+
 	const blockVisitor = useCallback(
 		() =>
 			blockVisitorMutation.mutateAsync({
@@ -739,6 +790,7 @@ export function useConversationActions({
 		markUnarchived,
 		markRead,
 		markUnread,
+		joinEscalation,
 		blockVisitor,
 		unblockVisitor,
 		isAnyPending:
@@ -750,6 +802,7 @@ export function useConversationActions({
 			markUnarchivedMutation.isPending ||
 			markReadMutation.isPending ||
 			markUnreadMutation.isPending ||
+			joinEscalationMutation.isPending ||
 			blockVisitorMutation.isPending ||
 			unblockVisitorMutation.isPending,
 		pendingAction: {
@@ -761,6 +814,7 @@ export function useConversationActions({
 			markUnarchived: markUnarchivedMutation.isPending,
 			markRead: markReadMutation.isPending,
 			markUnread: markUnreadMutation.isPending,
+			joinEscalation: joinEscalationMutation.isPending,
 			blockVisitor: blockVisitorMutation.isPending,
 			unblockVisitor: unblockVisitorMutation.isPending,
 		},

@@ -48,6 +48,7 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 
 	// Check for human command first (highest priority)
 	const humanCommand = detectHumanCommand(triggerMessage);
+
 	if (humanCommand) {
 		console.log(
 			`[ai-agent:decision] conv=${convId} | Human command detected: "${humanCommand.slice(0, 50)}${humanCommand.length > 50 ? "..." : ""}"`
@@ -78,6 +79,26 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 			mode: "background_only",
 			humanCommand: null,
 		};
+	}
+
+	// Check for proactive scenarios (before response mode logic)
+	if (settings.proactiveMode) {
+		const proactiveResult = checkProactiveScenarios(
+			input.conversation,
+			conversationHistory,
+			conversationState
+		);
+		if (proactiveResult.shouldAct) {
+			console.log(
+				`[ai-agent:decision] conv=${convId} | proactive=${proactiveResult.reason}`
+			);
+			return {
+				shouldAct: true,
+				reason: proactiveResult.reason,
+				mode: "respond_to_visitor",
+				humanCommand: null,
+			};
+		}
 	}
 
 	// Apply response mode logic
@@ -272,4 +293,48 @@ function findLastMessageByType(
 		}
 	}
 	return null;
+}
+
+/**
+ * Check for scenarios where AI should proactively respond
+ *
+ * Proactive scenarios:
+ * 1. First message greeting - new conversation, visitor hasn't typed yet
+ * 2. Visitor waiting - visitor sent last message and been waiting 5+ minutes
+ */
+function checkProactiveScenarios(
+	conversation: ConversationSelect,
+	history: RoleAwareMessage[],
+	state: ConversationState
+): { shouldAct: boolean; reason: string } {
+	// Don't be proactive if there's an active human assignee
+	if (state.hasHumanAssignee) {
+		return { shouldAct: false, reason: "" };
+	}
+
+	// 1. First message greeting - greet new visitors
+	const visitorMessages = history.filter((m) => m.senderType === "visitor");
+	const aiMessages = history.filter((m) => m.senderType === "ai_agent");
+
+	// If no messages at all, could greet (but this is rare - usually triggered by message)
+	if (history.length === 0) {
+		return { shouldAct: true, reason: "Greeting new conversation" };
+	}
+
+	// 2. Visitor waiting - if visitor sent last message and waiting 5+ minutes
+	const lastMessage = history[history.length - 1];
+	if (lastMessage?.senderType === "visitor" && lastMessage.timestamp) {
+		const waitingMinutes =
+			(Date.now() - new Date(lastMessage.timestamp).getTime()) / 60_000;
+
+		// If visitor waiting 5+ minutes without response, follow up
+		if (waitingMinutes >= 5) {
+			return {
+				shouldAct: true,
+				reason: `Visitor waiting ${Math.round(waitingMinutes)} minutes`,
+			};
+		}
+	}
+
+	return { shouldAct: false, reason: "" };
 }

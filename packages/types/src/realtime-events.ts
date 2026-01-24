@@ -133,6 +133,128 @@ export const realtimeSchema = {
 		}),
 		aiAgentId: z.string().nullable(),
 	}),
+
+	// =========================================================================
+	// AI AGENT PROCESSING EVENTS
+	// For progressive UI updates during AI agent responses
+	//
+	// AUDIENCE FIELD:
+	// - 'all': Send to both dashboard and widget
+	// - 'dashboard': Send only to dashboard (human agents)
+	//
+	// Widget (visitor) connections only receive events with audience='all'
+	// =========================================================================
+
+	// Emitted when AI agent starts processing a message
+	aiAgentProcessingStarted: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		aiAgentId: z.string(),
+		workflowRunId: z.string(),
+		/** ID of the trigger message that started this workflow */
+		triggerMessageId: z.string(),
+		/** Initial phase of processing */
+		phase: z.string().optional(),
+		/** Audience: 'all' = everyone, 'dashboard' = team only */
+		audience: z.enum(["all", "dashboard"]).default("dashboard"),
+	}),
+
+	// Emitted when AI agent makes a decision about whether to act
+	aiAgentDecisionMade: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		aiAgentId: z.string(),
+		workflowRunId: z.string(),
+		/** Whether the AI decided to take action */
+		shouldAct: z.boolean(),
+		/** Human-readable reason for the decision */
+		reason: z.string(),
+		/** Response mode: how the AI is responding */
+		mode: z.enum([
+			"respond_to_visitor",
+			"respond_to_command",
+			"background_only",
+		]),
+		/** Audience: 'all' = everyone, 'dashboard' = team only */
+		audience: z.enum(["all", "dashboard"]),
+	}),
+
+	// Emitted for progress updates during AI agent processing
+	aiAgentProcessingProgress: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		aiAgentId: z.string(),
+		workflowRunId: z.string(),
+		/** Current phase: 'thinking', 'searching', 'tool-executing', 'generating', etc. */
+		phase: z.string(),
+		/** Human-readable message for display (widget sees this) */
+		message: z.string().nullable(),
+		/** Tool information when phase is tool-related */
+		tool: z
+			.object({
+				toolCallId: z.string(),
+				toolName: z.string(),
+				/** Tool state: partial (executing), result (success), error (failed) */
+				state: z.enum(["partial", "result", "error"]),
+			})
+			.optional(),
+		/** Audience: 'all' = everyone, 'dashboard' = team only */
+		audience: z.enum(["all", "dashboard"]).default("all"),
+	}),
+
+	// Emitted when AI agent finishes processing
+	aiAgentProcessingCompleted: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		aiAgentId: z.string(),
+		workflowRunId: z.string(),
+		/** Whether processing completed successfully, was skipped, cancelled, or errored */
+		status: z.enum(["success", "skipped", "cancelled", "error"]),
+		/** Action taken (if status is 'success') */
+		action: z.string().nullable().optional(),
+		/** Reason for skip/cancel/error */
+		reason: z.string().nullable().optional(),
+		/** Audience: 'all' = everyone, 'dashboard' = team only */
+		audience: z.enum(["all", "dashboard"]).default("all"),
+	}),
+
+	// =========================================================================
+	// TIMELINE ITEM UPDATE EVENTS
+	// For updating timeline items with new parts or state changes
+	// =========================================================================
+
+	// Emitted when an entire timeline item is updated (e.g., parts added)
+	timelineItemUpdated: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		item: z.object({
+			id: z.string(),
+			conversationId: z.string(),
+			organizationId: z.string(),
+			visibility: z.enum([
+				TimelineItemVisibility.PUBLIC,
+				TimelineItemVisibility.PRIVATE,
+			]),
+			type: z.enum([
+				ConversationTimelineType.MESSAGE,
+				ConversationTimelineType.EVENT,
+				ConversationTimelineType.IDENTIFICATION,
+			]),
+			text: z.string().nullable(),
+			parts: z.array(z.unknown()),
+			userId: z.string().nullable(),
+			visitorId: z.string().nullable(),
+			aiAgentId: z.string().nullable(),
+			createdAt: z.string(),
+			deletedAt: z.string().nullable(),
+			tool: z.string().nullable().optional(),
+		}),
+	}),
+
+	// Emitted for granular part updates (e.g., tool state changes)
+	timelineItemPartUpdated: baseRealtimeEvent.extend({
+		conversationId: z.string(),
+		timelineItemId: z.string(),
+		/** Index of the part in the parts array */
+		partIndex: z.number(),
+		/** The updated part data */
+		part: z.unknown(),
+	}),
 	// Web crawling events
 	crawlStarted: baseRealtimeEvent.extend({
 		linkSourceId: z.string(),

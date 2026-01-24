@@ -1,6 +1,7 @@
 import {
 	archiveConversation,
 	type ConversationRecord,
+	joinEscalation,
 	markConversationAsNotSpam,
 	markConversationAsRead,
 	markConversationAsSpam,
@@ -231,10 +232,12 @@ export const conversationRouter = createTRPCRouter({
 					reason: "Sent message",
 				});
 
-				// Create participant joined event
+				// Create participant joined event (PUBLIC so visitor sees it)
 				await createParticipantJoinedEvent(db, {
 					conversationId: input.conversationId,
 					organizationId: websiteData.organizationId,
+					websiteId: websiteData.id,
+					visitorId: conversation.visitorId,
 					targetUserId: user.id,
 					isAutoAdded: true,
 				});
@@ -488,6 +491,57 @@ export const conversationRouter = createTRPCRouter({
 				input
 			);
 			const updatedConversation = await markConversationAsUnread(db, {
+				conversation,
+				actorUserId: user.id,
+			});
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	joinEscalation: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation, website } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+
+			// Check if user is already a participant
+			const isParticipant = await isUserParticipant(db, {
+				conversationId: input.conversationId,
+				userId: user.id,
+			});
+
+			if (!isParticipant) {
+				// Add user as participant
+				await addConversationParticipant(db, {
+					conversationId: input.conversationId,
+					userId: user.id,
+					organizationId: website.organizationId,
+					reason: "Joined escalation",
+				});
+
+				// Create participant joined event (PUBLIC so visitor sees it)
+				await createParticipantJoinedEvent(db, {
+					conversationId: input.conversationId,
+					organizationId: website.organizationId,
+					websiteId: website.id,
+					visitorId: conversation.visitorId,
+					targetUserId: user.id,
+					isAutoAdded: false,
+					customMessage: "joined to help",
+				});
+			}
+
+			// Mark escalation as handled
+			const updatedConversation = await joinEscalation(db, {
 				conversation,
 				actorUserId: user.id,
 			});

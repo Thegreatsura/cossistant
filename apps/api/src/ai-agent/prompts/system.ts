@@ -21,6 +21,7 @@ import { formatVisitorContextForPrompt } from "../context/visitor";
 import type { ResponseMode } from "../pipeline/2-decision";
 import { getBehaviorSettings } from "../settings";
 import { buildBehaviorInstructions } from "./instructions";
+import { CORE_SECURITY_PROMPT, SECURITY_REMINDER } from "./security";
 import { PROMPT_TEMPLATES } from "./templates";
 
 type BuildPromptInput = {
@@ -35,6 +36,14 @@ type BuildPromptInput = {
 
 /**
  * Build the complete system prompt for the AI agent
+ *
+ * Layered Architecture:
+ * - Layer 0: Core Security (immutable) - Multi-party context, private info protection
+ * - Layer 1: Base Prompt (user-configurable) - Agent personality and role
+ * - Layer 2: Dynamic Context (auto-generated) - Visitor, tools, behavior
+ * - Layer 3: Security Reminder (immutable) - Final reinforcement
+ *
+ * The security layers cannot be overridden by user configuration.
  */
 export function buildSystemPrompt(input: BuildPromptInput): string {
 	const {
@@ -50,8 +59,19 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 
 	const parts: string[] = [];
 
-	// Base prompt from agent configuration
+	// =========================================================================
+	// LAYER 0: Core Security (immutable - always first)
+	// =========================================================================
+	parts.push(CORE_SECURITY_PROMPT);
+
+	// =========================================================================
+	// LAYER 1: Base Prompt (user-configurable)
+	// =========================================================================
 	parts.push(aiAgent.basePrompt);
+
+	// =========================================================================
+	// LAYER 2: Dynamic Context (auto-generated)
+	// =========================================================================
 
 	// Add real-time context (visitor + temporal + conversation meta)
 	const realtimeContext = buildRealtimeContext(
@@ -68,11 +88,12 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		parts.push(buildToolInstructions(tools));
 	}
 
+	// Add grounding instructions to prevent hallucinations
+	// This is critical for ensuring AI doesn't make up information
+	parts.push(PROMPT_TEMPLATES.GROUNDING_INSTRUCTIONS);
+
 	// Add structured output instructions
 	parts.push(PROMPT_TEMPLATES.STRUCTURED_OUTPUT);
-
-	// Add critical instruction to never go silent
-	parts.push(PROMPT_TEMPLATES.NEVER_GO_SILENT);
 
 	// Add behavior instructions based on settings
 	parts.push(buildBehaviorInstructions(settings, mode));
@@ -80,12 +101,12 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 	// Add mode-specific instructions
 	if (mode === "respond_to_command" && humanCommand) {
 		parts.push(buildCommandModeInstructions(humanCommand));
-	} else if (mode === "respond_to_visitor") {
-		parts.push(PROMPT_TEMPLATES.VISITOR_RESPONSE);
 	}
 
-	// Add conversation context
-	parts.push(PROMPT_TEMPLATES.CONVERSATION_CONTEXT);
+	// =========================================================================
+	// LAYER 3: Security Reminder (immutable - always last)
+	// =========================================================================
+	parts.push(SECURITY_REMINDER);
 
 	return parts.join("\n\n");
 }
