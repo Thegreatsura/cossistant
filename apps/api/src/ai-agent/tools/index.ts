@@ -7,7 +7,7 @@
  * 1. Messaging: sendMessage, sendPrivateMessage - how AI communicates
  * 2. Actions: respond, escalate, resolve, markSpam, skip - signal completion
  * 3. Context-gathering: searchKnowledgeBase - fetch info to inform response
- * 4. Side-effect: setConversationTitle, updateSentiment, setPriority - inline actions
+ * 4. Side-effect: updateConversationTitle, updateSentiment, setPriority - inline actions
  *
  * The AI MUST use tools for everything - there's no structured output.
  */
@@ -26,7 +26,7 @@ import { createSearchKnowledgeBaseTool } from "./search-knowledge";
 import { createSendMessageTool } from "./send-message-tool";
 import { createSendPrivateMessageTool } from "./send-private-message-tool";
 import { createSetPriorityTool } from "./set-priority";
-import { createSetConversationTitleTool } from "./set-title";
+import { createUpdateConversationTitleTool } from "./set-title";
 import type { ToolContext } from "./types";
 import { createUpdateSentimentTool } from "./update-sentiment";
 
@@ -54,7 +54,8 @@ export function getToolsForGeneration(
 
 	// Title tool - available if auto-generate title is enabled
 	if (settings.autoGenerateTitle) {
-		tools.setConversationTitle = createSetConversationTitleTool(toolContext);
+		tools.updateConversationTitle =
+			createUpdateConversationTitleTool(toolContext);
 	}
 
 	// Sentiment tool - available if auto-analyze is enabled

@@ -1,8 +1,9 @@
 /**
- * Set Conversation Title Tool
+ * Update Conversation Title Tool
  *
- * Allows the AI to set a descriptive title for the conversation.
- * Should be called early when the topic becomes clear.
+ * Allows the AI to set or update a descriptive title for the conversation.
+ * Can be called when the topic becomes clear, or updated later if a more
+ * accurate title is discovered during the conversation.
  */
 
 import { tool } from "ai";
@@ -20,12 +21,12 @@ const inputSchema = z.object({
 });
 
 /**
- * Create the setConversationTitle tool with bound context
+ * Create the updateConversationTitle tool with bound context
  */
-export function createSetConversationTitleTool(ctx: ToolContext) {
+export function createUpdateConversationTitleTool(ctx: ToolContext) {
 	return tool({
 		description:
-			"Set a brief, descriptive title for this conversation. Call this early when the main topic becomes clear. Keep titles under 60 characters.",
+			"Set or update the title for this conversation. Use this when the main topic becomes clear, or update it later if you discover a more accurate description. Keep titles under 60 characters.",
 		inputSchema,
 		execute: async ({ title }): Promise<ToolResult<{ title: string }>> => {
 			try {
@@ -44,12 +45,13 @@ export function createSetConversationTitleTool(ctx: ToolContext) {
 				};
 			} catch (error) {
 				console.error(
-					`[tool:setConversationTitle] conv=${ctx.conversationId} | Failed:`,
+					`[tool:updateConversationTitle] conv=${ctx.conversationId} | Failed:`,
 					error
 				);
 				return {
 					success: false,
-					error: error instanceof Error ? error.message : "Failed to set title",
+					error:
+						error instanceof Error ? error.message : "Failed to update title",
 				};
 			}
 		},

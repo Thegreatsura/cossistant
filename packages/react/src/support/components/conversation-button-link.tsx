@@ -58,22 +58,11 @@ export function ConversationButtonLink({
 			? text(statusTextKey)
 			: text("common.fallbacks.unknown");
 
-	const lastMessageContent = lastMessage ? (
-		lastMessage.isFromVisitor ? (
-			<span>
-				{text("component.conversationButtonLink.lastMessage.visitor", {
-					time: lastMessage.time,
-				})}
-			</span>
-		) : (
-			<span>
-				{text("component.conversationButtonLink.lastMessage.agent", {
-					name: lastMessage.senderName || text("common.fallbacks.supportTeam"),
-					time: lastMessage.time,
-				})}
-			</span>
-		)
-	) : undefined;
+	// Show the actual title if it exists, otherwise use the preview title (which may fallback to message)
+	const displayTitle = conversation.title || preview.title;
+
+	// Show the truncated message content as secondary text
+	const messagePreview = lastMessage?.content || null;
 
 	return (
 		<button
@@ -95,20 +84,18 @@ export function ConversationButtonLink({
 			/>
 
 			<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+				<div className="flex max-w-[90%] items-center justify-between gap-2">
+					<h3 className="truncate font-medium text-co-primary text-sm">
+						{displayTitle}
+					</h3>
+				</div>
 				{typing.isTyping ? (
 					<BouncingDots />
-				) : (
-					<>
-						<div className="flex max-w-[90%] items-center justify-between gap-2">
-							<h3 className="truncate font-medium text-co-primary text-sm">
-								{preview.title}
-							</h3>
-						</div>
-						{lastMessageContent ? (
-							<p className="text-co-primary/60 text-xs">{lastMessageContent}</p>
-						) : null}
-					</>
-				)}
+				) : messagePreview ? (
+					<p className="truncate text-co-primary/60 text-xs">
+						{messagePreview}
+					</p>
+				) : null}
 			</div>
 
 			<div

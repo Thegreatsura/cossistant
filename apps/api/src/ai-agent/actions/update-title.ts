@@ -8,12 +8,9 @@
 
 import type { Database } from "@api/db";
 import type { ConversationSelect } from "@api/db/schema/conversation";
-import {
-	conversation,
-	conversationTimelineItem,
-} from "@api/db/schema/conversation";
+import { conversation } from "@api/db/schema/conversation";
 import { realtime } from "@api/realtime/emitter";
-import { generateShortPrimaryId } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
@@ -30,6 +27,23 @@ type UpdateTitleParams = {
 };
 
 /**
+ * Normalize title for comparison (lowercase, trim whitespace)
+ */
+function normalizeTitle(title: string): string {
+	return title.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+/**
+ * Check if two titles are meaningfully different
+ */
+function isTitleDifferent(oldTitle: string | null, newTitle: string): boolean {
+	if (!oldTitle) {
+		return true;
+	}
+	return normalizeTitle(oldTitle) !== normalizeTitle(newTitle);
+}
+
+/**
  * Update conversation title
  */
 export async function updateTitle(params: UpdateTitleParams): Promise<void> {
@@ -42,11 +56,12 @@ export async function updateTitle(params: UpdateTitleParams): Promise<void> {
 		title,
 	} = params;
 
-	// Skip if title already exists
-	if (conv.title) {
+	// Skip if title is not meaningfully different
+	if (!isTitleDifferent(conv.title, title)) {
 		return;
 	}
 
+	const isUpdate = Boolean(conv.title);
 	const now = new Date().toISOString();
 
 	// Update conversation
@@ -58,18 +73,24 @@ export async function updateTitle(params: UpdateTitleParams): Promise<void> {
 		})
 		.where(eq(conversation.id, conv.id));
 
-	// Create private timeline event (TITLE_GENERATED)
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId: conv.id,
+	// Create private timeline event (uses createTimelineItem for proper realtime emission)
+	const eventText = isUpdate
+		? `AI updated title: "${title}" (was: "${conv.title}")`
+		: `AI generated title: "${title}"`;
+
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PRIVATE, // Private - team only
-		text: `AI generated title: "${title}"`,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId: conv.id,
+		conversationOwnerVisitorId: conv.visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PRIVATE,
+			text: eventText,
+			parts: [{ type: "text", text: eventText }],
+			aiAgentId,
+		},
 	});
 
 	// Emit conversationUpdated event for real-time dashboard and widget updates

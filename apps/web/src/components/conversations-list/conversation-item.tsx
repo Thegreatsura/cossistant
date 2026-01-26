@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
+import { Logo } from "../ui/logo";
 
 function stripMarkdownLinks(text: string): string {
 	return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
@@ -43,6 +44,8 @@ type ConversationItemViewProps = {
 	lastTimelineContent: ReactNode;
 	lastTimelineItemCreatedAt?: Date | null;
 	isTyping: boolean;
+	isAITyping?: boolean;
+	isLastMessageFromAI?: boolean;
 	waitingSinceLabel?: string | null;
 	needsHumanIntervention?: boolean;
 	hasUnreadMessage: boolean;
@@ -62,6 +65,8 @@ export function ConversationItemView({
 	lastTimelineContent,
 	lastTimelineItemCreatedAt,
 	isTyping,
+	isAITyping = false,
+	isLastMessageFromAI = false,
 	waitingSinceLabel,
 	needsHumanIntervention = false,
 	hasUnreadMessage,
@@ -95,20 +100,25 @@ export function ConversationItemView({
 			<div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
 				<p className="min-w-[120px] max-w-[120px] truncate">{visitorName}</p>
 
-				{isTyping ? (
-					<BouncingDots />
-				) : title ? (
-					<div className="flex min-w-0 flex-1 items-center gap-2 truncate pr-6">
-						<span className="truncate font-medium">{title}</span>
-						<span className="hidden truncate text-muted-foreground md:inline">
+				<div className="flex min-w-0 flex-1 items-center gap-6 truncate pr-6">
+					{title && <span className="truncate font-medium">{title}</span>}
+					{isTyping ? (
+						<div className="flex shrink-0 items-center gap-1">
+							{isAITyping && <Logo className="size-3.5" />}
+							<BouncingDots />
+						</div>
+					) : (
+						<span
+							className={cn(
+								"hidden items-center gap-1 truncate md:inline-flex",
+								title ? "text-muted-foreground" : ""
+							)}
+						>
+							{isLastMessageFromAI && <Logo className="size-3.5 shrink-0" />}
 							{lastTimelineContent}
 						</span>
-					</div>
-				) : (
-					<div className="flex min-w-0 items-center gap-2 truncate pr-6 text-muted-foreground">
-						{lastTimelineContent}
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 			<div className="flex items-center gap-3">
 				{needsHumanIntervention && (
@@ -289,6 +299,11 @@ export function ConversationItem({
 		return null;
 	}, [typingEntries, visitor, members]);
 
+	const isAITyping = useMemo(
+		() => typingEntries.some((entry) => entry.actorType === "ai_agent"),
+		[typingEntries]
+	);
+
 	const cachedLastTimelineItem = useLatestConversationMessage({
 		conversationId: header.id,
 		websiteSlug,
@@ -394,6 +409,8 @@ export function ConversationItem({
 	const isLastTimelineItemFromCurrentUser =
 		lastTimelineItem?.userId === user.id;
 
+	const isLastMessageFromAI = Boolean(lastTimelineItem?.aiAgentId);
+
 	const hasUnreadMessage = Boolean(
 		lastTimelineItem &&
 			!isLastTimelineItemFromCurrentUser &&
@@ -408,6 +425,8 @@ export function ConversationItem({
 			focused={focused}
 			hasUnreadMessage={hasUnreadMessage}
 			href={href}
+			isAITyping={isAITyping}
+			isLastMessageFromAI={isLastMessageFromAI}
 			isTyping={Boolean(typingInfo)}
 			lastTimelineContent={lastTimelineContent}
 			lastTimelineItemCreatedAt={lastTimelineItemCreatedAt}
