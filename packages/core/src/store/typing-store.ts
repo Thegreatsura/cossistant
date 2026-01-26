@@ -272,14 +272,53 @@ export function clearTypingFromTimelineItem(
 ): void {
 	const { item } = event.payload;
 
-	// Clear ALL typing entries for this conversation when any message arrives.
-	// This ensures:
-	// 1. AI typing stops immediately when an AI message is displayed
-	// 2. AI typing stops when visitor sends a new message (new workflow will start)
-	// 3. User/visitor typing stops when their message is sent
-	// Previously, we kept AI typing alive to support multiple messages with delays,
-	// but this caused typing indicators to linger after messages were already visible.
-	store.clearConversation(item.conversationId);
+	// Determine who sent this message
+	const senderType: TypingActorType | null = item.aiAgentId
+		? "ai_agent"
+		: item.userId
+			? "user"
+			: item.visitorId
+				? "visitor"
+				: null;
+
+	// Strategy for clearing typing based on who sent the message:
+	//
+	// 1. VISITOR message → Clear ALL typing
+	//    - A new AI workflow will start, so AI typing should stop
+	//    - User typing should stop too (conversation state changed)
+	//
+	// 2. USER message → Clear ALL typing
+	//    - Human took over the conversation
+	//    - AI typing should stop (human is handling)
+	//
+	// 3. AI message → DON'T clear AI typing (more messages may come)
+	//    - AI may send multiple messages in sequence
+	//    - Server restarts typing after each message
+	//    - Typing TTL (6s) handles eventual cleanup
+	//    - Clear OTHER typing (visitor/user) just in case
+
+	if (senderType === "ai_agent") {
+		// AI sent a message - keep AI typing alive for multi-message sequences
+		// Only clear non-AI typing entries
+		const conversationTyping =
+			store.getState().conversations[item.conversationId];
+		if (conversationTyping) {
+			for (const key of Object.keys(conversationTyping)) {
+				const entry = conversationTyping[key];
+				if (entry && entry.actorType !== "ai_agent") {
+					store.removeTyping({
+						conversationId: item.conversationId,
+						actorType: entry.actorType,
+						actorId: entry.actorId,
+					});
+				}
+			}
+		}
+	} else {
+		// Visitor or user sent a message - clear ALL typing
+		// This resets the conversation state properly
+		store.clearConversation(item.conversationId);
+	}
 }
 
 export function getConversationTyping(

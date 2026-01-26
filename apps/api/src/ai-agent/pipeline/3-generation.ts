@@ -73,8 +73,10 @@ type GenerationInput = {
 	abortSignal?: AbortSignal;
 	/** Callback to check if workflow is still active - prevents duplicate messages */
 	checkWorkflowActive?: () => Promise<boolean>;
-	/** Callback to stop the typing indicator before first message is sent */
+	/** Callback to stop the typing indicator just before a message is sent */
 	stopTyping?: () => Promise<void>;
+	/** Callback to start/restart the typing indicator during inter-message delays */
+	startTyping?: () => Promise<void>;
 	/** Whether conversation is currently escalated */
 	isEscalated?: boolean;
 	/** Reason for escalation if escalated */
@@ -110,6 +112,7 @@ export async function generate(
 		abortSignal,
 		checkWorkflowActive,
 		stopTyping,
+		startTyping,
 		isEscalated,
 		escalationReason,
 		smartDecision,
@@ -133,8 +136,10 @@ export async function generate(
 		},
 		// Callback to check workflow state - prevents duplicate messages when superseded
 		checkWorkflowActive,
-		// Callback to stop typing indicator before first message is sent
+		// Callback to stop typing indicator just before a message is sent
 		stopTyping,
+		// Callback to start/restart typing indicator during delays between messages
+		startTyping,
 		// Escalation state - prevents re-escalation
 		isEscalated,
 	};

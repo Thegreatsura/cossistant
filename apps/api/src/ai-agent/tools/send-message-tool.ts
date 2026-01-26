@@ -106,13 +106,19 @@ export function createSendMessageTool(ctx: ToolContext) {
 					}
 				}
 
-				// Add natural delay for subsequent messages (not the first one)
-				// This simulates human typing and prevents messages appearing all at once
+				// For subsequent messages (not the first one), add a natural delay
+				// with typing indicator to simulate human conversation pacing
 				if (messageNumber > 1) {
 					const delayMs = calculateTypingDelay(message.length);
 					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Adding ${delayMs}ms delay before message #${messageNumber}`
+						`[tool:sendMessage] conv=${ctx.conversationId} | Message #${messageNumber}: Starting typing indicator for ${delayMs}ms delay`
 					);
+
+					// Start typing indicator BEFORE the delay so users see "AI is typing..."
+					// This is critical - without this, users see dead silence between messages
+					if (ctx.startTyping) {
+						await ctx.startTyping();
+					}
 
 					// Use interruptible sleep to abort if workflow is superseded
 					const completed = await interruptibleSleep(
@@ -123,6 +129,10 @@ export function createSendMessageTool(ctx: ToolContext) {
 						console.log(
 							`[tool:sendMessage] conv=${ctx.conversationId} | Workflow superseded during delay, skipping message #${messageNumber}`
 						);
+						// Stop typing since we're not sending the message
+						if (ctx.stopTyping) {
+							await ctx.stopTyping();
+						}
 						return {
 							success: false,
 							error: "Workflow superseded during typing delay",
@@ -131,11 +141,11 @@ export function createSendMessageTool(ctx: ToolContext) {
 					}
 				}
 
-				// Stop typing indicator before first message is sent
-				// This prevents the typing indicator from lingering after the message appears
-				if (messageNumber === 1 && ctx.stopTyping) {
+				// Stop typing indicator just before sending the message
+				// This prevents typing from showing alongside the message
+				if (ctx.stopTyping) {
 					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Stopping typing before first message`
+						`[tool:sendMessage] conv=${ctx.conversationId} | Stopping typing before message #${messageNumber}`
 					);
 					await ctx.stopTyping();
 				}
@@ -158,6 +168,16 @@ export function createSendMessageTool(ctx: ToolContext) {
 				console.log(
 					`[tool:sendMessage] conv=${ctx.conversationId} | sent=${result.created}`
 				);
+
+				// Restart typing indicator after sending the message
+				// This ensures typing shows while AI prepares the next message or calls other tools
+				// The pipeline will stop typing at the end when generation completes
+				if (ctx.startTyping) {
+					console.log(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Restarting typing after message #${messageNumber}`
+					);
+					await ctx.startTyping();
+				}
 
 				return {
 					success: true,

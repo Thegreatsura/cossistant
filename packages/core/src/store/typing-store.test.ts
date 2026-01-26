@@ -239,4 +239,189 @@ describe("typing store", () => {
 
 		expect(getEntries("conv-1")).toHaveLength(0);
 	});
+
+	it("keeps AI typing when AI message arrives (for multi-message sequences)", () => {
+		// Set up AI typing state
+		setTypingState(store, {
+			conversationId: "conv-1",
+			actorType: "ai_agent",
+			actorId: "bot-1",
+			isTyping: true,
+		});
+
+		// Verify AI is typing
+		let entries = getEntries("conv-1");
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.actorType).toBe("ai_agent");
+
+		// AI sends a message - typing should NOT be cleared
+		const aiMessageEvent: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
+			payload: {
+				conversationId: "conv-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				userId: null,
+				visitorId: null,
+				item: {
+					id: "item-1",
+					conversationId: "conv-1",
+					organizationId: "org-1",
+					type: "message",
+					text: "Hello! I can help with that.",
+					parts: [{ type: "text", text: "Hello! I can help with that." }],
+					userId: null,
+					aiAgentId: "bot-1", // AI sent this message
+					visitorId: null,
+					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			},
+		};
+
+		clearTypingFromTimelineItem(store, aiMessageEvent);
+
+		// AI typing should STILL be present (for multi-message support)
+		entries = getEntries("conv-1");
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.actorType).toBe("ai_agent");
+	});
+
+	it("clears all typing when visitor message arrives", () => {
+		// Set up AI typing state
+		setTypingState(store, {
+			conversationId: "conv-1",
+			actorType: "ai_agent",
+			actorId: "bot-1",
+			isTyping: true,
+		});
+
+		// Verify AI is typing
+		expect(getEntries("conv-1")).toHaveLength(1);
+
+		// Visitor sends a new message - should clear ALL typing
+		const visitorMessageEvent: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
+			payload: {
+				conversationId: "conv-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				userId: null,
+				visitorId: "visitor-1",
+				item: {
+					id: "item-2",
+					conversationId: "conv-1",
+					organizationId: "org-1",
+					type: "message",
+					text: "Thanks!",
+					parts: [{ type: "text", text: "Thanks!" }],
+					userId: null,
+					aiAgentId: null,
+					visitorId: "visitor-1", // Visitor sent this
+					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			},
+		};
+
+		clearTypingFromTimelineItem(store, visitorMessageEvent);
+
+		// All typing should be cleared
+		expect(getEntries("conv-1")).toHaveLength(0);
+	});
+
+	it("clears AI typing when user message arrives", () => {
+		// Set up AI typing state
+		setTypingState(store, {
+			conversationId: "conv-1",
+			actorType: "ai_agent",
+			actorId: "bot-1",
+			isTyping: true,
+		});
+
+		// Human agent sends a message - should clear ALL typing
+		const userMessageEvent: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
+			payload: {
+				conversationId: "conv-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				userId: "user-1",
+				visitorId: null,
+				item: {
+					id: "item-3",
+					conversationId: "conv-1",
+					organizationId: "org-1",
+					type: "message",
+					text: "Let me help you with that.",
+					parts: [{ type: "text", text: "Let me help you with that." }],
+					userId: "user-1", // Human agent sent this
+					aiAgentId: null,
+					visitorId: null,
+					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			},
+		};
+
+		clearTypingFromTimelineItem(store, userMessageEvent);
+
+		// All typing should be cleared
+		expect(getEntries("conv-1")).toHaveLength(0);
+	});
+
+	it("clears visitor typing when AI message arrives", () => {
+		// Set up both AI and visitor typing
+		setTypingState(store, {
+			conversationId: "conv-1",
+			actorType: "ai_agent",
+			actorId: "bot-1",
+			isTyping: true,
+		});
+		setTypingState(store, {
+			conversationId: "conv-1",
+			actorType: "visitor",
+			actorId: "visitor-1",
+			isTyping: true,
+		});
+
+		// Both should be typing
+		expect(getEntries("conv-1")).toHaveLength(2);
+
+		// AI sends a message
+		const aiMessageEvent: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
+			payload: {
+				conversationId: "conv-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				userId: null,
+				visitorId: null,
+				item: {
+					id: "item-4",
+					conversationId: "conv-1",
+					organizationId: "org-1",
+					type: "message",
+					text: "Here's the answer",
+					parts: [{ type: "text", text: "Here's the answer" }],
+					userId: null,
+					aiAgentId: "bot-1",
+					visitorId: null,
+					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			},
+		};
+
+		clearTypingFromTimelineItem(store, aiMessageEvent);
+
+		// Only AI typing should remain
+		const entries = getEntries("conv-1");
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.actorType).toBe("ai_agent");
+	});
 });

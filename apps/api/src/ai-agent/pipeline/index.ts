@@ -183,13 +183,60 @@ export async function runAiAgentPipeline(
 			);
 
 		// Callback to stop typing - passed to tools
-		// Stops the typing indicator before the first message is sent
+		// Stops the typing indicator just before a message is sent
 		const stopTyping = async (): Promise<void> => {
 			if (typingHeartbeat?.running) {
 				console.log(
 					`[ai-agent] conv=${convId} | Stopping typing via tool callback`
 				);
 				await typingHeartbeat.stop();
+			}
+		};
+
+		// Capture conversation and aiAgent for use in closures
+		// (TypeScript doesn't narrow inside async callbacks)
+		const conversation = intakeResult.conversation;
+		const aiAgent = intakeResult.aiAgent;
+
+		// Callback to start/restart typing - passed to tools
+		// Used to show typing indicator during inter-message delays
+		// This ensures users see "typing..." between multiple messages
+		const startTyping = async (): Promise<void> => {
+			// Only start typing if we should be showing typing indicators
+			if (!willSendVisibleMessages) {
+				return;
+			}
+
+			// Check if workflow is still active before restarting typing
+			const isActive = await isWorkflowRunActive(
+				ctx.redis,
+				convId,
+				"ai-agent-response",
+				ctx.input.workflowRunId
+			);
+			if (!isActive) {
+				console.log(
+					`[ai-agent] conv=${convId} | Workflow superseded, not restarting typing`
+				);
+				return;
+			}
+
+			// If heartbeat was stopped, restart it
+			if (typingHeartbeat && !typingHeartbeat.running) {
+				console.log(
+					`[ai-agent] conv=${convId} | Restarting typing via tool callback`
+				);
+				await typingHeartbeat.start();
+			} else if (!typingHeartbeat) {
+				// Create new heartbeat if none exists
+				typingHeartbeat = new TypingHeartbeat({
+					conversation,
+					aiAgentId: aiAgent.id,
+				});
+				console.log(
+					`[ai-agent] conv=${convId} | Creating new typing heartbeat via tool callback`
+				);
+				await typingHeartbeat.start();
 			}
 		};
 
@@ -272,7 +319,8 @@ export async function runAiAgentPipeline(
 				triggerMessageId: ctx.input.messageId,
 				abortSignal: abortController.signal,
 				checkWorkflowActive, // Prevent duplicate messages when superseded
-				stopTyping, // Stop typing before first message is sent
+				stopTyping, // Stop typing just before message is sent
+				startTyping, // Restart typing after message is sent / during delays
 				isEscalated: decisionResult.isEscalated, // Pass escalation context
 				escalationReason: decisionResult.escalationReason,
 				smartDecision: decisionResult.smartDecision, // Pass smart decision for prompt context

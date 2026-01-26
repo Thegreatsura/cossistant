@@ -24,9 +24,15 @@ export type CheckWorkflowActiveCallback = () => Promise<boolean>;
 
 /**
  * Callback to stop the typing indicator.
- * Called when the first message is sent so typing doesn't linger.
+ * Called just before a message is sent so typing doesn't linger.
  */
 export type StopTypingCallback = () => Promise<void>;
+
+/**
+ * Callback to start/restart the typing indicator.
+ * Called before inter-message delays so users see typing between messages.
+ */
+export type StartTypingCallback = () => Promise<void>;
 
 /**
  * Context passed to all tools via experimental_context
@@ -52,10 +58,16 @@ export type ToolContext = {
 	 */
 	checkWorkflowActive?: CheckWorkflowActiveCallback;
 	/**
-	 * Callback to stop the typing indicator when a message is sent.
+	 * Callback to stop the typing indicator just before a message is sent.
 	 * Prevents typing from lingering after the message is already visible.
 	 */
 	stopTyping?: StopTypingCallback;
+	/**
+	 * Callback to start/restart the typing indicator.
+	 * Used to show typing during inter-message delays so users see
+	 * the AI is still working on subsequent messages.
+	 */
+	startTyping?: StartTypingCallback;
 	/** Whether the conversation is already escalated - prevents re-escalation */
 	isEscalated?: boolean;
 };
