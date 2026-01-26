@@ -127,6 +127,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					db,
 					conversation,
 					organizationId,
+					websiteId,
 					aiAgentId: aiAgent.id,
 					newStatus: "resolved",
 				});
@@ -142,6 +143,7 @@ export async function execute(input: ExecutionInput): Promise<ExecutionResult> {
 					db,
 					conversation,
 					organizationId,
+					websiteId,
 					aiAgentId: aiAgent.id,
 					newStatus: "spam",
 				});

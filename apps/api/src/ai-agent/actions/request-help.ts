@@ -5,13 +5,10 @@
  */
 
 import type { Database } from "@api/db";
-import {
-	conversationParticipant,
-	conversationTimelineItem,
-} from "@api/db/schema/conversation";
+import { conversationParticipant } from "@api/db/schema/conversation";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
-	ConversationEventType,
 	ConversationParticipationStatus,
 	ConversationTimelineType,
 	TimelineItemVisibility,
@@ -22,6 +19,8 @@ type RequestHelpParams = {
 	db: Database;
 	conversationId: string;
 	organizationId: string;
+	websiteId: string;
+	visitorId: string;
 	userId: string;
 	aiAgentId: string;
 	reason: string;
@@ -31,8 +30,16 @@ type RequestHelpParams = {
  * Request a user to participate in the conversation
  */
 export async function requestHelp(params: RequestHelpParams): Promise<void> {
-	const { db, conversationId, organizationId, userId, aiAgentId, reason } =
-		params;
+	const {
+		db,
+		conversationId,
+		organizationId,
+		websiteId,
+		visitorId,
+		userId,
+		aiAgentId,
+		reason,
+	} = params;
 
 	const now = new Date().toISOString();
 
@@ -67,17 +74,20 @@ export async function requestHelp(params: RequestHelpParams): Promise<void> {
 		createdAt: now,
 	});
 
-	// Create timeline event
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId,
+	// Create timeline event with proper realtime emission
+	const eventText = `AI requested assistance: ${reason}`;
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PRIVATE, // Private - team only
-		text: `AI requested assistance: ${reason}`,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId,
+		conversationOwnerVisitorId: visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PRIVATE,
+			text: eventText,
+			parts: [{ type: "text", text: eventText }],
+			aiAgentId,
+		},
 	});
 }

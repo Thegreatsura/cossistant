@@ -1,111 +1,85 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type SpinnerProps = {
 	className?: string;
 	size?: number;
-	circleCount?: number;
-	circleDiameter?: number;
+	squaresPerSide?: number;
+	squareSize?: number;
+	trailLength?: number;
 };
 
 export const Spinner = ({
 	className,
-	size = 20,
-	circleCount = 7,
-	circleDiameter = 3,
+	size = 16,
+	squaresPerSide = 3,
+	squareSize = 3,
+	trailLength = 3,
 }: SpinnerProps) => {
-	const [rotation, setRotation] = useState(0);
-	const [isSpread, setIsSpread] = useState(false);
+	// Auto-adjust squares per side based on size if not explicitly set
+	const effectiveSquaresPerSide = squaresPerSide ?? (size < 18 ? 3 : 4);
+	// Generate positions for squares along the perimeter in clockwise order
+	const generateSquarePositions = () => {
+		const positions: { x: number; y: number }[] = [];
+		const gap = (size - squareSize) / (effectiveSquaresPerSide - 1);
 
-	// Start the spreading animation first, then rotation
-	useEffect(() => {
-		// Start spreading animation after a short delay
-		const spreadTimer = setTimeout(() => {
-			setIsSpread(true);
-		}, 100);
+		// Top edge: left to right
+		for (let i = 0; i < effectiveSquaresPerSide; i++) {
+			positions.push({ x: i * gap, y: 0 });
+		}
 
-		// Start rotation animation after spreading is complete
-		const rotationTimer = setTimeout(() => {
-			setRotation(240); // Start by rotating right with overshoot
-		}, 300); // Delay to allow spreading animation to complete
+		// Right edge: top to bottom (skip first corner)
+		for (let i = 1; i < effectiveSquaresPerSide; i++) {
+			positions.push({ x: size - squareSize, y: i * gap });
+		}
 
-		return () => {
-			clearTimeout(spreadTimer);
-			clearTimeout(rotationTimer);
-		};
-	}, []);
+		// Bottom edge: right to left (skip first corner)
+		for (let i = effectiveSquaresPerSide - 2; i >= 0; i--) {
+			positions.push({ x: i * gap, y: size - squareSize });
+		}
 
-	// Calculate radius based on size, leaving space for circle diameter
-	const radius = size / 2 - circleDiameter / 2 - 1;
+		// Left edge: bottom to top (skip first and last corners)
+		for (let i = effectiveSquaresPerSide - 2; i > 0; i--) {
+			positions.push({ x: 0, y: i * gap });
+		}
 
-	// Create circles positioned in a circle
-	const circles = Array.from({ length: circleCount }, (_, i) => {
-		const angle = (i * 360) / circleCount; // Distribute circles evenly
-		const x = Math.cos((angle * Math.PI) / 180) * radius;
-		const y = Math.sin((angle * Math.PI) / 180) * radius;
+		return positions;
+	};
 
-		return { x, y };
-	});
+	const squares = generateSquarePositions();
+	const totalSquares = squares.length;
+	const animationDuration = 1.5; // Total time for one full loop
 
 	return (
 		<div
 			className={cn("relative", className)}
 			style={{ width: size, height: size }}
 		>
-			{/* Container that rotates */}
-			<motion.div
-				animate={{
-					rotate: rotation,
-				}}
-				className="absolute inset-0 flex items-center justify-center"
-				initial={{
-					rotate: 0,
-				}}
-				onAnimationComplete={() => {
-					// After animation completes, switch to the opposite rotation with 80° overshoot
-					setTimeout(() => {
-						setRotation((prev) => (prev === 0 || prev === 240 ? -80 : 240));
-					}, 20);
-				}}
-				transition={{
-					type: "tween",
-					duration: 2,
-					ease: "easeInOut",
-				}}
-			>
-				{circles.map((circle, index) => (
-					<motion.div
-						animate={{
-							left: isSpread
-								? size / 2 + circle.x - circleDiameter / 2
-								: size / 2 - circleDiameter / 2, // Animate to target position or stay at center
-							top: isSpread
-								? size / 2 + circle.y - circleDiameter / 2
-								: size / 2 - circleDiameter / 2,
-						}}
-						className="absolute rounded-full bg-current"
-						initial={{
-							left: size / 2 - circleDiameter / 2, // Start at center
-							top: size / 2 - circleDiameter / 2,
-						}}
-						key={index}
-						style={{
-							width: circleDiameter,
-							height: circleDiameter,
-						}}
-						transition={{
-							type: "spring",
-							stiffness: 200,
-							damping: 20,
-							duration: 0.6,
-							delay: index * 0.3,
-						}}
-					/>
-				))}
-			</motion.div>
+			{squares.map((square, index) => (
+				<motion.div
+					animate={{
+						opacity: [0.15, 0.15, 1, 1, 0.15, 0.15],
+					}}
+					className="absolute bg-current"
+					key={index}
+					style={{
+						width: squareSize,
+						height: squareSize,
+						left: square.x,
+						top: square.y,
+						borderRadius: squareSize * 0.2,
+					}}
+					transition={{
+						duration: animationDuration,
+						repeat: Number.POSITIVE_INFINITY,
+						ease: "easeInOut",
+						delay: (index / totalSquares) * animationDuration,
+						times: [0, 0.1, 0.2, 0.3, 0.4, 1],
+					}}
+				/>
+			))}
 		</div>
 	);
 };

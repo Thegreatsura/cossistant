@@ -5,13 +5,10 @@
  */
 
 import type { Database } from "@api/db";
-import {
-	conversationAssignee,
-	conversationTimelineItem,
-} from "@api/db/schema/conversation";
+import { conversationAssignee } from "@api/db/schema/conversation";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
-	ConversationEventType,
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
@@ -21,6 +18,8 @@ type AssignParams = {
 	db: Database;
 	conversationId: string;
 	organizationId: string;
+	websiteId: string;
+	visitorId: string;
 	userId: string;
 	aiAgentId: string;
 };
@@ -29,7 +28,15 @@ type AssignParams = {
  * Assign a conversation to a user
  */
 export async function assign(params: AssignParams): Promise<void> {
-	const { db, conversationId, organizationId, userId, aiAgentId } = params;
+	const {
+		db,
+		conversationId,
+		organizationId,
+		websiteId,
+		visitorId,
+		userId,
+		aiAgentId,
+	} = params;
 
 	const now = new Date().toISOString();
 
@@ -63,17 +70,20 @@ export async function assign(params: AssignParams): Promise<void> {
 		createdAt: now,
 	});
 
-	// Create timeline event
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId,
+	// Create timeline event with proper realtime emission
+	const eventText = "AI assigned conversation";
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PUBLIC,
-		text: "AI assigned conversation",
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId,
+		conversationOwnerVisitorId: visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PUBLIC,
+			text: eventText,
+			parts: [{ type: "text", text: eventText }],
+			aiAgentId,
+		},
 	});
 }

@@ -5,13 +5,10 @@
  */
 
 import type { Database } from "@api/db";
-import {
-	conversationTimelineItem,
-	conversationView,
-} from "@api/db/schema/conversation";
+import { conversationView } from "@api/db/schema/conversation";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
-	ConversationEventType,
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
@@ -21,6 +18,8 @@ type CategorizeParams = {
 	db: Database;
 	conversationId: string;
 	organizationId: string;
+	websiteId: string;
+	visitorId: string;
 	viewId: string;
 	aiAgentId: string;
 };
@@ -29,7 +28,15 @@ type CategorizeParams = {
  * Add a conversation to a view
  */
 export async function categorize(params: CategorizeParams): Promise<void> {
-	const { db, conversationId, organizationId, viewId, aiAgentId } = params;
+	const {
+		db,
+		conversationId,
+		organizationId,
+		websiteId,
+		visitorId,
+		viewId,
+		aiAgentId,
+	} = params;
 
 	const now = new Date().toISOString();
 
@@ -62,17 +69,20 @@ export async function categorize(params: CategorizeParams): Promise<void> {
 		createdAt: now,
 	});
 
-	// Create timeline event
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId,
+	// Create timeline event with proper realtime emission
+	const eventText = "AI categorized conversation";
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PRIVATE, // Private - team only
-		text: "AI categorized conversation",
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId,
+		conversationOwnerVisitorId: visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PRIVATE,
+			text: eventText,
+			parts: [{ type: "text", text: eventText }],
+			aiAgentId,
+		},
 	});
 }

@@ -34,15 +34,8 @@ export default function AgentCreatePage() {
 	}
 
 	return (
-		<div className="flex h-screen w-full">
-			{/* Main Content - Centered Form */}
-			<ScrollArea
-				className="flex flex-1 flex-col"
-				orientation="vertical"
-				scrollMask
-			>
-				<AgentOnboardingFlow existingAgent={existingAgent} />
-			</ScrollArea>
-		</div>
+		<ScrollArea className="h-screen w-full" orientation="vertical" scrollMask>
+			<AgentOnboardingFlow existingAgent={existingAgent} />
+		</ScrollArea>
 	);
 }

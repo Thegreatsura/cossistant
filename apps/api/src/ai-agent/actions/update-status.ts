@@ -6,14 +6,9 @@
 
 import type { Database } from "@api/db";
 import type { ConversationSelect } from "@api/db/schema/conversation";
+import { conversation } from "@api/db/schema/conversation";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
-	conversation,
-	conversationTimelineItem,
-} from "@api/db/schema/conversation";
-import { generateShortPrimaryId } from "@api/utils/db/ids";
-import {
-	ConversationEventType,
-	ConversationStatus,
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
@@ -23,6 +18,7 @@ type UpdateStatusParams = {
 	db: Database;
 	conversation: ConversationSelect;
 	organizationId: string;
+	websiteId: string;
 	aiAgentId: string;
 	newStatus: "open" | "resolved" | "spam";
 };
@@ -35,6 +31,7 @@ export async function updateStatus(params: UpdateStatusParams): Promise<void> {
 		db,
 		conversation: conv,
 		organizationId,
+		websiteId,
 		aiAgentId,
 		newStatus,
 	} = params;
@@ -63,22 +60,20 @@ export async function updateStatus(params: UpdateStatusParams): Promise<void> {
 		.set(updateData)
 		.where(eq(conversation.id, conv.id));
 
-	// Create timeline event
-	const eventType =
-		newStatus === "resolved"
-			? ConversationEventType.RESOLVED
-			: ConversationEventType.STATUS_CHANGED;
-
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId: conv.id,
+	// Create timeline event with proper realtime emission
+	const eventText = `Status changed to ${newStatus}`;
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PUBLIC,
-		text: `Status changed to ${newStatus}`,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId: conv.id,
+		conversationOwnerVisitorId: conv.visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PUBLIC,
+			text: eventText,
+			parts: [{ type: "text", text: eventText }],
+			aiAgentId,
+		},
 	});
 }

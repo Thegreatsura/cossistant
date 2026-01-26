@@ -8,12 +8,9 @@
 
 import type { Database } from "@api/db";
 import type { ConversationSelect } from "@api/db/schema/conversation";
-import {
-	conversation,
-	conversationTimelineItem,
-} from "@api/db/schema/conversation";
+import { conversation } from "@api/db/schema/conversation";
 import { realtime } from "@api/realtime/emitter";
-import { generateShortPrimaryId } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
@@ -58,18 +55,21 @@ export async function updateSentiment(
 		})
 		.where(eq(conversation.id, conv.id));
 
-	// Create private timeline event (AI_ANALYZED)
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId: conv.id,
+	// Create private timeline event (AI_ANALYZED) with proper realtime emission
+	const eventText = `AI analyzed sentiment: ${sentiment} (${Math.round(confidence * 100)}% confidence)`;
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PRIVATE, // Private - team only
-		text: `AI analyzed sentiment: ${sentiment} (${Math.round(confidence * 100)}% confidence)`,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId: conv.id,
+		conversationOwnerVisitorId: conv.visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PRIVATE,
+			text: eventText,
+			parts: [{ type: "text", text: eventText }],
+			aiAgentId,
+		},
 	});
 
 	// Emit conversationUpdated event for real-time dashboard updates

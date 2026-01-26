@@ -70,6 +70,8 @@ export function createSendPrivateMessageTool(ctx: ToolContext) {
 					db: ctx.db,
 					conversationId: ctx.conversationId,
 					organizationId: ctx.organizationId,
+					websiteId: ctx.websiteId,
+					visitorId: ctx.visitorId,
 					aiAgentId: ctx.aiAgentId,
 					text: message,
 					idempotencyKey: uniqueKey,

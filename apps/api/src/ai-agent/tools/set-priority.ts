@@ -37,6 +37,7 @@ export function createSetPriorityTool(ctx: ToolContext) {
 					db: ctx.db,
 					conversation: ctx.conversation,
 					organizationId: ctx.organizationId,
+					websiteId: ctx.websiteId,
 					aiAgentId: ctx.aiAgentId,
 					newPriority: priority,
 				});

@@ -8,6 +8,7 @@
 import type { Database } from "@api/db";
 import { conversationTimelineItem } from "@api/db/schema/conversation";
 import { generateIdempotentULID } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
@@ -18,6 +19,8 @@ type AddInternalNoteParams = {
 	db: Database;
 	conversationId: string;
 	organizationId: string;
+	websiteId: string;
+	visitorId: string;
 	aiAgentId: string;
 	text: string;
 	idempotencyKey: string;
@@ -38,6 +41,8 @@ export async function addInternalNote(
 		db,
 		conversationId,
 		organizationId,
+		websiteId,
+		visitorId,
 		aiAgentId,
 		text,
 		idempotencyKey,
@@ -60,19 +65,21 @@ export async function addInternalNote(
 		};
 	}
 
-	const now = new Date().toISOString();
-
-	await db.insert(conversationTimelineItem).values({
-		id: noteId, // Use deterministic ULID for deduplication
-		conversationId,
+	// Create private message with proper realtime emission
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.MESSAGE,
-		visibility: TimelineItemVisibility.PRIVATE,
-		text,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId,
+		conversationOwnerVisitorId: visitorId,
+		item: {
+			id: noteId, // Use deterministic ULID for deduplication
+			type: ConversationTimelineType.MESSAGE,
+			visibility: TimelineItemVisibility.PRIVATE,
+			text,
+			parts: [{ type: "text", text }],
+			aiAgentId,
+		},
 	});
 
 	return {

@@ -15,6 +15,7 @@ import {
 import { realtime } from "@api/realtime/emitter";
 import { createParticipantRequestedEvent } from "@api/utils/conversation-events";
 import { generateShortPrimaryId } from "@api/utils/db/ids";
+import { createTimelineItem } from "@api/utils/timeline-item";
 import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
@@ -110,18 +111,21 @@ export async function escalate(params: EscalateParams): Promise<void> {
 		});
 	}
 
-	// Create escalation event (private - AI_ESCALATED) for team visibility
-	await db.insert(conversationTimelineItem).values({
-		id: generateShortPrimaryId(),
-		conversationId: conv.id,
+	// Create escalation event (private - AI_ESCALATED) for team visibility with proper realtime emission
+	const escalationEventText = `AI escalated: ${reason}`;
+	await createTimelineItem({
+		db,
 		organizationId,
-		type: ConversationTimelineType.EVENT,
-		visibility: TimelineItemVisibility.PRIVATE, // Private - team only
-		text: `AI escalated: ${reason}`,
-		aiAgentId,
-		userId: null,
-		visitorId: null,
-		createdAt: now,
+		websiteId,
+		conversationId: conv.id,
+		conversationOwnerVisitorId: conv.visitorId,
+		item: {
+			type: ConversationTimelineType.EVENT,
+			visibility: TimelineItemVisibility.PRIVATE,
+			text: escalationEventText,
+			parts: [{ type: "text", text: escalationEventText }],
+			aiAgentId,
+		},
 	});
 
 	// Create public PARTICIPANT_REQUESTED event so visitor knows human help is coming
@@ -154,6 +158,8 @@ export async function escalate(params: EscalateParams): Promise<void> {
 			db,
 			conversationId: conv.id,
 			organizationId,
+			websiteId,
+			visitorId: conv.visitorId,
 			userId: assignToUserId,
 			aiAgentId,
 		});
@@ -165,6 +171,7 @@ export async function escalate(params: EscalateParams): Promise<void> {
 			db,
 			conversation: conv,
 			organizationId,
+			websiteId,
 			aiAgentId,
 			newPriority: urgency,
 		});
