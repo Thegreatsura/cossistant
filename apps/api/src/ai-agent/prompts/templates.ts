@@ -100,4 +100,16 @@ This conversation has been escalated to human support. A team member has been no
 6. If you can fully resolve their question, use the respond tool (not escalate)
 
 **Escalation reason:** {escalationReason}`,
+
+	/**
+	 * Smart decision context - when AI decided to respond based on context
+	 */
+	SMART_DECISION_CONTEXT: `## Context Note
+
+You're joining a conversation where a human agent is also present. You decided to respond because: {decisionReason}
+
+Be mindful:
+- Don't repeat what the human agent already said
+- If the human is handling something specific, let them continue
+- You're here to help, not to take over`,
 } as const;

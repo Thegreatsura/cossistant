@@ -19,6 +19,7 @@ import {
 import type { VisitorContext } from "../context/visitor";
 import { formatVisitorContextForPrompt } from "../context/visitor";
 import type { ResponseMode } from "../pipeline/2-decision";
+import type { SmartDecisionResult } from "../pipeline/2a-smart-decision";
 import { getBehaviorSettings } from "../settings";
 import { buildBehaviorInstructions } from "./instructions";
 import { CORE_SECURITY_PROMPT, SECURITY_REMINDER } from "./security";
@@ -36,6 +37,8 @@ type BuildPromptInput = {
 	isEscalated?: boolean;
 	/** Reason for escalation if escalated */
 	escalationReason?: string | null;
+	/** Smart decision result if AI was used to decide */
+	smartDecision?: SmartDecisionResult;
 };
 
 /**
@@ -60,6 +63,7 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		tools,
 		isEscalated,
 		escalationReason,
+		smartDecision,
 	} = input;
 	const settings = getBehaviorSettings(aiAgent);
 
@@ -117,6 +121,16 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 			escalationReason || "Human support requested"
 		);
 		parts.push(escalatedContext);
+	}
+
+	// Add smart decision context if AI decided to respond with human present
+	// This gives the AI context about why it's joining the conversation
+	if (smartDecision && smartDecision.intent === "respond") {
+		const smartContext = PROMPT_TEMPLATES.SMART_DECISION_CONTEXT.replace(
+			"{decisionReason}",
+			smartDecision.reasoning
+		);
+		parts.push(smartContext);
 	}
 
 	// =========================================================================

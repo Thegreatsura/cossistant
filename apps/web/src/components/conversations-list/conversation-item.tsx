@@ -39,6 +39,7 @@ type ConversationItemViewProps = {
 	visitorAvatarUrl?: string | null;
 	visitorPresenceStatus?: "online" | "away";
 	visitorLastSeenAt?: string | null;
+	title?: string | null;
 	lastTimelineContent: ReactNode;
 	lastTimelineItemCreatedAt?: Date | null;
 	isTyping: boolean;
@@ -57,6 +58,7 @@ export function ConversationItemView({
 	visitorAvatarUrl,
 	visitorPresenceStatus,
 	visitorLastSeenAt,
+	title,
 	lastTimelineContent,
 	lastTimelineItemCreatedAt,
 	isTyping,
@@ -95,6 +97,13 @@ export function ConversationItemView({
 
 				{isTyping ? (
 					<BouncingDots />
+				) : title ? (
+					<div className="flex min-w-0 flex-1 items-center gap-2 truncate pr-6">
+						<span className="truncate font-medium">{title}</span>
+						<span className="hidden truncate text-muted-foreground md:inline">
+							{lastTimelineContent}
+						</span>
+					</div>
 				) : (
 					<div className="flex min-w-0 items-center gap-2 truncate pr-6 text-muted-foreground">
 						{lastTimelineContent}
@@ -246,21 +255,39 @@ export function ConversationItem({
 	});
 
 	const typingInfo = useMemo(() => {
-		if (typingEntries.length === 0 || !visitor) {
+		if (typingEntries.length === 0) {
 			return null;
 		}
 
 		const entry = typingEntries[0];
 
-		if (entry?.actorType === "visitor") {
+		// Visitor typing - requires visitor data
+		if (entry?.actorType === "visitor" && visitor) {
 			return {
 				name: visitor.contact?.name || visitor.contact?.email || "Visitor",
 				hasPreview: !!entry.preview,
 			};
 		}
 
+		// AI agent typing
+		if (entry?.actorType === "ai_agent") {
+			return {
+				name: "AI Agent",
+				hasPreview: false,
+			};
+		}
+
+		// Team member typing - look up member name
+		if (entry?.actorType === "user") {
+			const member = members.find((m) => m.id === entry.actorId);
+			return {
+				name: member?.name ?? member?.email?.split("@")[0] ?? "Team member",
+				hasPreview: false,
+			};
+		}
+
 		return null;
-	}, [typingEntries, visitor]);
+	}, [typingEntries, visitor, members]);
 
 	const cachedLastTimelineItem = useLatestConversationMessage({
 		conversationId: header.id,
@@ -404,6 +431,7 @@ export function ConversationItem({
 					/>
 				) : null
 			}
+			title={header.title}
 			visitorAvatarUrl={
 				visitor?.contact?.image ?? headerVisitor?.contact?.image ?? null
 			}

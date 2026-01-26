@@ -2,19 +2,23 @@
  * Pipeline Step 2: Decision
  *
  * This step determines if and how the AI agent should respond.
- * Simplified for MVP - AI responds to all messages unless paused.
  *
- * Decision factors:
- * - Human commands (@ai prefix) - highest priority
- * - Team member messages - always respond
- * - Visitor messages - always respond
- * - Pause state - only blocker
+ * IMPORTANT: Smart decision is OBLIGATORY for all messages.
+ * The ONLY exceptions are:
+ * 1. @ai or /ai command (explicit AI request - always respond)
+ * 2. AI is paused (never respond)
+ *
+ * For ALL other messages, the AI must evaluate whether to respond.
  */
 
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import type { RoleAwareMessage } from "../context/conversation";
 import type { ConversationState } from "../context/state";
+import {
+	runSmartDecision,
+	type SmartDecisionResult,
+} from "./2a-smart-decision";
 
 export type ResponseMode =
 	| "respond_to_visitor"
@@ -30,6 +34,8 @@ export type DecisionResult = {
 	isEscalated: boolean;
 	/** Reason for escalation if escalated */
 	escalationReason: string | null;
+	/** Smart decision details if AI was used */
+	smartDecision?: SmartDecisionResult;
 };
 
 type DecisionInput = {
@@ -42,30 +48,53 @@ type DecisionInput = {
 
 /**
  * Determine if and how the AI agent should act
+ *
+ * Smart decision is ALWAYS run except for:
+ * - @ai or /ai commands (always respond)
+ * - AI is paused (never respond)
  */
 export async function decide(input: DecisionInput): Promise<DecisionResult> {
 	const { triggerMessage, conversationState } = input;
 	const convId = input.conversation.id;
 
-	// Check for human command first (highest priority)
-	const humanCommand = detectHumanCommand(triggerMessage);
-
-	if (humanCommand) {
+	// No trigger message - don't act
+	if (!triggerMessage) {
 		console.log(
-			`[ai-agent:decision] conv=${convId} | Human command detected: "${humanCommand.slice(0, 50)}${humanCommand.length > 50 ? "..." : ""}"`
+			`[ai-agent:decision] conv=${convId} | No trigger message, skipping`
 		);
 		return {
-			shouldAct: true,
-			reason: "Human agent issued a command",
-			mode: "respond_to_command",
-			humanCommand,
+			shouldAct: false,
+			reason: "No trigger message",
+			mode: "background_only",
+			humanCommand: null,
 			isEscalated: conversationState.isEscalated,
 			escalationReason: conversationState.escalationReason,
 		};
 	}
 
-	// Check if AI is paused for this conversation
+	// ==========================================================================
+	// EXCEPTION 1: @ai or /ai command - ALWAYS respond (skip smart decision)
+	// ==========================================================================
+	const aiCommand = detectAiCommand(triggerMessage);
+	if (aiCommand) {
+		console.log(
+			`[ai-agent:decision] conv=${convId} | @ai command detected, responding`
+		);
+		return {
+			shouldAct: true,
+			reason: "AI was explicitly tagged",
+			mode: "respond_to_command",
+			humanCommand: aiCommand,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
+		};
+	}
+
+	// ==========================================================================
+	// EXCEPTION 2: AI is paused - NEVER respond (skip smart decision)
+	// ==========================================================================
 	if (isAiPaused(input.conversation)) {
+		console.log(`[ai-agent:decision] conv=${convId} | AI is paused, skipping`);
 		return {
 			shouldAct: false,
 			reason: "AI is paused for this conversation",
@@ -76,81 +105,91 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 		};
 	}
 
-	// NOTE: We no longer block AI when escalated
-	// The AI should continue helping while visitor waits for human
-	// Escalation status is passed to generation via isEscalated field
-	// The prompt will inform AI not to re-escalate
+	// ==========================================================================
+	// ALL OTHER MESSAGES: Smart decision is OBLIGATORY
+	// ==========================================================================
+	console.log(
+		`[ai-agent:decision] conv=${convId} | Running smart decision for ${triggerMessage.senderType} message`
+	);
 
-	// Team member messages are treated as implicit commands
-	// (they're working in the conversation, AI should help)
-	if (triggerMessage?.senderType === "human_agent") {
+	const smartResult = await runSmartDecision({
+		aiAgent: input.aiAgent,
+		conversation: input.conversation,
+		conversationHistory: input.conversationHistory,
+		conversationState,
+		triggerMessage,
+	});
+
+	// Map smart decision intent to response
+	const responseMode =
+		triggerMessage.senderType === "human_agent"
+			? "respond_to_command"
+			: "respond_to_visitor";
+
+	if (smartResult.intent === "observe") {
 		console.log(
-			`[ai-agent:decision] conv=${convId} | Team member message, responding`
+			`[ai-agent:decision] conv=${convId} | Smart decision: observe | "${smartResult.reasoning}"`
 		);
 		return {
-			shouldAct: true,
-			reason: "Team member sent a message",
-			mode: "respond_to_command",
-			humanCommand: triggerMessage.content,
-			isEscalated: conversationState.isEscalated,
-			escalationReason: conversationState.escalationReason,
-		};
-	}
-
-	// Visitor messages - always respond
-	if (triggerMessage?.senderType === "visitor") {
-		console.log(
-			`[ai-agent:decision] conv=${convId} | Visitor message, responding`
-		);
-		return {
-			shouldAct: true,
-			reason: "Visitor sent a message",
-			mode: "respond_to_visitor",
+			shouldAct: false,
+			reason: `Smart decision: ${smartResult.reasoning}`,
+			mode: "background_only",
 			humanCommand: null,
 			isEscalated: conversationState.isEscalated,
 			escalationReason: conversationState.escalationReason,
+			smartDecision: smartResult,
 		};
 	}
 
-	// No trigger message - don't act
+	if (smartResult.intent === "assist_team") {
+		console.log(
+			`[ai-agent:decision] conv=${convId} | Smart decision: assist_team | "${smartResult.reasoning}"`
+		);
+		return {
+			shouldAct: true,
+			reason: `Smart decision: ${smartResult.reasoning}`,
+			mode: "background_only", // Will only send private messages
+			humanCommand: null,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
+			smartDecision: smartResult,
+		};
+	}
+
+	// intent === "respond"
 	console.log(
-		`[ai-agent:decision] conv=${convId} | No actionable trigger, skipping`
+		`[ai-agent:decision] conv=${convId} | Smart decision: respond | "${smartResult.reasoning}"`
 	);
 	return {
-		shouldAct: false,
-		reason: "No actionable trigger message",
-		mode: "background_only",
-		humanCommand: null,
+		shouldAct: true,
+		reason: `Smart decision: ${smartResult.reasoning}`,
+		mode: responseMode,
+		humanCommand:
+			triggerMessage.senderType === "human_agent"
+				? triggerMessage.content
+				: null,
 		isEscalated: conversationState.isEscalated,
 		escalationReason: conversationState.escalationReason,
+		smartDecision: smartResult,
 	};
 }
 
 /**
- * Detect if the message is a human command to the AI
- * Commands start with @ai or /ai
+ * Detect if the message contains @ai or /ai command
+ * Can be from visitor OR human agent
  */
-function detectHumanCommand(message: RoleAwareMessage | null): string | null {
-	if (!message) {
-		return null;
-	}
-
-	// Only human agents can issue commands
-	if (message.senderType !== "human_agent") {
-		return null;
-	}
-
+function detectAiCommand(message: RoleAwareMessage): string | null {
 	const text = message.content.trim();
 	const lowerText = text.toLowerCase();
 
-	// Check for @ai prefix
-	if (lowerText.startsWith("@ai ")) {
-		return text.slice(4).trim();
+	// Check for @ai prefix (from anyone)
+	if (lowerText.startsWith("@ai ") || lowerText === "@ai") {
+		return text.slice(3).trim() || text;
 	}
 
-	// Check for /ai prefix
-	if (lowerText.startsWith("/ai ")) {
-		return text.slice(4).trim();
+	// Check for /ai prefix (from anyone)
+	if (lowerText.startsWith("/ai ") || lowerText === "/ai") {
+		return text.slice(3).trim() || text;
 	}
 
 	return null;

@@ -38,6 +38,7 @@ import {
 	type ToolContext,
 } from "../tools";
 import type { ResponseMode } from "./2-decision";
+import type { SmartDecisionResult } from "./2a-smart-decision";
 
 export type GenerationResult = {
 	decision: AiDecision;
@@ -78,6 +79,8 @@ type GenerationInput = {
 	isEscalated?: boolean;
 	/** Reason for escalation if escalated */
 	escalationReason?: string | null;
+	/** Smart decision result if AI was used to decide */
+	smartDecision?: SmartDecisionResult;
 };
 
 /**
@@ -109,6 +112,7 @@ export async function generate(
 		stopTyping,
 		isEscalated,
 		escalationReason,
+		smartDecision,
 	} = input;
 	const convId = conversation.id;
 
@@ -152,6 +156,7 @@ export async function generate(
 		tools,
 		isEscalated,
 		escalationReason,
+		smartDecision,
 	});
 
 	// Format conversation history for LLM with multi-party prefixes

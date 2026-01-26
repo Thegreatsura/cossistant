@@ -151,17 +151,26 @@ export async function runAiAgentPipeline(
 			};
 		}
 
-		// Decision says we should act - start typing indicator IMMEDIATELY
-		// This provides instant feedback to the visitor while the LLM generates
-		typingHeartbeat = new TypingHeartbeat({
-			conversation: intakeResult.conversation,
-			aiAgentId: intakeResult.aiAgent.id,
-		});
+		// Only start typing if AI will send visible messages to visitor
+		// background_only mode = AI won't send visible messages (private notes only)
+		// This prevents "phantom typing" when AI observes but doesn't respond
+		const willSendVisibleMessages = decisionResult.mode !== "background_only";
 
-		console.log(
-			`[ai-agent] conv=${convId} | Starting typing indicator (AI is thinking)`
-		);
-		await typingHeartbeat.start();
+		if (willSendVisibleMessages) {
+			typingHeartbeat = new TypingHeartbeat({
+				conversation: intakeResult.conversation,
+				aiAgentId: intakeResult.aiAgent.id,
+			});
+
+			console.log(
+				`[ai-agent] conv=${convId} | Starting typing indicator (AI will respond)`
+			);
+			await typingHeartbeat.start();
+		} else {
+			console.log(
+				`[ai-agent] conv=${convId} | Skipping typing indicator (background_only mode)`
+			);
+		}
 
 		// Callback to check if workflow is still active - passed to tools
 		// This prevents duplicate messages when a newer message supersedes this workflow
@@ -266,6 +275,7 @@ export async function runAiAgentPipeline(
 				stopTyping, // Stop typing before first message is sent
 				isEscalated: decisionResult.isEscalated, // Pass escalation context
 				escalationReason: decisionResult.escalationReason,
+				smartDecision: decisionResult.smartDecision, // Pass smart decision for prompt context
 			});
 		} finally {
 			// Always clean up the polling interval
