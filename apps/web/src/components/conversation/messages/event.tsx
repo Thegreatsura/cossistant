@@ -60,9 +60,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 							withBoringAvatar
 						/>
 					) : display.avatarType === "ai" ? (
-						<div className="flex size-5 items-center justify-center rounded-sm bg-primary/10">
-							<Logo className="h-3 w-3 text-primary" />
-						</div>
+						<Logo className="size-5 text-primary" />
 					) : (
 						<Avatar
 							className="size-5 shrink-0 overflow-clip"

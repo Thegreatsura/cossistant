@@ -7,6 +7,7 @@ import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-con
 import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
 import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import type { ConversationProps } from "@/components/conversation";
@@ -26,10 +27,10 @@ import { useDashboardNewMessageSound } from "@/hooks/use-dashboard-new-message-s
 import { useSendConversationMessage } from "@/hooks/use-send-conversation-message";
 import { useSidebar } from "@/hooks/use-sidebars";
 import { useSoundPreferences } from "@/hooks/use-sound-preferences";
+import { useTRPC } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 
 const MESSAGES_PAGE_LIMIT = 50;
-const EMPTY_AVAILABLE_AI_AGENTS: AvailableAIAgent[] = [];
 
 type ConversationPaneProps = {
 	conversationId: string;
@@ -44,7 +45,27 @@ export function ConversationPane({
 	websiteSlug,
 	currentUserId,
 }: ConversationPaneProps) {
+	const trpc = useTRPC();
 	const { newMessageEnabled } = useSoundPreferences({ websiteSlug });
+
+	// Fetch AI agent for the website to display proper names in events
+	const { data: aiAgent } = useQuery(
+		trpc.aiAgent.get.queryOptions({ websiteSlug })
+	);
+
+	// Build availableAIAgents array from fetched AI agent
+	const availableAIAgents = useMemo<AvailableAIAgent[]>(() => {
+		if (!aiAgent) {
+			return [];
+		}
+		return [
+			{
+				id: aiAgent.id,
+				name: aiAgent.name,
+				image: null, // AI agents don't have custom images yet
+			},
+		];
+	}, [aiAgent]);
 	const playNewMessageSound = useDashboardNewMessageSound(newMessageEnabled);
 	const previousItemsRef = useRef<readonly TimelineItem[]>([]);
 
@@ -375,7 +396,7 @@ export function ConversationPane({
 			visitorIsBlocked: selectedConversation?.visitor.isBlocked ?? null,
 		},
 		timeline: {
-			availableAIAgents: EMPTY_AVAILABLE_AI_AGENTS,
+			availableAIAgents,
 			conversationId,
 			currentUserId,
 			items: items as TimelineItem[],
