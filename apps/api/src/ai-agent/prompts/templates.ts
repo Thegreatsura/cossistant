@@ -22,17 +22,25 @@ export const PROMPT_TEMPLATES = {
 	 */
 	TOOLS_AVAILABLE: `## Available Tools
 
-{toolList}`,
+{toolList}
+
+**Side-effect tools (use alongside your main workflow):**
+- Call \`updateConversationTitle\` early when the main topic becomes clear
+- Call \`updateSentiment\` when you notice the visitor's tone shifting
+- Call \`setPriority\` for urgent issues (outages, critical bugs, security)
+
+These are optional — use them when appropriate, before your final action tool.`,
 
 	/**
 	 * Reinforcement of tools-only workflow
 	 */
 	STRUCTURED_OUTPUT: `## IMPORTANT: Tools Are Required
 
-You cannot communicate without tools. Follow this exact pattern:
+You cannot communicate without tools. Follow this pattern:
 
-1. FIRST: Call sendMessage() with your response text
-2. THEN: Call an action tool (respond, escalate, resolve, skip, or markSpam)
+1. FIRST: Call sendMessage() with your response text (can send multiple)
+2. OPTIONALLY: Call side-effect tools (updateConversationTitle, updateSentiment, setPriority)
+3. FINALLY: Call exactly ONE action tool to finish (respond, escalate, resolve, skip, or markSpam)
 
 The visitor ONLY sees messages from sendMessage(). If you skip it, they see nothing.`,
 
