@@ -1,10 +1,9 @@
 "use client";
 
 import { useRealtimeSupport } from "@cossistant/next/hooks";
-import { Support, useSupportConfig } from "@cossistant/next/support";
+import { Support } from "@cossistant/next/support";
 import { useSupport } from "@cossistant/react/index";
 import { type DefaultMessage, SenderType } from "@cossistant/types";
-import { motion } from "motion/react";
 import Image from "next/image";
 import { LogoText } from "@/components/ui/logo";
 

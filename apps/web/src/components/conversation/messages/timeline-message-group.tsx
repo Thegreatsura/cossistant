@@ -8,10 +8,11 @@ import {
 import type { AvailableAIAgent, VisitorPresenceEntry } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type { ConversationSeen } from "@cossistant/types/schemas";
 import { motion } from "motion/react";
 import type React from "react";
 import { useMemo } from "react";
-import { Avatar, AvatarContainer } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ type TimelineMessageGroupProps = {
 	currentUserId?: string;
 	visitor: ConversationHeader["visitor"];
 	visitorPresence?: VisitorPresenceEntry | null;
+	seenData?: ConversationSeen[];
 };
 
 export function TimelineMessageGroup({
@@ -47,6 +49,7 @@ export function TimelineMessageGroup({
 	currentUserId,
 	visitor,
 	visitorPresence,
+	seenData,
 }: TimelineMessageGroupProps) {
 	// Get agent info for the sender
 	const firstItem = items[0];
@@ -208,6 +211,7 @@ export function TimelineMessageGroup({
 								lastReadMessageIds={lastReadMessageIds}
 								messageId={lastItem.id}
 								messages={items}
+								seenData={seenData}
 								teamMembers={teamMembers}
 								visitor={visitor}
 							/>

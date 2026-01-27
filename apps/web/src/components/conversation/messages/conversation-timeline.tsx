@@ -210,6 +210,7 @@ function ConversationTimelineListComponent({
 									items={item.items || []}
 									key={groupKey}
 									lastReadMessageIds={lastReadMessageMap}
+									seenData={seenData}
 									teamMembers={teamMembers}
 									visitor={visitor}
 									visitorPresence={visitorPresence}

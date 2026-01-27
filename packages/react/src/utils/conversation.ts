@@ -1,9 +1,6 @@
-import { type Conversation, ConversationStatus } from "@cossistant/types";
+import type { Conversation, ConversationStatus } from "@cossistant/types";
 
-const HIDDEN_STATUSES = new Set<ConversationStatus | "closed">([
-	ConversationStatus.RESOLVED,
-	"closed",
-]);
+const HIDDEN_STATUSES = new Set<ConversationStatus | "closed">(["closed"]);
 
 function hasDisplayableTitle(conversation: Conversation): boolean {
 	const title = conversation.title?.trim();

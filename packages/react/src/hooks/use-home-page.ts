@@ -117,19 +117,22 @@ export function useHomePage(
 
 	// Derive useful state from conversations
 	const { lastOpenConversation, availableConversationsCount } = useMemo(() => {
-		// Find the most recent open conversation
+		// Find the most recent open conversation first
 		const openConversation = conversations.find(
 			(conv) => conv.status === ConversationStatus.OPEN
 		);
 
+		// If no open conversation, show the most recent one (could be resolved)
+		const conversationToShow = openConversation ?? conversations[0];
+
 		// Count other conversations (excluding the one we're showing)
 		const otherCount = Math.max(
-			conversations.length - (openConversation ? 1 : 0),
+			conversations.length - (conversationToShow ? 1 : 0),
 			0
 		);
 
 		return {
-			lastOpenConversation: openConversation,
+			lastOpenConversation: conversationToShow,
 			availableConversationsCount: otherCount,
 		};
 	}, [conversations]);

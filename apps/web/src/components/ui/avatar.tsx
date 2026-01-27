@@ -64,6 +64,9 @@ function stringHash(str: string): number {
 	return Math.abs(hash);
 }
 
+// CSS class for SVG faces - uses percentage-based sizing for better scaling
+const FACE_SVG_CLASS = "w-[60%] h-auto max-w-[90%] max-h-[50%]";
+
 function BoringAvatar({
 	className,
 	name,
@@ -81,12 +84,10 @@ function BoringAvatar({
 
 	const faces = [
 		<svg
-			className="size-5 max-h-[90%] max-w-[90%]"
+			className={FACE_SVG_CLASS}
 			fill="none"
-			height="15"
 			key="round"
 			viewBox="0 0 63 15"
-			width="63"
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<title>Round Face</title>
@@ -100,12 +101,10 @@ function BoringAvatar({
 			/>
 		</svg>,
 		<svg
-			className="size-5 max-h-[90%] max-w-[90%]"
+			className={FACE_SVG_CLASS}
 			fill="none"
-			height="23"
 			key="cross"
 			viewBox="0 0 71 23"
-			width="71"
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<title>Cross Eyes</title>
@@ -119,12 +118,10 @@ function BoringAvatar({
 			/>
 		</svg>,
 		<svg
-			className="size-5 max-h-[90%] max-w-[90%]"
+			className={FACE_SVG_CLASS}
 			fill="none"
-			height="8"
 			key="lineeyes"
 			viewBox="0 0 82 8"
-			width="82"
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<title>line Eyes</title>
@@ -146,12 +143,10 @@ function BoringAvatar({
 			/>
 		</svg>,
 		<svg
-			className="size-5 max-h-[90%] max-w-[90%]"
+			className={FACE_SVG_CLASS}
 			fill="none"
-			height="9"
 			key="curved"
 			viewBox="0 0 63 9"
-			width="63"
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<title>Curved Face</title>
@@ -174,23 +169,25 @@ function BoringAvatar({
 		const _color = colorClasses[hash % colorClasses.length];
 
 		// Define different sphere positions (angles in degrees)
+		// Using smaller angles for better appearance at small sizes
 		const spherePositions = [
-			{ rotateX: -15, rotateY: 15 }, // down-right
-			{ rotateX: 15, rotateY: 15 }, // up-right
-			{ rotateX: 15, rotateY: 0 }, // up
-			{ rotateX: 0, rotateY: 15 }, // right
-			{ rotateX: -15, rotateY: 0 }, // down
+			{ rotateX: -10, rotateY: 10 }, // down-right
+			{ rotateX: 10, rotateY: 10 }, // up-right
+			{ rotateX: 10, rotateY: 0 }, // up
+			{ rotateX: 0, rotateY: 10 }, // right
+			{ rotateX: -10, rotateY: 0 }, // down
 			{ rotateX: 0, rotateY: 0 }, // center
-			{ rotateX: 0, rotateY: -15 }, // left
-			{ rotateX: -15, rotateY: -15 }, // down-left
-			{ rotateX: 15, rotateY: -15 }, // up-left
+			{ rotateX: 0, rotateY: -10 }, // left
+			{ rotateX: -10, rotateY: -10 }, // down-left
+			{ rotateX: 10, rotateY: -10 }, // up-left
 		];
 
 		const position = spherePositions[hash % spherePositions.length] ?? {
 			rotateX: 0,
 			rotateY: 0,
 		};
-		const _transform = `rotateX(${position.rotateX}deg) rotateY(${position.rotateY}deg) translateZ(15px)`;
+		// Reduced translateZ for better small size appearance
+		const _transform = `rotateX(${position.rotateX}deg) rotateY(${position.rotateY}deg) translateZ(8px)`;
 
 		return { face: _face, color: _color, transform: _transform };
 	}, [name]);
@@ -199,25 +196,20 @@ function BoringAvatar({
 		<div
 			className={cn("flex size-full items-center justify-center", color)}
 			style={{
-				perspective: "1000px",
+				perspective: "500px",
 				transformStyle: "preserve-3d",
 			}}
 		>
 			<div className="absolute inset-0 bg-radial from-primary/10 via-from-primary/40 to-transparent opacity-100 shadow-inner dark:from-background/90 dark:to-background/50" />
 			<div
-				className="absolute z-5 flex scale-90 flex-col items-center justify-center text-primary/90 transition-all delay-500 duration-200 group-hover/conversation-item:rotate-x-0! group-hover/conversation-item:rotate-y-0! group-hover/conversation-item:scale-95 group-focus/conversation-item:rotate-x-0! group-focus/conversation-item:rotate-y-0!"
+				className="absolute inset-0 z-5 flex scale-[0.85] flex-col items-center justify-center text-primary/90 transition-all delay-500 duration-200 group-hover/conversation-item:rotate-x-0! group-hover/conversation-item:rotate-y-0! group-hover/conversation-item:scale-90 group-focus/conversation-item:rotate-x-0! group-focus/conversation-item:rotate-y-0!"
 				style={{
-					// color,
 					transform,
 					transformStyle: "preserve-3d",
-					left: "50%",
-					top: "50%",
-					marginLeft: "-9px",
-					marginTop: "-12px",
 				}}
 			>
 				{face}
-				<span className="-mt-1.5 font-mono text-[8px] opacity-75">
+				<span className="mt-px font-mono text-[0.35em] leading-none opacity-75">
 					{name.charAt(0)}
 				</span>
 			</div>
