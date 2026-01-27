@@ -1,4 +1,8 @@
 import {
+	generateInboundReplyAddress,
+	generateThreadingHeaders,
+} from "@cossistant/api/email-threading";
+import {
 	getMemberNotificationPreference,
 	getMessagesForEmail,
 	getNotificationData,
@@ -265,10 +269,15 @@ async function sendMemberEmailNotification(params: {
 		return;
 	}
 
+	// Generate email threading headers and reply-to address
+	const threadingHeaders = generateThreadingHeaders({ conversationId });
+	const replyTo = generateInboundReplyAddress({ conversationId });
+
 	// Send email
 	await sendEmail(
 		{
 			to: recipient.email,
+			replyTo,
 			subject:
 				totalCount > 1
 					? `${totalCount} new messages from ${websiteInfo.name}`
@@ -284,6 +293,7 @@ async function sendMemberEmailNotification(params: {
 				/>
 			),
 			variant: "notifications",
+			headers: threadingHeaders,
 		},
 		{}
 	);
@@ -325,10 +335,15 @@ async function sendVisitorEmailNotification(params: {
 		return;
 	}
 
+	// Generate email threading headers and reply-to address
+	const threadingHeaders = generateThreadingHeaders({ conversationId });
+	const replyTo = generateInboundReplyAddress({ conversationId });
+
 	// Send email
 	await sendEmail(
 		{
 			to: recipient.email,
+			replyTo,
 			subject:
 				totalCount > 1
 					? `${totalCount} new messages from ${websiteInfo.name}`
@@ -344,6 +359,7 @@ async function sendVisitorEmailNotification(params: {
 				/>
 			),
 			variant: "notifications",
+			headers: threadingHeaders,
 		},
 		{}
 	);

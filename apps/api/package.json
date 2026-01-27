@@ -8,6 +8,7 @@
     "./types": "./src/trpc/types.ts",
     "./schema": "./src/db/schema/index.ts",
     "./notification-helpers": "./src/utils/notification-helpers.ts",
+    "./email-threading": "./src/utils/email-threading.ts",
     "./db": "./src/db/index.ts"
   },
   "dependencies": {
