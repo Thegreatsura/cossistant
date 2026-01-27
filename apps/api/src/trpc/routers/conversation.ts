@@ -527,18 +527,19 @@ export const conversationRouter = createTRPCRouter({
 					organizationId: website.organizationId,
 					reason: "Joined escalation",
 				});
-
-				// Create participant joined event (PUBLIC so visitor sees it)
-				await createParticipantJoinedEvent(db, {
-					conversationId: input.conversationId,
-					organizationId: website.organizationId,
-					websiteId: website.id,
-					visitorId: conversation.visitorId,
-					targetUserId: user.id,
-					isAutoAdded: false,
-					customMessage: "joined to help",
-				});
 			}
+
+			// Always create participant joined event when handling escalation (PUBLIC so visitor sees it)
+			await createParticipantJoinedEvent(db, {
+				conversationId: input.conversationId,
+				organizationId: website.organizationId,
+				websiteId: website.id,
+				visitorId: conversation.visitorId,
+				targetUserId: user.id,
+				actorUserId: user.id,
+				isAutoAdded: false,
+				customMessage: "joined to help",
+			});
 
 			// Mark escalation as handled
 			const updatedConversation = await joinEscalation(db, {
