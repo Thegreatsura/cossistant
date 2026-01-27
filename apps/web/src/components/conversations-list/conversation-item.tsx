@@ -103,14 +103,14 @@ export function ConversationItemView({
 				<div className="flex min-w-0 flex-1 items-center gap-6 truncate pr-6">
 					{title && <span className="truncate font-medium">{title}</span>}
 					{isTyping ? (
-						<div className="flex shrink-0 items-center gap-1">
+						<div className="flex shrink-0 items-center gap-2">
 							{isAITyping && <Logo className="size-3.5" />}
 							<BouncingDots />
 						</div>
 					) : (
 						<span
 							className={cn(
-								"hidden items-center gap-1 truncate md:inline-flex",
+								"hidden items-center gap-2 truncate md:inline-flex",
 								title ? "text-muted-foreground" : ""
 							)}
 						>
