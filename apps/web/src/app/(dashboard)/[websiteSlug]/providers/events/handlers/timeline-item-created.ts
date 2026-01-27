@@ -163,9 +163,15 @@ function createHeaderUpdaterFromTimelineItem(
 		return (header) => header;
 	}
 
+	const isMessage = item.type === "message";
+
 	return (header: ConversationHeader): ConversationHeader => ({
 		...header,
 		lastTimelineItem,
+		// Update lastMessageTimelineItem when the new item is a message so the
+		// conversations list preview picks it up immediately (it has priority
+		// over lastTimelineItem in the fallback chain).
+		...(isMessage ? { lastMessageTimelineItem: lastTimelineItem } : {}),
 		lastMessageAt,
 		updatedAt: lastMessageAt,
 	});

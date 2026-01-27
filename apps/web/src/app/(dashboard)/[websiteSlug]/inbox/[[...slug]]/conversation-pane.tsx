@@ -8,11 +8,12 @@ import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-vis
 import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import type { ConversationProps } from "@/components/conversation";
 import { Conversation } from "@/components/conversation";
 import type { ConversationHeaderNavigationProps } from "@/components/conversation/header/navigation";
+import type { MessageVisibility } from "@/components/conversation/multimodal-input";
 import { ButtonWithPaywall } from "@/components/plan/button-with-paywall";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
@@ -69,6 +70,9 @@ export function ConversationPane({
 	const playNewMessageSound = useDashboardNewMessageSound(newMessageEnabled);
 	const previousItemsRef = useRef<readonly TimelineItem[]>([]);
 
+	const [messageVisibility, setMessageVisibility] =
+		useState<MessageVisibility>("public");
+
 	const {
 		submit: submitConversationMessage,
 		isUploading,
@@ -101,7 +105,10 @@ export function ConversationPane({
 	} = useMultimodalInput({
 		onSubmit: async (payload) => {
 			handleTypingSubmit();
-			await submitConversationMessage(payload);
+			await submitConversationMessage({
+				...payload,
+				visibility: messageVisibility,
+			});
 		},
 		onError: (submitError) => {
 			console.error("Failed to send message", submitError);
@@ -420,6 +427,8 @@ export function ConversationPane({
 			onSubmit: submit,
 			placeholder: "Type your message...",
 			value: message,
+			visibility: messageVisibility,
+			onVisibilityChange: setMessageVisibility,
 			renderAttachButton: ({ triggerFileInput, disabled }) => (
 				<TooltipOnHover content="Attach files">
 					<ButtonWithPaywall

@@ -57,6 +57,11 @@ export function SupportRealtimeProvider({
 					return;
 				}
 
+				// Never process private timeline items in the visitor widget
+				if (event.payload.item.visibility === "private") {
+					return;
+				}
+
 				// Clear typing state when a timeline item is created
 				clearTypingFromTimelineItem(event);
 

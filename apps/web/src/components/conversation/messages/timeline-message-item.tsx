@@ -66,37 +66,35 @@ export function TimelineMessageItem({
 										"items-end": isSentByViewer,
 									})}
 								>
-									<TimelineItemContent
-										className={cn(
-											"block w-fit min-w-0 max-w-full whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
-											{
-												"bg-background-300 text-foreground dark:bg-background-600":
-													!(isSentByViewer || isPrivate),
-												"bg-primary text-primary-foreground":
-													isSentByViewer && !isPrivate,
-												"border border-cossistant-orange/30 bg-cossistant-orange/10 text-foreground":
-													isPrivate,
-												"rounded-br-[2px]":
-													isLast && isSentByViewer && !hasAttachments,
-												"rounded-bl-[2px]":
-													isLast && !isSentByViewer && !hasAttachments,
-											}
-										)}
-										renderMarkdown
-										text={item.text}
-									/>
-									{isPrivate && (
-										<TooltipOnHover
-											content="This message is only visible to you and your team"
-											delay={300}
-											side="bottom"
-										>
-											<span className="mt-1 flex cursor-default items-center gap-1 text-cossistant-orange text-xs">
-												<Icon className="size-3" name="lock" />
-												private
-											</span>
-										</TooltipOnHover>
-									)}
+									<TooltipOnHover
+										content={
+											isPrivate
+												? "This message is only visible to you, your team and AI — not the visitor"
+												: undefined
+										}
+										delay={300}
+										side="bottom"
+									>
+										<TimelineItemContent
+											className={cn(
+												"block w-fit min-w-0 max-w-full whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+												{
+													"bg-background-300 text-foreground dark:bg-background-600":
+														!(isSentByViewer || isPrivate),
+													"bg-primary text-primary-foreground":
+														isSentByViewer && !isPrivate,
+													"border border-cossistant-yellow/30 bg-cossistant-yellow/10 text-foreground":
+														isPrivate,
+													"rounded-br-[2px]":
+														isLast && isSentByViewer && !hasAttachments,
+													"rounded-bl-[2px]":
+														isLast && !isSentByViewer && !hasAttachments,
+												}
+											)}
+											renderMarkdown
+											text={item.text}
+										/>
+									</TooltipOnHover>
 								</div>
 							)}
 

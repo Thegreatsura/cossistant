@@ -8,10 +8,13 @@ import {
 } from "@cossistant/core";
 import type React from "react";
 import { useLayoutEffect, useRef } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+export type MessageVisibility = "public" | "private";
 
 export type MultimodalInputProps = {
 	className?: string;
@@ -30,6 +33,8 @@ export type MultimodalInputProps = {
 	maxFiles?: number;
 	maxFileSize?: number;
 	allowedFileTypes?: string;
+	visibility?: MessageVisibility;
+	onVisibilityChange?: (visibility: MessageVisibility) => void;
 	/**
 	 * Render prop for custom attach button.
 	 * Receives `triggerFileInput` callback to open the file picker and
@@ -72,12 +77,29 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	maxFiles = MAX_FILES_PER_MESSAGE,
 	maxFileSize = MAX_FILE_SIZE,
 	allowedFileTypes = FILE_INPUT_ACCEPT,
+	visibility = "public",
+	onVisibilityChange,
 	renderAttachButton,
 }) => {
+	const isPrivate = visibility === "private";
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const hasContent = value.trim().length > 0 || files.length > 0;
 	const canSubmit = !disabled && hasContent && !isUploading;
+
+	// Toggle private mode with "n" shortcut (for "note")
+	useHotkeys(
+		"n",
+		() => {
+			onVisibilityChange?.(isPrivate ? "public" : "private");
+		},
+		{
+			enableOnFormTags: false,
+			enableOnContentEditable: false,
+			preventDefault: true,
+		},
+		[isPrivate, onVisibilityChange]
+	);
 
 	// Auto-resize textarea with max height constraint
 	useLayoutEffect(() => {
@@ -181,102 +203,179 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 				)}
 
 				{/* Input area */}
-				<div className="flex h-fit flex-col rounded-lg border border-border/50 bg-background-100 drop-shadow-xs dark:border-border/50 dark:bg-background-300">
-					<div className="scrollbar-thin scrollbar-track-fd-overlay scrollbar-thumb-border/30 hover:scrollbar-thumb-border/50 max-h-[280px] overflow-y-scroll">
-						<textarea
-							aria-describedby={error ? "multimodal-input-error" : undefined}
-							aria-invalid={error ? "true" : undefined}
-							autoFocus
-							className={cn(
-								"min-h-[20px] w-full flex-1 resize-none p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
-								className
-							)}
-							disabled={disabled}
-							onChange={(e) => onChange(e.target.value)}
-							onKeyDown={(e) => {
-								// Handle Cmd/Ctrl + Enter to submit
-								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-									e.preventDefault();
-									handleSubmit();
-								}
-							}}
-							placeholder={placeholder}
-							ref={textareaRef}
-							rows={1}
-							value={value}
-						/>
+				<div className="relative">
+					{/* Floating private mode banner — slides up from above the input */}
+					<div
+						className={cn(
+							"absolute top-1 right-0 flex items-center justify-center px-3 py-1.5 text-cossistant-yellow text-xs transition-all duration-200",
+							isPrivate
+								? "opacity-100"
+								: "pointer-events-none translate-y-0 opacity-0"
+						)}
+					>
+						Only visible to team members and AI
 					</div>
-					<div className="flex items-center justify-end pr-1 pb-1 pl-3">
-						<div className="flex items-center gap-0.5">
-							{/* File attachment button */}
-							{onFileSelect && (
-								<>
-									{renderAttachButton ? (
-										// Render custom attach button (e.g., ButtonWithPaywall)
-										renderAttachButton({
-											triggerFileInput,
-											disabled: isAttachDisabled,
-										})
-									) : (
-										<TooltipOnHover content="Attach files">
-											<Button
-												className={cn(files.length >= maxFiles && "opacity-50")}
-												disabled={isAttachDisabled}
-												onClick={triggerFileInput}
-												size="icon"
-												type="button"
-												variant="ghost"
-											>
-												<Icon className="h-4 w-4" name="attachment" />
-											</Button>
-										</TooltipOnHover>
-									)}
 
-									<input
-										accept={allowedFileTypes}
-										className="hidden"
-										disabled={isAttachDisabled}
-										multiple
-										onChange={(e) => {
-											const selectedFiles = Array.from(e.target.files || []);
-											if (selectedFiles.length > 0) {
-												onFileSelect(selectedFiles);
-												// Reset input to allow selecting the same file again
-												e.target.value = "";
-											}
-										}}
-										ref={fileInputRef}
-										type="file"
-									/>
-								</>
+					<div className="bg-background">
+						<div
+							className={cn(
+								"relative flex h-fit flex-col rounded-xs border drop-shadow-xs",
+								isPrivate
+									? "border-cossistant-yellow/50 border-dashed bg-cossistant-yellow/5"
+									: "border-border/50 bg-background-100 dark:border-border/50 dark:bg-background-300"
+							)}
+						>
+							{/* Visibility toggle tabs — inside the input block */}
+							{onVisibilityChange && (
+								<div className="flex items-center gap-0.5 px-1 pt-1">
+									<TooltipOnHover
+										content="Send a public reply visible to the visitor"
+										shortcuts={["N"]}
+									>
+										<button
+											className={cn(
+												"rounded-xs px-3 py-1.5 font-medium text-xs transition-colors",
+												isPrivate
+													? "text-muted-foreground hover:text-foreground"
+													: "bg-background-200 text-foreground dark:bg-background-400"
+											)}
+											onClick={() => onVisibilityChange("public")}
+											type="button"
+										>
+											Reply
+										</button>
+									</TooltipOnHover>
+									<TooltipOnHover
+										content="Send a private note only visible to your team and AI"
+										shortcuts={["N"]}
+									>
+										<button
+											className={cn(
+												"rounded-xs px-3 py-1.5 font-medium text-xs transition-colors",
+												isPrivate
+													? "bg-cossistant-yellow/10 text-cossistant-yellow"
+													: "text-muted-foreground hover:text-foreground"
+											)}
+											onClick={() => onVisibilityChange("private")}
+											type="button"
+										>
+											Private note
+										</button>
+									</TooltipOnHover>
+								</div>
 							)}
 
-							<TooltipOnHover
-								content={isUploading ? "Uploading files..." : "Send message"}
-								shortcuts={isUploading ? undefined : ["mod", "enter"]}
-							>
-								<Button
+							<div className="scrollbar-thin scrollbar-track-fd-overlay scrollbar-thumb-border/30 hover:scrollbar-thumb-border/50 max-h-[280px] overflow-y-scroll">
+								<textarea
+									aria-describedby={
+										error ? "multimodal-input-error" : undefined
+									}
+									aria-invalid={error ? "true" : undefined}
+									autoFocus
 									className={cn(
-										canSubmit
-											? "[&_svg]:text-primary/90"
-											: "[&_svg]:text-primary/50"
+										"min-h-[20px] w-full flex-1 resize-none p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
+										className
 									)}
-									disabled={!canSubmit}
-									size="icon"
-									type="submit"
-									variant="ghost"
-								>
-									{isUploading ? (
-										<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-									) : (
-										<Icon
-											className={cn("size-4")}
-											name="send"
-											variant={canSubmit ? "filled" : "default"}
-										/>
+									disabled={disabled}
+									onChange={(e) => onChange(e.target.value)}
+									onKeyDown={(e) => {
+										// Handle Cmd/Ctrl + Enter to submit
+										if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+											e.preventDefault();
+											handleSubmit();
+										}
+									}}
+									placeholder={
+										isPrivate ? "Write a private note..." : placeholder
+									}
+									ref={textareaRef}
+									rows={1}
+									value={value}
+								/>
+							</div>
+							<div className="flex items-center justify-end pr-1 pb-1 pl-3">
+								<div className="flex items-center gap-0.5">
+									{/* File attachment button */}
+									{onFileSelect && (
+										<>
+											{renderAttachButton ? (
+												// Render custom attach button (e.g., ButtonWithPaywall)
+												renderAttachButton({
+													triggerFileInput,
+													disabled: isAttachDisabled,
+												})
+											) : (
+												<TooltipOnHover content="Attach files">
+													<Button
+														className={cn(
+															files.length >= maxFiles && "opacity-50"
+														)}
+														disabled={isAttachDisabled}
+														onClick={triggerFileInput}
+														size="icon"
+														type="button"
+														variant="ghost"
+													>
+														<Icon className="h-4 w-4" name="attachment" />
+													</Button>
+												</TooltipOnHover>
+											)}
+
+											<input
+												accept={allowedFileTypes}
+												className="hidden"
+												disabled={isAttachDisabled}
+												multiple
+												onChange={(e) => {
+													const selectedFiles = Array.from(
+														e.target.files || []
+													);
+													if (selectedFiles.length > 0) {
+														onFileSelect(selectedFiles);
+														// Reset input to allow selecting the same file again
+														e.target.value = "";
+													}
+												}}
+												ref={fileInputRef}
+												type="file"
+											/>
+										</>
 									)}
-								</Button>
-							</TooltipOnHover>
+
+									<TooltipOnHover
+										content={
+											isUploading ? "Uploading files..." : "Send message"
+										}
+										shortcuts={isUploading ? undefined : ["mod", "enter"]}
+									>
+										<Button
+											className={cn(
+												canSubmit
+													? isPrivate
+														? "[&_svg]:text-cossistant-yellow"
+														: "[&_svg]:text-primary/90"
+													: isPrivate
+														? "[&_svg]:text-cossistant-yellow/50"
+														: "[&_svg]:text-primary/50"
+											)}
+											disabled={!canSubmit}
+											size="icon"
+											type="submit"
+											variant="ghost"
+										>
+											{isUploading ? (
+												<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+											) : (
+												<Icon
+													className={cn("size-4")}
+													name="send"
+													variant={canSubmit ? "filled" : "default"}
+												/>
+											)}
+										</Button>
+									</TooltipOnHover>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>

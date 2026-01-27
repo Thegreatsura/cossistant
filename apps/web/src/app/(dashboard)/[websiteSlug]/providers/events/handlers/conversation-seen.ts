@@ -65,15 +65,16 @@ type SeenEntry = ConversationHeader["seenData"][number];
 function buildActorPredicates(event: ConversationSeenEvent) {
 	const predicates: ((seen: SeenEntry) => boolean)[] = [];
 
-	if (event.payload.userId) {
+	// Use actorType to determine which ID field identifies the actor.
+	// This prevents issues where visitorId might be set for routing purposes
+	// even when the actor is a user or AI agent.
+	const { actorType } = event.payload;
+
+	if (actorType === "user" && event.payload.userId) {
 		predicates.push((seen) => seen.userId === event.payload.userId);
-	}
-
-	if (event.payload.visitorId) {
+	} else if (actorType === "visitor" && event.payload.visitorId) {
 		predicates.push((seen) => seen.visitorId === event.payload.visitorId);
-	}
-
-	if (event.payload.aiAgentId) {
+	} else if (actorType === "ai_agent" && event.payload.aiAgentId) {
 		predicates.push((seen) => seen.aiAgentId === event.payload.aiAgentId);
 	}
 
@@ -103,25 +104,33 @@ function maybeUpdateSeenEntries(
 	);
 
 	// If no entry exists, create a new one
+	// Use actorType from payload to determine which ID to use, not just checking presence
 	if (existingEntryIndex === -1) {
-		const actorType = event.payload.userId
-			? "user"
-			: event.payload.visitorId
-				? "visitor"
-				: "ai_agent";
-		const actorId =
-			event.payload.userId ??
-			event.payload.visitorId ??
-			event.payload.aiAgentId;
+		const { actorType } = event.payload;
+		let actorId: string | undefined;
+
+		// Only use the ID corresponding to the actor type
+		if (actorType === "user") {
+			actorId = event.payload.userId ?? undefined;
+		} else if (actorType === "visitor") {
+			actorId = event.payload.visitorId ?? undefined;
+		} else if (actorType === "ai_agent") {
+			actorId = event.payload.aiAgentId ?? undefined;
+		}
+
 		if (!actorId) {
 			return { header, changed: false };
 		}
+
 		const newEntry: ConversationHeader["seenData"][number] = {
 			id: `${header.id}:${actorType}:${actorId}`,
 			conversationId: header.id,
-			userId: event.payload.userId || null,
-			visitorId: event.payload.visitorId || null,
-			aiAgentId: event.payload.aiAgentId || null,
+			// Only set the ID corresponding to the actor type
+			userId: actorType === "user" ? event.payload.userId || null : null,
+			visitorId:
+				actorType === "visitor" ? event.payload.visitorId || null : null,
+			aiAgentId:
+				actorType === "ai_agent" ? event.payload.aiAgentId || null : null,
 			lastSeenAt: nextDate,
 			createdAt: nextDate,
 			updatedAt: nextDate,
@@ -231,11 +240,16 @@ export function handleConversationSeen({
 
 	// Update React Query cache for reactive updates (only for other users/visitors)
 	// This ensures the conversation-seen hook gets fresh data for read receipts
+	// Only pass the ID that corresponds to the actual actor type to prevent
+	// incorrectly updating other actors' seen entries (e.g., visitor entry when a user marks as read)
 	if (!isOwnUserEvent) {
+		const { actorType } = event.payload;
 		updateConversationSeenInCache(context.queryClient, conversationId, {
-			userId: event.payload.userId || null,
-			visitorId: event.payload.visitorId || null,
-			aiAgentId: event.payload.aiAgentId || null,
+			userId: actorType === "user" ? event.payload.userId || null : null,
+			visitorId:
+				actorType === "visitor" ? event.payload.visitorId || null : null,
+			aiAgentId:
+				actorType === "ai_agent" ? event.payload.aiAgentId || null : null,
 			lastSeenAt: event.payload.lastSeenAt,
 		});
 	}

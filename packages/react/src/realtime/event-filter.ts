@@ -21,6 +21,9 @@ function getTargetVisitorId(event: AnyRealtimeEvent): string | null {
 /**
  * Determines whether a realtime event should be processed based on website and
  * visitor identifiers.
+ *
+ * When a visitorId is provided (i.e. the consumer is a visitor/widget), private
+ * timeline items are filtered out to prevent leaking internal data.
  */
 export function shouldDeliverEvent(
 	event: AnyRealtimeEvent,
@@ -28,6 +31,12 @@ export function shouldDeliverEvent(
 	visitorId: string | null
 ): boolean {
 	if (websiteId && event.payload.websiteId !== websiteId) {
+		return false;
+	}
+
+	// When consuming as a visitor, never deliver private timeline items.
+	// This is a defense-in-depth measure; the server should also filter these.
+	if (visitorId && isPrivateTimelineEvent(event)) {
 		return false;
 	}
 
@@ -42,6 +51,23 @@ export function shouldDeliverEvent(
 	}
 
 	return true;
+}
+
+/**
+ * Returns true if the event carries a timeline item with private visibility.
+ */
+function isPrivateTimelineEvent(event: AnyRealtimeEvent): boolean {
+	if (
+		event.type === "timelineItemCreated" ||
+		event.type === "timelineItemUpdated"
+	) {
+		const payload = event.payload as Record<string, unknown>;
+		const item = payload.item as Record<string, unknown> | undefined;
+		if (item && item.visibility === "private") {
+			return true;
+		}
+	}
+	return false;
 }
 
 export { getTargetVisitorId };

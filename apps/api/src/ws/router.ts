@@ -123,8 +123,9 @@ function resolveWebsiteDispatchOptions(
 }
 
 /**
- * Check if an event should be sent to visitors based on audience field
- * AI agent events use audience filtering: 'all' goes to both, 'dashboard' goes only to website
+ * Check if an event should be sent to visitors based on audience and visibility fields.
+ * - AI agent events use audience filtering: 'all' goes to both, 'dashboard' goes only to website
+ * - Timeline item events with visibility "private" are never sent to visitors
  */
 function shouldSendToVisitor<T extends RealtimeEventType>(
 	event: RealtimeEvent<T>
@@ -134,6 +135,14 @@ function shouldSendToVisitor<T extends RealtimeEventType>(
 	// If the event has an audience field and it's 'dashboard', don't send to visitor
 	if ("audience" in payload && payload.audience === "dashboard") {
 		return false;
+	}
+
+	// Never send private timeline items to visitors
+	if ("item" in payload) {
+		const item = payload.item as Record<string, unknown> | undefined;
+		if (item && "visibility" in item && item.visibility === "private") {
+			return false;
+		}
 	}
 
 	return true;

@@ -15,6 +15,7 @@ import { useTRPC } from "@/lib/trpc/client";
 type SubmitPayload = {
 	message: string;
 	files: File[];
+	visibility?: "public" | "private";
 };
 
 type UseSendConversationMessageOptions = {
@@ -66,7 +67,7 @@ export function useSendConversationMessage({
 	);
 
 	const submit = useCallback(
-		async ({ message, files }: SubmitPayload) => {
+		async ({ message, files, visibility = "public" }: SubmitPayload) => {
 			const trimmedMessage = message.trim();
 
 			// Allow empty message if there are files
@@ -99,7 +100,7 @@ export function useSendConversationMessage({
 					type: "message",
 					text: trimmedMessage,
 					parts,
-					visibility: "public",
+					visibility,
 					userId: currentUserId,
 					aiAgentId: null,
 					visitorId: null,
@@ -119,7 +120,7 @@ export function useSendConversationMessage({
 					conversationId,
 					websiteSlug,
 					text: trimmedMessage,
-					visibility: "public",
+					visibility,
 					timelineItemId,
 					parts: uploadedParts.length > 0 ? uploadedParts : undefined,
 				});

@@ -43,6 +43,10 @@ export const realtimeSchema = {
 		conversationId: z.string(),
 		aiAgentId: z.string().nullable(),
 		lastSeenAt: z.string(),
+		/** The type of actor who marked the conversation as seen */
+		actorType: z.enum(["visitor", "user", "ai_agent"]),
+		/** The actor's ID (matches one of userId, visitorId, or aiAgentId based on actorType) */
+		actorId: z.string(),
 	}),
 	conversationTyping: baseRealtimeEvent.extend({
 		conversationId: z.string(),
