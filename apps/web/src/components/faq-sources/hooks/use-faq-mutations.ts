@@ -136,6 +136,11 @@ export function useFaqMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -200,6 +205,11 @@ export function useFaqMutations({
 				});
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});
@@ -279,6 +289,11 @@ export function useFaqMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -341,6 +356,11 @@ export function useFaqMutations({
 			onSettled: () => {
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});

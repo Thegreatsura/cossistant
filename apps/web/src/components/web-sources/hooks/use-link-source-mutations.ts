@@ -125,6 +125,11 @@ export function useLinkSourceMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -193,6 +198,11 @@ export function useLinkSourceMutations({
 				});
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});
@@ -335,6 +345,11 @@ export function useLinkSourceMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -368,6 +383,11 @@ export function useLinkSourceMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -393,6 +413,11 @@ export function useLinkSourceMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -413,6 +438,11 @@ export function useLinkSourceMutations({
 				});
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});
@@ -443,6 +473,11 @@ export function useLinkSourceMutations({
 				});
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});
@@ -633,6 +668,11 @@ export function useLinkSourceMutations({
 				});
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});

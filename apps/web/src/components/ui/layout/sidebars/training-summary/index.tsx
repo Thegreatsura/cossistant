@@ -2,6 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { UpgradeModal } from "@/components/plan/upgrade-modal";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { Progress } from "@/components/ui/progress";
@@ -30,12 +33,30 @@ function formatBytes(bytes: number): string {
 	return `${mb.toFixed(1)} MB`;
 }
 
+function getHintDismissedKey(websiteSlug: string): string {
+	return `cossistant:training-hint-dismissed:${websiteSlug}`;
+}
+
 export function TrainingSummarySidebar({
 	aiAgentId,
 }: TrainingSummarySidebarProps) {
 	const website = useWebsite();
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+	const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+	const [isHintDismissed, setIsHintDismissed] = useState(true);
+
+	// Load hint dismissed state from localStorage
+	useEffect(() => {
+		const key = getHintDismissedKey(website.slug);
+		setIsHintDismissed(localStorage.getItem(key) === "true");
+	}, [website.slug]);
+
+	const dismissHint = useCallback(() => {
+		const key = getHintDismissedKey(website.slug);
+		localStorage.setItem(key, "true");
+		setIsHintDismissed(true);
+	}, [website.slug]);
 
 	// Fetch training stats
 	const { data: stats, isLoading: isLoadingStats } = useQuery(
@@ -59,16 +80,39 @@ export function TrainingSummarySidebar({
 		})
 	);
 
+	// Fetch training readiness
+	const { data: readiness } = useQuery(
+		trpc.aiAgent.getTrainingReadiness.queryOptions({
+			websiteSlug: website.slug,
+		})
+	);
+
+	// Fetch plan info for upgrade modal
+	const { data: planInfo } = useQuery(
+		trpc.plan.getPlanInfo.queryOptions({
+			websiteSlug: website.slug,
+		})
+	);
+
 	// Start training mutation
 	const startTrainingMutation = useMutation(
 		trpc.aiAgent.startTraining.mutationOptions({
 			onSuccess: () => {
-				// Invalidate training status to trigger refetch
+				// Invalidate training status and readiness to trigger refetch
 				queryClient.invalidateQueries({
 					queryKey: trpc.aiAgent.getTrainingStatus.queryKey({
 						websiteSlug: website.slug,
 					}),
 				});
+				queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug: website.slug,
+					}),
+				});
+				// Reset hint dismissed so it can show again next time
+				const key = getHintDismissedKey(website.slug);
+				localStorage.removeItem(key);
+				setIsHintDismissed(false);
 			},
 		})
 	);
@@ -100,7 +144,16 @@ export function TrainingSummarySidebar({
 		trainingStatus?.trainingStatus === "pending";
 	const hasFailedTraining = trainingStatus?.trainingStatus === "failed";
 	const hasCompletedTraining = trainingStatus?.trainingStatus === "completed";
-	const canTrain = totalSources > 0 && agent?.id && !isTraining;
+
+	// Smart gating: only allow training if sources changed
+	const needsTraining = readiness?.needsTraining ?? false;
+	const isOnCooldown = readiness?.canTrainAt != null;
+	const canTrain =
+		totalSources > 0 &&
+		agent?.id &&
+		!isTraining &&
+		needsTraining &&
+		!isOnCooldown;
 
 	// Format last trained date
 	const lastTrainedText = trainingStatus?.lastTrainedAt
@@ -113,146 +166,206 @@ export function TrainingSummarySidebar({
 		if (!agent?.id) {
 			return;
 		}
+
+		// If on cooldown, show upgrade modal
+		if (isOnCooldown) {
+			setIsUpgradeModalOpen(true);
+			return;
+		}
+
 		startTrainingMutation.mutate({
 			websiteSlug: website.slug,
 			aiAgentId: agent.id,
 		});
 	};
 
-	return (
-		<ResizableSidebar
-			className="hidden lg:flex"
-			position="right"
-			sidebarTitle="Sources"
-		>
-			<SidebarContainer>
-				<div className="flex flex-col gap-6">
-					<div className="px-1 pt-2">
-						<h3 className="mb-4 font-medium text-sm">Sources</h3>
-						{isLoadingStats ? (
-							<div className="flex flex-col gap-3">
-								<Skeleton className="h-5 w-full" />
-								<Skeleton className="h-5 w-full" />
-								<Skeleton className="h-5 w-full" />
-							</div>
-						) : (
-							<div className="flex flex-col gap-2">
-								<SourceRow
-									count={stats?.urlKnowledgeCount ?? 0}
-									icon="dashboard"
-									label="Pages"
-									limit={stats?.totalPagesLimit}
-								/>
-								<SourceRow
-									count={stats?.faqKnowledgeCount ?? 0}
-									icon="help"
-									label="FAQs"
-								/>
-								<SourceRow
-									count={stats?.articleKnowledgeCount ?? 0}
-									icon="file"
-									label="Files"
-								/>
-							</div>
-						)}
-					</div>
+	// Determine button disabled state
+	// Disabled when: no agent, already training, mutation pending, or nothing new to train
+	// Enabled when on cooldown (clicking opens upgrade modal)
+	const isButtonDisabled =
+		!agent?.id ||
+		isTraining ||
+		startTrainingMutation.isPending ||
+		!needsTraining;
 
-					<div className="border-primary/10 border-t px-1 pt-4 dark:border-primary/5">
-						<div className="mb-2 flex items-center justify-between">
-							<span className="text-muted-foreground text-xs">Total size</span>
-							<span className="font-medium text-xs">
-								{totalSizeFormatted} / {limitFormatted}
-							</span>
+	return (
+		<>
+			<ResizableSidebar
+				className="hidden lg:flex"
+				position="right"
+				sidebarTitle="Sources"
+			>
+				<SidebarContainer>
+					<div className="flex flex-col gap-6">
+						<div className="px-1 pt-2">
+							<h3 className="mb-4 font-medium text-sm">Sources</h3>
+							{isLoadingStats ? (
+								<div className="flex flex-col gap-3">
+									<Skeleton className="h-5 w-full" />
+									<Skeleton className="h-5 w-full" />
+									<Skeleton className="h-5 w-full" />
+								</div>
+							) : (
+								<div className="flex flex-col gap-2">
+									<SourceRow
+										count={stats?.urlKnowledgeCount ?? 0}
+										icon="dashboard"
+										label="Pages"
+										limit={stats?.totalPagesLimit}
+									/>
+									<SourceRow
+										count={stats?.faqKnowledgeCount ?? 0}
+										icon="help"
+										label="FAQs"
+									/>
+									<SourceRow
+										count={stats?.articleKnowledgeCount ?? 0}
+										icon="file"
+										label="Files"
+									/>
+								</div>
+							)}
 						</div>
-						{stats?.planLimitBytes ? (
-							<Progress
-								className={cn(
-									"h-2",
-									isAtLimit && "bg-destructive/20",
-									isNearLimit && !isAtLimit && "bg-warning/20"
-								)}
-								indicatorClassName={cn(
-									isAtLimit && "bg-destructive",
-									isNearLimit && !isAtLimit && "bg-warning"
-								)}
-								value={usagePercentage}
-							/>
-						) : (
-							<Progress className="h-2" value={0} />
+
+						<div className="border-primary/10 border-t px-1 pt-4 dark:border-primary/5">
+							<div className="mb-2 flex items-center justify-between">
+								<span className="text-muted-foreground text-xs">
+									Total size
+								</span>
+								<span className="font-medium text-xs">
+									{totalSizeFormatted} / {limitFormatted}
+								</span>
+							</div>
+							{stats?.planLimitBytes ? (
+								<Progress
+									className={cn(
+										"h-2",
+										isAtLimit && "bg-destructive/20",
+										isNearLimit && !isAtLimit && "bg-warning/20"
+									)}
+									indicatorClassName={cn(
+										isAtLimit && "bg-destructive",
+										isNearLimit && !isAtLimit && "bg-warning"
+									)}
+									value={usagePercentage}
+								/>
+							) : (
+								<Progress className="h-2" value={0} />
+							)}
+							{isAtLimit && (
+								<p className="mt-2 text-destructive text-xs">
+									You've reached your plan's storage limit.{" "}
+									<a
+										className="underline hover:text-destructive/80"
+										href={`/${website.slug}/settings/plan`}
+									>
+										Upgrade your plan
+									</a>{" "}
+									to add more sources.
+								</p>
+							)}
+						</div>
+
+						{/* Training progress bar (shown during training) */}
+						{isTraining && (
+							<div className="px-1">
+								<div className="mb-2 flex items-center justify-between">
+									<span className="text-muted-foreground text-xs">
+										Training progress
+									</span>
+									<span className="font-medium text-xs">
+										{trainingStatus?.trainingProgress ?? 0}%
+									</span>
+								</div>
+								<Progress
+									className="h-2"
+									value={trainingStatus?.trainingProgress ?? 0}
+								/>
+							</div>
 						)}
-						{isAtLimit && (
-							<p className="mt-2 text-destructive text-xs">
-								You've reached your plan's storage limit.{" "}
-								<a
-									className="underline hover:text-destructive/80"
-									href={`/${website.slug}/settings/plan`}
+
+						<Button
+							className="w-full"
+							disabled={isButtonDisabled}
+							onClick={handleStartTraining}
+							size="sm"
+							title={
+								!needsTraining && hasCompletedTraining
+									? "No sources have been updated since last training"
+									: isOnCooldown
+										? "Training available once per hour on the free plan"
+										: undefined
+							}
+							variant="secondary"
+						>
+							{isTraining ? (
+								<>
+									<div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+									Training...
+								</>
+							) : !needsTraining && hasCompletedTraining ? (
+								"Nothing new to train"
+							) : (
+								<>
+									<Icon className="mr-2 size-4" name="play" />
+									{hasCompletedTraining ? "Retrain Agent" : "Train Agent"}
+								</>
+							)}
+						</Button>
+
+						{/* Dismissible training hint */}
+						{needsTraining && !isTraining && !isHintDismissed && (
+							<div className="relative rounded-md border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900 dark:bg-blue-950/50">
+								<button
+									className="absolute top-1.5 right-1.5 rounded p-0.5 text-muted-foreground hover:text-foreground"
+									onClick={dismissHint}
+									type="button"
 								>
-									Upgrade your plan
-								</a>{" "}
-								to add more sources.
+									<X className="size-3.5" />
+								</button>
+								<p className="pr-5 text-xs leading-relaxed">
+									Your knowledge base has been updated. Train your agent to
+									apply the latest changes.
+									{readiness?.updatedSourcesCount
+										? ` ${readiness.updatedSourcesCount} source${readiness.updatedSourcesCount > 1 ? "s" : ""} changed.`
+										: ""}
+								</p>
+							</div>
+						)}
+
+						{/* Status message */}
+						{!isLoadingTrainingStatus && (
+							<p className="text-center text-muted-foreground text-xs">
+								{totalSources === 0 ? (
+									"Add sources to train your AI agent."
+								) : isTraining ? (
+									"Processing your knowledge base..."
+								) : hasFailedTraining ? (
+									<span className="text-destructive">
+										Training failed. Please try again.
+									</span>
+								) : lastTrainedText ? (
+									`Last trained ${lastTrainedText}`
+								) : (
+									"Click to train your AI agent."
+								)}
 							</p>
 						)}
 					</div>
+				</SidebarContainer>
+			</ResizableSidebar>
 
-					{/* Training progress bar (shown during training) */}
-					{isTraining && (
-						<div className="px-1">
-							<div className="mb-2 flex items-center justify-between">
-								<span className="text-muted-foreground text-xs">
-									Training progress
-								</span>
-								<span className="font-medium text-xs">
-									{trainingStatus?.trainingProgress ?? 0}%
-								</span>
-							</div>
-							<Progress
-								className="h-2"
-								value={trainingStatus?.trainingProgress ?? 0}
-							/>
-						</div>
-					)}
-
-					<Button
-						className="w-full"
-						disabled={!canTrain || startTrainingMutation.isPending}
-						onClick={handleStartTraining}
-						size="sm"
-						variant="secondary"
-					>
-						{isTraining ? (
-							<>
-								<div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-								Training...
-							</>
-						) : (
-							<>
-								<Icon className="mr-2 size-4" name="play" />
-								{hasCompletedTraining ? "Retrain Agent" : "Train Agent"}
-							</>
-						)}
-					</Button>
-
-					{/* Status message */}
-					{!isLoadingTrainingStatus && (
-						<p className="text-center text-muted-foreground text-xs">
-							{totalSources === 0 ? (
-								"Add sources to train your AI agent."
-							) : isTraining ? (
-								"Processing your knowledge base..."
-							) : hasFailedTraining ? (
-								<span className="text-destructive">
-									Training failed. Please try again.
-								</span>
-							) : lastTrainedText ? (
-								`Last trained ${lastTrainedText}`
-							) : (
-								"Click to train your AI agent."
-							)}
-						</p>
-					)}
-				</div>
-			</SidebarContainer>
-		</ResizableSidebar>
+			{planInfo && (
+				<UpgradeModal
+					currentPlan={planInfo.plan}
+					highlightedFeatureKey="ai-agent-training-interval"
+					initialPlanName="hobby"
+					onOpenChange={setIsUpgradeModalOpen}
+					open={isUpgradeModalOpen}
+					websiteSlug={website.slug}
+				/>
+			)}
+		</>
 	);
 }
 

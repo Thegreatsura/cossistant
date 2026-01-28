@@ -203,6 +203,19 @@ export function handleCrawlCompleted({
 			console.error("Failed to invalidate training stats:", error);
 		});
 
+	// Invalidate training readiness so the Train button updates
+	queryClient
+		.invalidateQueries({
+			queryKey: [
+				["aiAgent", "getTrainingReadiness"],
+				{ input: { websiteSlug: website.slug } },
+			],
+			exact: false,
+		})
+		.catch((error) => {
+			console.error("Failed to invalidate training readiness:", error);
+		});
+
 	// Show success toast
 	const domain = getDomainFromUrl(payload.url);
 	toast.success(`Crawl complete for ${domain}`, {

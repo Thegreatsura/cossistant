@@ -16,7 +16,7 @@ export type VectorSearchOptions = {
 	contactId?: string;
 	/** Filter by knowledge ID (for knowledge chunks) */
 	knowledgeId?: string;
-	/** Minimum similarity score (0-1, default: 0.5) */
+	/** Minimum similarity score (0-1, default: 0.3) */
 	minSimilarity?: number;
 	/** Maximum number of results (default: 10) */
 	limit?: number;
@@ -53,7 +53,7 @@ export async function findSimilarChunks(
 		visitorId,
 		contactId,
 		knowledgeId,
-		minSimilarity = 0.5,
+		minSimilarity = 0.3,
 		limit = 10,
 	} = options;
 

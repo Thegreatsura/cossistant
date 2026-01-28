@@ -25,7 +25,8 @@ export type FeatureKey =
 	| "ai-agent-crawl-pages-per-source"
 	| "ai-agent-training-pages-total"
 	| "ai-agent-training-faqs"
-	| "ai-agent-training-files";
+	| "ai-agent-training-files"
+	| "ai-agent-training-interval";
 
 export type PlanName = "free" | "hobby" | "pro";
 
@@ -224,6 +225,13 @@ export const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
 		unit: "files",
 		category: "secondary",
 	},
+	"ai-agent-training-interval": {
+		key: "ai-agent-training-interval",
+		name: "AI Agent Training Interval",
+		description: "Minimum time between AI agent training runs",
+		unit: "minutes",
+		category: "secondary",
+	},
 };
 
 // Polar product IDs by environment
@@ -281,6 +289,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-agent-training-pages-total": 10, // 10 pages total across all sources
 			"ai-agent-training-faqs": 10, // 10 FAQs
 			"ai-agent-training-files": 5, // 5 files
+			"ai-agent-training-interval": 120, // Every 2 hours
 		},
 	},
 	hobby: {
@@ -317,6 +326,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-agent-training-pages-total": null, // Unlimited total pages
 			"ai-agent-training-faqs": null, // Unlimited FAQs
 			"ai-agent-training-files": null, // Unlimited files
+			"ai-agent-training-interval": 10, // Every 10 minutes
 		},
 	},
 	pro: {
@@ -353,6 +363,7 @@ export const PLAN_CONFIG: Record<PlanName, PlanConfig> = {
 			"ai-agent-training-pages-total": null, // Unlimited total pages
 			"ai-agent-training-faqs": null, // Unlimited FAQs
 			"ai-agent-training-files": null, // Unlimited files
+			"ai-agent-training-interval": 0, // Anytime
 		},
 	},
 };

@@ -104,21 +104,28 @@ export class PgTimestampISOString extends PgTimestampString<
 		// Regex to find a timezone offset like +05, +0530, or -07.
 		const offsetRegex = /([+-])(\d{2})(\d{2})?$/;
 
-		// Replace the matched offset with a colon-separated version (e.g., +0530 -> +05:30).
-		// This ensures maximum compatibility with JavaScript's `new Date()` parser.
-		return addedT.replace(
-			offsetRegex,
-			(
-				_match,
-				sign: string | null,
-				hours: string | null,
-				minutes: string | null
-			) => {
-				// If minutes exist, use them, otherwise default to "00"
-				const formattedMinutes = minutes ?? "00";
-				return `${sign}${hours}:${formattedMinutes}`;
-			}
-		);
+		const match = addedT.match(offsetRegex);
+		if (match) {
+			// Replace the matched offset with a colon-separated version (e.g., +0530 -> +05:30).
+			// This ensures maximum compatibility with JavaScript's `new Date()` parser.
+			return addedT.replace(
+				offsetRegex,
+				(
+					_match,
+					sign: string | null,
+					hours: string | null,
+					minutes: string | null
+				) => {
+					const formattedMinutes = minutes ?? "00";
+					return `${sign}${hours}:${formattedMinutes}`;
+				}
+			);
+		}
+
+		// No timezone offset found — this happens when the column is
+		// `timestamp without time zone`. All timestamps in the app are
+		// written as UTC (via .toISOString()), so assume UTC.
+		return `${addedT}+00:00`;
 	}
 }
 

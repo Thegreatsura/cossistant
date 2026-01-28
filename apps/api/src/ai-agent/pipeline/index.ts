@@ -324,6 +324,7 @@ export async function runAiAgentPipeline(
 				isEscalated: decisionResult.isEscalated, // Pass escalation context
 				escalationReason: decisionResult.escalationReason,
 				smartDecision: decisionResult.smartDecision, // Pass smart decision for prompt context
+				workflowRunId: ctx.input.workflowRunId, // For progress events in tools
 			});
 		} finally {
 			// Always clean up the polling interval

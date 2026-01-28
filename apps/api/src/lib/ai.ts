@@ -19,7 +19,7 @@
 import { devToolsMiddleware } from "@ai-sdk/devtools";
 import { env } from "@api/env";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { type LanguageModel, wrapLanguageModel } from "ai";
+import { embed, embedMany, type LanguageModel, wrapLanguageModel } from "ai";
 
 // Re-export commonly used AI SDK functions for convenience
 export {
@@ -125,24 +125,17 @@ export function createModelRaw(modelId: string): LanguageModel {
 }
 
 /**
- * Embedding configuration
+ * Create an embedding model using the OpenRouter provider.
  */
-const OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings";
-
-type EmbeddingResponse = {
-	data: Array<{
-		embedding: number[];
-		index: number;
-	}>;
-	model: string;
-	usage: {
-		prompt_tokens: number;
-		total_tokens: number;
-	};
-};
+function createEmbeddingModel(modelId?: string) {
+	const openrouter = getOpenRouter();
+	return openrouter.textEmbeddingModel(
+		modelId ?? env.OPENROUTER_EMBEDDING_MODEL ?? "openai/text-embedding-3-small"
+	);
+}
 
 /**
- * Generate an embedding for a single text using OpenRouter API.
+ * Generate an embedding for a single text using AI SDK with OpenRouter.
  *
  * @param text - The text to embed
  * @param model - Optional model override (defaults to OPENROUTER_EMBEDDING_MODEL env var)
@@ -152,36 +145,16 @@ export async function generateEmbedding(
 	text: string,
 	model?: string
 ): Promise<number[]> {
-	if (!env.OPENROUTER_API_KEY) {
-		throw new Error("OPENROUTER_API_KEY is not configured");
-	}
-
-	const response = await fetch(OPENROUTER_EMBEDDINGS_URL, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model: model ?? env.OPENROUTER_EMBEDDING_MODEL,
-			input: text,
-		}),
+	const { embedding } = await embed({
+		model: createEmbeddingModel(model),
+		value: text,
 	});
-
-	if (!response.ok) {
-		const errorText = await response.text();
-		throw new Error(
-			`OpenRouter embedding failed: ${response.status} - ${errorText}`
-		);
-	}
-
-	const data = (await response.json()) as EmbeddingResponse;
-	return data.data[0].embedding;
+	return embedding;
 }
 
 /**
- * Generate embeddings for multiple texts using OpenRouter API.
- * More efficient than calling generateEmbedding multiple times.
+ * Generate embeddings for multiple texts using AI SDK with OpenRouter.
+ * The AI SDK automatically handles chunking for large requests.
  *
  * @param texts - Array of texts to embed
  * @param model - Optional model override (defaults to OPENROUTER_EMBEDDING_MODEL env var)
@@ -195,34 +168,11 @@ export async function generateEmbeddings(
 		return [];
 	}
 
-	if (!env.OPENROUTER_API_KEY) {
-		throw new Error("OPENROUTER_API_KEY is not configured");
-	}
-
-	const response = await fetch(OPENROUTER_EMBEDDINGS_URL, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model: model ?? env.OPENROUTER_EMBEDDING_MODEL,
-			input: texts,
-		}),
+	const { embeddings } = await embedMany({
+		model: createEmbeddingModel(model),
+		values: texts,
 	});
-
-	if (!response.ok) {
-		const errorText = await response.text();
-		throw new Error(
-			`OpenRouter embedding failed: ${response.status} - ${errorText}`
-		);
-	}
-
-	const data = (await response.json()) as EmbeddingResponse;
-	// Sort by index to ensure order matches input
-	return data.data
-		.sort((a, b) => a.index - b.index)
-		.map((item) => item.embedding);
+	return embeddings;
 }
 
 /**

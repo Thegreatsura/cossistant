@@ -16,7 +16,7 @@ import type { RedisOptions } from "@cossistant/redis";
 import { db } from "@workers/db";
 import { emitToWebsite } from "@workers/realtime";
 import { type Job, Worker } from "bullmq";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 
 // Batch size for embedding generation (to avoid hitting API limits)
 const EMBEDDING_BATCH_SIZE = 20;
@@ -134,18 +134,70 @@ async function processTrainingJob(job: Job<AiTrainingJobData>): Promise<void> {
 			return;
 		}
 
-		// Delete existing chunks for this website (clean slate training)
-		await db.delete(chunkTable).where(eq(chunkTable.websiteId, websiteId));
+		// --- Incremental training: only re-embed changed knowledge items ---
 
+		// Build a map of existing chunks' contentHash per knowledgeId
+		const existingChunks = await db
+			.select({
+				knowledgeId: chunkTable.knowledgeId,
+				contentHash: sql<string>`${chunkTable.metadata}->>'contentHash'`,
+			})
+			.from(chunkTable)
+			.where(
+				and(
+					eq(chunkTable.websiteId, websiteId),
+					eq(chunkTable.sourceType, "knowledge")
+				)
+			);
+
+		const existingHashByKnowledgeId = new Map<string, string>();
+		for (const row of existingChunks) {
+			if (row.knowledgeId && row.contentHash) {
+				existingHashByKnowledgeId.set(row.knowledgeId, row.contentHash);
+			}
+		}
+
+		// Delete orphaned chunks (knowledgeIds that no longer exist)
+		const currentKnowledgeIds = knowledgeItems.map((k) => k.id);
+		if (currentKnowledgeIds.length > 0) {
+			await db
+				.delete(chunkTable)
+				.where(
+					and(
+						eq(chunkTable.websiteId, websiteId),
+						eq(chunkTable.sourceType, "knowledge"),
+						notInArray(chunkTable.knowledgeId, currentKnowledgeIds)
+					)
+				);
+		}
+
+		// Filter to only items that need re-embedding
+		const itemsToProcess = knowledgeItems.filter((item) => {
+			const existingHash = existingHashByKnowledgeId.get(item.id);
+			return existingHash !== item.contentHash;
+		});
+
+		const skippedItems = totalItems - itemsToProcess.length;
 		console.log(
-			`[ai-training] Deleted existing chunks for website ${websiteId}`
+			`[ai-training] Incremental training: ${itemsToProcess.length} changed, ${skippedItems} unchanged (skipped)`
 		);
 
 		let processedItems = 0;
 		let totalChunks = 0;
 
-		// Process each knowledge item
-		for (const knowledgeItem of knowledgeItems) {
+		// Process only changed knowledge items
+		for (const knowledgeItem of itemsToProcess) {
+			// Delete old chunks for this specific knowledge item
+			await db
+				.delete(chunkTable)
+				.where(
+					and(
+						eq(chunkTable.websiteId, websiteId),
+						eq(chunkTable.knowledgeId, knowledgeItem.id),
+						eq(chunkTable.sourceType, "knowledge")
+					)
+				);
+
 			// Extract text content from the knowledge item
 			const text = extractTextFromKnowledgePayload(
 				knowledgeItem.type as "url" | "faq" | "article",
@@ -176,15 +228,31 @@ async function processTrainingJob(job: Job<AiTrainingJobData>): Promise<void> {
 				knowledgeItem.sourceTitle
 			);
 
+			// Build a contextual prefix so embeddings carry source semantics
+			const contextParts: string[] = [];
+			if (knowledgeItem.sourceTitle) {
+				contextParts.push(knowledgeItem.sourceTitle);
+			}
+			if (knowledgeItem.sourceUrl) {
+				contextParts.push(knowledgeItem.sourceUrl);
+			}
+			const contextPrefix =
+				contextParts.length > 0
+					? `Source: ${contextParts.join(" | ")}\n\n`
+					: "";
+
 			// Process chunks in batches for embedding generation
 			for (let i = 0; i < chunks.length; i += EMBEDDING_BATCH_SIZE) {
 				const chunkBatch = chunks.slice(i, i + EMBEDDING_BATCH_SIZE);
-				const chunkTexts = chunkBatch.map((c) => c.content);
+				// Prepend source context to each chunk for richer embeddings
+				const chunkTexts = chunkBatch.map(
+					(c) => `${contextPrefix}${c.content}`
+				);
 
 				// Generate embeddings for this batch
 				const embeddings = await generateEmbeddings(chunkTexts);
 
-				// Insert chunks into database
+				// Insert chunks into database with contentHash for incremental detection
 				const chunkInserts = chunkBatch.map((chunk, batchIndex) => ({
 					id: generateULID(),
 					websiteId,
@@ -197,6 +265,7 @@ async function processTrainingJob(job: Job<AiTrainingJobData>): Promise<void> {
 					chunkIndex: chunk.index,
 					metadata: {
 						...metadata,
+						contentHash: knowledgeItem.contentHash,
 						startOffset: chunk.startOffset,
 						endOffset: chunk.endOffset,
 					},
@@ -211,7 +280,9 @@ async function processTrainingJob(job: Job<AiTrainingJobData>): Promise<void> {
 			processedItems++;
 
 			// Calculate progress percentage
-			const progress = Math.round((processedItems / totalItems) * 100);
+			const progress = Math.round(
+				(processedItems / itemsToProcess.length) * 100
+			);
 
 			// Update progress
 			await updateAiAgentTrainingStatus(db, {
@@ -228,7 +299,7 @@ async function processTrainingJob(job: Job<AiTrainingJobData>): Promise<void> {
 				userId: job.data.triggeredBy,
 				aiAgentId,
 				processedItems,
-				totalItems,
+				totalItems: itemsToProcess.length,
 				currentItem: {
 					id: knowledgeItem.id,
 					title: knowledgeItem.sourceTitle ?? null,
@@ -241,7 +312,7 @@ async function processTrainingJob(job: Job<AiTrainingJobData>): Promise<void> {
 			await job.updateProgress(progress);
 
 			console.log(
-				`[ai-training] Processed ${processedItems}/${totalItems} items (${chunks.length} chunks)`
+				`[ai-training] Processed ${processedItems}/${itemsToProcess.length} items (${chunks.length} chunks)`
 			);
 		}
 

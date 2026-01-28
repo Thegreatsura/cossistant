@@ -12,6 +12,8 @@ import {
 	getWebsiteBySlugWithAccess,
 	updateWebsite,
 } from "@api/db/queries/website";
+import { knowledge } from "@api/db/schema/knowledge";
+import { getPlanForWebsite } from "@api/lib/plans/access";
 import { firecrawlService } from "@api/services/firecrawl";
 import { generateAgentBasePrompt } from "@api/services/prompt-generator";
 import { triggerAiTraining } from "@api/utils/queue-triggers";
@@ -30,8 +32,24 @@ import {
 	updateBehaviorSettingsResponseSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
+import { and, count, eq, gt, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
+
+/** Get training cooldown in ms from plan's training interval (in minutes) */
+function getTrainingCooldownMs(
+	trainingIntervalMinutes: number | boolean | null
+): number {
+	if (
+		trainingIntervalMinutes === null ||
+		trainingIntervalMinutes === true ||
+		trainingIntervalMinutes === false ||
+		trainingIntervalMinutes <= 0
+	) {
+		return 0;
+	}
+	return (trainingIntervalMinutes as number) * 60 * 1000;
+}
 
 function toAiAgentResponse(agent: {
 	id: string;
@@ -484,6 +502,109 @@ export const aiAgentRouter = createTRPCRouter({
 		}),
 
 	/**
+	 * Check if the AI agent needs training and whether the user can train now.
+	 * Used to gate the Train button in the UI.
+	 */
+	getTrainingReadiness: protectedProcedure
+		.input(z.object({ websiteSlug: z.string() }))
+		.output(
+			z.object({
+				needsTraining: z.boolean(),
+				canTrainAt: z.string().nullable(),
+				isFreePlan: z.boolean(),
+				updatedSourcesCount: z.number(),
+			})
+		)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent) {
+				return {
+					needsTraining: false,
+					canTrainAt: null,
+					isFreePlan: true,
+					updatedSourcesCount: 0,
+				};
+			}
+
+			// Count knowledge items updated since last training
+			const conditions = [
+				eq(knowledge.websiteId, websiteData.id),
+				eq(knowledge.isIncluded, true),
+				isNull(knowledge.deletedAt),
+			];
+
+			if (agent.lastTrainedAt) {
+				// Compare directly using raw DB strings to avoid
+				// timezone shift from Date object round-trip
+				conditions.push(gt(knowledge.updatedAt, agent.lastTrainedAt));
+			}
+
+			const [result] = await db
+				.select({ count: count() })
+				.from(knowledge)
+				.where(and(...conditions));
+
+			const updatedSourcesCount = result?.count ?? 0;
+
+			// If never trained, check if there are any sources at all
+			let needsTraining: boolean;
+			if (agent.lastTrainedAt) {
+				needsTraining = updatedSourcesCount > 0;
+			} else {
+				const [totalResult] = await db
+					.select({ count: count() })
+					.from(knowledge)
+					.where(
+						and(
+							eq(knowledge.websiteId, websiteData.id),
+							eq(knowledge.isIncluded, true),
+							isNull(knowledge.deletedAt)
+						)
+					);
+				needsTraining = (totalResult?.count ?? 0) > 0;
+			}
+
+			// Check plan and training interval cooldown
+			const planInfo = await getPlanForWebsite(websiteData);
+			const isFreePlan = planInfo.planName === "free";
+			const cooldownMs = getTrainingCooldownMs(
+				planInfo.features["ai-agent-training-interval"]
+			);
+
+			let canTrainAt: string | null = null;
+			if (cooldownMs > 0 && agent.lastTrainedAt) {
+				const lastTrainedDate = new Date(agent.lastTrainedAt);
+				const cooldownEnd = new Date(lastTrainedDate.getTime() + cooldownMs);
+				if (cooldownEnd > new Date()) {
+					canTrainAt = cooldownEnd.toISOString();
+				}
+			}
+
+			return {
+				needsTraining,
+				canTrainAt,
+				isFreePlan,
+				updatedSourcesCount,
+			};
+		}),
+
+	/**
 	 * Start training the AI agent's knowledge base
 	 * Processes all included knowledge items and generates embeddings
 	 */
@@ -534,6 +655,23 @@ export const aiAgentRouter = createTRPCRouter({
 					code: "CONFLICT",
 					message: "Training is already in progress",
 				});
+			}
+
+			// Check training interval cooldown
+			const planInfo = await getPlanForWebsite(websiteData);
+			const cooldownMs = getTrainingCooldownMs(
+				planInfo.features["ai-agent-training-interval"]
+			);
+			if (cooldownMs > 0 && agent.lastTrainedAt) {
+				const cooldownEnd = new Date(
+					new Date(agent.lastTrainedAt).getTime() + cooldownMs
+				);
+				if (cooldownEnd > new Date()) {
+					throw new TRPCError({
+						code: "TOO_MANY_REQUESTS",
+						message: `Your plan allows training every ${Math.round(cooldownMs / 60_000)} minutes. Try again after ${cooldownEnd.toISOString()}`,
+					});
+				}
 			}
 
 			// Update status to pending

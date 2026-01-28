@@ -70,6 +70,8 @@ export type ToolContext = {
 	startTyping?: StartTypingCallback;
 	/** Whether the conversation is already escalated - prevents re-escalation */
 	isEscalated?: boolean;
+	/** Workflow run ID for progress event emission */
+	workflowRunId?: string;
 };
 
 /**

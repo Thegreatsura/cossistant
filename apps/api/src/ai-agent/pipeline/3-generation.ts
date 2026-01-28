@@ -83,6 +83,8 @@ type GenerationInput = {
 	escalationReason?: string | null;
 	/** Smart decision result if AI was used to decide */
 	smartDecision?: SmartDecisionResult;
+	/** Workflow run ID for progress events */
+	workflowRunId?: string;
 };
 
 /**
@@ -116,6 +118,7 @@ export async function generate(
 		isEscalated,
 		escalationReason,
 		smartDecision,
+		workflowRunId,
 	} = input;
 	const convId = conversation.id;
 
@@ -142,6 +145,8 @@ export async function generate(
 		startTyping,
 		// Escalation state - prevents re-escalation
 		isEscalated,
+		// Workflow run ID for progress events
+		workflowRunId,
 	};
 
 	// Reset captured action before generation

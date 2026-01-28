@@ -144,6 +144,11 @@ export function useFileMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -251,6 +256,11 @@ export function useFileMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -316,6 +326,11 @@ export function useFileMutations({
 				});
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});
@@ -395,6 +410,11 @@ export function useFileMutations({
 						websiteSlug,
 					}),
 				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug,
+					}),
+				});
 			},
 		})
 	);
@@ -457,6 +477,11 @@ export function useFileMutations({
 			onSettled: () => {
 				void queryClient.invalidateQueries({
 					queryKey: trpc.linkSource.getTrainingStats.queryKey({
+						websiteSlug,
+					}),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
 						websiteSlug,
 					}),
 				});
