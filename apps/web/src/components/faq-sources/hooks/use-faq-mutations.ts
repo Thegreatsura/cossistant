@@ -25,6 +25,7 @@ type UseFaqMutationsOptions = {
 	aiAgentId: string | null;
 	onCreateSuccess?: () => void;
 	onUpdateSuccess?: () => void;
+	onTrainRequested?: () => void;
 };
 
 export function useFaqMutations({
@@ -32,6 +33,7 @@ export function useFaqMutations({
 	aiAgentId,
 	onCreateSuccess,
 	onUpdateSuccess,
+	onTrainRequested,
 }: UseFaqMutationsOptions) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
@@ -120,7 +122,14 @@ export function useFaqMutations({
 				toast.error(_error.message || "Failed to add FAQ");
 			},
 			onSuccess: () => {
-				toast.success("FAQ added");
+				toast.success("FAQ added", {
+					...(onTrainRequested && {
+						action: {
+							label: "Train Agent",
+							onClick: onTrainRequested,
+						},
+					}),
+				});
 				onCreateSuccess?.();
 			},
 			onSettled: () => {

@@ -216,11 +216,17 @@ export function handleCrawlCompleted({
 			console.error("Failed to invalidate training readiness:", error);
 		});
 
-	// Show success toast
+	// Show success toast with optional Train action
 	const domain = getDomainFromUrl(payload.url);
 	toast.success(`Crawl complete for ${domain}`, {
 		id: getCrawlToastId(payload.linkSourceId),
 		description: `${payload.crawledPagesCount} pages added to knowledge base`,
+		...(context.startTraining && {
+			action: {
+				label: "Train Agent",
+				onClick: context.startTraining,
+			},
+		}),
 	});
 
 	console.log(

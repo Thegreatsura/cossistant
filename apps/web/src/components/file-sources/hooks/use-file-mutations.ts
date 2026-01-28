@@ -32,6 +32,7 @@ type UseFileMutationsOptions = {
 	onCreateSuccess?: () => void;
 	onUpdateSuccess?: () => void;
 	onUploadSuccess?: () => void;
+	onTrainRequested?: () => void;
 };
 
 export function useFileMutations({
@@ -40,6 +41,7 @@ export function useFileMutations({
 	onCreateSuccess,
 	onUpdateSuccess,
 	onUploadSuccess,
+	onTrainRequested,
 }: UseFileMutationsOptions) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
@@ -128,7 +130,14 @@ export function useFileMutations({
 				toast.error(_error.message || "Failed to add file");
 			},
 			onSuccess: () => {
-				toast.success("File added");
+				toast.success("File added", {
+					...(onTrainRequested && {
+						action: {
+							label: "Train Agent",
+							onClick: onTrainRequested,
+						},
+					}),
+				});
 				onCreateSuccess?.();
 			},
 			onSettled: () => {
@@ -240,7 +249,14 @@ export function useFileMutations({
 				toast.error(_error.message || "Failed to upload file");
 			},
 			onSuccess: (data) => {
-				toast.success(`File uploaded: ${data.sourceTitle}`);
+				toast.success(`File uploaded: ${data.sourceTitle}`, {
+					...(onTrainRequested && {
+						action: {
+							label: "Train Agent",
+							onClick: onTrainRequested,
+						},
+					}),
+				});
 				onUploadSuccess?.();
 			},
 			onSettled: () => {

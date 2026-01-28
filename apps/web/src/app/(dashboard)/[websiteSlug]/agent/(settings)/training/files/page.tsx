@@ -1,7 +1,7 @@
 "use client";
 
 import type { KnowledgeResponse } from "@cossistant/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import {
 	AddFileDialog,
@@ -50,6 +50,47 @@ export default function FilesPage() {
 		})
 	);
 
+	const queryClient = useQueryClient();
+
+	// Fetch training readiness for train action
+	const { data: readiness } = useQuery(
+		trpc.aiAgent.getTrainingReadiness.queryOptions({
+			websiteSlug: website.slug,
+		})
+	);
+
+	const startTrainingMutation = useMutation(
+		trpc.aiAgent.startTraining.mutationOptions({
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingStatus.queryKey({
+						websiteSlug: website.slug,
+					}),
+				});
+				queryClient.invalidateQueries({
+					queryKey: trpc.aiAgent.getTrainingReadiness.queryKey({
+						websiteSlug: website.slug,
+					}),
+				});
+			},
+		})
+	);
+
+	const handleTrainRequested = useCallback(() => {
+		if (!aiAgent?.id) {
+			return;
+		}
+		const isOnCooldown = readiness?.canTrainAt != null;
+		if (isOnCooldown) {
+			setShowUpgradeModal(true);
+			return;
+		}
+		startTrainingMutation.mutate({
+			websiteSlug: website.slug,
+			aiAgentId: aiAgent.id,
+		});
+	}, [aiAgent?.id, readiness?.canTrainAt, startTrainingMutation, website.slug]);
+
 	const isFreePlan = planInfo?.plan.name === "free";
 
 	// Check if user is at file limit
@@ -82,6 +123,7 @@ export default function FilesPage() {
 		onUpdateSuccess: () => {
 			setEditingFile(null);
 		},
+		onTrainRequested: handleTrainRequested,
 	});
 
 	const handleAddFile = useCallback(

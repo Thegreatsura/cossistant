@@ -96,14 +96,10 @@ export function handleTrainingProgress({
 		}
 	);
 
-	// Update toast with progress
-	const itemInfo = payload.currentItem
-		? ` - ${payload.currentItem.type}: ${payload.currentItem.title ?? "Untitled"}`
-		: "";
-
+	// Update toast with progress (keep stable shape - no item details)
 	toast.loading("Training AI agent...", {
 		id: getTrainingToastId(payload.aiAgentId),
-		description: `${payload.processedItems}/${payload.totalItems} items (${payload.percentage}%)${itemInfo}`,
+		description: `${payload.processedItems}/${payload.totalItems} items (${payload.percentage}%)`,
 	});
 
 	console.log(
@@ -153,6 +149,32 @@ export function handleTrainingCompleted({
 		durationSeconds < 60
 			? `${durationSeconds}s`
 			: `${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`;
+
+	// Invalidate training readiness so sidebar shows "Nothing new to train"
+	queryClient
+		.invalidateQueries({
+			queryKey: [
+				["aiAgent", "getTrainingReadiness"],
+				{ input: { websiteSlug: website.slug } },
+			],
+			exact: false,
+		})
+		.catch((error) => {
+			console.error("Failed to invalidate training readiness:", error);
+		});
+
+	// Invalidate training stats
+	queryClient
+		.invalidateQueries({
+			queryKey: [
+				["linkSource", "getTrainingStats"],
+				{ input: { websiteSlug: website.slug } },
+			],
+			exact: false,
+		})
+		.catch((error) => {
+			console.error("Failed to invalidate training stats:", error);
+		});
 
 	// Show success toast
 	toast.success("Training complete!", {

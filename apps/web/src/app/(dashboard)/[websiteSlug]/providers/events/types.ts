@@ -13,4 +13,5 @@ export type DashboardRealtimeContext = {
 	queryNormalizer: QueryNormalizer;
 	website: WebsiteContext;
 	userId: string | null;
+	startTraining?: () => void;
 };
