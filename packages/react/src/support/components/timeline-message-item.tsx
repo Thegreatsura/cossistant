@@ -72,7 +72,7 @@ export function TimelineMessageItem({
 								{hasText && (
 									<TimelineItemContent
 										className={cn(
-											"block min-w-0 max-w-[300px] whitespace-pre-wrap break-words rounded-lg px-3.5 py-2.5 text-sm",
+											"block min-w-0 max-w-[300px] break-words rounded-lg px-3.5 py-2.5 text-sm",
 											{
 												"bg-co-background-300 text-co-foreground dark:bg-co-background-600":
 													!isSentByViewerFinal,

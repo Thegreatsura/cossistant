@@ -1,6 +1,7 @@
 import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
@@ -103,7 +104,19 @@ const MemoizedMarkdownBlock = React.memo(
 			<ReactMarkdown
 				components={{
 					// Render paragraphs as block elements to preserve multiline spacing
-					p: ({ children }) => <span className="block">{children}</span>,
+					p: ({ children }) => {
+						// Skip empty paragraphs (caused by consecutive blank lines in markdown)
+						const isEmpty =
+							children === undefined ||
+							children === null ||
+							children === "" ||
+							(Array.isArray(children) &&
+								children.every((c) => c === "\n" || c === "" || c == null));
+						if (isEmpty) {
+							return null;
+						}
+						return <span className="mt-1 block first:mt-0">{children}</span>;
+					},
 					// Ensure proper line break handling
 					br: () => <br />,
 					// Handle code blocks properly
@@ -128,6 +141,28 @@ const MemoizedMarkdownBlock = React.memo(
 					strong: ({ children }) => (
 						<strong className="font-semibold">{children}</strong>
 					),
+					// Handle ordered lists
+					ol: ({ children }) => (
+						<ol className="my-0 list-decimal pl-6">{children}</ol>
+					),
+					// Handle unordered lists
+					ul: ({ children }) => (
+						<ul className="my-0 list-disc pl-6">{children}</ul>
+					),
+					// Handle list items
+					li: ({ children }) => (
+						<li className="[&>span.block]:mt-0 [&>span.block]:inline">
+							{children}
+						</li>
+					),
+					// Handle blockquotes
+					blockquote: ({ children }) => (
+						<blockquote className="my-1 border-co-border border-l-2 pl-3 italic opacity-80">
+							{children}
+						</blockquote>
+					),
+					// Handle emphasis
+					em: ({ children }) => <em className="italic">{children}</em>,
 					// Handle links
 					a: ({ href, children }) => (
 						<a
@@ -140,6 +175,7 @@ const MemoizedMarkdownBlock = React.memo(
 						</a>
 					),
 				}}
+				remarkPlugins={[remarkBreaks]}
 			>
 				{content}
 			</ReactMarkdown>

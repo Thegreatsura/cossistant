@@ -77,7 +77,7 @@ export function TimelineMessageItem({
 									>
 										<TimelineItemContent
 											className={cn(
-												"block w-fit min-w-0 max-w-full whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+												"block w-fit min-w-0 max-w-full break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
 												{
 													"bg-background-300 text-foreground dark:bg-background-600":
 														!(isSentByViewer || isPrivate),

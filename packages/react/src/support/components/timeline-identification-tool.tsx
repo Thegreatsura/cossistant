@@ -64,7 +64,7 @@ export const IdentificationTimelineTool: React.FC<
 					conversationId,
 					item: {
 						type: ConversationTimelineType.EVENT,
-						text: text("component.identificationTool.eventLog"),
+						text: "",
 						tool: null,
 						parts: [
 							{
@@ -74,7 +74,7 @@ export const IdentificationTimelineTool: React.FC<
 								actorAiAgentId: null,
 								targetUserId: null,
 								targetAiAgentId: null,
-								message: text("component.identificationTool.eventLog"),
+								message: null,
 							},
 						],
 						visitorId: identifyResult.visitorId,
