@@ -1,0 +1,158 @@
+import { Github } from "lucide-react";
+import { AvatarGenerator } from "@/components/avatar-generator";
+import { CodeExample } from "@/components/code-example";
+import { FloatingAvatars } from "@/components/floating-avatars";
+import { InstallCommand } from "@/components/install-command";
+import { ThemeToggle } from "@/components/theme-toggle";
+
+export default function Home() {
+	return (
+		<div className="relative min-h-screen">
+			{/* Floating avatars background */}
+			<FloatingAvatars />
+
+			{/* Main content */}
+			<main className="relative z-10 mx-auto flex min-h-screen max-w-lg flex-col border-[var(--border)] border-x border-dashed bg-[var(--background)]/80 px-8 py-12 backdrop-blur-md md:px-12 md:py-20">
+				{/* Logo with tight guide borders */}
+				<div className="relative mb-10">
+					{/* Full-width top border */}
+					<div className="-translate-x-1/2 absolute top-0 left-1/2 w-screen border-[var(--border)] border-t border-dashed" />
+					{/* Full-width bottom border */}
+					<div className="-translate-x-1/2 absolute bottom-0 left-1/2 w-screen border-[var(--border)] border-b border-dashed" />
+					<h1 className="font-light text-4xl tracking-tight md:text-5xl">
+						facehash
+					</h1>
+				</div>
+
+				{/* Hero */}
+				<section className="mb-10">
+					<p className="mb-6 text-[var(--muted-foreground)] text-base md:text-lg">
+						deterministic avatar faces from any string
+					</p>
+					<InstallCommand />
+				</section>
+
+				{/* Playground - right after install */}
+				<section className="mb-16">
+					<p className="mb-4 text-[var(--muted-foreground)] text-xs">
+						try it — type anything
+					</p>
+					<AvatarGenerator />
+				</section>
+
+				{/* Why facehash */}
+				<section className="mb-16">
+					<h2 className="mb-4 font-semibold text-lg">why facehash?</h2>
+					<div className="space-y-4 text-[var(--muted-foreground)] text-sm">
+						<p>
+							every app needs avatars. most solutions are either too heavy,
+							require external services, or look dated. facehash generates
+							unique, friendly faces from any string — emails, usernames, uuids,
+							whatever.
+						</p>
+						<p>
+							same input = same face. always. no api calls, no storage, no
+							randomness. just deterministic, beautiful avatars that work
+							offline.
+						</p>
+						<p>
+							perfect for user profiles, comment sections, chat apps, and{" "}
+							<span className="text-[var(--foreground)]">ai agents</span> — give
+							your bots a face that&apos;s consistent across sessions.
+						</p>
+					</div>
+				</section>
+
+				{/* Features grid */}
+				<section className="mb-16 grid grid-cols-2 gap-8 md:grid-cols-4">
+					<div>
+						<div className="mb-1 text-xl">0kb</div>
+						<div className="text-[var(--muted-foreground)] text-xs">
+							no external assets
+						</div>
+					</div>
+					<div>
+						<div className="mb-1 text-xl">css</div>
+						<div className="text-[var(--muted-foreground)] text-xs">
+							pure css 3d effects
+						</div>
+					</div>
+					<div>
+						<div className="mb-1 text-xl">a11y</div>
+						<div className="text-[var(--muted-foreground)] text-xs">
+							accessible by default
+						</div>
+					</div>
+					<div>
+						<div className="mb-1 text-xl">ts</div>
+						<div className="text-[var(--muted-foreground)] text-xs">
+							fully typed
+						</div>
+					</div>
+				</section>
+
+				{/* Code example */}
+				<section className="mb-16">
+					<CodeExample />
+				</section>
+
+				{/* Use cases */}
+				<section className="mb-16">
+					<h2 className="mb-4 font-semibold text-lg">use cases</h2>
+					<div className="flex flex-wrap gap-2 text-xs">
+						{[
+							"user profiles",
+							"chat apps",
+							"ai agents",
+							"comment sections",
+							"team directories",
+							"multiplayer games",
+							"placeholder avatars",
+							"bot identities",
+						].map((useCase) => (
+							<span className="text-[var(--muted-foreground)]" key={useCase}>
+								[{useCase}]
+							</span>
+						))}
+					</div>
+				</section>
+
+				{/* Cross-promotion */}
+				<section className="relative mb-12 pb-12">
+					<p className="text-[var(--muted-foreground)] text-sm">
+						made by{" "}
+						<a
+							className="text-[var(--foreground)] underline underline-offset-4 transition-colors hover:text-[var(--accent)]"
+							href="https://cossistant.com"
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							cossistant
+						</a>
+					</p>
+					<p className="mt-1 text-[var(--muted-foreground)] text-xs">
+						the open-source chat support widget for react
+					</p>
+					{/* Full-width bottom border */}
+					<div className="-translate-x-1/2 absolute bottom-0 left-1/2 w-screen border-[var(--border)] border-b border-dashed" />
+				</section>
+
+				{/* Footer controls */}
+				<footer className="mt-auto flex items-center justify-between">
+					<div className="flex items-center gap-4">
+						<a
+							className="text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+							href="https://github.com/cossistantcom/facehash"
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							<Github className="h-4 w-4" />
+						</a>
+						<span className="text-[var(--muted-foreground)] text-xs">MIT</span>
+					</div>
+					<ThemeToggle />
+				</footer>
+			</main>
+		</div>
+	);
+}

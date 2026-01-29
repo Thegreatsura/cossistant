@@ -1,4 +1,17 @@
-// Main components
+// ============================================================================
+// Primary Export - This is what you want
+// ============================================================================
+
+export type {
+	FacehashProps,
+	Intensity3D,
+	Variant,
+} from "./facehash";
+export { Facehash } from "./facehash";
+
+// ============================================================================
+// Avatar Compound Components - For image + fallback pattern
+// ============================================================================
 
 export {
 	Avatar,
@@ -8,9 +21,11 @@ export {
 } from "./avatar";
 export { AvatarFallback, type AvatarFallbackProps } from "./avatar-fallback";
 export { AvatarImage, type AvatarImageProps } from "./avatar-image";
-export { FacehashAvatar, type FacehashAvatarProps } from "./facehash-avatar";
 
-// Faces (for advanced customization)
+// ============================================================================
+// Face Components - For custom compositions
+// ============================================================================
+
 export {
 	CrossFace,
 	CurvedFace,
@@ -20,11 +35,9 @@ export {
 	LineFace,
 	RoundFace,
 } from "./faces";
-export {
-	type ColorPalette,
-	DEFAULT_COLORS,
-	DEFAULT_COLORS_DARK,
-	DEFAULT_COLORS_LIGHT,
-} from "./utils/colors";
+
+// ============================================================================
 // Utilities
+// ============================================================================
+
 export { stringHash } from "./utils/hash";

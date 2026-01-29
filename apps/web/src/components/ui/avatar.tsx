@@ -5,12 +5,20 @@ import {
 	PRESENCE_ONLINE_WINDOW_MS,
 } from "@cossistant/types";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { FacehashAvatar } from "facehash";
+import { Facehash } from "facehash";
 import type * as React from "react";
-import { useMemo } from "react";
 import { formatTimeAgo } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { TooltipOnHover } from "./tooltip";
+
+// Cossistant brand color classes (Tailwind)
+const COSSISTANT_COLOR_CLASSES = [
+	"dark:bg-cossistant-pink/90 bg-cossistant-pink/20",
+	"dark:bg-cossistant-yellow/90 bg-cossistant-yellow/20",
+	"dark:bg-cossistant-blue/90 bg-cossistant-blue/20",
+	"dark:bg-cossistant-orange/90 bg-cossistant-orange/20",
+	"dark:bg-cossistant-green/90 bg-cossistant-green/20",
+];
 
 function AvatarContainer({
 	className,
@@ -55,67 +63,31 @@ interface AvatarFallbackProps
 const REGEX_SPLIT_INITIALS = /\s+/;
 
 /**
- * BoringAvatar - Styled wrapper around facehash primitive
- * with Cossistant brand colors and 3D effects
+ * BoringAvatar - Uses the Facehash component with Cossistant brand colors
  */
 function BoringAvatar({
 	className,
 	name,
+	interactive = false,
 }: {
 	className?: string;
 	name: string;
+	interactive?: boolean;
 }) {
-	// Cossistant brand color classes for light/dark mode
-	const colorClasses = [
-		"dark:bg-cossistant-pink/90 bg-cossistant-pink/20",
-		"dark:bg-cossistant-yellow/90 bg-cossistant-yellow/20",
-		"dark:bg-cossistant-blue/90 bg-cossistant-blue/20",
-		"dark:bg-cossistant-orange/90 bg-cossistant-orange/20",
-		"dark:bg-cossistant-green/90 bg-cossistant-green/20",
-	];
-
-	// Simple hash function to get consistent color index
-	const colorIndex = useMemo(() => {
-		let hash = 0;
-		for (let i = 0; i < name.length; i++) {
-			const char = name.charCodeAt(i);
-			hash = (hash << 5) - hash + char;
-			hash &= hash;
-		}
-		return Math.abs(hash) % colorClasses.length;
-	}, [name, colorClasses.length]);
-
-	const colorClass = colorClasses[colorIndex];
-
 	return (
-		<div
+		<Facehash
 			className={cn(
-				"relative flex size-full items-center justify-center overflow-hidden",
-				colorClass,
+				"text-primarym transition-transform duration-200",
+				"[&_svg]:fill-current",
 				className
 			)}
-		>
-			{/* Gradient overlay for depth effect */}
-			<div className="absolute inset-0 bg-radial from-primary/10 via-from-primary/40 to-transparent opacity-100 shadow-inner dark:from-background/90 dark:to-background/50" />
-
-			{/* FacehashAvatar primitive with styling */}
-			<FacehashAvatar
-				className={cn(
-					"absolute inset-0 z-10 flex scale-[0.85] flex-col items-center justify-center",
-					"text-primary transition-all delay-500 duration-200",
-					"group-hover/conversation-item:scale-90",
-					"group-focus/conversation-item:scale-90",
-					"[&_svg]:fill-current"
-				)}
-				enable3D={true}
-				name={name}
-				showInitial={true}
-				style={{
-					backgroundColor: "transparent",
-					containerType: "size",
-				}}
-			/>
-		</div>
+			colorClasses={COSSISTANT_COLOR_CLASSES}
+			gradientOverlayClass="bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,_var(--tw-gradient-from)_0%,_transparent_100%)] from-[#FFFFFF] dark:from-[#000000]/80"
+			intensity3d="medium"
+			interactive={interactive}
+			name={name}
+			size="100%"
+		/>
 	);
 }
 
@@ -138,7 +110,7 @@ function AvatarFallback({
 		<AvatarPrimitive.Fallback
 			className={cn(
 				"flex size-full items-center justify-center",
-				!value && "text-[10px] text-primary",
+				!withBoringAvatar && "text-[10px] text-primary",
 				className
 			)}
 			data-slot="avatar-fallback"

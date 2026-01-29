@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useAvatarContext } from "./avatar";
-import { FacehashAvatar, type FacehashAvatarProps } from "./facehash-avatar";
+import { Facehash, type FacehashProps } from "./facehash";
 
 const WHITESPACE_REGEX = /\s+/;
 
@@ -9,7 +9,7 @@ export type AvatarFallbackProps = Omit<
 	"children"
 > & {
 	/**
-	 * The name to derive initials and FacehashAvatar from.
+	 * The name to derive initials and Facehash from.
 	 */
 	name?: string;
 
@@ -21,20 +21,20 @@ export type AvatarFallbackProps = Omit<
 	delayMs?: number;
 
 	/**
-	 * Custom children to render instead of initials or FacehashAvatar.
+	 * Custom children to render instead of initials or Facehash.
 	 */
 	children?: React.ReactNode;
 
 	/**
-	 * Use the FacehashAvatar component as fallback instead of initials.
-	 * @default false
+	 * Use the Facehash component as fallback instead of initials.
+	 * @default true
 	 */
 	facehash?: boolean;
 
 	/**
-	 * Props to pass to the FacehashAvatar when `facehash` is true.
+	 * Props to pass to the Facehash component.
 	 */
-	facehashProps?: Omit<FacehashAvatarProps, "name">;
+	facehashProps?: Omit<FacehashProps, "name">;
 };
 
 /**
@@ -56,15 +56,15 @@ function getInitials(name: string): string {
 
 /**
  * Fallback component that displays when the image fails to load.
- * Can show initials, FacehashAvatar, or custom content.
+ * Uses Facehash by default, can show initials or custom content.
  *
  * @example
  * ```tsx
- * // With initials
+ * // With Facehash (default)
  * <AvatarFallback name="John Doe" />
  *
- * // With FacehashAvatar
- * <AvatarFallback name="John Doe" facehash />
+ * // With initials
+ * <AvatarFallback name="John Doe" facehash={false} />
  *
  * // With custom content
  * <AvatarFallback>
@@ -81,7 +81,7 @@ export const AvatarFallback = React.forwardRef<
 			name = "",
 			delayMs = 0,
 			children,
-			facehash = false,
+			facehash = true,
 			facehashProps,
 			className,
 			style,
@@ -132,26 +132,25 @@ export const AvatarFallback = React.forwardRef<
 			);
 		}
 
-		// FacehashAvatar mode
+		// Facehash mode (default)
 		if (facehash) {
 			return (
-				<FacehashAvatar
+				<Facehash
 					className={className}
 					data-avatar-fallback=""
 					name={name}
 					ref={ref as React.Ref<HTMLDivElement>}
+					size="100%"
+					{...facehashProps}
 					style={{
-						width: "100%",
-						height: "100%",
 						...style,
 					}}
-					{...facehashProps}
 					{...props}
 				/>
 			);
 		}
 
-		// Default: show initials
+		// Initials mode
 		return (
 			<span
 				className={className}

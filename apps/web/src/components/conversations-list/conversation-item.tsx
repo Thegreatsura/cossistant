@@ -98,7 +98,9 @@ export function ConversationItemView({
 			/>
 
 			<div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
-				<p className="max-w-[90px] shrink-0 truncate">{visitorName}</p>
+				<p className="min-w-[140px] max-w-[140px] shrink-0 truncate capitalize">
+					{visitorName}
+				</p>
 
 				<div className="flex min-w-0 flex-1 items-center gap-4 pr-6">
 					{title && (
@@ -115,7 +117,11 @@ export function ConversationItemView({
 						<span
 							className={cn(
 								"hidden min-w-0 flex-1 items-center gap-2 truncate md:inline-flex",
-								title ? "text-muted-foreground" : ""
+								hasUnreadMessage
+									? "text-primary"
+									: title
+										? "text-muted-foreground"
+										: ""
 							)}
 						>
 							{isLastMessageFromAI && <Logo className="size-3.5 shrink-0" />}
