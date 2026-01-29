@@ -66,9 +66,9 @@ function getPosition(index: number) {
 	return positions[index % positions.length];
 }
 
-function getSize(index: number) {
+function getSize(index: number): number {
 	const sizes = [32, 40, 48, 56, 36, 44, 52, 38, 46, 42];
-	return sizes[index % sizes.length];
+	return sizes[index % sizes.length] ?? 40;
 }
 
 function getAnimationDelay(index: number) {
