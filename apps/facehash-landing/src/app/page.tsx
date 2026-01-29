@@ -19,7 +19,7 @@ export default function Home() {
 				{/* Main content */}
 				<main className="relative z-10 mx-auto flex min-h-screen max-w-lg flex-col border-[var(--border)] border-x border-dashed bg-[var(--background)]/80 px-8 py-12 backdrop-blur-md md:px-12 md:py-20">
 					{/* Logo with tight guide borders */}
-					<div className="relative mb-10">
+					<div className="relative mb-10 pb-1">
 						{/* Full-width top border */}
 						<div className="-translate-x-1/2 absolute top-0 left-1/2 w-screen border-[var(--border)] border-t border-dashed" />
 						{/* Full-width bottom border */}
