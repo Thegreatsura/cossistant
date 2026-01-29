@@ -154,7 +154,7 @@ export default function Home() {
 						<div className="flex items-center gap-4">
 							<a
 								className="text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
-								href="https://github.com/cossistantcom/facehash"
+								href="https://github.com/cossistantcom/cossistant"
 								rel="noopener noreferrer"
 								target="_blank"
 							>
