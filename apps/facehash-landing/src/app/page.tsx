@@ -2,6 +2,7 @@ import { Github } from "lucide-react";
 import { AvatarGenerator } from "@/components/avatar-generator";
 import { CodeExample } from "@/components/code-example";
 import { FloatingAvatars } from "@/components/floating-avatars";
+import { InlineAvatar } from "@/components/inline-avatar";
 import { InstallCommand } from "@/components/install-command";
 import { ShapeProvider } from "@/components/shape-context";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -113,22 +114,12 @@ export default function Home() {
 					{/* Use cases */}
 					<section className="mb-16">
 						<h2 className="mb-4 font-semibold text-lg">use cases</h2>
-						<div className="flex flex-wrap gap-2 text-xs">
-							{[
-								"user profiles",
-								"chat apps",
-								"ai agents",
-								"comment sections",
-								"team directories",
-								"multiplayer games",
-								"placeholder avatars",
-								"bot identities",
-							].map((useCase) => (
-								<span className="text-[var(--muted-foreground)]" key={useCase}>
-									[{useCase}]
-								</span>
-							))}
-						</div>
+						<p className="text-[var(--muted-foreground)] text-sm">
+							user profiles, chat apps, comment sections, team directories,
+							multiplayer games, placeholder avatars, bot identities, even AI
+							agents like that one you randomly named &quot;Claude&quot;{" "}
+							<InlineAvatar name="Claude" />.
+						</p>
 					</section>
 
 					{/* Cross-promotion */}
