@@ -82,8 +82,8 @@ function BoringAvatar({
 				className
 			)}
 			colorClasses={COSSISTANT_COLOR_CLASSES}
-			gradientOverlayClass="bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,_var(--tw-gradient-from)_0%,_transparent_100%)] from-[#FFFFFF] dark:from-[#000000]/80"
-			intensity3d="medium"
+			//   gradientOverlayClass="bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,_var(--tw-gradient-from)_0%,_transparent_100%)] from-[#FFFFFF] dark:from-[#000000]/80"
+			intensity3d="dramatic"
 			interactive={interactive}
 			name={name}
 			size="100%"

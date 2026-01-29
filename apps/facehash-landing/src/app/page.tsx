@@ -4,6 +4,7 @@ import { CodeExample } from "@/components/code-example";
 import { FloatingAvatars } from "@/components/floating-avatars";
 import { InlineAvatar } from "@/components/inline-avatar";
 import { InstallCommand } from "@/components/install-command";
+import { PropsExamples } from "@/components/props-examples";
 import { ShapeProvider } from "@/components/shape-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -109,6 +110,12 @@ export default function Home() {
 					{/* Code example */}
 					<section className="mb-16">
 						<CodeExample />
+					</section>
+
+					{/* Props examples */}
+					<section className="mb-16">
+						<h2 className="mb-6 font-semibold text-lg">props</h2>
+						<PropsExamples />
 					</section>
 
 					{/* Use cases */}

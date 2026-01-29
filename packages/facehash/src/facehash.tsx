@@ -33,14 +33,14 @@ export interface FacehashProps
 
 	/**
 	 * 3D effect intensity.
-	 * @default "medium"
+	 * @default "dramatic"
 	 */
 	intensity3d?: Intensity3D;
 
 	/**
 	 * Enable hover interaction.
 	 * When true, face "looks straight" on hover.
-	 * @default false
+	 * @default true
 	 */
 	interactive?: boolean;
 
@@ -149,7 +149,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 			name,
 			size = 40,
 			variant = "gradient",
-			intensity3d = "medium",
+			intensity3d = "dramatic",
 			interactive = true,
 			showInitial = true,
 			colors,
