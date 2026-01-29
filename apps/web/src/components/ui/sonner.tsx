@@ -13,7 +13,7 @@ const Toaster = ({ toastOptions, ...props }: ToasterProps) => {
 		<Sonner
 			className="toaster group"
 			icons={{
-				loading: <Spinner circleCount={6} circleDiameter={2} size={16} />,
+				loading: <Spinner size={16} squareSize={2} squaresPerSide={3} />,
 			}}
 			style={
 				{

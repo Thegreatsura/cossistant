@@ -1,0 +1,65 @@
+{
+  "name": "facehash",
+  "type": "module",
+  "version": "0.0.1",
+  "private": false,
+  "author": "Cossistant team",
+  "description": "Deterministic avatar faces from any string. Zero dependencies, unstyled, React 18/19 compatible.",
+  "keywords": [
+    "facehash",
+    "avatar",
+    "deterministic",
+    "react",
+    "headless",
+    "hash",
+    "profile-picture",
+    "shadcn",
+    "tailwind",
+    "typescript",
+    "accessible"
+  ],
+  "bugs": {
+    "url": "https://github.com/cossistantcom/cossistant/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cossistantcom/cossistant.git",
+    "directory": "packages/facehash"
+  },
+  "license": "MIT",
+  "homepage": "https://cossistant.com",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
+    "@types/react": ""
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "scripts": {
+    "build": "tsdown && bun run prepare-package",
+    "prepare-package": "bun ../../scripts/prepare-package.ts",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

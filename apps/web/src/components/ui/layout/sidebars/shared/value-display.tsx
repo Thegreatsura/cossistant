@@ -288,7 +288,9 @@ export function ValueDisplay({
 				<div
 					className={cn("flex items-center gap-1", withPaddingLeft && "pl-2")}
 				>
-					<p className="text-primary/60 text-xs capitalize">{displayTitle}</p>
+					<span className="text-primary/60 text-xs capitalize">
+						{displayTitle}
+					</span>
 					{canCopy && (
 						<span
 							className={cn(
@@ -303,14 +305,14 @@ export function ValueDisplay({
 						</span>
 					)}
 				</div>
-				<p
+				<span
 					className={cn(
 						"flex-1 text-right text-xs",
 						hasValue ? "text-primary" : "text-primary/40"
 					)}
 				>
 					{displayValue}
-				</p>
+				</span>
 			</div>
 		</TooltipOnHover>
 	);

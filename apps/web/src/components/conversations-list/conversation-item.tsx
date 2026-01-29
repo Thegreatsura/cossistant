@@ -98,10 +98,14 @@ export function ConversationItemView({
 			/>
 
 			<div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">
-				<p className="min-w-[120px] max-w-[120px] truncate">{visitorName}</p>
+				<p className="max-w-[90px] shrink-0 truncate">{visitorName}</p>
 
-				<div className="flex min-w-0 flex-1 items-center gap-6 truncate pr-6">
-					{title && <span className="truncate font-medium">{title}</span>}
+				<div className="flex min-w-0 flex-1 items-center gap-4 pr-6">
+					{title && (
+						<span className="max-w-[40%] shrink-0 truncate font-medium">
+							{title}
+						</span>
+					)}
 					{isTyping ? (
 						<div className="flex shrink-0 items-center gap-2">
 							{isAITyping && <Logo className="size-3.5" />}
@@ -110,7 +114,7 @@ export function ConversationItemView({
 					) : (
 						<span
 							className={cn(
-								"hidden items-center gap-2 truncate md:inline-flex",
+								"hidden min-w-0 flex-1 items-center gap-2 truncate md:inline-flex",
 								title ? "text-muted-foreground" : ""
 							)}
 						>
