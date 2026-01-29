@@ -24,7 +24,7 @@
     "@cossistant/web",
     "@cossistant/location",
     "@cossistant/transactional",
-    "widget-next-test",
-    "@cossistant/workers"
+    "@cossistant/workers",
+    "@cossistant/facehash-landing"
   ]
 }
