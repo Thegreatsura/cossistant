@@ -10,21 +10,20 @@ const geistMono = Geist_Mono({
 	display: "swap",
 });
 
-const siteUrl =
-	process.env.NEXT_PUBLIC_URL || "https://facehash.cossistant.com";
+const siteUrl = process.env.NEXT_PUBLIC_URL || "https://facehash.dev";
 
 export const metadata: Metadata = {
 	title: {
-		default: "Facehash - Deterministic Avatar Faces from Any String",
+		default: "Facehash - Beautiful Minimalist Avatars for React",
 		template: "%s | Facehash",
 	},
 	description:
-		"Generate unique, deterministic avatar faces from any string. Zero external assets, pure CSS 3D effects, fully typed. Perfect for user profiles, chat apps, and AI agents.",
+		"Beautiful minimalist avatars from any string for React. Zero dependencies, pure CSS 3D effects, fully typed. Perfect for user profiles, chat apps, and AI agents.",
 	keywords: [
 		"avatar",
 		"avatar generator",
-		"deterministic avatar",
 		"react avatar",
+		"minimalist avatar",
 		"generative avatar",
 		"profile picture",
 		"identicon",
@@ -56,23 +55,23 @@ export const metadata: Metadata = {
 		locale: "en_US",
 		url: "/",
 		siteName: "Facehash",
-		title: "Facehash - Deterministic Avatar Faces from Any String",
+		title: "Facehash - Beautiful Minimalist Avatars for React",
 		description:
-			"Generate unique, deterministic avatar faces from any string. Zero external assets, pure CSS 3D effects, fully typed. Perfect for user profiles, chat apps, and AI agents.",
+			"Beautiful minimalist avatars from any string for React. Zero dependencies, pure CSS 3D effects, fully typed. Perfect for user profiles, chat apps, and AI agents.",
 		images: [
 			{
 				url: "/og-image.png",
 				width: 1200,
 				height: 630,
-				alt: "Facehash - Deterministic Avatar Faces",
+				alt: "Facehash - Beautiful Minimalist Avatars for React",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Facehash - Deterministic Avatar Faces from Any String",
+		title: "Facehash - Beautiful Minimalist Avatars for React",
 		description:
-			"Generate unique, deterministic avatar faces from any string. Zero external assets, pure CSS 3D effects, fully typed.",
+			"Beautiful minimalist avatars from any string for React. Zero dependencies, pure CSS 3D effects, fully typed.",
 		images: ["/og-image.png"],
 		creator: "@cossistant",
 	},
@@ -103,6 +102,37 @@ export const viewport = {
 	],
 };
 
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "SoftwareApplication",
+	name: "Facehash",
+	applicationCategory: "DeveloperApplication",
+	operatingSystem: "Any",
+	description:
+		"Beautiful minimalist avatars from any string for React. Zero dependencies, pure CSS 3D effects, fully typed.",
+	url: "https://facehash.dev",
+	author: {
+		"@type": "Organization",
+		name: "Cossistant",
+		url: "https://cossistant.com",
+	},
+	offers: {
+		"@type": "Offer",
+		price: "0",
+		priceCurrency: "USD",
+	},
+	license: "https://opensource.org/licenses/MIT",
+	programmingLanguage: ["TypeScript", "JavaScript", "React"],
+	keywords: [
+		"avatar",
+		"react",
+		"deterministic",
+		"component",
+		"typescript",
+		"css3d",
+	],
+};
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -116,6 +146,11 @@ export default function RootLayout({
 					crossOrigin="anonymous"
 					href="https://fonts.gstatic.com"
 					rel="preconnect"
+				/>
+				<script
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data requires dangerouslySetInnerHTML
+					dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+					type="application/ld+json"
 				/>
 			</head>
 			<body className={`${geistMono.variable} font-mono antialiased`}>

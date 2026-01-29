@@ -1,8 +1,9 @@
 "use client";
 
 import { Facehash } from "facehash";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { SHAPES, useShape } from "./shape-context";
 
 // Cossistant brand colors
 const COLORS = [
@@ -20,18 +21,17 @@ const COLORS = [
 
 const SIZES = [32, 48, 64, 80];
 
-const SHAPES = [
-	{ id: "square", label: "square", radius: "0" },
-	{ id: "squircle", label: "squircle", radius: "30%" },
-	{ id: "rounded", label: "round", radius: "9999px" },
-] as const;
-
 export function AvatarGenerator() {
-	const [name, setName] = useState("your name");
-	const [shape, setShape] = useState<string>("square");
+	const [name, setName] = useState("");
+	const { shape, setShape, borderRadius } = useShape();
+	const inputRef = useRef<HTMLInputElement>(null);
 
-	const currentShape = SHAPES.find((s) => s.id === shape);
-	const borderRadius = currentShape?.radius || "9999px";
+	useEffect(() => {
+		inputRef.current?.focus();
+	}, []);
+
+	// Use input value or fallback to "facehash" for preview
+	const displayName = name || "facehash";
 
 	return (
 		<div className="mx-auto w-full max-w-md">
@@ -40,7 +40,8 @@ export function AvatarGenerator() {
 				className="w-full border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-base transition-all placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
 				maxLength={50}
 				onChange={(e) => setName(e.target.value)}
-				placeholder="type any name..."
+				placeholder="facehash"
+				ref={inputRef}
 				type="text"
 				value={name}
 			/>
@@ -69,10 +70,10 @@ export function AvatarGenerator() {
 				{SIZES.map((size) => (
 					<div className="flex flex-col items-center gap-2" key={size}>
 						<Facehash
-							className="transition-all duration-300"
+							className="transition-[border-radius] duration-150"
 							colors={COLORS}
-							intensity3d="medium"
-							name={name || "anonymous"}
+							intensity3d="dramatic"
+							name={displayName}
 							size={size}
 							style={{ borderRadius }}
 						/>
@@ -87,10 +88,10 @@ export function AvatarGenerator() {
 			<div className="mt-8 flex items-center gap-5">
 				<div className="flex flex-col items-center gap-1">
 					<Facehash
-						className=""
+						className="transition-[border-radius] duration-150"
 						colors={COLORS}
 						intensity3d="dramatic"
-						name={name || "anonymous"}
+						name={displayName}
 						size={48}
 						style={{ borderRadius }}
 					/>
@@ -100,10 +101,10 @@ export function AvatarGenerator() {
 				</div>
 				<div className="flex flex-col items-center gap-1">
 					<Facehash
-						className=""
+						className="transition-[border-radius] duration-150"
 						colors={COLORS}
 						intensity3d="none"
-						name={name || "anonymous"}
+						name={displayName}
 						size={48}
 						style={{ borderRadius }}
 						variant="solid"
@@ -114,10 +115,10 @@ export function AvatarGenerator() {
 				</div>
 				<div className="flex flex-col items-center gap-1">
 					<Facehash
-						className=""
+						className="transition-[border-radius] duration-150"
 						colors={COLORS}
 						intensity3d="medium"
-						name={name || "anonymous"}
+						name={displayName}
 						showInitial={false}
 						size={48}
 						style={{ borderRadius }}

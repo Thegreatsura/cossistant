@@ -28,12 +28,18 @@ export function InstallCommand() {
 	return (
 		<div className="-ml-8 md:-ml-12 relative w-[calc(100%+4rem)] bg-[var(--foreground)]/[0.03] px-8 md:w-[calc(100%+6rem)] md:px-12">
 			{/* Full-width top border */}
-			<div className="-translate-x-1/2 absolute top-0 left-1/2 w-screen border-[var(--border)] border-t border-dashed" />
+			<div
+				className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2 w-screen border-[var(--border)] border-t border-dashed"
+				style={{ zIndex: -30 }}
+			/>
 			{/* Full-width bottom border */}
-			<div className="-translate-x-1/2 absolute bottom-0 left-1/2 w-screen border-[var(--border)] border-b border-dashed" />
+			<div
+				className="-translate-x-1/2 pointer-events-none absolute bottom-0 left-1/2 w-screen border-[var(--border)] border-b border-dashed"
+				style={{ zIndex: -30 }}
+			/>
 
 			{/* Tabs */}
-			<div className="relative flex py-2">
+			<div className="relative flex py-4">
 				{PACKAGE_MANAGERS.map((pm) => (
 					<button
 						className={cn(
@@ -57,7 +63,7 @@ export function InstallCommand() {
 				))}
 			</div>
 			{/* Command */}
-			<div className="relative flex items-center justify-between py-3">
+			<div className="relative flex items-center justify-between py-4">
 				<code className="text-sm">{selectedPm?.command}</code>
 				<button
 					className="p-1 transition-colors hover:bg-[var(--border)]"

@@ -1,6 +1,8 @@
 "use client";
 
 import { Facehash } from "facehash";
+import { useCallback, useState } from "react";
+import { useShape } from "./shape-context";
 
 const NAMES = [
 	"Alice",
@@ -38,6 +40,9 @@ const COLORS = [
 	"hsla(19, 99%, 50%, 1)", // light orange
 	"hsla(156, 86%, 64%, 1)", // light green
 ];
+
+// Max inflation level before deflate
+const MAX_INFLATION = 4;
 
 // Deterministic positions based on index
 function getPosition(index: number) {
@@ -81,11 +86,6 @@ function getAnimationDuration(index: number) {
 }
 
 // Bokeh effect - varying blur levels to simulate camera depth of field
-// More faces in focus, with gradual blur falloff for depth
-// Sharp (in focus): 8 faces - indices 0, 2, 5, 7, 10, 12, 15, 18
-// Light blur (1px): indices 1, 6, 11, 16
-// Medium blur (3px): indices 4, 9, 14, 19
-// Heavy blur (6px): indices 3, 8, 13, 17
 function getBlur(index: number): string {
 	const sharpIndices = [0, 2, 5, 7, 10, 12, 15, 18];
 	const lightBlurIndices = [1, 6, 11, 16];
@@ -100,40 +100,143 @@ function getBlur(index: number): string {
 	if (heavyBlurIndices.includes(index)) {
 		return "6px";
 	}
-	return "3px"; // medium blur for the rest
+	return "3px";
 }
 
+// Random rotation for each inflation level
+function getInflationRotation(level: number): number {
+	const rotations = [0, 15, -20, 25, -30];
+	return rotations[level] ?? 0;
+}
+
+type AvatarState = {
+	inflation: number;
+	isDeflating: boolean;
+	rotation: number;
+};
+
 export function FloatingAvatars() {
+	const { borderRadius } = useShape();
+	const [avatarStates, setAvatarStates] = useState<Record<string, AvatarState>>(
+		{}
+	);
+
+	const handleClick = useCallback((name: string) => {
+		setAvatarStates((prev) => {
+			const current = prev[name] || {
+				inflation: 0,
+				isDeflating: false,
+				rotation: 0,
+			};
+
+			// If already deflating, ignore clicks
+			if (current.isDeflating) {
+				return prev;
+			}
+
+			const newInflation = current.inflation + 1;
+
+			// Time to pop!
+			if (newInflation > MAX_INFLATION) {
+				// Respawn after a delay (animation 800ms + pause 2500ms)
+				setTimeout(() => {
+					setAvatarStates((p) => ({
+						...p,
+						[name]: { inflation: 0, isDeflating: false, rotation: 0 },
+					}));
+				}, 3300);
+
+				return {
+					...prev,
+					[name]: {
+						inflation: current.inflation,
+						isDeflating: true,
+						rotation: 360,
+					},
+				};
+			}
+
+			// Inflate with new rotation
+			return {
+				...prev,
+				[name]: {
+					inflation: newInflation,
+					isDeflating: false,
+					rotation: getInflationRotation(newInflation),
+				},
+			};
+		});
+	}, []);
+
 	return (
 		<div aria-hidden="true" className="fixed inset-0 z-0 overflow-hidden">
 			{NAMES.map((name, index) => {
 				const position = getPosition(index);
-				const size = getSize(index);
+				const baseSize = getSize(index);
 				const blur = getBlur(index);
+				const state = avatarStates[name] || {
+					inflation: 0,
+					isDeflating: false,
+					rotation: 0,
+				};
+
+				// Calculate current size based on inflation
+				const sizeMultiplier = 1 + state.inflation * 0.3;
+				const currentSize = state.isDeflating
+					? baseSize * 0.5
+					: baseSize * sizeMultiplier;
 
 				return (
+					// biome-ignore lint/a11y/useKeyWithClickEvents: Decorative easter egg, not essential functionality
+					// biome-ignore lint/a11y/noStaticElementInteractions: Decorative element with fun interaction
+					// biome-ignore lint/a11y/noNoninteractiveElementInteractions: Easter egg interaction on decorative avatars
 					<div
-						className="hover:!filter-none absolute flex animate-float flex-col items-center gap-1 transition-[filter] duration-300"
+						className={`absolute flex cursor-pointer flex-col items-center gap-1 transition-[filter] duration-300 ${
+							state.inflation === 0 && !state.isDeflating
+								? "hover:!filter-none animate-float"
+								: "hover:!filter-none"
+						} ${state.isDeflating ? "animate-deflate" : state.inflation > 0 ? "animate-wobble" : ""}`}
 						key={name}
+						onClick={() => handleClick(name)}
 						style={{
 							...position,
-							animationDelay: getAnimationDelay(index),
-							animationDuration: getAnimationDuration(index),
-							filter: blur !== "0" ? `blur(${blur})` : undefined,
+							animationDelay:
+								state.inflation === 0 ? getAnimationDelay(index) : "0s",
+							animationDuration:
+								state.inflation === 0 ? getAnimationDuration(index) : "0.3s",
+							filter:
+								blur !== "0" && state.inflation === 0
+									? `blur(${blur})`
+									: undefined,
+							transform: `rotate(${state.rotation}deg) scale(${state.isDeflating ? 0 : 1})`,
+							transition: state.isDeflating
+								? "transform 0.5s cubic-bezier(0.36, 0, 0.66, -0.56), opacity 0.5s ease-out"
+								: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+							opacity: state.isDeflating ? 0 : 1,
+							zIndex: state.inflation > 0 ? 100 : undefined,
 						}}
 					>
 						<Facehash
+							className="transition-[border-radius] duration-150"
 							colors={COLORS}
-							intensity3d="subtle"
-							interactive={false}
+							intensity3d="dramatic"
+							interactive={true}
 							name={name}
-							size={size}
+							size={currentSize}
+							style={{ borderRadius }}
 						/>
 						<span
-							className="text-[10px] text-[var(--muted-foreground)]"
-							style={{ fontSize: Math.max(8, size / 5) }}
+							className="text-[10px] text-[var(--muted-foreground)] transition-all duration-200"
+							style={{
+								fontSize: Math.max(8, currentSize / 5),
+								fontWeight: state.inflation > 2 ? "bold" : "normal",
+							}}
 						>
-							{name.toLowerCase()}
+							{state.inflation > 3
+								? `${name.toLowerCase()}!!!`
+								: state.inflation > 1
+									? `${name.toLowerCase()}!`
+									: name.toLowerCase()}
 						</span>
 					</div>
 				);
@@ -155,8 +258,55 @@ export function FloatingAvatars() {
           }
         }
 
+        @keyframes wobble {
+          0%, 100% {
+            transform: rotate(var(--rotation, 0deg)) scale(1);
+          }
+          25% {
+            transform: rotate(calc(var(--rotation, 0deg) + 5deg)) scale(1.05);
+          }
+          75% {
+            transform: rotate(calc(var(--rotation, 0deg) - 5deg)) scale(0.95);
+          }
+        }
+
+        @keyframes deflate {
+          0% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
+          15% {
+            transform: scale(1.15) rotate(5deg);
+            opacity: 1;
+          }
+          30% {
+            transform: scale(1.1) rotate(-3deg);
+            opacity: 0.9;
+          }
+          50% {
+            transform: scale(0.8) rotate(8deg);
+            opacity: 0.7;
+          }
+          70% {
+            transform: scale(0.4) rotate(-5deg);
+            opacity: 0.4;
+          }
+          100% {
+            transform: scale(0) rotate(0deg);
+            opacity: 0;
+          }
+        }
+
         .animate-float {
           animation: float ease-in-out infinite;
+        }
+
+        .animate-wobble {
+          animation: wobble 0.3s ease-in-out;
+        }
+
+        .animate-deflate {
+          animation: deflate 0.8s ease-out forwards;
         }
       `}</style>
 		</div>
