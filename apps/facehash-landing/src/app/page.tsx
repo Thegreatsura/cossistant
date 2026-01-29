@@ -1,6 +1,7 @@
 import { Github } from "lucide-react";
 import { AvatarGenerator } from "@/components/avatar-generator";
 import { CodeExample } from "@/components/code-example";
+import { CossistantLogo } from "@/components/cossistant-logo";
 import { FloatingAvatars } from "@/components/floating-avatars";
 import { InlineAvatar } from "@/components/inline-avatar";
 import { InstallCommand } from "@/components/install-command";
@@ -33,6 +34,16 @@ export default function Home() {
 							<span>S</span>
 							<span>H</span>
 						</h1>
+						<a
+							className="mt-3 flex items-center justify-center gap-1.5 text-[var(--muted-foreground)] text-xs transition-colors hover:text-[var(--foreground)]"
+							href="https://cossistant.com?ref=facehash"
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							<span>by</span>
+							<CossistantLogo className="h-2.5 w-auto" />
+							<span>cossistant</span>
+						</a>
 					</div>
 
 					{/* Hero */}
