@@ -1,7 +1,7 @@
 {
   "name": "facehash",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "author": "Cossistant team",
   "description": "Deterministic avatar faces from any string. Lightweight, interactive, pure CSS. Works with any framework.",
@@ -42,7 +42,7 @@
     "directory": "packages/facehash"
   },
   "license": "MIT",
-  "homepage": "https://cossistant.com",
+  "homepage": "https://facehash.dev",
   "exports": {
     ".": "./src/index.ts"
   },
