@@ -1,7 +1,7 @@
 {
   "name": "facehash",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": false,
   "author": "Cossistant team",
   "description": "Deterministic avatar faces from any string. Lightweight, interactive, pure CSS. Works with any framework.",
@@ -82,8 +82,8 @@
   "scripts": {
     "build": "tsdown && bun run prepare-package",
     "prepare-package": "bun ../../scripts/prepare-package.ts",
-    "pub:release": "bun run build && npm publish --access public",
-    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:release": "bun run build && npm publish ./dist --access public",
+    "pub:beta": "bun run build && npm publish ./dist --access public --tag beta --no-git-checks",
     "lint": "biome check .",
     "check-types": "tsc --noEmit --project tsconfig.json"
   }
