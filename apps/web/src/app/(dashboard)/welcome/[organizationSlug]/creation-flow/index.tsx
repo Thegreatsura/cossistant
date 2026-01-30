@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { CodeBlockCommand } from "@/components/code-block-command";
 import { DashboardCodeBlock } from "@/components/dashboard-code-block";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,9 @@ export default function CreationFlowWrapper({
 					website: data,
 					installationTarget: variables.installationTarget,
 				});
+			},
+			onError: (error) => {
+				toast.error(error.message || "Failed to create website");
 			},
 		})
 	);
