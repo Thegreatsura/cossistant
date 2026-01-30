@@ -23,7 +23,7 @@ const MAX_DISPLAYED_MESSAGES = 5;
 const stripMarkdownLinks = (text: string): string =>
 	text.replace(/\[([^\]]+)]\(([^)]+)\)/g, "$2");
 
-import { LOGO_URL, OG_AVATAR_URL } from "../constants";
+import { AVATAR_URL, LOGO_URL } from "../constants";
 
 export function NewMessageInConversation({
 	website = {
@@ -218,7 +218,7 @@ export function NewMessageInConversation({
 														height="28"
 														src={
 															message.sender.image ||
-															`${OG_AVATAR_URL}${encodeURIComponent(message.sender.name)}?bg=77A6F9&color=ffffff`
+															`${AVATAR_URL}${encodeURIComponent(message.sender.name)}`
 														}
 														width="28"
 													/>

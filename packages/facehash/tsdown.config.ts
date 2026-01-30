@@ -1,7 +1,7 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-	entry: ["src/index.ts"],
+	entry: ["src/index.ts", "src/next/index.ts"],
 	clean: true,
 	dts: {
 		resolve: true,
@@ -14,5 +14,5 @@ export default defineConfig({
 		js: ".js",
 		dts: ".d.ts",
 	}),
-	external: ["react", "react-dom"],
+	external: ["react", "react-dom", "next", "next/og", "next/server"],
 });

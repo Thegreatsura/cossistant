@@ -1,6 +1,6 @@
 # facehash
 
-Deterministic avatar faces from any string. Zero dependencies, works with React 18/19.
+Deterministic avatar faces from any string. Zero dependencies, works with React 18/19 and Next.js 15/16.
 
 <p align="center">
   <img src="https://facehash.dev/og-image.png" alt="facehash examples" width="600" />
@@ -14,6 +14,8 @@ npm install facehash
 
 ## Quick Start
 
+### React Component
+
 ```tsx
 import { Facehash } from "facehash";
 
@@ -21,6 +23,25 @@ import { Facehash } from "facehash";
 ```
 
 Same string = same face. Always.
+
+### Next.js API Route (Image Generation)
+
+Generate PNG avatar images via API endpoint — perfect for emails, Open Graph images, or anywhere you need a URL.
+
+```tsx
+// app/api/avatar/route.ts
+import { toFacehashHandler } from "facehash/next";
+
+export const { GET } = toFacehashHandler();
+```
+
+Then use it:
+```
+GET /api/avatar?name=john@example.com
+GET /api/avatar?name=john&size=200&variant=solid
+```
+
+Returns a PNG image. Cached for 1 year by default.
 
 ## Props
 
@@ -87,6 +108,60 @@ import { Avatar, AvatarImage, AvatarFallback } from "facehash";
 <AvatarFallback name="John Doe" facehash={false} />
 ```
 
+## Next.js API Route
+
+The `facehash/next` export provides a route handler factory for generating avatar images server-side. This is useful for:
+
+- Email avatars (where you need an image URL)
+- Open Graph / social sharing images
+- Any context where you need a URL instead of a React component
+
+### Basic Setup
+
+```tsx
+// app/api/avatar/route.ts
+import { toFacehashHandler } from "facehash/next";
+
+export const { GET } = toFacehashHandler();
+```
+
+### With Custom Defaults
+
+```tsx
+export const { GET } = toFacehashHandler({
+  size: 200,           // Default image size (default: 400)
+  variant: "solid",    // "gradient" | "solid" (default: "gradient")
+  showInitial: false,  // Show first letter (default: true)
+  colors: ["#ff6b6b", "#4ecdc4", "#45b7d1"],  // Custom color palette
+  cacheControl: "public, max-age=86400",      // Custom cache header
+});
+```
+
+### Query Parameters
+
+All options can be overridden via URL query parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string` | **Required.** String to generate avatar from |
+| `size` | `number` | Image size in pixels (16-2000) |
+| `variant` | `string` | `"gradient"` or `"solid"` |
+| `showInitial` | `boolean` | `"true"` or `"false"` |
+| `colors` | `string` | Comma-separated hex colors (e.g., `#ff0000,#00ff00`) |
+
+### Example URLs
+
+```
+/api/avatar?name=john@example.com
+/api/avatar?name=Alice&size=128
+/api/avatar?name=Bob&variant=solid&showInitial=false
+/api/avatar?name=Team&colors=%23ff6b6b,%234ecdc4,%2345b7d1
+```
+
+### Caching
+
+By default, responses include `Cache-Control: public, max-age=31536000, immutable` (1 year). Same name always generates the same image, so aggressive caching is safe.
+
 ## Exports
 
 ```tsx
@@ -104,6 +179,10 @@ import { stringHash } from "facehash";
 
 // Types
 import type { FacehashProps, AvatarProps, AvatarFallbackProps, AvatarImageProps } from "facehash";
+
+// Next.js route handler (facehash/next)
+import { toFacehashHandler } from "facehash/next";
+import type { FacehashHandlerOptions, FacehashHandler } from "facehash/next";
 ```
 
 ## License

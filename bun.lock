@@ -301,14 +301,17 @@
       "version": "0.0.3",
       "devDependencies": {
         "@cossistant/typescript-config": "workspace:*",
+        "next": "16.1.1",
       },
       "peerDependencies": {
         "@types/react": "",
+        "next": ">=15",
         "react": ">=18 <20",
         "react-dom": ">=18 <20",
       },
       "optionalPeers": [
         "@types/react",
+        "next",
       ],
     },
     "packages/jobs": {

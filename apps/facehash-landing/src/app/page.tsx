@@ -1,4 +1,5 @@
 import { Github } from "lucide-react";
+import { ApiRouteExample } from "@/components/api-route-example";
 import { AvatarGenerator } from "@/components/avatar-generator";
 import { CodeExample } from "@/components/code-example";
 import { CossistantLogo } from "@/components/cossistant-logo";
@@ -83,6 +84,13 @@ export default function Home() {
 								offline.
 							</p>
 							<p>
+								need an image URL for emails or og images? use the{" "}
+								<span className="text-[var(--foreground)]">
+									next.js route handler
+								</span>{" "}
+								to generate PNGs on the fly — cached forever.
+							</p>
+							<p>
 								perfect for user profiles, comment sections, chat apps, and{" "}
 								<span className="text-[var(--foreground)]">ai agents</span> —
 								give your bots a face that&apos;s consistent across sessions.
@@ -99,9 +107,9 @@ export default function Home() {
 							</div>
 						</div>
 						<div>
-							<div className="mb-1 text-xl">css</div>
+							<div className="mb-1 text-xl">api</div>
 							<div className="text-[var(--muted-foreground)] text-xs">
-								pure css 3d effects
+								next.js image route
 							</div>
 						</div>
 						<div>
@@ -121,6 +129,11 @@ export default function Home() {
 					{/* Code example */}
 					<section className="mb-16">
 						<CodeExample />
+					</section>
+
+					{/* API Route example */}
+					<section className="mb-16">
+						<ApiRouteExample />
 					</section>
 
 					{/* Props examples */}

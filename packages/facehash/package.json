@@ -10,6 +10,10 @@
     "avatar",
     "react",
     "react-avatar",
+    "nextjs",
+    "next",
+    "og-image",
+    "image-generation",
     "deterministic",
     "generative",
     "profile-picture",
@@ -44,7 +48,8 @@
   "license": "MIT",
   "homepage": "https://facehash.dev",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./next": "./src/next/index.ts"
   },
   "main": "./src/index.ts",
   "module": "./src/index.ts",
@@ -53,15 +58,20 @@
     "dist"
   ],
   "devDependencies": {
-    "@cossistant/typescript-config": "workspace:*"
+    "@cossistant/typescript-config": "workspace:*",
+    "next": "16.1.1"
   },
   "peerDependencies": {
     "react": ">=18 <20",
     "react-dom": ">=18 <20",
-    "@types/react": ""
+    "@types/react": "",
+    "next": ">=15"
   },
   "peerDependenciesMeta": {
     "@types/react": {
+      "optional": true
+    },
+    "next": {
       "optional": true
     }
   },
