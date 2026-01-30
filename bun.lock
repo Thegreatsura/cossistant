@@ -83,6 +83,7 @@
       "name": "@cossistant/facehash-landing",
       "version": "0.1.0",
       "dependencies": {
+        "@vercel/analytics": "^1.6.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "facehash": "workspace:*",
@@ -297,7 +298,7 @@
     },
     "packages/facehash": {
       "name": "facehash",
-      "version": "0.0.1",
+      "version": "0.0.3",
       "devDependencies": {
         "@cossistant/typescript-config": "workspace:*",
       },

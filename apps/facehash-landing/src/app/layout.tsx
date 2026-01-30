@@ -1,6 +1,6 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
-
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -140,13 +140,8 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
+			<Analytics />
 			<head>
-				<link href="https://fonts.googleapis.com" rel="preconnect" />
-				<link
-					crossOrigin="anonymous"
-					href="https://fonts.gstatic.com"
-					rel="preconnect"
-				/>
 				<script
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data requires dangerouslySetInnerHTML
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
