@@ -53,6 +53,8 @@
 	/* custom colors */
 	--color-cossistant-pink: var(--cossistant-pink);
 	--color-cossistant-yellow: var(--cossistant-yellow);
+	--color-cossistant-yellow-100: var(--cossistant-yellow-100);
+	--color-cossistant-yellow-600: var(--cossistant-yellow-600);
 	--color-cossistant-blue: var(--cossistant-blue);
 	--color-cossistant-orange: var(--cossistant-orange);
 	--color-cossistant-green: var(--cossistant-green);
@@ -119,6 +121,8 @@
 
 	--cossistant-pink: hsla(314, 100%, 80%, 1);
 	--cossistant-yellow: hsla(58, 93%, 72%, 1);
+	--cossistant-yellow-100: hsla(45, 70%, 88%, 1);
+	--cossistant-yellow-600: hsla(40, 90%, 28%, 1);
 	--cossistant-blue: hsla(218, 92%, 72%, 1);
 	--cossistant-orange: hsla(19, 99%, 44%, 1);
 	--cossistant-green: hsla(156, 86%, 40%, 1);
@@ -186,6 +190,8 @@
 
 	--cossistant-pink: hsla(314, 100%, 85%, 1);
 	--cossistant-yellow: hsla(58, 92%, 79%, 1);
+	--cossistant-yellow-100: hsla(58, 70%, 20%, 1);
+	--cossistant-yellow-600: hsla(58, 92%, 79%, 1);
 	--cossistant-blue: hsla(218, 91%, 78%, 1);
 	--cossistant-orange: hsla(19, 99%, 50%, 1);
 	--cossistant-green: hsla(156, 86%, 64%, 1);

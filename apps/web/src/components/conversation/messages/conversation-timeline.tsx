@@ -163,12 +163,12 @@ function ConversationTimelineListComponent({
 									>
 										{({ formattedDate }) => (
 											<>
-												<DaySeparatorLine className="h-px flex-1 bg-fd-border" />
+												<DaySeparatorLine className="h-px flex-1 bg-border/50" />
 												<DaySeparatorLabel
-													className="text-fd-muted-foreground text-xs"
+													className="text-muted-foreground/70 text-xs"
 													formattedDate={formattedDate}
 												/>
-												<DaySeparatorLine className="h-px flex-1 bg-fd-border" />
+												<DaySeparatorLine className="h-px flex-1 bg-border/50" />
 											</>
 										)}
 									</DaySeparator>

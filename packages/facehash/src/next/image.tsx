@@ -12,11 +12,13 @@ export type FacehashImageProps = {
 	variant: Variant;
 	/** Show initial letter */
 	showInitial: boolean;
+	/** Rotation for 3D effect simulation */
+	rotation: { x: number; y: number };
 };
 
 /**
  * Static Facehash image component for use with ImageResponse.
- * Uses only Satori-compatible CSS (flexbox, no transforms).
+ * Uses only Satori-compatible CSS (flexbox, position offsets for 3D effect).
  */
 export function FacehashImage({
 	data,
@@ -24,6 +26,7 @@ export function FacehashImage({
 	size,
 	variant,
 	showInitial,
+	rotation,
 }: FacehashImageProps) {
 	const { faceType, initial } = data;
 	const svgData = FACE_SVG_DATA[faceType];
@@ -38,6 +41,14 @@ export function FacehashImage({
 
 	// Font size for initial (26% of size, matching cqw from React component)
 	const fontSize = size * 0.26;
+
+	// Calculate 3D effect offset (simulate looking direction)
+	// rotation.x: -1 = looking down, 0 = center, 1 = looking up
+	// rotation.y: -1 = looking left, 0 = center, 1 = looking right
+	// We offset the face in the opposite direction to simulate the "looking" effect
+	const offsetMagnitude = size * 0.05; // 5% of container size
+	const offsetX = rotation.y * offsetMagnitude; // horizontal offset (positive = right)
+	const offsetY = -rotation.x * offsetMagnitude; // vertical offset (positive = down, so negate)
 
 	return (
 		<div
@@ -67,13 +78,16 @@ export function FacehashImage({
 				/>
 			)}
 
-			{/* Face container */}
+			{/* Face container with 3D position offset */}
 			<div
 				style={{
 					display: "flex",
 					flexDirection: "column",
 					alignItems: "center",
 					justifyContent: "center",
+					// Apply position offset to simulate 3D "looking direction"
+					marginLeft: offsetX,
+					marginTop: offsetY,
 				}}
 			>
 				{/* Face SVG */}

@@ -83,7 +83,7 @@ export function TimelineMessageItem({
 														!(isSentByViewer || isPrivate),
 													"bg-primary text-primary-foreground":
 														isSentByViewer && !isPrivate,
-													"border border-cossistant-yellow/30 bg-cossistant-yellow/10 text-foreground":
+													"border border-cossistant-yellow-600/30 bg-cossistant-yellow-100/50 text-foreground":
 														isPrivate,
 													"rounded-br-[2px]":
 														isLast && isSentByViewer && !hasAttachments,

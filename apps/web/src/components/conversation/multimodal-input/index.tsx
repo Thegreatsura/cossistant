@@ -207,7 +207,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 					{/* Floating private mode banner — slides up from above the input */}
 					<div
 						className={cn(
-							"absolute top-1 right-0 flex items-center justify-center px-3 py-1.5 text-cossistant-yellow text-xs transition-all duration-200",
+							"absolute top-1 right-0 flex items-center justify-center px-3 py-1.5 text-cossistant-yellow-600 text-xs transition-all duration-200",
 							isPrivate
 								? "opacity-100"
 								: "pointer-events-none translate-y-0 opacity-0"
@@ -221,7 +221,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 							className={cn(
 								"relative flex h-fit flex-col rounded-xs border drop-shadow-xs",
 								isPrivate
-									? "border-cossistant-yellow/50 border-dashed bg-cossistant-yellow/5"
+									? "border-cossistant-yellow-600/50 border-dashed bg-cossistant-yellow-100/50"
 									: "border-border/50 bg-background-100 dark:border-border/50 dark:bg-background-300"
 							)}
 						>
@@ -253,7 +253,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 											className={cn(
 												"rounded-xs px-3 py-1.5 font-medium text-xs transition-colors",
 												isPrivate
-													? "bg-cossistant-yellow/10 text-cossistant-yellow"
+													? "bg-cossistant-yellow-100/70 text-cossistant-yellow-600"
 													: "text-muted-foreground hover:text-foreground"
 											)}
 											onClick={() => onVisibilityChange("private")}
@@ -352,10 +352,10 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 											className={cn(
 												canSubmit
 													? isPrivate
-														? "[&_svg]:text-cossistant-yellow"
+														? "[&_svg]:text-cossistant-yellow-600"
 														: "[&_svg]:text-primary/90"
 													: isPrivate
-														? "[&_svg]:text-cossistant-yellow/50"
+														? "[&_svg]:text-cossistant-yellow-600/50"
 														: "[&_svg]:text-primary/50"
 											)}
 											disabled={!canSubmit}

@@ -208,6 +208,7 @@ export function toFacehashHandler(
 			<FacehashImage
 				backgroundColor={backgroundColor}
 				data={data}
+				rotation={data.rotation}
 				showInitial={showInitial}
 				size={size}
 				variant={variant}
