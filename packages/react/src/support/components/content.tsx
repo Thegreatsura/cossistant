@@ -386,7 +386,7 @@ const ContentInner: React.FC<{
 				className={cn(
 					"flex flex-1 flex-col overflow-y-auto",
 					// Only add top padding if no custom header (default header is absolute positioned)
-					!hasCustomHeader && "pt-18"
+					!hasCustomHeader && "pt-16"
 				)}
 				ref={containerRef}
 			>

@@ -59,6 +59,7 @@ const VirtualConversationItem = memo(
 			prevProps.conversation.lastMessageAt ===
 				nextProps.conversation.lastMessageAt &&
 			prevProps.conversation.updatedAt === nextProps.conversation.updatedAt &&
+			prevProps.conversation.lastSeenAt === nextProps.conversation.lastSeenAt &&
 			prevProps.focused === nextProps.focused &&
 			prevProps.isSmartMode === nextProps.isSmartMode &&
 			prevProps.href === nextProps.href

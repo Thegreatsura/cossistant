@@ -117,11 +117,7 @@ export function ConversationItemView({
 						<span
 							className={cn(
 								"hidden min-w-0 flex-1 items-center gap-2 truncate md:inline-flex",
-								hasUnreadMessage
-									? "text-primary"
-									: title
-										? "text-muted-foreground"
-										: ""
+								hasUnreadMessage ? "text-primary" : "text-muted-foreground"
 							)}
 						>
 							{isLastMessageFromAI && <Logo className="size-3.5 shrink-0" />}
@@ -138,7 +134,7 @@ export function ConversationItemView({
 				)}
 				{waitingSinceLabel && !needsHumanIntervention && (
 					<span className="shrink-0 rounded border border-cossistant-orange/10 bg-cossistant-orange/5 px-2 py-1 font-medium text-[11px] text-cossistant-orange leading-none">
-						Waiting for {waitingSinceLabel}
+						{waitingSinceLabel} waiting
 					</span>
 				)}
 				<div className="flex min-w-[70px] items-center justify-end gap-1">
@@ -443,9 +439,11 @@ export function ConversationItem({
 
 	const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
 
-	// In smart mode, hide badges since category headers provide this info
+	// In smart mode, hide "needs human" badge since category header provides this info
+	// But show waiting time label in orange when conversation is in "long waiting" category
 	const showNeedsHuman = !isSmartMode && needsHumanIntervention;
-	const showWaitingLabel = isSmartMode ? null : waitingSinceLabel;
+	// In smart mode, show waiting label inline (without "Waiting for" prefix)
+	const showWaitingLabel = waitingSinceLabel;
 
 	return (
 		<ConversationItemView
@@ -472,6 +470,7 @@ export function ConversationItem({
 						conversationId={header.id}
 						deletedAt={header.deletedAt}
 						enableKeyboardShortcuts
+						hasUnreadMessage={hasUnreadMessage}
 						status={header.status}
 						visitorId={header.visitorId}
 					/>

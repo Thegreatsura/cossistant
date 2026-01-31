@@ -13,17 +13,13 @@ export function CategoryHeader({
 	label,
 	count,
 }: CategoryHeaderProps) {
-	const styles = CATEGORY_STYLES[category];
-
 	return (
 		<div className="flex h-full max-h-[48px] flex-col justify-end">
 			<div
-				className={
-					"flex items-center gap-1 px-1 pb-1 font-medium text-primary/80 text-sm"
-				}
+				className={"flex items-center gap-1 px-1 pb-1 text-primary/80 text-sm"}
 			>
 				<span>{label}</span>
-				<span>[{count}]</span>
+				<span className="tracking-wider">[{count}]</span>
 			</div>
 		</div>
 	);

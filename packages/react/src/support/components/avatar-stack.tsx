@@ -30,7 +30,7 @@ function createRoundedCutoutMask(
 	// SVG mask: white = visible, black = hidden
 	// We create a white rectangle (full size) and subtract a rounded rect on the left
 	// The cutout rect is extended beyond top/bottom bounds so only the right-side curve is visible
-	const extension = borderRadius * 0.5;
+	const extension = borderRadius * 0.15;
 	const svg = `
 		<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
 			<defs>
@@ -108,7 +108,7 @@ export function AvatarStack({
 	className,
 	size = 44,
 	spacing = 36,
-	gapWidth = 4,
+	gapWidth = 3,
 }: AvatarStackProps): ReactElement | null {
 	const displayedHumanAgents = humanAgents.slice(0, 2);
 	const remainingHumanAgentsCount = Math.max(0, humanAgents.length - 2);
@@ -169,7 +169,7 @@ export function AvatarStack({
 						)}
 						{item.type === "ai" && (
 							<Avatar
-								className="size-full"
+								className="z-0 size-full"
 								image={item.agent?.image}
 								isAI
 								name={item.agent?.name || "AI"}

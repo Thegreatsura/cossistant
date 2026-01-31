@@ -23,7 +23,7 @@ export type VirtualListItem = CategoryHeader | ConversationItem;
 
 export const CATEGORY_LABELS: Record<CategoryType, string> = {
 	needsHuman: "Human intervention needed",
-	waiting8Hours: "Waiting 8+ hours",
+	waiting8Hours: "Long waiting",
 	other: "Other conversations",
 } as const;
 

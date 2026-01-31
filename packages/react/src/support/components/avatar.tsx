@@ -128,7 +128,7 @@ export function Avatar({
 				</AvatarFallback>
 			</AvatarPrimitive>
 			<OnlineIndicator
-				className="-bottom-0.5 -right-0.5"
+				className="-bottom-0.5 -right-0.5 z-10"
 				size={indicatorSize}
 				status={agentStatus}
 			/>

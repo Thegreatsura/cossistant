@@ -71,12 +71,13 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 					>
 						<AvatarStack
 							aiAgents={website?.availableAIAgents || []}
+							className="mb-4"
 							hideDefaultAIAgent={false}
 							humanAgents={availableHumanAgents}
 							size={44}
-							spacing={32}
+							spacing={42}
 						/>
-						<h2 className="max-w-xs text-balance font-co-sans font-medium text-2xl text-co-primary leading-normal">
+						<h2 className="max-w-xs text-balance font-co-sans font-medium text-2xl text-co-primary leading-normal tracking-wide">
 							{text("page.home.greeting", {
 								visitorName: visitor?.contact?.name?.split(" ")[0] ?? undefined,
 							})}

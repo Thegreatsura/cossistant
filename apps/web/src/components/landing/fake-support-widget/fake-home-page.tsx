@@ -45,7 +45,7 @@ export const FakeHomePage = forwardRef<HTMLButtonElement, FakeHomePageProps>(
 		return (
 			<>
 				<FakeHeader>{/* Empty header like real HomePage */}</FakeHeader>
-				<div className="relative flex flex-1 flex-col px-6 pt-18">
+				<div className="relative flex flex-1 flex-col px-6 pt-10">
 					<div className="flex flex-col gap-2">
 						<motion.div
 							animate="visible"

@@ -85,7 +85,7 @@ export function ConversationButtonLink({
 				name={assignedAgent?.name ?? text("common.fallbacks.supportTeam")}
 			/>
 
-			<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+			<div className="mr-6 ml-1 flex min-w-0 flex-1 flex-col gap-0.5">
 				<div className="flex max-w-[90%] items-center justify-between gap-2">
 					<h3 className="truncate font-medium text-co-primary text-sm">
 						{displayTitle}
@@ -94,20 +94,20 @@ export function ConversationButtonLink({
 				{typing.isTyping ? (
 					<BouncingDots />
 				) : messagePreview ? (
-					<p className="truncate text-co-primary/60 text-xs">
+					<p className="truncate text-co-primary/60 text-sm">
 						{messagePreview}
 					</p>
 				) : null}
 			</div>
 
-			<div
-				className={cn(
-					"mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
-					statusBadgeClassName
-				)}
-			>
-				{statusText}
-			</div>
+			{/* <div
+        className={cn(
+          "mr-6 inline-flex items-center rounded px-2 py-0.5 font-medium text-[9px] uppercase",
+          statusBadgeClassName,
+        )}
+      >
+        {statusText}
+      </div> */}
 
 			<Icon
 				className="-translate-y-1/2 absolute top-1/2 right-4 size-3 text-co-primary/60 transition-transform duration-200 group-hover/btn:translate-x-0.5 group-hover/btn:text-co-primary"

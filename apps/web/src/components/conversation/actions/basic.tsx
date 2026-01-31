@@ -18,6 +18,7 @@ export function ConversationBasicActions({
 	status,
 	deletedAt,
 	enableKeyboardShortcuts = false,
+	hasUnreadMessage = false,
 }: {
 	className?: string;
 	conversationId: string;
@@ -25,12 +26,16 @@ export function ConversationBasicActions({
 	status?: ConversationStatus;
 	deletedAt?: string | null;
 	enableKeyboardShortcuts?: boolean;
+	hasUnreadMessage?: boolean;
 }) {
 	const {
 		markResolved,
 		markOpen,
 		markArchived,
 		markUnarchived,
+		markRead,
+		markUnread,
+		markNotSpam,
 		pendingAction,
 		runAction,
 	} = useConversationActionRunner({
@@ -75,6 +80,36 @@ export function ConversationBasicActions({
 	const archivePending = isArchived
 		? pendingAction.markUnarchived
 		: pendingAction.markArchived;
+
+	// Read/Unread logic
+	const readUnreadLabel = useMemo(
+		() =>
+			hasUnreadMessage
+				? "Mark conversation as read"
+				: "Mark conversation as unread",
+		[hasUnreadMessage]
+	);
+	const readUnreadSuccessMessage = useMemo(
+		() =>
+			hasUnreadMessage
+				? "Conversation marked as read"
+				: "Conversation marked as unread",
+		[hasUnreadMessage]
+	);
+	const readUnreadErrorMessage = hasUnreadMessage
+		? "Failed to mark as read"
+		: "Failed to mark as unread";
+	const readUnreadIcon = hasUnreadMessage ? "notifications" : "notifications";
+
+	const readUnreadPending = hasUnreadMessage
+		? pendingAction.markRead
+		: pendingAction.markUnread;
+
+	// Spam logic
+	const isSpam = status === ConversationStatus.SPAM;
+	const notSpamLabel = "Move to inbox";
+	const notSpamSuccessMessage = "Conversation moved to inbox";
+	const notSpamErrorMessage = "Failed to move to inbox";
 
 	const runResolveAction = useCallback(() => {
 		if (resolvePending || isArchived) {
@@ -131,7 +166,60 @@ export function ConversationBasicActions({
 		[runArchiveAction]
 	);
 
-	const resolveShortcutsEnabled = enableKeyboardShortcuts && !isArchived;
+	const runReadUnreadAction = useCallback(() => {
+		if (readUnreadPending) {
+			return;
+		}
+		void runAction(() => (hasUnreadMessage ? markRead() : markUnread()), {
+			successMessage: readUnreadSuccessMessage,
+			errorMessage: readUnreadErrorMessage,
+		});
+	}, [
+		hasUnreadMessage,
+		markRead,
+		markUnread,
+		readUnreadErrorMessage,
+		readUnreadPending,
+		readUnreadSuccessMessage,
+		runAction,
+	]);
+
+	const handleReadUnread = useCallback(
+		(event: React.MouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			runReadUnreadAction();
+		},
+		[runReadUnreadAction]
+	);
+
+	const runNotSpamAction = useCallback(() => {
+		if (pendingAction.markNotSpam) {
+			return;
+		}
+		void runAction(() => markNotSpam(), {
+			successMessage: notSpamSuccessMessage,
+			errorMessage: notSpamErrorMessage,
+		});
+	}, [
+		markNotSpam,
+		notSpamErrorMessage,
+		notSpamSuccessMessage,
+		pendingAction.markNotSpam,
+		runAction,
+	]);
+
+	const handleNotSpam = useCallback(
+		(event: React.MouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			runNotSpamAction();
+		},
+		[runNotSpamAction]
+	);
+
+	const resolveShortcutsEnabled =
+		enableKeyboardShortcuts && !isArchived && !isSpam;
 	const archiveShortcutsEnabled = enableKeyboardShortcuts;
 
 	useHotkeys(
@@ -164,6 +252,58 @@ export function ConversationBasicActions({
 		[archiveShortcutsEnabled, runArchiveAction]
 	);
 
+	const readUnreadShortcutsEnabled = enableKeyboardShortcuts && !isSpam;
+
+	useHotkeys(
+		"u",
+		(event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			runReadUnreadAction();
+		},
+		{
+			enabled: readUnreadShortcutsEnabled,
+			enableOnFormTags: false,
+			enableOnContentEditable: false,
+		},
+		[readUnreadShortcutsEnabled, runReadUnreadAction]
+	);
+
+	// For spam conversations, show "Move to inbox" and "Archive"
+	if (isSpam) {
+		return (
+			<div className={cn("flex items-center gap-2 pr-1", className)}>
+				<TooltipOnHover content={notSpamLabel}>
+					<Button
+						aria-label={notSpamLabel}
+						disabled={pendingAction.markNotSpam}
+						onClick={handleNotSpam}
+						size="icon-small"
+						type="button"
+						variant="ghost"
+					>
+						<Icon filledOnHover name="inbox-zero" />
+					</Button>
+				</TooltipOnHover>
+				<TooltipOnHover
+					content={archiveLabel}
+					shortcuts={["Backspace", "Delete"]}
+				>
+					<Button
+						aria-label={archiveLabel}
+						disabled={archivePending}
+						onClick={handleArchive}
+						size="icon-small"
+						type="button"
+						variant="ghost"
+					>
+						<Icon filledOnHover name={archiveIcon} />
+					</Button>
+				</TooltipOnHover>
+			</div>
+		);
+	}
+
 	return (
 		<div className={cn("flex items-center gap-2 pr-1", className)}>
 			{!isArchived && (
@@ -180,6 +320,22 @@ export function ConversationBasicActions({
 					</Button>
 				</TooltipOnHover>
 			)}
+			<TooltipOnHover content={readUnreadLabel} shortcuts={["U"]}>
+				<Button
+					aria-label={readUnreadLabel}
+					disabled={readUnreadPending}
+					onClick={handleReadUnread}
+					size="icon-small"
+					type="button"
+					variant="ghost"
+				>
+					<Icon
+						filledOnHover
+						name={readUnreadIcon}
+						variant={hasUnreadMessage ? "filled" : "default"}
+					/>
+				</Button>
+			</TooltipOnHover>
 			<TooltipOnHover
 				content={archiveLabel}
 				shortcuts={["Backspace", "Delete"]}

@@ -84,7 +84,22 @@ export function useConversationKeyboardNavigation({
 		return 0;
 	}, [isSmartMode, items]);
 
-	// Find next conversation index (skipping headers)
+	// Find last non-header index
+	const findLastConversationIndex = useCallback((): number => {
+		if (!isSmartMode) {
+			return Math.max(0, conversations.length - 1);
+		}
+
+		for (let i = items.length - 1; i >= 0; i--) {
+			if (items[i]?.type === "conversation") {
+				return i;
+			}
+		}
+
+		return 0;
+	}, [isSmartMode, items, conversations.length]);
+
+	// Find next conversation index (skipping headers) with infinite loop support
 	const findNextConversationIndex = useCallback(
 		(currentIndex: number, direction: "up" | "down"): number => {
 			const delta = direction === "up" ? -1 : 1;
@@ -98,10 +113,20 @@ export function useConversationKeyboardNavigation({
 				newIndex += delta;
 			}
 
-			// If we couldn't find a valid index, stay at current
-			return currentIndex;
+			// Wrap around: if going down and reached the end, go to first
+			// If going up and reached the beginning, go to last
+			if (direction === "down") {
+				return findFirstConversationIndex();
+			}
+
+			return findLastConversationIndex();
 		},
-		[totalCount, isHeaderIndex]
+		[
+			totalCount,
+			isHeaderIndex,
+			findFirstConversationIndex,
+			findLastConversationIndex,
+		]
 	);
 
 	// Initialize focus index - restore from store if we should
