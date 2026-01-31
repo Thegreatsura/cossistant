@@ -18,12 +18,40 @@ type AvatarStackProps = {
 	gapWidth?: number;
 };
 
+/**
+ * Creates an SVG mask with a rounded rectangle cutout on the left side.
+ * This respects the border radius of the avatars.
+ */
+function createRoundedCutoutMask(
+	size: number,
+	cutoutWidth: number,
+	borderRadius: number
+): string {
+	// SVG mask: white = visible, black = hidden
+	// We create a white rectangle (full size) and subtract a rounded rect on the left
+	// The cutout rect is extended beyond top/bottom bounds so only the right-side curve is visible
+	const extension = borderRadius * 0.5;
+	const svg = `
+		<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+			<defs>
+				<mask id="m">
+					<rect width="${size}" height="${size}" fill="white"/>
+					<rect x="${-size + cutoutWidth}" y="${-extension}" width="${size}" height="${size + extension * 2}" rx="${borderRadius}" ry="${borderRadius}" fill="black"/>
+				</mask>
+			</defs>
+			<rect width="${size}" height="${size}" fill="white" mask="url(#m)"/>
+		</svg>
+	`.replace(/\s+/g, " ");
+
+	return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
 export const AvatarStackItem = ({
 	children,
 	index,
 	size = 44,
-	spacing = 28,
-	gapWidth = 2,
+	spacing = 32,
+	gapWidth = 1,
 	className,
 }: {
 	children: ReactNode;
@@ -38,7 +66,9 @@ export const AvatarStackItem = ({
 	// Calculate mask for squared avatars with rounded corners
 	// The mask creates a cutout on the left side where the previous avatar overlaps
 	const cutoutWidth = size - spacing + gapWidth;
-	const borderRadius = size * 0.2; // Match rounded-lg approximately
+	const borderRadius = size * 0.25; // Match rounded-md approximately
+
+	const maskImage = createRoundedCutoutMask(size, cutoutWidth, borderRadius);
 
 	return useRenderElement(
 		"div",
@@ -52,12 +82,12 @@ export const AvatarStackItem = ({
 				style: {
 					width: `${size}px`,
 					height: `${size}px`,
-					// Apply mask only to non-first items - uses a linear gradient to cut off left side
+					// Apply mask only to non-first items - uses SVG for rounded cutout
 					...(isFirst
 						? {}
 						: {
-								mask: `linear-gradient(to right, transparent ${cutoutWidth}px, white ${cutoutWidth}px)`,
-								WebkitMask: `linear-gradient(to right, transparent ${cutoutWidth}px, white ${cutoutWidth}px)`,
+								maskImage,
+								WebkitMaskImage: maskImage,
 							}),
 				},
 				children,
@@ -77,8 +107,8 @@ export function AvatarStack({
 	hideDefaultAIAgent = true,
 	className,
 	size = 44,
-	spacing = 28,
-	gapWidth = 3,
+	spacing = 36,
+	gapWidth = 4,
 }: AvatarStackProps): ReactElement | null {
 	const displayedHumanAgents = humanAgents.slice(0, 2);
 	const remainingHumanAgentsCount = Math.max(0, humanAgents.length - 2);
@@ -128,11 +158,12 @@ export function AvatarStack({
 							<Avatar
 								className={cn("size-full")}
 								image={item.agent.image}
+								lastSeenAt={item.agent.lastSeenAt}
 								name={item.agent.name}
 							/>
 						)}
 						{item.type === "count" && (
-							<div className="flex size-full items-center justify-center rounded-lg bg-co-background-200 font-medium text-co-primary text-sm dark:bg-co-background-500">
+							<div className="flex size-full items-center justify-center rounded-md bg-co-background-200 font-medium text-co-primary text-sm dark:bg-co-background-500">
 								+{item.count}
 							</div>
 						)}

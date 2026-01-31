@@ -71,9 +71,10 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 					>
 						<AvatarStack
 							aiAgents={website?.availableAIAgents || []}
+							hideDefaultAIAgent={false}
 							humanAgents={availableHumanAgents}
 							size={44}
-							spacing={32}
+							spacing={38}
 						/>
 						<h2 className="max-w-xs text-balance font-co-sans font-medium text-2xl text-co-primary leading-normal">
 							{text("page.home.greeting", {

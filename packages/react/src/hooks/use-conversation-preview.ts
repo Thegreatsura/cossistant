@@ -24,6 +24,8 @@ export type ConversationPreviewAssignedAgent = {
 	name: string;
 	image: string | null;
 	type: "human" | "ai" | "fallback";
+	/** Last seen timestamp for human agents, used for online status indicator */
+	lastSeenAt?: string | null;
 };
 
 export type ConversationPreviewTypingParticipant = PreviewTypingParticipant;
@@ -202,6 +204,7 @@ export function useConversationPreview(
 					type: "human" as const,
 					name: human.name,
 					image: human.image ?? null,
+					lastSeenAt: human.lastSeenAt ?? null,
 				};
 			}
 
@@ -209,6 +212,7 @@ export function useConversationPreview(
 				type: "human" as const,
 				name: supportFallbackName,
 				image: null,
+				lastSeenAt: null,
 			};
 		}
 
@@ -238,6 +242,7 @@ export function useConversationPreview(
 				type: "human" as const,
 				name: fallbackHuman.name,
 				image: fallbackHuman.image ?? null,
+				lastSeenAt: fallbackHuman.lastSeenAt ?? null,
 			};
 		}
 

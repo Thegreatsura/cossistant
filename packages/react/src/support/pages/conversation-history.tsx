@@ -68,6 +68,7 @@ export const ConversationHistoryPage: React.FC<ConversationHistoryPageProps> = (
 					<AvatarStack
 						aiAgents={availableAIAgents}
 						gapWidth={2}
+						hideDefaultAIAgent={false}
 						humanAgents={availableHumanAgents}
 						size={32}
 						spacing={28}

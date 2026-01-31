@@ -12,6 +12,13 @@ export const AI_MODELS = [
 		freeOnly: true,
 	},
 	{
+		value: "moonshotai/kimi-k2.5",
+		label: "Kimi K2.5",
+		provider: "Moonshot AI",
+		icon: "agent",
+		freeOnly: true,
+	},
+	{
 		value: "openai/gpt-5.2-chat",
 		label: "GPT-5.2",
 		provider: "OpenAI",

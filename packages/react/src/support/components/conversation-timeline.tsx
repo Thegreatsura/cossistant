@@ -181,12 +181,12 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 							>
 								{({ formattedDate }) => (
 									<>
-										<DaySeparatorLine className="flex-1 border-gray-300/50 border-t dark:border-gray-600/50" />
+										<DaySeparatorLine className="flex-1 border-gray-300/20 border-t dark:border-gray-600/20" />
 										<DaySeparatorLabel
-											className="px-3 text-gray-400/70 text-xs dark:text-gray-500/70"
+											className="px-3 text-gray-400/50 text-xs dark:text-gray-500/50"
 											formattedDate={formattedDate}
 										/>
-										<DaySeparatorLine className="flex-1 border-gray-300/50 border-t dark:border-gray-600/50" />
+										<DaySeparatorLine className="flex-1 border-gray-300/20 border-t dark:border-gray-600/20" />
 									</>
 								)}
 							</DaySeparator>

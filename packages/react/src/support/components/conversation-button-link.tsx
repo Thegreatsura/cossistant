@@ -71,15 +71,17 @@ export function ConversationButtonLink({
 					variant: "secondary",
 					size: "large",
 				}),
-				"group/btn relative gap-3 border-0 border-co-border/50 border-b text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0",
+				"group/btn relative gap-2 border-0 border-co-border/50 border-b px-3 text-left transition-colors first-of-type:rounded-t last-of-type:rounded-b last-of-type:border-b-0",
 				className
 			)}
 			onClick={onClick}
 			type="button"
 		>
 			<Avatar
-				className="flex size-8 flex-shrink-0 items-center justify-center overflow-clip rounded-lg bg-co-background-200 dark:bg-co-background-500"
+				className="flex size-8 flex-shrink-0 items-center justify-center overflow-clip rounded-md bg-co-background-200 dark:bg-co-background-500"
 				image={assignedAgent?.image}
+				isAI={assignedAgent?.type === "ai"}
+				lastSeenAt={assignedAgent?.lastSeenAt}
 				name={assignedAgent?.name ?? text("common.fallbacks.supportTeam")}
 			/>
 
