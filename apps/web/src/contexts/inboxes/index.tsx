@@ -25,6 +25,7 @@ type InboxesContextValue = {
 	previousConversation: ConversationHeader | null;
 	navigateToNextConversation: () => void;
 	navigateToPreviousConversation: () => void;
+	navigateAwayIfNeeded: (conversationId: string) => boolean;
 	conversations: ConversationHeader[];
 	selectedConversationStatus: ConversationStatus | "archived" | null;
 	selectedConversation: ConversationHeader | null;
@@ -82,6 +83,7 @@ export function InboxesProvider({
 		previousConversation,
 		navigateToNextConversation,
 		navigateToPreviousConversation,
+		navigateAwayIfNeeded,
 	} = useFilteredConversations({
 		selectedConversationStatus,
 		selectedViewId,
@@ -107,6 +109,7 @@ export function InboxesProvider({
 				previousConversation,
 				navigateToNextConversation,
 				navigateToPreviousConversation,
+				navigateAwayIfNeeded,
 			}}
 		>
 			{children}

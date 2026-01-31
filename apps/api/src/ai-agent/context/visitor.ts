@@ -38,7 +38,10 @@ export async function getVisitorContext(
 	}
 
 	return {
-		name: visitorWithContact.contact?.name ?? null,
+		name:
+			visitorWithContact.contact?.name ??
+			visitorWithContact.contact?.email?.split("@")[0] ??
+			null,
 		email: visitorWithContact.contact?.email ?? null,
 		country: visitorWithContact.country ?? null,
 		city: visitorWithContact.city ?? null,

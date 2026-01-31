@@ -17,9 +17,10 @@ export type RunConversationAction = (
 	options?: RunConversationActionOptions
 ) => Promise<boolean>;
 
-type UseConversationActionRunnerParams = Parameters<
-	typeof useConversationActions
->[0];
+type UseConversationActionRunnerParams = Omit<
+	Parameters<typeof useConversationActions>[0],
+	"onNavigateAway"
+>;
 
 type UseConversationActionRunnerReturn = ReturnType<
 	typeof useConversationActions
@@ -28,16 +29,6 @@ type UseConversationActionRunnerReturn = ReturnType<
 };
 
 type InboxFilter = "open" | "resolved" | "spam" | "archived";
-
-type NavigationAwareAction =
-	| "markResolved"
-	| "markOpen"
-	| "markSpam"
-	| "markNotSpam"
-	| "markArchived"
-	| "markUnarchived";
-
-type NavigationCallback = (() => void) | null;
 
 function resolveInboxFilter(
 	status: ConversationStatus | "archived" | null | undefined
@@ -56,127 +47,33 @@ function resolveInboxFilter(
 	}
 }
 
-function getTargetInboxForAction(action: NavigationAwareAction): InboxFilter {
-	switch (action) {
-		case "markResolved":
-			return "resolved";
-		case "markOpen":
-		case "markNotSpam":
-		case "markUnarchived":
-			return "open";
-		case "markSpam":
-			return "spam";
-		case "markArchived":
-			return "archived";
-		default: {
-			const _exhaustive: never = action;
-			throw new Error(`Unhandled action: ${_exhaustive}`);
-		}
-	}
-}
-
 export function useConversationActionRunner(
 	params: UseConversationActionRunnerParams
 ): UseConversationActionRunnerReturn {
 	const inboxes = useOptionalInboxes();
-	const actions = useConversationActions(params);
 
-	const {
-		markResolved: baseMarkResolved,
-		markOpen: baseMarkOpen,
-		markSpam: baseMarkSpam,
-		markNotSpam: baseMarkNotSpam,
-		markArchived: baseMarkArchived,
-		markUnarchived: baseMarkUnarchived,
-		...otherActions
-	} = actions;
-
-	const shouldNavigateAfterAction = useCallback(
-		(action: NavigationAwareAction) => {
-			if (!inboxes) {
-				return false;
-			}
-
-			if (inboxes.selectedConversationId !== params.conversationId) {
-				return false;
-			}
-
-			const currentInbox = resolveInboxFilter(
-				inboxes.selectedConversationStatus
-			);
-			const targetInbox = getTargetInboxForAction(action);
-
-			return currentInbox !== targetInbox;
-		},
-		[inboxes, params.conversationId]
-	);
-
-	const resolveNavigationCallback = useCallback((): NavigationCallback => {
+	/**
+	 * Navigate away callback that fires during onMutate (optimistic update phase).
+	 * This provides instant navigation feedback before the mutation completes.
+	 */
+	const handleNavigateAway = useCallback(() => {
 		if (!inboxes) {
-			return null;
+			return false;
 		}
 
-		if (inboxes.nextConversation) {
-			return inboxes.navigateToNextConversation;
+		// Only navigate if this is the currently selected conversation
+		if (inboxes.selectedConversationId !== params.conversationId) {
+			return false;
 		}
 
-		if (inboxes.previousConversation) {
-			return inboxes.navigateToPreviousConversation;
-		}
+		// Use the navigateAwayIfNeeded helper which handles next/prev/goBack logic
+		return inboxes.navigateAwayIfNeeded(params.conversationId);
+	}, [inboxes, params.conversationId]);
 
-		return inboxes.goBack;
-	}, [inboxes]);
-
-	const runNavigationAwareAction = useCallback(
-		async <T>(
-			action: () => Promise<T>,
-			actionName: NavigationAwareAction
-		): Promise<T> => {
-			const shouldNavigate = shouldNavigateAfterAction(actionName);
-			const navigationCallback = shouldNavigate
-				? resolveNavigationCallback()
-				: null;
-
-			const result = await action();
-
-			if (navigationCallback) {
-				navigationCallback();
-			}
-
-			return result;
-		},
-		[resolveNavigationCallback, shouldNavigateAfterAction]
-	);
-
-	const markResolved = useCallback(
-		() => runNavigationAwareAction(baseMarkResolved, "markResolved"),
-		[baseMarkResolved, runNavigationAwareAction]
-	);
-
-	const markOpen = useCallback(
-		() => runNavigationAwareAction(baseMarkOpen, "markOpen"),
-		[baseMarkOpen, runNavigationAwareAction]
-	);
-
-	const markSpam = useCallback(
-		() => runNavigationAwareAction(baseMarkSpam, "markSpam"),
-		[baseMarkSpam, runNavigationAwareAction]
-	);
-
-	const markNotSpam = useCallback(
-		() => runNavigationAwareAction(baseMarkNotSpam, "markNotSpam"),
-		[baseMarkNotSpam, runNavigationAwareAction]
-	);
-
-	const markArchived = useCallback(
-		() => runNavigationAwareAction(baseMarkArchived, "markArchived"),
-		[baseMarkArchived, runNavigationAwareAction]
-	);
-
-	const markUnarchived = useCallback(
-		() => runNavigationAwareAction(baseMarkUnarchived, "markUnarchived"),
-		[baseMarkUnarchived, runNavigationAwareAction]
-	);
+	const actions = useConversationActions({
+		...params,
+		onNavigateAway: handleNavigateAway,
+	});
 
 	const runAction = useCallback<RunConversationAction>(
 		async (action, options) => {
@@ -210,13 +107,7 @@ export function useConversationActionRunner(
 	);
 
 	return {
-		...otherActions,
-		markResolved,
-		markOpen,
-		markSpam,
-		markNotSpam,
-		markArchived,
-		markUnarchived,
+		...actions,
 		runAction,
 	};
 }

@@ -3,7 +3,7 @@
 import type { RouterOutputs } from "@api/trpc/types";
 import { useQueryNormalizer } from "@normy/react-query";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTRPC } from "@/lib/trpc/client";
 
 type VisitorResponse = RouterOutputs["conversation"]["getVisitorById"];
@@ -42,6 +42,15 @@ export function useVisitor({
 		staleTime: 0,
 		refetchOnMount: "always",
 	});
+
+	// Normalize visitor data into normy after fetch for consistent access across components
+	useEffect(() => {
+		if (visitor) {
+			queryNormalizer.setNormalizedData(
+				visitor as Parameters<typeof queryNormalizer.setNormalizedData>[0]
+			);
+		}
+	}, [visitor, queryNormalizer]);
 
 	return {
 		visitor: visitor ?? null,

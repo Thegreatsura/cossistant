@@ -302,6 +302,47 @@ export function useFilteredConversations({
 		[conversationMap, unfilteredConversations]
 	);
 
+	/**
+	 * Navigate to next conversation if current one will leave the filter.
+	 * Used after actions like archive, mark as spam, etc.
+	 * Returns true if navigation happened, false otherwise.
+	 */
+	const navigateAwayIfNeeded = useCallback(
+		(conversationId: string) => {
+			if (
+				!selectedConversationId ||
+				conversationId !== selectedConversationId
+			) {
+				return false;
+			}
+
+			// Navigate to next, or previous, or go back to list
+			if (nextConversation) {
+				const path = basePath.split("/").slice(0, -1).join("/");
+				router.push(`${path}/${nextConversation.id}`);
+				return true;
+			}
+
+			if (previousConversation) {
+				const path = basePath.split("/").slice(0, -1).join("/");
+				router.push(`${path}/${previousConversation.id}`);
+				return true;
+			}
+
+			// No other conversations, go back to list
+			goBack();
+			return true;
+		},
+		[
+			selectedConversationId,
+			nextConversation,
+			previousConversation,
+			basePath,
+			router,
+			goBack,
+		]
+	);
+
 	return {
 		conversations,
 		conversationMap,
@@ -318,6 +359,7 @@ export function useFilteredConversations({
 		previousConversation,
 		navigateToNextConversation,
 		navigateToPreviousConversation,
+		navigateAwayIfNeeded,
 		// Utilities
 		isConversationInCurrentFilter,
 		getConversationById,

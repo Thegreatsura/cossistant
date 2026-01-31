@@ -56,6 +56,12 @@ function cloneConversationHeader(
 type UseConversationActionsParams = {
 	conversationId: string;
 	visitorId?: string | null;
+	/**
+	 * Optional callback to navigate away after an action that moves
+	 * the conversation out of the current filter (archive, spam, resolve).
+	 * Returns true if navigation happened.
+	 */
+	onNavigateAway?: () => boolean;
 };
 
 type UseConversationActionsReturn = {
@@ -117,6 +123,7 @@ function computeResolutionTime(
 export function useConversationActions({
 	conversationId,
 	visitorId,
+	onNavigateAway,
 }: UseConversationActionsParams): UseConversationActionsReturn {
 	const trpc = useTRPC();
 	const website = useWebsite();
@@ -241,6 +248,9 @@ export function useConversationActions({
 				updatedAt: now,
 			}));
 
+			// Navigate away after optimistic update (conversation will leave Open filter)
+			onNavigateAway?.();
+
 			return context;
 		},
 		onError: (_error, _variables, context) => {
@@ -306,6 +316,9 @@ export function useConversationActions({
 				updatedAt: now,
 			}));
 
+			// Navigate away after optimistic update (conversation will leave current filter)
+			onNavigateAway?.();
+
 			return context;
 		},
 		onError: (_error, _variables, context) => {
@@ -367,6 +380,9 @@ export function useConversationActions({
 				deletedAt: now,
 				updatedAt: now,
 			}));
+
+			// Navigate away after optimistic update (conversation will leave current filter)
+			onNavigateAway?.();
 
 			return context;
 		},

@@ -263,6 +263,17 @@ export function ConversationItem({
 		placeholderData: visitorPlaceholder,
 	});
 
+	// Normalize visitor data when query completes for consistent access across components
+	useEffect(() => {
+		if (visitorQuery.data) {
+			queryNormalizer.setNormalizedData(
+				visitorQuery.data as Parameters<
+					typeof queryNormalizer.setNormalizedData
+				>[0]
+			);
+		}
+	}, [visitorQuery.data, queryNormalizer]);
+
 	const visitor = useMemo(() => {
 		const normalizedVisitor = visitorQuery.data ?? null;
 

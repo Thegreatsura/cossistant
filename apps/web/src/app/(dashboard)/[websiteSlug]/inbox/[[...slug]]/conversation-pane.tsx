@@ -21,6 +21,7 @@ import { useInboxes } from "@/contexts/inboxes";
 import { useWebsiteMembers } from "@/contexts/website";
 import { useConversationActions } from "@/data/use-conversation-actions";
 import { useConversationTimelineItems } from "@/data/use-conversation-timeline-items";
+import { usePrefetchConversationData } from "@/data/use-prefetch-conversation-data";
 import { useVisitor } from "@/data/use-visitor";
 import { useAgentTypingReporter } from "@/hooks/use-agent-typing-reporter";
 import { useConversationSeen } from "@/hooks/use-conversation-seen";
@@ -138,11 +139,35 @@ export function ConversationPane({
 		nextConversation,
 		navigateToPreviousConversation,
 		navigateToNextConversation,
+		navigateAwayIfNeeded,
 		goBack,
 		statusCounts,
 		selectedConversationIndex,
 		conversations,
 	} = useInboxes();
+
+	const { prefetchConversation } = usePrefetchConversationData();
+
+	// Proactively prefetch next and previous conversations for instant navigation
+	useEffect(() => {
+		if (nextConversation) {
+			prefetchConversation({
+				websiteSlug,
+				conversationId: nextConversation.id,
+				visitorId: nextConversation.visitorId,
+			});
+		}
+	}, [nextConversation, prefetchConversation, websiteSlug]);
+
+	useEffect(() => {
+		if (previousConversation) {
+			prefetchConversation({
+				websiteSlug,
+				conversationId: previousConversation.id,
+				visitorId: previousConversation.visitorId,
+			});
+		}
+	}, [previousConversation, prefetchConversation, websiteSlug]);
 
 	const { open: isRightSidebarOpen, toggle: toggleRightSidebar } = useSidebar({
 		position: "right",
@@ -151,9 +176,15 @@ export function ConversationPane({
 		position: "left",
 	});
 
+	const handleNavigateAway = useCallback(
+		() => navigateAwayIfNeeded(conversationId),
+		[navigateAwayIfNeeded, conversationId]
+	);
+
 	const { markRead, joinEscalation, pendingAction } = useConversationActions({
 		conversationId,
 		visitorId,
+		onNavigateAway: handleNavigateAway,
 	});
 
 	const lastMarkedMessageIdRef = useRef<string | null>(null);

@@ -11,7 +11,7 @@ import {
 	visitor,
 	website,
 } from "@api/db/schema";
-import { generateVisitorName } from "@cossistant/core";
+import { getVisitorNameWithFallback } from "@cossistant/core";
 import {
 	ConversationParticipationStatus,
 	MemberNotificationChannel,
@@ -307,6 +307,7 @@ export async function getMessagesForEmail(
 				const [visitorInfo] = await db
 					.select({
 						contactName: contact.name,
+						contactEmail: contact.email,
 						contactImage: contact.image,
 					})
 					.from(visitor)
@@ -314,12 +315,16 @@ export async function getMessagesForEmail(
 					.where(eq(visitor.id, message.visitorId))
 					.limit(1);
 
-				if (visitorInfo?.contactName) {
-					senderName = visitorInfo.contactName;
-					senderImage = visitorInfo.contactImage;
-				} else {
-					senderName = generateVisitorName(message.visitorId);
-				}
+				senderName = getVisitorNameWithFallback({
+					id: message.visitorId,
+					contact: visitorInfo
+						? {
+								name: visitorInfo.contactName,
+								email: visitorInfo.contactEmail,
+							}
+						: null,
+				});
+				senderImage = visitorInfo?.contactImage ?? null;
 			}
 
 			return {
@@ -469,17 +474,24 @@ export async function getLatestMessageForPush(
 		}
 	} else if (latestMessage.visitorId) {
 		const [visitorInfo] = await db
-			.select({ contactName: contact.name })
+			.select({
+				contactName: contact.name,
+				contactEmail: contact.email,
+			})
 			.from(visitor)
 			.leftJoin(contact, eq(visitor.contactId, contact.id))
 			.where(eq(visitor.id, latestMessage.visitorId))
 			.limit(1);
 
-		if (visitorInfo?.contactName) {
-			senderName = visitorInfo.contactName;
-		} else {
-			senderName = generateVisitorName(latestMessage.visitorId);
-		}
+		senderName = getVisitorNameWithFallback({
+			id: latestMessage.visitorId,
+			contact: visitorInfo
+				? {
+						name: visitorInfo.contactName,
+						email: visitorInfo.contactEmail,
+					}
+				: null,
+		});
 	}
 
 	return {
