@@ -78,7 +78,7 @@ export function ConversationButtonLink({
 			type="button"
 		>
 			<Avatar
-				className="flex size-8 flex-shrink-0 items-center justify-center overflow-clip rounded-full bg-co-background-200 dark:bg-co-background-500"
+				className="flex size-8 flex-shrink-0 items-center justify-center overflow-clip rounded-lg bg-co-background-200 dark:bg-co-background-500"
 				image={assignedAgent?.image}
 				name={assignedAgent?.name ?? text("common.fallbacks.supportTeam")}
 			/>

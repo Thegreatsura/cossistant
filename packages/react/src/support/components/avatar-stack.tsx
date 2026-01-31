@@ -35,10 +35,10 @@ export const AvatarStackItem = ({
 }): ReactElement | null => {
 	const isFirst = index === 0;
 
-	// Calculate the circle radius for the mask cutout
-	const circleRadius = size * 0.5;
-	const cutoutRadius = circleRadius + gapWidth; // Add gap width to create visible border
-	const cutoutPosition = `${circleRadius - spacing}px`;
+	// Calculate mask for squared avatars with rounded corners
+	// The mask creates a cutout on the left side where the previous avatar overlaps
+	const cutoutWidth = size - spacing + gapWidth;
+	const borderRadius = size * 0.2; // Match rounded-lg approximately
 
 	return useRenderElement(
 		"div",
@@ -52,12 +52,12 @@ export const AvatarStackItem = ({
 				style: {
 					width: `${size}px`,
 					height: `${size}px`,
-					// Apply mask only to non-first items
+					// Apply mask only to non-first items - uses a linear gradient to cut off left side
 					...(isFirst
 						? {}
 						: {
-								mask: `radial-gradient(${cutoutRadius}px ${cutoutRadius}px at ${cutoutPosition} 50%, transparent ${cutoutRadius}px, white ${cutoutRadius}px)`,
-								WebkitMask: `radial-gradient(${cutoutRadius}px ${cutoutRadius}px at ${cutoutPosition} 50%, transparent ${cutoutRadius}px, white ${cutoutRadius}px)`,
+								mask: `linear-gradient(to right, transparent ${cutoutWidth}px, white ${cutoutWidth}px)`,
+								WebkitMask: `linear-gradient(to right, transparent ${cutoutWidth}px, white ${cutoutWidth}px)`,
 							}),
 				},
 				children,
@@ -132,7 +132,7 @@ export function AvatarStack({
 							/>
 						)}
 						{item.type === "count" && (
-							<div className="flex size-full items-center justify-center rounded-full bg-co-background-200 font-medium text-co-primary text-sm dark:bg-co-background-500">
+							<div className="flex size-full items-center justify-center rounded-lg bg-co-background-200 font-medium text-co-primary text-sm dark:bg-co-background-500">
 								+{item.count}
 							</div>
 						)}

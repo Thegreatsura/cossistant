@@ -40,6 +40,13 @@ export type UseMessageComposerOptions = {
 	onMessageSent?: (conversationId: string, messageId: string) => void;
 
 	/**
+	 * Called immediately after a new conversation is initiated (before API call).
+	 * Use this to immediately switch the UI to the new conversation ID for
+	 * proper optimistic updates display.
+	 */
+	onConversationInitiated?: (conversationId: string) => void;
+
+	/**
 	 * Callback when message sending fails.
 	 */
 	onError?: (error: Error) => void;
@@ -126,6 +133,7 @@ export function useMessageComposer(
 		defaultTimelineItems = [],
 		visitorId,
 		onMessageSent,
+		onConversationInitiated,
 		onError,
 		fileOptions,
 		realtimeSend,
@@ -157,6 +165,10 @@ export function useMessageComposer(
 				files,
 				defaultTimelineItems,
 				visitorId,
+				onConversationInitiated: (newConversationId) => {
+					// Immediately switch to new conversation ID for optimistic updates
+					onConversationInitiated?.(newConversationId);
+				},
 				onSuccess: (resultConversationId, messageId) => {
 					onMessageSent?.(resultConversationId, messageId);
 				},

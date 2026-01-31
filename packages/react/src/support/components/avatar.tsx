@@ -1,3 +1,4 @@
+import { Facehash } from "facehash";
 import type { ReactElement } from "react";
 
 import {
@@ -19,11 +20,11 @@ type AvatarProps = {
 };
 
 /**
- * Renders a circular avatar with graceful fallbacks when no image is
- * available.
+ * Renders a squared avatar with graceful fallbacks using Facehash when no
+ * image is available.
  *
  * For AI agents without an image, displays the Cossistant logo without
- * a background circle.
+ * a background.
  */
 export function Avatar({
 	className,
@@ -41,17 +42,25 @@ export function Avatar({
 		);
 	}
 
-	// AI agent with image: show image in a circle
+	// AI agent with image: show image in a square
 	if (isAI && image) {
 		return (
 			<AvatarPrimitive
 				className={cn(
-					"flex size-9 items-center justify-center overflow-clip rounded-full bg-co-background-200 dark:bg-co-background-500",
+					"flex size-9 items-center justify-center overflow-clip rounded-lg bg-co-background-200 dark:bg-co-background-500",
 					className
 				)}
 			>
 				<AvatarImage alt={name} src={image} />
-				<AvatarFallback className="font-medium text-xs" name={name} />
+				<AvatarFallback className="size-full">
+					<Facehash
+						className="size-full"
+						interactive={false}
+						name={name}
+						showInitial={false}
+						size="100%"
+					/>
+				</AvatarFallback>
 			</AvatarPrimitive>
 		);
 	}
@@ -59,12 +68,20 @@ export function Avatar({
 	return (
 		<AvatarPrimitive
 			className={cn(
-				"flex size-9 items-center justify-center overflow-clip rounded-full bg-co-background-200 dark:bg-co-background-500",
+				"flex size-9 items-center justify-center overflow-clip rounded-lg bg-co-background-200 dark:bg-co-background-500",
 				className
 			)}
 		>
 			{image && <AvatarImage alt={name} src={image} />}
-			<AvatarFallback className="font-medium text-xs" name={name} />
+			<AvatarFallback className="size-full">
+				<Facehash
+					className="size-full"
+					interactive={false}
+					name={name}
+					showInitial={false}
+					size="100%"
+				/>
+			</AvatarFallback>
 		</AvatarPrimitive>
 	);
 }

@@ -298,7 +298,7 @@
     },
     "packages/facehash": {
       "name": "facehash",
-      "version": "0.0.3",
+      "version": "0.0.5",
       "devDependencies": {
         "@cossistant/typescript-config": "workspace:*",
         "next": "16.1.1",
@@ -361,6 +361,7 @@
         "@floating-ui/react": "^0.27.16",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "facehash": "workspace:*",
         "nanoid": "^5.1.5",
         "react-markdown": "^10.1.0",
         "react-use-websocket": "^4.13.0",

@@ -28,6 +28,12 @@ export type SendMessageOptions = {
 	messageId?: string;
 	onSuccess?: (conversationId: string, messageId: string) => void;
 	onError?: (error: Error) => void;
+	/**
+	 * Called immediately after a new conversation is initiated (before API call).
+	 * Use this to immediately switch the UI to the new conversation ID for
+	 * proper optimistic updates display.
+	 */
+	onConversationInitiated?: (conversationId: string) => void;
 };
 
 export type SendMessageResult = {
@@ -185,6 +191,7 @@ export function useSendMessage(
 				messageId: providedMessageId,
 				onSuccess,
 				onError,
+				onConversationInitiated,
 			} = payload;
 
 			// Allow empty message if there are files
@@ -221,6 +228,9 @@ export function useSendMessage(
 					conversationId = initiated.conversationId;
 					preparedDefaultTimelineItems = initiated.defaultTimelineItems;
 					initialConversation = initiated.conversation;
+					// Immediately notify about the new conversation ID so UI can switch
+					// to reading from the right store key for optimistic updates
+					onConversationInitiated?.(conversationId);
 				}
 
 				// Upload files BEFORE sending the message

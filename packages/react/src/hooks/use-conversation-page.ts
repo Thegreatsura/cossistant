@@ -241,8 +241,16 @@ export function useConversationPage(
 		conversationId: lifecycle.realConversationId,
 		defaultTimelineItems: effectiveDefaultTimelineItems,
 		visitorId: visitor?.id,
+		onConversationInitiated: (newConversationId) => {
+			// Immediately switch to new conversation ID for optimistic updates
+			// This happens BEFORE the API call, so the UI starts reading from
+			// the correct store key right away
+			if (lifecycle.isPending) {
+				lifecycle.setConversationId(newConversationId);
+			}
+		},
 		onMessageSent: (newConversationId) => {
-			// Transition from pending to real conversation
+			// Also handle this for completeness (API call completed)
 			if (lifecycle.isPending) {
 				lifecycle.setConversationId(newConversationId);
 			}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import type { ConversationSeen, TimelineItem } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
-import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import type { ConversationSeen } from "@cossistant/types/schemas";
 
 import type {
 	ConversationItem,
@@ -477,6 +476,139 @@ describe("buildTimelineReadReceiptData", () => {
 		expect(seenByMap.get("msg-2")?.has("dashboard-user-1")).toBe(true);
 		expect(seenByMap.get("msg-3")?.has("dashboard-user-1")).toBe(true);
 		expect(unreadCountMap.get("dashboard-user-1")).toBe(0);
+	});
+
+	it("correctly handles AI agent read receipts using aiAgentId", () => {
+		// Scenario: AI agent responds to visitor and marks messages as read
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: null,
+				visitorId: "visitor-1",
+				aiAgentId: null,
+				createdAt: new Date("2024-01-01T10:00:00.000Z").toISOString(),
+				text: "Hello, I need help with my order",
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: null,
+				visitorId: null,
+				aiAgentId: "ai-agent-1",
+				createdAt: new Date("2024-01-01T10:01:00.000Z").toISOString(),
+				text: "Hi! I'd be happy to help. What's your order number?",
+			}),
+			createTimelineItem({
+				id: "msg-3",
+				userId: null,
+				visitorId: "visitor-1",
+				aiAgentId: null,
+				createdAt: new Date("2024-01-01T10:02:00.000Z").toISOString(),
+				text: "Order #12345",
+			}),
+		];
+
+		// AI agent has seen up to 10:02 (all messages)
+		// Visitor has seen up to 10:01 (first two messages)
+		const seenData: ConversationSeen[] = [
+			createSeenEntry({
+				id: "seen-ai",
+				userId: null,
+				visitorId: null,
+				aiAgentId: "ai-agent-1",
+				lastSeenAt: new Date("2024-01-01T10:02:30.000Z").toISOString(),
+			}),
+			createSeenEntry({
+				id: "seen-visitor",
+				userId: null,
+				visitorId: "visitor-1",
+				aiAgentId: null,
+				lastSeenAt: new Date("2024-01-01T10:01:30.000Z").toISOString(),
+			}),
+		];
+
+		const { seenByMap, lastReadMessageMap, unreadCountMap } =
+			buildTimelineReadReceiptData(seenData, items);
+
+		// AI agent should have seen all messages
+		expect(seenByMap.get("msg-1")?.has("ai-agent-1")).toBe(true);
+		expect(seenByMap.get("msg-2")?.has("ai-agent-1")).toBe(true);
+		expect(seenByMap.get("msg-3")?.has("ai-agent-1")).toBe(true);
+
+		// AI agent's last read message should be msg-3
+		expect(lastReadMessageMap.get("ai-agent-1")).toBe("msg-3");
+
+		// AI agent should have 0 unread messages
+		expect(unreadCountMap.get("ai-agent-1")).toBe(0);
+
+		// Visitor should have seen msg-1 and msg-2 (before 10:01:30)
+		expect(seenByMap.get("msg-1")?.has("visitor-1")).toBe(true);
+		expect(seenByMap.get("msg-2")?.has("visitor-1")).toBe(true);
+
+		// Visitor should NOT have seen msg-3 (after 10:01:30)
+		expect(seenByMap.get("msg-3")?.has("visitor-1")).toBe(false);
+
+		// Visitor should have 1 unread message
+		expect(unreadCountMap.get("visitor-1")).toBe(1);
+	});
+
+	it("correctly identifies AI agent as sender type", () => {
+		// Verify that getSenderIdAndTypeFromTimelineItem correctly identifies AI agents
+		const aiAgentItem = createTimelineItem({
+			id: "msg-1",
+			userId: null,
+			visitorId: null,
+			aiAgentId: "ai-agent-1",
+		});
+
+		const { senderId, senderType } =
+			getSenderIdAndTypeFromTimelineItem(aiAgentItem);
+
+		expect(senderId).toBe("ai-agent-1");
+		expect(senderType).toBe(SenderType.AI);
+	});
+
+	it("groups AI agent messages separately from human agent messages", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: null,
+				visitorId: null,
+				aiAgentId: "ai-agent-1",
+				createdAt: new Date("2024-01-01T10:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-2",
+				userId: null,
+				visitorId: null,
+				aiAgentId: "ai-agent-1",
+				createdAt: new Date("2024-01-01T10:01:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "msg-3",
+				userId: "human-agent-1",
+				visitorId: null,
+				aiAgentId: null,
+				createdAt: new Date("2024-01-01T10:02:00.000Z").toISOString(),
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+
+		// Should have: day separator + AI agent group + human agent group
+		expect(result.length).toBe(3);
+		expect(result[0]?.type).toBe("day_separator");
+
+		if (result[1]?.type === "message_group") {
+			expect(result[1].senderId).toBe("ai-agent-1");
+			expect(result[1].senderType).toBe(SenderType.AI);
+			expect(result[1].items.length).toBe(2);
+		}
+
+		if (result[2]?.type === "message_group") {
+			expect(result[2].senderId).toBe("human-agent-1");
+			expect(result[2].senderType).toBe(SenderType.TEAM_MEMBER);
+			expect(result[2].items.length).toBe(1);
+		}
 	});
 });
 
