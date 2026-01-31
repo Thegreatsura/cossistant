@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.30
+
+### Patch Changes
+
+- Better design, bug fixes, better support for AI agent auto reply and better performances
+
 ## 0.0.29
 
 ### Patch Changes
