@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import type { NextRequest } from "next/server";
 import {
 	computeFacehash,
 	DEFAULT_COLORS,
@@ -50,7 +49,7 @@ export type FacehashHandlerOptions = {
 };
 
 export type FacehashHandler = {
-	GET: (request: NextRequest) => Promise<ImageResponse>;
+	GET: (request: Request) => Promise<Response>;
 };
 
 // ============================================================================
@@ -143,8 +142,9 @@ export function toFacehashHandler(
 		cacheControl = "public, max-age=31536000, immutable",
 	} = options;
 
-	async function GET(request: NextRequest): Promise<ImageResponse> {
-		const searchParams = request.nextUrl.searchParams;
+	async function GET(request: Request): Promise<Response> {
+		const url = new URL(request.url);
+		const searchParams = url.searchParams;
 
 		// Parse name (required)
 		const name = searchParams.get("name");

@@ -117,7 +117,7 @@ bun install                    # Install dependencies (Bun v1.2+)
 bun run dev                    # Docker + all apps in dev mode
 bun run build                  # Build all via Turbo
 bun run fix                    # Lint/format with Ultracite/Biome
-bun run check-types            # TypeScript checks
+bun run check-types            # TypeScript type checking (all packages)
 ```
 
 **API commands (from `apps/api`):**
@@ -131,7 +131,17 @@ bun run db:studio              # Drizzle Studio
 ```bash
 bun run build --filter @cossistant/react...  # Build with dependencies
 turbo run test --filter @cossistant/react    # Run specific tests
+turbo run check-types --filter @cossistant/api  # Type check specific package
 ```
+
+## Type Checking
+
+Run `bun run check-types` to verify TypeScript types across the entire monorepo. This command:
+- Uses Turbo for parallel execution across all packages
+- Caches results for faster subsequent runs
+- Builds dependencies first (configured via `dependsOn: ["^build"]` in turbo.json)
+
+**Always run before committing** to catch type errors early. The check covers all apps and packages including `apps/api`, `apps/web`, `apps/workers`, and all shared packages.
 
 ## Code Style
 

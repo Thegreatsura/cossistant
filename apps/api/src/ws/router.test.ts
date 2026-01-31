@@ -184,6 +184,8 @@ describe("conversationSeen handler", () => {
 				visitorId: null,
 				aiAgentId: null,
 				lastSeenAt: new Date().toISOString(),
+				actorType: "user",
+				actorId: "user-actor",
 			},
 		};
 
@@ -214,6 +216,8 @@ describe("conversationSeen handler", () => {
 				visitorId,
 				aiAgentId: null,
 				lastSeenAt: new Date().toISOString(),
+				actorType: "visitor",
+				actorId: visitorId,
 			},
 		};
 

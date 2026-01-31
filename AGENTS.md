@@ -10,8 +10,15 @@
 - `bun run dev` (root) bootstraps Docker services and runs `turbo run dev` across apps.
 - `bun run build` composes all package builds via Turbo; use `bun run build --filter @cossistant/web` for scoped builds.
 - `bun run fix` calls Ultracite/Biome to lint and autofix formatting; rely on it before committing or pushing.
-- `bun run lint`, `bun run check-types`, and `bun run docs:links` delegate to Turbo, Biome checks, and Markdown link validation respectively.
+- `bun run check-types` runs TypeScript type checking across all packages via Turbo (builds dependencies first, caches results).
+- `bun run lint` and `bun run docs:links` delegate to Biome checks and Markdown link validation respectively.
 - API-specific tooling lives in `apps/api`: `bun run db:migrate`, `bun run db:seed`, and `bun run better-auth:generate-schema`.
+
+## Type Checking
+- **Command**: `bun run check-types` - Runs `tsc --noEmit` across all packages in parallel via Turbo.
+- **Scoped check**: `turbo run check-types --filter @cossistant/api` - Type check a specific package.
+- **Pre-commit**: Always run `bun run check-types` before committing to catch type errors early.
+- **Dependencies**: The `check-types` task depends on `^build`, meaning it builds dependencies first before type checking.
 
 ## Coding Style & Naming Conventions
 - Formatting is enforced by Biome (`biome.jsonc`), inheriting Ultracite presets: tab indentation, double quotes, and trailing commas where valid.
