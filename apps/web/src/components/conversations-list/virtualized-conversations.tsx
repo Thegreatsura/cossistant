@@ -60,6 +60,8 @@ const VirtualConversationItem = memo(
 				nextProps.conversation.lastMessageAt &&
 			prevProps.conversation.updatedAt === nextProps.conversation.updatedAt &&
 			prevProps.conversation.lastSeenAt === nextProps.conversation.lastSeenAt &&
+			prevProps.conversation.status === nextProps.conversation.status &&
+			prevProps.conversation.deletedAt === nextProps.conversation.deletedAt &&
 			prevProps.focused === nextProps.focused &&
 			prevProps.isSmartMode === nextProps.isSmartMode &&
 			prevProps.href === nextProps.href
@@ -119,10 +121,26 @@ export function VirtualizedConversations({
 		[isSmartMode, items]
 	);
 
+	// Use conversation IDs as keys to ensure proper React reconciliation when list reorders
+	const getItemKey = useCallback(
+		(index: number) => {
+			if (isSmartMode && items) {
+				const item = items[index];
+				if (item?.type === "header") {
+					return `header-${item.category}`;
+				}
+				return item?.conversation.id ?? index;
+			}
+			return conversations[index]?.id ?? index;
+		},
+		[isSmartMode, items, conversations]
+	);
+
 	const virtualizer = useVirtualizer({
 		count: itemCount,
 		getScrollElement,
 		estimateSize,
+		getItemKey,
 		gap: 4,
 		overscan: 4,
 	});
@@ -188,7 +206,7 @@ export function VirtualizedConversations({
 
 						return (
 							<div
-								key={virtualItem.key}
+								key={conversation.id}
 								style={{
 									position: "absolute",
 									top: 0,
@@ -218,7 +236,7 @@ export function VirtualizedConversations({
 
 					return (
 						<div
-							key={virtualItem.key}
+							key={conversation.id}
 							style={{
 								position: "absolute",
 								top: 0,
