@@ -3,6 +3,10 @@
 import type { ConversationStatus } from "@cossistant/types";
 import { useEffect, useRef } from "react";
 import { ConversationsList } from "@/components/conversations-list";
+import type {
+	SortMode,
+	VirtualListItem,
+} from "@/components/conversations-list/types";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useConversationFocusStore } from "@/contexts/inboxes/conversation-focus-store";
 import { useDashboardNewMessageSound } from "@/hooks/use-dashboard-new-message-sound";
@@ -14,6 +18,9 @@ type ConversationsListPaneProps = {
 	selectedConversationStatus: ConversationStatus | "archived" | null;
 	conversations: ConversationHeader[];
 	websiteSlug: string;
+	sortMode: SortMode;
+	onSortModeChange: (mode: SortMode) => void;
+	smartItems?: VirtualListItem[] | null;
 };
 
 export function ConversationsListPane({
@@ -21,6 +28,9 @@ export function ConversationsListPane({
 	selectedConversationStatus,
 	conversations,
 	websiteSlug,
+	sortMode,
+	onSortModeChange,
+	smartItems,
 }: ConversationsListPaneProps) {
 	const clearFocus = useConversationFocusStore((state) => state.clearFocus);
 	const { open: isLeftSidebarOpen, toggle: toggleLeftSidebar } = useSidebar({
@@ -81,8 +91,11 @@ export function ConversationsListPane({
 			basePath={basePath}
 			conversations={conversations}
 			isLeftSidebarOpen={isLeftSidebarOpen}
+			onSortModeChange={onSortModeChange}
 			onToggleLeftSidebar={toggleLeftSidebar}
 			selectedConversationStatus={selectedConversationStatus}
+			smartItems={smartItems}
+			sortMode={sortMode}
 			websiteSlug={websiteSlug}
 		/>
 	);

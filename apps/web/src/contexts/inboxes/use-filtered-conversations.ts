@@ -2,6 +2,15 @@ import type { RouterOutputs } from "@api/trpc/types";
 import { ConversationStatus } from "@cossistant/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import {
+	CATEGORY_LABELS,
+	type CategoryType,
+	type ConversationItem,
+	PRIORITY_WEIGHTS,
+	type SortMode,
+	type VirtualListItem,
+	WAITING_THRESHOLD_MS,
+} from "@/components/conversations-list/types";
 import { useWebsite } from "@/contexts/website";
 import { useConversationHeaders } from "@/data/use-conversation-headers";
 import { isInboundVisitorMessage } from "@/lib/conversation-messages";
@@ -21,6 +30,12 @@ type FilterResult = {
 		spam: number;
 		archived: number;
 	};
+};
+
+type SmartOrderResult = {
+	items: VirtualListItem[];
+	conversationIndexMap: Map<string, number>;
+	categoryCounts: Record<CategoryType, number>;
 };
 
 /**
@@ -82,6 +97,169 @@ function matchesStatusFilter(
 }
 
 /**
+ * Categorize a conversation for smart ordering
+ */
+function categorizeConversation(
+	conversation: ConversationHeader,
+	now: number
+): CategoryType {
+	// Category 1: Needs human intervention (escalated but not handled)
+	if (conversation.escalatedAt && !conversation.escalationHandledAt) {
+		return "needsHuman";
+	}
+
+	// Category 2: Waiting 8+ hours (last message from visitor, > 8 hours old)
+	const lastTimelineItem = conversation.lastTimelineItem;
+
+	if (isInboundVisitorMessage(lastTimelineItem)) {
+		const messageTime = Date.parse(lastTimelineItem.createdAt);
+
+		if (now - messageTime > WAITING_THRESHOLD_MS) {
+			return "waiting8Hours";
+		}
+	}
+
+	// Category 3: Everything else
+	return "other";
+}
+
+/**
+ * Build smart ordered list with category headers
+ * O(n) categorization + O(k log k) sort per category
+ */
+function buildSmartOrderedList(
+	conversations: ConversationHeader[]
+): SmartOrderResult {
+	const now = Date.now();
+
+	// Categorize all conversations (O(n))
+	const categorized = new Map<CategoryType, ConversationItem[]>([
+		["needsHuman", []],
+		["waiting8Hours", []],
+		["other", []],
+	]);
+
+	for (const conversation of conversations) {
+		const category = categorizeConversation(conversation, now);
+
+		categorized.get(category)?.push({
+			type: "conversation",
+			conversation,
+			category,
+		});
+	}
+
+	// Sort "needsHuman" and "waiting8Hours" by priority DESC, then lastMessageAt DESC
+	const sortByPriorityThenTime = (categoryItems: ConversationItem[]) => {
+		categoryItems.sort((a, b) => {
+			// First by priority (higher priority first)
+			const priorityA =
+				PRIORITY_WEIGHTS[
+					a.conversation.priority as keyof typeof PRIORITY_WEIGHTS
+				] ?? 2;
+			const priorityB =
+				PRIORITY_WEIGHTS[
+					b.conversation.priority as keyof typeof PRIORITY_WEIGHTS
+				] ?? 2;
+
+			if (priorityA !== priorityB) {
+				return priorityB - priorityA;
+			}
+
+			// Then by last message time (most recent first)
+			const timeA = Date.parse(
+				a.conversation.lastMessageAt ?? a.conversation.updatedAt
+			);
+			const timeB = Date.parse(
+				b.conversation.lastMessageAt ?? b.conversation.updatedAt
+			);
+
+			if (!(Number.isNaN(timeA) || Number.isNaN(timeB))) {
+				return timeB - timeA;
+			}
+
+			return 0;
+		});
+	};
+
+	// Sort "other" category only by last message time (most recent first)
+	const sortByTimeOnly = (categoryItems: ConversationItem[]) => {
+		categoryItems.sort((a, b) => {
+			const timeA = Date.parse(
+				a.conversation.lastMessageAt ?? a.conversation.updatedAt
+			);
+			const timeB = Date.parse(
+				b.conversation.lastMessageAt ?? b.conversation.updatedAt
+			);
+
+			if (!(Number.isNaN(timeA) || Number.isNaN(timeB))) {
+				return timeB - timeA;
+			}
+
+			return 0;
+		});
+	};
+
+	// Apply appropriate sorting to each category
+	const needsHumanItems = categorized.get("needsHuman");
+	const waiting8HoursItems = categorized.get("waiting8Hours");
+	const otherItems = categorized.get("other");
+
+	if (needsHumanItems) {
+		sortByPriorityThenTime(needsHumanItems);
+	}
+	if (waiting8HoursItems) {
+		sortByPriorityThenTime(waiting8HoursItems);
+	}
+	if (otherItems) {
+		sortByTimeOnly(otherItems);
+	}
+
+	// Build final list with headers
+	const items: VirtualListItem[] = [];
+	const conversationIndexMap = new Map<string, number>();
+	const categoryCounts: Record<CategoryType, number> = {
+		needsHuman: needsHumanItems?.length ?? 0,
+		waiting8Hours: waiting8HoursItems?.length ?? 0,
+		other: otherItems?.length ?? 0,
+	};
+
+	// Check if we only have "other" conversations - if so, skip headers entirely
+	const hasOnlyOther =
+		categoryCounts.needsHuman === 0 && categoryCounts.waiting8Hours === 0;
+
+	const addCategory = (category: CategoryType, showHeader: boolean) => {
+		const categoryItems = categorized.get(category);
+
+		if (!categoryItems || categoryItems.length === 0) {
+			return;
+		}
+
+		// Add header only if we have multiple categories
+		if (showHeader) {
+			items.push({
+				type: "header",
+				category,
+				count: categoryItems.length,
+				label: CATEGORY_LABELS[category],
+			});
+		}
+
+		// Add conversations, tracking their indices
+		for (const item of categoryItems) {
+			conversationIndexMap.set(item.conversation.id, items.length);
+			items.push(item);
+		}
+	};
+
+	addCategory("needsHuman", true);
+	addCategory("waiting8Hours", true);
+	addCategory("other", !hasOnlyOther);
+
+	return { items, conversationIndexMap, categoryCounts };
+}
+
+/**
  * Single-pass filter and count function optimized for performance
  * This function processes conversations once to:
  * 1. Filter by status and view
@@ -92,7 +270,7 @@ function filterAndProcessConversations(
 	conversations: ConversationHeader[],
 	selectedStatus: ConversationStatusFilter,
 	selectedViewId: string | null,
-	selectedConversationId: string | null
+	_selectedConversationId: string | null
 ): FilterResult {
 	const statusCounts = { open: 0, resolved: 0, spam: 0, archived: 0 };
 	const filteredConversations: ConversationHeader[] = [];
@@ -179,6 +357,7 @@ function filterAndProcessConversations(
 	// Build maps after sorting for correct indexes
 	for (let i = 0; i < filteredConversations.length; i++) {
 		const conversation = filteredConversations[i];
+
 		if (conversation) {
 			conversationMap.set(conversation.id, conversation);
 			indexMap.set(conversation.id, i);
@@ -206,6 +385,7 @@ function filterAndProcessConversations(
  * @param selectedConversationStatus - The selected conversation status filter
  * @param selectedConversationId - The currently selected conversation ID
  * @param basePath - The base path for navigation
+ * @param sortMode - The sort mode ("smart" or "lastMessage")
  * @returns Filtered conversations with navigation utilities and O(1) lookup capabilities
  */
 export function useFilteredConversations({
@@ -213,11 +393,13 @@ export function useFilteredConversations({
 	selectedConversationStatus,
 	selectedConversationId,
 	basePath,
+	sortMode = "smart",
 }: {
 	selectedViewId: string | null;
 	selectedConversationStatus: ConversationStatusFilter;
 	selectedConversationId: string | null;
 	basePath: string;
+	sortMode?: SortMode;
 }) {
 	const website = useWebsite();
 	const router = useRouter();
@@ -241,8 +423,29 @@ export function useFilteredConversations({
 		]
 	);
 
+	// Build smart ordered list only when in smart mode and on main inbox
+	const isSmartModeActive =
+		sortMode === "smart" && selectedConversationStatus === null;
+
+	const smartOrderResult = useMemo(() => {
+		if (!isSmartModeActive) {
+			return null;
+		}
+
+		return buildSmartOrderedList(conversations);
+	}, [conversations, isSmartModeActive]);
+
+	// Get the appropriate index map based on sort mode
+	const activeIndexMap = useMemo(() => {
+		if (smartOrderResult) {
+			return smartOrderResult.conversationIndexMap;
+		}
+
+		return indexMap;
+	}, [smartOrderResult, indexMap]);
+
 	const currentIndex = selectedConversationId
-		? (indexMap.get(selectedConversationId) ?? -1)
+		? (activeIndexMap.get(selectedConversationId) ?? -1)
 		: -1;
 
 	const selectedConversation = useMemo(() => {
@@ -346,13 +549,16 @@ export function useFilteredConversations({
 	return {
 		conversations,
 		conversationMap,
-		indexMap,
+		indexMap: activeIndexMap,
 		statusCounts,
 		selectedConversationIndex: currentIndex,
 		selectedConversation,
 		selectedVisitorId: selectedConversation?.visitorId || null,
 		totalCount: conversations.length,
 		isLoading,
+		// Smart ordering
+		smartOrderResult,
+		isSmartModeActive,
 		// Navigation
 		goBack,
 		nextConversation,

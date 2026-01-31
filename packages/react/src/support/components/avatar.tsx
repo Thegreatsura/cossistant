@@ -42,11 +42,17 @@ type AvatarProps = {
 	 * Only shown for non-AI agents.
 	 */
 	lastSeenAt?: string | null;
+	/**
+	 * Size of the online indicator in pixels.
+	 * Defaults to 6px.
+	 */
+	indicatorSize?: number;
 };
 
 /**
  * Renders a squared avatar with graceful fallbacks using Facehash when no
- * image is available.
+ * image is available. Features squircle corners when supported by the browser
+ * and a subtle ring border.
  *
  * For AI agents without an image, displays the Cossistant logo without
  * a background.
@@ -59,6 +65,7 @@ export function Avatar({
 	showBackground = true,
 	colorClasses = DEFAULT_AVATAR_COLORS,
 	lastSeenAt,
+	indicatorSize = 6,
 }: AvatarProps): ReactElement {
 	const agentStatus = isAI ? "offline" : getAgentStatus(lastSeenAt);
 
@@ -68,7 +75,7 @@ export function Avatar({
 		return (
 			<div
 				className={cn(
-					"flex items-center justify-center rounded-md bg-co-background-200 dark:bg-co-background-500",
+					"flex items-center justify-center rounded bg-co-background-200 ring-1 ring-co-border/30 dark:bg-co-background-500",
 					className
 				)}
 			>
@@ -82,7 +89,7 @@ export function Avatar({
 		return (
 			<AvatarPrimitive
 				className={cn(
-					"flex size-9 items-center justify-center overflow-clip rounded-md bg-co-background-200 dark:bg-co-background-500",
+					"flex size-9 items-center justify-center overflow-clip rounded bg-co-background-200 ring-1 ring-co-border/30 dark:bg-co-background-500",
 					className
 				)}
 			>
@@ -105,7 +112,7 @@ export function Avatar({
 		<div className={cn("relative", className)}>
 			<AvatarPrimitive
 				className={cn(
-					"flex size-full items-center justify-center overflow-clip rounded-md bg-co-background-200 dark:bg-co-background-500"
+					"flex size-full items-center justify-center overflow-clip rounded bg-co-background-200 ring-1 ring-co-border/30 dark:bg-co-background-500"
 				)}
 			>
 				{image && <AvatarImage alt={name} src={image} />}
@@ -121,8 +128,8 @@ export function Avatar({
 				</AvatarFallback>
 			</AvatarPrimitive>
 			<OnlineIndicator
-				className="-bottom-1 right-0.5"
-				size={8}
+				className="-bottom-0.5 -right-0.5"
+				size={indicatorSize}
 				status={agentStatus}
 			/>
 		</div>

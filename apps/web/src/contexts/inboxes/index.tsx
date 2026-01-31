@@ -5,8 +5,13 @@ import type { RouterOutputs } from "@cossistant/api/types";
 import type { ConversationStatus } from "@cossistant/types";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useMemo } from "react";
+import type {
+	SortMode,
+	VirtualListItem,
+} from "@/components/conversations-list/types";
+import { useInboxSortPreference } from "@/hooks/use-inbox-sort-preference";
 import { extractInboxParamsFromSlug } from "@/lib/url";
-import { useWebsiteViews } from "../website";
+import { useWebsite, useWebsiteViews } from "../website";
 import { useFilteredConversations } from "./use-filtered-conversations";
 
 export type ConversationHeader =
@@ -35,6 +40,14 @@ type InboxesContextValue = {
 	basePath: string;
 	selectedViewId: string | null;
 	isLoading: boolean;
+	// Smart ordering
+	sortMode: SortMode;
+	setSortMode: (mode: SortMode) => void;
+	smartOrderResult: {
+		items: VirtualListItem[];
+		conversationIndexMap: Map<string, number>;
+	} | null;
+	isSmartModeActive: boolean;
 };
 
 const InboxesContext = createContext<InboxesContextValue | null>(null);
@@ -54,6 +67,8 @@ export function InboxesProvider({
 }: InboxesProviderProps) {
 	const views = useWebsiteViews();
 	const pathname = usePathname();
+	const website = useWebsite();
+	const { sortMode, setSortMode } = useInboxSortPreference(website.id);
 
 	// Extract the inbox params from the pathname
 	const {
@@ -84,11 +99,14 @@ export function InboxesProvider({
 		navigateToNextConversation,
 		navigateToPreviousConversation,
 		navigateAwayIfNeeded,
+		smartOrderResult,
+		isSmartModeActive,
 	} = useFilteredConversations({
 		selectedConversationStatus,
 		selectedViewId,
 		selectedConversationId,
 		basePath,
+		sortMode,
 	});
 
 	return (
@@ -110,6 +128,11 @@ export function InboxesProvider({
 				navigateToNextConversation,
 				navigateToPreviousConversation,
 				navigateAwayIfNeeded,
+				// Smart ordering
+				sortMode,
+				setSortMode,
+				smartOrderResult,
+				isSmartModeActive,
 			}}
 		>
 			{children}

@@ -63,7 +63,7 @@ type OnlineIndicatorProps = {
 	status: AgentStatus;
 	/**
 	 * Size of the indicator dot in pixels.
-	 * @default 8
+	 * @default 6
 	 */
 	size?: number;
 	/**
@@ -87,7 +87,7 @@ const STATUS_COLORS: Record<AgentStatus, string> = {
  */
 export function OnlineIndicator({
 	status,
-	size = 8,
+	size = 6,
 	className,
 }: OnlineIndicatorProps): ReactElement | null {
 	if (status === "offline") {
@@ -98,9 +98,8 @@ export function OnlineIndicator({
 		<span
 			aria-hidden="true"
 			className={cn(
-				"absolute block rounded-full",
+				"absolute block rounded-full ring-2 ring-co-background",
 				STATUS_COLORS[status],
-				"shadow-[0_0_0_2px_var(--co-background)]",
 				className
 			)}
 			style={{

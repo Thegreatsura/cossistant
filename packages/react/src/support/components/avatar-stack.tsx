@@ -66,7 +66,7 @@ export const AvatarStackItem = ({
 	// Calculate mask for squared avatars with rounded corners
 	// The mask creates a cutout on the left side where the previous avatar overlaps
 	const cutoutWidth = size - spacing + gapWidth;
-	const borderRadius = size * 0.25; // Match rounded-md approximately
+	const borderRadius = 4; // Match the 4px border radius used on avatars
 
 	const maskImage = createRoundedCutoutMask(size, cutoutWidth, borderRadius);
 
@@ -163,7 +163,7 @@ export function AvatarStack({
 							/>
 						)}
 						{item.type === "count" && (
-							<div className="flex size-full items-center justify-center rounded-md bg-co-background-200 font-medium text-co-primary text-sm dark:bg-co-background-500">
+							<div className="flex size-full items-center justify-center rounded bg-co-background-200 font-medium text-co-primary text-sm ring-1 ring-co-border/30 dark:bg-co-background-500">
 								+{item.count}
 							</div>
 						)}

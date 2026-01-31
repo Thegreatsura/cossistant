@@ -161,7 +161,7 @@ export function ConversationItemView({
 	);
 
 	const baseClasses = cn(
-		"group/conversation-item relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm",
+		"group/conversation-item relative flex items-center gap-3 rounded px-2 py-2 text-sm",
 		"focus-visible:outline-none focus-visible:ring-0",
 		focused && "bg-background-200 text-primary dark:bg-background-300",
 		className
@@ -198,6 +198,7 @@ type Props = {
 	focused?: boolean;
 	setFocused?: () => void;
 	showWaitingForReplyPill?: boolean;
+	isSmartMode?: boolean;
 };
 
 export function ConversationItem({
@@ -207,6 +208,7 @@ export function ConversationItem({
 	focused = false,
 	setFocused,
 	showWaitingForReplyPill = false,
+	isSmartMode = false,
 }: Props) {
 	const queryNormalizer = useQueryNormalizer();
 	const {
@@ -441,6 +443,10 @@ export function ConversationItem({
 
 	const fullName = getVisitorNameWithFallback(visitor ?? headerVisitor);
 
+	// In smart mode, hide badges since category headers provide this info
+	const showNeedsHuman = !isSmartMode && needsHumanIntervention;
+	const showWaitingLabel = isSmartMode ? null : waitingSinceLabel;
+
 	return (
 		<ConversationItemView
 			focused={focused}
@@ -451,7 +457,7 @@ export function ConversationItem({
 			isTyping={Boolean(typingInfo)}
 			lastTimelineContent={lastTimelineContent}
 			lastTimelineItemCreatedAt={lastTimelineItemCreatedAt}
-			needsHumanIntervention={needsHumanIntervention}
+			needsHumanIntervention={showNeedsHuman}
 			onMouseEnter={() => {
 				setFocused?.();
 				prefetchConversation({
@@ -483,7 +489,7 @@ export function ConversationItem({
 			}
 			visitorName={fullName}
 			visitorPresenceStatus={presence?.status}
-			waitingSinceLabel={waitingSinceLabel}
+			waitingSinceLabel={showWaitingLabel}
 		/>
 	);
 }

@@ -74,7 +74,7 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 							hideDefaultAIAgent={false}
 							humanAgents={availableHumanAgents}
 							size={44}
-							spacing={38}
+							spacing={32}
 						/>
 						<h2 className="max-w-xs text-balance font-co-sans font-medium text-2xl text-co-primary leading-normal">
 							{text("page.home.greeting", {
