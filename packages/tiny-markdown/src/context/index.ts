@@ -1,7 +1,7 @@
 export {
+	type TinyMarkdownContextValue,
 	TinyMarkdownProvider,
+	type TinyMarkdownProviderProps,
 	useTinyMarkdownContext,
 	useTinyMarkdownContextSafe,
-	type TinyMarkdownContextValue,
-	type TinyMarkdownProviderProps,
 } from "./tiny-markdown-context";

@@ -103,7 +103,6 @@ const MemoizedMarkdownBlock = React.memo(
 		return (
 			<ReactMarkdown
 				// Allow mention: protocol URLs (not sanitized by default)
-				urlTransform={(url) => url}
 				components={{
 					// Render paragraphs as block elements to preserve multiline spacing
 					p: ({ children }) => {
@@ -170,9 +169,7 @@ const MemoizedMarkdownBlock = React.memo(
 					a: ({ href, children, node }) => {
 						// Get the raw href from the AST node if available (react-markdown may sanitize href)
 						const rawHref =
-							href ||
-							(node?.properties?.href as string | undefined) ||
-							"";
+							href || (node?.properties?.href as string | undefined) || "";
 
 						// Check if this is a mention link: mention:type:id
 						if (rawHref.startsWith("mention:")) {
@@ -207,6 +204,7 @@ const MemoizedMarkdownBlock = React.memo(
 					},
 				}}
 				remarkPlugins={[remarkBreaks]}
+				urlTransform={(url) => url}
 			>
 				{content}
 			</ReactMarkdown>

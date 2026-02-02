@@ -43,7 +43,9 @@ export function convertDisplayToMarkdown(
 	text: string,
 	store: MentionStore
 ): string {
-	if (store.size === 0) return text;
+	if (store.size === 0) {
+		return text;
+	}
 
 	// Replace each @Name with full markdown if found in store
 	return text.replace(MENTION_PATTERN, (match, name) => {
@@ -61,20 +63,30 @@ export function convertDisplayToMarkdown(
 export function parseDisplayMentions(
 	text: string,
 	store: MentionStore
-): Array<{ name: string; start: number; end: number; raw: string; mention: Mention | undefined }> {
-	const mentions: Array<{ name: string; start: number; end: number; raw: string; mention: Mention | undefined }> = [];
-	let match: RegExpExecArray | null;
+): Array<{
+	name: string;
+	start: number;
+	end: number;
+	raw: string;
+	mention: Mention | undefined;
+}> {
+	const mentions: Array<{
+		name: string;
+		start: number;
+		end: number;
+		raw: string;
+		mention: Mention | undefined;
+	}> = [];
 
-	MENTION_PATTERN.lastIndex = 0;
-	while ((match = MENTION_PATTERN.exec(text)) !== null) {
+	for (const match of text.matchAll(MENTION_PATTERN)) {
 		const name = match[1]?.trim() ?? "";
 		const mention = store.get(name);
 		// Only include if this name is in our store (i.e., it's a real mention, not just @word)
 		if (mention) {
 			mentions.push({
 				name,
-				start: match.index,
-				end: match.index + match[0].length,
+				start: match.index ?? 0,
+				end: (match.index ?? 0) + match[0].length,
 				raw: match[0],
 				mention,
 			});

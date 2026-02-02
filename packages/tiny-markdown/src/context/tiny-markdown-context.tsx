@@ -9,7 +9,8 @@ export type TinyMarkdownContextValue = {
 	mention?: UseTinyMentionReturn;
 };
 
-const TinyMarkdownContext = React.createContext<TinyMarkdownContextValue | null>(null);
+const TinyMarkdownContext =
+	React.createContext<TinyMarkdownContextValue | null>(null);
 
 export type TinyMarkdownProviderProps = {
 	children: React.ReactNode;
@@ -25,10 +26,7 @@ export function TinyMarkdownProvider({
 	editor,
 	mention,
 }: TinyMarkdownProviderProps) {
-	const value = React.useMemo(
-		() => ({ editor, mention }),
-		[editor, mention]
-	);
+	const value = React.useMemo(() => ({ editor, mention }), [editor, mention]);
 
 	return (
 		<TinyMarkdownContext.Provider value={value}>

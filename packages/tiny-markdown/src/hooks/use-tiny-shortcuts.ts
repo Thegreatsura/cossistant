@@ -1,12 +1,12 @@
 import * as React from "react";
 import type { UseTinyShortcutsOptions, UseTinyShortcutsReturn } from "../types";
 import {
-	toggleBold as transformBold,
-	toggleItalic as transformItalic,
-	insertBulletList as transformBulletList,
-	insertNumberedList as transformNumberedList,
-	insertHeader as transformHeader,
 	handleListEnter,
+	toggleBold as transformBold,
+	insertBulletList as transformBulletList,
+	insertHeader as transformHeader,
+	toggleItalic as transformItalic,
+	insertNumberedList as transformNumberedList,
 } from "../utils/markdown-transforms";
 
 /**
@@ -56,7 +56,9 @@ export function useTinyShortcuts({
 	);
 
 	const toggleBold = React.useCallback(() => {
-		if (!bold) return;
+		if (!bold) {
+			return;
+		}
 		const { start, end } = getSelection();
 		const result = transformBold(value, start, end);
 		setValue(result.text);
@@ -64,7 +66,9 @@ export function useTinyShortcuts({
 	}, [bold, value, setValue, getSelection, setSelection]);
 
 	const toggleItalic = React.useCallback(() => {
-		if (!italic) return;
+		if (!italic) {
+			return;
+		}
 		const { start, end } = getSelection();
 		const result = transformItalic(value, start, end);
 		setValue(result.text);
@@ -72,7 +76,9 @@ export function useTinyShortcuts({
 	}, [italic, value, setValue, getSelection, setSelection]);
 
 	const insertBulletList = React.useCallback(() => {
-		if (!bulletLists) return;
+		if (!bulletLists) {
+			return;
+		}
 		const { start } = getSelection();
 		const result = transformBulletList(value, start);
 		setValue(result.text);
@@ -80,7 +86,9 @@ export function useTinyShortcuts({
 	}, [bulletLists, value, setValue, getSelection, setSelection]);
 
 	const insertNumberedList = React.useCallback(() => {
-		if (!numberedLists) return;
+		if (!numberedLists) {
+			return;
+		}
 		const { start } = getSelection();
 		const result = transformNumberedList(value, start);
 		setValue(result.text);
@@ -89,7 +97,9 @@ export function useTinyShortcuts({
 
 	const insertHeader = React.useCallback(
 		(level: 1 | 2 | 3 = 2) => {
-			if (!headers) return;
+			if (!headers) {
+				return;
+			}
 			const { start } = getSelection();
 			const result = transformHeader(value, start, level);
 			setValue(result.text);

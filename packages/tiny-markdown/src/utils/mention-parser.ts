@@ -12,12 +12,8 @@ const MENTION_REGEX = /\[@([^\]]+)\]\(mention:([^:]+):([^)]+)\)/g;
  */
 export function parseMentions(text: string): ParsedMention[] {
 	const mentions: ParsedMention[] = [];
-	let match: RegExpExecArray | null;
 
-	// Reset regex state
-	MENTION_REGEX.lastIndex = 0;
-
-	while ((match = MENTION_REGEX.exec(text)) !== null) {
+	for (const match of text.matchAll(MENTION_REGEX)) {
 		const raw = match[0];
 		const name = match[1] ?? "";
 		const type = match[2] ?? "";
@@ -27,8 +23,8 @@ export function parseMentions(text: string): ParsedMention[] {
 			name,
 			type: type as MentionType,
 			raw,
-			startIndex: match.index,
-			endIndex: match.index + raw.length,
+			startIndex: match.index ?? 0,
+			endIndex: (match.index ?? 0) + raw.length,
 		});
 	}
 
@@ -74,7 +70,6 @@ export function replaceMentionsWithDisplay(
 	text: string,
 	formatter: (mention: ParsedMention) => string = (m) => `@${m.name}`
 ): string {
-	MENTION_REGEX.lastIndex = 0;
 	return text.replace(MENTION_REGEX, (raw, name, type, id) => {
 		const mention: ParsedMention = {
 			id,

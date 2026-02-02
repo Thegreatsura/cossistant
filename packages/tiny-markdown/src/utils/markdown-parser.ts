@@ -6,12 +6,28 @@ import type { MarkdownToken, ParsedMention } from "../types";
  * not full markdown compliance.
  */
 
-// Regex patterns
+// Regex patterns for inline parsing
 const MENTION_REGEX = /@\[([^\]]+)\]\(mention:([^:]+):([^)]+)\)/;
 const BOLD_REGEX = /\*\*(.+?)\*\*/;
 const ITALIC_REGEX = /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/;
 const CODE_INLINE_REGEX = /`([^`]+)`/;
 const LINK_REGEX = /\[([^\]]+)\]\(([^)]+)\)/;
+
+// Regex patterns for block-level parsing
+const HEADER_REGEX = /^(#{1,3})\s+(.*)$/;
+const BULLET_LIST_REGEX = /^[-*]\s+(.*)$/;
+const NUMBERED_LIST_REGEX = /^\d+\.\s+(.*)$/;
+const BLOCKQUOTE_REGEX = /^>\s*(.*)$/;
+
+// Regex patterns for hasMarkdownFormatting check
+const BOLD_CHECK_REGEX = /\*\*.+?\*\*/;
+const ITALIC_CHECK_REGEX = /\*.+?\*/;
+const CODE_CHECK_REGEX = /`.+?`/;
+const LINK_CHECK_REGEX = /\[.+?\]\(.+?\)/;
+const HEADER_CHECK_REGEX = /^#{1,3}\s/m;
+const BULLET_CHECK_REGEX = /^[-*]\s/m;
+const NUMBERED_CHECK_REGEX = /^\d+\.\s/m;
+const BLOCKQUOTE_CHECK_REGEX = /^>\s/m;
 
 /**
  * Parse inline markdown into tokens.
@@ -38,10 +54,17 @@ export function parseInline(text: string): MarkdownToken[] {
 			{ type: "italic", regex: new RegExp(ITALIC_REGEX.source) },
 		];
 
-		for (const { type, regex } of patterns) {
-			const match = regex.exec(remaining);
-			if (match && (earliestMatch === null || match.index < earliestMatch.index)) {
-				earliestMatch = { type, index: match.index, match };
+		for (const { type: patternType, regex } of patterns) {
+			const patternMatch = regex.exec(remaining);
+			if (
+				patternMatch &&
+				(earliestMatch === null || patternMatch.index < earliestMatch.index)
+			) {
+				earliestMatch = {
+					type: patternType,
+					index: patternMatch.index,
+					match: patternMatch,
+				};
 			}
 		}
 
@@ -114,6 +137,10 @@ export function parseInline(text: string): MarkdownToken[] {
 				}
 				break;
 			}
+			default:
+				// Unknown type, treat as text
+				tokens.push({ type: "text", content: raw });
+				break;
 		}
 
 		// Move past the match
@@ -129,7 +156,7 @@ export function parseInline(text: string): MarkdownToken[] {
  */
 function parseLine(line: string): MarkdownToken | null {
 	// Header
-	const headerMatch = line.match(/^(#{1,3})\s+(.*)$/);
+	const headerMatch = line.match(HEADER_REGEX);
 	if (headerMatch) {
 		const hashPart = headerMatch[1] ?? "";
 		const level = Math.min(3, Math.max(1, hashPart.length)) as 1 | 2 | 3;
@@ -141,7 +168,7 @@ function parseLine(line: string): MarkdownToken | null {
 	}
 
 	// Unordered list item
-	const bulletMatch = line.match(/^[-*]\s+(.*)$/);
+	const bulletMatch = line.match(BULLET_LIST_REGEX);
 	if (bulletMatch) {
 		return {
 			type: "li",
@@ -150,7 +177,7 @@ function parseLine(line: string): MarkdownToken | null {
 	}
 
 	// Ordered list item
-	const numberMatch = line.match(/^\d+\.\s+(.*)$/);
+	const numberMatch = line.match(NUMBERED_LIST_REGEX);
 	if (numberMatch) {
 		return {
 			type: "li",
@@ -159,7 +186,7 @@ function parseLine(line: string): MarkdownToken | null {
 	}
 
 	// Blockquote
-	const quoteMatch = line.match(/^>\s*(.*)$/);
+	const quoteMatch = line.match(BLOCKQUOTE_REGEX);
 	if (quoteMatch) {
 		return {
 			type: "blockquote",
@@ -248,16 +275,14 @@ export function parseMarkdown(text: string): MarkdownToken[] {
  * Check if text contains any markdown formatting.
  */
 export function hasMarkdownFormatting(text: string): boolean {
-	const patterns = [
-		/\*\*.+?\*\*/,     // bold
-		/\*.+?\*/,         // italic
-		/`.+?`/,           // inline code
-		/\[.+?\]\(.+?\)/,  // links/mentions
-		/^#{1,3}\s/m,      // headers
-		/^[-*]\s/m,        // bullet list
-		/^\d+\.\s/m,       // numbered list
-		/^>\s/m,           // blockquote
-	];
-
-	return patterns.some((p) => p.test(text));
+	return (
+		BOLD_CHECK_REGEX.test(text) ||
+		ITALIC_CHECK_REGEX.test(text) ||
+		CODE_CHECK_REGEX.test(text) ||
+		LINK_CHECK_REGEX.test(text) ||
+		HEADER_CHECK_REGEX.test(text) ||
+		BULLET_CHECK_REGEX.test(text) ||
+		NUMBERED_CHECK_REGEX.test(text) ||
+		BLOCKQUOTE_CHECK_REGEX.test(text)
+	);
 }

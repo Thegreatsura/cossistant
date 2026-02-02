@@ -6,10 +6,7 @@ import {
 	MAX_FILE_SIZE,
 	MAX_FILES_PER_MESSAGE,
 } from "@cossistant/core";
-import {
-	useTinyMention,
-	type Mention,
-} from "@cossistant/tiny-markdown";
+import { type Mention, useTinyMention } from "@cossistant/tiny-markdown";
 import type React from "react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -18,16 +15,16 @@ import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { MentionPopover } from "./mention-popover";
+import {
+	convertDisplayToMarkdown,
+	formatMentionDisplay,
+	type MentionStore,
+	parseDisplayMentions,
+} from "./mention-store";
 import { StyledOverlay } from "./styled-overlay";
 import {
-	formatMentionDisplay,
-	convertDisplayToMarkdown,
-	parseDisplayMentions,
-	type MentionStore,
-} from "./mention-store";
-import {
-	useMentionSearch,
 	type UseMentionSearchOptions,
+	useMentionSearch,
 } from "./use-mention-search";
 
 export type MessageVisibility = "public" | "private";
@@ -105,7 +102,9 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 	// Check if we have display-format mentions
 	const hasMentions = useMemo(() => {
-		if (!mentionConfig) return false;
+		if (!mentionConfig) {
+			return false;
+		}
 		return parseDisplayMentions(value, mentionStoreRef.current).length > 0;
 	}, [mentionConfig, value]);
 
@@ -131,21 +130,25 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 	// Handle mention selection - insert short display format
 	const handleMentionSelect = useCallback(
-		(mention: Mention) => {
+		(selectedMention: Mention) => {
 			const textarea = textareaRef.current;
-			if (!textarea) return;
+			if (!textarea) {
+				return;
+			}
 
 			// Find the @ trigger position
 			const textBeforeCursor = value.slice(0, cursorPosition);
 			const triggerIndex = textBeforeCursor.lastIndexOf("@");
 
-			if (triggerIndex === -1) return;
+			if (triggerIndex === -1) {
+				return;
+			}
 
 			// Store the mention data keyed by name
-			mentionStoreRef.current.set(mention.name, mention);
+			mentionStoreRef.current.set(selectedMention.name, selectedMention);
 
 			// Insert short display format: @Name
-			const displayMention = formatMentionDisplay(mention);
+			const displayMention = formatMentionDisplay(selectedMention);
 			const newValue =
 				value.slice(0, triggerIndex) +
 				displayMention +
@@ -551,6 +554,6 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	);
 };
 
+export { convertDisplayToMarkdown, type MentionStore } from "./mention-store";
 // Re-export types and utilities for parent components
 export type { UseMentionSearchOptions } from "./use-mention-search";
-export { convertDisplayToMarkdown, type MentionStore } from "./mention-store";

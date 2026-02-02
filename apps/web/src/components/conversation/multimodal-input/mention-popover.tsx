@@ -1,6 +1,6 @@
 "use client";
 
-import type { Mention, CaretCoordinates } from "@cossistant/tiny-markdown";
+import type { CaretCoordinates, Mention } from "@cossistant/tiny-markdown";
 import { Avatar } from "@/components/ui/avatar";
 import Icon from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -48,7 +48,7 @@ export function MentionPopover({
 	onSelect,
 	containerRef,
 }: MentionPopoverProps) {
-	if (!isActive || !caretPosition) {
+	if (!(isActive && caretPosition)) {
 		return null;
 	}
 

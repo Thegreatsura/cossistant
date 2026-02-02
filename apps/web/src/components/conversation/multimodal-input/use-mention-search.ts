@@ -1,5 +1,5 @@
-import { useMemo, useCallback } from "react";
 import type { Mention, MentionType } from "@cossistant/tiny-markdown";
+import { useCallback, useMemo } from "react";
 
 export type MentionableEntityType = "ai-agent" | "human-agent" | "visitor";
 

@@ -1,5 +1,9 @@
 import * as React from "react";
-import type { CaretCoordinates, UseCaretPositionOptions, UseCaretPositionReturn } from "../types";
+import type {
+	CaretCoordinates,
+	UseCaretPositionOptions,
+	UseCaretPositionReturn,
+} from "../types";
 
 /**
  * Creates a mirror element to measure text dimensions.
@@ -75,8 +79,9 @@ function getCaretCoordinatesFromTextarea(
 		const mirrorRect = mirror.getBoundingClientRect();
 
 		// Get line height from computed styles
-		const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) ||
-			parseFloat(window.getComputedStyle(textarea).fontSize) * 1.2;
+		const lineHeight =
+			Number.parseFloat(window.getComputedStyle(textarea).lineHeight) ||
+			Number.parseFloat(window.getComputedStyle(textarea).fontSize) * 1.2;
 
 		return {
 			top: caretRect.top - mirrorRect.top - textarea.scrollTop,

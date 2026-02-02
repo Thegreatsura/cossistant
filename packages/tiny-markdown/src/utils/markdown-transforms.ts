@@ -1,3 +1,10 @@
+// Regex patterns for list and header detection
+const BULLET_PREFIX_REGEX = /^[-*]\s/;
+const NUMBERED_PREFIX_REGEX = /^(\d+)\.\s/;
+const HEADER_PREFIX_REGEX = /^(#{1,3})\s/;
+const BULLET_LINE_REGEX = /^([-*])\s(.*)$/;
+const NUMBERED_LINE_REGEX = /^(\d+)\.\s(.*)$/;
+
 /**
  * Wrap selected text with markdown formatting.
  * If the text is already wrapped, unwrap it instead (toggle).
@@ -97,10 +104,12 @@ export function insertBulletList(
 	const currentLine = getCurrentLine(text, position);
 
 	// Check if line already starts with bullet
-	if (currentLine.match(/^[-*]\s/)) {
+	if (BULLET_PREFIX_REGEX.test(currentLine)) {
 		// Remove bullet
 		const newText =
-			text.slice(0, lineStart) + currentLine.slice(2) + text.slice(lineStart + currentLine.length);
+			text.slice(0, lineStart) +
+			currentLine.slice(2) +
+			text.slice(lineStart + currentLine.length);
 		return {
 			text: newText,
 			cursorPosition: position - 2,
@@ -108,7 +117,7 @@ export function insertBulletList(
 	}
 
 	// Add bullet
-	const newText = text.slice(0, lineStart) + "- " + text.slice(lineStart);
+	const newText = `${text.slice(0, lineStart)}- ${text.slice(lineStart)}`;
 	return {
 		text: newText,
 		cursorPosition: position + 2,
@@ -126,7 +135,7 @@ export function insertNumberedList(
 	const currentLine = getCurrentLine(text, position);
 
 	// Check if line already starts with number
-	const numberMatch = currentLine.match(/^(\d+)\.\s/);
+	const numberMatch = currentLine.match(NUMBERED_PREFIX_REGEX);
 	if (numberMatch) {
 		// Remove number
 		const prefixLength = numberMatch[0].length;
@@ -141,7 +150,7 @@ export function insertNumberedList(
 	}
 
 	// Add "1. " at the start
-	const newText = text.slice(0, lineStart) + "1. " + text.slice(lineStart);
+	const newText = `${text.slice(0, lineStart)}1. ${text.slice(lineStart)}`;
 	return {
 		text: newText,
 		cursorPosition: position + 3,
@@ -160,7 +169,7 @@ export function insertHeader(
 	const currentLine = getCurrentLine(text, position);
 
 	// Check if line already has a header
-	const headerMatch = currentLine.match(/^(#{1,3})\s/);
+	const headerMatch = currentLine.match(HEADER_PREFIX_REGEX);
 	if (headerMatch) {
 		const hashPart = headerMatch[1] ?? "";
 		const currentLevel = hashPart.length;
@@ -177,7 +186,7 @@ export function insertHeader(
 			};
 		}
 		// Change header level
-		const newPrefix = "#".repeat(level) + " ";
+		const newPrefix = `${"#".repeat(level)} `;
 		const newText =
 			text.slice(0, lineStart) +
 			newPrefix +
@@ -190,7 +199,7 @@ export function insertHeader(
 	}
 
 	// Add header
-	const prefix = "#".repeat(level) + " ";
+	const prefix = `${"#".repeat(level)} `;
 	const newText = text.slice(0, lineStart) + prefix + text.slice(lineStart);
 	return {
 		text: newText,
@@ -209,7 +218,7 @@ export function handleListEnter(
 	const currentLine = getCurrentLine(text, position);
 
 	// Check for bullet list
-	const bulletMatch = currentLine.match(/^([-*])\s(.*)$/);
+	const bulletMatch = currentLine.match(BULLET_LINE_REGEX);
 	if (bulletMatch) {
 		const bullet = bulletMatch[1] ?? "-";
 		const content = bulletMatch[2] ?? "";
@@ -223,8 +232,7 @@ export function handleListEnter(
 			};
 		}
 		// Continue list
-		const newText =
-			text.slice(0, position) + "\n" + bullet + " " + text.slice(position);
+		const newText = `${text.slice(0, position)}\n${bullet} ${text.slice(position)}`;
 		return {
 			text: newText,
 			cursorPosition: position + 3,
@@ -232,7 +240,7 @@ export function handleListEnter(
 	}
 
 	// Check for numbered list
-	const numberMatch = currentLine.match(/^(\d+)\.\s(.*)$/);
+	const numberMatch = currentLine.match(NUMBERED_LINE_REGEX);
 	if (numberMatch) {
 		const num = numberMatch[1] ?? "1";
 		const content = numberMatch[2] ?? "";
@@ -246,10 +254,9 @@ export function handleListEnter(
 			};
 		}
 		// Continue list with next number
-		const nextNum = parseInt(num, 10) + 1;
+		const nextNum = Number.parseInt(num, 10) + 1;
 		const prefix = `${nextNum}. `;
-		const newText =
-			text.slice(0, position) + "\n" + prefix + text.slice(position);
+		const newText = `${text.slice(0, position)}\n${prefix}${text.slice(position)}`;
 		return {
 			text: newText,
 			cursorPosition: position + 1 + prefix.length,

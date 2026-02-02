@@ -32,7 +32,11 @@ const defaultComponents: Required<MarkdownComponents> = {
 	ol: ({ children }) => React.createElement("ol", null, children),
 	li: ({ children }) => React.createElement("li", null, children),
 	a: ({ href, children }) =>
-		React.createElement("a", { href, target: "_blank", rel: "noopener" }, children),
+		React.createElement(
+			"a",
+			{ href, target: "_blank", rel: "noopener" },
+			children
+		),
 	br: () => React.createElement("br"),
 	mention: ({ mention }) =>
 		React.createElement(
@@ -271,10 +275,14 @@ export function useTinyMarkdown(
 
 	// Auto-resize effect
 	React.useLayoutEffect(() => {
-		if (!autoResize) return;
+		if (!autoResize) {
+			return;
+		}
 
 		const textarea = textareaRef.current;
-		if (!textarea) return;
+		if (!textarea) {
+			return;
+		}
 
 		// Reset height to auto to get correct scrollHeight
 		textarea.style.height = "auto";
@@ -338,7 +346,9 @@ export function useTinyMarkdown(
 	const containerProps = React.useMemo(
 		() => ({
 			ref: ((node: HTMLDivElement | null) => {
-				(containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+				(
+					containerRef as React.MutableRefObject<HTMLDivElement | null>
+				).current = node;
 			}) as React.RefCallback<HTMLDivElement>,
 			style: {
 				position: "relative" as const,
@@ -353,7 +363,9 @@ export function useTinyMarkdown(
 	const textareaProps = React.useMemo(
 		() => ({
 			ref: ((node: HTMLTextAreaElement | null) => {
-				(textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
+				(
+					textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>
+				).current = node;
 			}) as React.RefCallback<HTMLTextAreaElement>,
 			value,
 			onChange: handleChange,
@@ -381,14 +393,23 @@ export function useTinyMarkdown(
 				wordSpacing: "inherit",
 			},
 		}),
-		[value, handleChange, shortcuts.handleKeyDown, handleSelect, handleScroll, handleFocus, handleBlur]
+		[
+			value,
+			handleChange,
+			shortcuts.handleKeyDown,
+			handleSelect,
+			handleScroll,
+			handleFocus,
+			handleBlur,
+		]
 	);
 
 	// Overlay props (visible but doesn't receive input)
 	const overlayProps = React.useMemo(
 		() => ({
 			ref: ((node: HTMLDivElement | null) => {
-				(overlayRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+				(overlayRef as React.MutableRefObject<HTMLDivElement | null>).current =
+					node;
 			}) as React.RefCallback<HTMLDivElement>,
 			style: {
 				pointerEvents: "none" as const,

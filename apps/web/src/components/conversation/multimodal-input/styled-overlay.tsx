@@ -3,7 +3,7 @@
 import type React from "react";
 import { forwardRef, useMemo } from "react";
 import { MentionPill } from "./mention-pill";
-import { parseDisplayMentions, type MentionStore } from "./mention-store";
+import { type MentionStore, parseDisplayMentions } from "./mention-store";
 
 export type StyledOverlayProps = {
 	value: string;
@@ -16,9 +16,11 @@ export type StyledOverlayProps = {
  * Used as an overlay on top of a transparent textarea.
  */
 export const StyledOverlay = forwardRef<HTMLDivElement, StyledOverlayProps>(
-	function StyledOverlay({ value, mentionStore, className }, ref) {
+	function StyledOverlayInner({ value, mentionStore, className }, ref) {
 		const renderedContent = useMemo(() => {
-			if (!value) return null;
+			if (!value) {
+				return null;
+			}
 
 			const mentions = parseDisplayMentions(value, mentionStore);
 
@@ -38,13 +40,15 @@ export const StyledOverlay = forwardRef<HTMLDivElement, StyledOverlayProps>(
 				}
 
 				// Add the styled mention pill
-				// Note: parseDisplayMentions only returns entries where mention is defined
-				segments.push(
-					<MentionPill
-						key={`mention-${displayMention.name}-${displayMention.start}`}
-						mention={displayMention.mention!}
-					/>
-				);
+				// parseDisplayMentions only returns entries where mention is defined
+				if (displayMention.mention) {
+					segments.push(
+						<MentionPill
+							key={`mention-${displayMention.name}-${displayMention.start}`}
+							mention={displayMention.mention}
+						/>
+					);
+				}
 
 				lastIndex = displayMention.end;
 			}

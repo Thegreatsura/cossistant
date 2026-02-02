@@ -492,8 +492,8 @@ export function ConversationPane({
 			// Enable mentions for AI agent, team members, and visitor
 			mentionConfig: {
 				aiAgent: aiAgent ?? null,
-				teamMembers: members.filter(
-					(m): m is typeof m & { name: string } => Boolean(m.name)
+				teamMembers: members.filter((m): m is typeof m & { name: string } =>
+					Boolean(m.name)
 				),
 				visitor,
 			},

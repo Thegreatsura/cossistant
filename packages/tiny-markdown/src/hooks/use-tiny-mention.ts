@@ -8,6 +8,9 @@ import type {
 import { formatMention as formatMentionUtil } from "../utils/mention-parser";
 import { useCaretPosition } from "./use-caret-position";
 
+// Regex for whitespace detection
+const WHITESPACE_REGEX = /\s/;
+
 /**
  * Debounce hook for search queries.
  */
@@ -41,13 +44,18 @@ function extractMentionQuery(
 
 	for (let i = position - 1; i >= 0; i--) {
 		const char = text[i];
-		if (char === undefined) break;
+		if (char === undefined) {
+			break;
+		}
 
 		// Found the trigger
 		if (char === trigger) {
 			// Check if trigger is at start or preceded by whitespace
 			const prevChar = text[i - 1];
-			if (i === 0 || (prevChar !== undefined && /\s/.test(prevChar))) {
+			if (
+				i === 0 ||
+				(prevChar !== undefined && WHITESPACE_REGEX.test(prevChar))
+			) {
 				triggerPos = i;
 				break;
 			}
@@ -56,7 +64,7 @@ function extractMentionQuery(
 		}
 
 		// Hit whitespace without finding trigger - no active mention
-		if (/\s/.test(char)) {
+		if (WHITESPACE_REGEX.test(char)) {
 			return null;
 		}
 	}
@@ -90,14 +98,20 @@ export function useTinyMention({
 	// State
 	const [isActive, setIsActive] = React.useState(false);
 	const [query, setQuery] = React.useState("");
-	const [triggerPosition, setTriggerPosition] = React.useState<number | null>(null);
+	const [triggerPosition, setTriggerPosition] = React.useState<number | null>(
+		null
+	);
 	const [results, setResults] = React.useState<Mention[]>([]);
 	const [highlightedIndex, setHighlightedIndex] = React.useState(0);
 	const [isLoading, setIsLoading] = React.useState(false);
 
 	// Caret position for popover
-	const { getCaretCoordinates } = useCaretPosition({ textareaRef, containerRef });
-	const [caretPosition, setCaretPosition] = React.useState<CaretCoordinates | null>(null);
+	const { getCaretCoordinates } = useCaretPosition({
+		textareaRef,
+		containerRef,
+	});
+	const [caretPosition, setCaretPosition] =
+		React.useState<CaretCoordinates | null>(null);
 
 	// Debounced query for search
 	const debouncedQuery = useDebounce(query, debounceMs);
@@ -125,7 +139,9 @@ export function useTinyMention({
 
 	// Search when debounced query changes
 	React.useEffect(() => {
-		if (!isActive) return;
+		if (!isActive) {
+			return;
+		}
 		if (debouncedQuery.length < minQueryLength) {
 			setResults([]);
 			return;
@@ -160,9 +176,10 @@ export function useTinyMention({
 	}, [debouncedQuery, isActive, minQueryLength, maxResults, onSearch]);
 
 	// Format mention for insertion
-	const formatMention = React.useCallback((mention: Mention): string => {
-		return formatMentionUtil(mention);
-	}, []);
+	const formatMention = React.useCallback(
+		(mention: Mention): string => formatMentionUtil(mention),
+		[]
+	);
 
 	// Select a mention
 	const selectMention = React.useCallback(
@@ -187,15 +204,11 @@ export function useTinyMention({
 
 	// Navigation
 	const highlightNext = React.useCallback(() => {
-		setHighlightedIndex((prev) =>
-			prev < results.length - 1 ? prev + 1 : 0
-		);
+		setHighlightedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
 	}, [results.length]);
 
 	const highlightPrevious = React.useCallback(() => {
-		setHighlightedIndex((prev) =>
-			prev > 0 ? prev - 1 : results.length - 1
-		);
+		setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
 	}, [results.length]);
 
 	// Close the mention popover
@@ -243,7 +256,14 @@ export function useTinyMention({
 					return false;
 			}
 		},
-		[isActive, results.length, highlightNext, highlightPrevious, selectHighlighted, close]
+		[
+			isActive,
+			results.length,
+			highlightNext,
+			highlightPrevious,
+			selectHighlighted,
+			close,
+		]
 	);
 
 	return {

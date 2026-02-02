@@ -78,7 +78,7 @@ export function TimelineMessageItem({
 										{isPrivate ? (
 											<div
 												className={cn(
-													"flex w-fit min-w-0 max-w-full flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 bg-cossistant-yellow-100/30 px-3 py-2 dark:border-cossistant-yellow-600/30 dark:bg-cossistant-yellow-100/20 md:max-w-[420px]",
+													"flex w-fit min-w-0 max-w-full flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 bg-cossistant-yellow-100/30 px-3 py-2 md:max-w-[420px] dark:border-cossistant-yellow-600/30 dark:bg-cossistant-yellow-100/20",
 													{
 														"rounded-br-[2px]":
 															isLast && isSentByViewer && !hasAttachments,
