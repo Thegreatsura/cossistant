@@ -41,19 +41,37 @@ export default function Playground() {
 	const { size, isOpen } = useSupport();
 
 	return (
-		<div className="relative flex min-h-screen items-center bg-background p-20">
+		<div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4 md:p-20">
 			<Image
 				alt="Playground"
 				className="absolute inset-0 z-0 object-fill opacity-5 grayscale-100"
 				fill
 				src="https://cdn.cossistant.com/neom-t3dlLOhdEzs-unsplash.jpg"
 			/>
-			<div className="z-10 h-fit w-full md:w-1/3">
+
+			{/* Header */}
+			<div className="absolute top-4 left-4 z-10 md:top-10 md:left-10">
 				<h1 className="flex items-center gap-2 font-f37-stout text-xl">
 					<LogoText />
 					<span className="font-medium text-primary/40">dev playground</span>
 				</h1>
-				<div className="mt-10 flex flex-col gap-2">
+			</div>
+
+			{/* Centered Widget */}
+			<div className="z-10 flex flex-col items-center gap-6">
+				<Support
+					defaultMessages={DEFAULT_MESSAGES}
+					onOpenChange={() => {}}
+					open={true}
+					quickOptions={QUICK_OPTIONS}
+				>
+					<Support.Content className="md:!fixed md:!inset-auto md:!left-1/2 md:!top-1/2 md:!-translate-x-1/2 md:!-translate-y-1/2 relative" />
+				</Support>
+			</div>
+
+			{/* Status Display */}
+			<div className="absolute right-4 bottom-4 z-10 w-full max-w-xs md:right-10 md:bottom-10">
+				<div className="flex flex-col gap-2 rounded-lg border border-primary/10 bg-background/80 p-4 backdrop-blur-sm">
 					<PlaygroundPropDisplay
 						name="Websocket healthy"
 						value={isConnected.toString()}
@@ -62,11 +80,6 @@ export default function Playground() {
 					<PlaygroundPropDisplay name="Size" value={size} />
 				</div>
 			</div>
-			<Support
-				defaultMessages={DEFAULT_MESSAGES}
-				defaultOpen
-				quickOptions={QUICK_OPTIONS}
-			/>
 		</div>
 	);
 }
