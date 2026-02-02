@@ -6,13 +6,29 @@ import {
 	MAX_FILE_SIZE,
 	MAX_FILES_PER_MESSAGE,
 } from "@cossistant/core";
+import {
+	useTinyMention,
+	type Mention,
+} from "@cossistant/tiny-markdown";
 import type React from "react";
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { MentionPopover } from "./mention-popover";
+import { StyledOverlay } from "./styled-overlay";
+import {
+	formatMentionDisplay,
+	convertDisplayToMarkdown,
+	parseDisplayMentions,
+	type MentionStore,
+} from "./mention-store";
+import {
+	useMentionSearch,
+	type UseMentionSearchOptions,
+} from "./use-mention-search";
 
 export type MessageVisibility = "public" | "private";
 
@@ -37,27 +53,20 @@ export type MultimodalInputProps = {
 	onVisibilityChange?: (visibility: MessageVisibility) => void;
 	/**
 	 * Render prop for custom attach button.
-	 * Receives `triggerFileInput` callback to open the file picker and
-	 * `disabled` boolean indicating if attachment is currently disabled.
-	 *
-	 * @example
-	 * ```tsx
-	 * renderAttachButton={({ triggerFileInput, disabled }) => (
-	 *   <ButtonWithPaywall
-	 *     featureKey="dashboard-file-sharing"
-	 *     websiteSlug={websiteSlug}
-	 *     onClick={triggerFileInput}
-	 *     disabled={disabled}
-	 *   >
-	 *     <Icon name="attachment" />
-	 *   </ButtonWithPaywall>
-	 * )}
-	 * ```
 	 */
 	renderAttachButton?: (props: {
 		triggerFileInput: () => void;
 		disabled: boolean;
 	}) => React.ReactNode;
+	/**
+	 * Mention configuration - pass AI agent, team members, and visitor to enable mentions.
+	 */
+	mentionConfig?: UseMentionSearchOptions;
+	/**
+	 * Called with the markdown-formatted value (mentions converted to full format).
+	 * Use this to get the value for sending to the server.
+	 */
+	onMarkdownChange?: (markdownValue: string) => void;
 };
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
@@ -80,12 +89,94 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	visibility = "public",
 	onVisibilityChange,
 	renderAttachButton,
+	mentionConfig,
+	onMarkdownChange,
 }) => {
 	const isPrivate = visibility === "private";
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const overlayRef = useRef<HTMLDivElement>(null);
 	const hasContent = value.trim().length > 0 || files.length > 0;
 	const canSubmit = !disabled && hasContent && !isUploading;
+
+	// Mention store - maps display IDs to full mention data
+	const mentionStoreRef = useRef<MentionStore>(new Map());
+
+	// Check if we have display-format mentions
+	const hasMentions = useMemo(() => {
+		if (!mentionConfig) return false;
+		return parseDisplayMentions(value, mentionStoreRef.current).length > 0;
+	}, [mentionConfig, value]);
+
+	// Track cursor position for mentions
+	const [cursorPosition, setCursorPosition] = useState(0);
+
+	// Mention search
+	const { search: mentionSearch } = useMentionSearch(mentionConfig ?? {});
+
+	// Update markdown value when display value changes
+	const updateMarkdownValue = useCallback(
+		(displayValue: string) => {
+			if (onMarkdownChange) {
+				const markdownValue = convertDisplayToMarkdown(
+					displayValue,
+					mentionStoreRef.current
+				);
+				onMarkdownChange(markdownValue);
+			}
+		},
+		[onMarkdownChange]
+	);
+
+	// Handle mention selection - insert short display format
+	const handleMentionSelect = useCallback(
+		(mention: Mention) => {
+			const textarea = textareaRef.current;
+			if (!textarea) return;
+
+			// Find the @ trigger position
+			const textBeforeCursor = value.slice(0, cursorPosition);
+			const triggerIndex = textBeforeCursor.lastIndexOf("@");
+
+			if (triggerIndex === -1) return;
+
+			// Store the mention data keyed by name
+			mentionStoreRef.current.set(mention.name, mention);
+
+			// Insert short display format: @Name
+			const displayMention = formatMentionDisplay(mention);
+			const newValue =
+				value.slice(0, triggerIndex) +
+				displayMention +
+				" " +
+				value.slice(cursorPosition);
+
+			onChange(newValue);
+			updateMarkdownValue(newValue);
+
+			// Move cursor after the mention
+			const newPosition = triggerIndex + displayMention.length + 1;
+			requestAnimationFrame(() => {
+				textarea.setSelectionRange(newPosition, newPosition);
+				textarea.focus();
+				setCursorPosition(newPosition);
+			});
+		},
+		[value, cursorPosition, onChange, updateMarkdownValue]
+	);
+
+	// Mention hook
+	const mention = useTinyMention({
+		textareaRef,
+		containerRef,
+		value,
+		cursorPosition,
+		onSearch: mentionSearch,
+		onSelect: handleMentionSelect,
+		trigger: "@",
+		debounceMs: 100,
+	});
 
 	// Toggle private mode with "n" shortcut (for "note")
 	useHotkeys(
@@ -116,7 +207,22 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 		textarea.style.height = `${scrollHeight}px`;
 		textarea.style.overflowY = "hidden";
+
+		// Sync overlay height
+		if (overlayRef.current) {
+			overlayRef.current.style.height = `${scrollHeight}px`;
+		}
 	}, [value]);
+
+	// Scroll sync between textarea and overlay
+	const handleScroll = useCallback(() => {
+		const textarea = textareaRef.current;
+		const overlay = overlayRef.current;
+		if (textarea && overlay) {
+			overlay.scrollTop = textarea.scrollTop;
+			overlay.scrollLeft = textarea.scrollLeft;
+		}
+	}, []);
 
 	const handleSubmit = () => {
 		if (!canSubmit) {
@@ -124,6 +230,8 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		}
 
 		onSubmit();
+		// Clear mention store on submit
+		mentionStoreRef.current.clear();
 		// Focus textarea after submission
 		textareaRef.current?.focus();
 		requestAnimationFrame(() => {
@@ -143,6 +251,36 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	};
 
 	const isAttachDisabled = disabled || isSubmitting || files.length >= maxFiles;
+
+	// Handle keyboard events - mentions first, then submit
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		// Let mention hook handle its keys first
+		if (mentionConfig && mention.handleKeyDown(e)) {
+			return;
+		}
+
+		// Handle Cmd/Ctrl + Enter to submit
+		if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+			e.preventDefault();
+			handleSubmit();
+		}
+	};
+
+	// Track selection changes for cursor position
+	const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+		setCursorPosition(e.currentTarget.selectionStart);
+	};
+
+	// Handle text changes
+	const handleChange = useCallback(
+		(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+			const newValue = e.target.value;
+			onChange(newValue);
+			updateMarkdownValue(newValue);
+			setCursorPosition(e.target.selectionStart);
+		},
+		[onChange, updateMarkdownValue]
+	);
 
 	return (
 		<div className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl">
@@ -203,7 +341,20 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 				)}
 
 				{/* Input area */}
-				<div className="relative">
+				<div className="relative" ref={containerRef}>
+					{/* Mention popover */}
+					{mentionConfig && (
+						<MentionPopover
+							caretPosition={mention.caretPosition}
+							containerRef={containerRef}
+							highlightedIndex={mention.highlightedIndex}
+							isActive={mention.isActive}
+							isLoading={mention.isLoading}
+							onSelect={mention.selectMention}
+							results={mention.results}
+						/>
+					)}
+
 					{/* Floating private mode banner — slides up from above the input */}
 					<div
 						className={cn(
@@ -221,7 +372,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 							className={cn(
 								"relative flex h-fit flex-col rounded-xs border drop-shadow-xs",
 								isPrivate
-									? "border-cossistant-yellow-600/50 border-dashed bg-cossistant-yellow-100/50"
+									? "border-cossistant-yellow-600/40 border-dashed bg-cossistant-yellow-100/30 dark:border-cossistant-yellow-600/30 dark:bg-cossistant-yellow-100/20"
 									: "border-border/50 bg-background-100 dark:border-border/50 dark:bg-background-300"
 							)}
 						>
@@ -253,7 +404,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 											className={cn(
 												"rounded-xs px-3 py-1.5 font-medium text-xs transition-colors",
 												isPrivate
-													? "bg-cossistant-yellow-100/70 text-cossistant-yellow-600"
+													? "bg-cossistant-yellow-100 text-cossistant-yellow-600 dark:bg-cossistant-yellow-100/25"
 													: "text-muted-foreground hover:text-foreground"
 											)}
 											onClick={() => onVisibilityChange("private")}
@@ -265,7 +416,19 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 								</div>
 							)}
 
-							<div className="scrollbar-thin scrollbar-track-fd-overlay scrollbar-thumb-border/30 hover:scrollbar-thumb-border/50 max-h-[280px] overflow-y-scroll">
+							<div className="scrollbar-thin scrollbar-track-fd-overlay scrollbar-thumb-border/30 hover:scrollbar-thumb-border/50 relative max-h-[280px] overflow-y-scroll">
+								{/* Styled overlay - shows formatted content with mention pills */}
+								{hasMentions && (
+									<StyledOverlay
+										className={cn(
+											"pointer-events-none absolute inset-0 min-h-[20px] w-full whitespace-pre-wrap break-words p-3 text-foreground text-sm",
+											className
+										)}
+										mentionStore={mentionStoreRef.current}
+										ref={overlayRef}
+										value={value}
+									/>
+								)}
 								<textarea
 									aria-describedby={
 										error ? "multimodal-input-error" : undefined
@@ -273,20 +436,24 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 									aria-invalid={error ? "true" : undefined}
 									autoFocus
 									className={cn(
-										"min-h-[20px] w-full flex-1 resize-none p-3 text-foreground text-sm placeholder:text-primary/50 focus-visible:outline-none",
+										"min-h-[20px] w-full flex-1 resize-none bg-transparent p-3 text-sm placeholder:text-primary/50 focus-visible:outline-none",
+										// When there are mentions, make text transparent so pills show through
+										hasMentions
+											? "text-transparent caret-foreground"
+											: "text-foreground",
 										className
 									)}
 									disabled={disabled}
-									onChange={(e) => onChange(e.target.value)}
-									onKeyDown={(e) => {
-										// Handle Cmd/Ctrl + Enter to submit
-										if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-											e.preventDefault();
-											handleSubmit();
-										}
-									}}
+									onChange={handleChange}
+									onKeyDown={handleKeyDown}
+									onScroll={handleScroll}
+									onSelect={handleSelect}
 									placeholder={
-										isPrivate ? "Write a private note..." : placeholder
+										isPrivate
+											? "Write a private note..."
+											: mentionConfig
+												? `${placeholder} Type @ to mention...`
+												: placeholder
 									}
 									ref={textareaRef}
 									rows={1}
@@ -383,3 +550,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		</div>
 	);
 };
+
+// Re-export types and utilities for parent components
+export type { UseMentionSearchOptions } from "./use-mention-search";
+export { convertDisplayToMarkdown, type MentionStore } from "./mention-store";

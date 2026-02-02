@@ -75,25 +75,46 @@ export function TimelineMessageItem({
 										delay={300}
 										side="bottom"
 									>
-										<TimelineItemContent
-											className={cn(
-												"block w-fit min-w-0 max-w-full break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
-												{
-													"bg-background-300 text-foreground dark:bg-background-600":
-														!(isSentByViewer || isPrivate),
-													"bg-primary text-primary-foreground":
-														isSentByViewer && !isPrivate,
-													"border border-cossistant-yellow-600/30 bg-cossistant-yellow-100/50 text-foreground":
-														isPrivate,
-													"rounded-br-[2px]":
-														isLast && isSentByViewer && !hasAttachments,
-													"rounded-bl-[2px]":
-														isLast && !isSentByViewer && !hasAttachments,
-												}
-											)}
-											renderMarkdown
-											text={item.text}
-										/>
+										{isPrivate ? (
+											<div
+												className={cn(
+													"flex w-fit min-w-0 max-w-full flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 bg-cossistant-yellow-100/30 px-3 py-2 dark:border-cossistant-yellow-600/30 dark:bg-cossistant-yellow-100/20 md:max-w-[420px]",
+													{
+														"rounded-br-[2px]":
+															isLast && isSentByViewer && !hasAttachments,
+														"rounded-bl-[2px]":
+															isLast && !isSentByViewer && !hasAttachments,
+													}
+												)}
+											>
+												<span className="font-medium text-cossistant-yellow-600 text-xs">
+													NOTE
+												</span>
+												<TimelineItemContent
+													className="block min-w-0 max-w-full break-words text-foreground text-sm"
+													renderMarkdown
+													text={item.text}
+												/>
+											</div>
+										) : (
+											<TimelineItemContent
+												className={cn(
+													"block w-fit min-w-0 max-w-full break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+													{
+														"bg-background-300 text-foreground dark:bg-background-600":
+															!isSentByViewer,
+														"bg-primary text-primary-foreground":
+															isSentByViewer,
+														"rounded-br-[2px]":
+															isLast && isSentByViewer && !hasAttachments,
+														"rounded-bl-[2px]":
+															isLast && !isSentByViewer && !hasAttachments,
+													}
+												)}
+												renderMarkdown
+												text={item.text}
+											/>
+										)}
 									</TooltipOnHover>
 								</div>
 							)}

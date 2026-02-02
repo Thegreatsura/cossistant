@@ -11,6 +11,7 @@
     "./send": "./send-via-resend.ts"
   },
   "dependencies": {
+    "@cossistant/tiny-markdown": "workspace:*",
     "@react-email/components": "^1.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",

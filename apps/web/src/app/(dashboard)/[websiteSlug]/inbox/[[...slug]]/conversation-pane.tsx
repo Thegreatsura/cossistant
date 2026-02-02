@@ -74,6 +74,9 @@ export function ConversationPane({
 	const [messageVisibility, setMessageVisibility] =
 		useState<MessageVisibility>("public");
 
+	// Track markdown-formatted message for submission (with mentions converted)
+	const markdownMessageRef = useRef<string>("");
+
 	const {
 		submit: submitConversationMessage,
 		isUploading,
@@ -106,10 +109,14 @@ export function ConversationPane({
 	} = useMultimodalInput({
 		onSubmit: async (payload) => {
 			handleTypingSubmit();
+			// Use the markdown-formatted message (with mentions converted)
 			await submitConversationMessage({
 				...payload,
+				message: markdownMessageRef.current || payload.message,
 				visibility: messageVisibility,
 			});
+			// Clear the markdown ref after submit
+			markdownMessageRef.current = "";
 		},
 		onError: (submitError) => {
 			console.error("Failed to send message", submitError);
@@ -123,6 +130,11 @@ export function ConversationPane({
 		},
 		[handleTypingChange, setMessage]
 	);
+
+	// Handle markdown-formatted value from MultimodalInput (with mentions converted)
+	const handleMarkdownChange = useCallback((markdownValue: string) => {
+		markdownMessageRef.current = markdownValue;
+	}, []);
 
 	useEffect(
 		() => () => {
@@ -453,6 +465,7 @@ export function ConversationPane({
 			maxFileSize: 10 * 1024 * 1024,
 			maxFiles: 2,
 			onChange: handleMessageChange,
+			onMarkdownChange: handleMarkdownChange,
 			onFileSelect: addFiles,
 			onRemoveFile: removeFile,
 			onSubmit: submit,
@@ -476,6 +489,14 @@ export function ConversationPane({
 					</ButtonWithPaywall>
 				</TooltipOnHover>
 			),
+			// Enable mentions for AI agent, team members, and visitor
+			mentionConfig: {
+				aiAgent: aiAgent ?? null,
+				teamMembers: members.filter(
+					(m): m is typeof m & { name: string } => Boolean(m.name)
+				),
+				visitor,
+			},
 		},
 		visitorSidebar: {
 			conversationId,

@@ -102,6 +102,8 @@ const MemoizedMarkdownBlock = React.memo(
 	({ content }: { content: string }) => {
 		return (
 			<ReactMarkdown
+				// Allow mention: protocol URLs (not sanitized by default)
+				urlTransform={(url) => url}
 				components={{
 					// Render paragraphs as block elements to preserve multiline spacing
 					p: ({ children }) => {
@@ -163,17 +165,46 @@ const MemoizedMarkdownBlock = React.memo(
 					),
 					// Handle emphasis
 					em: ({ children }) => <em className="italic">{children}</em>,
-					// Handle links
-					a: ({ href, children }) => (
-						<a
-							className="underline hover:opacity-80"
-							href={href}
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							{children}
-						</a>
-					),
+					// Handle links - with special handling for mentions
+					// Mention format: [@Name](mention:type:id) - the @ is inside the link
+					a: ({ href, children, node }) => {
+						// Get the raw href from the AST node if available (react-markdown may sanitize href)
+						const rawHref =
+							href ||
+							(node?.properties?.href as string | undefined) ||
+							"";
+
+						// Check if this is a mention link: mention:type:id
+						if (rawHref.startsWith("mention:")) {
+							// Parse mention:type:id format
+							const parts = rawHref.split(":");
+							const mentionType = parts[1]; // visitor, ai-agent, human-agent
+							const mentionId = parts.slice(2).join(":"); // id (may contain colons)
+
+							// Render as styled orange pill (same design as input)
+							return (
+								<span
+									className="rounded bg-co-orange/15 font-medium text-co-orange"
+									data-mention-id={mentionId}
+									data-mention-type={mentionType}
+								>
+									{children}
+								</span>
+							);
+						}
+
+						// Regular link
+						return (
+							<a
+								className="underline hover:opacity-80"
+								href={href}
+								rel="noopener noreferrer"
+								target="_blank"
+							>
+								{children}
+							</a>
+						);
+					},
 				}}
 				remarkPlugins={[remarkBreaks]}
 			>

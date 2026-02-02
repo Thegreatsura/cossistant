@@ -21,7 +21,9 @@
       "@cossistant/core": ["../core/src"],
       "@cossistant/core/*": ["../core/src/*"],
       "@cossistant/types": ["../types/src"],
-      "@cossistant/types/*": ["../types/src/*"]
+      "@cossistant/types/*": ["../types/src/*"],
+      "@cossistant/tiny-markdown": ["../tiny-markdown/src"],
+      "@cossistant/tiny-markdown/*": ["../tiny-markdown/src/*"]
     }
   },
   "include": ["src/**/*", "src/**/*.d.ts"],

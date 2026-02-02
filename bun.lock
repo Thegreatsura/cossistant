@@ -151,6 +151,7 @@
         "@cossistant/core": "workspace:*",
         "@cossistant/location": "workspace:*",
         "@cossistant/next": "workspace:*",
+        "@cossistant/tiny-markdown": "workspace:*",
         "@cossistant/transactional": "workspace:*",
         "@cossistant/types": "workspace:*",
         "@hookform/resolvers": "^5.2.2",
@@ -284,7 +285,7 @@
     },
     "packages/core": {
       "name": "@cossistant/core",
-      "version": "0.0.29",
+      "version": "0.0.30",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "nanoid": "^5.1.5",
@@ -338,7 +339,7 @@
     },
     "packages/next": {
       "name": "@cossistant/next",
-      "version": "0.0.29",
+      "version": "0.0.30",
       "dependencies": {
         "@cossistant/react": "workspace:*",
         "tailwindcss": "^4.1.13",
@@ -354,9 +355,10 @@
     },
     "packages/react": {
       "name": "@cossistant/react",
-      "version": "0.0.29",
+      "version": "0.0.30",
       "dependencies": {
         "@cossistant/core": "workspace:*",
+        "@cossistant/tiny-markdown": "workspace:*",
         "@cossistant/types": "workspace:*",
         "@floating-ui/react": "^0.27.16",
         "class-variance-authority": "^0.7.1",
@@ -424,10 +426,30 @@
         "@types/prompts": "^2.4.9",
       },
     },
+    "packages/tiny-markdown": {
+      "name": "@cossistant/tiny-markdown",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@cossistant/typescript-config": "workspace:*",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "peerDependencies": {
+        "@types/react": "",
+        "react": ">=18 <20",
+        "react-dom": ">=18 <20",
+      },
+      "optionalPeers": [
+        "@types/react",
+      ],
+    },
     "packages/transactional": {
       "name": "@cossistant/transactional",
       "version": "0.0.6",
       "dependencies": {
+        "@cossistant/tiny-markdown": "workspace:*",
         "@react-email/components": "^1.0.1",
         "react": "19.1.0",
         "react-dom": "19.1.0",
@@ -443,7 +465,7 @@
     },
     "packages/types": {
       "name": "@cossistant/types",
-      "version": "0.0.29",
+      "version": "0.0.30",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "zod": "^4.1.8",
@@ -882,6 +904,8 @@
     "@cossistant/redis": ["@cossistant/redis@workspace:packages/redis"],
 
     "@cossistant/release": ["@cossistant/release@workspace:packages/release"],
+
+    "@cossistant/tiny-markdown": ["@cossistant/tiny-markdown@workspace:packages/tiny-markdown"],
 
     "@cossistant/transactional": ["@cossistant/transactional@workspace:packages/transactional"],
 

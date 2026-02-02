@@ -59,6 +59,9 @@
 	--color-cossistant-orange: var(--cossistant-orange);
 	--color-cossistant-green: var(--cossistant-green);
 
+	/* Alias co-orange for shared primitives (used in timeline-item mentions) */
+	--color-co-orange: var(--cossistant-orange);
+
 	/* custom code colors */
 	--color-code: var(--code);
 	--color-code-foreground: var(--code-foreground);

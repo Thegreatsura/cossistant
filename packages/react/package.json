@@ -56,6 +56,7 @@
   ],
   "dependencies": {
     "@cossistant/core": "workspace:*",
+    "@cossistant/tiny-markdown": "workspace:*",
     "@cossistant/types": "workspace:*",
     "facehash": "workspace:*",
     "@floating-ui/react": "^0.27.16",

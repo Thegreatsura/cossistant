@@ -1,3 +1,4 @@
+import { formatMessagePreview } from "@cossistant/tiny-markdown/utils";
 import {
 	Body,
 	Column,
@@ -19,9 +20,6 @@ import {
 import React from "react";
 
 const MAX_DISPLAYED_MESSAGES = 5;
-
-const stripMarkdownLinks = (text: string): string =>
-	text.replace(/\[([^\]]+)]\(([^)]+)\)/g, "$2");
 
 import { AVATAR_URL, LOGO_URL } from "../constants";
 
@@ -205,7 +203,7 @@ export function NewMessageInConversation({
 													className="my-0 rounded-lg rounded-bl-none bg-neutral-100 px-4 py-2.5 text-neutral-800 text-sm leading-5"
 													style={{ whiteSpace: "pre-wrap" }}
 												>
-													{stripMarkdownLinks(message.text)}
+													{formatMessagePreview(message.text)}
 												</Text>
 											</Column>
 										</Row>

@@ -1,3 +1,4 @@
+import { formatMessagePreview } from "@cossistant/tiny-markdown/utils";
 import type { Conversation } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useMemo } from "react";
@@ -178,7 +179,7 @@ export function useConversationPreview(
 		}
 
 		return {
-			content: lastTimelineMessage.text || "",
+			content: formatMessagePreview(lastTimelineMessage.text || ""),
 			time: formatTimeAgo(lastTimelineMessage.createdAt),
 			isFromVisitor,
 			senderName,

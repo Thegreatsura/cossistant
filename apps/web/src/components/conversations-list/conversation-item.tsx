@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@api/trpc/types";
 import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import { formatMessagePreview } from "@cossistant/tiny-markdown/utils";
 import {
 	ConversationStatus,
 	ConversationTimelineType,
@@ -30,10 +31,6 @@ import { getVisitorNameWithFallback } from "@/lib/visitors";
 import { ConversationBasicActions } from "../conversation/actions/basic";
 import { BouncingDots } from "../conversation/messages/typing-indicator";
 import { Logo } from "../ui/logo";
-
-function stripMarkdownLinks(text: string): string {
-	return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
-}
 
 type ConversationItemViewProps = {
 	visitorName: string;
@@ -358,7 +355,7 @@ export function ConversationItem({
 			});
 		}
 
-		return stripMarkdownLinks(lastTimelineItem.text ?? "");
+		return formatMessagePreview(lastTimelineItem.text ?? "");
 	}, [availableAIAgents, availableHumanAgents, lastTimelineItem, visitor]);
 
 	const isEventPreview = Boolean(
