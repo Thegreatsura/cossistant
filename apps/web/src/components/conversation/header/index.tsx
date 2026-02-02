@@ -22,7 +22,6 @@ export type ConversationHeaderProps = {
 	visitorId?: string | null;
 	status?: ConversationStatus;
 	deletedAt?: string | null;
-	hasUnreadMessage: boolean;
 	visitorIsBlocked?: boolean | null;
 };
 
@@ -36,7 +35,6 @@ export function ConversationHeader({
 	visitorId,
 	status,
 	deletedAt,
-	hasUnreadMessage,
 	visitorIsBlocked,
 }: ConversationHeaderProps) {
 	return (
@@ -71,7 +69,6 @@ export function ConversationHeader({
 				<MoreConversationActions
 					conversationId={conversationId}
 					deletedAt={deletedAt ?? null}
-					hasUnreadMessage={hasUnreadMessage}
 					status={status}
 					visitorId={visitorId}
 					visitorIsBlocked={visitorIsBlocked ?? null}

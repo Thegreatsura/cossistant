@@ -102,7 +102,7 @@ const UnreadBadge = ({
 		<motion.div
 			animate={{ scale: 1, opacity: 1 }}
 			className={cn(
-				"absolute flex size-2 items-center justify-center rounded-full bg-co-destructive",
+				"absolute flex size-1.5 items-center justify-center rounded-full bg-cossistant-orange",
 				className
 			)}
 			exit={{ scale: 0, opacity: 0 }}
@@ -156,7 +156,7 @@ export const DashboardTriggerContent = ({
 		/>
 		<span className="font-medium text-sm">Need help?</span>
 		<UnreadBadge
-			className="-top-1 -right-1 bg-primary outline-1 outline-background"
+			className="-top-1 -right-1 bg-cossistant-orange outline-1 outline-background"
 			count={unreadCount}
 		/>
 	</>

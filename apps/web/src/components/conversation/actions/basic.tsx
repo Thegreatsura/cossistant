@@ -99,7 +99,7 @@ export function ConversationBasicActions({
 	const readUnreadErrorMessage = hasUnreadMessage
 		? "Failed to mark as read"
 		: "Failed to mark as unread";
-	const readUnreadIcon = hasUnreadMessage ? "notifications" : "notifications";
+	const readUnreadIcon = hasUnreadMessage ? "eye" : "eye-off";
 
 	const readUnreadPending = hasUnreadMessage
 		? pendingAction.markRead
@@ -329,11 +329,7 @@ export function ConversationBasicActions({
 					type="button"
 					variant="ghost"
 				>
-					<Icon
-						filledOnHover
-						name={readUnreadIcon}
-						variant={hasUnreadMessage ? "filled" : "default"}
-					/>
+					<Icon filledOnHover name={readUnreadIcon} />
 				</Button>
 			</TooltipOnHover>
 			<TooltipOnHover

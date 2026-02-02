@@ -25,7 +25,6 @@ export function MoreConversationActions({
 	status,
 	visitorIsBlocked,
 	deletedAt,
-	hasUnreadMessage = false,
 }: {
 	className?: string;
 	conversationId: string;
@@ -33,7 +32,6 @@ export function MoreConversationActions({
 	status?: ConversationStatus;
 	visitorIsBlocked?: boolean | null;
 	deletedAt?: string | null;
-	hasUnreadMessage?: boolean;
 }) {
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 	const [open, setOpen] = useState(false);
@@ -45,8 +43,6 @@ export function MoreConversationActions({
 		markOpen,
 		markArchived,
 		markUnarchived,
-		markRead,
-		markUnread,
 		markSpam,
 		markNotSpam,
 		blockVisitor,
@@ -79,9 +75,6 @@ export function MoreConversationActions({
 		? pendingAction.unblockVisitor
 		: pendingAction.blockVisitor;
 
-	const shouldShowMarkRead = hasUnreadMessage;
-	const shouldShowMarkUnread = !hasUnreadMessage;
-
 	const resolveSuccessMessage = isResolved
 		? "Conversation marked unresolved"
 		: "Conversation marked resolved";
@@ -98,10 +91,6 @@ export function MoreConversationActions({
 		? "Visitor unblocked"
 		: "Visitor blocked";
 	const blockErrorMessage = "Failed to update visitor block status";
-	const markReadSuccessMessage = "Conversation marked as read";
-	const markReadErrorMessage = "Failed to mark conversation as read";
-	const markUnreadSuccessMessage = "Conversation marked as unread";
-	const markUnreadErrorMessage = "Failed to mark conversation as unread";
 	const copyIdSuccessMessage = "Conversation ID copied";
 	const copyIdErrorMessage = "Unable to copy conversation ID";
 	const copyUrlSuccessMessage = "Conversation link copied";
@@ -239,65 +228,6 @@ export function MoreConversationActions({
 			markArchived,
 			markUnarchived,
 			runMenuAction,
-		]
-	);
-
-	useHotkeys(
-		"u",
-		(event) => {
-			event.preventDefault();
-
-			if (shouldShowMarkRead) {
-				if (pendingAction.markRead) {
-					return;
-				}
-
-				void runMenuAction(
-					async () => {
-						await markRead();
-						return true;
-					},
-					{
-						successMessage: markReadSuccessMessage,
-						errorMessage: markReadErrorMessage,
-					}
-				);
-				return;
-			}
-
-			if (!shouldShowMarkUnread || pendingAction.markUnread) {
-				return;
-			}
-
-			void runMenuAction(
-				async () => {
-					await markUnread();
-					return true;
-				},
-				{
-					successMessage: markUnreadSuccessMessage,
-					errorMessage: markUnreadErrorMessage,
-				}
-			);
-		},
-		{
-			...preventHotkeysOptions,
-			enabled:
-				(shouldShowMarkRead && !pendingAction.markRead) ||
-				(shouldShowMarkUnread && !pendingAction.markUnread),
-		},
-		[
-			markReadErrorMessage,
-			markReadSuccessMessage,
-			markRead,
-			markUnreadErrorMessage,
-			markUnreadSuccessMessage,
-			markUnread,
-			pendingAction.markRead,
-			pendingAction.markUnread,
-			runMenuAction,
-			shouldShowMarkRead,
-			shouldShowMarkUnread,
 		]
 	);
 
@@ -441,48 +371,6 @@ export function MoreConversationActions({
 						>
 							{archiveLabel}
 						</DropdownMenuItem>
-						{shouldShowMarkRead && (
-							<DropdownMenuItem
-								disabled={pendingAction.markRead}
-								onSelect={(event) => {
-									event.preventDefault();
-									void runMenuAction(
-										async () => {
-											await markRead();
-											return true;
-										},
-										{
-											successMessage: markReadSuccessMessage,
-											errorMessage: markReadErrorMessage,
-										}
-									);
-								}}
-								shortcuts={["U"]}
-							>
-								Mark as read
-							</DropdownMenuItem>
-						)}
-						{shouldShowMarkUnread && (
-							<DropdownMenuItem
-								disabled={pendingAction.markUnread}
-								onSelect={(event) => {
-									event.preventDefault();
-									void runMenuAction(
-										async () => {
-											await markUnread();
-											return true;
-										},
-										{
-											successMessage: markUnreadSuccessMessage,
-											errorMessage: markUnreadErrorMessage,
-										}
-									);
-								}}
-								shortcuts={["U"]}
-							>
-								Mark as unread
-							</DropdownMenuItem>
-						)}
 						<DropdownMenuItem
 							disabled={spamPending}
 							onSelect={(event) => {
