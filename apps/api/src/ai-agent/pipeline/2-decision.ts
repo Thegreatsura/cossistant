@@ -45,6 +45,8 @@ type DecisionInput = {
 const MENTION_REGEX = /\[@([^\]]+)\]\(mention:([^:]+):([^)]+)\)/g;
 const AI_TAG_REGEX = /(^|\s)(@ai|\/ai)(?=\s|$|[.,!?])/i;
 const TEXT_MENTION_REGEX = /@([a-zA-Z0-9][a-zA-Z0-9 _-]{0,60})/g;
+const PLAIN_TAG_REGEX = /[.,!?]+$/;
+const REMOVE_TAG_REGEX = /^(@ai|\/ai)(\s+|$)/i;
 
 const GREETING_REGEX =
 	/^(hi|hey|hello|yo|hiya|heya|howdy|sup|what's up|good\s*(morning|afternoon|evening))\b/i;
@@ -371,7 +373,8 @@ function detectPlainTextTag(text: string, aiAgentName: string): boolean {
 	const normalizedAgentNoSpace = normalizedAgentName.replace(/\s+/g, "");
 
 	for (const match of text.matchAll(TEXT_MENTION_REGEX)) {
-		const raw = (match[1] ?? "").replace(/[.,!?]+$/, "");
+		const raw = (match[1] ?? "").replace(PLAIN_TAG_REGEX, "");
+
 		const normalized = normalizeName(raw);
 		if (!normalized) {
 			continue;
@@ -391,7 +394,7 @@ function stripLeadingTag(text: string, aiAgentName: string): string {
 	let cleaned = text.trim();
 
 	// Remove @ai or /ai at start
-	cleaned = cleaned.replace(/^(@ai|\/ai)(\s+|$)/i, "").trim();
+	cleaned = cleaned.replace(REMOVE_TAG_REGEX, "").trim();
 
 	// Remove @AgentName at start (best-effort, supports spaces)
 	if (cleaned.startsWith("@")) {
