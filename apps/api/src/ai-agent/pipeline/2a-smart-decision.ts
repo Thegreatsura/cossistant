@@ -64,13 +64,13 @@ const decisionSchema = z.object({
 });
 
 /**
- * Select relevant messages for context
+ * Select relevant messages for context (token-light)
  *
  * Strategy:
- * 1. Always include recent consecutive messages from current speaker burst
+ * 1. Include recent consecutive messages from current speaker burst
  * 2. Include the last exchange between different parties
- * 3. Include any human agent messages (they're important for context)
- * 4. Cap at ~15 messages to stay token-efficient
+ * 3. Include up to 3 recent human agent messages
+ * 4. Cap at ~8 messages to stay token-efficient
  */
 function selectRelevantMessages(
 	history: RoleAwareMessage[],
@@ -80,11 +80,11 @@ function selectRelevantMessages(
 		return [];
 	}
 
-	const MAX_MESSAGES = 15;
+	const MAX_MESSAGES = 8;
+	const MAX_HUMAN_MESSAGES = 3;
 	const result: RoleAwareMessage[] = [];
 	const seen = new Set<string>();
 
-	// Helper to add message if not already added
 	const addMessage = (msg: RoleAwareMessage) => {
 		const key = `${msg.messageId}-${msg.content.slice(0, 50)}`;
 		if (!seen.has(key)) {
@@ -93,7 +93,7 @@ function selectRelevantMessages(
 		}
 	};
 
-	// 1. Get the current "burst" - consecutive messages from same sender at the end
+	// Current burst (same sender at end)
 	const currentBurst: RoleAwareMessage[] = [];
 	for (let i = history.length - 1; i >= 0; i--) {
 		const msg = history[i];
@@ -104,32 +104,33 @@ function selectRelevantMessages(
 		}
 	}
 
-	// 2. Find the last exchange point (where sender changed)
 	const exchangeStartIndex = history.length - currentBurst.length;
 
-	// 3. Get messages before the burst to understand context
-	// Look for the previous exchange (back-and-forth)
+	// Previous exchange context (up to 4 sender switches)
 	const contextMessages: RoleAwareMessage[] = [];
 	let lastSenderType: string | null = null;
 	let exchangeCount = 0;
-
 	for (let i = exchangeStartIndex - 1; i >= 0 && exchangeCount < 4; i--) {
 		const msg = history[i];
 		contextMessages.unshift(msg);
-
 		if (msg.senderType !== lastSenderType) {
 			exchangeCount++;
 			lastSenderType = msg.senderType;
 		}
 	}
 
-	// 4. Always include ALL human agent messages (they're rare and important)
-	const humanAgentMessages = history.filter(
-		(m) => m.senderType === "human_agent"
-	);
+	// Recent human agent messages (last N)
+	const humanAgentMessages: RoleAwareMessage[] = [];
+	for (let i = history.length - 1; i >= 0; i--) {
+		const msg = history[i];
+		if (msg.senderType === "human_agent") {
+			humanAgentMessages.unshift(msg);
+			if (humanAgentMessages.length >= MAX_HUMAN_MESSAGES) {
+				break;
+			}
+		}
+	}
 
-	// Build final list: context + burst + human messages
-	// Priority: human messages > context > burst
 	for (const msg of humanAgentMessages) {
 		addMessage(msg);
 	}
@@ -140,29 +141,27 @@ function selectRelevantMessages(
 		addMessage(msg);
 	}
 
-	// Sort by original order and cap
-	const sortedResult = result
+	return result
 		.sort((a, b) => {
 			const aIndex = history.findIndex((m) => m.messageId === a.messageId);
 			const bIndex = history.findIndex((m) => m.messageId === b.messageId);
 			return aIndex - bIndex;
 		})
 		.slice(-MAX_MESSAGES);
-
-	return sortedResult;
 }
 
 /**
  * Format a message for the prompt
  */
 function formatMessage(msg: RoleAwareMessage): string {
+	const privatePrefix = msg.visibility === "private" ? "[PRIVATE] " : "";
 	const prefix =
 		msg.senderType === "visitor"
 			? "[VISITOR]"
 			: msg.senderType === "human_agent"
 				? `[TEAM:${msg.senderName || "Agent"}]`
 				: "[AI]";
-	return `${prefix} ${msg.content}`;
+	return `${privatePrefix}${prefix} ${msg.content}`;
 }
 
 /**
@@ -180,50 +179,25 @@ function buildDecisionPrompt(input: SmartDecisionInput): string {
 	// Format messages
 	const formattedMessages = relevantMessages.map(formatMessage).join("\n");
 
-	// Check if human agent is present and active
-	const hasHumanAgent = conversationHistory.some(
-		(m) => m.senderType === "human_agent"
-	);
-
-	// Check when human last spoke (in terms of messages ago)
+	// Human activity signals
 	const lastHumanIndex = conversationHistory.findLastIndex(
-		(m) => m.senderType === "human_agent"
+		(m) => m.senderType === "human_agent" && m.visibility === "public"
 	);
 	const messagesSinceHuman =
 		lastHumanIndex >= 0 ? conversationHistory.length - 1 - lastHumanIndex : -1;
-
-	// Build context notes
-	const contextNotes: string[] = [];
-
-	// Human agent context
-	if (hasHumanAgent) {
-		if (messagesSinceHuman === 0) {
-			contextNotes.push(
-				"A human agent just sent the previous message - they are actively engaged."
-			);
-		} else if (messagesSinceHuman > 0 && messagesSinceHuman <= 3) {
-			contextNotes.push(
-				`A human agent spoke ${messagesSinceHuman} message(s) ago - they may still be engaged.`
-			);
-		} else if (messagesSinceHuman > 3) {
-			contextNotes.push(
-				`A human agent is in the conversation but hasn't spoken in ${messagesSinceHuman} messages.`
-			);
+	let lastHumanPublicAt: number | null = null;
+	if (lastHumanIndex >= 0) {
+		const ts = conversationHistory[lastHumanIndex]?.timestamp;
+		const parsed = ts ? Date.parse(ts) : Number.NaN;
+		if (!Number.isNaN(parsed)) {
+			lastHumanPublicAt = parsed;
 		}
-	} else {
-		contextNotes.push(
-			"No human agent is in this conversation - you are the only support available."
-		);
 	}
+	const humanActive =
+		lastHumanPublicAt !== null
+			? Date.now() - lastHumanPublicAt <= 2 * 60 * 1000
+			: messagesSinceHuman >= 0 && messagesSinceHuman <= 1;
 
-	// Escalation context
-	if (conversationState.isEscalated) {
-		contextNotes.push(
-			`Conversation is escalated: ${conversationState.escalationReason || "Human support requested"}`
-		);
-	}
-
-	// Count recent visitor messages in a row
 	let visitorBurstCount = 0;
 	for (let i = conversationHistory.length - 1; i >= 0; i--) {
 		if (conversationHistory[i].senderType === "visitor") {
@@ -232,55 +206,26 @@ function buildDecisionPrompt(input: SmartDecisionInput): string {
 			break;
 		}
 	}
-	if (visitorBurstCount > 1) {
-		contextNotes.push(
-			`Visitor has sent ${visitorBurstCount} messages in a row without a response.`
-		);
-	}
 
-	// Determine who sent the trigger message
-	const isFromHuman = triggerMessage.senderType === "human_agent";
-	const isFromVisitor = triggerMessage.senderType === "visitor";
+	return `Decide one: respond, observe, assist_team.
 
-	return `You are an AI support assistant deciding whether to respond to the latest message in a conversation.
+Rules:
+- respond = reply to visitor
+- observe = stay silent
+- assist_team = internal note only (no visitor reply)
 
-PARTICIPANTS:
-- [VISITOR]: The customer seeking help
-- [TEAM:name]: Human support agents (your teammates, if present)
-- [AI]: You (the AI assistant)
+Signals:
+- humanActive: ${humanActive}
+- hasHumanAssignee: ${conversationState.hasHumanAssignee}
+- escalated: ${conversationState.isEscalated}
+- visitorBurst: ${visitorBurstCount}
+- latestVisibility: ${triggerMessage.visibility}
 
-CURRENT SITUATION:
-${contextNotes.map((n) => `- ${n}`).join("\n")}
-- Latest message is from: ${isFromHuman ? "a human agent (your teammate)" : isFromVisitor ? "the visitor" : "unknown"}
-
-WHEN TO RESPOND:
-- Visitor asks a question or needs help
-- You are the only support available (no human agent)
-- Human agent is not actively handling the conversation
-- You can provide value (answer questions, provide information)
-- Visitor seems to be waiting for any response
-${isFromHuman ? "- Human agent sent a message and might need your help or input" : ""}
-
-WHEN TO OBSERVE (stay silent):
-- Human agent is actively engaged in conversation with visitor
-- The message is clearly not directed at you
-- Message is just a simple acknowledgment ("ok", "thanks", "got it") AND someone just helped them
-- You would just be interrupting an ongoing exchange
-${isFromHuman ? "- Human agent is handling things and doesn't need your input" : ""}
-- NOTE: If you're the only support available for the visitor, you should almost always respond
-
-WHEN TO ASSIST TEAM (internal note only):
-- You have useful context to share with the human agent
-- But the human should be the one responding to the visitor
-- Only applicable when a human agent is present
-
-CONVERSATION:
+Conversation:
 ${formattedMessages}
 
-LATEST MESSAGE TO EVALUATE:
-${formatMessage(triggerMessage)}
-
-Based on the conversation flow and context, decide your action.`;
+Latest:
+${formatMessage(triggerMessage)}`;
 }
 
 /**

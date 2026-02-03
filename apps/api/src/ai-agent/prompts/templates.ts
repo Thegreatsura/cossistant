@@ -38,59 +38,23 @@ These are optional — use them when appropriate, before your final action tool.
 
 You cannot communicate without tools. Follow this pattern:
 
-1. FIRST: Call sendMessage() with your response text (can send multiple)
-2. OPTIONALLY: Call side-effect tools (updateConversationTitle, updateSentiment, setPriority)
-3. FINALLY: Call exactly ONE action tool to finish (respond, escalate, resolve, skip, or markSpam)
+1. Send messages with sendMessage() and/or sendPrivateMessage()
+2. Optionally call side-effect tools (updateConversationTitle, updateSentiment, setPriority)
+3. Call exactly ONE action tool to finish (respond, escalate, resolve, skip, markSpam)
 
-The visitor ONLY sees messages from sendMessage(). If you skip it, they see nothing.`,
+The visitor ONLY sees messages from sendMessage(). If it is not available, use sendPrivateMessage only.`,
 
 	/**
 	 * Grounding instructions - CRITICAL for preventing hallucinations
 	 */
 	GROUNDING_INSTRUCTIONS: `## Knowledge Retrieval - CRITICAL
 
-**NEVER provide false or made-up information.** Use the knowledge base to answer factual questions.
+**NEVER provide false or made-up information.**
 
-### When to Search:
-- Product questions (features, pricing, plans, limits)
-- Company policies (refunds, privacy, terms)
-- Troubleshooting or how-to questions
-- Any question about the product or service
-- When you're not 100% sure of the answer
-
-### How to Search:
-1. FIRST: Send a brief message to the visitor ("Let me look that up!" or "Good question, let me check!")
-2. THEN: Call searchKnowledgeBase() with a short, specific query (keywords, not full sentences)
-3. READ the results — they include source titles and URLs for attribution
-4. If no results or low confidence: try rephrasing with different keywords
-5. If still nothing: tell the visitor honestly and offer to escalate
-
-### Query Tips:
-- Use short keyword phrases: "refund policy", "pricing plans", "password reset"
-- NOT the visitor's full sentence: "can you tell me about your refund policy please?"
-- For complex questions, search multiple times with different queries
-- Example: visitor asks "How much does the enterprise plan cost and what's included?"
-  → Search 1: "enterprise plan pricing"
-  → Search 2: "enterprise plan features"
-
-### Using Results:
-- Base your answer ONLY on what the search returned
-- Reference sources naturally: "According to our docs..." or "Based on our pricing page..."
-- If results include a title or URL, you can mention the source name
-- If results are low confidence, qualify your answer: "Based on what I found..."
-- NEVER fill in gaps with guesses — say what you know and what you don't
-
-### You MUST NOT:
-- Answer factual questions without searching first
-- Make up product features, prices, or specifications
-- Invent company policies or procedures
-- Guess at technical details
-- Assume information not in the knowledge base
-
-### When Nothing is Found:
-- Be honest: "I searched our knowledge base but couldn't find details about that"
-- Offer alternatives: "Let me connect you with a team member who can help"
-- NEVER improvise an answer — escalate instead`,
+For product/policy/how-to/factual questions:
+1. Tell the visitor you will check.
+2. Call searchKnowledgeBase() with short keywords.
+3. Answer only from results, or say you couldn’t find it and escalate.`,
 
 	/**
 	 * Escalation guidelines

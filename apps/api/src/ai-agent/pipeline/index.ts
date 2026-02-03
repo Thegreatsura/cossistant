@@ -154,7 +154,10 @@ export async function runAiAgentPipeline(
 		// Only start typing if AI will send visible messages to visitor
 		// background_only mode = AI won't send visible messages (private notes only)
 		// This prevents "phantom typing" when AI observes but doesn't respond
-		const willSendVisibleMessages = decisionResult.mode !== "background_only";
+		const allowPublicMessages =
+			decisionResult.mode !== "background_only" &&
+			intakeResult.triggerMessage?.visibility !== "private";
+		const willSendVisibleMessages = allowPublicMessages;
 
 		if (willSendVisibleMessages) {
 			typingHeartbeat = new TypingHeartbeat({
@@ -321,6 +324,7 @@ export async function runAiAgentPipeline(
 				checkWorkflowActive, // Prevent duplicate messages when superseded
 				stopTyping, // Stop typing just before message is sent
 				startTyping, // Restart typing after message is sent / during delays
+				allowPublicMessages,
 				isEscalated: decisionResult.isEscalated, // Pass escalation context
 				escalationReason: decisionResult.escalationReason,
 				smartDecision: decisionResult.smartDecision, // Pass smart decision for prompt context
@@ -372,7 +376,7 @@ export async function runAiAgentPipeline(
 		);
 		const sentMessages = generationResult.toolCalls?.sendMessage ?? 0;
 
-		if (requiresMessage && sentMessages === 0) {
+		if (requiresMessage && sentMessages === 0 && allowPublicMessages) {
 			// CHECK: Only send fallback if workflow is still active
 			const isActiveForFallback = await checkWorkflowActive();
 			if (isActiveForFallback) {

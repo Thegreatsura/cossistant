@@ -76,6 +76,17 @@ export function createSendMessageTool(ctx: ToolContext) {
 			message,
 		}): Promise<ToolResult<{ sent: boolean; messageId: string }>> => {
 			try {
+				if (!ctx.allowPublicMessages) {
+					console.warn(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Public messages not allowed for this workflow`
+					);
+					return {
+						success: false,
+						error: "Public messages are not allowed for this workflow",
+						data: { sent: false, messageId: "" },
+					};
+				}
+
 				// Defensive initialization for counters (handles hot reload edge cases)
 				const counters = ctx.counters ?? {
 					sendMessage: 0,

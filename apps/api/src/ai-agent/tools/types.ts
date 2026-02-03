@@ -45,6 +45,8 @@ export type ToolContext = {
 	websiteId: string;
 	visitorId: string;
 	aiAgentId: string;
+	/** Whether public visitor messages are allowed in this run */
+	allowPublicMessages: boolean;
 	/** Trigger message ID - used for idempotency keys in send-message tool */
 	triggerMessageId: string;
 	/**

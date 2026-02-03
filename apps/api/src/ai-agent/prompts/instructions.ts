@@ -33,7 +33,7 @@ export function buildBehaviorInstructions(
 		instructions.push(`## Current Mode: Background Only
 
 You are in background mode. Do NOT send visible messages to the visitor.
-Choose "skip" or "internal_note" only.`);
+Use sendPrivateMessage() if needed, then finish with respond or skip.`);
 	}
 
 	return instructions.join("\n\n");

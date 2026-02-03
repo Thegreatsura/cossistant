@@ -99,8 +99,10 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 	}
 
 	// Add grounding instructions to prevent hallucinations
-	// This is critical for ensuring AI doesn't make up information
-	parts.push(PROMPT_TEMPLATES.GROUNDING_INSTRUCTIONS);
+	// Only needed when responding to the visitor
+	if (mode === "respond_to_visitor") {
+		parts.push(PROMPT_TEMPLATES.GROUNDING_INSTRUCTIONS);
+	}
 
 	// Add structured output instructions
 	parts.push(PROMPT_TEMPLATES.STRUCTURED_OUTPUT);
@@ -108,8 +110,8 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 	// Add behavior instructions based on settings
 	parts.push(buildBehaviorInstructions(settings, mode));
 
-	// Add mode-specific instructions
-	if (mode === "respond_to_command" && humanCommand) {
+	// Add command instructions when a human agent provided a command
+	if (humanCommand) {
 		parts.push(buildCommandModeInstructions(humanCommand));
 	}
 
@@ -208,6 +210,6 @@ A human support agent has given you a command. You should follow this instructio
 Important:
 - This is a request from a teammate, not a visitor
 - Your response should help the support team
-- Use "internal_note" action unless the command specifically asks you to respond to the visitor
+- Use sendPrivateMessage unless the command explicitly asks for a visitor reply
 - Be concise and actionable`;
 }

@@ -77,6 +77,8 @@ type GenerationInput = {
 	stopTyping?: () => Promise<void>;
 	/** Callback to start/restart the typing indicator during inter-message delays */
 	startTyping?: () => Promise<void>;
+	/** Whether public visitor messages are allowed */
+	allowPublicMessages: boolean;
 	/** Whether conversation is currently escalated */
 	isEscalated?: boolean;
 	/** Reason for escalation if escalated */
@@ -115,6 +117,7 @@ export async function generate(
 		checkWorkflowActive,
 		stopTyping,
 		startTyping,
+		allowPublicMessages,
 		isEscalated,
 		escalationReason,
 		smartDecision,
@@ -132,6 +135,7 @@ export async function generate(
 		websiteId,
 		visitorId,
 		aiAgentId: aiAgent.id,
+		allowPublicMessages,
 		triggerMessageId,
 		counters: {
 			sendMessage: 0,

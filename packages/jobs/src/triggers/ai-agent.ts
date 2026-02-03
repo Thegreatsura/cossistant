@@ -47,7 +47,7 @@ export type EnqueueAiAgentResult =
  * Minimum delay before AI agent processes a message (ms)
  * This prevents immediate responses that feel unnatural
  */
-const MIN_AI_AGENT_DELAY_MS = 3000;
+const MIN_AI_AGENT_DELAY_MS = 0;
 
 /**
  * Retry configuration for AI agent jobs

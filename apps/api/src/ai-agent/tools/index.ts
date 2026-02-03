@@ -75,7 +75,9 @@ export function getToolsForGeneration(
 
 	// Messaging tools - ALWAYS available
 	// These are the primary way the AI communicates
-	tools.sendMessage = createSendMessageTool(toolContext);
+	if (toolContext.allowPublicMessages) {
+		tools.sendMessage = createSendMessageTool(toolContext);
+	}
 	tools.sendPrivateMessage = createSendPrivateMessageTool(toolContext);
 
 	// Action tools - AI MUST call one to signal completion

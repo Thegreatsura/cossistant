@@ -39,17 +39,17 @@ The AI is NOT just a "replier" - it's a decision-making agent that chooses the b
 
 ### Key Design Decisions
 
-1. **Structured Output**: The AI returns a structured decision, not free-form text. This prevents unintended responses.
+1. **Tools-Only Output**: The AI must use tools for messaging and actions (no free-form responses). This prevents unintended responses.
 
 2. **Multi-Party Awareness**: The AI understands who sent each message (visitor, human agent, or AI) via a prefix protocol and respects message visibility (public vs private).
 
 3. **Layered Security**: Immutable security prompts sandwich the user-configurable base prompt, preventing prompt injection attacks.
 
-4. **Behavior Settings**: Each AI agent can be configured with different behaviors (response mode, capabilities, etc.). Settings are persisted in the database and configurable via dashboard.
+4. **Behavior Settings**: Each AI agent can be configured with different capabilities and background analysis settings. Settings are persisted in the database and configurable via dashboard.
 
 5. **BullMQ Execution**: All processing happens in BullMQ workers for reliability and scalability.
 
-6. **Response Delay**: Configurable delay before responding to make responses feel more natural.
+6. **Fast Response**: Queue delay is disabled; natural typing delays between messages keep responses human.
 
 7. **Audience-Aware Events**: Progress events have audience filtering (widget vs dashboard) for appropriate visibility.
 
@@ -191,11 +191,13 @@ The AI agent processes messages through a 5-step pipeline:
 
 **Decision Factors**:
 
-- Response mode (always, when_no_human, on_mention, manual)
-- Human agent activity (recent replies, assignments)
+- Explicit tags via markdown mentions `[@Name](mention:ai-agent:ID)` or plain-text `@ai`/`@Name`
+- Human agent activity (recent replies, assignments, idle window)
+- Visitor burst detection (multiple messages in a row)
+- Private vs public visibility (private triggers are background-only)
 - Escalation status
-- Human commands (@ai prefix)
 - Pause state
+- Smart decision AI used only for ambiguous cases
 
 **Outputs**:
 
@@ -207,38 +209,41 @@ The AI agent processes messages through a 5-step pipeline:
 
 ### Step 3: Generation (`pipeline/3-generation.ts`)
 
-**Purpose**: Generate the AI's decision using the LLM.
+**Purpose**: Generate the AI's response using LLM tools (messages + actions).
 
 **Process**:
 
 1. Build dynamic system prompt with layered security architecture
 2. Format conversation history with **message prefix protocol**
 3. Check for prompt injection (log for monitoring)
-4. Call LLM with structured output using AI SDK v6 pattern
-5. Validate structured output exists (fallback to skip if null)
-6. Return validated AI decision
+4. Call LLM with tools-only workflow
+5. Capture the action tool result (respond/escalate/resolve/skip/mark_spam)
+6. Return the captured decision
 
-**Key**: The AI returns a structured decision, NOT free-form text.
+**Key**: The AI MUST use tools for messaging and to finish the turn.
 
 **Message Prefix Protocol**: See [Multi-Party Conversation Context](#multi-party-conversation-context)
 
-**AI SDK v6 Pattern**:
+**AI SDK v6 Tool Pattern**:
 ```typescript
-import { generateText, Output, stepCountIs } from "ai";
+import { generateText, hasToolCall, stepCountIs } from "ai";
 
 const result = await generateText({
-  model: openrouter.chat(model),
-  output: Output.object({
-    schema: aiDecisionSchema,
-  }),
+  model: createModel(aiAgent.model),
   tools,
-  stopWhen: tools ? stepCountIs(5) : undefined,
+  toolChoice: "required",
+  stopWhen: [
+    hasToolCall("respond"),
+    hasToolCall("escalate"),
+    hasToolCall("resolve"),
+    hasToolCall("markSpam"),
+    hasToolCall("skip"),
+    stepCountIs(10),
+  ],
   system: systemPrompt,
   messages,
+  temperature: 0,
 });
-
-// Access via result.output (not result.object)
-const decision = result.output;
 ```
 
 ### Step 4: Execution (`pipeline/4-execution.ts`)
@@ -248,11 +253,12 @@ const decision = result.output;
 **Actions Supported**:
 
 - `respond` - Send visible message to visitor
-- `internal_note` - Add private note for team
 - `escalate` - Escalate to human agent
 - `resolve` - Mark conversation resolved
 - `mark_spam` - Mark as spam
 - `skip` - Take no action
+
+Private notes are sent during generation via `sendPrivateMessage()` tool.
 
 **Side Effects**:
 
@@ -498,20 +504,10 @@ If shouldAct:
 }
 ```
 
-### Response Delay
+### Response Timing
 
-The worker applies a configurable response delay before running the pipeline:
-
-```typescript
-// In worker, before pipeline runs:
-if (settings.responseDelayMs > 0) {
-  await sleep(settings.responseDelayMs);
-  // Re-check if still active after delay
-  if (!stillActive) return;
-}
-```
-
-This makes AI responses feel more natural and allows for supersession if a newer message arrives during the delay.
+Queue delay is disabled (0ms) so the AI responds as fast as possible.
+Natural typing delays between multi-part messages are still applied to keep the experience human.
 
 ### Failure Handling
 
@@ -636,9 +632,9 @@ if (shouldCheckNewFactor(input)) {
 **AI not responding**:
 
 1. Check agent is active: `aiAgent.isActive`
-2. Check response mode: `settings.responseMode`
-3. Check for human activity: Recent human messages?
-4. Check escalation status: Is conversation escalated but not handled?
+2. Check for human activity: Recent human messages?
+3. Check escalation status: Is conversation escalated but not handled?
+4. Check explicit tagging format (markdown mention or `@ai`)
 
 **Duplicate messages**:
 
@@ -648,10 +644,9 @@ if (shouldCheckNewFactor(input)) {
 
 **Slow responses**:
 
-1. Check response delay setting: `settings.responseDelayMs`
-2. Check LLM response time
-3. Check database query performance
-4. Check context size (message count)
+1. Check LLM response time
+2. Check database query performance
+3. Check context size (message count)
 
 **Escalated conversations not getting AI responses**:
 
@@ -708,14 +703,6 @@ Each AI agent has configurable behavior stored in `aiAgent.behaviorSettings`:
 
 ```typescript
 type AiAgentBehaviorSettings = {
-  // When to respond
-  responseMode: "always" | "when_no_human" | "on_mention" | "manual";
-  responseDelayMs: number; // 0-30000ms
-
-  // Human interaction
-  pauseOnHumanReply: boolean;
-  pauseDurationMinutes: number | null;
-
   // Capabilities
   canResolve: boolean;
   canMarkSpam: boolean;
@@ -726,7 +713,6 @@ type AiAgentBehaviorSettings = {
 
   // Escalation
   defaultEscalationUserId: string | null;
-  autoAssignOnEscalation: boolean;
 
   // Background analysis
   autoAnalyzeSentiment: boolean;
@@ -735,26 +721,17 @@ type AiAgentBehaviorSettings = {
 };
 ```
 
-### Response Modes
+### Tagging & Commands
 
-| Mode            | Description                              |
-| --------------- | ---------------------------------------- |
-| `always`        | Respond to every visitor message         |
-| `when_no_human` | Only respond if no human agent is active |
-| `on_mention`    | Only respond when explicitly mentioned   |
-| `manual`        | Only respond to human commands           |
-
-### Human Commands
-
-Human agents can give commands using `@ai`:
+AI can be explicitly tagged using markdown mention format:
 
 ```
-@ai summarize this conversation
-@ai draft a response about shipping
-@ai what do we know about this customer?
+[@Agent Name](mention:ai-agent:AGENT_ID)
 ```
 
-Commands always trigger AI processing regardless of response mode.
+Plain text `@ai` or `@AgentName` is accepted as a fallback for non-markdown channels.
+
+If the tag appears in a private message, the AI responds privately only.
 
 ---
 

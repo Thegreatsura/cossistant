@@ -25,12 +25,13 @@ function PlaygroundPropDisplay({
 
 const DEFAULT_MESSAGES: DefaultMessage[] = [
 	{
-		content: "Hi 👋 I'm Anthony, founder of Cossistant",
-		senderType: SenderType.TEAM_MEMBER,
+		content: "Hi 👋 I'm Coss, I'm here to help you with your questions.",
+		senderType: SenderType.AI,
 	},
 	{
-		content: "How can I help you?",
-		senderType: SenderType.TEAM_MEMBER,
+		content:
+			"(if you need help or want to chat with Anthony our founder just ask away!)",
+		senderType: SenderType.AI,
 	},
 ];
 

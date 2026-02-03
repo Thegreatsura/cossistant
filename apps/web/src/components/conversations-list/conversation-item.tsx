@@ -125,12 +125,12 @@ export function ConversationItemView({
 			</div>
 			<div className="flex items-center gap-3">
 				{needsHumanIntervention && (
-					<span className="shrink-0 rounded border border-red-500/20 bg-red-500/10 px-2 py-1 font-medium text-[11px] text-red-500 leading-none">
+					<span className="shrink-0 font-medium text-cossistant-orange text-xs leading-none">
 						Needs human
 					</span>
 				)}
 				{waitingSinceLabel && !needsHumanIntervention && (
-					<span className="shrink-0 rounded border border-cossistant-orange/10 bg-cossistant-orange/5 px-2 py-1 font-medium text-[11px] text-cossistant-orange leading-none">
+					<span className="shrink-0 font-medium text-cossistant-orange text-xs leading-none">
 						{waitingSinceLabel} waiting
 					</span>
 				)}
