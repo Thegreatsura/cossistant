@@ -134,7 +134,7 @@ export function ConversationItemView({
 						{waitingSinceLabel} waiting
 					</span>
 				)}
-				<div className="flex min-w-[70px] items-center justify-end gap-1">
+				<div className="flex min-w-[150px] items-center justify-end gap-1">
 					{rightContent ||
 						(isMounted && formattedTime ? (
 							<span className="shrink-0 pr-2 text-primary/40 text-xs">
