@@ -64,7 +64,7 @@ const REGEX_SPLIT_INITIALS = /\s+/;
 function BoringAvatar({
 	className,
 	name,
-	interactive = false,
+	interactive = true,
 }: {
 	className?: string;
 	name: string;
@@ -79,6 +79,7 @@ function BoringAvatar({
 			)}
 			colorClasses={COSSISTANT_COLOR_CLASSES}
 			//   gradientOverlayClass="bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,_var(--tw-gradient-from)_0%,_transparent_100%)] from-[#FFFFFF] dark:from-[#000000]/80"
+			enableBlink
 			intensity3d="dramatic"
 			interactive={interactive}
 			name={name}
