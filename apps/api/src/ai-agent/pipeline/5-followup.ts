@@ -20,7 +20,7 @@ import { updateAiAgentUsage } from "@api/db/queries/ai-agent";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import {
-	clearWorkflowState,
+	clearWorkflowStateIfActive,
 	type WorkflowDirection,
 } from "@cossistant/jobs/workflow-state";
 import type { Redis } from "@cossistant/redis";
@@ -40,6 +40,7 @@ type FollowupInput = {
 	executionResult: ExecutionResult | null;
 	organizationId: string;
 	websiteId: string;
+	workflowRunId: string;
 };
 
 /**
@@ -49,7 +50,12 @@ export async function followup(input: FollowupInput): Promise<void> {
 	const { db, redis, aiAgent, conversation, decision, executionResult } = input;
 
 	// Clear workflow state
-	await clearWorkflowState(redis, conversation.id, AI_AGENT_DIRECTION);
+	await clearWorkflowStateIfActive(
+		redis,
+		conversation.id,
+		AI_AGENT_DIRECTION,
+		input.workflowRunId
+	);
 
 	// If there was a successful action, update usage stats
 	if (executionResult?.primaryAction.success && decision?.action !== "skip") {

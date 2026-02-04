@@ -31,6 +31,7 @@ import {
 	desc,
 	eq,
 	inArray,
+	isNotNull,
 	isNull,
 	lt,
 	or,
@@ -914,4 +915,73 @@ export async function getMessageMetadata(
 		.limit(1);
 
 	return message;
+}
+
+/**
+ * Get the most recent public visitor message ID for a conversation.
+ * Used to detect if a newer visitor message arrived during AI generation.
+ */
+export async function getLatestPublicVisitorMessageId(
+	db: Database,
+	params: {
+		conversationId: string;
+		organizationId: string;
+	}
+): Promise<string | null> {
+	const [message] = await db
+		.select({ id: conversationTimelineItem.id })
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.type, "message"),
+				eq(conversationTimelineItem.visibility, "public"),
+				isNotNull(conversationTimelineItem.visitorId),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.orderBy(
+			desc(conversationTimelineItem.createdAt),
+			desc(conversationTimelineItem.id)
+		)
+		.limit(1);
+
+	return message?.id ?? null;
+}
+
+/**
+ * Get the most recent public AI message for a conversation.
+ * Used for duplicate message suppression.
+ */
+export async function getLatestPublicAiMessage(
+	db: Database,
+	params: {
+		conversationId: string;
+		organizationId: string;
+	}
+): Promise<{ id: string; text: string | null } | null> {
+	const [message] = await db
+		.select({
+			id: conversationTimelineItem.id,
+			text: conversationTimelineItem.text,
+		})
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.type, "message"),
+				eq(conversationTimelineItem.visibility, "public"),
+				isNotNull(conversationTimelineItem.aiAgentId),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.orderBy(
+			desc(conversationTimelineItem.createdAt),
+			desc(conversationTimelineItem.id)
+		)
+		.limit(1);
+
+	return message ?? null;
 }

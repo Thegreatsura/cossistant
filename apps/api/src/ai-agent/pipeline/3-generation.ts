@@ -32,6 +32,7 @@ import type { VisitorContext } from "../context/visitor";
 import type { AiDecision } from "../output/schemas";
 import { buildSystemPrompt } from "../prompts/system";
 import {
+	createActionCapture,
 	getCapturedAction,
 	getRepairTools,
 	getToolsForGeneration,
@@ -90,6 +91,8 @@ type GenerationInput = {
 	smartDecision?: SmartDecisionResult;
 	/** Workflow run ID for progress events */
 	workflowRunId?: string;
+	/** Latest public visitor message ID at pipeline start */
+	latestVisitorMessageIdAtStart?: string | null;
 };
 
 /**
@@ -125,8 +128,11 @@ export async function generate(
 		escalationReason,
 		smartDecision,
 		workflowRunId,
+		latestVisitorMessageIdAtStart,
 	} = input;
 	const convId = conversation.id;
+
+	const actionCapture = createActionCapture();
 
 	// Build tool context for passing to tool execute functions
 	// Counters are mutable objects that track message idempotency within this generation
@@ -140,6 +146,7 @@ export async function generate(
 		aiAgentId: aiAgent.id,
 		allowPublicMessages,
 		triggerMessageId,
+		latestVisitorMessageIdAtStart,
 		counters: {
 			sendMessage: 0,
 			sendPrivateMessage: 0,
@@ -154,10 +161,12 @@ export async function generate(
 		isEscalated,
 		// Workflow run ID for progress events
 		workflowRunId,
+		// Per-generation captured action store (concurrency-safe)
+		actionCapture,
 	};
 
 	// Reset captured action before generation
-	resetCapturedAction();
+	resetCapturedAction(actionCapture);
 
 	// Get tools for this agent based on settings (with bound context)
 	const tools = getToolsForGeneration(aiAgent, toolContext);
@@ -287,7 +296,7 @@ export async function generate(
 	);
 
 	// Get the captured action from action tools
-	const capturedAction = getCapturedAction();
+	const capturedAction = getCapturedAction(actionCapture);
 
 	const requiresMessage = Boolean(
 		capturedAction &&
@@ -311,7 +320,7 @@ export async function generate(
 		const repairTools = getRepairTools(toolContext);
 		if (repairTools) {
 			// Reset captured action before repair generation
-			resetCapturedAction();
+			resetCapturedAction(actionCapture);
 
 			const repairPrompt = `${buildSystemPrompt({
 				aiAgent,
@@ -369,7 +378,7 @@ export async function generate(
 				(tc) => tc.toolName === "sendPrivateMessage"
 			);
 
-			const repairAction = getCapturedAction();
+			const repairAction = getCapturedAction(actionCapture);
 			const repairSucceeded = Boolean(
 				repairAction &&
 					repairAction.action === "respond" &&

@@ -8,6 +8,10 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { sendMessage as sendMessageAction } from "../actions/send-message";
+import {
+	hasNewerVisitorMessageSinceStart,
+	isDuplicatePublicAiMessage,
+} from "../utils/message-guards";
 import type { ToolContext, ToolResult } from "./types";
 
 /**
@@ -99,7 +103,8 @@ export function createSendMessageTool(ctx: ToolContext) {
 				// Increment counter in context (shared mutable object)
 				counters.sendMessage++;
 				const messageNumber = counters.sendMessage;
-				const uniqueKey = `${ctx.triggerMessageId}-msg-${messageNumber}`;
+				const workflowKey = ctx.workflowRunId ?? ctx.triggerMessageId;
+				const uniqueKey = `${workflowKey}-msg-${messageNumber}`;
 
 				// CHECK: Is this workflow still active? Prevents duplicate messages
 				// when a newer message has superseded this workflow during generation.
@@ -115,6 +120,51 @@ export function createSendMessageTool(ctx: ToolContext) {
 							data: { sent: false, messageId: "" },
 						};
 					}
+				}
+
+				// CHECK: Has a newer visitor message arrived since this pipeline started?
+				const { hasNewer: hasNewerVisitorMessage } =
+					await hasNewerVisitorMessageSinceStart({
+						db: ctx.db,
+						conversationId: ctx.conversationId,
+						organizationId: ctx.organizationId,
+						latestVisitorMessageIdAtStart: ctx.latestVisitorMessageIdAtStart,
+					});
+
+				if (hasNewerVisitorMessage) {
+					console.log(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Newer visitor message detected, skipping message #${messageNumber}`
+					);
+					if (ctx.stopTyping) {
+						await ctx.stopTyping();
+					}
+					return {
+						success: false,
+						error: "Superseded by newer visitor message",
+						data: { sent: false, messageId: "" },
+					};
+				}
+
+				// CHECK: Prevent duplicate consecutive AI messages
+				const { duplicate: isDuplicate } = await isDuplicatePublicAiMessage({
+					db: ctx.db,
+					conversationId: ctx.conversationId,
+					organizationId: ctx.organizationId,
+					messageText: message,
+				});
+
+				if (isDuplicate) {
+					console.log(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Duplicate message detected, skipping message #${messageNumber}`
+					);
+					if (ctx.stopTyping) {
+						await ctx.stopTyping();
+					}
+					return {
+						success: false,
+						error: "Duplicate message suppressed",
+						data: { sent: false, messageId: "" },
+					};
 				}
 
 				// For subsequent messages (not the first one), add a natural delay

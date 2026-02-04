@@ -20,10 +20,31 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { ToolContext, ToolResult } from "./types";
 
+const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+
 const inputSchema = z
 	.object({
-		email: z.string().email().optional().describe("Visitor email address"),
-		name: z.string().optional().describe("Visitor name"),
+		email: z
+			.string()
+			.email()
+			.optional()
+			.describe(
+				"Visitor's email address only, e.g. 'john@example.com'. Do NOT include name here."
+			),
+		name: z
+			.string()
+			.max(100)
+			.optional()
+			.describe(
+				"Visitor's name only, e.g. 'John Smith'. Do NOT include email here. Must be a single line."
+			)
+			.refine((val) => !val?.includes("\\n"), {
+				message: "Name must be a single line without newlines",
+			})
+			.refine((val) => !(val && EMAIL_PATTERN.test(val)), {
+				message:
+					"Name should not contain an email address. Use the email field for emails.",
+			}),
 	})
 	.refine((data) => Boolean(data.email?.trim() || data.name?.trim()), {
 		message: "Provide at least a name or email",
@@ -32,7 +53,7 @@ const inputSchema = z
 export function createIdentifyVisitorTool(ctx: ToolContext) {
 	return tool({
 		description:
-			"Identify or update a visitor's contact details (name/email). Use when the visitor shares their information or wants to update it.",
+			"Identify or update a visitor's contact details. IMPORTANT: Put the name in the 'name' field (e.g., 'John Smith') and the email in the 'email' field (e.g., 'john@example.com'). Never combine them in a single field.",
 		inputSchema,
 		execute: async ({
 			email,

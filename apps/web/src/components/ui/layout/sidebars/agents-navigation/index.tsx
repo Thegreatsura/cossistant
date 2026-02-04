@@ -73,7 +73,7 @@ export function AgentsNavigationSidebar() {
 					<SidebarItem
 						active={isBehaviorActive}
 						href={`${basePath}/behavior`}
-						iconName="settings-2"
+						iconName="target"
 					>
 						Behavior
 					</SidebarItem>

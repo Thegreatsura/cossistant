@@ -28,6 +28,7 @@ export {
 } from "./utils/debounced-job";
 export {
 	clearWorkflowState,
+	clearWorkflowStateIfActive,
 	generateWorkflowRunId,
 	getWorkflowState,
 	isWorkflowRunActive,

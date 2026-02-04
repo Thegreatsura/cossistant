@@ -107,21 +107,23 @@ export function Footer() {
 							© 2025 cossistant. open source under GPL-3.0 license.
 						</p>
 						<div className="mt-4 flex items-center space-x-6 px-6 md:mt-0 lg:px-0">
-							<a
+							<Link
 								className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
-								href="#privacy"
+								href="/privacy"
 							>
 								Privacy
-							</a>
-							<a
+							</Link>
+							<Link
 								className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
-								href="#terms"
+								href="/terms"
 							>
 								Terms
-							</a>
+							</Link>
 							<a
 								className="font-mono text-foreground/60 text-sm transition-colors hover:text-foreground"
 								href="https://github.com/cossistantcom/cossistant?tab=security-ov-file#readme"
+								rel="noopener noreferrer"
+								target="_blank"
 							>
 								Security
 							</a>

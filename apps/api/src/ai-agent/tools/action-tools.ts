@@ -9,7 +9,7 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import type { ToolContext } from "./types";
+import type { ActionCapture, CapturedAction, ToolContext } from "./types";
 
 async function stopTypingIfNeeded(
 	ctx: ToolContext | undefined,
@@ -25,29 +25,37 @@ async function stopTypingIfNeeded(
 	}
 }
 
-/**
- * Store for capturing the action result within a generation.
- * This is set when an action tool is called.
- */
-let capturedAction: {
-	action: "respond" | "escalate" | "resolve" | "mark_spam" | "skip";
-	reasoning: string;
-	confidence: number;
-	escalation?: { reason: string; urgency?: "normal" | "high" | "urgent" };
-} | null = null;
+function createDefaultCapture(): ActionCapture {
+	let capturedAction: CapturedAction | null = null;
+	return {
+		get: () => capturedAction,
+		set: (action) => {
+			capturedAction = action;
+		},
+		reset: () => {
+			capturedAction = null;
+		},
+	};
+}
+
+const defaultCapture = createDefaultCapture();
+
+export function createActionCapture(): ActionCapture {
+	return createDefaultCapture();
+}
 
 /**
  * Reset the captured action (call before each generation)
  */
-export function resetCapturedAction() {
-	capturedAction = null;
+export function resetCapturedAction(capture: ActionCapture = defaultCapture) {
+	capture.reset();
 }
 
 /**
  * Get the captured action (call after generation)
  */
-export function getCapturedAction() {
-	return capturedAction;
+export function getCapturedAction(capture: ActionCapture = defaultCapture) {
+	return capture.get();
 }
 
 // Schemas for action tools
@@ -115,11 +123,12 @@ export function createRespondTool(ctx?: ToolContext) {
 			confidence,
 		}): Promise<{ success: boolean; action: string }> => {
 			await stopTypingIfNeeded(ctx, "respond");
-			capturedAction = {
+			const capture = ctx?.actionCapture ?? defaultCapture;
+			capture.set({
 				action: "respond",
 				reasoning,
 				confidence,
-			};
+			});
 			return { success: true, action: "respond" };
 		},
 	});
@@ -145,17 +154,18 @@ export function createEscalateTool(ctx?: ToolContext) {
 			alreadyEscalated?: boolean;
 		}> => {
 			await stopTypingIfNeeded(ctx, "escalate");
+			const capture = ctx?.actionCapture ?? defaultCapture;
 			// Check if already escalated - prevent re-escalation
 			if (ctx?.isEscalated) {
 				console.log(
 					`[tool:escalate] conv=${ctx.conversationId} | Already escalated, skipping re-escalation`
 				);
 				// Still capture the action but mark it to be handled differently
-				capturedAction = {
+				capture.set({
 					action: "respond", // Change to respond since we can't re-escalate
 					reasoning: `Attempted to escalate but conversation is already escalated. Original reasoning: ${reasoning}`,
 					confidence,
-				};
+				});
 				return {
 					success: false,
 					action: "respond",
@@ -164,12 +174,12 @@ export function createEscalateTool(ctx?: ToolContext) {
 				};
 			}
 
-			capturedAction = {
+			capture.set({
 				action: "escalate",
 				reasoning,
 				confidence,
 				escalation: { reason, urgency: urgency ?? "normal" },
-			};
+			});
 			return { success: true, action: "escalate", reason };
 		},
 	});
@@ -188,11 +198,12 @@ export function createResolveTool(ctx?: ToolContext) {
 			confidence,
 		}): Promise<{ success: boolean; action: string }> => {
 			await stopTypingIfNeeded(ctx, "resolve");
-			capturedAction = {
+			const capture = ctx?.actionCapture ?? defaultCapture;
+			capture.set({
 				action: "resolve",
 				reasoning,
 				confidence,
-			};
+			});
 			return { success: true, action: "resolve" };
 		},
 	});
@@ -211,11 +222,12 @@ export function createMarkSpamTool(ctx?: ToolContext) {
 			confidence,
 		}): Promise<{ success: boolean; action: string }> => {
 			await stopTypingIfNeeded(ctx, "markSpam");
-			capturedAction = {
+			const capture = ctx?.actionCapture ?? defaultCapture;
+			capture.set({
 				action: "mark_spam",
 				reasoning,
 				confidence,
-			};
+			});
 			return { success: true, action: "mark_spam" };
 		},
 	});
@@ -233,11 +245,12 @@ export function createSkipTool(ctx?: ToolContext) {
 			reasoning,
 		}): Promise<{ success: boolean; action: string }> => {
 			await stopTypingIfNeeded(ctx, "skip");
-			capturedAction = {
+			const capture = ctx?.actionCapture ?? defaultCapture;
+			capture.set({
 				action: "skip",
 				reasoning,
 				confidence: 1,
-			};
+			});
 			return { success: true, action: "skip" };
 		},
 	});

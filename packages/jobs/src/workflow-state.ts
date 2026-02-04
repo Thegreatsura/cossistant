@@ -64,6 +64,21 @@ export async function clearWorkflowState(
 	await redis.del(key);
 }
 
+export async function clearWorkflowStateIfActive(
+	redis: Redis,
+	conversationId: string,
+	direction: WorkflowDirection,
+	workflowRunId: string
+): Promise<boolean> {
+	const state = await getWorkflowState(redis, conversationId, direction);
+	if (state?.workflowRunId !== workflowRunId) {
+		return false;
+	}
+
+	await clearWorkflowState(redis, conversationId, direction);
+	return true;
+}
+
 export async function isWorkflowRunActive(
 	redis: Redis,
 	conversationId: string,

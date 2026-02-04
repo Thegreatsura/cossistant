@@ -31,7 +31,11 @@ import { createUpdateConversationTitleTool } from "./set-title";
 import type { ToolContext } from "./types";
 import { createUpdateSentimentTool } from "./update-sentiment";
 
-export { getCapturedAction, resetCapturedAction } from "./action-tools";
+export {
+	createActionCapture,
+	getCapturedAction,
+	resetCapturedAction,
+} from "./action-tools";
 export type { ToolContext, ToolResult } from "./types";
 
 /**

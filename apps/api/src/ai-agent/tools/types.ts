@@ -16,6 +16,19 @@ export type MessageCounters = {
 	sendPrivateMessage: number;
 };
 
+export type CapturedAction = {
+	action: "respond" | "escalate" | "resolve" | "mark_spam" | "skip";
+	reasoning: string;
+	confidence: number;
+	escalation?: { reason: string; urgency?: "normal" | "high" | "urgent" };
+};
+
+export type ActionCapture = {
+	get: () => CapturedAction | null;
+	set: (action: CapturedAction) => void;
+	reset: () => void;
+};
+
 /**
  * Callback to check if this workflow run is still active.
  * Used to prevent duplicate messages when a newer workflow supersedes this one.
@@ -49,6 +62,10 @@ export type ToolContext = {
 	allowPublicMessages: boolean;
 	/** Trigger message ID - used for idempotency keys in send-message tool */
 	triggerMessageId: string;
+	/** Workflow run ID - used for idempotency and guards */
+	workflowRunId?: string;
+	/** Latest public visitor message ID at pipeline start */
+	latestVisitorMessageIdAtStart?: string | null;
 	/**
 	 * Mutable counters for message idempotency - shared across tool calls.
 	 * May be undefined in edge cases (hot reload), tools should initialize defensively.
@@ -72,8 +89,8 @@ export type ToolContext = {
 	startTyping?: StartTypingCallback;
 	/** Whether the conversation is already escalated - prevents re-escalation */
 	isEscalated?: boolean;
-	/** Workflow run ID for progress event emission */
-	workflowRunId?: string;
+	/** Per-generation captured action store */
+	actionCapture?: ActionCapture;
 };
 
 /**
