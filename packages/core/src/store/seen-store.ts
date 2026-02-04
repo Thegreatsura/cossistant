@@ -85,9 +85,16 @@ type ActorIdentity = {
 function resolveActorIdentity(
 	entry: Pick<
 		ConversationSeen | RealtimeEvent<"conversationSeen">["payload"],
-		"userId" | "visitorId" | "aiAgentId"
+		"userId" | "visitorId" | "aiAgentId" | "actorType" | "actorId"
 	>
 ): ActorIdentity | null {
+	if (entry.actorType && entry.actorId) {
+		return {
+			actorType: entry.actorType as SeenActorType,
+			actorId: entry.actorId,
+		} satisfies ActorIdentity;
+	}
+
 	if (entry.userId) {
 		return { actorType: "user", actorId: entry.userId } satisfies ActorIdentity;
 	}
@@ -267,17 +274,14 @@ export function applyConversationSeenEvent(
 
 	if (
 		(identity.actorType === "visitor" &&
-			payload.visitorId &&
 			options.ignoreVisitorId &&
-			payload.visitorId === options.ignoreVisitorId) ||
+			identity.actorId === options.ignoreVisitorId) ||
 		(identity.actorType === "user" &&
-			payload.userId &&
 			options.ignoreUserId &&
-			payload.userId === options.ignoreUserId) ||
+			identity.actorId === options.ignoreUserId) ||
 		(identity.actorType === "ai_agent" &&
-			payload.aiAgentId &&
 			options.ignoreAiAgentId &&
-			payload.aiAgentId === options.ignoreAiAgentId)
+			identity.actorId === options.ignoreAiAgentId)
 	) {
 		return;
 	}

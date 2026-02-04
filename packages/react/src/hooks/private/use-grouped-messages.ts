@@ -214,7 +214,8 @@ const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 const buildTimelineReadReceiptData = (
 	seenData: ConversationSeen[],
 	items: TimelineItem[],
-	sortedMessageItems: TimelineItem[]
+	sortedMessageItems: TimelineItem[],
+	sortedMessageTimes: number[]
 ) => {
 	const seenByMap = new Map<string, Set<string>>();
 	const lastReadMessageMap = new Map<string, string>();
@@ -239,8 +240,10 @@ const buildTimelineReadReceiptData = (
 		let unreadCount = 0;
 
 		// Process items in chronological order (using pre-sorted array)
-		for (const item of sortedMessageItems) {
-			const itemTime = getTimestamp(item.createdAt);
+		for (let index = 0; index < sortedMessageItems.length; index++) {
+			const item = sortedMessageItems[index];
+			const itemTime =
+				sortedMessageTimes[index] ?? getTimestamp(item.createdAt);
 
 			if (itemTime <= seenTime) {
 				// This item has been seen
@@ -283,10 +286,33 @@ export const useGroupedMessages = ({
 	return useMemo(() => {
 		const groupedItems = groupTimelineItems(items);
 
-		// Pre-sort message items once for reuse (performance optimization)
-		const sortedMessageItems = items
-			.filter((item) => item.type === "message")
-			.sort((a, b) => getTimestamp(a.createdAt) - getTimestamp(b.createdAt));
+		// Pre-compute message items and timestamps once for reuse
+		const messageItems = items.filter((item) => item.type === "message");
+		let sortedMessageItems = messageItems;
+		let sortedMessageTimes = messageItems.map((item) =>
+			getTimestamp(item.createdAt)
+		);
+
+		// Avoid sorting if items are already in chronological order
+		let isSorted = true;
+		for (let index = 1; index < sortedMessageTimes.length; index++) {
+			if (sortedMessageTimes[index] < sortedMessageTimes[index - 1]) {
+				isSorted = false;
+				break;
+			}
+		}
+
+		if (!isSorted) {
+			const itemsWithTimes = messageItems.map((item, index) => ({
+				item,
+				time: sortedMessageTimes[index] ?? 0,
+			}));
+
+			itemsWithTimes.sort((a, b) => a.time - b.time);
+
+			sortedMessageItems = itemsWithTimes.map((entry) => entry.item);
+			sortedMessageTimes = itemsWithTimes.map((entry) => entry.time);
+		}
 
 		// Build index map from sorted items for O(1) chronological lookups
 		// Must use sortedMessageItems (not raw items) to ensure indices reflect time order
@@ -300,7 +326,12 @@ export const useGroupedMessages = ({
 
 		// Build read receipt data with pre-sorted items
 		const { seenByMap, lastReadMessageMap, unreadCountMap } =
-			buildTimelineReadReceiptData(seenData, items, sortedMessageItems);
+			buildTimelineReadReceiptData(
+				seenData,
+				items,
+				sortedMessageItems,
+				sortedMessageTimes
+			);
 
 		// Cache for turning seen sets into stable arrays across renders
 		const seenByArrayCache = new Map<string, readonly string[]>();

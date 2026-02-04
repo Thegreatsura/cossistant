@@ -1,4 +1,31 @@
-# Progress Log: Facehash Next.js Route Handler
+# Progress Log: Facehash Package
+
+## Session: 2026-02-04 - Custom Mouth Renderer & Eye Blinking
+
+### Features Implemented
+- [x] Added `onRenderMouth` prop for custom mouth/content rendering
+- [x] Added `enableBlink` prop for random eye blinking animation
+- [x] Pure CSS blink animation with chaotic timing per eye
+- [x] Updated all face components (RoundFace, CrossFace, LineFace, CurvedFace)
+- [x] Updated README documentation with examples
+
+### Files Modified
+- `src/facehash.tsx` - Added new props and rendering logic
+- `src/faces.tsx` - Added blink animation support with `<g>` wrappers
+- `README.md` - Added documentation for new features
+- `apps/facehash-landing/src/components/props-examples.tsx` - Added demos for new features
+
+### Technical Details
+- Blink animation uses CSS keyframes injected once into document head
+- Each eye has different delay (0-5s) and duration (2-7s) for chaotic effect
+- Timings are deterministic based on name hash (same name = same timing)
+- `onRenderMouth` takes precedence over `showInitial` when provided
+
+### Build & Type Check
+- ✅ TypeScript check passes
+- ✅ Build passes
+
+---
 
 ## Session: 2026-01-30
 

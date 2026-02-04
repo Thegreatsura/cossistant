@@ -602,10 +602,21 @@ export class CossistantRestClient {
 	async getConversationSeenData(params: {
 		conversationId: string;
 	}): Promise<GetConversationSeenDataResponse> {
+		const storedVisitorId = this.websiteId
+			? getVisitorId(this.websiteId)
+			: undefined;
+		const visitorId = this.visitorId || storedVisitorId;
+
+		const headers: Record<string, string> = {};
+		if (visitorId) {
+			headers["X-Visitor-Id"] = visitorId;
+		}
+
 		const response = await this.request<GetConversationSeenDataResponse>(
 			`/conversations/${params.conversationId}/seen`,
 			{
 				method: "GET",
+				headers,
 			}
 		);
 

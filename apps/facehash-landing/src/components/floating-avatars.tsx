@@ -103,6 +103,12 @@ function getBlur(index: number): string {
 	return "3px";
 }
 
+// Some avatars blink randomly (deterministic based on index)
+function shouldBlink(index: number): boolean {
+	const blinkingIndices = [1, 4, 7, 11, 14, 17];
+	return blinkingIndices.includes(index);
+}
+
 // Random rotation for each inflation level
 function getInflationRotation(level: number): number {
 	const rotations = [0, 15, -20, 25, -30];
@@ -219,6 +225,7 @@ export function FloatingAvatars() {
 						<Facehash
 							className="transition-[border-radius] duration-150"
 							colors={COLORS}
+							enableBlink={shouldBlink(index)}
 							intensity3d="dramatic"
 							interactive={true}
 							name={name}

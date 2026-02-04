@@ -55,6 +55,8 @@ Returns a PNG image. Cached for 1 year by default.
 | `intensity3d` | `"none" \| "subtle" \| "medium" \| "dramatic"` | `"dramatic"` | 3D rotation effect |
 | `interactive` | `boolean` | `true` | Animate on hover |
 | `showInitial` | `boolean` | `true` | Show first letter below face |
+| `onRenderMouth` | `() => React.ReactNode` | - | Custom mouth renderer (replaces initial) |
+| `enableBlink` | `boolean` | `false` | Enable random eye blinking animation |
 
 ## Examples
 
@@ -87,6 +89,44 @@ Returns a PNG image. Cached for 1 year by default.
 
 ```tsx
 <Facehash name="diana" showInitial={false} />
+```
+
+### Eye Blinking Animation
+
+Add a subtle, chaotic blinking effect to make faces feel alive:
+
+```tsx
+<Facehash name="alive" enableBlink />
+```
+
+The blinking is pure CSS with randomized timing per eye — each eye blinks at different intervals for a natural, chaotic effect.
+
+### Custom Mouth Renderer
+
+Replace the initial letter with any custom component:
+
+```tsx
+import { Facehash } from "facehash";
+import { Spinner } from "./spinner"; // Your loading spinner
+
+// Show a spinner as the "mouth"
+<Facehash
+  name="loading"
+  onRenderMouth={() => <Spinner size={16} />}
+/>
+
+// Custom icon
+<Facehash
+  name="bot"
+  onRenderMouth={() => <BotIcon className="w-4 h-4" />}
+/>
+
+// Combine with blinking for a "thinking" avatar
+<Facehash
+  name="thinking"
+  enableBlink
+  onRenderMouth={() => <Spinner size={12} />}
+/>
 ```
 
 ## Avatar with Image Fallback

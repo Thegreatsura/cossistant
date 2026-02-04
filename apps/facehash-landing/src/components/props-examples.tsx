@@ -3,6 +3,38 @@
 import { Avatar, AvatarFallback, AvatarImage, Facehash } from "facehash";
 import { useShape } from "./shape-context";
 
+// Simple spinner component for demo
+function Spinner({ size = 12 }: { size?: number }) {
+	return (
+		<svg
+			aria-hidden="true"
+			height={size}
+			style={{
+				animation: "spin 1s linear infinite",
+			}}
+			viewBox="0 0 24 24"
+			width={size}
+		>
+			<style>
+				{
+					"@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }"
+				}
+			</style>
+			<circle
+				cx="12"
+				cy="12"
+				fill="none"
+				r="10"
+				stroke="currentColor"
+				strokeDasharray="32"
+				strokeDashoffset="12"
+				strokeLinecap="round"
+				strokeWidth="3"
+			/>
+		</svg>
+	);
+}
+
 const COLORS = [
 	"hsla(314, 100%, 80%, 1)",
 	"hsla(58, 93%, 72%, 1)",
@@ -248,6 +280,85 @@ export function PropsExamples() {
 						size={48}
 						style={{ borderRadius }}
 						variant="solid"
+					/>
+				</Example>
+			</PropSection>
+
+			{/* enableBlink */}
+			<PropSection
+				code={`<Facehash name="facehash" enableBlink />
+<Facehash name="alice" enableBlink />
+<Facehash name="bob" enableBlink />`}
+				name="enableBlink"
+			>
+				<Example isDefault label="false">
+					<Facehash
+						colors={COLORS}
+						name="facehash"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label="true">
+					<Facehash
+						colors={COLORS}
+						enableBlink
+						name="facehash"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label='"alice"'>
+					<Facehash
+						colors={COLORS}
+						enableBlink
+						name="alice"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label='"bob"'>
+					<Facehash
+						colors={COLORS}
+						enableBlink
+						name="bob"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+			</PropSection>
+
+			{/* onRenderMouth */}
+			<PropSection
+				code={`<Facehash name="loading" onRenderMouth={() => <Spinner />} />
+<Facehash name="thinking" enableBlink onRenderMouth={() => <Spinner />} />`}
+				name="onRenderMouth"
+			>
+				<Example label="default">
+					<Facehash
+						colors={COLORS}
+						name="loading"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label="spinner">
+					<Facehash
+						colors={COLORS}
+						name="loading"
+						onRenderMouth={() => <Spinner size={10} />}
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label="thinking">
+					<Facehash
+						colors={COLORS}
+						enableBlink
+						name="thinking"
+						onRenderMouth={() => <Spinner size={10} />}
+						size={48}
+						style={{ borderRadius }}
 					/>
 				</Example>
 			</PropSection>

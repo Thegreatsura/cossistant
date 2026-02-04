@@ -84,7 +84,7 @@ export function Dashboard({
         defaultMessages={[
           {
             content:
-              "Welcome in our your dashboard, if you need any help I'm here!",
+              "Welcome to your dashboard. If you need any help, I'm here!",
             senderType: SenderType.TeamMember,
           },
         ]}
@@ -93,6 +93,8 @@ export function Dashboard({
   );
 }
 ```
+
+Make sure `IdentifySupportVisitor` and `SupportConfig` are rendered inside `SupportProvider`, and keep `<Support />` mounted somewhere in that tree.
 
 ## Need help or spot a typo?
 

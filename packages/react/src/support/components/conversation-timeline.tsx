@@ -20,6 +20,7 @@ import {
 } from "../../primitives/day-separator";
 import { cn } from "../utils";
 import { ConversationEvent } from "./conversation-event";
+import { filterSeenByIdsForViewer } from "./conversation-timeline-utils";
 import { TimelineMessageGroup } from "./timeline-message-group";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
@@ -238,10 +239,14 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 					// Only show seen indicator on the LAST message group sent by the visitor
 					const isLastVisitorGroup =
 						index === timeline.lastVisitorMessageGroupIndex;
-					const seenByIds =
+					const rawSeenByIds =
 						isLastVisitorGroup && item.lastMessageId
 							? timeline.groupedMessages.getMessageSeenBy(item.lastMessageId)
 							: EMPTY_SEEN_BY_IDS;
+					const seenByIds = filterSeenByIdsForViewer(
+						rawSeenByIds,
+						currentVisitorId
+					);
 					const seenByNames =
 						seenByIds.length > 0
 							? getSeenByNames(seenByIds)

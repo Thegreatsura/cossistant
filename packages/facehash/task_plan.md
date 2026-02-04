@@ -1,129 +1,122 @@
-# Task Plan: Next.js Route Handler Adapter for Facehash
+# Task Plan: Custom Mouth Renderer & Eye Blinking
 
 ## Goal
-Add a Next.js route handler adapter to the `facehash` library that generates PNG images of facehash avatars. Users can export `{ GET }` from `facehash/next` in their `app/api/avatar/route.ts` and get a working image endpoint.
+Add two new features to the Facehash component:
+1. **Custom Mouth Renderer** (`onRenderMouth`) - Allow users to render a custom mouth instead of the initial letter
+2. **Eye Blinking Effect** (`enableBlink`) - Random, chaotic CSS-only eye blinking animation
 
 ## Key Requirements
-1. **Tree-shakable**: Everything Next.js-related lives in `facehash/next` - core library remains framework-agnostic
-2. **Next.js 15/16 only**: App Router with route handlers, no legacy support
-3. **400x400 default**: Image dimensions default to 400px square
-4. **Same params as React component**: Accept `name`, `size`, `variant`, `intensity3d`, `showInitial`, `colors`
-5. **Fully typed**: TypeScript with proper generics
-6. **Easy API**: Follow Better Auth's pattern: `export const { GET } = toFacehashHandler(options?)`
+1. `onRenderMouth` render prop to replace the initial letter with custom content (e.g., a spinner)
+2. Eye blinking effect should be:
+   - Pure CSS (no JS timers)
+   - Random and chaotic (different timing per eye)
+   - Optional via `enableBlink` prop
+3. Update documentation (README.md)
 
-## Architecture
-
-```
-packages/facehash/
-├── src/
-│   ├── index.ts              # Main entry (unchanged)
-│   ├── next/
-│   │   ├── index.ts          # Entry for facehash/next
-│   │   ├── handler.ts        # Route handler factory
-│   │   └── image.tsx         # ImageResponse JSX component
-│   ├── core/
-│   │   └── facehash-data.ts  # Shared logic for computing face properties
-│   └── ...existing files
-├── package.json              # Add exports for ./next
-└── tsdown.config.ts          # Add entry for next
-```
+## Current Architecture Understanding
+- **Eyes** are rendered by `FaceComponent` (RoundFace, CrossFace, LineFace, CurvedFace)
+- **Mouth** area is currently the initial letter (`showInitial` prop)
+- The `onRenderMouth` should allow replacing this area entirely
 
 ## Phases
 
-### Phase 1: Extract Core Logic ✅ `complete`
-- [x] Create `src/core/facehash-data.ts` with pure functions
-- [x] Extract hash-based computation (face selection, color index, rotation)
-- [x] No React dependencies in core module
-- [x] Export types: `FacehashData`, `FacehashOptions`
+### Phase 1: Add onRenderMouth Prop ✅ `complete`
+- [x] Add `onRenderMouth?: () => React.ReactNode` prop to FacehashProps
+- [x] Replace the initial letter rendering with conditional: `onRenderMouth?.() ?? initial`
+- [x] When `onRenderMouth` is provided, it takes precedence over `showInitial`
+- [x] Export the type from index.ts
 
-### Phase 2: Create Static Image Component ✅ `complete`
-- [x] Create `src/next/image.tsx` - JSX for ImageResponse
-- [x] Render face SVG inline via `faces-svg.ts`
-- [x] Use inline styles only (flexbox, no grid)
-- [x] Satori-compatible CSS
+### Phase 2: Add Eye Blinking CSS Animation ✅ `complete`
+- [x] Create CSS keyframes for blinking (scaleY animation)
+- [x] Add `enableBlink?: boolean` prop to FacehashProps
+- [x] Apply random animation delays to each eye (left/right)
+- [x] Use CSS custom properties or inline styles for randomness
+- [x] Blinking should be chaotic: different durations, delays per eye
 
-### Phase 3: Build Route Handler Factory ✅ `complete`
-- [x] Create `src/next/handler.tsx`
-- [x] Implement `toFacehashHandler(options?)` function
-- [x] Parse search params: `name`, `size`, `variant`, `showInitial`, `colors`
-- [x] Return `{ GET }` object for destructuring export
-- [x] Full TypeScript types with JSDoc
+### Phase 3: Update faces.tsx for Individual Eye Control ✅ `complete`
+- [x] Modify face components to allow wrapping each eye separately
+- [x] Enable applying different animations to left vs right eye
+- [x] Keep backward compatibility with existing API
 
-### Phase 4: Configure Package Exports ✅ `complete`
-- [x] Update `package.json` with `./next` export
-- [x] Update `tsdown.config.ts` with new entry point
-- [x] Mark `next`, `next/og`, `next/server` as external
-- [x] Next.js as optional peer dependency (>=15)
+### Phase 4: Update Documentation ✅ `complete`
+- [x] Add `onRenderMouth` section to README
+- [x] Add `enableBlink` section to README
+- [x] Add example using Spinner as mouth
+- [x] Update Props table
 
 ### Phase 5: Test & Validate ✅ `complete`
-- [x] Create test route in `apps/facehash-landing/src/app/api/avatar/route.ts`
-- [x] Build passes successfully
-- [x] Route handler correctly detected as dynamic function route
+- [x] Build passes
+- [x] TypeScript check passes
 
 ## API Design
 
-### User-facing API
+### New Props
 ```typescript
-// app/api/avatar/route.ts
-import { toFacehashHandler } from "facehash/next";
+interface FacehashProps {
+  // ... existing props ...
 
-export const { GET } = toFacehashHandler({
-  // Optional defaults (all overridable via query params)
-  size: 400,
-  variant: "gradient",
-  colors: ["#ec4899", "#f59e0b", "#3b82f6"],
-});
-```
+  /**
+   * Custom mouth renderer. When provided, replaces the initial letter.
+   * Useful for showing loading spinners, custom icons, etc.
+   */
+  onRenderMouth?: () => React.ReactNode;
 
-### Query Parameters
-```
-GET /api/avatar?name=john
-GET /api/avatar?name=john&size=200
-GET /api/avatar?name=john&variant=solid&showInitial=false
-GET /api/avatar?name=john&colors=#ff0000,#00ff00,#0000ff
-```
-
-### Handler Options Type
-```typescript
-interface FacehashHandlerOptions {
-  size?: number;              // Default: 400
-  variant?: "gradient" | "solid";
-  showInitial?: boolean;      // Default: true
-  colors?: string[];          // Default: library defaults
-  cacheControl?: string;      // Default: "public, max-age=31536000, immutable"
+  /**
+   * Enable random eye blinking animation.
+   * Pure CSS, different timing per eye for chaotic effect.
+   * @default false
+   */
+  enableBlink?: boolean;
 }
 ```
 
-## Technical Notes
+### Usage Examples
+```tsx
+// Custom mouth with spinner
+<Facehash
+  name="loading"
+  onRenderMouth={() => <Spinner size={16} />}
+/>
 
-### ImageResponse Constraints
-- Only flexbox layouts (no CSS grid)
-- Subset of CSS properties
-- 500KB bundle limit
-- Font formats: ttf, otf, woff only
-- Uses Satori + Resvg under the hood
+// Eye blinking
+<Facehash name="alive" enableBlink />
 
-### Face SVGs
-Need to inline SVG paths directly in JSX (not use React components). The face components return JSX which should work, but may need adjustment for Satori compatibility.
+// Both
+<Facehash
+  name="bot"
+  enableBlink
+  onRenderMouth={() => <BotIcon size={12} />}
+/>
+```
 
-### Colors in Query String
-Parse comma-separated hex colors: `?colors=#ec4899,#f59e0b`
+## CSS Animation Strategy for Blinking
+
+Use CSS keyframes with random delays injected via inline styles:
+```css
+@keyframes facehash-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+```
+
+Each eye gets a different random delay (2-6s) and duration (0.1-0.2s for blink).
+Use `Math.random()` seeded by hash to make it deterministic per name but different per eye.
+
+## Technical Considerations
+
+### Face Component Refactoring
+Current faces render both eyes in a single SVG. For individual eye animation, we have two options:
+1. **Wrapper approach**: Wrap each path in a `<g>` element with its own animation
+2. **Split SVG approach**: Render each eye as separate SVG (more complex)
+
+Going with option 1 (wrapper approach) for simplicity.
+
+## Files to Modify
+- `src/facehash.tsx` - Add new props and rendering logic
+- `src/faces.tsx` - Possibly add wrappers for individual eye animation
+- `README.md` - Update documentation
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
 | (none yet) | | |
-
-## Files to Create/Modify
-- `src/core/facehash-data.ts` - NEW
-- `src/next/index.ts` - NEW
-- `src/next/handler.ts` - NEW
-- `src/next/image.tsx` - NEW
-- `package.json` - MODIFY
-- `tsdown.config.ts` - MODIFY
-
-## References
-- [Next.js ImageResponse](https://nextjs.org/docs/app/api-reference/functions/image-response)
-- [Next.js Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)
-- [Better Auth Next.js Integration](https://www.better-auth.com/docs/integrations/next)
-- [Satori CSS Support](https://github.com/vercel/satori#css)

@@ -371,6 +371,32 @@ describe("buildTimelineReadReceiptData", () => {
 		expect(seenByMap.get("msg-3")?.has("user-2")).toBe(false);
 	});
 
+	it("handles large timelines without corrupting read receipts", () => {
+		const baseTime = new Date("2024-01-01T00:00:00.000Z").getTime();
+		const items: TimelineItem[] = Array.from({ length: 500 }, (_, index) =>
+			createTimelineItem({
+				id: `msg-${index}`,
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date(baseTime + index * 1000).toISOString(),
+			})
+		);
+
+		const seenData: ConversationSeen[] = [
+			createSeenEntry({
+				userId: null,
+				visitorId: "visitor-1",
+				lastSeenAt: new Date(baseTime + 249 * 1000).toISOString(),
+			}),
+		];
+
+		const { seenByMap } = buildTimelineReadReceiptData(seenData, items);
+
+		expect(seenByMap.get("msg-0")?.has("visitor-1")).toBe(true);
+		expect(seenByMap.get("msg-249")?.has("visitor-1")).toBe(true);
+		expect(seenByMap.get("msg-250")?.has("visitor-1")).toBe(false);
+	});
+
 	it("does NOT extend seen time to include viewer's own messages sent after lastSeenAt", () => {
 		const items: TimelineItem[] = [
 			createTimelineItem({

@@ -1,7 +1,7 @@
 "use client";
 
 import { getImageProps } from "next/image";
-import { AsciiImage } from "./ascii-image";
+import { type AsciiCharacterPalette, AsciiImage } from "./ascii-image";
 
 type BackgroundImageProps = {
 	/**
@@ -77,17 +77,23 @@ type BackgroundImageProps = {
 	 */
 	characters?: string;
 	/**
+	 * Built-in palette name (dense to sparse).
+	 * Use `characters` for a fully custom palette.
+	 */
+	characterPalette?: AsciiCharacterPalette;
+	/**
 	 * Resolution/density of ASCII characters (0.05 = fine, 0.3 = coarse)
 	 */
 	resolution?: number;
 	/**
-	 * Speed of the noise animation effect
+	 * Contrast multiplier for luminance before mapping to characters.
+	 * 1 = neutral, >1 = stronger definition, <1 = softer.
 	 */
-	noiseSpeed?: number;
+	strength?: number;
 	/**
-	 * Intensity of the noise animation effect
+	 * Reverse luminance mapping (light areas get dense characters).
 	 */
-	noiseIntensity?: number;
+	reverse?: boolean;
 };
 
 /**
@@ -114,9 +120,10 @@ export function BackgroundImage({
 	portraitOnMobile = false,
 	asciiOpacity = 0.25,
 	characters = "@%#*+=-:;  ",
+	characterPalette,
 	resolution = 0.15,
-	noiseSpeed = 0.15,
-	noiseIntensity = 0.2,
+	strength,
+	reverse,
 }: BackgroundImageProps) {
 	const common = {
 		alt,
@@ -176,13 +183,14 @@ export function BackgroundImage({
 			<AsciiImage
 				alt={alt}
 				asciiOpacity={asciiOpacity}
+				characterPalette={characterPalette}
 				characters={characters}
 				className="absolute inset-0 size-full"
-				noiseIntensity={noiseIntensity}
-				noiseSpeed={noiseSpeed}
 				priority
 				resolution={resolution}
+				reverse={reverse}
 				src={largeSrc}
+				strength={strength}
 			/>
 		</div>
 	);

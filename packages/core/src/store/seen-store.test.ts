@@ -164,6 +164,8 @@ describe("seen store", () => {
 				websiteId: "site-1",
 				organizationId: "org-1",
 				conversationId: "conv-1",
+				actorType: "visitor",
+				actorId: "visitor-1",
 				visitorId: "visitor-1",
 				userId: null,
 				aiAgentId: null,
@@ -182,6 +184,54 @@ describe("seen store", () => {
 		const entries = getEntries("conv-1");
 		expect(Object.keys(entries)).toHaveLength(1);
 		expect(entries["conv-1:visitor:visitor-1"]?.actorType).toBe("visitor");
+	});
+
+	it("applies realtime events that only include actorType/actorId", () => {
+		const event: RealtimeEvent<"conversationSeen"> = {
+			type: "conversationSeen",
+			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
+				conversationId: "conv-1",
+				actorType: "user",
+				actorId: "user-9",
+				visitorId: null,
+				userId: null,
+				aiAgentId: null,
+				lastSeenAt: new Date("2024-01-01T03:00:00.000Z").toISOString(),
+			},
+		};
+
+		applyConversationSeenEvent(store, event);
+
+		const entries = getEntries("conv-1");
+		expect(Object.keys(entries)).toHaveLength(1);
+		expect(entries["conv-1:user:user-9"]?.actorType).toBe("user");
+	});
+
+	it("does not ignore non-visitor actors when ignoreVisitorId is set", () => {
+		const event: RealtimeEvent<"conversationSeen"> = {
+			type: "conversationSeen",
+			payload: {
+				websiteId: "site-1",
+				organizationId: "org-1",
+				conversationId: "conv-1",
+				actorType: "user",
+				actorId: "user-2",
+				visitorId: null,
+				userId: "user-2",
+				aiAgentId: null,
+				lastSeenAt: new Date("2024-01-01T04:00:00.000Z").toISOString(),
+			},
+		};
+
+		applyConversationSeenEvent(store, event, {
+			ignoreVisitorId: "visitor-1",
+		});
+
+		const entries = getEntries("conv-1");
+		expect(Object.keys(entries)).toHaveLength(1);
+		expect(entries["conv-1:user:user-2"]?.actorType).toBe("user");
 	});
 
 	it("clears conversations", () => {

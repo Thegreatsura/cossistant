@@ -12,30 +12,60 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
+// Built-in character sets sorted by visual density (dense to sparse)
+export const ASCII_CHARACTER_PALETTES = {
+	balanced: "@#%*+:. ",
+	contrast: "@%#*+=-:;  ",
+	minimal: "@#*+:. ",
+	detailed:
+		"$@B%8&WM#*oahkbdpqwmZ0OQLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ",
+} as const;
+
+export type AsciiCharacterPalette = keyof typeof ASCII_CHARACTER_PALETTES;
+
 type AsciiImageProps = {
 	src: string;
 	alt: string;
 	className?: string;
 	asciiOpacity?: number;
+	/**
+	 * Opacity of the base image layer (0-1).
+	 */
+	imageOpacity?: number;
+	/**
+	 * Render the base image in monochrome (grayscale).
+	 */
+	imageMonochrome?: boolean;
+	/**
+	 * Built-in palette name (dense to sparse).
+	 * Use `characters` for a fully custom palette.
+	 */
+	characterPalette?: AsciiCharacterPalette;
+	/**
+	 * Custom character palette sorted by visual density (dense to sparse).
+	 * Overrides `characterPalette` when provided.
+	 */
 	characters?: string;
 	resolution?: number;
-	noiseSpeed?: number;
-	noiseIntensity?: number;
+	/**
+	 * Contrast multiplier for luminance before mapping to characters.
+	 * 1 = neutral, >1 = stronger definition, <1 = softer.
+	 */
+	strength?: number;
+	/**
+	 * Reverse luminance mapping (light areas get dense characters).
+	 */
+	reverse?: boolean;
 	priority?: boolean;
 };
 
 // Default character set sorted by visual density (dense to sparse)
-// High-contrast set: @=very dense, #=dense, %=medium-dense, *=medium, +=medium-light, :=light, .=very light, space=empty
-const DEFAULT_CHARACTERS = "@#%*+:. ";
+const DEFAULT_CHARACTERS = ASCII_CHARACTER_PALETTES.balanced;
 
 // Luminance weights for RGB to grayscale conversion (ITU-R BT.601)
 const LUMINANCE_R = 0.299;
 const LUMINANCE_G = 0.587;
 const LUMINANCE_B = 0.114;
-
-// Animation constants
-const TARGET_FPS = 18;
-const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
 // Debounce delay for resize
 const RESIZE_DEBOUNCE_MS = 150;
@@ -54,7 +84,31 @@ type SampleOptions = {
 	containerHeight: number;
 	resolution: number;
 	characters: string;
+	strength: number;
+	reverse: boolean;
 };
+
+function clampUnit(value: number) {
+	return Math.min(1, Math.max(0, value));
+}
+
+function resolveCharacters({
+	characterPalette,
+	characters,
+}: {
+	characterPalette?: AsciiCharacterPalette;
+	characters?: string;
+}) {
+	if (characters && characters.trim().length > 0) {
+		return characters;
+	}
+
+	if (characterPalette) {
+		return ASCII_CHARACTER_PALETTES[characterPalette];
+	}
+
+	return DEFAULT_CHARACTERS;
+}
 
 /**
  * Samples pixels from an image and creates a grid of ASCII characters
@@ -66,6 +120,8 @@ function sampleImageToAscii({
 	containerHeight,
 	resolution,
 	characters,
+	strength,
+	reverse,
 }: SampleOptions): CharacterGrid | null {
 	if (!img.complete || img.naturalWidth === 0) {
 		return null;
@@ -104,6 +160,9 @@ function sampleImageToAscii({
 
 	const chars: string[] = [];
 	const charCount = characters.length;
+	if (charCount === 0) {
+		return null;
+	}
 
 	// Sample each pixel and map to a character
 	for (let y = 0; y < rows; y++) {
@@ -124,10 +183,16 @@ function sampleImageToAscii({
 			// Characters are sorted dense to sparse, so dark (low luminance) = first chars
 			// We invert so that dark areas get dense characters
 			const normalizedLuminance = adjustedLuminance / 255;
-			const invertedLuminance = 1 - normalizedLuminance;
+			const contrast = Number.isFinite(strength) ? Math.max(0, strength) : 1;
+			const contrastedLuminance = clampUnit(
+				(normalizedLuminance - 0.5) * contrast + 0.5
+			);
+			const mappedLuminance = reverse
+				? contrastedLuminance
+				: 1 - contrastedLuminance;
 			const charIndex = Math.min(
 				charCount - 1,
-				Math.floor(invertedLuminance * charCount)
+				Math.floor(mappedLuminance * charCount)
 			);
 
 			chars.push(characters[charIndex] ?? " ");
@@ -144,146 +209,75 @@ function sampleImageToAscii({
 }
 
 /**
- * Simple seeded random for consistent noise per character position
- */
-function seededRandom(x: number, y: number, seed: number): number {
-	const n =
-		Math.sin(x * 12.9898 + y * 78.233 + seed * 43_758.5453) * 43_758.5453;
-	return n - Math.floor(n);
-}
-
-/**
- * Canvas 2D ASCII renderer with animation
+ * Canvas 2D ASCII renderer
  */
 function AsciiCanvas({
 	grid,
-	noiseSpeed,
-	noiseIntensity,
 	color,
 	isVisible,
 }: {
 	grid: CharacterGrid;
-	noiseSpeed: number;
-	noiseIntensity: number;
 	color: string;
 	isVisible: boolean;
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const animationRef = useRef<number>(0);
-	const lastFrameTimeRef = useRef<number>(0);
-	const timeRef = useRef<number>(0);
 
-	const render = useCallback(
-		(time: number) => {
-			const canvas = canvasRef.current;
-			if (!canvas) {
-				return;
-			}
+	const render = useCallback(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) {
+			return;
+		}
 
-			const ctx = canvas.getContext("2d");
-			if (!ctx) {
-				return;
-			}
+		const ctx = canvas.getContext("2d");
+		if (!ctx) {
+			return;
+		}
 
-			const { chars, cols, rows, cellWidth, cellHeight } = grid;
+		const { chars, cols, rows, cellWidth, cellHeight } = grid;
 
-			// Clear canvas
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
+		// Clear canvas
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			// Scale for retina (canvas is 2x the CSS size)
-			ctx.save();
-			ctx.scale(2, 2);
+		// Scale for retina (canvas is 2x the CSS size)
+		ctx.save();
+		ctx.scale(2, 2);
 
-			// Set font - scale to fit cell while maintaining readability
-			const fontSize = Math.max(4, Math.min(cellWidth * 0.9, cellHeight * 0.6));
-			ctx.font = `${fontSize}px "SF Mono", "Fira Code", "Monaco", "Consolas", monospace`;
-			ctx.fillStyle = color;
-			ctx.textAlign = "center";
-			ctx.textBaseline = "middle";
+		// Set font - scale to fit cell while maintaining readability
+		const fontSize = Math.max(4, Math.min(cellWidth * 0.9, cellHeight * 0.6));
+		ctx.font = `${fontSize}px "SF Mono", "Fira Code", "Monaco", "Consolas", monospace`;
+		ctx.fillStyle = color;
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
 
-			// Render each character with optional animation
-			for (let y = 0; y < rows; y++) {
-				for (let x = 0; x < cols; x++) {
-					const charIndex = y * cols + x;
-					const char = chars[charIndex];
+		// Render each character
+		for (let y = 0; y < rows; y++) {
+			for (let x = 0; x < cols; x++) {
+				const charIndex = y * cols + x;
+				const char = chars[charIndex];
 
-					if (!char || char === " ") {
-						continue;
-					}
-
-					// Calculate base position (center of cell)
-					let px = x * cellWidth + cellWidth / 2;
-					let py = y * cellHeight + cellHeight / 2;
-
-					// Apply subtle animation effects
-					if (noiseIntensity > 0) {
-						// Jitter effect - small random offset
-						const jitterSeed = seededRandom(x, y, Math.floor(time * 0.003));
-						const jitterX =
-							(jitterSeed - 0.5) * noiseIntensity * cellWidth * 0.3;
-						const jitterY =
-							(seededRandom(y, x, Math.floor(time * 0.003)) - 0.5) *
-							noiseIntensity *
-							cellHeight *
-							0.3;
-
-						// Wave effect - sinusoidal displacement
-						const wavePhase = time * noiseSpeed * 0.002;
-						const waveX =
-							Math.sin(y * 0.15 + wavePhase) * noiseIntensity * cellWidth * 0.2;
-						const waveY =
-							Math.cos(x * 0.15 + wavePhase * 0.7) *
-							noiseIntensity *
-							cellHeight *
-							0.15;
-
-						px += jitterX + waveX;
-						py += jitterY + waveY;
-					}
-
-					ctx.fillText(char, px, py);
+				if (!char || char === " ") {
+					continue;
 				}
+
+				// Calculate position (center of cell)
+				const px = x * cellWidth + cellWidth / 2;
+				const py = y * cellHeight + cellHeight / 2;
+
+				ctx.fillText(char, px, py);
 			}
+		}
 
-			// Restore canvas state (undo scale)
-			ctx.restore();
-		},
-		[grid, color, noiseIntensity, noiseSpeed]
-	);
+		// Restore canvas state (undo scale)
+		ctx.restore();
+	}, [grid, color]);
 
-	// Animation loop
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!isVisible) {
 			return;
 		}
 
-		const animate = (timestamp: number) => {
-			// Throttle to target FPS
-			const elapsed = timestamp - lastFrameTimeRef.current;
-
-			if (elapsed >= FRAME_INTERVAL) {
-				lastFrameTimeRef.current = timestamp - (elapsed % FRAME_INTERVAL);
-				timeRef.current = timestamp;
-				render(timestamp);
-			}
-
-			animationRef.current = requestAnimationFrame(animate);
-		};
-
-		// Initial render
-		render(0);
-
-		// Start animation if we have noise effects
-		if (noiseIntensity > 0) {
-			animationRef.current = requestAnimationFrame(animate);
-		}
-
-		return () => {
-			if (animationRef.current) {
-				cancelAnimationFrame(animationRef.current);
-			}
-		};
-	}, [render, isVisible, noiseIntensity]);
+		render();
+	}, [render, isVisible]);
 
 	// Set canvas size
 	const width = grid.cols * grid.cellWidth;
@@ -307,10 +301,13 @@ export function AsciiImage({
 	alt,
 	className,
 	asciiOpacity = 0.35,
-	characters = DEFAULT_CHARACTERS,
+	imageOpacity = 1,
+	imageMonochrome = false,
+	characterPalette,
+	characters,
 	resolution = 0.15,
-	noiseSpeed = 0.15,
-	noiseIntensity = 0.2,
+	strength = 1.3,
+	reverse = false,
 	priority = false,
 }: AsciiImageProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -378,6 +375,11 @@ export function AsciiImage({
 		};
 	}, []);
 
+	const resolvedCharacters = useMemo(
+		() => resolveCharacters({ characterPalette, characters }),
+		[characterPalette, characters]
+	);
+
 	// Generate ASCII grid when image loads or dimensions change
 	const regenerateGrid = useCallback(() => {
 		if (!imgRef.current || dimensions.width === 0 || dimensions.height === 0) {
@@ -389,13 +391,22 @@ export function AsciiImage({
 			containerWidth: dimensions.width,
 			containerHeight: dimensions.height,
 			resolution,
-			characters,
+			characters: resolvedCharacters,
+			strength,
+			reverse,
 		});
 
 		if (newGrid) {
 			setGrid(newGrid);
 		}
-	}, [dimensions.width, dimensions.height, resolution, characters]);
+	}, [
+		dimensions.width,
+		dimensions.height,
+		resolution,
+		resolvedCharacters,
+		strength,
+		reverse,
+	]);
 
 	// Regenerate on dimension changes
 	useLayoutEffect(() => {
@@ -428,12 +439,16 @@ export function AsciiImage({
 			{/* Base Image (Layer 0) */}
 			<Image
 				alt={alt}
-				className="absolute inset-0 h-full w-full object-cover"
+				className={cn(
+					"absolute inset-0 h-full w-full object-cover",
+					imageMonochrome ? "grayscale" : null
+				)}
 				crossOrigin="anonymous"
 				fill
 				onLoad={handleImageLoad}
 				priority={priority}
 				src={src}
+				style={{ opacity: imageOpacity }}
 			/>
 
 			{/* ASCII Overlay (Layer 1) */}
@@ -445,13 +460,7 @@ export function AsciiImage({
 						mixBlendMode: resolvedTheme === "dark" ? "screen" : "multiply",
 					}}
 				>
-					<AsciiCanvas
-						color={textColor}
-						grid={grid}
-						isVisible={isVisible}
-						noiseIntensity={noiseIntensity}
-						noiseSpeed={noiseSpeed}
-					/>
+					<AsciiCanvas color={textColor} grid={grid} isVisible={isVisible} />
 				</div>
 			)}
 		</div>

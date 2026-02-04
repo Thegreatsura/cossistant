@@ -258,8 +258,6 @@ export default async function BlogPostPage(props: {
 						alt={title}
 						asciiOpacity={0.9}
 						className="mb-12 aspect-[16/9] border border-primary/10 border-dashed bg-background-100 grayscale"
-						noiseIntensity={1}
-						noiseSpeed={1}
 						priority
 						resolution={0.15}
 						src={image || DEFAULT_BLOG_IMAGE}

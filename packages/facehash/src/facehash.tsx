@@ -69,6 +69,23 @@ export interface FacehashProps
 	 * Only used when variant="gradient".
 	 */
 	gradientOverlayClass?: string;
+
+	/**
+	 * Custom mouth renderer. When provided, replaces the initial letter.
+	 * Useful for showing loading spinners, custom icons, etc.
+	 * @example
+	 * ```tsx
+	 * <Facehash name="loading" onRenderMouth={() => <Spinner size={16} />} />
+	 * ```
+	 */
+	onRenderMouth?: () => React.ReactNode;
+
+	/**
+	 * Enable random eye blinking animation.
+	 * Pure CSS animation with chaotic timing per eye.
+	 * @default false
+	 */
+	enableBlink?: boolean;
 }
 
 // ============================================================================
@@ -155,6 +172,8 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 			colors,
 			colorClasses,
 			gradientOverlayClass,
+			onRenderMouth,
+			enableBlink = false,
 			className,
 			style,
 			onMouseEnter,
@@ -166,20 +185,35 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 		const [isHovered, setIsHovered] = React.useState(false);
 
 		// Generate deterministic values from name
-		const { FaceComponent, colorIndex, rotation } = React.useMemo(() => {
-			const hash = stringHash(name);
-			const faceIndex = hash % FACES.length;
-			const colorsLength = colorClasses?.length ?? colors?.length ?? 1;
-			const _colorIndex = hash % colorsLength;
-			const positionIndex = hash % SPHERE_POSITIONS.length;
-			const position = SPHERE_POSITIONS[positionIndex] ?? { x: 0, y: 0 };
+		const { FaceComponent, colorIndex, rotation, blinkTimings } =
+			React.useMemo(() => {
+				const hash = stringHash(name);
+				const faceIndex = hash % FACES.length;
+				const colorsLength = colorClasses?.length ?? colors?.length ?? 1;
+				const _colorIndex = hash % colorsLength;
+				const positionIndex = hash % SPHERE_POSITIONS.length;
+				const position = SPHERE_POSITIONS[positionIndex] ?? { x: 0, y: 0 };
 
-			return {
-				FaceComponent: FACES[faceIndex] ?? FACES[0],
-				colorIndex: _colorIndex,
-				rotation: position,
-			};
-		}, [name, colors?.length, colorClasses?.length]);
+				// Generate blink timings using hash
+				// Both eyes blink together with same timing
+				const blinkSeed = hash * 31;
+
+				// Delay: 0-4 seconds, Duration: 2-6 seconds (for full cycle)
+				const blinkDelay = (blinkSeed % 40) / 10; // 0-4s
+				const blinkDuration = 2 + (blinkSeed % 40) / 10; // 2-6s
+
+				const timing = { delay: blinkDelay, duration: blinkDuration };
+
+				return {
+					FaceComponent: FACES[faceIndex] ?? FACES[0],
+					colorIndex: _colorIndex,
+					rotation: position,
+					blinkTimings: {
+						left: timing,
+						right: timing,
+					},
+				};
+			}, [name, colors?.length, colorClasses?.length]);
 
 		// Get intensity preset
 		const preset = INTENSITY_PRESETS[intensity3d];
@@ -299,8 +333,10 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 						color: "#000000",
 					}}
 				>
-					{/* Face SVG */}
+					{/* Face SVG (Eyes) */}
 					<FaceComponent
+						blinkTimings={blinkTimings}
+						enableBlink={enableBlink}
 						style={{
 							width: "60%",
 							height: "auto",
@@ -309,20 +345,34 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 						}}
 					/>
 
-					{/* Initial letter */}
-					{showInitial && (
-						<span
-							data-facehash-initial=""
+					{/* Mouth area: custom renderer or initial letter */}
+					{onRenderMouth ? (
+						<div
+							data-facehash-mouth=""
 							style={{
 								marginTop: "8%",
-								fontSize: "26cqw",
-								lineHeight: 1,
-								fontFamily: "monospace",
-								fontWeight: "bold",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
 							}}
 						>
-							{initial}
-						</span>
+							{onRenderMouth()}
+						</div>
+					) : (
+						showInitial && (
+							<span
+								data-facehash-initial=""
+								style={{
+									marginTop: "8%",
+									fontSize: "26cqw",
+									lineHeight: 1,
+									fontFamily: "monospace",
+									fontWeight: "bold",
+								}}
+							>
+								{initial}
+							</span>
+						)
 					)}
 				</div>
 			</div>

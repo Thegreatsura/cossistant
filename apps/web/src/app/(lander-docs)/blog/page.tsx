@@ -88,8 +88,6 @@ function BlogHero({ post }: { post: BlogPage }) {
 				alt={post.data.title}
 				asciiOpacity={0.8}
 				className="aspect-16/10 bg-background-200 grayscale md:aspect-4/3"
-				noiseIntensity={0.15}
-				noiseSpeed={1}
 				priority
 				resolution={0.15}
 				src={post.data.image || DEFAULT_BLOG_IMAGE}
