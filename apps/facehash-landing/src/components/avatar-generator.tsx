@@ -72,6 +72,7 @@ export function AvatarGenerator() {
 						<Facehash
 							className="transition-[border-radius] duration-150"
 							colors={COLORS}
+							enableBlink
 							intensity3d="dramatic"
 							name={displayName}
 							size={size}
