@@ -917,7 +917,7 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 				stroke="currentColor"
 				strokeLinecap="round"
 				strokeLinejoin="round"
-				strokeWidth="1.5"
+				strokeWidth="2"
 			/>
 		),
 		filled: (
@@ -936,7 +936,7 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 				stroke="currentColor"
 				strokeLinecap="round"
 				strokeLinejoin="round"
-				strokeWidth="1.5"
+				strokeWidth="2"
 			/>
 		),
 		filled: (
@@ -974,13 +974,13 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 					d="M22 12C22 14.5 19 20 12 20C5 20 2 14.5 2 12C2 9.5 5 4 12 4C19 4 22 9.5 22 12Z"
 					stroke="currentColor"
 					strokeLinecap="round"
-					strokeWidth="1.5"
+					strokeWidth="2"
 				/>
 				<path
 					d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
 					stroke="currentColor"
 					strokeLinecap="round"
-					strokeWidth="1.5"
+					strokeWidth="2"
 				/>
 			</>
 		),
@@ -999,7 +999,7 @@ const iconRegistry: Record<IconName, Record<IconVariant, ReactNode>> = {
 				d="M3 3L5.82578 5.82578M21 21L18.1742 18.1742M18.1742 18.1742C16.6292 19.2482 14.588 20 12 20C5 20 2 14.5 2 12C2 10.4243 3.19179 7.65676 5.82578 5.82578M18.1742 18.1742L14.1213 14.1213M5.82578 5.82578L9.87863 9.87863M9.87863 9.87863C9.33571 10.4215 8.99991 11.1715 8.99991 12C8.99991 13.6569 10.3431 15 11.9999 15C12.8284 15 13.5784 14.6642 14.1213 14.1213M9.87863 9.87863L14.1213 14.1213M20.4197 16C20.5431 15.8341 20.659 15.6671 20.7674 15.5C21.6051 14.2091 22 12.9071 22 12C22 9.5 19 4 12 4C10.903 4 9.90427 4.13507 8.99991 4.3725C8.82995 4.41712 8.66332 4.46536 8.5 4.517"
 				stroke="currentColor"
 				strokeLinecap="round"
-				strokeWidth="1.5"
+				strokeWidth="2"
 			/>
 		),
 		filled: (

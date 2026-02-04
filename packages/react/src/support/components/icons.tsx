@@ -156,7 +156,7 @@ export const Icon: React.FC<IconProps> = ({
 						stroke="currentColor"
 						strokeLinecap="round"
 						strokeLinejoin="round"
-						strokeWidth="1.5"
+						strokeWidth="2"
 					/>
 				</svg>
 				<svg
@@ -209,7 +209,7 @@ export const Icon: React.FC<IconProps> = ({
 					stroke="currentColor"
 					strokeLinecap="round"
 					strokeLinejoin="round"
-					strokeWidth="1.5"
+					strokeWidth="2"
 				/>
 			)}
 		</svg>
