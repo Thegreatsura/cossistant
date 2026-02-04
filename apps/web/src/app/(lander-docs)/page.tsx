@@ -1,4 +1,5 @@
 import { SupportConfig } from "@cossistant/react/support-config";
+import { SenderType } from "@cossistant/types";
 import Link from "next/link";
 import { FakeDashboard } from "@/components/landing/fake-dashboard";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ export default async function Landing() {
 				defaultMessages={[
 					{
 						content: "Hi, liking Cossistant so far? How can I help you today?",
-						senderType: "team_member",
+						senderType: SenderType.AI,
 					},
 				]}
 			/>

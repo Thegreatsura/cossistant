@@ -8,8 +8,7 @@ import Icon from "../ui/icons";
 import { Page, PageContent, PageHeader, PageHeaderTitle } from "../ui/layout";
 import { TextEffect } from "../ui/text-effect";
 import { TooltipOnHover } from "../ui/tooltip";
-import { InboxModeTabs } from "./inbox-mode-tabs";
-import type { SortMode, VirtualListItem } from "./types";
+import type { VirtualListItem } from "./types";
 import { VirtualizedConversations } from "./virtualized-conversations";
 
 type Props = {
@@ -19,8 +18,6 @@ type Props = {
 	websiteSlug: string;
 	isLeftSidebarOpen: boolean;
 	onToggleLeftSidebar: () => void;
-	sortMode: SortMode;
-	onSortModeChange: (mode: SortMode) => void;
 	smartItems?: VirtualListItem[] | null;
 };
 
@@ -31,12 +28,9 @@ export function ConversationsList({
 	websiteSlug,
 	isLeftSidebarOpen,
 	onToggleLeftSidebar,
-	sortMode,
-	onSortModeChange,
 	smartItems,
 }: Props) {
 	const showWaitingForReplyPill = selectedConversationStatus === null;
-	const isMainInbox = selectedConversationStatus === null;
 
 	return (
 		<Page className="px-0">
@@ -62,9 +56,6 @@ export function ConversationsList({
 						{selectedConversationStatus || "Inbox"}
 					</PageHeaderTitle>
 				</div>
-				{isMainInbox && (
-					<InboxModeTabs mode={sortMode} onModeChange={onSortModeChange} />
-				)}
 			</PageHeader>
 			{conversations.length === 0 ? (
 				<PageContent>
@@ -93,7 +84,6 @@ export function ConversationsList({
 					conversations={conversations}
 					showWaitingForReplyPill={showWaitingForReplyPill}
 					smartItems={smartItems}
-					sortMode={sortMode}
 					websiteSlug={websiteSlug}
 				/>
 			)}

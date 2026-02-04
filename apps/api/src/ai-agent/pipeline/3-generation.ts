@@ -33,6 +33,7 @@ import type { AiDecision } from "../output/schemas";
 import { buildSystemPrompt } from "../prompts/system";
 import {
 	getCapturedAction,
+	getRepairTools,
 	getToolsForGeneration,
 	resetCapturedAction,
 	type ToolContext,
@@ -44,6 +45,8 @@ export type GenerationResult = {
 	decision: AiDecision;
 	/** Whether generation was aborted due to new message */
 	aborted?: boolean;
+	/** Whether a repair attempt failed and fallback messaging is required */
+	needsFallbackMessage?: boolean;
 	usage?: {
 		inputTokens: number;
 		outputTokens: number;
@@ -241,6 +244,7 @@ export async function generate(
 			temperature: 0,
 			// Support interruption via AbortSignal
 			abortSignal,
+			maxSteps: 10,
 		});
 	} catch (error) {
 		// Handle abort gracefully - this means a new message arrived
@@ -285,6 +289,136 @@ export async function generate(
 	// Get the captured action from action tools
 	const capturedAction = getCapturedAction();
 
+	const requiresMessage = Boolean(
+		capturedAction &&
+			["respond", "escalate", "resolve"].includes(capturedAction.action)
+	);
+	const missingRequiredMessage =
+		requiresMessage && sendMessageCalls.length === 0;
+	const missingAction = !capturedAction;
+
+	if (
+		toolContext.allowPublicMessages &&
+		(missingAction || missingRequiredMessage)
+	) {
+		const repairReason = missingAction
+			? "missing_action"
+			: "missing_send_message";
+		console.warn(
+			`[ai-agent:generate] conv=${convId} | Repair triggered (${repairReason})`
+		);
+
+		const repairTools = getRepairTools(toolContext);
+		if (repairTools) {
+			// Reset captured action before repair generation
+			resetCapturedAction();
+
+			const repairPrompt = `${buildSystemPrompt({
+				aiAgent,
+				conversation,
+				conversationHistory,
+				visitorContext,
+				mode,
+				humanCommand,
+				tools: repairTools,
+				isEscalated,
+				escalationReason,
+				smartDecision,
+			})}\n\n## Repair Mode\n\nYou must complete this turn using ONLY these tools:\n- sendMessage(): send a short, safe, helpful reply to the visitor\n- respond(): finish the turn\n\nRules:\n- Call sendMessage() exactly once\n- Call respond() immediately after sendMessage()\n- Do not call any other tools`;
+
+			let repairResult: Awaited<ReturnType<typeof generateText>>;
+			try {
+				repairResult = await generateText({
+					model: createModel(aiAgent.model),
+					tools: repairTools,
+					toolChoice: "required",
+					stopWhen: [hasToolCall("respond"), stepCountIs(3)],
+					system: repairPrompt,
+					messages,
+					temperature: 0,
+					abortSignal,
+					maxSteps: 3,
+				});
+			} catch (error) {
+				if (error instanceof Error && error.name === "AbortError") {
+					console.log(
+						`[ai-agent:generate] conv=${convId} | Repair aborted - new message arrived`
+					);
+					return {
+						decision: {
+							action: "skip" as const,
+							reasoning: "Repair aborted due to new message arriving",
+							confidence: 1,
+						},
+						aborted: true,
+						toolCalls: {
+							sendMessage: toolContext.counters?.sendMessage ?? 0,
+							sendPrivateMessage: toolContext.counters?.sendPrivateMessage ?? 0,
+						},
+					};
+				}
+				throw error;
+			}
+
+			const repairToolCalls =
+				repairResult.steps?.flatMap((step) => step.toolCalls ?? []) ?? [];
+			const repairSendMessageCalls = repairToolCalls.filter(
+				(tc) => tc.toolName === "sendMessage"
+			);
+			const repairSendPrivateMessageCalls = repairToolCalls.filter(
+				(tc) => tc.toolName === "sendPrivateMessage"
+			);
+
+			const repairAction = getCapturedAction();
+			const repairSucceeded = Boolean(
+				repairAction &&
+					repairAction.action === "respond" &&
+					repairSendMessageCalls.length > 0
+			);
+
+			if (repairSucceeded) {
+				console.log(`[ai-agent:generate] conv=${convId} | Repair succeeded`);
+				return {
+					decision: repairAction,
+					usage: repairResult.usage
+						? {
+								inputTokens: repairResult.usage.inputTokens ?? 0,
+								outputTokens: repairResult.usage.outputTokens ?? 0,
+								totalTokens: repairResult.usage.totalTokens ?? 0,
+							}
+						: undefined,
+					toolCalls: {
+						sendMessage: repairSendMessageCalls.length,
+						sendPrivateMessage: repairSendPrivateMessageCalls.length,
+					},
+				};
+			}
+
+			console.warn(
+				`[ai-agent:generate] conv=${convId} | Repair failed, sending fallback`
+			);
+			return {
+				decision: {
+					action: "respond" as const,
+					reasoning: "Repair attempt failed to produce a tool-based response",
+					confidence: 0,
+				},
+				needsFallbackMessage: true,
+				usage: repairResult.usage
+					? {
+							inputTokens: repairResult.usage.inputTokens ?? 0,
+							outputTokens: repairResult.usage.outputTokens ?? 0,
+							totalTokens: repairResult.usage.totalTokens ?? 0,
+						}
+					: undefined,
+				toolCalls: {
+					sendMessage: repairSendMessageCalls.length,
+					sendPrivateMessage: repairSendPrivateMessageCalls.length,
+				},
+			};
+		}
+	}
+
 	// Validate that we got an action
 	if (!capturedAction) {
 		console.error(
@@ -314,9 +448,6 @@ export async function generate(
 	}
 
 	// Warn if no sendMessage was called for respond/escalate/resolve actions
-	const requiresMessage = ["respond", "escalate", "resolve"].includes(
-		capturedAction.action
-	);
 	if (requiresMessage && sendMessageCalls.length === 0) {
 		console.warn(
 			`[ai-agent:generate] conv=${convId} | WARNING: Action "${capturedAction.action}" without sendMessage! The visitor won't see a response.`

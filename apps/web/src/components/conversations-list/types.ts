@@ -2,8 +2,6 @@
 
 import type { ConversationHeader } from "@/contexts/inboxes";
 
-export type SortMode = "smart" | "lastMessage";
-
 export type CategoryType = "needsHuman" | "waiting8Hours" | "other";
 
 export type CategoryHeader = {

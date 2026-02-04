@@ -20,8 +20,6 @@ export default function InboxClientRouter({ websiteSlug }: InboxClientProps) {
 		selectedConversationStatus,
 		basePath,
 		selectedVisitorId,
-		sortMode,
-		setSortMode,
 		smartOrderResult,
 	} = useInboxes();
 
@@ -48,10 +46,8 @@ export default function InboxClientRouter({ websiteSlug }: InboxClientProps) {
 			<ConversationsListPane
 				basePath={basePath}
 				conversations={conversations}
-				onSortModeChange={setSortMode}
 				selectedConversationStatus={selectedConversationStatus}
 				smartItems={smartOrderResult?.items}
-				sortMode={sortMode}
 				websiteSlug={websiteSlug}
 			/>
 			<SupportConfig

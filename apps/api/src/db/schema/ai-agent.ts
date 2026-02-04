@@ -45,6 +45,9 @@ export type AiAgentBehaviorSettings = {
 	defaultEscalationUserId: string | null;
 	autoAssignOnEscalation: boolean;
 
+	// Visitor identification
+	visitorContactPolicy: "only_if_needed" | "ask_early" | "ask_after_time";
+
 	// Background analysis (runs silently)
 	autoAnalyzeSentiment: boolean;
 	autoGenerateTitle: boolean;

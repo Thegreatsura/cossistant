@@ -26,6 +26,9 @@ export function getDefaultBehaviorSettings(): AiAgentBehaviorSettings {
 		// Escalation config
 		defaultEscalationUserId: null,
 
+		// Visitor identification
+		visitorContactPolicy: "only_if_needed",
+
 		// Background analysis - all enabled by default
 		autoAnalyzeSentiment: true,
 		autoGenerateTitle: true,

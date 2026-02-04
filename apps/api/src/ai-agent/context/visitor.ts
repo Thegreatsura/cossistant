@@ -13,6 +13,7 @@ import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 export type VisitorContext = {
 	name: string | null;
 	email: string | null;
+	isIdentified: boolean;
 	country: string | null;
 	city: string | null;
 	language: string | null;
@@ -43,6 +44,7 @@ export async function getVisitorContext(
 			visitorWithContact.contact?.email?.split("@")[0] ??
 			null,
 		email: visitorWithContact.contact?.email ?? null,
+		isIdentified: Boolean(visitorWithContact.contact),
 		country: visitorWithContact.country ?? null,
 		city: visitorWithContact.city ?? null,
 		language: visitorWithContact.language ?? null,

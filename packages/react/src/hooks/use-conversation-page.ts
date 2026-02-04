@@ -118,7 +118,7 @@ export function useConversationPage(
 		autoSeenEnabled = true,
 	} = options;
 
-	const { client, visitor } = useSupport();
+	const { client, visitor, availableAIAgents } = useSupport();
 	const websocket = useWebSocketSafe();
 	const identificationState = useIdentificationState();
 
@@ -175,6 +175,11 @@ export function useConversationPage(
 			return false;
 		}
 
+		// Hide identification form when an AI agent is available
+		if (availableAIAgents.length > 0) {
+			return false;
+		}
+
 		// Don't show identification form while identification is in progress
 		// This prevents the form from flashing when an authenticated user opens the widget
 		if (identificationState?.isIdentifying) {
@@ -193,6 +198,7 @@ export function useConversationPage(
 		lifecycle.isPending,
 		visitor?.contact,
 		identificationState?.isIdentifying,
+		availableAIAgents.length,
 	]);
 
 	const displayItems = useMemo(() => {

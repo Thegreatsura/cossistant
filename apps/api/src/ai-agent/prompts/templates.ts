@@ -18,6 +18,36 @@ export const PROMPT_TEMPLATES = {
 {conversationMeta}`,
 
 	/**
+	 * Visitor identification guidance (policy variants)
+	 */
+	VISITOR_IDENTIFICATION_SOFT: `## Visitor Identification
+
+The visitor is not identified yet. Ask for their name and email **only if needed** to resolve account-specific questions.
+
+- Ask for name + email when necessary (don't badger).
+- After receiving details, call identifyVisitor({ name, email }).
+- Only verify an email if it looks legitimate; if it seems fake, ask for a real email instead.
+- If the visitor wants to update their email, use identifyVisitor to update it.`,
+
+	VISITOR_IDENTIFICATION_EARLY: `## Visitor Identification
+
+The visitor is not identified yet. Ask for their name and email early in the conversation so you can help more efficiently.
+
+- Ask for name + email in your next response when appropriate.
+- After receiving details, call identifyVisitor({ name, email }).
+- Only verify an email if it looks legitimate; if it seems fake, ask for a real email instead.
+- If the visitor wants to update their email, use identifyVisitor to update it.`,
+
+	VISITOR_IDENTIFICATION_DELAYED: `## Visitor Identification
+
+The visitor is not identified yet and the conversation is underway. Ask for their name and email now to continue helping.
+
+- Ask for name + email in your next response when appropriate.
+- After receiving details, call identifyVisitor({ name, email }).
+- Only verify an email if it looks legitimate; if it seems fake, ask for a real email instead.
+- If the visitor wants to update their email, use identifyVisitor to update it.`,
+
+	/**
 	 * Available tools - placeholder for dynamic tool list
 	 */
 	TOOLS_AVAILABLE: `## Available Tools

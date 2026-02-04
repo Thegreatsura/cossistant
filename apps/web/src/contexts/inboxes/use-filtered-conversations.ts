@@ -7,7 +7,6 @@ import {
 	type CategoryType,
 	type ConversationItem,
 	PRIORITY_WEIGHTS,
-	type SortMode,
 	type VirtualListItem,
 	WAITING_THRESHOLD_MS,
 } from "@/components/conversations-list/types";
@@ -385,7 +384,6 @@ function filterAndProcessConversations(
  * @param selectedConversationStatus - The selected conversation status filter
  * @param selectedConversationId - The currently selected conversation ID
  * @param basePath - The base path for navigation
- * @param sortMode - The sort mode ("smart" or "lastMessage")
  * @returns Filtered conversations with navigation utilities and O(1) lookup capabilities
  */
 export function useFilteredConversations({
@@ -393,13 +391,11 @@ export function useFilteredConversations({
 	selectedConversationStatus,
 	selectedConversationId,
 	basePath,
-	sortMode = "smart",
 }: {
 	selectedViewId: string | null;
 	selectedConversationStatus: ConversationStatusFilter;
 	selectedConversationId: string | null;
 	basePath: string;
-	sortMode?: SortMode;
 }) {
 	const website = useWebsite();
 	const router = useRouter();
@@ -423,9 +419,8 @@ export function useFilteredConversations({
 		]
 	);
 
-	// Build smart ordered list only when in smart mode and on main inbox
-	const isSmartModeActive =
-		sortMode === "smart" && selectedConversationStatus === null;
+	// Build smart ordered list only when on main inbox (no status filter)
+	const isSmartModeActive = selectedConversationStatus === null;
 
 	const smartOrderResult = useMemo(() => {
 		if (!isSmartModeActive) {

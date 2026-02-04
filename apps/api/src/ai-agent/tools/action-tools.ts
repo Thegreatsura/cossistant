@@ -11,6 +11,20 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 
+async function stopTypingIfNeeded(
+	ctx: ToolContext | undefined,
+	toolName: string
+) {
+	if (!ctx?.stopTyping) {
+		return;
+	}
+	try {
+		await ctx.stopTyping();
+	} catch (error) {
+		console.warn(`[tool:${toolName}] Failed to stop typing`, error);
+	}
+}
+
 /**
  * Store for capturing the action result within a generation.
  * This is set when an action tool is called.
@@ -91,7 +105,7 @@ const skipSchema = z.object({
 /**
  * Create the respond tool - signals normal response completion
  */
-export function createRespondTool() {
+export function createRespondTool(ctx?: ToolContext) {
 	return tool({
 		description:
 			"FINISH action: Call AFTER sendMessage() to complete your turn. Use when you've answered the visitor's question or provided the requested help. Do NOT call without first calling sendMessage().",
@@ -100,6 +114,7 @@ export function createRespondTool() {
 			reasoning,
 			confidence,
 		}): Promise<{ success: boolean; action: string }> => {
+			await stopTypingIfNeeded(ctx, "respond");
 			capturedAction = {
 				action: "respond",
 				reasoning,
@@ -129,6 +144,7 @@ export function createEscalateTool(ctx?: ToolContext) {
 			reason: string;
 			alreadyEscalated?: boolean;
 		}> => {
+			await stopTypingIfNeeded(ctx, "escalate");
 			// Check if already escalated - prevent re-escalation
 			if (ctx?.isEscalated) {
 				console.log(
@@ -162,7 +178,7 @@ export function createEscalateTool(ctx?: ToolContext) {
 /**
  * Create the resolve tool - signals conversation resolution
  */
-export function createResolveTool() {
+export function createResolveTool(ctx?: ToolContext) {
 	return tool({
 		description:
 			"FINISH action: Mark conversation as resolved/complete. Call AFTER sendMessage() with a closing message. Use when the visitor's issue is fully addressed and they've confirmed satisfaction or said goodbye.",
@@ -171,6 +187,7 @@ export function createResolveTool() {
 			reasoning,
 			confidence,
 		}): Promise<{ success: boolean; action: string }> => {
+			await stopTypingIfNeeded(ctx, "resolve");
 			capturedAction = {
 				action: "resolve",
 				reasoning,
@@ -184,7 +201,7 @@ export function createResolveTool() {
 /**
  * Create the markSpam tool - signals spam detection
  */
-export function createMarkSpamTool() {
+export function createMarkSpamTool(ctx?: ToolContext) {
 	return tool({
 		description:
 			"FINISH action: Mark conversation as spam/abuse and close it. Use ONLY for obvious spam, bots, or abusive content. Does not require sendMessage() first since we don't respond to spam.",
@@ -193,6 +210,7 @@ export function createMarkSpamTool() {
 			reasoning,
 			confidence,
 		}): Promise<{ success: boolean; action: string }> => {
+			await stopTypingIfNeeded(ctx, "markSpam");
 			capturedAction = {
 				action: "mark_spam",
 				reasoning,
@@ -206,7 +224,7 @@ export function createMarkSpamTool() {
 /**
  * Create the skip tool - signals no action needed
  */
-export function createSkipTool() {
+export function createSkipTool(ctx?: ToolContext) {
 	return tool({
 		description:
 			"FINISH action: Skip responding entirely. Use ONLY when a human agent is actively handling the conversation, or when the message doesn't require any response (e.g., visitor just said 'ok' or 'thanks'). Does not require sendMessage() first.",
@@ -214,6 +232,7 @@ export function createSkipTool() {
 		execute: async ({
 			reasoning,
 		}): Promise<{ success: boolean; action: string }> => {
+			await stopTypingIfNeeded(ctx, "skip");
 			capturedAction = {
 				action: "skip",
 				reasoning,

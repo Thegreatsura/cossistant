@@ -5,11 +5,7 @@ import type { RouterOutputs } from "@cossistant/api/types";
 import type { ConversationStatus } from "@cossistant/types";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useMemo } from "react";
-import type {
-	SortMode,
-	VirtualListItem,
-} from "@/components/conversations-list/types";
-import { useInboxSortPreference } from "@/hooks/use-inbox-sort-preference";
+import type { VirtualListItem } from "@/components/conversations-list/types";
 import { extractInboxParamsFromSlug } from "@/lib/url";
 import { useWebsite, useWebsiteViews } from "../website";
 import { useFilteredConversations } from "./use-filtered-conversations";
@@ -41,8 +37,6 @@ type InboxesContextValue = {
 	selectedViewId: string | null;
 	isLoading: boolean;
 	// Smart ordering
-	sortMode: SortMode;
-	setSortMode: (mode: SortMode) => void;
 	smartOrderResult: {
 		items: VirtualListItem[];
 		conversationIndexMap: Map<string, number>;
@@ -68,7 +62,6 @@ export function InboxesProvider({
 	const views = useWebsiteViews();
 	const pathname = usePathname();
 	const website = useWebsite();
-	const { sortMode, setSortMode } = useInboxSortPreference(website.id);
 
 	// Extract the inbox params from the pathname
 	const {
@@ -106,7 +99,6 @@ export function InboxesProvider({
 		selectedViewId,
 		selectedConversationId,
 		basePath,
-		sortMode,
 	});
 
 	return (
@@ -129,8 +121,6 @@ export function InboxesProvider({
 				navigateToPreviousConversation,
 				navigateAwayIfNeeded,
 				// Smart ordering
-				sortMode,
-				setSortMode,
 				smartOrderResult,
 				isSmartModeActive,
 			}}

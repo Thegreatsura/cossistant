@@ -481,6 +481,15 @@ export const aiAgentBehaviorSettingsSchema = z
 			example: null,
 		}),
 
+		// Visitor identification
+		visitorContactPolicy: z
+			.enum(["only_if_needed", "ask_early", "ask_after_time"])
+			.openapi({
+				description:
+					"How aggressively the AI should ask for visitor contact information.",
+				example: "only_if_needed",
+			}),
+
 		// Background analysis
 		autoAnalyzeSentiment: z.boolean().openapi({
 			description: "Whether to automatically analyze conversation sentiment.",

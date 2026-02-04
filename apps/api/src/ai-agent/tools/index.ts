@@ -22,6 +22,7 @@ import {
 	createRespondTool,
 	createSkipTool,
 } from "./action-tools";
+import { createIdentifyVisitorTool } from "./identify-visitor";
 import { createSearchKnowledgeBaseTool } from "./search-knowledge";
 import { createSendMessageTool } from "./send-message-tool";
 import { createSendPrivateMessageTool } from "./send-private-message-tool";
@@ -73,6 +74,9 @@ export function getToolsForGeneration(
 	// Knowledge base search - available for all agents
 	tools.searchKnowledgeBase = createSearchKnowledgeBaseTool(toolContext);
 
+	// Visitor identification - always available
+	tools.identifyVisitor = createIdentifyVisitorTool(toolContext);
+
 	// Messaging tools - ALWAYS available
 	// These are the primary way the AI communicates
 	if (toolContext.allowPublicMessages) {
@@ -82,11 +86,27 @@ export function getToolsForGeneration(
 
 	// Action tools - AI MUST call one to signal completion
 	// These replace structured output to force tool usage
-	tools.respond = createRespondTool();
+	tools.respond = createRespondTool(toolContext);
 	tools.escalate = createEscalateTool(toolContext); // Pass context to check escalation state
-	tools.resolve = createResolveTool();
-	tools.markSpam = createMarkSpamTool();
-	tools.skip = createSkipTool();
+	tools.resolve = createResolveTool(toolContext);
+	tools.markSpam = createMarkSpamTool(toolContext);
+	tools.skip = createSkipTool(toolContext);
+
+	return Object.keys(tools).length > 0 ? tools : undefined;
+}
+
+/**
+ * Get a minimal toolset for repair mode.
+ *
+ * Only includes the tools required to send a public message and finish.
+ */
+export function getRepairTools(toolContext: ToolContext): ToolSet | undefined {
+	const tools: ToolSet = {};
+
+	if (toolContext.allowPublicMessages) {
+		tools.sendMessage = createSendMessageTool(toolContext);
+		tools.respond = createRespondTool(toolContext);
+	}
 
 	return Object.keys(tools).length > 0 ? tools : undefined;
 }

@@ -15,6 +15,7 @@ import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import { BackgroundAnalysisForm } from "./background-analysis-form";
 import { CapabilitiesForm } from "./capabilities-form";
+import { VisitorContactForm } from "./visitor-contact-form";
 
 export default function BehaviorPage() {
 	const website = useWebsite();
@@ -106,6 +107,17 @@ export default function BehaviorPage() {
 							title="Background Analysis"
 						>
 							<BackgroundAnalysisForm
+								aiAgentId={aiAgent.id}
+								initialData={behaviorSettings}
+								websiteSlug={website.slug}
+							/>
+						</SettingsRow>
+
+						<SettingsRow
+							description="Controls how aggressively the AI asks for name and email."
+							title="Get Visitor Contact"
+						>
+							<VisitorContactForm
 								aiAgentId={aiAgent.id}
 								initialData={behaviorSettings}
 								websiteSlug={website.slug}

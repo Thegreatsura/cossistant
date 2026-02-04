@@ -19,6 +19,7 @@ import type { Redis } from "@cossistant/redis";
 import { sendMessage } from "../actions/send-message";
 import {
 	emitDecisionMade,
+	emitTypingStop,
 	emitWorkflowCancelled,
 	emitWorkflowCompleted,
 	TypingHeartbeat,
@@ -375,11 +376,19 @@ export async function runAiAgentPipeline(
 			generationResult.decision.action
 		);
 		const sentMessages = generationResult.toolCalls?.sendMessage ?? 0;
+		const needsFallbackMessage =
+			generationResult.needsFallbackMessage ||
+			(requiresMessage && sentMessages === 0);
 
-		if (requiresMessage && sentMessages === 0 && allowPublicMessages) {
+		if (needsFallbackMessage && allowPublicMessages) {
 			// CHECK: Only send fallback if workflow is still active
 			const isActiveForFallback = await checkWorkflowActive();
 			if (isActiveForFallback) {
+				if (generationResult.needsFallbackMessage) {
+					console.warn(
+						`[ai-agent] conv=${convId} | Repair failed, sending fallback message`
+					);
+				}
 				console.warn(
 					`[ai-agent] conv=${convId} | AI forgot to call sendMessage! Sending fallback...`
 				);
@@ -396,10 +405,9 @@ export async function runAiAgentPipeline(
 							"I hope that helped! Let me know if you need anything else.";
 						break;
 					default:
-						// For respond, use the reasoning if available, otherwise generic
+						// For respond, use a safe generic message (do not leak reasoning)
 						fallbackMessage =
-							generationResult.decision.reasoning?.slice(0, 200) ||
-							"I'm here to help! How can I assist you?";
+							"Thanks for your message. I'm looking into this now. Could you share any extra details that might help?";
 				}
 
 				try {
@@ -493,6 +501,27 @@ export async function runAiAgentPipeline(
 			websiteId: ctx.input.websiteId,
 		});
 		metrics.followupMs = Date.now() - followupStart;
+
+		// Final safety stop in case typing didn't clear for any reason
+		if (willSendVisibleMessages) {
+			const isActiveAfterFollowup = await checkWorkflowActive();
+			if (isActiveAfterFollowup) {
+				try {
+					console.log(
+						`[ai-agent] conv=${convId} | Safety typing stop after followup`
+					);
+					await emitTypingStop({
+						conversation: intakeResult.conversation,
+						aiAgentId: intakeResult.aiAgent.id,
+					});
+				} catch (error) {
+					console.warn(
+						`[ai-agent] conv=${convId} | Safety typing stop failed:`,
+						error
+					);
+				}
+			}
+		}
 
 		// Emit completion event (success - notify widget)
 		await emitWorkflowCompleted({

@@ -6,12 +6,7 @@ import { CategoryHeader } from "@/components/conversations-list/category-header"
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { PageContent } from "../ui/layout";
-import {
-	HEADER_HEIGHT,
-	ITEM_HEIGHT,
-	type SortMode,
-	type VirtualListItem,
-} from "./types";
+import { HEADER_HEIGHT, ITEM_HEIGHT, type VirtualListItem } from "./types";
 import { useConversationKeyboardNavigation } from "./use-conversation-keyboard-navigation";
 
 type ConversationsListProps = {
@@ -19,7 +14,6 @@ type ConversationsListProps = {
 	conversations: ConversationHeader[];
 	showWaitingForReplyPill: boolean;
 	websiteSlug: string;
-	sortMode?: SortMode;
 	smartItems?: VirtualListItem[] | null;
 };
 
@@ -79,13 +73,12 @@ export function VirtualizedConversations({
 	conversations,
 	showWaitingForReplyPill,
 	websiteSlug,
-	sortMode = "lastMessage",
 	smartItems,
 }: ConversationsListProps) {
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const viewportRef = useRef<HTMLDivElement>(null);
 
-	const isSmartMode = sortMode === "smart" && smartItems != null;
+	const isSmartMode = smartItems != null;
 	const items = isSmartMode ? smartItems : null;
 	const itemCount = isSmartMode && items ? items.length : conversations.length;
 

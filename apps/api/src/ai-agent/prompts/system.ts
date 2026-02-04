@@ -98,6 +98,39 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		parts.push(buildToolInstructions(tools));
 	}
 
+	// Ask for identification only when visitor isn't identified and we're responding
+	if (visitorContext && visitorContext.isIdentified === false) {
+		const conversationMeta = getConversationMeta(
+			conversation,
+			conversationHistory
+		);
+		const visitorMessageCount = conversationMeta.visitorMessageCount;
+		const policy = settings.visitorContactPolicy ?? "only_if_needed";
+
+		let identificationPrompt: string | null = null;
+
+		if (mode === "respond_to_visitor") {
+			switch (policy) {
+				case "ask_early":
+					identificationPrompt = PROMPT_TEMPLATES.VISITOR_IDENTIFICATION_EARLY;
+					break;
+				case "ask_after_time":
+					if (visitorMessageCount >= 2) {
+						identificationPrompt =
+							PROMPT_TEMPLATES.VISITOR_IDENTIFICATION_DELAYED;
+					}
+					break;
+				default:
+					identificationPrompt = PROMPT_TEMPLATES.VISITOR_IDENTIFICATION_SOFT;
+					break;
+			}
+		}
+
+		if (identificationPrompt) {
+			parts.push(identificationPrompt);
+		}
+	}
+
 	// Add grounding instructions to prevent hallucinations
 	// Only needed when responding to the visitor
 	if (mode === "respond_to_visitor") {
