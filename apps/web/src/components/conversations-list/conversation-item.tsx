@@ -91,7 +91,6 @@ export function ConversationItemView({
 				lastOnlineAt={visitorLastSeenAt}
 				status={visitorPresenceStatus}
 				url={visitorAvatarUrl}
-				withBoringAvatar
 			/>
 
 			<div className="flex min-w-0 flex-1 items-center gap-1 md:gap-4">

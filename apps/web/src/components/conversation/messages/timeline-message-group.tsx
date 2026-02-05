@@ -142,7 +142,6 @@ export function TimelineMessageGroup({
 											}
 											status={visitorPresence?.status}
 											url={visitor?.contact?.image}
-											withBoringAvatar
 										/>
 									) : isAI ? (
 										<div

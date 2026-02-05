@@ -73,6 +73,9 @@ app.get("/health", async (c) => {
 	}
 });
 
+// Robots.txt to prevent search engine indexing
+app.get("/robots.txt", (c) => c.text("User-agent: *\nDisallow: /\n"));
+
 // CORS middleware for auth and TRPC endpoints (trusted domains only)
 app.use(
 	"/api/auth/*",

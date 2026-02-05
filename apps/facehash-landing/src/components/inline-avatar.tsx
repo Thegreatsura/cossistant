@@ -17,7 +17,7 @@ export function InlineAvatar({ name }: { name: string }) {
 	return (
 		<span className="inline-block align-middle">
 			<Facehash
-				className="transition-[border-radius] duration-150"
+				className="text-black transition-[border-radius] duration-150"
 				colors={COLORS}
 				intensity3d="dramatic"
 				name={name}

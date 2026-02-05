@@ -44,7 +44,6 @@ export function VisitorSidebarHeader({
 				lastOnlineAt={lastSeenAt}
 				status={status}
 				url={avatarUrl}
-				withBoringAvatar
 			/>
 			<div className="flex flex-col gap-0 text-left">
 				<p className="font-medium text-sm">{fullName}</p>

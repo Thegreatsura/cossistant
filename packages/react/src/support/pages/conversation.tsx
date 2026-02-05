@@ -115,7 +115,7 @@ export const ConversationPage: ConversationPageComponent = ({
 		setIsSubmittingRating(false);
 	}, [activeConversation?.id]);
 
-	const handleRateConversation = async (value: number) => {
+	const handleRateConversation = async (value: number, comment?: string) => {
 		if (!(client && activeConversation)) {
 			return;
 		}
@@ -138,6 +138,7 @@ export const ConversationPage: ConversationPageComponent = ({
 			await client.submitConversationRating({
 				conversationId: activeConversation.id,
 				rating: value,
+				comment,
 				visitorId: visitor?.id ?? undefined,
 			});
 		} catch (error) {

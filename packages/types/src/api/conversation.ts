@@ -206,6 +206,9 @@ export const submitConversationRatingRequestSchema = z
 			description: "Visitor rating for the conversation (1-5)",
 			example: 5,
 		}),
+		comment: z.string().optional().openapi({
+			description: "Optional written feedback about the conversation",
+		}),
 		visitorId: z.string().optional().openapi({
 			description:
 				"Visitor ID associated with the conversation. Optional if provided via the X-Visitor-Id header.",

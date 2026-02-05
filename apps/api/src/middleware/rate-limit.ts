@@ -1,14 +1,18 @@
+import { env } from "@api/env";
 import { getRateLimitStore } from "@api/lib/rate-limit-store";
 import type { Context, Next } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 
+const isDevelopment = env.NODE_ENV !== "production";
+
 /**
  * Default rate limiter for general API endpoints
- * Allows 100 requests per minute per IP
+ * Allows 300 requests per minute per IP in development
+ * Allows 100 requests per minute per IP in production
  */
 export const defaultRateLimiter = rateLimiter({
 	windowMs: 60 * 1000, // 1 minute
-	limit: 100, // 100 requests per minute
+	limit: isDevelopment ? 300 : 100,
 	standardHeaders: "draft-6",
 	keyGenerator: (c: Context) => {
 		// Use IP address as the key
@@ -56,11 +60,12 @@ export const authRateLimiter = rateLimiter({
 
 /**
  * Rate limiter for TRPC endpoints
- * Allows 50 requests per minute per IP
+ * Allows 200 requests per minute per IP in development (more forgiving)
+ * Allows 100 requests per minute per IP in production
  */
 export const trpcRateLimiter = rateLimiter({
 	windowMs: 60 * 1000, // 1 minute
-	limit: 60, // 50 requests per minute
+	limit: isDevelopment ? 200 : 100, // More forgiving in development
 	standardHeaders: "draft-6",
 	keyGenerator: (c: Context) => {
 		const ip =
@@ -81,11 +86,12 @@ export const trpcRateLimiter = rateLimiter({
 
 /**
  * Rate limiter for WebSocket connections
- * Allows 10 connections per minute per IP
+ * Allows 30 connections per minute per IP in development
+ * Allows 10 connections per minute per IP in production
  */
 export const websocketRateLimiter = rateLimiter({
 	windowMs: 60 * 1000, // 1 minute
-	limit: 10, // 10 connections per minute
+	limit: isDevelopment ? 30 : 10,
 	standardHeaders: "draft-6",
 	keyGenerator: (c: Context) => {
 		const ip =

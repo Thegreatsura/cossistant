@@ -57,7 +57,6 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 							className="size-5 shrink-0 overflow-clip"
 							fallbackName={display.avatarFallbackName}
 							url={display.avatarImage}
-							withBoringAvatar
 						/>
 					) : display.avatarType === "ai" ? (
 						<Logo className="size-5 text-primary" />

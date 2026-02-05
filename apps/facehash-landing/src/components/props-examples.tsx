@@ -1,7 +1,23 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage, Facehash } from "facehash";
+import {
+	Avatar,
+	AvatarFallback,
+	AvatarImage,
+	Facehash,
+	type FacehashProps,
+} from "facehash";
 import { useShape } from "./shape-context";
+
+// Wrapper with default text-black for the landing page demos
+function Face({ className, ...props }: FacehashProps) {
+	return (
+		<Facehash
+			className={["text-black", className].filter(Boolean).join(" ")}
+			{...props}
+		/>
+	);
+}
 
 // Simple spinner component for demo
 function Spinner({ size = 12 }: { size?: number }) {
@@ -98,7 +114,7 @@ export function PropsExamples() {
 				name="name"
 			>
 				<Example label='"alice"'>
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="alice"
 						size={48}
@@ -106,15 +122,10 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label='"bob"'>
-					<Facehash
-						colors={COLORS}
-						name="bob"
-						size={48}
-						style={{ borderRadius }}
-					/>
+					<Face colors={COLORS} name="bob" size={48} style={{ borderRadius }} />
 				</Example>
 				<Example label='"charlie"'>
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="charlie"
 						size={48}
@@ -131,7 +142,7 @@ export function PropsExamples() {
 				name="size"
 			>
 				<Example label="32">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={32}
@@ -139,7 +150,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example isDefault label="40">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={40}
@@ -147,7 +158,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="48">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={48}
@@ -155,7 +166,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="64">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={64}
@@ -170,7 +181,7 @@ export function PropsExamples() {
 				name="colors"
 			>
 				<Example label="default">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={48}
@@ -178,7 +189,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="custom">
-					<Facehash
+					<Face
 						colors={CUSTOM_COLORS}
 						name="facehash"
 						size={48}
@@ -195,7 +206,7 @@ export function PropsExamples() {
 				name="intensity3d"
 			>
 				<Example label="none">
-					<Facehash
+					<Face
 						colors={COLORS}
 						intensity3d="none"
 						name="facehash"
@@ -204,7 +215,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="subtle">
-					<Facehash
+					<Face
 						colors={COLORS}
 						intensity3d="subtle"
 						name="facehash"
@@ -213,7 +224,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="medium">
-					<Facehash
+					<Face
 						colors={COLORS}
 						intensity3d="medium"
 						name="facehash"
@@ -222,7 +233,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example isDefault label="dramatic">
-					<Facehash
+					<Face
 						colors={COLORS}
 						intensity3d="dramatic"
 						name="facehash"
@@ -239,7 +250,7 @@ export function PropsExamples() {
 				name="showInitial"
 			>
 				<Example isDefault label="true">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						showInitial={true}
@@ -248,7 +259,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="false">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						showInitial={false}
@@ -265,7 +276,7 @@ export function PropsExamples() {
 				name="variant"
 			>
 				<Example isDefault label="gradient">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={48}
@@ -274,7 +285,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="solid">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={48}
@@ -292,7 +303,7 @@ export function PropsExamples() {
 				name="enableBlink"
 			>
 				<Example isDefault label="false">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="facehash"
 						size={48}
@@ -300,7 +311,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="true">
-					<Facehash
+					<Face
 						colors={COLORS}
 						enableBlink
 						name="facehash"
@@ -309,7 +320,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label='"alice"'>
-					<Facehash
+					<Face
 						colors={COLORS}
 						enableBlink
 						name="alice"
@@ -318,7 +329,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label='"bob"'>
-					<Facehash
+					<Face
 						colors={COLORS}
 						enableBlink
 						name="bob"
@@ -335,7 +346,7 @@ export function PropsExamples() {
 				name="onRenderMouth"
 			>
 				<Example label="default">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="loading"
 						size={48}
@@ -343,7 +354,7 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="spinner">
-					<Facehash
+					<Face
 						colors={COLORS}
 						name="loading"
 						onRenderMouth={() => <Spinner size={10} />}
@@ -352,11 +363,72 @@ export function PropsExamples() {
 					/>
 				</Example>
 				<Example label="thinking">
-					<Facehash
+					<Face
 						colors={COLORS}
 						enableBlink
 						name="thinking"
 						onRenderMouth={() => <Spinner size={10} />}
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+			</PropSection>
+
+			{/* className - CSS styling */}
+			<PropSection
+				code={`// Style face color and font with Tailwind classes
+<Facehash name="ghost" className="text-gray-300" />
+<Facehash name="muted" className="text-gray-400 font-sans" />
+
+// For app-wide defaults, create a wrapper with tailwind-merge:
+import { Facehash, type FacehashProps } from "facehash";
+import { cn } from "@/lib/utils";
+
+export function Avatar({ className, ...props }: FacehashProps) {
+  return (
+    <Facehash
+      className={cn("text-black font-mono font-bold", className)}
+      {...props}
+    />
+  );
+}
+
+// Now overrides work naturally:
+<Avatar name="user" />                        // defaults
+<Avatar name="user" className="text-red-500" /> // red color`}
+				name="className (styling)"
+			>
+				<Example label="default">
+					<Face
+						colors={COLORS}
+						name="style-demo"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label="text-gray-400">
+					<Face
+						className="text-gray-400"
+						colors={COLORS}
+						name="style-demo"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label="text-blue-500">
+					<Face
+						className="text-blue-500"
+						colors={COLORS}
+						name="style-demo"
+						size={48}
+						style={{ borderRadius }}
+					/>
+				</Example>
+				<Example label="font-sans">
+					<Face
+						className="font-normal font-sans"
+						colors={COLORS}
+						name="style-demo"
 						size={48}
 						style={{ borderRadius }}
 					/>
@@ -392,7 +464,10 @@ export function PropsExamples() {
 								alt="anthony"
 								src="https://pbs.twimg.com/profile_images/1952043514692280321/v4gOT-jg_400x400.jpg"
 							/>
-							<AvatarFallback name="anthony" />
+							<AvatarFallback
+								facehashProps={{ className: "text-black" }}
+								name="anthony"
+							/>
 						</Avatar>
 					</Example>
 					<Example label="image fails">
@@ -406,7 +481,7 @@ export function PropsExamples() {
 						>
 							<AvatarImage alt="anthony" src="/broken-image.jpg" />
 							<AvatarFallback
-								facehashProps={{ colors: COLORS }}
+								facehashProps={{ colors: COLORS, className: "text-black" }}
 								name="anthony"
 							/>
 						</Avatar>
@@ -421,7 +496,7 @@ export function PropsExamples() {
 							}}
 						>
 							<AvatarFallback
-								facehashProps={{ colors: COLORS }}
+								facehashProps={{ colors: COLORS, className: "text-black" }}
 								name="anthony"
 							/>
 						</Avatar>

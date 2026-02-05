@@ -267,7 +267,9 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 			// biome-ignore lint/a11y/noNoninteractiveElementInteractions: Hover effect is purely cosmetic
 			// biome-ignore lint/a11y/noStaticElementInteractions: This is a decorative avatar component
 			<div
-				className={[bgColorClass, className].filter(Boolean).join(" ")}
+				className={["facehash", bgColorClass, className]
+					.filter(Boolean)
+					.join(" ")}
 				data-facehash=""
 				data-interactive={interactive || undefined}
 				onMouseEnter={handleMouseEnter}
@@ -329,8 +331,6 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 						transition: interactive
 							? "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
 							: undefined,
-						// Default to black text/icons for contrast on colored backgrounds
-						color: "#000000",
 					}}
 				>
 					{/* Face SVG (Eyes) */}
@@ -366,8 +366,6 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
 									marginTop: "8%",
 									fontSize: "26cqw",
 									lineHeight: 1,
-									fontFamily: "monospace",
-									fontWeight: "bold",
 								}}
 							>
 								{initial}

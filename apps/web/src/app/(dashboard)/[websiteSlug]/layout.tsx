@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CentralContainer } from "@/components/ui/layout";
 import { NavigationTopbar } from "@/components/ui/layout/navigation-topbar";
 import { InboxesProvider } from "@/contexts/inboxes";
@@ -10,6 +10,7 @@ import {
 	prefetch,
 	trpc,
 } from "@/lib/trpc/server";
+import { isValidWebsiteSlug } from "@/lib/url";
 import { ModalsAndSheets } from "./overlays/modals-and-sheets";
 import { Realtime } from "./providers/realtime";
 import { DashboardWebSocketProvider } from "./providers/websocket";
@@ -23,6 +24,12 @@ type LayoutProps = {
 
 export default async function Layout({ children, params }: LayoutProps) {
 	const { websiteSlug } = await params;
+
+	// Reject invalid slugs (e.g., __webpack_hmr, _next paths)
+	if (!isValidWebsiteSlug(websiteSlug)) {
+		notFound();
+	}
+
 	const queryClient = getQueryClient();
 
 	const handleAuthRedirect = (

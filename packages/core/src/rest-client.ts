@@ -705,6 +705,10 @@ export class CossistantRestClient {
 			rating: params.rating,
 		};
 
+		if (params.comment) {
+			body.comment = params.comment;
+		}
+
 		if (params.visitorId) {
 			body.visitorId = params.visitorId;
 		}

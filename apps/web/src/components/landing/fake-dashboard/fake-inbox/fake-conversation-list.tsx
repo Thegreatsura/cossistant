@@ -147,8 +147,8 @@ export function FakeConversationList({
 
 	return (
 		<PageContent className="h-full contain-strict">
-			<ScrollArea className="h-full px-2">
-				{analyticsSlot ? <div className="pb-3">{analyticsSlot}</div> : null}
+			<ScrollArea className="h-full">
+				{analyticsSlot ? <div className="pb-10">{analyticsSlot}</div> : null}
 				{sortedConversations.map((conversation, index) => {
 					const isTyping = typingVisitors.some(
 						(tv) => tv.conversationId === conversation.id

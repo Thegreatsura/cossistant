@@ -15,7 +15,6 @@ export function ContactSheetHeader({ contact }: ContactSheetHeaderProps) {
 					fallbackName={displayName}
 					lastOnlineAt={null}
 					url={contact.image}
-					withBoringAvatar
 				/>
 				<div className="flex flex-col gap-0">
 					<p className="font-medium text-sm">{displayName}</p>

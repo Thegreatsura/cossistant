@@ -1,6 +1,25 @@
 import { ConversationStatus } from "@cossistant/types";
 import type { InboxView } from "@cossistant/types/schemas";
 
+/**
+ * Check if a website slug is valid (not an internal Next.js/webpack path)
+ * This prevents queries from firing for invalid slugs like __webpack_hmr
+ */
+export function isValidWebsiteSlug(slug: string | undefined | null): boolean {
+	if (!slug) {
+		return false;
+	}
+	// Reject internal paths that might be caught by dynamic routes
+	if (slug.startsWith("__") || slug.startsWith("_next")) {
+		return false;
+	}
+	// Reject empty or whitespace-only slugs
+	if (!slug.trim()) {
+		return false;
+	}
+	return true;
+}
+
 export function getAPIBaseUrl(path: `/${string}`) {
 	const baseUrl =
 		process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8787";

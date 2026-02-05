@@ -61,7 +61,6 @@ export const VisitorTypingPreview = ({
 					lastOnlineAt={visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt}
 					status={visitorPresence?.status}
 					url={visitor?.contact?.image}
-					withBoringAvatar
 				/>
 			</TimelineItemGroupAvatar>
 			<TimelineItemGroupContent className={cn("flex flex-col gap-0")}>

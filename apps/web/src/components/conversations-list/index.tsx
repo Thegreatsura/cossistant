@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConversationStatus } from "@cossistant/types";
+import { Facehash } from "facehash";
 import Link from "next/link";
 import { InboxAnalytics } from "@/components/inbox-analytics";
 import type { ConversationHeader } from "@/contexts/inboxes";
@@ -66,19 +67,31 @@ export function ConversationsList({
 			</PageHeader>
 			{conversations.length === 0 ? (
 				<PageContent className={showAnalytics ? "gap-6" : undefined}>
-					{showAnalytics ? <InboxAnalytics websiteSlug={websiteSlug} /> : null}
-					<div className="mx-1 mt-4 flex h-1/3 flex-col items-center justify-center gap-10">
-						<TextEffect as="h1" className="text-primary/60 text-xl">
-							No {selectedConversationStatus || ""} conversations yet
-						</TextEffect>
+					{showAnalytics ? (
+						<div className="px-1">
+							<InboxAnalytics websiteSlug={websiteSlug} />
+						</div>
+					) : null}
+					<div className="mx-1 mt-4 flex h-2/3 flex-col items-center justify-center gap-10">
+						<Facehash
+							className="rounded-lg border border-primary/10 border-dashed font-bold font-mono text-primary/10"
+							colorClasses={["bg-background-100"]}
+							enableBlink
+							name={selectedConversationStatus ?? "I"}
+							size={80}
+							variant="solid"
+						/>
+						<p className="text-base text-primary/60">
+							No {selectedConversationStatus || ""} conversations
+						</p>
 						<div className="flex items-center justify-center gap-2">
-							<Button asChild variant="ghost">
+							<Button asChild size="xs" variant="ghost">
 								<Link href="/docs/quickstart">Read our setup guide</Link>
 							</Button>
-							<Button asChild variant="ghost">
+							<Button asChild size="xs" variant="ghost">
 								<Link href="/docs/concepts">What are visitors?</Link>
 							</Button>
-							<Button asChild variant="ghost">
+							<Button asChild size="xs" variant="ghost">
 								<Link href="/docs/concepts/conversations">
 									Learn about conversations
 								</Link>

@@ -5,7 +5,7 @@ import {
 	PRESENCE_ONLINE_WINDOW_MS,
 } from "@cossistant/types";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { Facehash } from "facehash";
+import { Facehash as FacehashComponent } from "facehash";
 import type * as React from "react";
 import { formatTimeAgo } from "@/lib/date";
 import { cn } from "@/lib/utils";
@@ -52,16 +52,10 @@ function AvatarImage({
 interface AvatarFallbackProps
 	extends React.ComponentProps<typeof AvatarPrimitive.Fallback> {
 	value?: string;
-	withBoringAvatar?: boolean;
 	children?: string;
 }
 
-const REGEX_SPLIT_INITIALS = /\s+/;
-
-/**
- * BoringAvatar - Uses the Facehash component with Cossistant brand colors
- */
-function BoringAvatar({
+function Facehash({
 	className,
 	name,
 	interactive = true,
@@ -71,14 +65,13 @@ function BoringAvatar({
 	interactive?: boolean;
 }) {
 	return (
-		<Facehash
+		<FacehashComponent
 			className={cn(
-				"text-primarym transition-transform duration-200",
+				"text-black transition-transform duration-200",
 				"[&_svg]:fill-current",
 				className
 			)}
 			colorClasses={COSSISTANT_COLOR_CLASSES}
-			//   gradientOverlayClass="bg-[radial-gradient(ellipse_100%_100%_at_50%_50%,_var(--tw-gradient-from)_0%,_transparent_100%)] from-[#FFFFFF] dark:from-[#000000]/80"
 			enableBlink
 			intensity3d="dramatic"
 			interactive={interactive}
@@ -92,32 +85,15 @@ function AvatarFallback({
 	className,
 	value,
 	children,
-	withBoringAvatar = false,
 	...props
 }: AvatarFallbackProps) {
-	const getInitials = (str: string) =>
-		str
-			.split(REGEX_SPLIT_INITIALS)
-			.map((word) => word.charAt(0))
-			.join("")
-			.toUpperCase()
-			.slice(0, 2);
-
 	return (
 		<AvatarPrimitive.Fallback
-			className={cn(
-				"flex size-full items-center justify-center",
-				!withBoringAvatar && "text-[10px] text-primary",
-				className
-			)}
+			className={cn("flex size-full items-center justify-center", className)}
 			data-slot="avatar-fallback"
 			{...props}
 		>
-			{withBoringAvatar ? (
-				<BoringAvatar name={value ?? children ?? ""} />
-			) : (
-				getInitials(value ?? children ?? "")
-			)}
+			<Facehash name={value ?? children ?? ""} />
 		</AvatarPrimitive.Fallback>
 	);
 }
@@ -128,14 +104,12 @@ function Avatar({
 	fallbackName,
 	lastOnlineAt,
 	status,
-	withBoringAvatar = false,
 }: {
 	className?: string;
 	url: string | null | undefined;
 	fallbackName: string;
 	lastOnlineAt?: string | null;
 	status?: "online" | "away";
-	withBoringAvatar?: boolean;
 }) {
 	const now = Date.now();
 	const lastOnlineDate = lastOnlineAt ? new Date(lastOnlineAt) : null;
@@ -177,10 +151,7 @@ function Avatar({
 					)}
 				>
 					{url && <AvatarImage alt={fallbackName} src={url} />}
-					<AvatarFallback
-						className="pointer-events-none"
-						withBoringAvatar={withBoringAvatar}
-					>
+					<AvatarFallback className="pointer-events-none">
 						{fallbackName}
 					</AvatarFallback>
 				</AvatarContainer>
@@ -200,4 +171,4 @@ function Avatar({
 	);
 }
 
-export { AvatarContainer, AvatarImage, AvatarFallback, Avatar, BoringAvatar };
+export { AvatarContainer, AvatarImage, AvatarFallback, Avatar, Facehash };

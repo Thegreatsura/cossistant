@@ -108,6 +108,9 @@ const fr: SupportLocaleMessages = {
 		});
 		return `Noter ${variables.rating} ${noun}`;
 	},
+	"component.conversationPage.commentPlaceholder":
+		"Dites-nous en plus sur votre expérience (optionnel)",
+	"component.conversationPage.submitFeedback": "Envoyer le retour",
 	"component.multimodalInput.placeholder": "Écrivez votre message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Supprimer ${variables.fileName}`,

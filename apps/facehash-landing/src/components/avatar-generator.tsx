@@ -70,7 +70,7 @@ export function AvatarGenerator() {
 				{SIZES.map((size) => (
 					<div className="flex flex-col items-center gap-2" key={size}>
 						<Facehash
-							className="transition-[border-radius] duration-150"
+							className="text-black transition-[border-radius] duration-150"
 							colors={COLORS}
 							enableBlink
 							intensity3d="dramatic"
@@ -89,7 +89,7 @@ export function AvatarGenerator() {
 			<div className="mt-8 flex items-center gap-5">
 				<div className="flex flex-col items-center gap-1">
 					<Facehash
-						className="transition-[border-radius] duration-150"
+						className="text-black transition-[border-radius] duration-150"
 						colors={COLORS}
 						intensity3d="dramatic"
 						name={displayName}
@@ -102,7 +102,7 @@ export function AvatarGenerator() {
 				</div>
 				<div className="flex flex-col items-center gap-1">
 					<Facehash
-						className="transition-[border-radius] duration-150"
+						className="text-black transition-[border-radius] duration-150"
 						colors={COLORS}
 						intensity3d="none"
 						name={displayName}
@@ -116,7 +116,7 @@ export function AvatarGenerator() {
 				</div>
 				<div className="flex flex-col items-center gap-1">
 					<Facehash
-						className="transition-[border-radius] duration-150"
+						className="text-black transition-[border-radius] duration-150"
 						colors={COLORS}
 						intensity3d="medium"
 						name={displayName}

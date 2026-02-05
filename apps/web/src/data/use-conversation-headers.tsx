@@ -4,6 +4,7 @@ import { useQueryNormalizer } from "@normy/react-query";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useTRPC } from "@/lib/trpc/client";
+import { isValidWebsiteSlug } from "@/lib/url";
 
 type UseConversationHeadersOptions = {
 	limit?: number;
@@ -22,6 +23,8 @@ export function useConversationHeaders(
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const queryNormalizer = useQueryNormalizer();
+
+	const isValidSlug = isValidWebsiteSlug(websiteSlug);
 
 	const query = useInfiniteQuery({
 		queryKey: [
@@ -43,7 +46,7 @@ export function useConversationHeaders(
 		},
 		getNextPageParam: (lastPage) => lastPage.nextCursor,
 		initialPageParam: null as string | null,
-		enabled: options?.enabled ?? true,
+		enabled: isValidSlug && (options?.enabled ?? true),
 		staleTime: STALE_TIME,
 	});
 

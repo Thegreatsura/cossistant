@@ -8,6 +8,7 @@ import {
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
+import { createFeedback } from "@api/db/queries/feedback";
 import {
 	conversation,
 	type conversationTimelineItem,
@@ -1026,6 +1027,7 @@ conversationRouter.openapi(
 
 		const ratedAt = new Date().toISOString();
 
+		// Update conversation with rating (legacy field for backward compatibility)
 		await db
 			.update(conversation)
 			.set({
@@ -1034,6 +1036,19 @@ conversationRouter.openapi(
 				updatedAt: ratedAt,
 			})
 			.where(eq(conversation.id, conversationRecord.id));
+
+		// Also create a feedback record in the new feedback table
+		await createFeedback(db, {
+			organizationId: organization.id,
+			websiteId: website.id,
+			conversationId: conversationRecord.id,
+			visitorId: visitor.id,
+			contactId: visitor.contactId ?? undefined,
+			rating: body.rating,
+			comment: body.comment,
+			trigger: "conversation_resolved",
+			source: "widget",
+		});
 
 		const response = {
 			conversationId: conversationRecord.id,

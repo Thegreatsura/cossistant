@@ -110,6 +110,9 @@ const en: SupportLocaleMessages = {
 		});
 		return `Rate ${variables.rating} ${noun}`;
 	},
+	"component.conversationPage.commentPlaceholder":
+		"Tell us more about your experience (optional)",
+	"component.conversationPage.submitFeedback": "Submit feedback",
 	"component.multimodalInput.placeholder": "Type your message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Remove ${variables.fileName}`,

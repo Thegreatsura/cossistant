@@ -152,6 +152,12 @@ export const supportTextDefinitions = {
 	"component.conversationPage.ratingLabel": {
 		variables: { rating: 0 as number },
 	},
+	"component.conversationPage.commentPlaceholder": {
+		variables: undefined,
+	},
+	"component.conversationPage.submitFeedback": {
+		variables: undefined,
+	},
 	"component.multimodalInput.placeholder": {
 		variables: undefined,
 	},

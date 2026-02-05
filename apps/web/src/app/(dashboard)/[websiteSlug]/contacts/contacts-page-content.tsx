@@ -297,7 +297,6 @@ function ContactsTable({
 								lastOnlineAt={lastSeenAt}
 								status={presence?.status}
 								url={avatarUrl}
-								withBoringAvatar
 							/>
 							{name ? (
 								<span className="min-w-[120px] max-w-[200px] truncate font-medium text-sm">

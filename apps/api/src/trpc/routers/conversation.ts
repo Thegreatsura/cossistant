@@ -127,6 +127,7 @@ export const conversationRouter = createTRPCRouter({
 						start: currentStart.toISOString(),
 						end: currentEnd.toISOString(),
 					},
+					isTestMode: true, // Include test visitors in dashboard analytics
 				}),
 				getInboxAnalyticsMetrics(db, {
 					organizationId: websiteData.organizationId,
@@ -135,6 +136,7 @@ export const conversationRouter = createTRPCRouter({
 						start: previousStart.toISOString(),
 						end: previousEnd.toISOString(),
 					},
+					isTestMode: true, // Include test visitors in dashboard analytics
 				}),
 			]);
 

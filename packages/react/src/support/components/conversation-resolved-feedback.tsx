@@ -1,4 +1,5 @@
 import { ConversationStatus } from "@cossistant/types";
+import { useState } from "react";
 import { Text, useSupportText } from "../text";
 import { cn } from "../utils";
 import Icon from "./icons";
@@ -6,7 +7,7 @@ import Icon from "./icons";
 type ConversationResolvedFeedbackProps = {
 	status: ConversationStatus | null;
 	rating: number | null;
-	onRate?: (rating: number) => void;
+	onRate?: (rating: number, comment?: string) => void;
 	isSubmitting?: boolean;
 	className?: string;
 };
@@ -23,7 +24,32 @@ export function ConversationResolvedFeedback({
 	const text = useSupportText();
 	const isResolved = status === ConversationStatus.RESOLVED;
 	const isRated = rating != null;
-	const isInteractive = Boolean(onRate) && !isSubmitting && !isRated;
+
+	// Local state for the rating flow
+	const [selectedRating, setSelectedRating] = useState<number | null>(null);
+	const [comment, setComment] = useState("");
+	const [hasSubmitted, setHasSubmitted] = useState(false);
+
+	// Show the rating that was submitted if available, otherwise use local selection
+	const displayRating = isRated ? rating : selectedRating;
+	const showCommentField = selectedRating != null && !isRated && !hasSubmitted;
+	const isInteractive =
+		Boolean(onRate) && !isSubmitting && !isRated && !hasSubmitted;
+
+	const handleRatingSelect = (value: number) => {
+		if (!isInteractive) {
+			return;
+		}
+		setSelectedRating(value);
+	};
+
+	const handleSubmit = () => {
+		if (!(selectedRating && onRate)) {
+			return;
+		}
+		setHasSubmitted(true);
+		onRate(selectedRating, comment.trim() || undefined);
+	};
 
 	if (!isResolved) {
 		return (
@@ -49,7 +75,7 @@ export function ConversationResolvedFeedback({
 				as="p"
 				className="font-medium text-co-foreground"
 				textKey={
-					isRated
+					isRated || hasSubmitted
 						? "component.conversationPage.ratingThanks"
 						: "component.conversationPage.ratingPrompt"
 				}
@@ -57,7 +83,7 @@ export function ConversationResolvedFeedback({
 			<div className="mt-2 flex items-center justify-center gap-1">
 				{Array.from({ length: STAR_COUNT }).map((_, index) => {
 					const value = index + 1;
-					const isFilled = rating ? value <= rating : false;
+					const isFilled = displayRating ? value <= displayRating : false;
 
 					return (
 						<button
@@ -72,7 +98,7 @@ export function ConversationResolvedFeedback({
 							)}
 							disabled={!isInteractive}
 							key={value}
-							onClick={() => onRate?.(value)}
+							onClick={() => handleRatingSelect(value)}
 							type="button"
 						>
 							<Icon
@@ -84,11 +110,40 @@ export function ConversationResolvedFeedback({
 					);
 				})}
 			</div>
-			<Text
-				as="p"
-				className="mt-2 text-co-muted-foreground text-xs"
-				textKey="component.conversationPage.closedMessage"
-			/>
+
+			{showCommentField && (
+				<div className="mt-3 space-y-2">
+					<textarea
+						className="w-full resize-none rounded-md border border-co-border bg-co-background px-3 py-2 text-co-foreground text-sm placeholder:text-co-muted-foreground focus:border-co-primary focus:outline-none focus:ring-1 focus:ring-co-primary"
+						disabled={isSubmitting}
+						onChange={(e) => setComment(e.target.value)}
+						placeholder={text("component.conversationPage.commentPlaceholder")}
+						rows={3}
+						value={comment}
+					/>
+					<button
+						className={cn(
+							"w-full rounded-md bg-co-primary px-4 py-2 font-medium text-co-primary-foreground text-sm transition-colors",
+							isSubmitting
+								? "cursor-not-allowed opacity-50"
+								: "hover:bg-co-primary/90"
+						)}
+						disabled={isSubmitting}
+						onClick={handleSubmit}
+						type="button"
+					>
+						{text("component.conversationPage.submitFeedback")}
+					</button>
+				</div>
+			)}
+
+			{(isRated || hasSubmitted || !showCommentField) && (
+				<Text
+					as="p"
+					className="mt-2 text-co-muted-foreground text-xs"
+					textKey="component.conversationPage.closedMessage"
+				/>
+			)}
 		</div>
 	);
 }

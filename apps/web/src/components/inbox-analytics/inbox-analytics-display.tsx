@@ -4,6 +4,7 @@ import type { InboxAnalyticsResponse } from "@cossistant/types";
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { INBOX_ANALYTICS_RANGES, type InboxAnalyticsRangeDays } from "./types";
 
@@ -18,6 +19,7 @@ type InboxAnalyticsDisplayProps = {
 type MetricConfig = {
 	key: keyof InboxAnalyticsResponse["current"];
 	label: string;
+	description: string;
 	higherIsBetter: boolean;
 	formatValue: (value: number | null) => string;
 	formatSuffix?: (value: number | null) => string | null;
@@ -82,24 +84,32 @@ const metricConfigs: MetricConfig[] = [
 	{
 		key: "medianResponseTimeSeconds",
 		label: "Median response time",
+		description:
+			"The median time between when a conversation starts and when the first response is sent.",
 		higherIsBetter: false,
 		formatValue: formatDuration,
 	},
 	{
 		key: "medianResolutionTimeSeconds",
 		label: "Median time to resolution",
+		description:
+			"The median time from when a conversation starts until it's marked as resolved.",
 		higherIsBetter: false,
 		formatValue: formatDuration,
 	},
 	{
 		key: "aiHandledRate",
 		label: "% handled by AI",
+		description:
+			"Percentage of conversations fully resolved by AI without human escalation.",
 		higherIsBetter: true,
 		formatValue: formatPercent,
 	},
 	{
 		key: "satisfactionIndex",
 		label: "Satisfaction index",
+		description:
+			"Composite score (0-100) based on: ratings (40%), sentiment (25%), response time (20%), and resolution rate (15%). Starts at 50 when no data.",
 		higherIsBetter: true,
 		formatValue: formatIndex,
 		formatSuffix: (value) => (value === null ? null : "/100"),
@@ -107,6 +117,8 @@ const metricConfigs: MetricConfig[] = [
 	{
 		key: "uniqueVisitors",
 		label: "Unique visitors",
+		description:
+			"Number of distinct visitors who started conversations in this period.",
 		higherIsBetter: true,
 		formatValue: formatCount,
 	},
@@ -197,35 +209,39 @@ export function InboxAnalyticsDisplay({
 								: "text-rose-600";
 
 					return (
-						<div
-							className="flex h-[42px] min-w-[150px] flex-1 flex-col justify-between px-1"
+						<TooltipOnHover
+							content={metric.description}
+							delay={300}
 							key={metric.key}
+							side="bottom"
 						>
-							<p className="text-primary/60 text-xs">{metric.label}</p>
-							<div className="flex items-center justify-start gap-2">
-								{isLoading ? (
-									<Skeleton className="h-5 w-16" />
-								) : (
-									<div className="flex items-baseline gap-1">
-										<span className="font-semibold text-md text-primary">
-											{value}
-										</span>
-										{suffix ? (
-											<span className="text-muted-foreground text-xs">
-												{suffix}
+							<div className="flex h-[42px] min-w-[150px] flex-1 cursor-help flex-col justify-between">
+								<p className="text-primary/60 text-xs">{metric.label}</p>
+								<div className="flex items-center justify-start gap-2">
+									{isLoading ? (
+										<Skeleton className="h-5 w-16" />
+									) : (
+										<div className="flex items-baseline gap-1">
+											<span className="font-semibold text-md text-primary">
+												{value}
 											</span>
-										) : null}
-									</div>
-								)}
-								{isLoading ? (
-									<Skeleton className="h-4 w-10" />
-								) : (
-									<span className={cn("font-medium text-xs", deltaClass)}>
-										{metric.deltaLabel}
-									</span>
-								)}
+											{suffix ? (
+												<span className="text-muted-foreground text-xs">
+													{suffix}
+												</span>
+											) : null}
+										</div>
+									)}
+									{isLoading ? (
+										<Skeleton className="h-4 w-10" />
+									) : (
+										<span className={cn("font-medium text-xs", deltaClass)}>
+											{metric.deltaLabel}
+										</span>
+									)}
+								</div>
 							</div>
-						</div>
+						</TooltipOnHover>
 					);
 				})}
 			</div>

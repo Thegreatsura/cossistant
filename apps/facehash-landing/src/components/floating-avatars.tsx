@@ -223,7 +223,7 @@ export function FloatingAvatars() {
 						}}
 					>
 						<Facehash
-							className="transition-[border-radius] duration-150"
+							className="text-black transition-[border-radius] duration-150"
 							colors={COLORS}
 							enableBlink={shouldBlink(index)}
 							intensity3d="dramatic"

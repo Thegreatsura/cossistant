@@ -236,7 +236,6 @@ export function ReadIndicator({
 												className="size-5 rounded border border-background"
 												fallbackName={visitorName}
 												url={reader.image}
-												withBoringAvatar
 											/>
 										)}
 									</motion.div>
