@@ -46,16 +46,25 @@ function isSameConversation(
 			b.visitorLastSeenAt &&
 			isSameDate(a.visitorLastSeenAt, b.visitorLastSeenAt));
 
+	// Check visitorRatingAt
+	const visitorRatingAtMatch =
+		!(a.visitorRatingAt || b.visitorRatingAt) ||
+		(a.visitorRatingAt &&
+			b.visitorRatingAt &&
+			isSameDate(a.visitorRatingAt, b.visitorRatingAt));
+
 	const basicMatch =
 		a.id === b.id &&
 		a.title === b.title &&
 		a.status === b.status &&
 		a.visitorId === b.visitorId &&
 		a.websiteId === b.websiteId &&
+		a.visitorRating === b.visitorRating &&
 		isSameDate(a.createdAt, b.createdAt) &&
 		isSameDate(a.updatedAt, b.updatedAt) &&
 		deletedAtMatch &&
-		visitorLastSeenAtMatch;
+		visitorLastSeenAtMatch &&
+		visitorRatingAtMatch;
 
 	if (!basicMatch) {
 		return false;

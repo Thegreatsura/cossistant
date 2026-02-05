@@ -9,7 +9,7 @@ import {
 } from "@cossistant/types";
 import { timelineItemSchema } from "@cossistant/types/api/timeline-item";
 import type { RealtimeEventData } from "@cossistant/types/realtime-events";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import * as linkify from "linkifyjs";
 import { triggerMessageNotificationWorkflow } from "./send-message-with-notification";
 
@@ -261,6 +261,26 @@ export async function createMessageTimelineItem(
 			tool,
 		},
 	});
+
+	const isResponseFromTeam = Boolean(userId || aiAgentId);
+
+	if (isResponseFromTeam) {
+		const [updatedConversation] = await db
+			.update(conversation)
+			.set({
+				firstResponseAt: createdTimelineItem.createdAt,
+				updatedAt: createdTimelineItem.createdAt,
+			})
+			.where(
+				and(
+					eq(conversation.id, conversationId),
+					eq(conversation.organizationId, organizationId),
+					eq(conversation.websiteId, websiteId),
+					isNull(conversation.firstResponseAt)
+				)
+			)
+			.returning({ id: conversation.id });
+	}
 
 	const actor = resolveMessageActor(
 		createdTimelineItem,

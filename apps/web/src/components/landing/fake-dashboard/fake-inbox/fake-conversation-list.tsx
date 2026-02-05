@@ -1,6 +1,6 @@
 import type { ConversationHeader } from "@cossistant/types";
 import { differenceInHours } from "date-fns";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { ConversationItemView } from "@/components/conversations-list/conversation-item";
 import { PageContent } from "@/components/ui/layout";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -125,12 +125,14 @@ type FakeConversationListProps = {
 	conversations: ConversationHeader[];
 	typingVisitors?: TypingVisitor[];
 	marcConversationRef?: React.RefObject<HTMLDivElement | null>;
+	analyticsSlot?: ReactNode;
 };
 
 export function FakeConversationList({
 	conversations,
 	typingVisitors = [],
 	marcConversationRef,
+	analyticsSlot,
 }: FakeConversationListProps) {
 	// Sort conversations by last message received (most recent first)
 	const sortedConversations = useMemo(() => {
@@ -146,6 +148,7 @@ export function FakeConversationList({
 	return (
 		<PageContent className="h-full contain-strict">
 			<ScrollArea className="h-full px-2">
+				{analyticsSlot ? <div className="pb-3">{analyticsSlot}</div> : null}
 				{sortedConversations.map((conversation, index) => {
 					const isTyping = typingVisitors.some(
 						(tv) => tv.conversationId === conversation.id

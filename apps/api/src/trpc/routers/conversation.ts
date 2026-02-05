@@ -15,6 +15,7 @@ import {
 	getConversationTimelineItems,
 	listConversationsHeaders,
 } from "@api/db/queries/conversation";
+import { getInboxAnalyticsMetrics } from "@api/db/queries/inbox-analytics";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
@@ -30,6 +31,8 @@ import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import {
 	type ContactMetadata,
 	conversationMutationResponseSchema,
+	inboxAnalyticsRequestSchema,
+	inboxAnalyticsResponseSchema,
 	listConversationHeadersResponseSchema,
 	visitorResponseSchema,
 } from "@cossistant/types";
@@ -79,6 +82,72 @@ export const conversationRouter = createTRPCRouter({
 			return {
 				items: result.items,
 				nextCursor: result.nextCursor,
+			};
+		}),
+
+	getInboxAnalytics: protectedProcedure
+		.input(inboxAnalyticsRequestSchema)
+		.output(inboxAnalyticsResponseSchema)
+		.query(async ({ ctx: { db, user }, input }) => {
+			if (input.websiteSlug !== "cossistant") {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Analytics are not enabled for this website",
+				});
+			}
+
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const rangeDays = input.rangeDays ?? 7;
+			const now = new Date();
+			const currentEnd = now;
+			const currentStart = new Date(
+				now.getTime() - rangeDays * 24 * 60 * 60 * 1000
+			);
+			const previousEnd = currentStart;
+			const previousStart = new Date(
+				previousEnd.getTime() - rangeDays * 24 * 60 * 60 * 1000
+			);
+
+			const [current, previous] = await Promise.all([
+				getInboxAnalyticsMetrics(db, {
+					organizationId: websiteData.organizationId,
+					websiteId: websiteData.id,
+					range: {
+						start: currentStart.toISOString(),
+						end: currentEnd.toISOString(),
+					},
+				}),
+				getInboxAnalyticsMetrics(db, {
+					organizationId: websiteData.organizationId,
+					websiteId: websiteData.id,
+					range: {
+						start: previousStart.toISOString(),
+						end: previousEnd.toISOString(),
+					},
+				}),
+			]);
+
+			return {
+				range: {
+					rangeDays,
+					currentStart: currentStart.toISOString(),
+					currentEnd: currentEnd.toISOString(),
+					previousStart: previousStart.toISOString(),
+					previousEnd: previousEnd.toISOString(),
+				},
+				current,
+				previous,
 			};
 		}),
 

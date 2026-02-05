@@ -30,6 +30,7 @@ export function useFakeSupportWidgetConversation({
 		ConversationTimelineItem[]
 	>([]);
 	const [typingVisitors, setTypingVisitors] = useState<FakeTypingVisitor[]>([]);
+	const [isConversationClosed, setIsConversationClosed] = useState(false);
 	const hasScheduledRef = useRef(false);
 	const scheduleRef = useRef<
 		((timeMs: number, callback: () => void) => () => void) | null
@@ -93,6 +94,7 @@ export function useFakeSupportWidgetConversation({
 	const resetDemoData = useCallback(() => {
 		setTimelineItems([]);
 		setTypingVisitors([]);
+		setIsConversationClosed(false);
 		resetScheduler();
 		hasScheduledRef.current = false;
 		hasInitializedRef.current = false;
@@ -243,6 +245,11 @@ export function useFakeSupportWidgetConversation({
 				appendTimelineItems(anthonyMessage);
 			});
 
+			// 6. Mark conversation as resolved after the response
+			currentSchedule(7500, () => {
+				setIsConversationClosed(true);
+			});
+
 			// Animation completes after 7 seconds
 			if (onCompleteRef.current) {
 				currentSchedule(20_000, () => {
@@ -260,6 +267,7 @@ export function useFakeSupportWidgetConversation({
 	return {
 		timelineItems,
 		typingVisitors,
+		isConversationClosed,
 		resetDemoData,
 	};
 }

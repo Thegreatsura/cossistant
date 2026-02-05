@@ -15,6 +15,8 @@ import type {
 	MarkConversationSeenRequestBody,
 	MarkConversationSeenResponseBody,
 	SetConversationTypingResponseBody,
+	SubmitConversationRatingRequestBody,
+	SubmitConversationRatingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
 	GetConversationTimelineItemsRequest,
@@ -276,6 +278,27 @@ export class CossistantClient {
 		visitorId?: string;
 	}): Promise<SetConversationTypingResponseBody> {
 		return this.restClient.setConversationTyping(params);
+	}
+
+	async submitConversationRating(
+		params: {
+			conversationId: string;
+		} & SubmitConversationRatingRequestBody
+	): Promise<SubmitConversationRatingResponseBody> {
+		const response = await this.restClient.submitConversationRating(params);
+
+		const existing =
+			this.conversationsStore.getState().byId[response.conversationId];
+
+		if (existing) {
+			this.conversationsStore.ingestConversation({
+				...existing,
+				visitorRating: response.rating,
+				visitorRatingAt: response.ratedAt,
+			});
+		}
+
+		return response;
 	}
 
 	// Timeline items management

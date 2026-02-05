@@ -11,6 +11,8 @@ import type {
 	MarkConversationSeenResponseBody,
 	SetConversationTypingRequestBody,
 	SetConversationTypingResponseBody,
+	SubmitConversationRatingRequestBody,
+	SubmitConversationRatingResponseBody,
 } from "@cossistant/types/api/conversation";
 import type {
 	GetConversationTimelineItemsRequest,
@@ -677,6 +679,49 @@ export class CossistantRestClient {
 			isTyping: response.isTyping,
 			visitorPreview: response.visitorPreview,
 			sentAt: response.sentAt,
+		};
+	}
+
+	async submitConversationRating(
+		params: {
+			conversationId: string;
+		} & SubmitConversationRatingRequestBody
+	): Promise<SubmitConversationRatingResponseBody> {
+		const storedVisitorId = this.websiteId
+			? getVisitorId(this.websiteId)
+			: undefined;
+		const visitorId = params.visitorId || storedVisitorId;
+
+		if (!visitorId) {
+			throw new Error("Visitor ID is required to submit a rating");
+		}
+
+		const headers: Record<string, string> = {};
+		if (visitorId) {
+			headers["X-Visitor-Id"] = visitorId;
+		}
+
+		const body: SubmitConversationRatingRequestBody = {
+			rating: params.rating,
+		};
+
+		if (params.visitorId) {
+			body.visitorId = params.visitorId;
+		}
+
+		const response = await this.request<SubmitConversationRatingResponseBody>(
+			`/conversations/${params.conversationId}/rating`,
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers,
+			}
+		);
+
+		return {
+			conversationId: response.conversationId,
+			rating: response.rating,
+			ratedAt: response.ratedAt,
 		};
 	}
 

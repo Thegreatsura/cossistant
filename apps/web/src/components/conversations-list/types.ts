@@ -17,7 +17,11 @@ export type ConversationItem = {
 	category: CategoryType;
 };
 
-export type VirtualListItem = CategoryHeader | ConversationItem;
+export type AnalyticsItem = {
+	type: "analytics";
+};
+
+export type VirtualListItem = CategoryHeader | ConversationItem | AnalyticsItem;
 
 export const CATEGORY_LABELS: Record<CategoryType, string> = {
 	needsHuman: "Human intervention needed",
@@ -34,4 +38,5 @@ export const PRIORITY_WEIGHTS = {
 
 export const HEADER_HEIGHT = 48;
 export const ITEM_HEIGHT = 48;
+export const ANALYTICS_HEIGHT = 76;
 export const WAITING_THRESHOLD_MS = 8 * 60 * 60 * 1000; // 8 hours

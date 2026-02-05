@@ -200,6 +200,45 @@ export type SetConversationTypingResponseBody = z.infer<
 	typeof setConversationTypingResponseSchema
 >;
 
+export const submitConversationRatingRequestSchema = z
+	.object({
+		rating: z.number().int().min(1).max(5).openapi({
+			description: "Visitor rating for the conversation (1-5)",
+			example: 5,
+		}),
+		visitorId: z.string().optional().openapi({
+			description:
+				"Visitor ID associated with the conversation. Optional if provided via the X-Visitor-Id header.",
+		}),
+	})
+	.openapi({
+		description: "Body for submitting a visitor rating on a conversation.",
+	});
+
+export type SubmitConversationRatingRequestBody = z.infer<
+	typeof submitConversationRatingRequestSchema
+>;
+
+export const submitConversationRatingResponseSchema = z
+	.object({
+		conversationId: z.string().openapi({
+			description: "The ID of the conversation that was rated",
+		}),
+		rating: z.number().int().min(1).max(5).openapi({
+			description: "The rating that was saved",
+		}),
+		ratedAt: z.string().openapi({
+			description: "Timestamp when the rating was recorded",
+		}),
+	})
+	.openapi({
+		description: "Response confirming the conversation rating was recorded",
+	});
+
+export type SubmitConversationRatingResponseBody = z.infer<
+	typeof submitConversationRatingResponseSchema
+>;
+
 export const getConversationSeenDataResponseSchema = z
 	.object({
 		seenData: z.array(

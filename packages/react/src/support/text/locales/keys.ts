@@ -143,6 +143,15 @@ export const supportTextDefinitions = {
 	"component.conversationPage.closedMessage": {
 		variables: undefined,
 	},
+	"component.conversationPage.ratingPrompt": {
+		variables: undefined,
+	},
+	"component.conversationPage.ratingThanks": {
+		variables: undefined,
+	},
+	"component.conversationPage.ratingLabel": {
+		variables: { rating: 0 as number },
+	},
 	"component.multimodalInput.placeholder": {
 		variables: undefined,
 	},

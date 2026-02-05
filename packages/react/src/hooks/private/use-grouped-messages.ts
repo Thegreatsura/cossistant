@@ -242,6 +242,10 @@ const buildTimelineReadReceiptData = (
 		// Process items in chronological order (using pre-sorted array)
 		for (let index = 0; index < sortedMessageItems.length; index++) {
 			const item = sortedMessageItems[index];
+			if (!item) {
+				continue;
+			}
+
 			const itemTime =
 				sortedMessageTimes[index] ?? getTimestamp(item.createdAt);
 
@@ -296,7 +300,13 @@ export const useGroupedMessages = ({
 		// Avoid sorting if items are already in chronological order
 		let isSorted = true;
 		for (let index = 1; index < sortedMessageTimes.length; index++) {
-			if (sortedMessageTimes[index] < sortedMessageTimes[index - 1]) {
+			const currentTime = sortedMessageTimes[index];
+			const previousTime = sortedMessageTimes[index - 1];
+			if (
+				currentTime !== undefined &&
+				previousTime !== undefined &&
+				currentTime < previousTime
+			) {
 				isSorted = false;
 				break;
 			}

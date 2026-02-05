@@ -135,6 +135,8 @@ const fakeConversations: ConversationHeader[] = [
 		deletedAt: null,
 		lastMessageAt: daysAgo(0, 3),
 		lastSeenAt: null,
+		visitorRating: null,
+		visitorRatingAt: null,
 		lastMessageTimelineItem: {
 			id: "01JGTIM11111111111111111",
 			conversationId: "01JGAA1111111111111111111",
@@ -226,6 +228,8 @@ const fakeConversations: ConversationHeader[] = [
 		deletedAt: null,
 		lastMessageAt: daysAgo(2, 1),
 		lastSeenAt: null,
+		visitorRating: null,
+		visitorRatingAt: null,
 		lastMessageTimelineItem: {
 			id: "01JGTIM33333333333333333",
 			conversationId: "01JGAA3333333333333333333",
@@ -311,6 +315,8 @@ const fakeConversations: ConversationHeader[] = [
 		deletedAt: null,
 		lastMessageAt: daysAgo(0, 12),
 		lastSeenAt: null,
+		visitorRating: null,
+		visitorRatingAt: null,
 		lastMessageTimelineItem: {
 			id: "01JGTIM44444444444444444",
 			conversationId: "01JGAA4444444444444444444",
@@ -402,6 +408,8 @@ const fakeConversations: ConversationHeader[] = [
 		deletedAt: null,
 		lastMessageAt: daysAgo(1, 6),
 		lastSeenAt: null,
+		visitorRating: null,
+		visitorRatingAt: null,
 		lastMessageTimelineItem: {
 			id: "01JGTIM55555555555555555",
 			conversationId: "01JGAA5555555555555555555",
@@ -493,6 +501,8 @@ const fakeConversations: ConversationHeader[] = [
 		deletedAt: null,
 		lastMessageAt: daysAgo(3, 2),
 		lastSeenAt: null,
+		visitorRating: null,
+		visitorRatingAt: null,
 		lastMessageTimelineItem: {
 			id: "01JGTIM66666666666666666",
 			conversationId: "01JGAA6666666666666666666",
@@ -582,6 +592,8 @@ const createMarcConversation = (
 	deletedAt: null,
 	lastMessageAt: timestamp.toISOString(),
 	lastSeenAt: null,
+	visitorRating: null,
+	visitorRatingAt: null,
 	lastMessageTimelineItem: {
 		id: "01JGTIM22222222222222222",
 		conversationId: "01JGAA2222222222222222222",

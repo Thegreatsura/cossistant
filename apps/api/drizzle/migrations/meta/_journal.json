@@ -260,6 +260,13 @@
       "when": 1769245223446,
       "tag": "0036_bizarre_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1770213611760,
+      "tag": "0037_shocking_talos",
+      "breakpoints": true
     }
   ]
 }

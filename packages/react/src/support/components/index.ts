@@ -1,6 +1,7 @@
 export { Content, type ContentProps } from "./content";
 export type { ConversationEventProps } from "./conversation-event";
 export { ConversationEvent } from "./conversation-event";
+export { ConversationResolvedFeedback } from "./conversation-resolved-feedback";
 export type { ConversationTimelineProps } from "./conversation-timeline";
 export { ConversationTimelineList } from "./conversation-timeline";
 export type { IconName, IconProps, IconVariant } from "./icons";

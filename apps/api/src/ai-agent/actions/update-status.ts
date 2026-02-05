@@ -53,6 +53,15 @@ export async function updateStatus(params: UpdateStatusParams): Promise<void> {
 		updateData.resolvedAt = now;
 		updateData.resolvedByAiAgentId = aiAgentId;
 		updateData.resolvedByUserId = null;
+		if (conv.startedAt) {
+			const diffSeconds = Math.max(
+				0,
+				Math.round(
+					(new Date(now).getTime() - new Date(conv.startedAt).getTime()) / 1000
+				)
+			);
+			updateData.resolutionTime = diffSeconds;
+		}
 	}
 
 	await db

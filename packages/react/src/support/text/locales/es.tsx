@@ -99,6 +99,15 @@ const es: SupportLocaleMessages = {
 		"El visitante confirmó su correo electrónico",
 	"component.conversationPage.closedMessage":
 		"Esta conversación está cerrada, inicia una nueva para hablar con nosotros",
+	"component.conversationPage.ratingPrompt": "¿Cómo lo hicimos?",
+	"component.conversationPage.ratingThanks": "¡Gracias por tu comentario!",
+	"component.conversationPage.ratingLabel": ({ variables, utils }) => {
+		const noun = utils.pluralize(variables.rating, {
+			one: "estrella",
+			other: "estrellas",
+		});
+		return `Calificar con ${variables.rating} ${noun}`;
+	},
 	"component.multimodalInput.placeholder": "Escribe tu mensaje...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Eliminar ${variables.fileName}`,

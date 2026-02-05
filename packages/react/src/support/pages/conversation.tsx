@@ -1,11 +1,12 @@
 import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { type ReactElement, useEffect, useMemo, useRef } from "react";
+import { type ReactElement, useEffect, useMemo, useRef, useState } from "react";
 import { useStoreSelector } from "../../hooks/private/store/use-store-selector";
 import { useConversationPage } from "../../hooks/use-conversation-page";
 import { useNewMessageSound } from "../../hooks/use-new-message-sound";
 import { useSupport } from "../../provider";
 import { AvatarStack } from "../components/avatar-stack";
+import { ConversationResolvedFeedback } from "../components/conversation-resolved-feedback";
 import { ConversationTimelineList } from "../components/conversation-timeline";
 import { Header } from "../components/header";
 import { MultimodalInput } from "../components/multimodal-input";
@@ -66,6 +67,8 @@ export const ConversationPage: ConversationPageComponent = ({
 		playbackRate: 1.0,
 	});
 	const previousItemsRef = useRef<TimelineItem[]>([]);
+	const [pendingRating, setPendingRating] = useState<number | null>(null);
+	const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
 	const timelineTools = useMemo(
 		() => ({
@@ -104,6 +107,46 @@ export const ConversationPage: ConversationPageComponent = ({
 				activeConversation.status === ConversationStatus.SPAM ||
 				activeConversation.deletedAt)
 	);
+	const resolvedRating =
+		activeConversation?.visitorRating ?? pendingRating ?? null;
+
+	useEffect(() => {
+		setPendingRating(null);
+		setIsSubmittingRating(false);
+	}, [activeConversation?.id]);
+
+	const handleRateConversation = async (value: number) => {
+		if (!(client && activeConversation)) {
+			return;
+		}
+
+		if (
+			activeConversation.status !== ConversationStatus.RESOLVED ||
+			activeConversation.visitorRating
+		) {
+			return;
+		}
+
+		if (isSubmittingRating) {
+			return;
+		}
+
+		setPendingRating(value);
+		setIsSubmittingRating(true);
+
+		try {
+			await client.submitConversationRating({
+				conversationId: activeConversation.id,
+				rating: value,
+				visitorId: visitor?.id ?? undefined,
+			});
+		} catch (error) {
+			console.error("[support] Failed to submit rating", error);
+			setPendingRating(null);
+		} finally {
+			setIsSubmittingRating(false);
+		}
+	};
 
 	const handleGoBack = () => {
 		if (canGoBack) {
@@ -171,9 +214,12 @@ export const ConversationPage: ConversationPageComponent = ({
 			/>
 
 			{isConversationClosed ? (
-				<div className="m-4 flex items-center justify-center text-balance px-4 pb-6 text-center font-medium text-co-muted-foreground text-sm">
-					<Text as="p" textKey="component.conversationPage.closedMessage" />
-				</div>
+				<ConversationResolvedFeedback
+					isSubmitting={isSubmittingRating}
+					onRate={handleRateConversation}
+					rating={resolvedRating}
+					status={activeConversation?.status ?? null}
+				/>
 			) : (
 				<div className="flex-shrink-0 p-1">
 					<MultimodalInput

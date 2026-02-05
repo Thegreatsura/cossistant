@@ -8,9 +8,9 @@ import {
 	listConversations,
 	upsertConversation,
 } from "@api/db/queries/conversation";
-import type {
+import {
 	conversation,
-	conversationTimelineItem,
+	type conversationTimelineItem,
 } from "@api/db/schema/conversation";
 import { markVisitorPresence } from "@api/services/presence";
 import {
@@ -44,6 +44,8 @@ import {
 	markConversationSeenResponseSchema,
 	setConversationTypingRequestSchema,
 	setConversationTypingResponseSchema,
+	submitConversationRatingRequestSchema,
+	submitConversationRatingResponseSchema,
 } from "@cossistant/types/api/conversation";
 import {
 	getConversationTimelineItemsRequestSchema,
@@ -56,6 +58,7 @@ import {
 	conversationSeenSchema,
 } from "@cossistant/types/schemas";
 import { OpenAPIHono, z } from "@hono/zod-openapi";
+import { eq } from "drizzle-orm";
 import { protectedPublicApiKeyMiddleware } from "../middleware";
 import type { RestContext } from "../types";
 
@@ -97,6 +100,8 @@ const serializeConversationForResponse = (
 		visitorId: record.visitorId,
 		websiteId: record.websiteId,
 		status: record.status,
+		visitorRating: record.visitorRating ?? null,
+		visitorRatingAt: record.visitorRatingAt ?? null,
 		deletedAt: record.deletedAt ?? null,
 		lastTimelineItem: record.lastTimelineItem
 			? serializeTimelineItemForResponse(record.lastTimelineItem)
@@ -876,6 +881,168 @@ conversationRouter.openapi(
 
 		return c.json(
 			validateResponse(response, setConversationTypingResponseSchema),
+			200
+		);
+	}
+);
+
+conversationRouter.openapi(
+	{
+		method: "post",
+		path: "/{conversationId}/rating",
+		summary: "Submit a visitor rating for a conversation",
+		description:
+			"Record a visitor rating (1-5) for a resolved conversation. Requires visitor ownership.",
+		tags: ["Conversations"],
+		request: {
+			body: {
+				required: true,
+				content: {
+					"application/json": {
+						schema: submitConversationRatingRequestSchema,
+					},
+				},
+			},
+		},
+		responses: {
+			200: {
+				description: "Conversation rating recorded",
+				content: {
+					"application/json": {
+						schema: submitConversationRatingResponseSchema,
+					},
+				},
+			},
+			400: {
+				description: "Invalid request",
+				content: {
+					"application/json": {
+						schema: z.object({ error: z.string() }),
+					},
+				},
+			},
+			403: {
+				description: "Forbidden",
+				content: {
+					"application/json": {
+						schema: z.object({ error: z.string() }),
+					},
+				},
+			},
+			404: {
+				description: "Conversation not found",
+				content: {
+					"application/json": {
+						schema: z.object({ error: z.string() }),
+					},
+				},
+			},
+		},
+		security: [
+			{
+				"Public API Key": [],
+			},
+		],
+		inputSchema: [
+			{
+				name: "conversationId",
+				in: "path",
+				description: "The ID of the conversation to rate",
+				required: true,
+				schema: {
+					type: "string",
+				},
+			},
+			{
+				name: "X-Public-Key",
+				in: "header",
+				description:
+					"Public API key for browser-based authentication. Can only be used from whitelisted domains. Format: `pk_[live|test]_...`",
+				required: false,
+				schema: {
+					type: "string",
+					pattern: "^pk_(live|test)_[a-f0-9]{64}$",
+					example: "pk_test_xxx",
+				},
+			},
+			{
+				name: "X-Visitor-Id",
+				in: "header",
+				description: "Visitor ID from localStorage.",
+				required: false,
+				schema: {
+					type: "string",
+					pattern: "^[0-9A-HJKMNP-TV-Z]{26}$",
+					example: "01JG000000000000000000000",
+				},
+			},
+		],
+	},
+	async (c) => {
+		const { db, website, organization, body, visitorIdHeader } =
+			await safelyExtractRequestData(c, submitConversationRatingRequestSchema);
+
+		const params = getConversationRequestSchema.parse({
+			conversationId: c.req.param("conversationId"),
+		});
+
+		const [visitor, conversationRecord] = await Promise.all([
+			getVisitor(db, {
+				visitorId: body.visitorId || visitorIdHeader,
+			}),
+			getConversationByIdWithLastMessage(db, {
+				organizationId: organization.id,
+				websiteId: website.id,
+				conversationId: params.conversationId,
+			}),
+		]);
+
+		if (!visitor || visitor.websiteId !== website.id) {
+			return c.json(
+				{
+					error: "Visitor not found, please pass a valid visitorId",
+				},
+				400
+			);
+		}
+
+		if (!conversationRecord || conversationRecord.visitorId !== visitor.id) {
+			return c.json(
+				{
+					error: "Conversation not found",
+				},
+				404
+			);
+		}
+
+		if (conversationRecord.status !== "resolved") {
+			return c.json(
+				{
+					error: "Conversation must be resolved before submitting a rating",
+				},
+				403
+			);
+		}
+
+		const ratedAt = new Date().toISOString();
+
+		await db
+			.update(conversation)
+			.set({
+				visitorRating: body.rating,
+				visitorRatingAt: ratedAt,
+				updatedAt: ratedAt,
+			})
+			.where(eq(conversation.id, conversationRecord.id));
+
+		const response = {
+			conversationId: conversationRecord.id,
+			rating: body.rating,
+			ratedAt,
+		};
+
+		return c.json(
+			validateResponse(response, submitConversationRatingResponseSchema),
 			200
 		);
 	}

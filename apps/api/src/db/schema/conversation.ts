@@ -161,6 +161,8 @@ export const conversation = pgTable(
 		channel: text("channel").notNull().default("widget"),
 		title: text("title"),
 		resolutionTime: integer("resolution_time"), // in seconds
+		visitorRating: integer("visitor_rating"), // 1-5 scale
+		visitorRatingAt: timestamp("visitor_rating_at"),
 		startedAt: timestamp("started_at").$defaultFn(() =>
 			new Date().toISOString()
 		),
@@ -218,6 +220,30 @@ export const conversation = pgTable(
 		index("conversation_org_resolved_idx").on(
 			table.organizationId,
 			table.resolvedAt
+		),
+		index("conversation_org_website_started_idx").on(
+			table.organizationId,
+			table.websiteId,
+			table.startedAt,
+			table.deletedAt
+		),
+		index("conversation_org_website_first_response_idx").on(
+			table.organizationId,
+			table.websiteId,
+			table.firstResponseAt,
+			table.deletedAt
+		),
+		index("conversation_org_website_resolved_idx").on(
+			table.organizationId,
+			table.websiteId,
+			table.resolvedAt,
+			table.deletedAt
+		),
+		index("conversation_org_website_rating_idx").on(
+			table.organizationId,
+			table.websiteId,
+			table.visitorRatingAt,
+			table.deletedAt
 		),
 		// Index for filtering conversations by website for the sync db
 		index("conversation_org_website_idx").on(table.websiteId, table.updatedAt),

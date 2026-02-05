@@ -1,12 +1,24 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+	memo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+} from "react";
 import { CategoryHeader } from "@/components/conversations-list/category-header";
 import { ConversationItem } from "@/components/conversations-list/conversation-item";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { PageContent } from "../ui/layout";
-import { HEADER_HEIGHT, ITEM_HEIGHT, type VirtualListItem } from "./types";
+import {
+	ANALYTICS_HEIGHT,
+	HEADER_HEIGHT,
+	ITEM_HEIGHT,
+	type VirtualListItem,
+} from "./types";
 import { useConversationKeyboardNavigation } from "./use-conversation-keyboard-navigation";
 
 type ConversationsListProps = {
@@ -15,6 +27,7 @@ type ConversationsListProps = {
 	showWaitingForReplyPill: boolean;
 	websiteSlug: string;
 	smartItems?: VirtualListItem[] | null;
+	analyticsSlot?: ReactNode;
 };
 
 // Memoized conversation item with proper comparison
@@ -74,6 +87,7 @@ export function VirtualizedConversations({
 	showWaitingForReplyPill,
 	websiteSlug,
 	smartItems,
+	analyticsSlot,
 }: ConversationsListProps) {
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const viewportRef = useRef<HTMLDivElement>(null);
@@ -99,6 +113,7 @@ export function VirtualizedConversations({
 		parentRef: viewportRef,
 		itemHeight: ITEM_HEIGHT,
 		headerHeight: HEADER_HEIGHT,
+		analyticsHeight: ANALYTICS_HEIGHT,
 		enabled: true,
 	});
 
@@ -107,7 +122,13 @@ export function VirtualizedConversations({
 		(index: number) => {
 			if (isSmartMode && items) {
 				const item = items[index];
-				return item?.type === "header" ? HEADER_HEIGHT : ITEM_HEIGHT;
+				if (item?.type === "header") {
+					return HEADER_HEIGHT;
+				}
+				if (item?.type === "analytics") {
+					return ANALYTICS_HEIGHT;
+				}
+				return ITEM_HEIGHT;
 			}
 			return ITEM_HEIGHT;
 		},
@@ -121,6 +142,9 @@ export function VirtualizedConversations({
 				const item = items[index];
 				if (item?.type === "header") {
 					return `header-${item.category}`;
+				}
+				if (item?.type === "analytics") {
+					return "analytics";
 				}
 				return item?.conversation.id ?? index;
 			}
@@ -189,6 +213,24 @@ export function VirtualizedConversations({
 										count={item.count}
 										label={item.label}
 									/>
+								</div>
+							);
+						}
+
+						if (item.type === "analytics") {
+							return (
+								<div
+									key="analytics"
+									style={{
+										position: "absolute",
+										top: 0,
+										left: 0,
+										width: "100%",
+										height: `${virtualItem.size}px`,
+										transform: `translateY(${virtualItem.start}px)`,
+									}}
+								>
+									{analyticsSlot ?? null}
 								</div>
 							);
 						}

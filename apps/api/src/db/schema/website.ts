@@ -271,6 +271,12 @@ export const visitor = pgTable(
 			table.organizationId,
 			table.lastSeenAt
 		),
+		index("visitor_org_website_last_seen_idx").on(
+			table.organizationId,
+			table.websiteId,
+			table.lastSeenAt,
+			table.deletedAt
+		),
 		// Index for soft delete queries
 		index("visitor_deleted_at_idx").on(table.deletedAt),
 	]

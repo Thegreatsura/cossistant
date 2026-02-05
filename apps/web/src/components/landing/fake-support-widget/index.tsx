@@ -3,9 +3,11 @@
 import * as Primitive from "@cossistant/react/primitives";
 import { AvatarStack } from "@cossistant/react/support/components/avatar-stack";
 import { CoButton as Button } from "@cossistant/react/support/components/button";
+import { ConversationResolvedFeedback } from "@cossistant/react/support/components/conversation-resolved-feedback";
 import Icon from "@cossistant/react/support/components/icons";
 import { Watermark } from "@cossistant/react/support/components/watermark";
 // Text component uses real hooks, so we'll create a simple fake version
+import { ConversationStatus } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useViewportVisibility } from "@/hooks/use-viewport-visibility";
@@ -61,15 +63,18 @@ function FakeConversationView({
 	conversationId,
 	timelineItems,
 	typingVisitors,
+	isConversationClosed,
 }: {
 	conversationId: string;
 	timelineItems: TimelineItem[];
 	typingVisitors: import("../fake-dashboard/data").FakeTypingVisitor[];
+	isConversationClosed: boolean;
 }) {
 	const { website, availableAIAgents, availableHumanAgents, visitor } =
 		useFakeSupport();
 	const text = useSupportText();
 	const [message, setMessage] = useState("");
+	const [rating, setRating] = useState<number | null>(null);
 
 	const handleGoBack = () => {
 		// Back button does nothing in fake demo
@@ -107,33 +112,43 @@ function FakeConversationView({
 				/>
 			</div>
 
-			<div className="shrink-0 p-1">
-				<form className="flex flex-col gap-2">
-					<div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
-						<Primitive.MultimodalInput
-							className={cn(
-								"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none"
-							)}
-							disabled={true}
-							onChange={setMessage}
-							placeholder={text("component.multimodalInput.placeholder")}
-							value={message}
-						/>
-						<div className="flex items-center justify-between py-1 pr-1 pl-3">
-							<Watermark />
-							<div className="flex items-center gap-0.5">
-								<button
-									className="group flex h-8 w-8 items-center justify-center rounded-md text-co-muted-foreground hover:bg-co-muted hover:text-co-foreground disabled:cursor-not-allowed disabled:opacity-50"
-									disabled={true}
-									type="button"
-								>
-									<Icon className="h-4 w-4" name="send" />
-								</button>
+			{isConversationClosed ? (
+				<div className="shrink-0">
+					<ConversationResolvedFeedback
+						onRate={(value) => setRating(value)}
+						rating={rating}
+						status={ConversationStatus.RESOLVED}
+					/>
+				</div>
+			) : (
+				<div className="shrink-0 p-1">
+					<form className="flex flex-col gap-2">
+						<div className="flex flex-col rounded border border-co-border/50 bg-co-background-100 dark:bg-co-background-200">
+							<Primitive.MultimodalInput
+								className={cn(
+									"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-primary/40 focus-visible:outline-none"
+								)}
+								disabled={true}
+								onChange={setMessage}
+								placeholder={text("component.multimodalInput.placeholder")}
+								value={message}
+							/>
+							<div className="flex items-center justify-between py-1 pr-1 pl-3">
+								<Watermark />
+								<div className="flex items-center gap-0.5">
+									<button
+										className="group flex h-8 w-8 items-center justify-center rounded-md text-co-muted-foreground hover:bg-co-muted hover:text-co-foreground disabled:cursor-not-allowed disabled:opacity-50"
+										disabled={true}
+										type="button"
+									>
+										<Icon className="h-4 w-4" name="send" />
+									</button>
+								</div>
 							</div>
 						</div>
-					</div>
-				</form>
-			</div>
+					</form>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -306,6 +321,7 @@ export function FakeSupportWidget({ className }: { className?: string }) {
 								) : (
 									<FakeConversationView
 										conversationId={conversationId}
+										isConversationClosed={conversationHook.isConversationClosed}
 										timelineItems={
 											conversationHook.timelineItems as TimelineItem[]
 										}

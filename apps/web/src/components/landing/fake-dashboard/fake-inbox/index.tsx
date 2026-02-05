@@ -1,7 +1,14 @@
 "use client";
 
-import type { ConversationHeader } from "@cossistant/types";
-import { useRef } from "react";
+import type {
+	ConversationHeader,
+	InboxAnalyticsResponse,
+} from "@cossistant/types";
+import { useMemo, useRef, useState } from "react";
+import {
+	InboxAnalyticsDisplay,
+	type InboxAnalyticsRangeDays,
+} from "@/components/inbox-analytics";
 import { Page, PageHeader, PageHeaderTitle } from "@/components/ui/layout";
 import { FakeInboxNavigationSidebar } from "../fake-sidebar/inbox";
 import { FakeConversationList } from "./fake-conversation-list";
@@ -26,6 +33,34 @@ export function FakeInbox({
 	onMouseClick,
 }: Props) {
 	const marcConversationRef = useRef<HTMLDivElement>(null);
+	const [rangeDays, setRangeDays] = useState<InboxAnalyticsRangeDays>(7);
+
+	const analyticsData = useMemo<InboxAnalyticsResponse>(
+		() => ({
+			range: {
+				rangeDays,
+				currentStart: new Date().toISOString(),
+				currentEnd: new Date().toISOString(),
+				previousStart: new Date().toISOString(),
+				previousEnd: new Date().toISOString(),
+			},
+			current: {
+				medianResponseTimeSeconds: 320,
+				medianResolutionTimeSeconds: 5400,
+				aiHandledRate: 62,
+				satisfactionIndex: 86,
+				uniqueVisitors: 1280,
+			},
+			previous: {
+				medianResponseTimeSeconds: 410,
+				medianResolutionTimeSeconds: 6100,
+				aiHandledRate: 55,
+				satisfactionIndex: 82,
+				uniqueVisitors: 1130,
+			},
+		}),
+		[rangeDays]
+	);
 
 	return (
 		<>
@@ -42,6 +77,13 @@ export function FakeInbox({
 				</PageHeader>
 
 				<FakeConversationList
+					analyticsSlot={
+						<InboxAnalyticsDisplay
+							data={analyticsData}
+							onRangeChange={setRangeDays}
+							rangeDays={rangeDays}
+						/>
+					}
 					conversations={conversations}
 					marcConversationRef={marcConversationRef}
 					typingVisitors={typingVisitors}

@@ -82,12 +82,20 @@ type ActorIdentity = {
 	actorId: string;
 };
 
-function resolveActorIdentity(
-	entry: Pick<
-		ConversationSeen | RealtimeEvent<"conversationSeen">["payload"],
-		"userId" | "visitorId" | "aiAgentId" | "actorType" | "actorId"
-	>
-): ActorIdentity | null {
+/**
+ * Input type for resolving actor identity from either:
+ * - ConversationSeen (has userId/visitorId/aiAgentId)
+ * - RealtimeEvent<"conversationSeen"> payload (has actorType/actorId plus userId/visitorId/aiAgentId)
+ */
+type SeenEntryInput = {
+	userId?: string | null;
+	visitorId?: string | null;
+	aiAgentId?: string | null;
+	actorType?: SeenActorType | string;
+	actorId?: string;
+};
+
+function resolveActorIdentity(entry: SeenEntryInput): ActorIdentity | null {
 	if (entry.actorType && entry.actorId) {
 		return {
 			actorType: entry.actorType as SeenActorType,

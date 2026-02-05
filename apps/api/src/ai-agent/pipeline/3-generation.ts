@@ -253,7 +253,6 @@ export async function generate(
 			temperature: 0,
 			// Support interruption via AbortSignal
 			abortSignal,
-			maxSteps: 10,
 		});
 	} catch (error) {
 		// Handle abort gracefully - this means a new message arrived
@@ -346,7 +345,6 @@ export async function generate(
 					messages,
 					temperature: 0,
 					abortSignal,
-					maxSteps: 3,
 				});
 			} catch (error) {
 				if (error instanceof Error && error.name === "AbortError") {
@@ -385,7 +383,7 @@ export async function generate(
 					repairSendMessageCalls.length > 0
 			);
 
-			if (repairSucceeded) {
+			if (repairSucceeded && repairAction) {
 				console.log(`[ai-agent:generate] conv=${convId} | Repair succeeded`);
 				return {
 					decision: repairAction,

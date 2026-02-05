@@ -101,6 +101,15 @@ const en: SupportLocaleMessages = {
 		"Visitor confirmed their email address",
 	"component.conversationPage.closedMessage":
 		"This conversation is closed, start a new one to talk with us",
+	"component.conversationPage.ratingPrompt": "How did we do?",
+	"component.conversationPage.ratingThanks": "Thanks for your feedback!",
+	"component.conversationPage.ratingLabel": ({ variables, utils }) => {
+		const noun = utils.pluralize(variables.rating, {
+			one: "star",
+			other: "stars",
+		});
+		return `Rate ${variables.rating} ${noun}`;
+	},
 	"component.multimodalInput.placeholder": "Type your message...",
 	"component.multimodalInput.remove": ({ variables }) =>
 		`Remove ${variables.fileName}`,

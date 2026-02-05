@@ -2,6 +2,7 @@
 
 import type { ConversationStatus } from "@cossistant/types";
 import Link from "next/link";
+import { InboxAnalytics } from "@/components/inbox-analytics";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { Button } from "../ui/button";
 import Icon from "../ui/icons";
@@ -31,6 +32,12 @@ export function ConversationsList({
 	smartItems,
 }: Props) {
 	const showWaitingForReplyPill = selectedConversationStatus === null;
+	const showAnalytics =
+		selectedConversationStatus === null && websiteSlug === "cossistant";
+	const analyticsItems =
+		showAnalytics && smartItems
+			? [{ type: "analytics" as const }, ...smartItems]
+			: smartItems;
 
 	return (
 		<Page className="px-0">
@@ -58,7 +65,8 @@ export function ConversationsList({
 				</div>
 			</PageHeader>
 			{conversations.length === 0 ? (
-				<PageContent>
+				<PageContent className={showAnalytics ? "gap-6" : undefined}>
+					{showAnalytics ? <InboxAnalytics websiteSlug={websiteSlug} /> : null}
 					<div className="mx-1 mt-4 flex h-1/3 flex-col items-center justify-center gap-10">
 						<TextEffect as="h1" className="text-primary/60 text-xl">
 							No {selectedConversationStatus || ""} conversations yet
@@ -80,10 +88,13 @@ export function ConversationsList({
 				</PageContent>
 			) : (
 				<VirtualizedConversations
+					analyticsSlot={
+						showAnalytics ? <InboxAnalytics websiteSlug={websiteSlug} /> : null
+					}
 					basePath={basePath}
 					conversations={conversations}
 					showWaitingForReplyPill={showWaitingForReplyPill}
-					smartItems={smartItems}
+					smartItems={analyticsItems}
 					websiteSlug={websiteSlug}
 				/>
 			)}

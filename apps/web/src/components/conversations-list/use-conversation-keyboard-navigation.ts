@@ -13,6 +13,7 @@ type UseConversationKeyboardNavigationProps = {
 	parentRef: React.RefObject<HTMLDivElement | null>;
 	itemHeight: number;
 	headerHeight?: number;
+	analyticsHeight?: number;
 	enabled?: boolean;
 };
 
@@ -23,6 +24,7 @@ export function useConversationKeyboardNavigation({
 	parentRef,
 	itemHeight,
 	headerHeight = 32,
+	analyticsHeight = 32,
 	enabled = true,
 }: UseConversationKeyboardNavigationProps) {
 	const router = useRouter();
@@ -39,14 +41,14 @@ export function useConversationKeyboardNavigation({
 		markFocusRestored,
 	} = useConversationFocusStore();
 
-	// Helper to check if an index is a header
+	// Helper to check if an index is not a conversation
 	const isHeaderIndex = useCallback(
 		(index: number): boolean => {
 			if (!isSmartMode) {
 				return false;
 			}
 
-			return items[index]?.type === "header";
+			return items[index]?.type !== "conversation";
 		},
 		[isSmartMode, items]
 	);
@@ -167,12 +169,18 @@ export function useConversationKeyboardNavigation({
 
 			for (let i = 0; i < index; i++) {
 				const item = items[i];
-				offset += (item?.type === "header" ? headerHeight : itemHeight) + 4; // 4px gap
+				const itemSize =
+					item?.type === "header"
+						? headerHeight
+						: item?.type === "analytics"
+							? analyticsHeight
+							: itemHeight;
+				offset += itemSize + 4; // 4px gap
 			}
 
 			return offset;
 		},
-		[isSmartMode, items, itemHeight, headerHeight]
+		[isSmartMode, items, itemHeight, headerHeight, analyticsHeight]
 	);
 
 	const scrollToItem = useCallback(
@@ -184,7 +192,9 @@ export function useConversationKeyboardNavigation({
 			const container = parentRef.current;
 			const itemTop = getItemOffset(index);
 			const currentItemHeight = isHeaderIndex(index)
-				? headerHeight
+				? items?.[index]?.type === "analytics"
+					? analyticsHeight
+					: headerHeight
 				: itemHeight;
 			const itemBottom = itemTop + currentItemHeight;
 			const scrollTop = container.scrollTop;
@@ -196,7 +206,15 @@ export function useConversationKeyboardNavigation({
 				container.scrollTop = itemBottom - container.clientHeight;
 			}
 		},
-		[getItemOffset, isHeaderIndex, itemHeight, headerHeight, parentRef]
+		[
+			getItemOffset,
+			isHeaderIndex,
+			itemHeight,
+			headerHeight,
+			analyticsHeight,
+			parentRef,
+			items,
+		]
 	);
 
 	const moveFocus = useCallback(

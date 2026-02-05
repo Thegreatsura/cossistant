@@ -30,6 +30,8 @@ export const conversationSchema = z.object({
 			ConversationStatus.SPAM,
 		])
 		.default(ConversationStatus.OPEN),
+	visitorRating: z.number().int().min(1).max(5).nullable().optional(),
+	visitorRatingAt: z.string().nullable().optional(),
 	deletedAt: z.string().nullable().default(null),
 	visitorLastSeenAt: z.string().nullable().optional(),
 	lastTimelineItem: timelineItemSchema.optional(),

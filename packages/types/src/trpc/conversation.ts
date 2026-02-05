@@ -41,6 +41,8 @@ export const conversationRecordSchema = z.object({
 	channel: z.string(),
 	title: z.string().nullable(),
 	resolutionTime: z.number().nullable(),
+	visitorRating: z.number().int().min(1).max(5).nullable(),
+	visitorRatingAt: z.string().nullable(),
 	startedAt: z.string().nullable(),
 	firstResponseAt: z.string().nullable(),
 	resolvedAt: z.string().nullable(),
@@ -80,6 +82,8 @@ export const conversationHeaderSchema = z.object({
 	channel: z.string(),
 	title: z.string().nullable(),
 	resolutionTime: z.number().nullable(),
+	visitorRating: z.number().int().min(1).max(5).nullable(),
+	visitorRatingAt: z.string().nullable(),
 	startedAt: z.string().nullable(),
 	firstResponseAt: z.string().nullable(),
 	resolvedAt: z.string().nullable(),
@@ -109,8 +113,44 @@ export const listConversationHeadersResponseSchema = z.object({
 	nextCursor: z.string().nullable(),
 });
 
+export const inboxAnalyticsRangeSchema = z.union([
+	z.literal(7),
+	z.literal(14),
+	z.literal(30),
+]);
+
+export const inboxAnalyticsRequestSchema = z.object({
+	websiteSlug: z.string(),
+	rangeDays: inboxAnalyticsRangeSchema.optional().default(7),
+});
+
+export const inboxAnalyticsMetricsSchema = z.object({
+	medianResponseTimeSeconds: z.number().nullable(),
+	medianResolutionTimeSeconds: z.number().nullable(),
+	aiHandledRate: z.number().nullable(),
+	satisfactionIndex: z.number().nullable(),
+	uniqueVisitors: z.number(),
+});
+
+export const inboxAnalyticsResponseSchema = z.object({
+	range: z.object({
+		rangeDays: inboxAnalyticsRangeSchema,
+		currentStart: z.string(),
+		currentEnd: z.string(),
+		previousStart: z.string(),
+		previousEnd: z.string(),
+	}),
+	current: inboxAnalyticsMetricsSchema,
+	previous: inboxAnalyticsMetricsSchema,
+});
+
 export type ConversationMutationResponse = z.infer<
 	typeof conversationMutationResponseSchema
 >;
 
 export type ConversationHeader = z.infer<typeof conversationHeaderSchema>;
+
+export type InboxAnalyticsRequest = z.infer<typeof inboxAnalyticsRequestSchema>;
+export type InboxAnalyticsResponse = z.infer<
+	typeof inboxAnalyticsResponseSchema
+>;

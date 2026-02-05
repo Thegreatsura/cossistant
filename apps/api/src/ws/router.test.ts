@@ -385,6 +385,8 @@ describe("conversationCreated handler", () => {
 					deletedAt: null,
 					lastMessageAt: null,
 					lastSeenAt: null,
+					visitorRating: null,
+					visitorRatingAt: null,
 					lastTimelineItem: null,
 					lastMessageTimelineItem: null,
 					viewIds: [],
