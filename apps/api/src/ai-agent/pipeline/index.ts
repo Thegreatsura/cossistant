@@ -52,6 +52,7 @@ export type AiAgentPipelineResult = {
 	action?: string;
 	reason?: string;
 	error?: string;
+	superseded?: boolean;
 	metrics: {
 		intakeMs: number;
 		decisionMs: number;
@@ -282,6 +283,7 @@ export async function runAiAgentPipeline(
 				reason: hasNewerVisitorMessage
 					? "Superseded by newer visitor message"
 					: "Superseded by newer message",
+				superseded: true,
 				metrics: finalizeMetrics(metrics, startTime),
 			};
 		}
@@ -393,6 +395,7 @@ export async function runAiAgentPipeline(
 			return {
 				status: "skipped",
 				reason: "Interrupted by new message",
+				superseded: true,
 				metrics: finalizeMetrics(metrics, startTime),
 			};
 		}
@@ -432,6 +435,7 @@ export async function runAiAgentPipeline(
 					return {
 						status: "skipped",
 						reason: "Superseded by newer visitor message",
+						superseded: true,
 						metrics: finalizeMetrics(metrics, startTime),
 					};
 				}
@@ -533,6 +537,7 @@ export async function runAiAgentPipeline(
 				reason: hasNewerVisitorMessageBeforeExecution
 					? "Superseded by newer visitor message"
 					: "Superseded by newer message",
+				superseded: true,
 				metrics: finalizeMetrics(metrics, startTime),
 			};
 		}

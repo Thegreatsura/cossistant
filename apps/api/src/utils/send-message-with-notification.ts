@@ -14,11 +14,14 @@ import {
 	triggerVisitorMessageNotification,
 } from "@api/utils/queue-triggers";
 import {
+	clearWorkflowPending,
 	clearWorkflowState,
 	generateWorkflowRunId,
 	getWorkflowState,
+	setWorkflowPending,
 	setWorkflowState,
 	type WorkflowDirection,
+	type WorkflowPendingJob,
 	type WorkflowState,
 } from "@api/utils/workflow-dedup-manager";
 import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
@@ -240,9 +243,9 @@ export async function triggerVisitorSentMessageWorkflow(params: {
  * Trigger AI agent response workflow when a visitor sends a message
  * This checks if an AI agent is configured and active for the website
  *
- * IMPORTANT: Workflow state is set AFTER successful job creation to ensure
- * the state always matches an actual queued job. When a job is skipped due
- * to debouncing, we sync the state with the existing job's workflowRunId.
+ * IMPORTANT: Workflow state is set BEFORE enqueue to avoid the "immediately
+ * superseded" race. A pending payload is stored so active jobs can requeue
+ * the newest message once they cancel or finish.
  */
 export async function triggerAiAgentResponseWorkflow(params: {
 	conversationId: string;
@@ -302,44 +305,22 @@ export async function triggerAiAgentResponseWorkflow(params: {
 			isReplacement: Boolean(existingState),
 		};
 
-		// Enqueue the job FIRST, then update state based on result
-		const result = await getAiAgentQueueTriggers().enqueueAiAgentJob(jobData);
+		// Store pending payload and set workflow state BEFORE enqueue to avoid race
+		const pendingPayload: WorkflowPendingJob = {
+			workflowRunId,
+			conversationId: params.conversationId,
+			direction,
+			messageId: params.messageId,
+			messageCreatedAt: messageMetadata.createdAt,
+			organizationId: params.organizationId,
+			websiteId: params.websiteId,
+			visitorId: params.visitorId,
+			aiAgentId: aiAgent.id,
+			createdAt: new Date().toISOString(),
+		};
 
-		if (result.status === "skipped") {
-			// Job was skipped due to debouncing - an existing job will run instead
-			// Sync workflow state to match the existing job's workflowRunId
-			// This ensures isWorkflowRunActive check passes for the existing job
-			const activeWorkflowRunId = result.activeWorkflowRunId;
+		await setWorkflowPending(pendingPayload);
 
-			// Only update state if it doesn't match the active job
-			if (
-				!existingState ||
-				existingState.workflowRunId !== activeWorkflowRunId
-			) {
-				const syncedState: WorkflowState = {
-					workflowRunId: activeWorkflowRunId,
-					// Keep tracking the original message that started this chain
-					initialMessageId: existingState?.initialMessageId ?? params.messageId,
-					initialMessageCreatedAt:
-						existingState?.initialMessageCreatedAt ?? messageMetadata.createdAt,
-					conversationId: params.conversationId,
-					direction,
-					createdAt: existingState?.createdAt ?? new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-				};
-				await setWorkflowState(syncedState);
-				console.log(
-					`[ai-agent] Job skipped (${result.reason}), synced state to existing job's workflowRunId: ${activeWorkflowRunId}`
-				);
-			} else {
-				console.log(
-					`[ai-agent] Job skipped (${result.reason}), state already matches activeWorkflowRunId: ${activeWorkflowRunId}`
-				);
-			}
-			return;
-		}
-
-		// Job was created or replaced - set workflow state with the new workflowRunId
 		const newState: WorkflowState = {
 			workflowRunId,
 			initialMessageId: existingState?.initialMessageId ?? params.messageId,
@@ -352,8 +333,49 @@ export async function triggerAiAgentResponseWorkflow(params: {
 		};
 		await setWorkflowState(newState);
 
-		console.log(
-			`[ai-agent] AI agent response job ${result.status} for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+		let result: Awaited<
+			ReturnType<
+				ReturnType<typeof getAiAgentQueueTriggers>["enqueueAiAgentJob"]
+			>
+		>;
+		try {
+			result = await getAiAgentQueueTriggers().enqueueAiAgentJob(jobData);
+		} catch (error) {
+			// Restore previous workflow state on enqueue failure
+			if (existingState) {
+				await setWorkflowState(existingState);
+			} else {
+				await clearWorkflowState(params.conversationId, direction);
+			}
+			await clearWorkflowPending(
+				params.conversationId,
+				direction,
+				workflowRunId
+			);
+			throw error;
+		}
+
+		if (result.status === "created" || result.status === "replaced") {
+			await clearWorkflowPending(
+				params.conversationId,
+				direction,
+				workflowRunId
+			);
+			console.log(
+				`[ai-agent] AI agent response job ${result.status} for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+			);
+			return;
+		}
+
+		if (result.status === "active") {
+			console.log(
+				`[ai-agent] Active job in progress; pending payload stored for conversation ${params.conversationId}`
+			);
+			return;
+		}
+
+		console.warn(
+			`[ai-agent] Job skipped (unexpected state: ${result.existingState}) for conversation ${params.conversationId}; pending payload retained`
 		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation

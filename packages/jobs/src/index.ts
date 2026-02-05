@@ -1,5 +1,6 @@
 // Triggers
 export {
+	AI_AGENT_JOB_OPTIONS,
 	createAiAgentTriggers,
 	createAiTrainingTriggers,
 	createMessageNotificationTriggers,
@@ -27,12 +28,16 @@ export {
 	type DebouncedJobResult,
 } from "./utils/debounced-job";
 export {
+	clearWorkflowPending,
 	clearWorkflowState,
 	clearWorkflowStateIfActive,
 	generateWorkflowRunId,
+	getWorkflowPending,
 	getWorkflowState,
 	isWorkflowRunActive,
+	setWorkflowPending,
 	setWorkflowState,
 	type WorkflowDirection,
+	type WorkflowPendingJob,
 	type WorkflowState,
 } from "./workflow-state";

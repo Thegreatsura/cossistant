@@ -10,26 +10,23 @@
  */
 
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
-import { Queue } from "bullmq";
+import { type JobsOptions, Queue } from "bullmq";
 import {
 	type AiAgentJobData,
 	generateAiAgentJobId,
 	QUEUE_NAMES,
 } from "../types";
-import {
-	addDebouncedJob,
-	type DebouncedJobResult,
-} from "../utils/debounced-job";
+import { addSingleActiveJob } from "../utils/single-active-job";
 
 /**
  * Result of enqueueing an AI agent job
  *
  * - created: New job was created
  * - replaced: Existing completed/failed job was replaced
- * - skipped: Job was skipped because another job is already queued
+ * - active: Job is currently active; caller should requeue later
+ * - skipped: Job skipped due to unexpected state
  *
- * When skipped, `existingJobData` contains the queued job's data
- * so callers can sync workflow state to match.
+ * When active/skipped, `existingJobData` contains the queued job's data.
  */
 export type EnqueueAiAgentResult =
 	| {
@@ -37,10 +34,15 @@ export type EnqueueAiAgentResult =
 			workflowRunId: string;
 	  }
 	| {
+			status: "active";
+			existingState: string;
+			existingJobData: AiAgentJobData;
+	  }
+	| {
 			status: "skipped";
-			reason: "debouncing" | "active" | "unexpected";
-			/** The workflowRunId that will actually be processed */
-			activeWorkflowRunId: string;
+			reason: "unexpected";
+			existingState: string;
+			existingJobData: AiAgentJobData;
 	  };
 
 /**
@@ -55,6 +57,15 @@ const MIN_AI_AGENT_DELAY_MS = 0;
  */
 const AI_RETRY_ATTEMPTS = 5;
 const AI_RETRY_BASE_DELAY_MS = 5000; // 5s, 10s, 20s, 40s, 80s
+
+export const AI_AGENT_JOB_OPTIONS: JobsOptions = {
+	delay: MIN_AI_AGENT_DELAY_MS,
+	attempts: AI_RETRY_ATTEMPTS,
+	backoff: {
+		type: "exponential",
+		delay: AI_RETRY_BASE_DELAY_MS,
+	},
+};
 
 type TriggerConfig = {
 	connection: RedisOptions;
@@ -115,12 +126,9 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 	 * The job will be processed by the AI agent worker which runs
 	 * the 5-step pipeline (intake, decision, generation, execution, followup).
 	 *
-	 * Uses debouncing: if a job for the same conversation is already queued,
-	 * the new message will be picked up when the existing job runs.
-	 *
-	 * IMPORTANT: Returns the result so callers can sync workflow state.
-	 * When status is "skipped", use `activeWorkflowRunId` to sync state
-	 * with the job that will actually be processed.
+	 * Strict single-job behavior:
+	 * - waiting/delayed jobs are replaced with the newest payload
+	 * - active job prevents enqueue; caller should requeue once it cancels
 	 */
 	async function enqueueAiAgentJob(
 		data: AiAgentJobData
@@ -128,34 +136,37 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 		const q = await ensureQueueReady();
 		const jobId = generateAiAgentJobId(data.conversationId);
 
-		const result = await addDebouncedJob({
+		const result = await addSingleActiveJob({
 			queue: q,
 			jobId,
 			jobName: "ai-agent",
 			data,
-			options: {
-				delay: MIN_AI_AGENT_DELAY_MS,
-				attempts: AI_RETRY_ATTEMPTS,
-				backoff: {
-					type: "exponential",
-					delay: AI_RETRY_BASE_DELAY_MS,
-				},
-			},
+			options: AI_AGENT_JOB_OPTIONS,
 			logPrefix: "[jobs:ai-agent]",
 		});
 
-		// If skipped due to debouncing, return the existing job's workflowRunId
-		// so the caller can sync workflow state
 		if (result.status === "skipped") {
-			const activeWorkflowRunId = result.existingJobData.workflowRunId;
-			console.log(
+			if (result.reason === "active") {
+				console.log(
+					`[jobs:ai-agent] Job ${jobId} active for conversation ${data.conversationId} ` +
+						`(state: ${result.existingState})`
+				);
+				return {
+					status: "active",
+					existingState: result.existingState,
+					existingJobData: result.existingJobData,
+				};
+			}
+
+			console.warn(
 				`[jobs:ai-agent] Job ${jobId} skipped for conversation ${data.conversationId} ` +
-					`(${result.reason}, state: ${result.existingState}, activeWorkflowRunId: ${activeWorkflowRunId})`
+					`(state: ${result.existingState})`
 			);
 			return {
 				status: "skipped",
-				reason: result.reason,
-				activeWorkflowRunId,
+				reason: "unexpected",
+				existingState: result.existingState,
+				existingJobData: result.existingJobData,
 			};
 		}
 

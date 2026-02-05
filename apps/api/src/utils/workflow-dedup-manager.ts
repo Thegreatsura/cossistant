@@ -8,10 +8,14 @@ import type {
 import {
 	generateWorkflowRunId,
 	isWorkflowRunActive,
+	clearWorkflowPending as sharedClearWorkflowPending,
 	clearWorkflowState as sharedClearWorkflowState,
+	getWorkflowPending as sharedGetWorkflowPending,
 	getWorkflowState as sharedGetWorkflowState,
+	setWorkflowPending as sharedSetWorkflowPending,
 	setWorkflowState as sharedSetWorkflowState,
 	type WorkflowDirection,
+	type WorkflowPendingJob,
 	type WorkflowState,
 } from "@cossistant/jobs/workflow-state";
 import type { Client } from "@upstash/workflow";
@@ -19,6 +23,7 @@ import type { Redis } from "ioredis";
 
 export type {
 	WorkflowDirection,
+	WorkflowPendingJob,
 	WorkflowState,
 } from "@cossistant/jobs/workflow-state";
 export { generateWorkflowRunId } from "@cossistant/jobs/workflow-state";
@@ -46,6 +51,33 @@ export async function clearWorkflowState(
 	direction: WorkflowDirection
 ): Promise<void> {
 	await sharedClearWorkflowState(getRedisClient(), conversationId, direction);
+}
+
+export async function getWorkflowPending(
+	conversationId: string,
+	direction: WorkflowDirection
+): Promise<WorkflowPendingJob | null> {
+	return sharedGetWorkflowPending(getRedisClient(), conversationId, direction);
+}
+
+export async function setWorkflowPending(
+	pending: WorkflowPendingJob,
+	ttlSeconds?: number
+): Promise<void> {
+	await sharedSetWorkflowPending(getRedisClient(), pending, ttlSeconds);
+}
+
+export async function clearWorkflowPending(
+	conversationId: string,
+	direction: WorkflowDirection,
+	workflowRunId?: string
+): Promise<boolean> {
+	return sharedClearWorkflowPending(
+		getRedisClient(),
+		conversationId,
+		direction,
+		workflowRunId
+	);
 }
 
 /**

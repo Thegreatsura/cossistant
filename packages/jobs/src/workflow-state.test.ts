@@ -8,12 +8,16 @@
 
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import {
+	clearWorkflowPending,
 	clearWorkflowState,
 	generateWorkflowRunId,
+	getWorkflowPending,
 	getWorkflowState,
 	isWorkflowRunActive,
+	setWorkflowPending,
 	setWorkflowState,
 	type WorkflowDirection,
+	type WorkflowPendingJob,
 	type WorkflowState,
 } from "./workflow-state";
 
@@ -28,6 +32,18 @@ function createMockRedis(storedState: WorkflowState | null = null): MockRedis {
 	return {
 		get: mock(() =>
 			Promise.resolve(storedState ? JSON.stringify(storedState) : null)
+		),
+		setex: mock(() => Promise.resolve()),
+		del: mock(() => Promise.resolve()),
+	};
+}
+
+function createMockRedisWithPending(
+	storedPending: WorkflowPendingJob | null = null
+): MockRedis {
+	return {
+		get: mock(() =>
+			Promise.resolve(storedPending ? JSON.stringify(storedPending) : null)
 		),
 		setex: mock(() => Promise.resolve()),
 		del: mock(() => Promise.resolve()),
@@ -269,5 +285,86 @@ describe("workflow state synchronization scenarios", () => {
 			// Job A should proceed because state was synced correctly
 			expect(shouldJobAProceed).toBe(true);
 		});
+	});
+});
+
+describe("workflow pending state", () => {
+	it("stores pending payload with TTL", async () => {
+		const redis = createMockRedisWithPending();
+		const pending: WorkflowPendingJob = {
+			workflowRunId: "run-pending-1",
+			conversationId: "conv-123",
+			direction: "ai-agent-response",
+			messageId: "msg-123",
+			messageCreatedAt: "2024-01-01T00:00:00Z",
+			organizationId: "org-1",
+			websiteId: "web-1",
+			visitorId: "visitor-1",
+			aiAgentId: "ai-1",
+			createdAt: "2024-01-01T00:00:00Z",
+		};
+
+		await setWorkflowPending(
+			redis as unknown as Parameters<typeof setWorkflowPending>[0],
+			pending
+		);
+
+		expect(redis.setex).toHaveBeenCalledTimes(1);
+	});
+
+	it("reads pending payload when it exists", async () => {
+		const pending: WorkflowPendingJob = {
+			workflowRunId: "run-pending-2",
+			conversationId: "conv-123",
+			direction: "ai-agent-response",
+			messageId: "msg-456",
+			messageCreatedAt: "2024-01-01T00:00:00Z",
+			organizationId: "org-1",
+			websiteId: "web-1",
+			visitorId: "visitor-1",
+			aiAgentId: "ai-1",
+			createdAt: "2024-01-01T00:00:00Z",
+		};
+		const redis = createMockRedisWithPending(pending);
+
+		const result = await getWorkflowPending(
+			redis as unknown as Parameters<typeof getWorkflowPending>[0],
+			"conv-123",
+			"ai-agent-response"
+		);
+
+		expect(result).toEqual(pending);
+	});
+
+	it("clears pending only when workflowRunId matches", async () => {
+		const pending: WorkflowPendingJob = {
+			workflowRunId: "run-pending-3",
+			conversationId: "conv-123",
+			direction: "ai-agent-response",
+			messageId: "msg-789",
+			messageCreatedAt: "2024-01-01T00:00:00Z",
+			organizationId: "org-1",
+			websiteId: "web-1",
+			visitorId: "visitor-1",
+			aiAgentId: "ai-1",
+			createdAt: "2024-01-01T00:00:00Z",
+		};
+		const redis = createMockRedisWithPending(pending);
+
+		const clearedWrong = await clearWorkflowPending(
+			redis as unknown as Parameters<typeof clearWorkflowPending>[0],
+			"conv-123",
+			"ai-agent-response",
+			"run-other"
+		);
+		expect(clearedWrong).toBe(false);
+
+		const clearedRight = await clearWorkflowPending(
+			redis as unknown as Parameters<typeof clearWorkflowPending>[0],
+			"conv-123",
+			"ai-agent-response",
+			"run-pending-3"
+		);
+		expect(clearedRight).toBe(true);
 	});
 });

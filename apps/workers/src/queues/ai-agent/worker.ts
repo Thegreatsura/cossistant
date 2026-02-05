@@ -17,9 +17,17 @@ import { emitWorkflowStarted } from "@api/ai-agent/events";
 import { markConversationAsSeen } from "@api/db/mutations/conversation";
 import { getConversationById } from "@api/db/queries/conversation";
 import { emitConversationSeenEvent } from "@api/utils/conversation-realtime";
-import { type AiAgentJobData, QUEUE_NAMES } from "@cossistant/jobs";
 import {
+	AI_AGENT_JOB_OPTIONS,
+	type AiAgentJobData,
+	generateAiAgentJobId,
+	QUEUE_NAMES,
+} from "@cossistant/jobs";
+import {
+	clearWorkflowPending,
 	clearWorkflowState,
+	getWorkflowPending,
+	getWorkflowState,
 	isWorkflowRunActive,
 	type WorkflowDirection,
 } from "@cossistant/jobs/workflow-state";
@@ -79,6 +87,10 @@ export function createAiAgentWorker({
 			// Maintenance queue for admin operations
 			maintenanceQueue = new Queue<AiAgentJobData>(queueName, {
 				connection: buildConnectionOptions(),
+				defaultJobOptions: {
+					removeOnComplete: { count: 1000 },
+					removeOnFail: { count: 5000 },
+				},
 			});
 			await maintenanceQueue.waitUntilReady();
 
@@ -157,6 +169,86 @@ export function createAiAgentWorker({
 		},
 	};
 
+	async function maybeEnqueuePendingAiJob(
+		redis: Redis,
+		conversationId: string
+	): Promise<void> {
+		if (!maintenanceQueue) {
+			console.warn(
+				`[worker:ai-agent] conv=${conversationId} | Maintenance queue not ready, cannot enqueue pending`
+			);
+			return;
+		}
+
+		const pending = await getWorkflowPending(
+			redis,
+			conversationId,
+			AI_AGENT_DIRECTION
+		);
+		if (!pending) {
+			return;
+		}
+
+		const state = await getWorkflowState(
+			redis,
+			conversationId,
+			AI_AGENT_DIRECTION
+		);
+		if (!state || state.workflowRunId !== pending.workflowRunId) {
+			await clearWorkflowPending(
+				redis,
+				conversationId,
+				AI_AGENT_DIRECTION,
+				pending.workflowRunId
+			);
+			return;
+		}
+
+		const jobId = generateAiAgentJobId(conversationId);
+		const existingJob = await maintenanceQueue.getJob(jobId);
+		if (existingJob) {
+			const existingState = await existingJob.getState();
+			if (existingState === "completed" || existingState === "failed") {
+				await existingJob.remove();
+			} else {
+				return;
+			}
+		}
+
+		const jobData: AiAgentJobData = {
+			conversationId: pending.conversationId,
+			messageId: pending.messageId,
+			messageCreatedAt: pending.messageCreatedAt,
+			websiteId: pending.websiteId,
+			organizationId: pending.organizationId,
+			visitorId: pending.visitorId,
+			aiAgentId: pending.aiAgentId,
+			workflowRunId: pending.workflowRunId,
+			isReplacement: true,
+		};
+
+		try {
+			await maintenanceQueue.add("ai-agent", jobData, {
+				...AI_AGENT_JOB_OPTIONS,
+				jobId,
+			});
+			await clearWorkflowPending(
+				redis,
+				conversationId,
+				AI_AGENT_DIRECTION,
+				pending.workflowRunId
+			);
+			console.log(
+				`[worker:ai-agent] conv=${conversationId} | Enqueued pending job`
+			);
+		} catch (error) {
+			console.error(
+				`[worker:ai-agent] conv=${conversationId} | Failed to enqueue pending job`,
+				error
+			);
+		}
+	}
+
 	/**
 	 * Process an AI agent job through the pipeline
 	 */
@@ -187,6 +279,7 @@ export function createAiAgentWorker({
 			console.log(
 				`[worker:ai-agent] conv=${conversationId} | Superseded by newer job, skipping`
 			);
+			await maybeEnqueuePendingAiJob(redis, conversationId);
 			return;
 		}
 
@@ -240,6 +333,10 @@ export function createAiAgentWorker({
 
 		if (result.status === "error") {
 			throw new Error(result.error ?? "Pipeline failed");
+		}
+
+		if (result.superseded) {
+			await maybeEnqueuePendingAiJob(redis, conversationId);
 		}
 	}
 }
