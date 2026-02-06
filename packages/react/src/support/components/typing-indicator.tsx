@@ -1,7 +1,7 @@
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
 import * as React from "react";
 import { cn } from "../utils";
-import { AvatarStack } from "./avatar-stack";
+import { Avatar } from "./avatar";
 
 export type TypingParticipantType = "visitor" | "team_member" | "ai";
 
@@ -88,13 +88,27 @@ export const TypingIndicator = React.forwardRef<
 				{...props}
 			>
 				{withAvatars && (
-					<AvatarStack
-						aiAgents={typingAIAgents}
-						hideDefaultAIAgent={typingAIAgents.length === 0}
-						humanAgents={typingHumanAgents}
-						size={24}
-						spacing={16}
-					/>
+					<div className="flex items-center">
+						{typingAIAgents.map((agent) => (
+							<Avatar
+								className="size-6"
+								image={agent.image}
+								isAI
+								key={agent.id}
+								name={agent.name}
+								showBackground={!!agent.image}
+							/>
+						))}
+						{typingHumanAgents.map((agent) => (
+							<Avatar
+								className="size-6"
+								image={agent.image}
+								key={agent.id}
+								lastSeenAt={agent.lastSeenAt}
+								name={agent.name}
+							/>
+						))}
+					</div>
 				)}
 				<BouncingDots />
 			</div>

@@ -11,7 +11,9 @@ import {
 	updateContact,
 } from "@api/db/queries/contact";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
+import { realtime } from "@api/realtime/emitter";
 import { createConversationEvent } from "@api/utils/conversation-event";
+import { formatVisitorWithContactResponse } from "@api/utils/format-visitor";
 import {
 	ConversationEventType,
 	TimelineItemVisibility,
@@ -96,13 +98,9 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 				}
 
 				const previousContact = visitorRecord.contact ?? null;
-				const previousEmail =
-					previousContact?.email?.trim() &&
-					previousContact.email.trim().length > 0
-						? previousContact.email.trim()
-						: null;
 
 				let contact = previousContact;
+				let contactChanged = false;
 
 				if (contact) {
 					const updates: Record<string, string> = {};
@@ -131,6 +129,7 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 						}
 
 						contact = updated;
+						contactChanged = true;
 					}
 				} else {
 					if (!(trimmedName && trimmedEmail)) {
@@ -154,17 +153,11 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 						contactId: contact.id,
 						websiteId: ctx.websiteId,
 					});
+
+					contactChanged = true;
 				}
 
-				const resolvedEmail =
-					contact.email?.trim() && contact.email.trim().length > 0
-						? contact.email.trim()
-						: null;
-
-				const shouldEmitEvent =
-					!previousContact || (!previousEmail && !!resolvedEmail);
-
-				if (shouldEmitEvent) {
+				if (contactChanged) {
 					await createConversationEvent({
 						db: ctx.db,
 						context: {
@@ -181,12 +174,35 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 					});
 				}
 
+				// Emit visitorIdentified for real-time dashboard updates
+				if (contactChanged) {
+					const updatedVisitor = await getCompleteVisitorWithContact(ctx.db, {
+						visitorId: ctx.visitorId,
+					});
+					if (updatedVisitor) {
+						try {
+							await realtime.emit("visitorIdentified", {
+								websiteId: ctx.websiteId,
+								organizationId: ctx.organizationId,
+								visitorId: updatedVisitor.id,
+								userId: null,
+								visitor: formatVisitorWithContactResponse(updatedVisitor),
+							});
+						} catch (emitError) {
+							console.error(
+								`[tool:identifyVisitor] conv=${ctx.conversationId} | Failed to emit visitorIdentified:`,
+								emitError
+							);
+						}
+					}
+				}
+
 				cachedResult = {
 					success: true,
 					data: {
 						visitorId: ctx.visitorId,
 						contactId: contact.id,
-						eventEmitted: shouldEmitEvent,
+						eventEmitted: contactChanged,
 					},
 				};
 				return cachedResult;
