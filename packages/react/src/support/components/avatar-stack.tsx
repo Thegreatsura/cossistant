@@ -173,7 +173,7 @@ export function AvatarStack({
 								image={item.agent?.image}
 								isAI
 								name={item.agent?.name || "AI"}
-								showBackground={!!item.agent?.image}
+								showBackground
 							/>
 						)}
 					</AvatarStackItem>

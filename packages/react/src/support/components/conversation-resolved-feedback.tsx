@@ -1,5 +1,5 @@
 import { ConversationStatus } from "@cossistant/types";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Text, useSupportText } from "../text";
 import { cn } from "../utils";
 import Icon from "./icons";
@@ -27,14 +27,22 @@ export function ConversationResolvedFeedback({
 
 	// Local state for the rating flow
 	const [selectedRating, setSelectedRating] = useState<number | null>(null);
+	const [hoveredRating, setHoveredRating] = useState<number | null>(null);
 	const [comment, setComment] = useState("");
 	const [hasSubmitted, setHasSubmitted] = useState(false);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	// Show the rating that was submitted if available, otherwise use local selection
-	const displayRating = isRated ? rating : selectedRating;
+	const displayRating = hoveredRating ?? (isRated ? rating : selectedRating);
 	const showCommentField = selectedRating != null && !isRated && !hasSubmitted;
 	const isInteractive =
 		Boolean(onRate) && !isSubmitting && !isRated && !hasSubmitted;
+
+	useEffect(() => {
+		if (showCommentField) {
+			textareaRef.current?.focus();
+		}
+	}, [showCommentField]);
 
 	const handleRatingSelect = (value: number) => {
 		if (!isInteractive) {
@@ -99,10 +107,19 @@ export function ConversationResolvedFeedback({
 							disabled={!isInteractive}
 							key={value}
 							onClick={() => handleRatingSelect(value)}
+							onMouseEnter={() => isInteractive && setHoveredRating(value)}
+							onMouseLeave={() => isInteractive && setHoveredRating(null)}
 							type="button"
 						>
 							<Icon
-								className="h-4 w-4 text-co-primary"
+								className={cn(
+									"h-4 w-4 transition-transform",
+									isFilled ? "text-co-primary" : "text-co-muted-foreground/40",
+									isInteractive &&
+										hoveredRating &&
+										value <= hoveredRating &&
+										"scale-110"
+								)}
 								name="star"
 								variant={isFilled ? "filled" : "default"}
 							/>
@@ -118,6 +135,7 @@ export function ConversationResolvedFeedback({
 						disabled={isSubmitting}
 						onChange={(e) => setComment(e.target.value)}
 						placeholder={text("component.conversationPage.commentPlaceholder")}
+						ref={textareaRef}
 						rows={3}
 						value={comment}
 					/>

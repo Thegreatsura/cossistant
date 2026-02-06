@@ -2,6 +2,7 @@ import { z } from "zod";
 import { visitorResponseSchema } from "./api/visitor";
 import {
 	ConversationEventType,
+	ConversationStatus,
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "./enums";
@@ -122,7 +123,7 @@ export const realtimeSchema = {
 			deletedAt: z.string().nullable(),
 		}),
 	}),
-	// Conversation updated (title, sentiment, escalation status changes)
+	// Conversation updated (title, sentiment, escalation status changes, status changes)
 	conversationUpdated: baseRealtimeEvent.extend({
 		conversationId: z.string(),
 		updates: z.object({
@@ -134,6 +135,14 @@ export const realtimeSchema = {
 			sentimentConfidence: z.number().nullable().optional(),
 			escalatedAt: z.string().nullable().optional(),
 			escalationReason: z.string().nullable().optional(),
+			status: z
+				.enum([
+					ConversationStatus.OPEN,
+					ConversationStatus.RESOLVED,
+					ConversationStatus.SPAM,
+				])
+				.optional(),
+			deletedAt: z.string().nullable().optional(),
 		}),
 		aiAgentId: z.string().nullable(),
 	}),

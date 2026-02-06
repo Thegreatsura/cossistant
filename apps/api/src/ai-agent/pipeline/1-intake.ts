@@ -14,7 +14,10 @@
 
 import type { Database } from "@api/db";
 import { getAiAgentById } from "@api/db/queries/ai-agent";
-import { getConversationById } from "@api/db/queries/conversation";
+import {
+	getConversationById,
+	getMessageMetadata,
+} from "@api/db/queries/conversation";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import {
@@ -76,12 +79,26 @@ export async function intake(
 		};
 	}
 
-	// Load conversation history and visitor context in parallel
+	const triggerMetadata = await getMessageMetadata(db, {
+		messageId: input.messageId,
+		organizationId: input.organizationId,
+	});
+
+	if (!triggerMetadata) {
+		return {
+			status: "skipped",
+			reason: `Trigger message ${input.messageId} not found`,
+		};
+	}
+
+	// Load conversation history (up to trigger message) and visitor context in parallel
 	const [conversationHistory, visitorContext] = await Promise.all([
 		buildConversationHistory(db, {
 			conversationId: input.conversationId,
 			organizationId: input.organizationId,
 			websiteId: input.websiteId,
+			maxCreatedAt: triggerMetadata.createdAt,
+			maxId: triggerMetadata.id,
 		}),
 		getVisitorContext(db, input.visitorId),
 	]);

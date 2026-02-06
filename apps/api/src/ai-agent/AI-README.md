@@ -272,7 +272,6 @@ Private notes are sent during generation via `sendPrivateMessage()` tool.
 
 **Actions**:
 
-- Clear workflow state
 - Update AI agent usage stats
 - Run background analysis (sentiment, title generation)
 
@@ -453,7 +452,9 @@ export class TypingHeartbeat {
 ### Event Flow
 
 ```
-Worker receives job
+Message enqueued → Redis per-conversation queue
+    ↓
+Wake job starts drain (BullMQ)
     ↓
 [aiAgentProcessingStarted] → Dashboard
     ↓
@@ -470,11 +471,13 @@ If shouldAct:
         ↓
     [aiAgentProcessingProgress] for each tool → Widget + Dashboard
         ↓
-    Pipeline: Execution
-        ↓
-    TypingHeartbeat.stop()
+    stopTyping() immediately before each visible send
         ↓
     [timelineItemCreated] → Widget + Dashboard
+        ↓
+    Pipeline: Execution → Followup
+        ↓
+    Final cleanup: TypingHeartbeat.stop() + emitTypingStop()
         ↓
 [aiAgentProcessingCompleted] → Dashboard (+ Widget if success)
 ```
@@ -507,15 +510,33 @@ If shouldAct:
 ### Response Timing
 
 Queue delay is disabled (0ms) so the AI responds as fast as possible.
+For visitor-trigger bursts, worker-side debounce (`AI_AGENT_VISITOR_DEBOUNCE_MS`, default 800ms) is applied before selecting an effective trigger.
 Natural typing delays between multi-part messages are still applied to keep the experience human.
+
+### Queueing Model
+
+- Each conversation has a Redis sorted set queue ordered by `createdAt` (with `messageId` tiebreaker).
+- A BullMQ drain job processes messages sequentially and advances a DB cursor for recovery.
+- Visitor bursts are coalesced at queue head: contiguous visitor triggers are handled as one effective trigger (latest message in the burst).
+- BullMQ wake jobs remain signals only; Redis queue + DB cursor are authoritative state.
+
+### Trigger-Level Reliability Rules
+
+1. **FIFO Trigger Processing**: Conversation triggers are processed in queue order using the Redis ZSET cursor model.
+2. **Burst Coalescing**: Contiguous visitor messages at queue head are coalesced and processed once using the latest coalesced trigger.
+3. **Continuation Gate**: If a queued visitor trigger already has a newer public AI reply, the pipeline runs `skip vs supplement` before generation.
+4. **Bias to Supplement on Uncertainty**: If continuation classification is uncertain (timeout/model error), fallback favors `supplement` (never silent miss).
+5. **No Full-Turn Retry After Visible Reply**: If a trigger already sent any public message, that trigger is marked `retryable=false` and dropped on subsequent pipeline error.
+6. **Retry Only Pre-Reply Failures**: If a trigger fails before any public send, it stays queued and is retried (with per-message failure threshold).
+7. **Typing Always Ends**: Typing is stopped before each visible send and force-stopped in final pipeline cleanup.
 
 ### Failure Handling
 
-1. **Transient Failures**: Automatically retried with exponential backoff
-2. **Permanent Failures**: Moved to dead-letter queue after max attempts
-3. **Stalled Jobs**: Detected and reprocessed automatically
-4. **Cleanup**: Typing indicator always cleared, even on error
-5. **Error Events**: `aiAgentProcessingCompleted` with `status: "error"` emitted to dashboard
+1. **`retryable=true` and below threshold**: Keep trigger message at queue head, schedule continuation drain.
+2. **`retryable=false`**: Advance cursor to effective trigger and remove processed/coalesced queue items immediately.
+3. **Threshold reached**: Drop trigger/coalesced batch, advance cursor, continue draining.
+4. **Stalled jobs**: BullMQ stalled-job recovery still applies at worker level.
+5. **Error events**: `aiAgentProcessingCompleted` with `status: "error"` is still emitted for dashboard observability.
 
 ### Idempotency
 
@@ -529,6 +550,14 @@ if (existing) {
 }
 // Proceed with creation
 ```
+
+Public send idempotency now uses normalized-content keys per trigger:
+
+```text
+public:{triggerMessageId}:{normalized_content_hash}
+```
+
+This suppresses duplicate visible content inside a run and keeps retries deterministic.
 
 ---
 
@@ -549,7 +578,7 @@ Workers share the same Redis queue and don't interfere with each other.
 
 - Pipeline is completely stateless
 - All state lives in PostgreSQL or Redis
-- Workflow state prevents duplicate processing
+- Redis per-conversation queues + DB cursor prevent duplicate processing
 
 ### Database Transactions
 
@@ -639,8 +668,8 @@ if (shouldCheckNewFactor(input)) {
 **Duplicate messages**:
 
 1. Check idempotency key handling
-2. Check workflow state in Redis
-3. Check job deduplication settings
+2. Check Redis per-conversation queue state
+3. Check AI cursor columns on conversation
 
 **Slow responses**:
 
@@ -732,6 +761,16 @@ AI can be explicitly tagged using markdown mention format:
 Plain text `@ai` or `@AgentName` is accepted as a fallback for non-markdown channels.
 
 If the tag appears in a private message, the AI responds privately only.
+
+### Rogue Protection
+
+Conversation-level rogue protection uses Redis + `conversation.aiPausedUntil`:
+
+- `AI_AGENT_ROGUE_WINDOW_SECONDS` (default: `60`)
+- `AI_AGENT_ROGUE_MAX_PUBLIC_MESSAGES` (default: `8`)
+- `AI_AGENT_ROGUE_PAUSE_MINUTES` (default: `15`)
+
+When the public AI message rate exceeds the threshold for a conversation, AI is auto-paused and pending queue items are dropped for that conversation.
 
 ---
 

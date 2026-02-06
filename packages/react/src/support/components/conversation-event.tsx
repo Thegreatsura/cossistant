@@ -120,7 +120,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 						/>
 					) : (
 						<Avatar
-							className="size-5 flex-shrink-0 overflow-clip rounded-lg"
+							className="size-5 flex-shrink-0"
 							image={humanAgent?.image}
 							name={humanAgent?.name || text("common.fallbacks.someone")}
 						/>

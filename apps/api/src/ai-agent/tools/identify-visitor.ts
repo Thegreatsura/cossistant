@@ -51,6 +51,12 @@ const inputSchema = z
 	});
 
 export function createIdentifyVisitorTool(ctx: ToolContext) {
+	let cachedResult: ToolResult<{
+		visitorId: string;
+		contactId: string;
+		eventEmitted: boolean;
+	}> | null = null;
+
 	return tool({
 		description:
 			"Identify or update a visitor's contact details. IMPORTANT: Put the name in the 'name' field (e.g., 'John Smith') and the email in the 'email' field (e.g., 'john@example.com'). Never combine them in a single field.",
@@ -66,6 +72,14 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 			}>
 		> => {
 			try {
+				// Enforce one identify call per trigger run.
+				if (cachedResult) {
+					console.log(
+						`[tool:identifyVisitor] conv=${ctx.conversationId} | Reusing cached result`
+					);
+					return cachedResult;
+				}
+
 				const trimmedEmail = email?.trim() || undefined;
 				const trimmedName = name?.trim() || undefined;
 
@@ -74,10 +88,11 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 				});
 
 				if (!visitorRecord) {
-					return {
+					cachedResult = {
 						success: false,
 						error: "Visitor not found",
 					};
+					return cachedResult;
 				}
 
 				const previousContact = visitorRecord.contact ?? null;
@@ -108,15 +123,25 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 						});
 
 						if (!updated) {
-							return {
+							cachedResult = {
 								success: false,
 								error: "Failed to update contact",
 							};
+							return cachedResult;
 						}
 
 						contact = updated;
 					}
 				} else {
+					if (!(trimmedName && trimmedEmail)) {
+						cachedResult = {
+							success: false,
+							error:
+								"For first-time identification, provide both name and email in a single call",
+						};
+						return cachedResult;
+					}
+
 					contact = await identifyContact(ctx.db, {
 						websiteId: ctx.websiteId,
 						organizationId: ctx.organizationId,
@@ -156,7 +181,7 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 					});
 				}
 
-				return {
+				cachedResult = {
 					success: true,
 					data: {
 						visitorId: ctx.visitorId,
@@ -164,18 +189,20 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 						eventEmitted: shouldEmitEvent,
 					},
 				};
+				return cachedResult;
 			} catch (error) {
 				console.error(
 					`[tool:identifyVisitor] conv=${ctx.conversationId} | Failed:`,
 					error
 				);
-				return {
+				cachedResult = {
 					success: false,
 					error:
 						error instanceof Error
 							? error.message
 							: "Failed to identify visitor",
 				};
+				return cachedResult;
 			}
 		},
 	});

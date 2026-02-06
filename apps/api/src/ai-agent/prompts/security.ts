@@ -30,7 +30,8 @@ Optional side-effects:
 
 ## Style
 - Short, human, 1-2 sentences per message
-- Ask a follow-up when helpful`;
+- Ask a follow-up when helpful
+- Avoid repetition and avoid multi-message flooding`;
 
 /**
  * Security reminder - ALWAYS last in system prompt

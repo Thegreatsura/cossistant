@@ -39,12 +39,13 @@ import {
 	resetCapturedAction,
 	type ToolContext,
 } from "../tools";
+import type { ContinuationHint } from "./1b-continuation-gate";
 import type { ResponseMode } from "./2-decision";
 import type { SmartDecisionResult } from "./2a-smart-decision";
 
 export type GenerationResult = {
 	decision: AiDecision;
-	/** Whether generation was aborted due to new message */
+	/** Whether generation was aborted due to cancellation */
 	aborted?: boolean;
 	/** Whether a repair attempt failed and fallback messaging is required */
 	needsFallbackMessage?: boolean;
@@ -73,14 +74,20 @@ type GenerationInput = {
 	visitorId: string;
 	/** Trigger message ID - used for idempotency keys in tools */
 	triggerMessageId: string;
+	/** Trigger message timestamp */
+	triggerMessageCreatedAt?: string;
+	/** Trigger sender type */
+	triggerSenderType?: "visitor" | "human_agent" | "ai_agent";
+	/** Trigger visibility */
+	triggerVisibility?: "public" | "private";
 	/** Optional abort signal for interruption handling */
 	abortSignal?: AbortSignal;
-	/** Callback to check if workflow is still active - prevents duplicate messages */
-	checkWorkflowActive?: () => Promise<boolean>;
 	/** Callback to stop the typing indicator just before a message is sent */
 	stopTyping?: () => Promise<void>;
 	/** Callback to start/restart the typing indicator during inter-message delays */
 	startTyping?: () => Promise<void>;
+	/** Callback when a public message send resolves */
+	onPublicMessageSent?: ToolContext["onPublicMessageSent"];
 	/** Whether public visitor messages are allowed */
 	allowPublicMessages: boolean;
 	/** Whether conversation is currently escalated */
@@ -89,10 +96,10 @@ type GenerationInput = {
 	escalationReason?: string | null;
 	/** Smart decision result if AI was used to decide */
 	smartDecision?: SmartDecisionResult;
+	/** Continuation hint when a queued trigger needs incremental follow-up only */
+	continuationHint?: ContinuationHint;
 	/** Workflow run ID for progress events */
 	workflowRunId?: string;
-	/** Latest public visitor message ID at pipeline start */
-	latestVisitorMessageIdAtStart?: string | null;
 };
 
 /**
@@ -101,8 +108,7 @@ type GenerationInput = {
  * The AI must use tools for everything - there's no structured output.
  * This ensures the model actually calls sendMessage() to respond.
  *
- * Supports interruption via AbortSignal - if a new message arrives during
- * generation, the abort signal will be triggered and generation stops gracefully.
+ * Supports interruption via AbortSignal for cancellation.
  */
 export async function generate(
 	input: GenerationInput
@@ -119,16 +125,19 @@ export async function generate(
 		websiteId,
 		visitorId,
 		triggerMessageId,
+		triggerMessageCreatedAt,
+		triggerSenderType,
+		triggerVisibility,
 		abortSignal,
-		checkWorkflowActive,
 		stopTyping,
 		startTyping,
+		onPublicMessageSent,
 		allowPublicMessages,
 		isEscalated,
 		escalationReason,
 		smartDecision,
+		continuationHint,
 		workflowRunId,
-		latestVisitorMessageIdAtStart,
 	} = input;
 	const convId = conversation.id;
 
@@ -146,17 +155,19 @@ export async function generate(
 		aiAgentId: aiAgent.id,
 		allowPublicMessages,
 		triggerMessageId,
-		latestVisitorMessageIdAtStart,
+		triggerMessageCreatedAt,
+		triggerSenderType,
+		triggerVisibility,
 		counters: {
 			sendMessage: 0,
 			sendPrivateMessage: 0,
 		},
-		// Callback to check workflow state - prevents duplicate messages when superseded
-		checkWorkflowActive,
 		// Callback to stop typing indicator just before a message is sent
 		stopTyping,
 		// Callback to start/restart typing indicator during delays between messages
 		startTyping,
+		// Callback to report successful public sends to the pipeline
+		onPublicMessageSent,
 		// Escalation state - prevents re-escalation
 		isEscalated,
 		// Workflow run ID for progress events
@@ -183,6 +194,7 @@ export async function generate(
 		isEscalated,
 		escalationReason,
 		smartDecision,
+		continuationHint,
 	});
 
 	// Format conversation history for LLM with multi-party prefixes
@@ -332,6 +344,7 @@ export async function generate(
 				isEscalated,
 				escalationReason,
 				smartDecision,
+				continuationHint,
 			})}\n\n## Repair Mode\n\nYou must complete this turn using ONLY these tools:\n- sendMessage(): send a short, safe, helpful reply to the visitor\n- respond(): finish the turn\n\nRules:\n- Call sendMessage() exactly once\n- Call respond() immediately after sendMessage()\n- Do not call any other tools`;
 
 			let repairResult: Awaited<ReturnType<typeof generateText>>;

@@ -130,6 +130,59 @@ export async function reopenConversation(
 	return updated;
 }
 
+export async function updateConversationAiCursor(
+	db: Database,
+	params: {
+		conversationId: string;
+		organizationId: string;
+		messageId: string;
+		messageCreatedAt: string;
+	}
+) {
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			aiAgentLastProcessedMessageId: params.messageId,
+			aiAgentLastProcessedMessageCreatedAt: params.messageCreatedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversationId),
+				eq(conversation.organizationId, params.organizationId)
+			)
+		)
+		.returning();
+
+	return updated ?? null;
+}
+
+export async function setConversationAiPausedUntil(
+	db: Database,
+	params: {
+		conversationId: string;
+		organizationId: string;
+		aiPausedUntil: string | null;
+	}
+) {
+	const updatedAt = new Date().toISOString();
+
+	const [updated] = await db
+		.update(conversation)
+		.set({
+			aiPausedUntil: params.aiPausedUntil,
+			updatedAt,
+		})
+		.where(
+			and(
+				eq(conversation.id, params.conversationId),
+				eq(conversation.organizationId, params.organizationId)
+			)
+		)
+		.returning();
+
+	return updated ?? null;
+}
+
 export async function markConversationAsSpam(
 	db: Database,
 	params: {

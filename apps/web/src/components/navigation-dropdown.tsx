@@ -18,6 +18,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Icon from "@/components/ui/icons";
+import { WebsiteImage } from "@/components/ui/website-image";
 import { useOrganizationWebsites, useWebsite } from "@/contexts/website";
 import { useOrganizationRole } from "@/hooks/use-organization-role";
 import { authClient, signOut } from "@/lib/auth/client";
@@ -97,10 +98,10 @@ export function NavigationDropdown({ websiteSlug }: NavigationDropdownProps) {
 					disabled={!user || isPending}
 					type="button"
 				>
-					<Avatar
+					<WebsiteImage
 						className="size-5"
-						fallbackName={websiteName}
-						url={websiteLogoUrl}
+						logoUrl={websiteLogoUrl}
+						name={websiteName}
 					/>
 					<div className="flex flex-1 items-center gap-2 pl-2 text-left text-sm leading-tight">
 						<span className="truncate">{websiteName}</span>
@@ -149,10 +150,10 @@ export function NavigationDropdown({ websiteSlug }: NavigationDropdownProps) {
 							}}
 						>
 							<div className="relative flex w-full items-center gap-2">
-								<Avatar
+								<WebsiteImage
 									className="mx-1 size-4"
-									fallbackName={site.name}
-									url={site.logoUrl}
+									logoUrl={site.logoUrl}
+									name={site.name}
 								/>
 								<span className="w-full truncate">{site.name}</span>
 								{site.id === website?.id && (

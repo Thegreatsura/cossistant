@@ -268,11 +268,11 @@ export async function runSmartDecision(
 
 		if (!decision) {
 			console.warn(
-				`[ai-agent:smart-decision] conv=${convId} | No output, defaulting to respond`
+				`[ai-agent:smart-decision] conv=${convId} | No output, defaulting to observe`
 			);
 			return {
-				intent: "respond",
-				reasoning: "Smart decision returned no output, defaulting to respond",
+				intent: "observe",
+				reasoning: "Smart decision returned no output, defaulting to observe",
 				confidence: "low",
 			};
 		}
@@ -296,10 +296,10 @@ export async function runSmartDecision(
 	} catch (error) {
 		console.error(`[ai-agent:smart-decision] conv=${convId} | Error:`, error);
 
-		// On error, default to responding (safer than silence)
+		// On error, default to observe to avoid low-confidence interruptions.
 		return {
-			intent: "respond",
-			reasoning: "Smart decision failed, defaulting to respond",
+			intent: "observe",
+			reasoning: "Smart decision failed, defaulting to observe",
 			confidence: "low",
 		};
 	}

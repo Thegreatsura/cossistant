@@ -15,6 +15,7 @@ import { generateShortPrimaryId } from "@api/utils/db/ids";
 import {
 	ConversationStatus,
 	ConversationTimelineType,
+	TimelineItemVisibility,
 	type TimelineItemVisibility as TimelineItemVisibilityEnum,
 } from "@cossistant/types";
 import {
@@ -30,10 +31,12 @@ import {
 	count,
 	desc,
 	eq,
+	gt,
 	inArray,
 	isNotNull,
 	isNull,
 	lt,
+	lte,
 	or,
 } from "drizzle-orm";
 
@@ -190,7 +193,7 @@ export async function listConversations(
 	> = {};
 
 	if (conversationIds.length > 0) {
-		// Get all timeline items for the conversations and group by conversation ID
+		// Get the last public message for each conversation (used for preview display)
 		const timelineItems = await db
 			.select()
 			.from(conversationTimelineItem)
@@ -198,7 +201,9 @@ export async function listConversations(
 				and(
 					eq(conversationTimelineItem.organizationId, params.organizationId),
 					inArray(conversationTimelineItem.conversationId, conversationIds),
-					isNull(conversationTimelineItem.deletedAt)
+					isNull(conversationTimelineItem.deletedAt),
+					eq(conversationTimelineItem.type, ConversationTimelineType.MESSAGE),
+					eq(conversationTimelineItem.visibility, TimelineItemVisibility.PUBLIC)
 				)
 			)
 			.orderBy(desc(conversationTimelineItem.createdAt));
@@ -734,12 +739,14 @@ export async function getConversationById(
 		conversationId: string;
 	}
 ) {
+	// Note: Caching was removed here because mutations (like markRead) return
+	// the input conversation record, which could be stale if cached. This caused
+	// escalation state (escalatedAt) to be overwritten with stale null values.
 	const [_conversation] = await db
 		.select()
 		.from(conversation)
 		.where(eq(conversation.id, params.conversationId))
-		.limit(1)
-		.$withCache();
+		.limit(1);
 
 	return _conversation;
 }
@@ -785,6 +792,8 @@ export async function getConversationTimelineItems(
 		websiteId: string;
 		limit?: number;
 		cursor?: string | Date | null;
+		maxCreatedAt?: string | null;
+		maxId?: string | null;
 		visibility?: TimelineItemVisibilityEnum[];
 	}
 ) {
@@ -806,6 +815,25 @@ export async function getConversationTimelineItems(
 		} else {
 			whereConditions.push(
 				inArray(conversationTimelineItem.visibility, visibilities)
+			);
+		}
+	}
+
+	if (params.maxCreatedAt) {
+		const maxTimestamp = params.maxCreatedAt;
+		if (params.maxId) {
+			whereConditions.push(
+				or(
+					lt(conversationTimelineItem.createdAt, maxTimestamp),
+					and(
+						eq(conversationTimelineItem.createdAt, maxTimestamp),
+						lte(conversationTimelineItem.id, params.maxId)
+					)
+				)!
+			);
+		} else {
+			whereConditions.push(
+				lte(conversationTimelineItem.createdAt, maxTimestamp)
 			);
 		}
 	}
@@ -887,8 +915,107 @@ export async function getConversationTimelineItems(
 }
 
 /**
- * Get a specific message's metadata (id and createdAt)
- * Used for anchoring notification workflows to the triggering message
+ * Get messages after a cursor (createdAt + id), ordered ascending.
+ * Used to hydrate the AI agent queue when Redis state is empty.
+ */
+export async function getConversationMessagesAfterCursor(
+	db: Database,
+	params: {
+		organizationId: string;
+		conversationId: string;
+		afterCreatedAt?: string | null;
+		afterId?: string | null;
+		limit?: number;
+	}
+) {
+	const limit = params.limit ?? 500;
+
+	const whereConditions = [
+		eq(conversationTimelineItem.organizationId, params.organizationId),
+		eq(conversationTimelineItem.conversationId, params.conversationId),
+		eq(conversationTimelineItem.type, "message"),
+		isNull(conversationTimelineItem.deletedAt),
+		// Only human/visitor messages can trigger AI processing.
+		or(
+			isNotNull(conversationTimelineItem.userId),
+			isNotNull(conversationTimelineItem.visitorId)
+		)!,
+	];
+
+	if (params.afterCreatedAt) {
+		const afterTimestamp = params.afterCreatedAt;
+		if (params.afterId) {
+			whereConditions.push(
+				or(
+					gt(conversationTimelineItem.createdAt, afterTimestamp),
+					and(
+						eq(conversationTimelineItem.createdAt, afterTimestamp),
+						gt(conversationTimelineItem.id, params.afterId)
+					)
+				)!
+			);
+		} else {
+			whereConditions.push(
+				gt(conversationTimelineItem.createdAt, afterTimestamp)
+			);
+		}
+	}
+
+	return db
+		.select({
+			id: conversationTimelineItem.id,
+			createdAt: conversationTimelineItem.createdAt,
+		})
+		.from(conversationTimelineItem)
+		.where(and(...whereConditions))
+		.orderBy(
+			asc(conversationTimelineItem.createdAt),
+			asc(conversationTimelineItem.id)
+		)
+		.limit(limit);
+}
+
+/**
+ * Get the latest triggerable message (human/visitor authored) for a conversation.
+ * Used to fast-forward AI cursor when dropping pending backlog.
+ */
+export async function getLatestTriggerableMessage(
+	db: Database,
+	params: {
+		organizationId: string;
+		conversationId: string;
+	}
+) {
+	const [message] = await db
+		.select({
+			id: conversationTimelineItem.id,
+			createdAt: conversationTimelineItem.createdAt,
+		})
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				eq(conversationTimelineItem.type, "message"),
+				isNull(conversationTimelineItem.deletedAt),
+				or(
+					isNotNull(conversationTimelineItem.userId),
+					isNotNull(conversationTimelineItem.visitorId)
+				)!
+			)
+		)
+		.orderBy(
+			desc(conversationTimelineItem.createdAt),
+			desc(conversationTimelineItem.id)
+		)
+		.limit(1);
+
+	return message ?? null;
+}
+
+/**
+ * Get a specific message's metadata and sender markers.
+ * Used for anchoring workflows and validating trigger eligibility.
  */
 export async function getMessageMetadata(
 	db: Database,
@@ -902,6 +1029,11 @@ export async function getMessageMetadata(
 			id: conversationTimelineItem.id,
 			createdAt: conversationTimelineItem.createdAt,
 			conversationId: conversationTimelineItem.conversationId,
+			userId: conversationTimelineItem.userId,
+			visitorId: conversationTimelineItem.visitorId,
+			aiAgentId: conversationTimelineItem.aiAgentId,
+			visibility: conversationTimelineItem.visibility,
+			text: conversationTimelineItem.text,
 		})
 		.from(conversationTimelineItem)
 		.where(
@@ -915,6 +1047,47 @@ export async function getMessageMetadata(
 		.limit(1);
 
 	return message;
+}
+
+/**
+ * Get metadata for multiple messages in one query.
+ * Used by AI worker burst coalescing to inspect head queue segments.
+ */
+export async function getMessageMetadataBatch(
+	db: Database,
+	params: {
+		messageIds: string[];
+		organizationId: string;
+	}
+) {
+	if (params.messageIds.length === 0) {
+		return [];
+	}
+
+	return db
+		.select({
+			id: conversationTimelineItem.id,
+			createdAt: conversationTimelineItem.createdAt,
+			conversationId: conversationTimelineItem.conversationId,
+			userId: conversationTimelineItem.userId,
+			visitorId: conversationTimelineItem.visitorId,
+			aiAgentId: conversationTimelineItem.aiAgentId,
+			visibility: conversationTimelineItem.visibility,
+			text: conversationTimelineItem.text,
+		})
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.type, "message"),
+				isNull(conversationTimelineItem.deletedAt),
+				inArray(conversationTimelineItem.id, params.messageIds)
+			)
+		)
+		.orderBy(
+			asc(conversationTimelineItem.createdAt),
+			asc(conversationTimelineItem.id)
+		);
 }
 
 /**
@@ -960,11 +1133,12 @@ export async function getLatestPublicAiMessage(
 		conversationId: string;
 		organizationId: string;
 	}
-): Promise<{ id: string; text: string | null } | null> {
+): Promise<{ id: string; text: string | null; createdAt: string } | null> {
 	const [message] = await db
 		.select({
 			id: conversationTimelineItem.id,
 			text: conversationTimelineItem.text,
+			createdAt: conversationTimelineItem.createdAt,
 		})
 		.from(conversationTimelineItem)
 		.where(
@@ -975,6 +1149,52 @@ export async function getLatestPublicAiMessage(
 				eq(conversationTimelineItem.visibility, "public"),
 				isNotNull(conversationTimelineItem.aiAgentId),
 				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.orderBy(
+			desc(conversationTimelineItem.createdAt),
+			desc(conversationTimelineItem.id)
+		)
+		.limit(1);
+
+	return message ?? null;
+}
+
+/**
+ * Get the latest public AI message created after a given cursor.
+ * Used by continuation gating to detect if a queued trigger was already covered.
+ */
+export async function getLatestPublicAiMessageAfterCursor(
+	db: Database,
+	params: {
+		conversationId: string;
+		organizationId: string;
+		afterCreatedAt: string;
+		afterId: string;
+	}
+): Promise<{ id: string; text: string | null; createdAt: string } | null> {
+	const [message] = await db
+		.select({
+			id: conversationTimelineItem.id,
+			text: conversationTimelineItem.text,
+			createdAt: conversationTimelineItem.createdAt,
+		})
+		.from(conversationTimelineItem)
+		.where(
+			and(
+				eq(conversationTimelineItem.conversationId, params.conversationId),
+				eq(conversationTimelineItem.organizationId, params.organizationId),
+				eq(conversationTimelineItem.type, "message"),
+				eq(conversationTimelineItem.visibility, "public"),
+				isNotNull(conversationTimelineItem.aiAgentId),
+				isNull(conversationTimelineItem.deletedAt),
+				or(
+					gt(conversationTimelineItem.createdAt, params.afterCreatedAt),
+					and(
+						eq(conversationTimelineItem.createdAt, params.afterCreatedAt),
+						gt(conversationTimelineItem.id, params.afterId)
+					)
+				)!
 			)
 		)
 		.orderBy(

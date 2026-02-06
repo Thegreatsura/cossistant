@@ -1,9 +1,12 @@
+import { isAiPausedForConversation } from "@api/ai-agent/kill-switch";
 import { db } from "@api/db";
+import { updateConversationAiCursor } from "@api/db/mutations/conversation";
 import { getActiveAiAgentForWebsite } from "@api/db/queries/ai-agent";
 import {
 	getConversationById,
 	getMessageMetadata,
 } from "@api/db/queries/conversation";
+import { getRedis } from "@api/redis";
 import {
 	getLatestMessageForPush,
 	getNotificationData,
@@ -13,18 +16,8 @@ import {
 	triggerMemberMessageNotification,
 	triggerVisitorMessageNotification,
 } from "@api/utils/queue-triggers";
-import {
-	clearWorkflowPending,
-	clearWorkflowState,
-	generateWorkflowRunId,
-	getWorkflowState,
-	setWorkflowPending,
-	setWorkflowState,
-	type WorkflowDirection,
-	type WorkflowPendingJob,
-	type WorkflowState,
-} from "@api/utils/workflow-dedup-manager";
 import { sendMemberPushNotification } from "@api/workflows/message/member-push-notifier";
+import { enqueueAiAgentMessage } from "@cossistant/jobs";
 
 /**
  * Trigger notification workflow when a member sends a message
@@ -242,10 +235,6 @@ export async function triggerVisitorSentMessageWorkflow(params: {
 /**
  * Trigger AI agent response workflow when a visitor sends a message
  * This checks if an AI agent is configured and active for the website
- *
- * IMPORTANT: Workflow state is set BEFORE enqueue to avoid the "immediately
- * superseded" race. A pending payload is stored so active jobs can requeue
- * the newest message once they cancel or finish.
  */
 export async function triggerAiAgentResponseWorkflow(params: {
 	conversationId: string;
@@ -255,6 +244,8 @@ export async function triggerAiAgentResponseWorkflow(params: {
 	visitorId: string;
 }): Promise<void> {
 	try {
+		const redis = getRedis();
+
 		// Check if there's an active AI agent for this website
 		const aiAgent = await getActiveAiAgentForWebsite(db, {
 			websiteId: params.websiteId,
@@ -278,105 +269,52 @@ export async function triggerAiAgentResponseWorkflow(params: {
 			return;
 		}
 
+		const isPaused = await isAiPausedForConversation({
+			db,
+			redis,
+			conversationId: params.conversationId,
+		});
+		if (isPaused) {
+			await updateConversationAiCursor(db, {
+				conversationId: params.conversationId,
+				organizationId: params.organizationId,
+				messageId: messageMetadata.id,
+				messageCreatedAt: messageMetadata.createdAt,
+			});
+			console.log(
+				`[ai-agent] Conversation ${params.conversationId} is paused, skipping AI enqueue and advancing cursor`
+			);
+			return;
+		}
+
 		console.log(
 			`[ai-agent] Queuing AI agent response job for conversation ${params.conversationId}`
 		);
 
-		const direction: WorkflowDirection = "ai-agent-response";
-		const existingState = await getWorkflowState(
-			params.conversationId,
-			direction
-		);
-		const workflowRunId = generateWorkflowRunId(
-			params.conversationId,
-			direction
-		);
+		await enqueueAiAgentMessage(redis, {
+			conversationId: params.conversationId,
+			messageId: params.messageId,
+			messageCreatedAt: messageMetadata.createdAt,
+		});
 
-		// Prepare job data with the new workflowRunId
 		const jobData = {
 			conversationId: params.conversationId,
-			messageId: params.messageId,
-			messageCreatedAt: messageMetadata.createdAt,
 			websiteId: params.websiteId,
 			organizationId: params.organizationId,
-			visitorId: params.visitorId,
 			aiAgentId: aiAgent.id,
-			workflowRunId,
-			isReplacement: Boolean(existingState),
+			triggerMessageId: messageMetadata.id,
 		};
 
-		// Store pending payload and set workflow state BEFORE enqueue to avoid race
-		const pendingPayload: WorkflowPendingJob = {
-			workflowRunId,
-			conversationId: params.conversationId,
-			direction,
-			messageId: params.messageId,
-			messageCreatedAt: messageMetadata.createdAt,
-			organizationId: params.organizationId,
-			websiteId: params.websiteId,
-			visitorId: params.visitorId,
-			aiAgentId: aiAgent.id,
-			createdAt: new Date().toISOString(),
-		};
-
-		await setWorkflowPending(pendingPayload);
-
-		const newState: WorkflowState = {
-			workflowRunId,
-			initialMessageId: existingState?.initialMessageId ?? params.messageId,
-			initialMessageCreatedAt:
-				existingState?.initialMessageCreatedAt ?? messageMetadata.createdAt,
-			conversationId: params.conversationId,
-			direction,
-			createdAt: existingState?.createdAt ?? new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-		};
-		await setWorkflowState(newState);
-
-		let result: Awaited<
-			ReturnType<
-				ReturnType<typeof getAiAgentQueueTriggers>["enqueueAiAgentJob"]
-			>
-		>;
-		try {
-			result = await getAiAgentQueueTriggers().enqueueAiAgentJob(jobData);
-		} catch (error) {
-			// Restore previous workflow state on enqueue failure
-			if (existingState) {
-				await setWorkflowState(existingState);
-			} else {
-				await clearWorkflowState(params.conversationId, direction);
-			}
-			await clearWorkflowPending(
-				params.conversationId,
-				direction,
-				workflowRunId
-			);
-			throw error;
-		}
-
-		if (result.status === "created" || result.status === "replaced") {
-			await clearWorkflowPending(
-				params.conversationId,
-				direction,
-				workflowRunId
-			);
+		const result = await getAiAgentQueueTriggers().enqueueAiAgentJob(jobData);
+		if (result.status === "created") {
 			console.log(
-				`[ai-agent] AI agent response job ${result.status} for conversation ${params.conversationId}, workflowRunId: ${workflowRunId}`
+				`[ai-agent] AI agent drain job created for conversation ${params.conversationId}`
 			);
-			return;
-		}
-
-		if (result.status === "active") {
+		} else {
 			console.log(
-				`[ai-agent] Active job in progress; pending payload stored for conversation ${params.conversationId}`
+				`[ai-agent] AI agent drain job already queued for conversation ${params.conversationId} (state: ${result.existingState})`
 			);
-			return;
 		}
-
-		console.warn(
-			`[ai-agent] Job skipped (unexpected state: ${result.existingState}) for conversation ${params.conversationId}; pending payload retained`
-		);
 	} catch (error) {
 		// Log errors but don't throw - we don't want to block message creation
 		console.error(

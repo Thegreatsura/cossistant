@@ -30,12 +30,6 @@ export type ActionCapture = {
 };
 
 /**
- * Callback to check if this workflow run is still active.
- * Used to prevent duplicate messages when a newer workflow supersedes this one.
- */
-export type CheckWorkflowActiveCallback = () => Promise<boolean>;
-
-/**
  * Callback to stop the typing indicator.
  * Called just before a message is sent so typing doesn't linger.
  */
@@ -46,6 +40,12 @@ export type StopTypingCallback = () => Promise<void>;
  * Called before inter-message delays so users see typing between messages.
  */
 export type StartTypingCallback = () => Promise<void>;
+
+export type PublicMessageSentCallback = (params: {
+	messageId: string;
+	created: boolean;
+	duplicateSuppressed?: boolean;
+}) => void;
 
 /**
  * Context passed to all tools via experimental_context
@@ -62,20 +62,19 @@ export type ToolContext = {
 	allowPublicMessages: boolean;
 	/** Trigger message ID - used for idempotency keys in send-message tool */
 	triggerMessageId: string;
-	/** Workflow run ID - used for idempotency and guards */
+	/** Trigger message timestamp - used for sequencing safeguards */
+	triggerMessageCreatedAt?: string;
+	/** Trigger sender type - used for stale trigger suppression */
+	triggerSenderType?: "visitor" | "human_agent" | "ai_agent";
+	/** Trigger visibility - public/private */
+	triggerVisibility?: "public" | "private";
+	/** Workflow run ID - used for progress events */
 	workflowRunId?: string;
-	/** Latest public visitor message ID at pipeline start */
-	latestVisitorMessageIdAtStart?: string | null;
 	/**
 	 * Mutable counters for message idempotency - shared across tool calls.
 	 * May be undefined in edge cases (hot reload), tools should initialize defensively.
 	 */
 	counters?: MessageCounters;
-	/**
-	 * Callback to check if workflow is still active before sending messages.
-	 * Prevents duplicate messages when a newer message supersedes this workflow.
-	 */
-	checkWorkflowActive?: CheckWorkflowActiveCallback;
 	/**
 	 * Callback to stop the typing indicator just before a message is sent.
 	 * Prevents typing from lingering after the message is already visible.
@@ -87,6 +86,11 @@ export type ToolContext = {
 	 * the AI is still working on subsequent messages.
 	 */
 	startTyping?: StartTypingCallback;
+	/**
+	 * Called when a public message send succeeds or resolves to an existing
+	 * idempotent message. Lets the pipeline classify retryability correctly.
+	 */
+	onPublicMessageSent?: PublicMessageSentCallback;
 	/** Whether the conversation is already escalated - prevents re-escalation */
 	isEscalated?: boolean;
 	/** Per-generation captured action store */

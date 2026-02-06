@@ -69,6 +69,18 @@ export const env = {
 	VAPID_SUBJECT: getEnvVariable("VAPID_SUBJECT"),
 	// OpenRouter API key for AI agents
 	OPENROUTER_API_KEY: getEnvVariable("OPENROUTER_API_KEY", ""),
+	AI_AGENT_ROGUE_WINDOW_SECONDS: +getEnvVariable(
+		"AI_AGENT_ROGUE_WINDOW_SECONDS",
+		"60"
+	),
+	AI_AGENT_ROGUE_MAX_PUBLIC_MESSAGES: +getEnvVariable(
+		"AI_AGENT_ROGUE_MAX_PUBLIC_MESSAGES",
+		"8"
+	),
+	AI_AGENT_ROGUE_PAUSE_MINUTES: +getEnvVariable(
+		"AI_AGENT_ROGUE_PAUSE_MINUTES",
+		"15"
+	),
 	// OpenRouter embedding model (default: text-embedding-3-small)
 	OPENROUTER_EMBEDDING_MODEL: getEnvVariable(
 		"OPENROUTER_EMBEDDING_MODEL",

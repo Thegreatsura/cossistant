@@ -5,13 +5,10 @@
  * Includes natural delays between messages to simulate human typing.
  */
 
+import { getLatestPublicVisitorMessageId } from "@api/db/queries/conversation";
 import { tool } from "ai";
 import { z } from "zod";
 import { sendMessage as sendMessageAction } from "../actions/send-message";
-import {
-	hasNewerVisitorMessageSinceStart,
-	isDuplicatePublicAiMessage,
-} from "../utils/message-guards";
 import type { ToolContext, ToolResult } from "./types";
 
 /**
@@ -31,13 +28,9 @@ function calculateTypingDelay(messageLength: number): number {
 }
 
 /**
- * Sleep for a given duration, but can be interrupted by checking workflow state.
- * Returns early if workflow is no longer active.
+ * Sleep for a given duration.
  */
-async function interruptibleSleep(
-	durationMs: number,
-	checkActive?: () => Promise<boolean>
-): Promise<boolean> {
+async function interruptibleSleep(durationMs: number): Promise<void> {
 	const POLL_INTERVAL_MS = 200; // Check every 200ms if we should abort
 	let elapsed = 0;
 
@@ -45,16 +38,32 @@ async function interruptibleSleep(
 		const sleepTime = Math.min(POLL_INTERVAL_MS, durationMs - elapsed);
 		await new Promise((resolve) => setTimeout(resolve, sleepTime));
 		elapsed += sleepTime;
-
-		// Check if workflow is still active
-		if (checkActive) {
-			const isActive = await checkActive();
-			if (!isActive) {
-				return false; // Workflow superseded, abort sleep
-			}
-		}
 	}
-	return true; // Completed full sleep
+}
+
+function normalizeMessageForDedup(message: string): string {
+	return message.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+async function isSupersededVisitorTrigger(ctx: ToolContext): Promise<boolean> {
+	if (ctx.triggerSenderType !== "visitor") {
+		return false;
+	}
+
+	if (ctx.triggerVisibility && ctx.triggerVisibility !== "public") {
+		return false;
+	}
+
+	const latestVisitorMessageId = await getLatestPublicVisitorMessageId(ctx.db, {
+		conversationId: ctx.conversationId,
+		organizationId: ctx.organizationId,
+	});
+
+	if (!latestVisitorMessageId) {
+		return false;
+	}
+
+	return latestVisitorMessageId !== ctx.triggerMessageId;
 }
 
 const inputSchema = z.object({
@@ -72,189 +81,173 @@ const inputSchema = z.object({
  * proper isolation in worker/serverless environments.
  */
 export function createSendMessageTool(ctx: ToolContext) {
+	const sentNormalizedMessages = new Set<string>();
+	let sendChain: Promise<void> = Promise.resolve();
+	let nextCreatedAtMs = Date.now();
+
+	const runSequentially = async <T>(op: () => Promise<T>): Promise<T> => {
+		const queued = sendChain.then(op);
+		sendChain = queued.then(
+			() => {},
+			() => {}
+		);
+		return queued;
+	};
+
 	return tool({
 		description:
-			"REQUIRED: Send a visible message to the visitor. The visitor ONLY sees messages sent through this tool. Call this BEFORE any action tool (respond, escalate, resolve). You can call multiple times for multi-part responses.",
+			"REQUIRED: Send a visible message to the visitor. The visitor ONLY sees messages sent through this tool. Call this BEFORE any action tool (respond, escalate, resolve). If sending multiple messages, call this tool in the exact final display order and ensure each message adds new information.",
 		inputSchema,
-		execute: async ({
-			message,
-		}): Promise<ToolResult<{ sent: boolean; messageId: string }>> => {
-			try {
-				if (!ctx.allowPublicMessages) {
-					console.warn(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Public messages not allowed for this workflow`
-					);
-					return {
-						success: false,
-						error: "Public messages are not allowed for this workflow",
-						data: { sent: false, messageId: "" },
-					};
-				}
-
-				// Defensive initialization for counters (handles hot reload edge cases)
-				const counters = ctx.counters ?? {
-					sendMessage: 0,
-					sendPrivateMessage: 0,
-				};
-				if (!ctx.counters) {
-					ctx.counters = counters;
-				}
-
-				// Increment counter in context (shared mutable object)
-				counters.sendMessage++;
-				const messageNumber = counters.sendMessage;
-				const workflowKey = ctx.workflowRunId ?? ctx.triggerMessageId;
-				const uniqueKey = `${workflowKey}-msg-${messageNumber}`;
-
-				// CHECK: Is this workflow still active? Prevents duplicate messages
-				// when a newer message has superseded this workflow during generation.
-				if (ctx.checkWorkflowActive) {
-					const isActive = await ctx.checkWorkflowActive();
-					if (!isActive) {
-						console.log(
-							`[tool:sendMessage] conv=${ctx.conversationId} | Workflow superseded, skipping message #${messageNumber}`
+		execute: ({ message }) =>
+			runSequentially<
+				ToolResult<{
+					sent: boolean;
+					messageId: string;
+					duplicateSuppressed?: boolean;
+					staleTriggerSuppressed?: boolean;
+				}>
+			>(async () => {
+				try {
+					if (!ctx.allowPublicMessages) {
+						console.warn(
+							`[tool:sendMessage] conv=${ctx.conversationId} | Public messages not allowed for this workflow`
 						);
 						return {
 							success: false,
-							error: "Workflow superseded by newer message",
+							error: "Public messages are not allowed for this workflow",
 							data: { sent: false, messageId: "" },
 						};
 					}
-				}
 
-				// CHECK: Has a newer visitor message arrived since this pipeline started?
-				const { hasNewer: hasNewerVisitorMessage } =
-					await hasNewerVisitorMessageSinceStart({
+					// Defensive initialization for counters (handles hot reload edge cases)
+					const counters = ctx.counters ?? {
+						sendMessage: 0,
+						sendPrivateMessage: 0,
+					};
+					if (!ctx.counters) {
+						ctx.counters = counters;
+					}
+
+					const normalizedMessage = normalizeMessageForDedup(message);
+					if (!normalizedMessage) {
+						return {
+							success: false,
+							error: "Message cannot be empty",
+						};
+					}
+
+					if (sentNormalizedMessages.has(normalizedMessage)) {
+						console.log(
+							`[tool:sendMessage] conv=${ctx.conversationId} | Duplicate normalized message suppressed`
+						);
+						return {
+							success: true,
+							data: {
+								sent: false,
+								messageId: "",
+								duplicateSuppressed: true,
+							},
+						};
+					}
+
+					const messageNumber = counters.sendMessage + 1;
+					const uniqueKey = `public:${ctx.triggerMessageId}:slot:${messageNumber}`;
+
+					// For subsequent messages (not the first one), add a natural delay
+					// with typing indicator to simulate human conversation pacing.
+					if (messageNumber > 1) {
+						const delayMs = calculateTypingDelay(message.length);
+						console.log(
+							`[tool:sendMessage] conv=${ctx.conversationId} | Message #${messageNumber}: typing for ${delayMs}ms`
+						);
+
+						if (ctx.startTyping) {
+							await ctx.startTyping();
+						}
+
+						await interruptibleSleep(delayMs);
+					}
+
+					if (await isSupersededVisitorTrigger(ctx)) {
+						console.log(
+							`[tool:sendMessage] conv=${ctx.conversationId} | Suppressing send for stale trigger ${ctx.triggerMessageId}`
+						);
+						return {
+							success: true,
+							data: {
+								sent: false,
+								messageId: "",
+								staleTriggerSuppressed: true,
+							},
+						};
+					}
+
+					nextCreatedAtMs = Math.max(nextCreatedAtMs + 1, Date.now());
+					const createdAt = new Date(nextCreatedAtMs);
+
+					console.log(
+						`[tool:sendMessage] conv=${ctx.conversationId} | sending #${messageNumber}`
+					);
+
+					const result = await sendMessageAction({
 						db: ctx.db,
 						conversationId: ctx.conversationId,
 						organizationId: ctx.organizationId,
-						latestVisitorMessageIdAtStart: ctx.latestVisitorMessageIdAtStart,
+						websiteId: ctx.websiteId,
+						visitorId: ctx.visitorId,
+						aiAgentId: ctx.aiAgentId,
+						text: message,
+						idempotencyKey: uniqueKey,
+						createdAt,
 					});
-
-				if (hasNewerVisitorMessage) {
-					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Newer visitor message detected, skipping message #${messageNumber}`
-					);
-					if (ctx.stopTyping) {
-						await ctx.stopTyping();
-					}
-					return {
-						success: false,
-						error: "Superseded by newer visitor message",
-						data: { sent: false, messageId: "" },
-					};
-				}
-
-				// CHECK: Prevent duplicate consecutive AI messages
-				const { duplicate: isDuplicate } = await isDuplicatePublicAiMessage({
-					db: ctx.db,
-					conversationId: ctx.conversationId,
-					organizationId: ctx.organizationId,
-					messageText: message,
-				});
-
-				if (isDuplicate) {
-					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Duplicate message detected, skipping message #${messageNumber}`
-					);
-					if (ctx.stopTyping) {
-						await ctx.stopTyping();
-					}
-					return {
-						success: false,
-						error: "Duplicate message suppressed",
-						data: { sent: false, messageId: "" },
-					};
-				}
-
-				// For subsequent messages (not the first one), add a natural delay
-				// with typing indicator to simulate human conversation pacing
-				if (messageNumber > 1) {
-					const delayMs = calculateTypingDelay(message.length);
-					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Message #${messageNumber}: Starting typing indicator for ${delayMs}ms delay`
-					);
-
-					// Start typing indicator BEFORE the delay so users see "AI is typing..."
-					// This is critical - without this, users see dead silence between messages
-					if (ctx.startTyping) {
-						await ctx.startTyping();
-					}
-
-					// Use interruptible sleep to abort if workflow is superseded
-					const completed = await interruptibleSleep(
-						delayMs,
-						ctx.checkWorkflowActive
-					);
-					if (!completed) {
-						console.log(
-							`[tool:sendMessage] conv=${ctx.conversationId} | Workflow superseded during delay, skipping message #${messageNumber}`
-						);
-						// Stop typing since we're not sending the message
-						if (ctx.stopTyping) {
-							await ctx.stopTyping();
-						}
+					if (result.paused) {
 						return {
 							success: false,
-							error: "Workflow superseded during typing delay",
-							data: { sent: false, messageId: "" },
+							error: "AI is paused for this conversation",
+							data: { sent: false, messageId: result.messageId },
 						};
 					}
-				}
 
-				// Stop typing indicator just before sending the message
-				// This prevents typing from showing alongside the message
-				if (ctx.stopTyping) {
+					// Count this normalized payload once the send resolves. This includes
+					// idempotent existing messages (`created=false`) which means the
+					// visitor already has the reply.
+					sentNormalizedMessages.add(normalizedMessage);
+					counters.sendMessage = messageNumber;
+					ctx.onPublicMessageSent?.({
+						messageId: result.messageId,
+						created: result.created,
+					});
+
 					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Stopping typing before message #${messageNumber}`
+						`[tool:sendMessage] conv=${ctx.conversationId} | sent=${result.created}`
 					);
-					await ctx.stopTyping();
-				}
 
-				console.log(
-					`[tool:sendMessage] conv=${ctx.conversationId} | sending #${messageNumber}`
-				);
-
-				const result = await sendMessageAction({
-					db: ctx.db,
-					conversationId: ctx.conversationId,
-					organizationId: ctx.organizationId,
-					websiteId: ctx.websiteId,
-					visitorId: ctx.visitorId,
-					aiAgentId: ctx.aiAgentId,
-					text: message,
-					idempotencyKey: uniqueKey,
-				});
-
-				console.log(
-					`[tool:sendMessage] conv=${ctx.conversationId} | sent=${result.created}`
-				);
-
-				// Restart typing indicator after sending the message
-				// This ensures typing shows while AI prepares the next message or calls other tools
-				// The pipeline will stop typing at the end when generation completes
-				if (ctx.startTyping) {
-					console.log(
-						`[tool:sendMessage] conv=${ctx.conversationId} | Restarting typing after message #${messageNumber}`
+					return {
+						success: true,
+						data: { sent: result.created, messageId: result.messageId },
+					};
+				} catch (error) {
+					console.error(
+						`[tool:sendMessage] conv=${ctx.conversationId} | Failed:`,
+						error
 					);
-					await ctx.startTyping();
+					return {
+						success: false,
+						error:
+							error instanceof Error ? error.message : "Failed to send message",
+					};
+				} finally {
+					if (ctx.stopTyping) {
+						try {
+							await ctx.stopTyping();
+						} catch (error) {
+							console.warn(
+								`[tool:sendMessage] conv=${ctx.conversationId} | Failed to stop typing in cleanup:`,
+								error
+							);
+						}
+					}
 				}
-
-				return {
-					success: true,
-					data: { sent: result.created, messageId: result.messageId },
-				};
-			} catch (error) {
-				console.error(
-					`[tool:sendMessage] conv=${ctx.conversationId} | Failed:`,
-					error
-				);
-				return {
-					success: false,
-					error:
-						error instanceof Error ? error.message : "Failed to send message",
-				};
-			}
-		},
+			}),
 	});
 }

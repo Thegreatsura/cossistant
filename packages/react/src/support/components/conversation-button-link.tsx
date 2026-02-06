@@ -83,6 +83,7 @@ export function ConversationButtonLink({
 				isAI={assignedAgent?.type === "ai"}
 				lastSeenAt={assignedAgent?.lastSeenAt}
 				name={assignedAgent?.name ?? text("common.fallbacks.supportTeam")}
+				showBackground={!!assignedAgent?.image}
 			/>
 
 			<div className="mr-6 ml-1 flex min-w-0 flex-1 flex-col gap-0.5">

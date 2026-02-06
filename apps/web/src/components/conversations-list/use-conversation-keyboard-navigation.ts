@@ -346,8 +346,12 @@ export function useConversationKeyboardNavigation({
 
 	// Ensure focused index stays valid when list changes
 	useEffect(() => {
-		if (focusedIndex >= totalCount && totalCount > 0) {
-			// Find the last valid conversation index
+		if (totalCount === 0) {
+			return;
+		}
+
+		// Index out of bounds - clamp to last valid conversation
+		if (focusedIndex >= totalCount) {
 			let lastValidIndex = totalCount - 1;
 
 			while (lastValidIndex >= 0 && isHeaderIndex(lastValidIndex)) {
@@ -355,8 +359,17 @@ export function useConversationKeyboardNavigation({
 			}
 
 			setFocusedIndex(Math.max(0, lastValidIndex));
+			return;
 		}
-	}, [totalCount, focusedIndex, isHeaderIndex]);
+
+		// Index points to a header/analytics item (e.g. after list reorder) - find nearest conversation
+		if (isHeaderIndex(focusedIndex)) {
+			const nextConversation = findNextConversationIndex(focusedIndex, "down");
+
+			// findNextConversationIndex wraps around, so the result is always a conversation
+			setFocusedIndex(nextConversation);
+		}
+	}, [totalCount, focusedIndex, isHeaderIndex, findNextConversationIndex]);
 
 	return {
 		focusedIndex,

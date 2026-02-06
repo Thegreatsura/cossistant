@@ -193,6 +193,13 @@ export const conversation = pgTable(
 		).references(() => user.id, { onDelete: "set null" }),
 		// AI pause control - when set, AI will not respond until this time
 		aiPausedUntil: timestamp("ai_paused_until"),
+		// AI agent processing cursor for ordered message handling
+		aiAgentLastProcessedMessageId: ulidNullableReference(
+			"ai_agent_last_processed_message_id"
+		),
+		aiAgentLastProcessedMessageCreatedAt: timestamp(
+			"ai_agent_last_processed_message_created_at"
+		),
 
 		createdAt: timestamp("created_at")
 			.$defaultFn(() => new Date().toISOString())

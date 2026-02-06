@@ -51,8 +51,7 @@ type AvatarProps = {
 
 /**
  * Renders a squared avatar with graceful fallbacks using Facehash when no
- * image is available. Features squircle corners when supported by the browser
- * and a subtle ring border.
+ * image is available. Features rounded corners and a subtle ring border.
  *
  * For AI agents without an image, displays the Cossistant logo without
  * a background.
@@ -69,19 +68,22 @@ export function Avatar({
 }: AvatarProps): ReactElement {
 	const agentStatus = isAI ? "offline" : getAgentStatus(lastSeenAt);
 
-	// AI agent without image: show logo in avatar box (only in avatar-stack context)
-	// or at full size when used standalone
+	// AI agent without image: show just the logo (no avatar wrapper)
+	// Unless showBackground is true (e.g. in avatar stack), then wrap in a box
 	if (isAI && !image) {
-		return (
-			<div
-				className={cn(
-					"flex items-center justify-center rounded bg-co-background-200 ring-1 ring-co-border/30 dark:bg-co-background-500",
-					className
-				)}
-			>
-				<CossistantLogo className="h-1/2 w-1/2" />
-			</div>
-		);
+		if (showBackground) {
+			return (
+				<div
+					className={cn(
+						"flex items-center justify-center rounded bg-co-background-200 ring-1 ring-co-border/30 dark:bg-co-background-500",
+						className
+					)}
+				>
+					<CossistantLogo className="h-1/2 w-1/2" />
+				</div>
+			);
+		}
+		return <CossistantLogo className={cn("h-full w-full", className)} />;
 	}
 
 	// AI agent with image: show image in a square

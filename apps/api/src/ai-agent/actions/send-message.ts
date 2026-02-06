@@ -7,9 +7,14 @@
 
 import type { Database } from "@api/db";
 import { conversationTimelineItem } from "@api/db/schema/conversation";
+import { getRedis } from "@api/redis";
 import { generateIdempotentULID } from "@api/utils/db/ids";
 import { createMessageTimelineItem } from "@api/utils/timeline-item";
 import { eq } from "drizzle-orm";
+import {
+	isAiPausedForConversation,
+	recordOutboundPublicAiMessageAndMaybePause,
+} from "../kill-switch";
 
 type SendMessageParams = {
 	db: Database;
@@ -20,11 +25,13 @@ type SendMessageParams = {
 	aiAgentId: string;
 	text: string;
 	idempotencyKey: string;
+	createdAt?: Date;
 };
 
 type SendMessageResult = {
 	messageId: string;
 	created: boolean;
+	paused?: boolean;
 };
 
 /**
@@ -42,10 +49,28 @@ export async function sendMessage(
 		aiAgentId,
 		text,
 		idempotencyKey,
+		createdAt,
 	} = params;
 
 	// Generate a valid 26-char ULID from the idempotency key
 	const messageId = generateIdempotentULID(idempotencyKey);
+	const redis = getRedis();
+
+	const paused = await isAiPausedForConversation({
+		db,
+		redis,
+		conversationId,
+	});
+	if (paused) {
+		console.warn(
+			`[ai-agent:send-message] conv=${conversationId} | Skipping - AI paused`
+		);
+		return {
+			messageId,
+			created: false,
+			paused: true,
+		};
+	}
 
 	console.log(
 		`[ai-agent:send-message] conv=${conversationId} | idempotencyKey=${idempotencyKey} | messageId=${messageId}`
@@ -79,8 +104,29 @@ export async function sendMessage(
 		id: messageId, // Use deterministic ULID for deduplication
 		userId: null,
 		visitorId: null,
+		createdAt,
 		triggerNotificationWorkflow: false,
 	});
+
+	try {
+		const status = await recordOutboundPublicAiMessageAndMaybePause({
+			db,
+			redis,
+			conversationId,
+			organizationId,
+			messageId: result.item.id,
+		});
+		if (status.paused) {
+			console.warn(
+				`[ai-agent:send-message] conv=${conversationId} | Auto-paused after ${status.messageCount} AI messages in window`
+			);
+		}
+	} catch (error) {
+		console.error(
+			`[ai-agent:send-message] conv=${conversationId} | Failed to run rogue protection:`,
+			error
+		);
+	}
 
 	return {
 		messageId: result.item.id,

@@ -113,6 +113,8 @@ type ConversationSnapshot = {
 	id: string;
 	lastTimelineItem: TimelineItem | null;
 	visitorLastSeenAt: string | null;
+	status: string;
+	deletedAt: string | null;
 };
 
 function areConversationSnapshotsEqual(
@@ -143,7 +145,9 @@ function areConversationSnapshotsEqual(
 		if (
 			snapshotA.id !== snapshotB.id ||
 			aLastCreatedAt !== bLastCreatedAt ||
-			snapshotA.visitorLastSeenAt !== snapshotB.visitorLastSeenAt
+			snapshotA.visitorLastSeenAt !== snapshotB.visitorLastSeenAt ||
+			snapshotA.status !== snapshotB.status ||
+			snapshotA.deletedAt !== snapshotB.deletedAt
 		) {
 			return false;
 		}
@@ -262,6 +266,8 @@ function SupportProviderInner({
 								id: string;
 								lastTimelineItem?: TimelineItem | null;
 								visitorLastSeenAt?: string | null;
+								status?: string;
+								deletedAt?: string | null;
 						  }
 						| undefined
 					>;
@@ -280,6 +286,8 @@ function SupportProviderInner({
 									id: conversation.id,
 									lastTimelineItem: conversation.lastTimelineItem ?? null,
 									visitorLastSeenAt: conversation.visitorLastSeenAt ?? null,
+									status: conversation.status ?? "open",
+									deletedAt: conversation.deletedAt ?? null,
 								} satisfies ConversationSnapshot;
 							})
 							.filter(
@@ -303,7 +311,14 @@ function SupportProviderInner({
 			id: conversationId,
 			lastTimelineItem,
 			visitorLastSeenAt,
+			status,
+			deletedAt,
 		} of conversationSnapshots) {
+			// Skip resolved, spam, or deleted conversations
+			if (status !== "open" || deletedAt) {
+				continue;
+			}
+
 			if (!lastTimelineItem) {
 				continue;
 			}

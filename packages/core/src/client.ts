@@ -524,11 +524,15 @@ export class CossistantClient {
 			return;
 		}
 
-		// Build the updated conversation with only the title field
+		// Build the updated conversation
 		// (sentiment and escalation are dashboard-only fields)
 		const nextConversation = {
 			...existingConversation,
 			...(updates.title !== undefined && { title: updates.title ?? undefined }),
+			...(updates.status !== undefined && { status: updates.status }),
+			...(updates.deletedAt !== undefined && {
+				deletedAt: updates.deletedAt,
+			}),
 			updatedAt: new Date().toISOString(),
 		};
 

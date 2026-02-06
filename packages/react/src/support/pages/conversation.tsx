@@ -197,6 +197,7 @@ export const ConversationPage: ConversationPageComponent = ({
 					<AvatarStack
 						aiAgents={availableAIAgents}
 						gapWidth={2}
+						hideDefaultAIAgent={false}
 						humanAgents={availableHumanAgents}
 						size={32}
 						spacing={28}

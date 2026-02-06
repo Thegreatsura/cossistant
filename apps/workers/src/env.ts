@@ -43,6 +43,23 @@ export const env = {
 		"AI_AGENT_MAX_STALLED_COUNT",
 		"2"
 	),
+	AI_AGENT_DRAIN_MAX_MESSAGES: +getEnvVariable(
+		"AI_AGENT_DRAIN_MAX_MESSAGES",
+		"5"
+	),
+	AI_AGENT_DRAIN_MAX_RUNTIME_MS: +getEnvVariable(
+		"AI_AGENT_DRAIN_MAX_RUNTIME_MS",
+		"25000"
+	),
+	AI_AGENT_DRAIN_LOCK_TTL_MS: +getEnvVariable(
+		"AI_AGENT_DRAIN_LOCK_TTL_MS",
+		"120000"
+	),
+	AI_AGENT_VISITOR_DEBOUNCE_MS: +getEnvVariable(
+		"AI_AGENT_VISITOR_DEBOUNCE_MS",
+		"800"
+	),
+	AI_AGENT_WAKE_TTL_SECONDS: +getEnvVariable("AI_AGENT_WAKE_TTL_SECONDS", "30"),
 	// Database (needed for notification queries)
 	DATABASE_HOST: getEnvVariable("DATABASE_HOST"),
 	DATABASE_PORT: +getEnvVariable("DATABASE_PORT"),

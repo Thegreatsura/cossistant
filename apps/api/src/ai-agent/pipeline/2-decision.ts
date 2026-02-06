@@ -79,6 +79,21 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 		};
 	}
 
+	// Never respond to AI-authored messages (defensive guard).
+	if (triggerMessage.senderType === "ai_agent") {
+		console.log(
+			`[ai-agent:decision] conv=${convId} | AI-authored trigger, skipping`
+		);
+		return {
+			shouldAct: false,
+			reason: "AI-authored message cannot trigger AI response",
+			mode: "background_only",
+			humanCommand: null,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
+		};
+	}
+
 	// AI paused - never respond
 	if (isAiPaused(input.conversation)) {
 		console.log(`[ai-agent:decision] conv=${convId} | AI is paused, skipping`);
@@ -157,6 +172,44 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 			conversationHistory,
 			conversationState
 		);
+		const hasActionableIntent =
+			classification.isQuestion || classification.isRequest;
+
+		if (classification.isAck && !hasActionableIntent) {
+			console.log(
+				`[ai-agent:decision] conv=${convId} | Non-actionable acknowledgement, skipping`
+			);
+			return {
+				shouldAct: false,
+				reason: "Visitor acknowledgement does not need a reply",
+				mode: "background_only",
+				humanCommand: null,
+				isEscalated: conversationState.isEscalated,
+				escalationReason: conversationState.escalationReason,
+			};
+		}
+
+		const hasPriorPublicTeamOrAi = hasPriorPublicTeamOrAiMessage(
+			conversationHistory,
+			triggerMessage.messageId
+		);
+		if (
+			classification.isGreeting &&
+			!hasActionableIntent &&
+			hasPriorPublicTeamOrAi
+		) {
+			console.log(
+				`[ai-agent:decision] conv=${convId} | Follow-up greeting without intent, skipping`
+			);
+			return {
+				shouldAct: false,
+				reason: "Greeting-only follow-up after prior team/AI reply",
+				mode: "background_only",
+				humanCommand: null,
+				isEscalated: conversationState.isEscalated,
+				escalationReason: conversationState.escalationReason,
+			};
+		}
 
 		if (!humanActivity.humanActive) {
 			console.log(
@@ -476,6 +529,28 @@ function countVisitorBurst(history: RoleAwareMessage[]): number {
 		}
 	}
 	return count;
+}
+
+function hasPriorPublicTeamOrAiMessage(
+	history: RoleAwareMessage[],
+	triggerMessageId: string
+): boolean {
+	for (const message of history) {
+		if (message.messageId === triggerMessageId) {
+			continue;
+		}
+		if (message.visibility !== "public") {
+			continue;
+		}
+		if (
+			message.senderType === "human_agent" ||
+			message.senderType === "ai_agent"
+		) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function getHumanActivity(

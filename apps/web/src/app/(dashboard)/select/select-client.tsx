@@ -4,9 +4,9 @@ import type { OrganizationSelect, WebsiteSelect } from "@api/db/schema";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { switchWebsite } from "@/app/actions/switch-website";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { WebsiteImage } from "@/components/ui/website-image";
 import { authClient } from "@/lib/auth/client";
 import { useTRPC } from "@/lib/trpc/client";
 
@@ -113,10 +113,10 @@ export default function SelectClient({ organizations }: SelectClientProps) {
 							onClick={() => handleSelectWebsite(website.id)}
 							type="button"
 						>
-							<Avatar
+							<WebsiteImage
 								className="size-8"
-								fallbackName={website.name}
-								url={website.logoUrl}
+								logoUrl={website.logoUrl}
+								name={website.name}
 							/>
 							<div className="flex-1">
 								<p className="font-medium text-sm">{website.name}</p>

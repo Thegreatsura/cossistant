@@ -18,6 +18,7 @@ import {
 } from "../context/temporal";
 import type { VisitorContext } from "../context/visitor";
 import { formatVisitorContextForPrompt } from "../context/visitor";
+import type { ContinuationHint } from "../pipeline/1b-continuation-gate";
 import type { ResponseMode } from "../pipeline/2-decision";
 import type { SmartDecisionResult } from "../pipeline/2a-smart-decision";
 import { getBehaviorSettings } from "../settings";
@@ -39,6 +40,8 @@ type BuildPromptInput = {
 	escalationReason?: string | null;
 	/** Smart decision result if AI was used to decide */
 	smartDecision?: SmartDecisionResult;
+	/** Continuation hint when this run should only add incremental information */
+	continuationHint?: ContinuationHint;
 };
 
 /**
@@ -64,6 +67,7 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		isEscalated,
 		escalationReason,
 		smartDecision,
+		continuationHint,
 	} = input;
 	const settings = getBehaviorSettings(aiAgent);
 
@@ -137,6 +141,8 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		parts.push(PROMPT_TEMPLATES.GROUNDING_INSTRUCTIONS);
 	}
 
+	parts.push(PROMPT_TEMPLATES.PARTICIPATION_POLICY);
+
 	// Add structured output instructions
 	parts.push(PROMPT_TEMPLATES.STRUCTURED_OUTPUT);
 
@@ -166,6 +172,21 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 			smartDecision.reasoning
 		);
 		parts.push(smartContext);
+	}
+
+	if (continuationHint) {
+		const continuationContext = PROMPT_TEMPLATES.CONTINUATION_CONTEXT.replace(
+			"{latestAiMessage}",
+			continuationHint.latestAiMessageText
+		)
+			.replace("{continuationReason}", continuationHint.reason)
+			.replace(
+				"{deltaHint}",
+				continuationHint.deltaHint ??
+					"Only add missing details required to move the conversation forward."
+			)
+			.replace("{continuationConfidence}", continuationHint.confidence);
+		parts.push(continuationContext);
 	}
 
 	// =========================================================================

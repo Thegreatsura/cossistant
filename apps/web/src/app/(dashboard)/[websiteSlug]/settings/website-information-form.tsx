@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
+	AvatarInput,
 	type AvatarInputValue,
 	uploadToPresignedUrl,
 } from "@/components/ui/avatar-input";
@@ -413,7 +414,7 @@ export function WebsiteInformationForm({
 							</FormItem>
 						)}
 					/>
-					{/* <FormField
+					<FormField
 						control={form.control}
 						name="logo"
 						render={({ field }) => (
@@ -451,7 +452,7 @@ export function WebsiteInformationForm({
 								<FormMessage />
 							</FormItem>
 						)}
-					/> */}
+					/>
 				</div>
 				<SettingsRowFooter className="flex items-center justify-end gap-2">
 					<BaseSubmitButton

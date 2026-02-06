@@ -35,6 +35,8 @@ type BuildHistoryParams = {
 	conversationId: string;
 	organizationId: string;
 	websiteId: string;
+	maxCreatedAt?: string | null;
+	maxId?: string | null;
 };
 
 /**
@@ -54,6 +56,8 @@ export async function buildConversationHistory(
 		conversationId: params.conversationId,
 		websiteId: params.websiteId,
 		limit: MAX_CONTEXT_MESSAGES,
+		maxCreatedAt: params.maxCreatedAt ?? null,
+		maxId: params.maxId ?? null,
 		// Include both public and private messages for full context
 		visibility: [TimelineItemVisibility.PUBLIC, TimelineItemVisibility.PRIVATE],
 	});

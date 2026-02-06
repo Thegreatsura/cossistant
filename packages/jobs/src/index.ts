@@ -1,4 +1,25 @@
 // Triggers
+
+// AI agent queue helpers
+export {
+	AI_AGENT_QUEUE_DEFAULTS,
+	acquireAiAgentLock,
+	clearAiAgentConversationFailures,
+	clearAiAgentConversationQueue,
+	consumeAiAgentWakeFlag,
+	enqueueAiAgentMessage,
+	getAiAgentFailureKey,
+	getAiAgentLockKey,
+	getAiAgentQueueKey,
+	getAiAgentQueueSize,
+	getAiAgentWakeKey,
+	peekAiAgentQueue,
+	peekAiAgentQueueBatch,
+	releaseAiAgentLock,
+	removeAiAgentQueueMessage,
+	removeAiAgentQueueMessages,
+	renewAiAgentLock,
+} from "./ai-agent-queue";
 export {
 	AI_AGENT_JOB_OPTIONS,
 	createAiAgentTriggers,
@@ -7,7 +28,6 @@ export {
 	createWebCrawlTriggers,
 	type EnqueueAiAgentResult,
 } from "./triggers";
-
 // Types
 export {
 	type AiAgentJobData,

@@ -5,7 +5,6 @@
  *
  * Responsibilities:
  * - Update AI agent usage statistics
- * - Clear workflow state
  * - Emit realtime events
  * - Run auto-categorization (if enabled)
  *
@@ -19,43 +18,24 @@ import type { Database } from "@api/db";
 import { updateAiAgentUsage } from "@api/db/queries/ai-agent";
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
 import type { ConversationSelect } from "@api/db/schema/conversation";
-import {
-	clearWorkflowStateIfActive,
-	type WorkflowDirection,
-} from "@cossistant/jobs/workflow-state";
-import type { Redis } from "@cossistant/redis";
 import * as analysis from "../analysis";
 import type { AiDecision } from "../output/schemas";
 import { getBehaviorSettings } from "../settings";
 import type { ExecutionResult } from "./4-execution";
 
-const AI_AGENT_DIRECTION: WorkflowDirection = "ai-agent-response";
-
 type FollowupInput = {
 	db: Database;
-	redis: Redis;
 	aiAgent: AiAgentSelect;
 	conversation: ConversationSelect;
 	decision: AiDecision | null;
 	executionResult: ExecutionResult | null;
-	organizationId: string;
-	websiteId: string;
-	workflowRunId: string;
 };
 
 /**
  * Execute post-processing tasks
  */
 export async function followup(input: FollowupInput): Promise<void> {
-	const { db, redis, aiAgent, conversation, decision, executionResult } = input;
-
-	// Clear workflow state
-	await clearWorkflowStateIfActive(
-		redis,
-		conversation.id,
-		AI_AGENT_DIRECTION,
-		input.workflowRunId
-	);
+	const { db, aiAgent, conversation, decision, executionResult } = input;
 
 	// If there was a successful action, update usage stats
 	if (executionResult?.primaryAction.success && decision?.action !== "skip") {

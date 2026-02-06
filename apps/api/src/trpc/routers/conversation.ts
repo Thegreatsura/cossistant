@@ -1,4 +1,8 @@
 import {
+	pauseAiForConversation,
+	resumeAiForConversation,
+} from "@api/ai-agent/kill-switch";
+import {
 	archiveConversation,
 	type ConversationRecord,
 	joinEscalation,
@@ -18,6 +22,9 @@ import {
 import { getInboxAnalyticsMetrics } from "@api/db/queries/inbox-analytics";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
+import { env } from "@api/env";
+import { realtime } from "@api/realtime/emitter";
+import { getRedis } from "@api/redis";
 import { createParticipantJoinedEvent } from "@api/utils/conversation-events";
 import {
 	emitConversationSeenEvent,
@@ -45,6 +52,24 @@ function toConversationOutput(record: ConversationRecord) {
 	return {
 		...record,
 	};
+}
+
+async function emitConversationStatusUpdate(
+	conversation: ConversationRecord,
+	updates: {
+		status?: ConversationRecord["status"];
+		deletedAt?: string | null;
+	}
+) {
+	await realtime.emit("conversationUpdated", {
+		websiteId: conversation.websiteId,
+		organizationId: conversation.organizationId,
+		visitorId: conversation.visitorId ?? null,
+		userId: null,
+		conversationId: conversation.id,
+		updates,
+		aiAgentId: null,
+	});
 }
 
 export const conversationRouter = createTRPCRouter({
@@ -370,6 +395,10 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
+			await emitConversationStatusUpdate(updatedConversation, {
+				status: updatedConversation.status,
+			});
+
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
@@ -398,6 +427,10 @@ export const conversationRouter = createTRPCRouter({
 					message: "Unable to reopen conversation",
 				});
 			}
+
+			await emitConversationStatusUpdate(updatedConversation, {
+				status: updatedConversation.status,
+			});
 
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
@@ -428,6 +461,10 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
+			await emitConversationStatusUpdate(updatedConversation, {
+				status: updatedConversation.status,
+			});
+
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
@@ -456,6 +493,10 @@ export const conversationRouter = createTRPCRouter({
 					message: "Unable to mark conversation as not spam",
 				});
 			}
+
+			await emitConversationStatusUpdate(updatedConversation, {
+				status: updatedConversation.status,
+			});
 
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
@@ -486,6 +527,10 @@ export const conversationRouter = createTRPCRouter({
 				});
 			}
 
+			await emitConversationStatusUpdate(updatedConversation, {
+				deletedAt: updatedConversation.deletedAt,
+			});
+
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
 
@@ -514,6 +559,10 @@ export const conversationRouter = createTRPCRouter({
 					message: "Unable to unarchive conversation",
 				});
 			}
+
+			await emitConversationStatusUpdate(updatedConversation, {
+				deletedAt: updatedConversation.deletedAt,
+			});
 
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),
@@ -565,6 +614,72 @@ export const conversationRouter = createTRPCRouter({
 				conversation,
 				actorUserId: user.id,
 			});
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	pauseAi: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+				durationMinutes: z.number().int().min(1).max(10_080).optional(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await pauseAiForConversation({
+				db,
+				redis: getRedis(),
+				conversationId: conversation.id,
+				organizationId: conversation.organizationId,
+				durationMinutes:
+					input.durationMinutes ?? env.AI_AGENT_ROGUE_PAUSE_MINUTES,
+				reason: `manual:${user.id}`,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to pause AI for conversation",
+				});
+			}
+
+			return { conversation: toConversationOutput(updatedConversation) };
+		}),
+
+	resumeAi: protectedProcedure
+		.input(
+			z.object({
+				conversationId: z.string(),
+				websiteSlug: z.string(),
+			})
+		)
+		.output(conversationMutationResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const { conversation } = await loadConversationContext(
+				db,
+				user.id,
+				input
+			);
+			const updatedConversation = await resumeAiForConversation({
+				db,
+				redis: getRedis(),
+				conversationId: conversation.id,
+				organizationId: conversation.organizationId,
+			});
+
+			if (!updatedConversation) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unable to resume AI for conversation",
+				});
+			}
 
 			return { conversation: toConversationOutput(updatedConversation) };
 		}),

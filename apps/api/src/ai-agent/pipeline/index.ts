@@ -13,23 +13,19 @@
  */
 
 import type { Database } from "@api/db";
-import { getLatestPublicVisitorMessageId } from "@api/db/queries/conversation";
 import { generateVisitorName } from "@cossistant/core";
-import { isWorkflowRunActive } from "@cossistant/jobs/workflow-state";
-import type { Redis } from "@cossistant/redis";
 import { sendMessage } from "../actions/send-message";
 import {
 	emitDecisionMade,
 	emitTypingStop,
-	emitWorkflowCancelled,
 	emitWorkflowCompleted,
 	TypingHeartbeat,
 } from "../events";
-import {
-	hasNewerVisitorMessageSinceStart,
-	isDuplicatePublicAiMessage,
-} from "../utils/message-guards";
 import { type IntakeResult, intake } from "./1-intake";
+import {
+	type ContinuationHint,
+	continuationGate,
+} from "./1b-continuation-gate";
 import { type DecisionResult, decide } from "./2-decision";
 import { type GenerationResult, generate } from "./3-generation";
 import { type ExecutionResult, execute } from "./4-execution";
@@ -52,7 +48,8 @@ export type AiAgentPipelineResult = {
 	action?: string;
 	reason?: string;
 	error?: string;
-	superseded?: boolean;
+	publicMessagesSent: number;
+	retryable: boolean;
 	metrics: {
 		intakeMs: number;
 		decisionMs: number;
@@ -65,9 +62,10 @@ export type AiAgentPipelineResult = {
 
 type PipelineContext = {
 	db: Database;
-	redis: Redis;
 	input: AiAgentPipelineInput;
 };
+
+const GENERATION_TIMEOUT_MS = 45_000;
 
 /**
  * Run the AI agent pipeline
@@ -98,7 +96,26 @@ export async function runAiAgentPipeline(
 	let generationResult: GenerationResult | null = null;
 	let executionResult: ExecutionResult | null = null;
 	let typingHeartbeat: TypingHeartbeat | null = null;
-	let latestVisitorMessageIdAtStart: string | null | undefined = null;
+	let willSendVisibleMessages = false;
+	let typingSessionStarted = false;
+	let publicMessagesSent = 0;
+	let continuationHint: ContinuationHint | undefined;
+	const publicMessageIds = new Set<string>();
+
+	const markPublicMessageSent = (params: {
+		messageId: string;
+		created: boolean;
+		duplicateSuppressed?: boolean;
+	}) => {
+		if (!params.messageId) {
+			return;
+		}
+		if (publicMessageIds.has(params.messageId)) {
+			return;
+		}
+		publicMessageIds.add(params.messageId);
+		publicMessagesSent++;
+	};
 
 	try {
 		// Step 1: Intake - Gather context and validate
@@ -113,18 +130,65 @@ export async function runAiAgentPipeline(
 			return {
 				status: "skipped",
 				reason: intakeResult.reason,
+				publicMessagesSent,
+				retryable: false,
 				metrics: finalizeMetrics(metrics, startTime),
 			};
 		}
 
-		// Capture latest visitor message at pipeline start
-		latestVisitorMessageIdAtStart = await getLatestPublicVisitorMessageId(
-			ctx.db,
-			{
-				conversationId: convId,
-				organizationId: ctx.input.organizationId,
-			}
+		const continuationResult = await continuationGate({
+			db: ctx.db,
+			conversationId: ctx.input.conversationId,
+			organizationId: ctx.input.organizationId,
+			triggerMessageId: ctx.input.messageId,
+			triggerMessageCreatedAt: ctx.input.messageCreatedAt,
+			triggerMessage: intakeResult.triggerMessage,
+			conversationHistory: intakeResult.conversationHistory,
+		});
+		console.log(
+			`[ai-agent] conv=${convId} | continuationDecision=${continuationResult.decision} | continuationConfidence=${continuationResult.confidence} | continuationReason=${continuationResult.reason}`
 		);
+
+		if (continuationResult.decision === "skip") {
+			const skipReason = `Continuation gate skipped trigger: ${continuationResult.reason}`;
+
+			await emitDecisionMade({
+				conversation: intakeResult.conversation,
+				aiAgentId: intakeResult.aiAgent.id,
+				workflowRunId: ctx.input.workflowRunId,
+				shouldAct: false,
+				reason: skipReason,
+				mode: "background_only",
+			});
+
+			await emitWorkflowCompleted({
+				conversation: intakeResult.conversation,
+				aiAgentId: intakeResult.aiAgent.id,
+				workflowRunId: ctx.input.workflowRunId,
+				status: "skipped",
+				reason: skipReason,
+			});
+
+			return {
+				status: "skipped",
+				reason: skipReason,
+				publicMessagesSent,
+				retryable: false,
+				metrics: finalizeMetrics(metrics, startTime),
+			};
+		}
+
+		if (continuationResult.decision === "supplement") {
+			continuationHint = {
+				reason: continuationResult.reason,
+				confidence: continuationResult.confidence,
+				deltaHint: continuationResult.deltaHint,
+				latestAiMessageId: continuationResult.latestAiMessageId ?? "",
+				latestAiMessageText:
+					continuationResult.latestAiMessageText ??
+					"Only add missing details; do not repeat the previous AI reply.",
+			};
+		}
 
 		// Step 2: Decision - Should AI act?
 		const decisionStart = Date.now();
@@ -136,6 +200,18 @@ export async function runAiAgentPipeline(
 			triggerMessage: intakeResult.triggerMessage,
 		});
 		metrics.decisionMs = Date.now() - decisionStart;
+
+		if (
+			continuationResult.decision === "supplement" &&
+			(!decisionResult.shouldAct || decisionResult.mode === "background_only")
+		) {
+			decisionResult = {
+				...decisionResult,
+				shouldAct: true,
+				reason: `Continuation supplement override: ${continuationResult.reason}`,
+				mode: "respond_to_visitor",
+			};
+		}
 
 		// Emit decision event
 		await emitDecisionMade({
@@ -164,6 +240,8 @@ export async function runAiAgentPipeline(
 			return {
 				status: "skipped",
 				reason: decisionResult.reason,
+				publicMessagesSent,
+				retryable: false,
 				metrics: finalizeMetrics(metrics, startTime),
 			};
 		}
@@ -174,17 +252,7 @@ export async function runAiAgentPipeline(
 		const allowPublicMessages =
 			decisionResult.mode !== "background_only" &&
 			intakeResult.triggerMessage?.visibility !== "private";
-		const willSendVisibleMessages = allowPublicMessages;
-
-		// Callback to check if workflow is still active - passed to tools
-		// This prevents duplicate messages when a newer message supersedes this workflow
-		const checkWorkflowActive = async (): Promise<boolean> =>
-			isWorkflowRunActive(
-				ctx.redis,
-				convId,
-				"ai-agent-response",
-				ctx.input.workflowRunId
-			);
+		willSendVisibleMessages = allowPublicMessages;
 
 		// Callback to stop typing - passed to tools
 		// Stops the typing indicator just before a message is sent
@@ -211,29 +279,6 @@ export async function runAiAgentPipeline(
 				return;
 			}
 
-			// Check if workflow is still active before restarting typing
-			const isActive = await checkWorkflowActive();
-			if (!isActive) {
-				console.log(
-					`[ai-agent] conv=${convId} | Workflow superseded, not restarting typing`
-				);
-				return;
-			}
-
-			const { hasNewer: hasNewerVisitorMessageDuringTyping } =
-				await hasNewerVisitorMessageSinceStart({
-					db: ctx.db,
-					conversationId: convId,
-					organizationId: ctx.input.organizationId,
-					latestVisitorMessageIdAtStart,
-				});
-			if (hasNewerVisitorMessageDuringTyping) {
-				console.log(
-					`[ai-agent] conv=${convId} | Newer visitor message detected, not restarting typing`
-				);
-				return;
-			}
-
 			// If heartbeat was stopped, restart it
 			if (typingHeartbeat && !typingHeartbeat.running) {
 				console.log(
@@ -253,41 +298,6 @@ export async function runAiAgentPipeline(
 			}
 		};
 
-		// CHECK: Has this job been superseded by a newer message?
-		const isActiveBeforeGeneration = await checkWorkflowActive();
-		const { hasNewer: hasNewerVisitorMessage } =
-			await hasNewerVisitorMessageSinceStart({
-				db: ctx.db,
-				conversationId: convId,
-				organizationId: ctx.input.organizationId,
-				latestVisitorMessageIdAtStart,
-			});
-
-		if (!isActiveBeforeGeneration || hasNewerVisitorMessage) {
-			console.log(
-				`[ai-agent] conv=${convId} | Superseded before generation, aborting`
-			);
-
-			// Emit cancelled event (dashboard only)
-			await emitWorkflowCancelled({
-				conversation: intakeResult.conversation,
-				aiAgentId: intakeResult.aiAgent.id,
-				workflowRunId: ctx.input.workflowRunId,
-				reason: hasNewerVisitorMessage
-					? "Superseded by newer visitor message"
-					: "Superseded by newer message",
-			});
-
-			return {
-				status: "skipped",
-				reason: hasNewerVisitorMessage
-					? "Superseded by newer visitor message"
-					: "Superseded by newer message",
-				superseded: true,
-				metrics: finalizeMetrics(metrics, startTime),
-			};
-		}
-
 		if (willSendVisibleMessages) {
 			typingHeartbeat = new TypingHeartbeat({
 				conversation: intakeResult.conversation,
@@ -298,6 +308,7 @@ export async function runAiAgentPipeline(
 				`[ai-agent] conv=${convId} | Starting typing indicator (AI will respond)`
 			);
 			await typingHeartbeat.start();
+			typingSessionStarted = true;
 		} else {
 			console.log(
 				`[ai-agent] conv=${convId} | Skipping typing indicator (background_only mode)`
@@ -305,37 +316,14 @@ export async function runAiAgentPipeline(
 		}
 
 		// Step 3: Generation - Call LLM with tools
-		// Set up AbortController for interruption handling during long LLM calls
-		const abortController = new AbortController();
-		let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-		// Poll workflow state every 2 seconds during generation
-		// If a new message arrives, the workflow state will change and we abort
-		const POLL_INTERVAL_MS = 2000;
-		pollInterval = setInterval(async () => {
-			try {
-				const isStillActive = await isWorkflowRunActive(
-					ctx.redis,
-					convId,
-					"ai-agent-response",
-					ctx.input.workflowRunId
-				);
-				if (!isStillActive) {
-					console.log(
-						`[ai-agent] conv=${convId} | Workflow superseded during generation, aborting`
-					);
-					abortController.abort();
-				}
-			} catch (error) {
-				// Log but don't abort on polling errors
-				console.warn(
-					`[ai-agent] conv=${convId} | Error polling workflow state:`,
-					error
-				);
-			}
-		}, POLL_INTERVAL_MS);
-
 		const generationStart = Date.now();
+		const generationAbortController = new AbortController();
+		const generationTimeout = setTimeout(() => {
+			console.warn(
+				`[ai-agent] conv=${convId} | Generation timeout after ${GENERATION_TIMEOUT_MS}ms`
+			);
+			generationAbortController.abort();
+		}, GENERATION_TIMEOUT_MS);
 		try {
 			generationResult = await generate({
 				db: ctx.db,
@@ -349,56 +337,24 @@ export async function runAiAgentPipeline(
 				websiteId: ctx.input.websiteId,
 				visitorId: ctx.input.visitorId,
 				triggerMessageId: ctx.input.messageId,
-				abortSignal: abortController.signal,
-				checkWorkflowActive, // Prevent duplicate messages when superseded
+				triggerMessageCreatedAt: ctx.input.messageCreatedAt,
+				triggerSenderType: intakeResult.triggerMessage?.senderType,
+				triggerVisibility: intakeResult.triggerMessage?.visibility,
+				abortSignal: generationAbortController.signal,
 				stopTyping, // Stop typing just before message is sent
-				startTyping, // Restart typing after message is sent / during delays
+				startTyping, // Start typing for inter-message delays
+				onPublicMessageSent: markPublicMessageSent,
 				allowPublicMessages,
 				isEscalated: decisionResult.isEscalated, // Pass escalation context
 				escalationReason: decisionResult.escalationReason,
 				smartDecision: decisionResult.smartDecision, // Pass smart decision for prompt context
+				continuationHint,
 				workflowRunId: ctx.input.workflowRunId, // For progress events in tools
-				latestVisitorMessageIdAtStart,
 			});
 		} finally {
-			// Always clean up the polling interval
-			if (pollInterval) {
-				clearInterval(pollInterval);
-				pollInterval = null;
-			}
+			clearTimeout(generationTimeout);
 		}
 		metrics.generationMs = Date.now() - generationStart;
-
-		// ALWAYS stop typing immediately after generation completes
-		// The AI is done "typing" - any remaining work is internal processing
-		if (typingHeartbeat?.running) {
-			console.log(
-				`[ai-agent] conv=${convId} | Generation complete, stopping typing indicator`
-			);
-			await typingHeartbeat.stop();
-		}
-		typingHeartbeat = null;
-
-		// Handle aborted generation - new message arrived during LLM call
-		if (generationResult.aborted) {
-			console.log(
-				`[ai-agent] conv=${convId} | Generation was aborted, stopping pipeline`
-			);
-
-			await emitWorkflowCancelled({
-				conversation: intakeResult.conversation,
-				aiAgentId: intakeResult.aiAgent.id,
-				workflowRunId: ctx.input.workflowRunId,
-				reason: "Interrupted by new message",
-			});
-
-			return {
-				status: "skipped",
-				reason: "Interrupted by new message",
-				superseded: true,
-				metrics: finalizeMetrics(metrics, startTime),
-			};
-		}
 
 		// FALLBACK: If AI returned respond/escalate/resolve but didn't call sendMessage,
 		// send a fallback message so the visitor isn't left without a response
@@ -411,135 +367,58 @@ export async function runAiAgentPipeline(
 			(requiresMessage && sentMessages === 0);
 
 		if (needsFallbackMessage && allowPublicMessages) {
-			// CHECK: Only send fallback if workflow is still active
-			const isActiveForFallback = await checkWorkflowActive();
-			if (isActiveForFallback) {
-				const { hasNewer: hasNewerVisitorMessageForFallback } =
-					await hasNewerVisitorMessageSinceStart({
-						db: ctx.db,
-						conversationId: convId,
-						organizationId: ctx.input.organizationId,
-						latestVisitorMessageIdAtStart,
-					});
-
-				if (hasNewerVisitorMessageForFallback) {
-					console.log(
-						`[ai-agent] conv=${convId} | Newer visitor message detected, skipping fallback message`
-					);
-					await emitWorkflowCancelled({
-						conversation: intakeResult.conversation,
-						aiAgentId: intakeResult.aiAgent.id,
-						workflowRunId: ctx.input.workflowRunId,
-						reason: "Superseded by newer visitor message",
-					});
-					return {
-						status: "skipped",
-						reason: "Superseded by newer visitor message",
-						superseded: true,
-						metrics: finalizeMetrics(metrics, startTime),
-					};
-				}
-
-				if (generationResult.needsFallbackMessage) {
-					console.warn(
-						`[ai-agent] conv=${convId} | Repair failed, sending fallback message`
-					);
-				}
+			if (generationResult.needsFallbackMessage) {
 				console.warn(
-					`[ai-agent] conv=${convId} | AI forgot to call sendMessage! Sending fallback...`
+					`[ai-agent] conv=${convId} | Repair failed, sending fallback message`
 				);
+			}
+			console.warn(
+				`[ai-agent] conv=${convId} | AI forgot to call sendMessage! Sending fallback...`
+			);
 
-				// Construct a fallback message based on the action
-				let fallbackMessage: string;
-				switch (generationResult.decision.action) {
-					case "escalate":
-						fallbackMessage =
-							"Let me connect you with a team member who can help.";
-						break;
-					case "resolve":
-						fallbackMessage =
-							"I hope that helped! Let me know if you need anything else.";
-						break;
-					default:
-						// For respond, use a safe generic message (do not leak reasoning)
-						fallbackMessage =
-							"Thanks for your message. I'm looking into this now. Could you share any extra details that might help?";
-				}
+			// Construct a fallback message based on the action
+			let fallbackMessage: string;
+			switch (generationResult.decision.action) {
+				case "escalate":
+					fallbackMessage =
+						"Let me connect you with a team member who can help.";
+					break;
+				case "resolve":
+					fallbackMessage =
+						"I hope that helped! Let me know if you need anything else.";
+					break;
+				default:
+					// For respond, use a safe generic message (do not leak reasoning)
+					fallbackMessage =
+						"Thanks for your message. I'm looking into this now. Could you share any extra details that might help?";
+			}
 
-				const { duplicate: isDuplicate } = await isDuplicatePublicAiMessage({
+			try {
+				const fallbackSend = await sendMessage({
 					db: ctx.db,
 					conversationId: convId,
 					organizationId: ctx.input.organizationId,
-					messageText: fallbackMessage,
+					websiteId: ctx.input.websiteId,
+					visitorId: ctx.input.visitorId,
+					aiAgentId: intakeResult.aiAgent.id,
+					text: fallbackMessage,
+					idempotencyKey: `public:${ctx.input.messageId}:fallback`,
 				});
-
-				if (isDuplicate) {
-					console.log(
-						`[ai-agent] conv=${convId} | Duplicate fallback message detected, skipping`
-					);
-				} else {
-					try {
-						await sendMessage({
-							db: ctx.db,
-							conversationId: convId,
-							organizationId: ctx.input.organizationId,
-							websiteId: ctx.input.websiteId,
-							visitorId: ctx.input.visitorId,
-							aiAgentId: intakeResult.aiAgent.id,
-							text: fallbackMessage,
-							idempotencyKey: `${ctx.input.workflowRunId}-fallback`,
-						});
-						console.log(
-							`[ai-agent] conv=${convId} | Fallback message sent successfully`
-						);
-					} catch (fallbackError) {
-						console.error(
-							`[ai-agent] conv=${convId} | Failed to send fallback:`,
-							fallbackError
-						);
-					}
+				if (!fallbackSend.paused) {
+					markPublicMessageSent({
+						messageId: fallbackSend.messageId,
+						created: fallbackSend.created,
+					});
 				}
-			} else {
 				console.log(
-					`[ai-agent] conv=${convId} | Workflow superseded, skipping fallback message`
+					`[ai-agent] conv=${convId} | Fallback message sent successfully`
+				);
+			} catch (fallbackError) {
+				console.error(
+					`[ai-agent] conv=${convId} | Failed to send fallback:`,
+					fallbackError
 				);
 			}
-		}
-
-		// CHECK: Has this job been superseded after LLM call but before execution?
-		const isActiveBeforeExecution = await checkWorkflowActive();
-		const { hasNewer: hasNewerVisitorMessageBeforeExecution } =
-			await hasNewerVisitorMessageSinceStart({
-				db: ctx.db,
-				conversationId: convId,
-				organizationId: ctx.input.organizationId,
-				latestVisitorMessageIdAtStart,
-			});
-
-		if (!isActiveBeforeExecution || hasNewerVisitorMessageBeforeExecution) {
-			console.log(
-				`[ai-agent] conv=${convId} | Superseded before execution, aborting`
-			);
-			// Typing already stopped after generation
-
-			// Emit cancelled event (dashboard only)
-			await emitWorkflowCancelled({
-				conversation: intakeResult.conversation,
-				aiAgentId: intakeResult.aiAgent.id,
-				workflowRunId: ctx.input.workflowRunId,
-				reason: hasNewerVisitorMessageBeforeExecution
-					? "Superseded by newer visitor message"
-					: "Superseded by newer message",
-			});
-
-			return {
-				status: "skipped",
-				reason: hasNewerVisitorMessageBeforeExecution
-					? "Superseded by newer visitor message"
-					: "Superseded by newer message",
-				superseded: true,
-				metrics: finalizeMetrics(metrics, startTime),
-			};
 		}
 
 		// Step 4: Execution - Execute actions
@@ -569,37 +448,12 @@ export async function runAiAgentPipeline(
 		const followupStart = Date.now();
 		await followup({
 			db: ctx.db,
-			redis: ctx.redis,
 			aiAgent: intakeResult.aiAgent,
 			conversation: intakeResult.conversation,
 			decision: generationResult.decision,
 			executionResult,
-			organizationId: ctx.input.organizationId,
-			websiteId: ctx.input.websiteId,
-			workflowRunId: ctx.input.workflowRunId,
 		});
 		metrics.followupMs = Date.now() - followupStart;
-
-		// Final safety stop in case typing didn't clear for any reason
-		if (willSendVisibleMessages) {
-			const isActiveAfterFollowup = await checkWorkflowActive();
-			if (isActiveAfterFollowup) {
-				try {
-					console.log(
-						`[ai-agent] conv=${convId} | Safety typing stop after followup`
-					);
-					await emitTypingStop({
-						conversation: intakeResult.conversation,
-						aiAgentId: intakeResult.aiAgent.id,
-					});
-				} catch (error) {
-					console.warn(
-						`[ai-agent] conv=${convId} | Safety typing stop failed:`,
-						error
-					);
-				}
-			}
-		}
 
 		// Emit completion event (success - notify widget)
 		await emitWorkflowCompleted({
@@ -618,31 +472,20 @@ export async function runAiAgentPipeline(
 		return {
 			status: "completed",
 			action: generationResult.decision.action,
+			publicMessagesSent,
+			retryable: false,
 			metrics: finalMetrics,
 		};
 	} catch (error) {
-		// Stop typing heartbeat if it was running
-		if (typingHeartbeat?.running) {
-			try {
-				await typingHeartbeat.stop();
-			} catch {
-				// Ignore typing cleanup errors
-			}
-		}
-
 		// Run followup for cleanup (workflow state, etc.)
 		if (intakeResult?.status === "ready") {
 			try {
 				await followup({
 					db: ctx.db,
-					redis: ctx.redis,
 					aiAgent: intakeResult.aiAgent,
 					conversation: intakeResult.conversation,
 					decision: null,
 					executionResult: null,
-					organizationId: ctx.input.organizationId,
-					websiteId: ctx.input.websiteId,
-					workflowRunId: ctx.input.workflowRunId,
 				});
 			} catch {
 				// Ignore cleanup errors
@@ -671,8 +514,40 @@ export async function runAiAgentPipeline(
 		return {
 			status: "error",
 			error: errorMessage,
+			publicMessagesSent,
+			retryable: publicMessagesSent === 0,
 			metrics: finalizeMetrics(metrics, startTime),
 		};
+	} finally {
+		// Single authoritative typing cleanup.
+		if (typingHeartbeat?.running) {
+			try {
+				await typingHeartbeat.stop();
+			} catch (error) {
+				console.warn(
+					`[ai-agent] conv=${convId} | Failed to stop typing heartbeat in cleanup:`,
+					error
+				);
+			}
+		}
+
+		if (
+			typingSessionStarted &&
+			willSendVisibleMessages &&
+			intakeResult?.status === "ready"
+		) {
+			try {
+				await emitTypingStop({
+					conversation: intakeResult.conversation,
+					aiAgentId: intakeResult.aiAgent.id,
+				});
+			} catch (error) {
+				console.warn(
+					`[ai-agent] conv=${convId} | Final typing stop emit failed:`,
+					error
+				);
+			}
+		}
 	}
 }
 

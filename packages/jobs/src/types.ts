@@ -48,17 +48,25 @@ export function generateMessageNotificationJobId(
  */
 export type AiAgentJobData = {
 	conversationId: string;
-	messageId: string;
-	messageCreatedAt: string;
 	websiteId: string;
 	organizationId: string;
-	visitorId: string;
 	aiAgentId: string;
-	workflowRunId: string;
-	isReplacement: boolean;
+	/**
+	 * Optional trigger message ID that woke this drain job.
+	 * Keeps wake jobs idempotent per trigger while preserving compatibility
+	 * with older producers that only enqueue by conversation.
+	 */
+	triggerMessageId?: string;
 };
 
-export function generateAiAgentJobId(conversationId: string): string {
+export function generateAiAgentJobId(
+	conversationId: string,
+	triggerMessageId?: string
+): string {
+	if (triggerMessageId) {
+		return `ai-agent-${conversationId}-${triggerMessageId}`;
+	}
+
 	return `ai-agent-${conversationId}`;
 }
 

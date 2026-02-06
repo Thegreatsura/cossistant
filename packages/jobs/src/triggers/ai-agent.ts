@@ -5,8 +5,7 @@
  * The AI agent can respond to visitors, analyze conversations,
  * escalate to humans, and execute background tasks.
  *
- * IMPORTANT: The enqueue functions return detailed results so callers
- * can properly handle workflow state synchronization.
+ * IMPORTANT: Jobs are wake signals. Redis queue state remains the source of truth.
  */
 
 import { getSafeRedisUrl, type RedisOptions } from "@cossistant/redis";
@@ -16,33 +15,21 @@ import {
 	generateAiAgentJobId,
 	QUEUE_NAMES,
 } from "../types";
-import { addSingleActiveJob } from "../utils/single-active-job";
+import { addUniqueJob } from "../utils/unique-job";
 
 /**
  * Result of enqueueing an AI agent job
  *
- * - created: New job was created
- * - replaced: Existing completed/failed job was replaced
- * - active: Job is currently active; caller should requeue later
- * - skipped: Job skipped due to unexpected state
- *
- * When active/skipped, `existingJobData` contains the queued job's data.
+ * - created: New wake job was created
+ * - skipped: Wake job already exists (waiting/delayed/active)
  */
 export type EnqueueAiAgentResult =
 	| {
-			status: "created" | "replaced";
-			workflowRunId: string;
-	  }
-	| {
-			status: "active";
-			existingState: string;
-			existingJobData: AiAgentJobData;
+			status: "created";
 	  }
 	| {
 			status: "skipped";
-			reason: "unexpected";
 			existingState: string;
-			existingJobData: AiAgentJobData;
 	  };
 
 /**
@@ -126,17 +113,19 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 	 * The job will be processed by the AI agent worker which runs
 	 * the 5-step pipeline (intake, decision, generation, execution, followup).
 	 *
-	 * Strict single-job behavior:
-	 * - waiting/delayed jobs are replaced with the newest payload
-	 * - active job prevents enqueue; caller should requeue once it cancels
+	 * Wake job behavior:
+	 * - waiting/delayed/active jobs are kept (no duplicate wake jobs for same trigger)
+	 * - completed/failed jobs are removed and replaced
 	 */
 	async function enqueueAiAgentJob(
 		data: AiAgentJobData
 	): Promise<EnqueueAiAgentResult> {
 		const q = await ensureQueueReady();
-		const jobId = generateAiAgentJobId(data.conversationId);
-
-		const result = await addSingleActiveJob({
+		const jobId = generateAiAgentJobId(
+			data.conversationId,
+			data.triggerMessageId
+		);
+		const result = await addUniqueJob({
 			queue: q,
 			jobId,
 			jobName: "ai-agent",
@@ -146,33 +135,13 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 		});
 
 		if (result.status === "skipped") {
-			if (result.reason === "active") {
-				console.log(
-					`[jobs:ai-agent] Job ${jobId} active for conversation ${data.conversationId} ` +
-						`(state: ${result.existingState})`
-				);
-				return {
-					status: "active",
-					existingState: result.existingState,
-					existingJobData: result.existingJobData,
-				};
-			}
-
-			console.warn(
-				`[jobs:ai-agent] Job ${jobId} skipped for conversation ${data.conversationId} ` +
-					`(state: ${result.existingState})`
-			);
-			return {
-				status: "skipped",
-				reason: "unexpected",
-				existingState: result.existingState,
-				existingJobData: result.existingJobData,
-			};
+			return { status: "skipped", existingState: result.existingState };
 		}
 
-		// Log job creation/replacement
+		const job = result.job;
+
 		const [state, counts] = await Promise.all([
-			result.job.getState().catch(() => "unknown"),
+			job.getState().catch(() => "unknown"),
 			q.getJobCounts("delayed", "waiting", "active").catch(() => null),
 		]);
 
@@ -180,19 +149,11 @@ export function createAiAgentTriggers({ connection, redisUrl }: TriggerConfig) {
 			? `| counts delayed:${counts.delayed} waiting:${counts.waiting} active:${counts.active}`
 			: "";
 
-		const action =
-			result.status === "replaced"
-				? `replaced (was ${result.previousState})`
-				: "created";
-
 		console.log(
-			`[jobs:ai-agent] Job ${result.job.id} ${action} for conversation ${data.conversationId} (state:${state}) ${countSummary}`
+			`[jobs:ai-agent] Job ${job.id} created for conversation ${data.conversationId} (state:${state}) ${countSummary}`
 		);
 
-		return {
-			status: result.status,
-			workflowRunId: data.workflowRunId,
-		};
+		return { status: "created" };
 	}
 
 	return {
