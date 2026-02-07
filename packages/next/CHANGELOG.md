@@ -1,5 +1,12 @@
 # @cossistant/next
 
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @cossistant/react@0.0.32
+
 ## 0.0.31
 
 ### Patch Changes

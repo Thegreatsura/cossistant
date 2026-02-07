@@ -1,5 +1,14 @@
 # @cossistant/react
 
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies []:
+  - facehash@0.0.7
+  - @cossistant/core@0.0.32
+  - @cossistant/types@0.0.32
+
 ## 0.0.31
 
 ### Patch Changes
