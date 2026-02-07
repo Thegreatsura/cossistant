@@ -8,9 +8,10 @@
 import type { Database } from "@api/db";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { conversation } from "@api/db/schema/conversation";
-import { createTimelineItem } from "@api/utils/timeline-item";
+import { realtime } from "@api/realtime/emitter";
+import { createConversationEvent } from "@api/utils/conversation-event";
 import {
-	ConversationTimelineType,
+	ConversationEventType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
 import { eq } from "drizzle-orm";
@@ -44,31 +45,51 @@ export async function updatePriority(
 		return;
 	}
 
-	const now = new Date().toISOString();
+	const now = new Date();
+	const nowIso = now.toISOString();
 
-	// Update conversation
-	await db
+	const [updatedConversation] = await db
 		.update(conversation)
 		.set({
 			priority: newPriority,
-			updatedAt: now,
+			updatedAt: nowIso,
 		})
-		.where(eq(conversation.id, conv.id));
+		.where(eq(conversation.id, conv.id))
+		.returning();
 
-	// Create private timeline event (not visible to visitors)
-	const eventText = `Priority changed to ${newPriority}`;
-	await createTimelineItem({
+	if (!updatedConversation) {
+		return;
+	}
+
+	await createConversationEvent({
 		db,
-		organizationId,
-		websiteId,
-		conversationId: conv.id,
-		conversationOwnerVisitorId: conv.visitorId,
-		item: {
-			type: ConversationTimelineType.EVENT,
-			visibility: TimelineItemVisibility.PRIVATE,
-			text: eventText,
-			parts: [{ type: "text", text: eventText }],
-			aiAgentId,
+		context: {
+			conversationId: conv.id,
+			organizationId,
+			websiteId,
+			visitorId: conv.visitorId,
 		},
+		event: {
+			type: ConversationEventType.PRIORITY_CHANGED,
+			actorAiAgentId: aiAgentId,
+			metadata: {
+				previousPriority: conv.priority,
+				newPriority,
+			},
+			createdAt: now,
+			visibility: TimelineItemVisibility.PRIVATE,
+		},
+	});
+
+	await realtime.emit("conversationUpdated", {
+		websiteId,
+		organizationId,
+		visitorId: null,
+		userId: null,
+		conversationId: conv.id,
+		updates: {
+			priority: updatedConversation.priority,
+		},
+		aiAgentId,
 	});
 }

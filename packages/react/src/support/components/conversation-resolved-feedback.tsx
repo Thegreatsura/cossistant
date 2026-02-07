@@ -60,6 +60,11 @@ export function ConversationResolvedFeedback({
 	};
 
 	if (!isResolved) {
+		const closedTextKey =
+			status === ConversationStatus.SPAM
+				? "component.conversationPage.spamMessage"
+				: "component.conversationPage.closedMessage";
+
 		return (
 			<div
 				className={cn(
@@ -67,7 +72,7 @@ export function ConversationResolvedFeedback({
 					className
 				)}
 			>
-				<Text as="p" textKey="component.conversationPage.closedMessage" />
+				<Text as="p" textKey={closedTextKey} />
 			</div>
 		);
 	}

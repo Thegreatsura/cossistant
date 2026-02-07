@@ -143,6 +143,9 @@ export const supportTextDefinitions = {
 	"component.conversationPage.closedMessage": {
 		variables: undefined,
 	},
+	"component.conversationPage.spamMessage": {
+		variables: undefined,
+	},
 	"component.conversationPage.ratingPrompt": {
 		variables: undefined,
 	},

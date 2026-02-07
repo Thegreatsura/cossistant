@@ -71,7 +71,6 @@ export const RoundFace: React.FC<FaceProps> = ({
 			viewBox="0 0 63 15"
 			xmlns="http://www.w3.org/2000/svg"
 		>
-			<title>Round Eyes</title>
 			{/* Right eye */}
 			<g style={enableBlink ? getBlinkStyle(blinkTimings?.right) : undefined}>
 				<path
@@ -112,7 +111,6 @@ export const CrossFace: React.FC<FaceProps> = ({
 			viewBox="0 0 71 23"
 			xmlns="http://www.w3.org/2000/svg"
 		>
-			<title>Cross Eyes</title>
 			{/* Left eye */}
 			<g style={enableBlink ? getBlinkStyle(blinkTimings?.left) : undefined}>
 				<path
@@ -153,7 +151,6 @@ export const LineFace: React.FC<FaceProps> = ({
 			viewBox="0 0 82 8"
 			xmlns="http://www.w3.org/2000/svg"
 		>
-			<title>Line Eyes</title>
 			{/* Left eye (2 paths) */}
 			<g style={enableBlink ? getBlinkStyle(blinkTimings?.left) : undefined}>
 				<path
@@ -202,7 +199,6 @@ export const CurvedFace: React.FC<FaceProps> = ({
 			viewBox="0 0 63 9"
 			xmlns="http://www.w3.org/2000/svg"
 		>
-			<title>Curved Eyes</title>
 			{/* Left eye */}
 			<g style={enableBlink ? getBlinkStyle(blinkTimings?.left) : undefined}>
 				<path

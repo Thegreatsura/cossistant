@@ -7,9 +7,10 @@
 import type { Database } from "@api/db";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { conversation } from "@api/db/schema/conversation";
-import { createTimelineItem } from "@api/utils/timeline-item";
+import { realtime } from "@api/realtime/emitter";
+import { createConversationEvent } from "@api/utils/conversation-event";
 import {
-	ConversationTimelineType,
+	ConversationEventType,
 	TimelineItemVisibility,
 } from "@cossistant/types";
 import { eq } from "drizzle-orm";
@@ -41,48 +42,82 @@ export async function updateStatus(params: UpdateStatusParams): Promise<void> {
 		return;
 	}
 
-	const now = new Date().toISOString();
+	const now = new Date();
+	const nowIso = now.toISOString();
 
-	// Update conversation
+	// Keep status transitions aligned with dashboard/manual mutations.
 	const updateData: Record<string, unknown> = {
 		status: newStatus,
-		updatedAt: now,
+		updatedAt: nowIso,
+		resolvedAt: null,
+		resolvedByUserId: null,
+		resolvedByAiAgentId: null,
+		resolutionTime: null,
 	};
 
 	if (newStatus === "resolved") {
-		updateData.resolvedAt = now;
+		updateData.resolvedAt = nowIso;
 		updateData.resolvedByAiAgentId = aiAgentId;
-		updateData.resolvedByUserId = null;
 		if (conv.startedAt) {
 			const diffSeconds = Math.max(
 				0,
 				Math.round(
-					(new Date(now).getTime() - new Date(conv.startedAt).getTime()) / 1000
+					(new Date(nowIso).getTime() - new Date(conv.startedAt).getTime()) /
+						1000
 				)
 			);
 			updateData.resolutionTime = diffSeconds;
+		} else {
+			updateData.resolutionTime = conv.resolutionTime ?? null;
 		}
 	}
 
-	await db
+	const [updatedConversation] = await db
 		.update(conversation)
 		.set(updateData)
-		.where(eq(conversation.id, conv.id));
+		.where(eq(conversation.id, conv.id))
+		.returning();
 
-	// Create timeline event with proper realtime emission
-	const eventText = `Status changed to ${newStatus}`;
-	await createTimelineItem({
+	if (!updatedConversation) {
+		return;
+	}
+
+	await createConversationEvent({
 		db,
-		organizationId,
-		websiteId,
-		conversationId: conv.id,
-		conversationOwnerVisitorId: conv.visitorId,
-		item: {
-			type: ConversationTimelineType.EVENT,
-			visibility: TimelineItemVisibility.PUBLIC,
-			text: eventText,
-			parts: [{ type: "text", text: eventText }],
-			aiAgentId,
+		context: {
+			conversationId: conv.id,
+			organizationId,
+			websiteId,
+			visitorId: conv.visitorId,
 		},
+		event: {
+			type:
+				newStatus === "resolved"
+					? ConversationEventType.RESOLVED
+					: ConversationEventType.STATUS_CHANGED,
+			actorAiAgentId: aiAgentId,
+			metadata: {
+				previousStatus: conv.status,
+				newStatus,
+			},
+			createdAt: now,
+			visibility: TimelineItemVisibility.PRIVATE,
+		},
+	});
+
+	await realtime.emit("conversationUpdated", {
+		websiteId,
+		organizationId,
+		visitorId: conv.visitorId,
+		userId: null,
+		conversationId: conv.id,
+		updates: {
+			status: updatedConversation.status,
+			resolvedAt: updatedConversation.resolvedAt,
+			resolvedByUserId: updatedConversation.resolvedByUserId,
+			resolvedByAiAgentId: updatedConversation.resolvedByAiAgentId,
+			resolutionTime: updatedConversation.resolutionTime,
+		},
+		aiAgentId,
 	});
 }

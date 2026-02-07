@@ -1,0 +1,189 @@
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+const forEachConversationHeadersQueryMock = mock(
+	(
+		_queryClient: unknown,
+		_websiteSlug: string,
+		callback: (queryKey: readonly unknown[]) => void
+	) => {
+		callback(["headers-query"]);
+	}
+);
+
+const updateConversationHeaderInCacheMock = mock(
+	(
+		_queryClient: unknown,
+		_queryKey: readonly unknown[],
+		_conversationId: string,
+		_updater: unknown
+	) => {}
+);
+
+mock.module("@/data/conversation-header-cache", () => ({
+	forEachConversationHeadersQuery: forEachConversationHeadersQueryMock,
+	updateConversationHeaderInCache: updateConversationHeaderInCacheMock,
+}));
+
+const conversationUpdatedModulePromise = import("./conversation-updated");
+
+describe("handleConversationUpdated", () => {
+	beforeEach(() => {
+		forEachConversationHeadersQueryMock.mockClear();
+		updateConversationHeaderInCacheMock.mockClear();
+	});
+
+	it("applies all supported realtime update fields to cached conversation headers", async () => {
+		const normalizedHeader = {
+			id: "conv-1",
+			title: "Old title",
+			status: "open",
+			deletedAt: null,
+			priority: "normal",
+			escalatedAt: null,
+			escalationReason: null,
+			resolvedAt: null,
+			resolvedByUserId: null,
+			resolvedByAiAgentId: null,
+			resolutionTime: null,
+		};
+
+		const setNormalizedDataMock = mock((() => {}) as (value: unknown) => void);
+		const getObjectByIdMock = mock(
+			(() => normalizedHeader) as (id: string) => unknown
+		);
+		const invalidateQueriesMock = mock((async () => {}) as (
+			input: unknown
+		) => Promise<void>);
+
+		const { handleConversationUpdated } =
+			await conversationUpdatedModulePromise;
+
+		handleConversationUpdated({
+			event: {
+				type: "conversationUpdated",
+				payload: {
+					websiteId: "site-1",
+					organizationId: "org-1",
+					visitorId: "visitor-1",
+					userId: null,
+					conversationId: "conv-1",
+					updates: {
+						title: "New title",
+						escalatedAt: "2025-01-01T00:00:00.000Z",
+						escalationReason: "Need human",
+						status: "resolved",
+						deletedAt: "2025-01-02T00:00:00.000Z",
+						priority: "urgent",
+						resolvedAt: "2025-01-03T00:00:00.000Z",
+						resolvedByUserId: "user-1",
+						resolvedByAiAgentId: "ai-1",
+						resolutionTime: 120,
+					},
+					aiAgentId: "ai-1",
+				},
+			} as never,
+			context: {
+				queryClient: {
+					invalidateQueries: invalidateQueriesMock,
+				} as never,
+				queryNormalizer: {
+					getObjectById: getObjectByIdMock,
+					setNormalizedData: setNormalizedDataMock,
+				} as never,
+				website: {
+					id: "site-1",
+					slug: "acme",
+				},
+				userId: "user-1",
+			} as never,
+		});
+
+		expect(updateConversationHeaderInCacheMock).toHaveBeenCalledTimes(1);
+		const updater = updateConversationHeaderInCacheMock.mock.calls[0]?.[3] as (
+			header: typeof normalizedHeader
+		) => typeof normalizedHeader;
+		const updatedViaCacheUpdater = updater(normalizedHeader);
+		expect(updatedViaCacheUpdater).toMatchObject({
+			title: "New title",
+			escalatedAt: "2025-01-01T00:00:00.000Z",
+			escalationReason: "Need human",
+			status: "resolved",
+			deletedAt: "2025-01-02T00:00:00.000Z",
+			priority: "urgent",
+			resolvedAt: "2025-01-03T00:00:00.000Z",
+			resolvedByUserId: "user-1",
+			resolvedByAiAgentId: "ai-1",
+			resolutionTime: 120,
+		});
+
+		expect(setNormalizedDataMock).toHaveBeenCalledTimes(1);
+		expect(setNormalizedDataMock.mock.calls[0]?.[0]).toMatchObject({
+			title: "New title",
+			status: "resolved",
+			priority: "urgent",
+			resolvedByAiAgentId: "ai-1",
+		});
+		expect(invalidateQueriesMock).toHaveBeenCalledTimes(0);
+	});
+
+	it("invalidates headers queries when the conversation is not in normalized cache", async () => {
+		forEachConversationHeadersQueryMock.mockImplementation(
+			(_queryClient, _websiteSlug, callback) => {
+				callback(["query-a"]);
+				callback(["query-b"]);
+			}
+		);
+
+		const setNormalizedDataMock = mock((() => {}) as (value: unknown) => void);
+		const getObjectByIdMock = mock((() => {}) as (id: string) => unknown);
+		const invalidateQueriesMock = mock((async () => {}) as (
+			input: unknown
+		) => Promise<void>);
+
+		const { handleConversationUpdated } =
+			await conversationUpdatedModulePromise;
+
+		handleConversationUpdated({
+			event: {
+				type: "conversationUpdated",
+				payload: {
+					websiteId: "site-1",
+					organizationId: "org-1",
+					visitorId: "visitor-1",
+					userId: null,
+					conversationId: "conv-missing",
+					updates: {
+						status: "spam",
+					},
+					aiAgentId: "ai-1",
+				},
+			} as never,
+			context: {
+				queryClient: {
+					invalidateQueries: invalidateQueriesMock,
+				} as never,
+				queryNormalizer: {
+					getObjectById: getObjectByIdMock,
+					setNormalizedData: setNormalizedDataMock,
+				} as never,
+				website: {
+					id: "site-1",
+					slug: "acme",
+				},
+				userId: "user-1",
+			} as never,
+		});
+
+		expect(updateConversationHeaderInCacheMock).toHaveBeenCalledTimes(0);
+		expect(setNormalizedDataMock).toHaveBeenCalledTimes(0);
+		expect(invalidateQueriesMock).toHaveBeenCalledTimes(2);
+		expect(invalidateQueriesMock.mock.calls[0]?.[0]).toEqual({
+			queryKey: ["query-a"],
+			exact: true,
+		});
+		expect(invalidateQueriesMock.mock.calls[1]?.[0]).toEqual({
+			queryKey: ["query-b"],
+			exact: true,
+		});
+	});
+});

@@ -17,6 +17,9 @@ const updateContactMock = mock(
 const createConversationEventMock = mock((async () => {}) as (
 	...args: unknown[]
 ) => Promise<void>);
+const realtimeEmitMock = mock((async () => {}) as (
+	...args: unknown[]
+) => Promise<void>);
 
 mock.module("@api/db/queries/visitor", () => ({
 	getCompleteVisitorWithContact: getCompleteVisitorWithContactMock,
@@ -30,6 +33,12 @@ mock.module("@api/db/queries/contact", () => ({
 
 mock.module("@api/utils/conversation-event", () => ({
 	createConversationEvent: createConversationEventMock,
+}));
+
+mock.module("@api/realtime/emitter", () => ({
+	realtime: {
+		emit: realtimeEmitMock,
+	},
 }));
 
 mock.module("ai", () => ({
@@ -68,6 +77,7 @@ describe("createIdentifyVisitorTool", () => {
 		linkVisitorToContactMock.mockReset();
 		updateContactMock.mockReset();
 		createConversationEventMock.mockReset();
+		realtimeEmitMock.mockReset();
 
 		identifyContactMock.mockResolvedValue({
 			id: "contact-1",
@@ -105,10 +115,22 @@ describe("createIdentifyVisitorTool", () => {
 
 	it("returns cached result on second call in the same run", async () => {
 		const { createIdentifyVisitorTool } = await identifyVisitorModulePromise;
-		getCompleteVisitorWithContactMock.mockResolvedValue({
-			id: "visitor-1",
-			contact: null,
-		});
+		getCompleteVisitorWithContactMock
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				contact: null,
+			})
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				contact: {
+					id: "contact-1",
+					name: "Jack",
+					email: "jack@example.com",
+					image: null,
+				},
+			});
 		identifyContactMock.mockResolvedValue({
 			id: "contact-1",
 			email: "jack@example.com",
@@ -143,14 +165,27 @@ describe("createIdentifyVisitorTool", () => {
 		expect(identifyContactMock).toHaveBeenCalledTimes(1);
 		expect(linkVisitorToContactMock).toHaveBeenCalledTimes(1);
 		expect(createConversationEventMock).toHaveBeenCalledTimes(1);
+		expect(realtimeEmitMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("emits the identification event once for first valid identification", async () => {
 		const { createIdentifyVisitorTool } = await identifyVisitorModulePromise;
-		getCompleteVisitorWithContactMock.mockResolvedValue({
-			id: "visitor-1",
-			contact: null,
-		});
+		getCompleteVisitorWithContactMock
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				contact: null,
+			})
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				contact: {
+					id: "contact-1",
+					name: "Jack",
+					email: "jack@example.com",
+					image: null,
+				},
+			});
 
 		const tool = createIdentifyVisitorTool(
 			createToolContext() as never
@@ -168,5 +203,91 @@ describe("createIdentifyVisitorTool", () => {
 		});
 
 		expect(createConversationEventMock).toHaveBeenCalledTimes(1);
+		expect(realtimeEmitMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("emits visitorIdentified sync even when contact fields are unchanged", async () => {
+		const { createIdentifyVisitorTool } = await identifyVisitorModulePromise;
+		getCompleteVisitorWithContactMock
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				contact: {
+					id: "contact-1",
+					name: "Jack",
+					email: "jack@example.com",
+					image: null,
+				},
+			})
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				websiteId: "site-1",
+				organizationId: "org-1",
+				contact: {
+					id: "contact-1",
+					name: "Jack",
+					email: "jack@example.com",
+					image: null,
+				},
+			});
+
+		const tool = createIdentifyVisitorTool(
+			createToolContext() as never
+		) as unknown as {
+			execute: (input: { email?: string; name?: string }) => Promise<{
+				success: boolean;
+				data?: {
+					eventEmitted: boolean;
+				};
+			}>;
+		};
+
+		const result = await tool.execute({
+			name: "Jack",
+			email: "jack@example.com",
+		});
+
+		expect(result.success).toBe(true);
+		expect(result.data?.eventEmitted).toBe(false);
+		expect(updateContactMock).toHaveBeenCalledTimes(0);
+		expect(createConversationEventMock).toHaveBeenCalledTimes(0);
+		expect(realtimeEmitMock).toHaveBeenCalledTimes(1);
+		expect(realtimeEmitMock.mock.calls[0]?.[0]).toBe("visitorIdentified");
+		expect(realtimeEmitMock.mock.calls[0]?.[1]).toEqual(
+			expect.objectContaining({
+				websiteId: "site-1",
+				organizationId: "org-1",
+				visitorId: "visitor-1",
+				userId: null,
+			})
+		);
+	});
+
+	it("skips visitorIdentified sync emit when refreshed visitor cannot be loaded", async () => {
+		const { createIdentifyVisitorTool } = await identifyVisitorModulePromise;
+		getCompleteVisitorWithContactMock
+			.mockResolvedValueOnce({
+				id: "visitor-1",
+				contact: null,
+			})
+			.mockResolvedValueOnce(null);
+
+		const tool = createIdentifyVisitorTool(
+			createToolContext() as never
+		) as unknown as {
+			execute: (input: { email?: string; name?: string }) => Promise<{
+				success: boolean;
+			}>;
+		};
+
+		const result = await tool.execute({
+			name: "Jack",
+			email: "jack@example.com",
+		});
+
+		expect(result.success).toBe(true);
+		expect(createConversationEventMock).toHaveBeenCalledTimes(1);
+		expect(realtimeEmitMock).toHaveBeenCalledTimes(0);
 	});
 });

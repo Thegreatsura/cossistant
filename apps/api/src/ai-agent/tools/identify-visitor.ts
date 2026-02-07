@@ -174,26 +174,24 @@ export function createIdentifyVisitorTool(ctx: ToolContext) {
 					});
 				}
 
-				// Emit visitorIdentified for real-time dashboard updates
-				if (contactChanged) {
-					const updatedVisitor = await getCompleteVisitorWithContact(ctx.db, {
-						visitorId: ctx.visitorId,
-					});
-					if (updatedVisitor) {
-						try {
-							await realtime.emit("visitorIdentified", {
-								websiteId: ctx.websiteId,
-								organizationId: ctx.organizationId,
-								visitorId: updatedVisitor.id,
-								userId: null,
-								visitor: formatVisitorWithContactResponse(updatedVisitor),
-							});
-						} catch (emitError) {
-							console.error(
-								`[tool:identifyVisitor] conv=${ctx.conversationId} | Failed to emit visitorIdentified:`,
-								emitError
-							);
-						}
+				// Emit visitorIdentified for realtime cache sync after successful identify/link.
+				const updatedVisitor = await getCompleteVisitorWithContact(ctx.db, {
+					visitorId: ctx.visitorId,
+				});
+				if (updatedVisitor?.contact) {
+					try {
+						await realtime.emit("visitorIdentified", {
+							websiteId: updatedVisitor.websiteId,
+							organizationId: updatedVisitor.organizationId,
+							visitorId: updatedVisitor.id,
+							userId: null,
+							visitor: formatVisitorWithContactResponse(updatedVisitor),
+						});
+					} catch (emitError) {
+						console.error(
+							`[tool:identifyVisitor] conv=${ctx.conversationId} | visitor=${ctx.visitorId} | website=${updatedVisitor.websiteId} | Failed to emit visitorIdentified:`,
+							emitError
+						);
 					}
 				}
 

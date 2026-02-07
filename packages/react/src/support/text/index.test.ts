@@ -56,6 +56,19 @@ describe("support text locale resolution", () => {
 		expect(message).toBe(BUILTIN_LOCALES.en["common.brand.watermark"]);
 	});
 
+	it("resolves the spam-specific conversation closed message", () => {
+		const overrides = normalizeOverrides({});
+		const message = resolveMessage(
+			"component.conversationPage.spamMessage",
+			["en"],
+			overrides
+		);
+
+		expect(message).toBe(
+			BUILTIN_LOCALES.en["component.conversationPage.spamMessage"]
+		);
+	});
+
 	it("provides locale-aware time of day labels", () => {
 		const originalGetHours = Date.prototype.getHours;
 		// Mock window to simulate browser environment (timeOfDay returns SSR fallback when window is undefined)

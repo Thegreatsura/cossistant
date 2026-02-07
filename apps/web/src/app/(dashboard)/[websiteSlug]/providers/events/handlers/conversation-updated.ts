@@ -10,7 +10,7 @@ type ConversationUpdatedEvent = RealtimeEvent<"conversationUpdated">;
 
 /**
  * Handle conversationUpdated events from the AI agent.
- * Updates conversation headers with new title or escalation status.
+ * Updates conversation headers with realtime state changes.
  */
 export function handleConversationUpdated({
 	event,
@@ -86,6 +86,34 @@ function createHeaderUpdaterFromUpdates(
 
 		if (updates.escalationReason !== undefined) {
 			updatedHeader.escalationReason = updates.escalationReason;
+		}
+
+		if (updates.status !== undefined) {
+			updatedHeader.status = updates.status;
+		}
+
+		if (updates.deletedAt !== undefined) {
+			updatedHeader.deletedAt = updates.deletedAt;
+		}
+
+		if (updates.priority !== undefined) {
+			updatedHeader.priority = updates.priority;
+		}
+
+		if (updates.resolvedAt !== undefined) {
+			updatedHeader.resolvedAt = updates.resolvedAt;
+		}
+
+		if (updates.resolvedByUserId !== undefined) {
+			updatedHeader.resolvedByUserId = updates.resolvedByUserId;
+		}
+
+		if (updates.resolvedByAiAgentId !== undefined) {
+			updatedHeader.resolvedByAiAgentId = updates.resolvedByAiAgentId;
+		}
+
+		if (updates.resolutionTime !== undefined) {
+			updatedHeader.resolutionTime = updates.resolutionTime;
 		}
 
 		return updatedHeader;

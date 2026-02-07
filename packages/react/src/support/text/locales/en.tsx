@@ -101,6 +101,8 @@ const en: SupportLocaleMessages = {
 		"Visitor confirmed their email address",
 	"component.conversationPage.closedMessage":
 		"This conversation is closed, start a new one to talk with us",
+	"component.conversationPage.spamMessage":
+		"This conversation was marked as spam.",
 	"component.conversationPage.ratingPrompt": "How did we do?",
 	"component.conversationPage.ratingThanks": "Thanks for your feedback!",
 	"component.conversationPage.ratingLabel": ({ variables, utils }) => {

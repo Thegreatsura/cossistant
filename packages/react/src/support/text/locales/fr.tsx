@@ -99,6 +99,8 @@ const fr: SupportLocaleMessages = {
 		"Le visiteur a confirmé son adresse e-mail",
 	"component.conversationPage.closedMessage":
 		"Cette conversation est close, commencez-en une nouvelle pour discuter avec nous",
+	"component.conversationPage.spamMessage":
+		"Cette conversation a été marquée comme indésirable.",
 	"component.conversationPage.ratingPrompt": "Comment avons-nous fait ?",
 	"component.conversationPage.ratingThanks": "Merci pour votre retour !",
 	"component.conversationPage.ratingLabel": ({ variables, utils }) => {

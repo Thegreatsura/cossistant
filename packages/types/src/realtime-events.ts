@@ -142,6 +142,11 @@ export const realtimeSchema = {
 					ConversationStatus.SPAM,
 				])
 				.optional(),
+			priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+			resolvedAt: z.string().nullable().optional(),
+			resolvedByUserId: z.string().nullable().optional(),
+			resolvedByAiAgentId: z.string().nullable().optional(),
+			resolutionTime: z.number().nullable().optional(),
 			deletedAt: z.string().nullable().optional(),
 		}),
 		aiAgentId: z.string().nullable(),
