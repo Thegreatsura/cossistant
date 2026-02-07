@@ -1,11 +1,10 @@
 /**
  * Pipeline Step 2a: Smart Decision
  *
- * Uses AI to intelligently decide whether the AI agent should respond
- * to a message or let humans handle it.
+ * Uses AI to decide whether the AI agent should act on a trigger
+ * (respond, observe, or assist privately).
  *
- * This replaces the simple rule-based decision for ambiguous cases
- * (visitor messages without explicit @ai triggers).
+ * This is used for non-obvious cases after deterministic shortcuts.
  *
  * Design principles:
  * - Token-efficient: minimal prompt, fast model
@@ -197,6 +196,10 @@ function buildDecisionPrompt(input: SmartDecisionInput): string {
 		lastHumanPublicAt !== null
 			? Date.now() - lastHumanPublicAt <= 2 * 60 * 1000
 			: messagesSinceHuman >= 0 && messagesSinceHuman <= 1;
+	const lastHumanSecondsAgo =
+		lastHumanPublicAt !== null
+			? Math.max(0, Math.round((Date.now() - lastHumanPublicAt) / 1000))
+			: null;
 
 	let visitorBurstCount = 0;
 	for (let i = conversationHistory.length - 1; i >= 0; i--) {
@@ -207,31 +210,49 @@ function buildDecisionPrompt(input: SmartDecisionInput): string {
 		}
 	}
 
-	return `Decide one: respond, observe, assist_team.
+	return `You are the decision gate for a support AI.
 
-Rules:
-- respond = reply to visitor
-- observe = stay silent
-- assist_team = internal note only (no visitor reply)
+Pick one intent:
+- respond: AI should take this turn now
+- observe: AI should not act this turn
+- assist_team: internal/private help only (no visitor-facing message)
+
+Intent guidance:
+- For visitor triggers, "respond" means reply to the visitor.
+- For human-agent triggers, "respond" means execute the teammate's request (can be public or private as needed).
+- "assist_team" means leave internal guidance only.
+
+Decision policy:
+- Prioritize natural conversation flow; do not interrupt an active human unless helpful.
+- Prefer respond for visitor greetings/openers ("hi", "hey", "hello"), unanswered questions, or repeated visitor follow-ups.
+- Prefer observe for pure acknowledgements/banter when no clear help is needed.
+- Prefer respond when a teammate asks AI to message or update the visitor.
+- Prefer assist_team when the teammate request is analysis/planning/handoff context.
+- If uncertain, choose the option that avoids visitor dead-ends.
 
 Signals:
+- triggerSender: ${triggerMessage.senderType}
+- triggerVisibility: ${triggerMessage.visibility}
 - humanActive: ${humanActive}
+- lastHumanSecondsAgo: ${lastHumanSecondsAgo ?? "none"}
+- messagesSinceHuman: ${messagesSinceHuman >= 0 ? messagesSinceHuman : "none"}
 - hasHumanAssignee: ${conversationState.hasHumanAssignee}
 - escalated: ${conversationState.isEscalated}
 - visitorBurst: ${visitorBurstCount}
-- latestVisibility: ${triggerMessage.visibility}
 
 Conversation:
 ${formattedMessages}
 
-Latest:
-${formatMessage(triggerMessage)}`;
+Latest trigger:
+${formatMessage(triggerMessage)}
+
+Return concise reasoning (max 1 sentence).`;
 }
 
 /**
  * Model for decision - use fast, cheap model
  */
-const DECISION_MODEL = "openai/gpt-4o-mini";
+const DECISION_MODEL = "google/gemini-2.5-flash";
 
 /**
  * Run smart decision to determine if AI should respond
@@ -308,11 +329,8 @@ export async function runSmartDecision(
 /**
  * Check if smart decision should be used for this message
  *
- * Smart decision is ALWAYS used for visitor messages.
- * This ensures consistent AI behavior and prevents unwanted responses.
- *
- * Skip smart decision ONLY when:
- * - Sender is not a visitor (team messages handled differently)
+ * This helper returns true for any non-null, non-AI trigger.
+ * Deterministic skip/respond shortcuts can run before this gate.
  */
 export function shouldUseSmartDecision(input: {
 	triggerMessage: RoleAwareMessage | null;
@@ -320,12 +338,9 @@ export function shouldUseSmartDecision(input: {
 }): boolean {
 	const { triggerMessage } = input;
 
-	// Only for visitor messages - smart decision is OBLIGATORY for all visitor messages
-	if (!triggerMessage || triggerMessage.senderType !== "visitor") {
+	if (!triggerMessage) {
 		return false;
 	}
 
-	// Always use smart decision for visitor messages
-	// This ensures the AI properly evaluates whether to respond
-	return true;
+	return triggerMessage.senderType !== "ai_agent";
 }

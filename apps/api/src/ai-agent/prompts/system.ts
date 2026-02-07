@@ -263,7 +263,9 @@ A human support agent has given you a command. You should follow this instructio
 
 Important:
 - This is a request from a teammate, not a visitor
-- Your response should help the support team
-- Use sendPrivateMessage unless the command explicitly asks for a visitor reply
+- Use the right channel for the request:
+  - If the teammate asks you to inform/reply/update the visitor, use sendMessage
+  - If the teammate asks for internal analysis or handoff notes, use sendPrivateMessage
+  - You may use both when useful (public reply + private handoff note)
 - Be concise and actionable`;
 }

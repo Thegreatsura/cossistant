@@ -3,8 +3,9 @@
  *
  * This step determines if and how the AI agent should respond.
  *
- * IMPORTANT: Smart decision is a last resort.
- * Prefer deterministic heuristics to minimize tokens and latency.
+ * Design:
+ * - Keep deterministic logic minimal (safety + explicit tags)
+ * - Let smart decision handle untagged conversational ambiguity
  */
 
 import type { AiAgentSelect } from "@api/db/schema/ai-agent";
@@ -48,20 +49,11 @@ const TEXT_MENTION_REGEX = /@([a-zA-Z0-9][a-zA-Z0-9 _-]{0,60})/g;
 const PLAIN_TAG_REGEX = /[.,!?]+$/;
 const REMOVE_TAG_REGEX = /^(@ai|\/ai)(\s+|$)/i;
 
-const GREETING_REGEX =
-	/^(hi|hey|hello|yo|hiya|heya|howdy|sup|what's up|good\s*(morning|afternoon|evening))\b/i;
-const ACK_REGEX =
-	/^(ok|okay|k|thanks|thank\s*you|thx|ty|got\s*it|cool|great|awesome|perfect|sounds\s*good|alright|all\s*good)\b/i;
-const QUESTION_START_REGEX =
-	/^(who|what|when|where|why|how|can|could|would|should|do|does|did|is|are|am|will|may|might|help|support)\b/i;
-const REQUEST_REGEX = /\b(help|need|issue|problem|trouble)\b/i;
-
 /**
  * Determine if and how the AI agent should act
  */
 export async function decide(input: DecisionInput): Promise<DecisionResult> {
-	const { triggerMessage, conversationState, aiAgent, conversationHistory } =
-		input;
+	const { triggerMessage, conversationState, aiAgent } = input;
 	const convId = input.conversation.id;
 
 	// No trigger message - don't act
@@ -109,15 +101,14 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 
 	const tagResult = detectAiTag(triggerMessage, aiAgent);
 	const cleanedText = tagResult.cleanedText;
-	const classification = classifyTriggerMessage(triggerMessage, cleanedText);
 
-	// Explicit tag - always respond
+	// Explicit tag - always respond.
+	// Human commands may still choose private/public messaging during generation.
 	if (tagResult.tagged) {
-		const baseMode =
+		const mode =
 			triggerMessage.senderType === "human_agent"
 				? "respond_to_command"
 				: "respond_to_visitor";
-		const mode = classification.isPrivate ? "background_only" : baseMode;
 		const humanCommand =
 			triggerMessage.senderType === "human_agent"
 				? stripLeadingTag(cleanedText, aiAgent.name)
@@ -136,216 +127,9 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 		};
 	}
 
-	// Private message without explicit tag
-	if (classification.isPrivate) {
-		if (classification.isQuestion || classification.isRequest) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Private request detected, responding privately`
-			);
-			return {
-				shouldAct: true,
-				reason: "Private request/question",
-				mode: "background_only",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		console.log(
-			`[ai-agent:decision] conv=${convId} | Private non-request, skipping`
-		);
-		return {
-			shouldAct: false,
-			reason: "Private message not requesting assistance",
-			mode: "background_only",
-			humanCommand: null,
-			isEscalated: conversationState.isEscalated,
-			escalationReason: conversationState.escalationReason,
-		};
-	}
-
-	// Visitor public message - heuristic-first
-	if (triggerMessage.senderType === "visitor") {
-		const visitorBurst = countVisitorBurst(conversationHistory);
-		const humanActivity = getHumanActivity(
-			conversationHistory,
-			conversationState
-		);
-		const hasActionableIntent =
-			classification.isQuestion || classification.isRequest;
-
-		if (classification.isAck && !hasActionableIntent) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Non-actionable acknowledgement, skipping`
-			);
-			return {
-				shouldAct: false,
-				reason: "Visitor acknowledgement does not need a reply",
-				mode: "background_only",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		const hasPriorPublicTeamOrAi = hasPriorPublicTeamOrAiMessage(
-			conversationHistory,
-			triggerMessage.messageId
-		);
-		if (
-			classification.isGreeting &&
-			!hasActionableIntent &&
-			hasPriorPublicTeamOrAi
-		) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Follow-up greeting without intent, skipping`
-			);
-			return {
-				shouldAct: false,
-				reason: "Greeting-only follow-up after prior team/AI reply",
-				mode: "background_only",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		if (!humanActivity.humanActive) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | No active human, responding`
-			);
-			return {
-				shouldAct: true,
-				reason: "No active human agent detected",
-				mode: "respond_to_visitor",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		if (visitorBurst >= 2) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Visitor burst (${visitorBurst}), responding`
-			);
-			return {
-				shouldAct: true,
-				reason: "Visitor sent multiple messages without response",
-				mode: "respond_to_visitor",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		if (
-			(classification.isGreeting || classification.isQuestion) &&
-			humanActivity.lastHumanPublicAt &&
-			Date.now() - humanActivity.lastHumanPublicAt > 2 * 60 * 1000
-		) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Greeting/question after idle human, responding`
-			);
-			return {
-				shouldAct: true,
-				reason: "Visitor needs response and human has been idle",
-				mode: "respond_to_visitor",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		if (classification.isAck && humanActivity.humanActive) {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Acknowledgement with active human, skipping`
-			);
-			return {
-				shouldAct: false,
-				reason: "Visitor acknowledgment while human is active",
-				mode: "background_only",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-			};
-		}
-
-		// Ambiguous visitor case - run smart decision
-		console.log(
-			`[ai-agent:decision] conv=${convId} | Ambiguous visitor message, running smart decision`
-		);
-
-		const smartResult = await runSmartDecision({
-			aiAgent: input.aiAgent,
-			conversation: input.conversation,
-			conversationHistory: input.conversationHistory,
-			conversationState,
-			triggerMessage,
-		});
-
-		if (smartResult.intent === "observe") {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Smart decision: observe | "${smartResult.reasoning}"`
-			);
-			return {
-				shouldAct: false,
-				reason: `Smart decision: ${smartResult.reasoning}`,
-				mode: "background_only",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-				smartDecision: smartResult,
-			};
-		}
-
-		if (smartResult.intent === "assist_team") {
-			console.log(
-				`[ai-agent:decision] conv=${convId} | Smart decision: assist_team | "${smartResult.reasoning}"`
-			);
-			return {
-				shouldAct: true,
-				reason: `Smart decision: ${smartResult.reasoning}`,
-				mode: "background_only",
-				humanCommand: null,
-				isEscalated: conversationState.isEscalated,
-				escalationReason: conversationState.escalationReason,
-				smartDecision: smartResult,
-			};
-		}
-
-		console.log(
-			`[ai-agent:decision] conv=${convId} | Smart decision: respond | "${smartResult.reasoning}"`
-		);
-		return {
-			shouldAct: true,
-			reason: `Smart decision: ${smartResult.reasoning}`,
-			mode: "respond_to_visitor",
-			humanCommand: null,
-			isEscalated: conversationState.isEscalated,
-			escalationReason: conversationState.escalationReason,
-			smartDecision: smartResult,
-		};
-	}
-
-	// Human public message without explicit tag - skip
-	if (triggerMessage.senderType === "human_agent") {
-		console.log(
-			`[ai-agent:decision] conv=${convId} | Human public message without tag, skipping`
-		);
-		return {
-			shouldAct: false,
-			reason: "Human agent is handling the conversation",
-			mode: "background_only",
-			humanCommand: null,
-			isEscalated: conversationState.isEscalated,
-			escalationReason: conversationState.escalationReason,
-		};
-	}
-
-	// Fallback - run smart decision
+	// All untagged cases route through smart decision.
 	console.log(
-		`[ai-agent:decision] conv=${convId} | Fallback to smart decision`
+		`[ai-agent:decision] conv=${convId} | Untagged trigger (${triggerMessage.senderType}/${triggerMessage.visibility}), running smart decision`
 	);
 
 	const smartResult = await runSmartDecision({
@@ -356,39 +140,13 @@ export async function decide(input: DecisionInput): Promise<DecisionResult> {
 		triggerMessage,
 	});
 
-	if (smartResult.intent === "observe") {
-		return {
-			shouldAct: false,
-			reason: `Smart decision: ${smartResult.reasoning}`,
-			mode: "background_only",
-			humanCommand: null,
-			isEscalated: conversationState.isEscalated,
-			escalationReason: conversationState.escalationReason,
-			smartDecision: smartResult,
-		};
-	}
-
-	if (smartResult.intent === "assist_team") {
-		return {
-			shouldAct: true,
-			reason: `Smart decision: ${smartResult.reasoning}`,
-			mode: "background_only",
-			humanCommand: null,
-			isEscalated: conversationState.isEscalated,
-			escalationReason: conversationState.escalationReason,
-			smartDecision: smartResult,
-		};
-	}
-
-	return {
-		shouldAct: true,
-		reason: `Smart decision: ${smartResult.reasoning}`,
-		mode: "respond_to_visitor",
-		humanCommand: null,
-		isEscalated: conversationState.isEscalated,
-		escalationReason: conversationState.escalationReason,
-		smartDecision: smartResult,
-	};
+	return decisionFromSmartResult({
+		triggerMessage,
+		conversationState,
+		smartResult,
+		humanCommand:
+			triggerMessage.senderType === "human_agent" ? cleanedText.trim() : null,
+	});
 }
 
 function stripMentionMarkdown(text: string): string {
@@ -491,110 +249,60 @@ function detectAiTag(
 	return { tagged: false, source: null, cleanedText };
 }
 
-function classifyTriggerMessage(
-	message: RoleAwareMessage,
-	cleanedText: string
-): {
-	isPrivate: boolean;
-	isGreeting: boolean;
-	isAck: boolean;
-	isQuestion: boolean;
-	isRequest: boolean;
-	text: string;
-} {
-	const text = cleanedText.trim();
-	const isGreeting = GREETING_REGEX.test(text);
-	const isAck = ACK_REGEX.test(text);
-	const isQuestion = QUESTION_START_REGEX.test(text) || text.includes("?");
-	const isRequest = REQUEST_REGEX.test(text);
+function decisionFromSmartResult(params: {
+	triggerMessage: RoleAwareMessage;
+	conversationState: ConversationState;
+	smartResult: SmartDecisionResult;
+	humanCommand: string | null;
+}): DecisionResult {
+	const { triggerMessage, conversationState, smartResult, humanCommand } =
+		params;
+
+	if (smartResult.intent === "observe") {
+		return {
+			shouldAct: false,
+			reason: `Smart decision: ${smartResult.reasoning}`,
+			mode: "background_only",
+			humanCommand: null,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
+			smartDecision: smartResult,
+		};
+	}
+
+	if (smartResult.intent === "assist_team") {
+		return {
+			shouldAct: true,
+			reason: `Smart decision: ${smartResult.reasoning}`,
+			mode: "background_only",
+			humanCommand:
+				triggerMessage.senderType === "human_agent" ? humanCommand : null,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
+			smartDecision: smartResult,
+		};
+	}
+
+	if (triggerMessage.senderType === "human_agent") {
+		return {
+			shouldAct: true,
+			reason: `Smart decision: ${smartResult.reasoning}`,
+			mode: "respond_to_command",
+			humanCommand,
+			isEscalated: conversationState.isEscalated,
+			escalationReason: conversationState.escalationReason,
+			smartDecision: smartResult,
+		};
+	}
 
 	return {
-		isPrivate: message.visibility === "private",
-		isGreeting,
-		isAck,
-		isQuestion,
-		isRequest,
-		text,
-	};
-}
-
-function countVisitorBurst(history: RoleAwareMessage[]): number {
-	let count = 0;
-	for (let i = history.length - 1; i >= 0; i--) {
-		const msg = history[i];
-		if (msg.senderType === "visitor") {
-			count++;
-		} else {
-			break;
-		}
-	}
-	return count;
-}
-
-function hasPriorPublicTeamOrAiMessage(
-	history: RoleAwareMessage[],
-	triggerMessageId: string
-): boolean {
-	for (const message of history) {
-		if (message.messageId === triggerMessageId) {
-			continue;
-		}
-		if (message.visibility !== "public") {
-			continue;
-		}
-		if (
-			message.senderType === "human_agent" ||
-			message.senderType === "ai_agent"
-		) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-function getHumanActivity(
-	history: RoleAwareMessage[],
-	conversationState: ConversationState
-): {
-	humanActive: boolean;
-	lastHumanPublicAt: number | null;
-	messagesSinceHuman: number | null;
-} {
-	let lastHumanIndex = -1;
-	for (let i = history.length - 1; i >= 0; i--) {
-		const msg = history[i];
-		if (msg.senderType === "human_agent" && msg.visibility === "public") {
-			lastHumanIndex = i;
-			break;
-		}
-	}
-
-	const messagesSinceHuman =
-		lastHumanIndex >= 0 ? history.length - 1 - lastHumanIndex : null;
-
-	let lastHumanPublicAt: number | null = null;
-	if (lastHumanIndex >= 0) {
-		const ts = history[lastHumanIndex]?.timestamp;
-		const parsed = ts ? Date.parse(ts) : Number.NaN;
-		if (!Number.isNaN(parsed)) {
-			lastHumanPublicAt = parsed;
-		}
-	}
-
-	const withinWindow =
-		lastHumanPublicAt !== null
-			? Date.now() - lastHumanPublicAt <= 2 * 60 * 1000
-			: false;
-	const hasRecentHuman =
-		messagesSinceHuman !== null &&
-		messagesSinceHuman <= 1 &&
-		conversationState.hasHumanAssignee;
-
-	return {
-		humanActive: withinWindow || hasRecentHuman,
-		lastHumanPublicAt,
-		messagesSinceHuman,
+		shouldAct: true,
+		reason: `Smart decision: ${smartResult.reasoning}`,
+		mode: "respond_to_visitor",
+		humanCommand: null,
+		isEscalated: conversationState.isEscalated,
+		escalationReason: conversationState.escalationReason,
+		smartDecision: smartResult,
 	};
 }
 

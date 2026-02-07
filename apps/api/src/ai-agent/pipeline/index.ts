@@ -246,12 +246,14 @@ export async function runAiAgentPipeline(
 			};
 		}
 
-		// Only start typing if AI will send visible messages to visitor
-		// background_only mode = AI won't send visible messages (private notes only)
-		// This prevents "phantom typing" when AI observes but doesn't respond
+		// Only start typing if AI may send visible visitor messages.
+		// background_only = private/internal only.
+		// respond_to_command may still send visitor messages even for private team triggers.
+		// This prevents "phantom typing" when AI observes but doesn't respond.
 		const allowPublicMessages =
 			decisionResult.mode !== "background_only" &&
-			intakeResult.triggerMessage?.visibility !== "private";
+			(intakeResult.triggerMessage?.visibility === "public" ||
+				decisionResult.mode === "respond_to_command");
 		willSendVisibleMessages = allowPublicMessages;
 
 		// Callback to stop typing - passed to tools

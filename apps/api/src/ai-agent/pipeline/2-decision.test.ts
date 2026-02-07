@@ -79,7 +79,7 @@ describe("decide", () => {
 		});
 	});
 
-	it("skips non-actionable visitor acknowledgements", async () => {
+	it("routes untagged visitor acknowledgements to smart decision", async () => {
 		const { decide } = await modulePromise;
 		const input = buildInput({
 			triggerMessage: visitorMessage("thanks", {}),
@@ -89,12 +89,17 @@ describe("decide", () => {
 
 		expect(result.shouldAct).toBe(false);
 		expect(result.mode).toBe("background_only");
-		expect(result.reason).toContain("acknowledgement");
-		expect(runSmartDecisionMock).toHaveBeenCalledTimes(0);
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("skips follow-up greetings after a prior team/AI public reply", async () => {
+	it("routes follow-up greetings through smart decision instead of hard-skipping", async () => {
 		const { decide } = await modulePromise;
+		runSmartDecisionMock.mockResolvedValueOnce({
+			intent: "respond",
+			reasoning: "Visitor greeted and still needs engagement",
+			confidence: "high",
+		});
 		const priorTeam = visitorMessage("Happy to help", {
 			messageId: "msg-team",
 			senderType: "human_agent",
@@ -108,10 +113,10 @@ describe("decide", () => {
 
 		const result = await decide(input as never);
 
-		expect(result.shouldAct).toBe(false);
-		expect(result.mode).toBe("background_only");
-		expect(result.reason).toContain("Greeting-only");
-		expect(runSmartDecisionMock).toHaveBeenCalledTimes(0);
+		expect(result.shouldAct).toBe(true);
+		expect(result.mode).toBe("respond_to_visitor");
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("still responds when explicitly tagged, even for short acknowledgements", async () => {
@@ -126,5 +131,56 @@ describe("decide", () => {
 
 		expect(result.shouldAct).toBe(true);
 		expect(result.reason).toContain("explicitly tagged");
+	});
+
+	it("keeps private tagged teammate commands in command mode", async () => {
+		const { decide } = await modulePromise;
+		const trigger = visitorMessage(
+			"@ai tell the visitor we've shipped the fix",
+			{
+				messageId: "msg-private-tag",
+				senderType: "human_agent",
+				senderName: "Sarah",
+				visibility: "private",
+			}
+		);
+		const input = buildInput({
+			conversationHistory: [trigger],
+			triggerMessage: trigger,
+		});
+
+		const result = await decide(input as never);
+
+		expect(result.shouldAct).toBe(true);
+		expect(result.mode).toBe("respond_to_command");
+		expect(result.humanCommand).toContain("tell the visitor");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(0);
+	});
+
+	it("routes untagged public teammate messages to smart decision", async () => {
+		const { decide } = await modulePromise;
+		runSmartDecisionMock.mockResolvedValueOnce({
+			intent: "assist_team",
+			reasoning: "Teammate requested internal support",
+			confidence: "high",
+		});
+
+		const trigger = visitorMessage("Can you summarize this thread for me?", {
+			messageId: "msg-human-public",
+			senderType: "human_agent",
+			senderName: "Sarah",
+			visibility: "public",
+		});
+		const input = buildInput({
+			conversationHistory: [trigger],
+			triggerMessage: trigger,
+		});
+
+		const result = await decide(input as never);
+
+		expect(result.shouldAct).toBe(true);
+		expect(result.mode).toBe("background_only");
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
 	});
 });
