@@ -31,6 +31,7 @@ export {
 	stepCountIs,
 	streamObject,
 	streamText,
+	ToolLoopAgent,
 	type ToolSet,
 } from "ai";
 

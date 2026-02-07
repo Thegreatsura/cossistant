@@ -19,9 +19,9 @@ import type { ConversationSelect } from "@api/db/schema/conversation";
 import { env } from "@api/env";
 import {
 	createModel,
-	generateText,
 	hasToolCall,
 	stepCountIs,
+	ToolLoopAgent,
 } from "@api/lib/ai";
 import {
 	detectPromptInjection,
@@ -30,6 +30,8 @@ import {
 import type { RoleAwareMessage } from "../context/conversation";
 import type { VisitorContext } from "../context/visitor";
 import type { AiDecision } from "../output/schemas";
+import { resolvePromptBundle } from "../prompts/resolver";
+import { selectRelevantSkills } from "../prompts/skill-selector";
 import { buildSystemPrompt } from "../prompts/system";
 import {
 	createActionCapture,
@@ -101,6 +103,43 @@ type GenerationInput = {
 	/** Workflow run ID for progress events */
 	workflowRunId?: string;
 };
+
+const MAIN_STOP_CONDITIONS = [
+	hasToolCall("respond"),
+	hasToolCall("escalate"),
+	hasToolCall("resolve"),
+	hasToolCall("markSpam"),
+	hasToolCall("skip"),
+	stepCountIs(10),
+];
+
+const REPAIR_STOP_CONDITIONS = [hasToolCall("respond"), stepCountIs(3)];
+
+async function generateWithToolLoopAgent(input: {
+	modelId: string;
+	systemPrompt: string;
+	messages: Array<{ role: "user" | "assistant"; content: string }>;
+	tools: NonNullable<ReturnType<typeof getToolsForGeneration>>;
+	stopWhen: Array<
+		ReturnType<typeof hasToolCall> | ReturnType<typeof stepCountIs>
+	>;
+	abortSignal?: AbortSignal;
+}): Promise<Awaited<ReturnType<ToolLoopAgent["generate"]>>> {
+	const agent = new ToolLoopAgent({
+		model: createModel(input.modelId),
+		instructions: input.systemPrompt,
+		tools: input.tools,
+		toolChoice: "required",
+		stopWhen: input.stopWhen,
+		// Deterministic tool calls reduce accidental tool misuse in multi-step loops.
+		temperature: 0,
+	});
+
+	return agent.generate({
+		messages: input.messages,
+		abortSignal: input.abortSignal,
+	});
+}
 
 /**
  * Generate AI response using LLM with tools
@@ -181,6 +220,33 @@ export async function generate(
 
 	// Get tools for this agent based on settings (with bound context)
 	const tools = getToolsForGeneration(aiAgent, toolContext);
+	if (!tools) {
+		return {
+			decision: {
+				action: "skip",
+				reasoning: "No tools available for generation",
+				confidence: 0,
+			},
+			toolCalls: {
+				sendMessage: 0,
+				sendPrivateMessage: 0,
+			},
+		};
+	}
+
+	const promptBundle = await resolvePromptBundle({
+		db,
+		aiAgent,
+		mode,
+	});
+	const selectedSkillDocuments = selectRelevantSkills({
+		enabledSkills: promptBundle.enabledSkills,
+		conversationHistory,
+		mode,
+		humanCommand,
+		capabilitiesContent:
+			promptBundle.coreDocuments["capabilities.md"]?.content ?? "",
+	});
 
 	// Build dynamic system prompt with real-time context and tool instructions
 	const systemPrompt = buildSystemPrompt({
@@ -195,6 +261,8 @@ export async function generate(
 		escalationReason,
 		smartDecision,
 		continuationHint,
+		promptBundle,
+		selectedSkillDocuments,
 	});
 
 	// Format conversation history for LLM with multi-party prefixes
@@ -202,7 +270,7 @@ export async function generate(
 	const messages = formatMessagesForLlm(conversationHistory, visitorName);
 
 	console.log(
-		`[ai-agent:generate] conv=${convId} | model=${aiAgent.model} | messages=${messages.length} | mode=${mode} | tools=${tools ? Object.keys(tools).length : 0}`
+		`[ai-agent:generate] conv=${convId} | model=${aiAgent.model} | messages=${messages.length} | mode=${mode} | tools=${Object.keys(tools).length} | selectedSkills=${selectedSkillDocuments.length}`
 	);
 
 	// Check for potential prompt injection in the latest visitor message (for monitoring)
@@ -242,28 +310,14 @@ export async function generate(
 	// - toolChoice: 'required' forces the model to call tools (can't skip them)
 	// - stopWhen: stops generation when an action tool is called OR after 10 steps
 	// - abortSignal: allows interruption when new message arrives
-	let result: Awaited<ReturnType<typeof generateText>>;
+	let result: Awaited<ReturnType<typeof generateWithToolLoopAgent>>;
 	try {
-		result = await generateText({
-			model: createModel(aiAgent.model),
-			tools,
-			toolChoice: "required", // Force the model to call tools
-			stopWhen: [
-				// Stop when any action tool is called
-				hasToolCall("respond"),
-				hasToolCall("escalate"),
-				hasToolCall("resolve"),
-				hasToolCall("markSpam"),
-				hasToolCall("skip"),
-				// Safety limit: stop after 10 steps regardless
-				stepCountIs(10),
-			],
-			system: systemPrompt,
+		result = await generateWithToolLoopAgent({
+			modelId: aiAgent.model,
+			systemPrompt,
 			messages,
-			// Use temperature 0 for deterministic tool calling (AI SDK best practice)
-			// This reduces randomness and improves tool call reliability
-			temperature: 0,
-			// Support interruption via AbortSignal
+			tools,
+			stopWhen: MAIN_STOP_CONDITIONS,
 			abortSignal,
 		});
 	} catch (error) {
@@ -345,18 +399,18 @@ export async function generate(
 				escalationReason,
 				smartDecision,
 				continuationHint,
+				promptBundle,
+				selectedSkillDocuments,
 			})}\n\n## Repair Mode\n\nYou must complete this turn using ONLY these tools:\n- sendMessage(): send a short, safe, helpful reply to the visitor\n- respond(): finish the turn\n\nRules:\n- Call sendMessage() exactly once\n- Call respond() immediately after sendMessage()\n- Do not call any other tools`;
 
-			let repairResult: Awaited<ReturnType<typeof generateText>>;
+			let repairResult: Awaited<ReturnType<typeof generateWithToolLoopAgent>>;
 			try {
-				repairResult = await generateText({
-					model: createModel(aiAgent.model),
-					tools: repairTools,
-					toolChoice: "required",
-					stopWhen: [hasToolCall("respond"), stepCountIs(3)],
-					system: repairPrompt,
+				repairResult = await generateWithToolLoopAgent({
+					modelId: aiAgent.model,
+					systemPrompt: repairPrompt,
 					messages,
-					temperature: 0,
+					tools: repairTools,
+					stopWhen: REPAIR_STOP_CONDITIONS,
 					abortSignal,
 				});
 			} catch (error) {

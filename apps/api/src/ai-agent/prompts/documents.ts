@@ -1,0 +1,129 @@
+import type { AiAgentPromptDocumentKind } from "@api/db/schema/ai-agent-prompt-document";
+
+export const CORE_PROMPT_DOCUMENT_NAMES = [
+	"agent.md",
+	"security.md",
+	"behaviour.md",
+	"participation.md",
+	"grounding.md",
+	"capabilities.md",
+] as const;
+
+export type CorePromptDocumentName =
+	(typeof CORE_PROMPT_DOCUMENT_NAMES)[number];
+
+export const RESERVED_CORE_PROMPT_DOCUMENT_NAMES = new Set<string>(
+	CORE_PROMPT_DOCUMENT_NAMES
+);
+
+export const SKILL_PROMPT_NAME_REGEX = /^[a-z0-9][a-z0-9-]{1,62}\.md$/;
+
+export const DEFAULT_SKILL_SELECTION_LIMIT = 3;
+
+export class PromptDocumentValidationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "PromptDocumentValidationError";
+	}
+}
+
+export class PromptDocumentConflictError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "PromptDocumentConflictError";
+	}
+}
+
+export function normalizePromptDocumentName(name: string): string {
+	return name.trim().toLowerCase();
+}
+
+export function isCorePromptDocumentName(
+	name: string
+): name is CorePromptDocumentName {
+	return RESERVED_CORE_PROMPT_DOCUMENT_NAMES.has(name);
+}
+
+export function isValidSkillPromptDocumentName(name: string): boolean {
+	if (!SKILL_PROMPT_NAME_REGEX.test(name)) {
+		return false;
+	}
+
+	if (RESERVED_CORE_PROMPT_DOCUMENT_NAMES.has(name)) {
+		return false;
+	}
+
+	return true;
+}
+
+export function assertCorePromptDocumentName(
+	name: string
+): asserts name is CorePromptDocumentName {
+	if (!isCorePromptDocumentName(name)) {
+		throw new PromptDocumentValidationError(
+			`Core document name must be one of: ${CORE_PROMPT_DOCUMENT_NAMES.join(", ")}`
+		);
+	}
+}
+
+export function assertSkillPromptDocumentName(name: string): void {
+	if (!isValidSkillPromptDocumentName(name)) {
+		throw new PromptDocumentValidationError(
+			"Skill name must match ^[a-z0-9][a-z0-9-]{1,62}\\.md$ and cannot use reserved core names"
+		);
+	}
+}
+
+export function assertPromptDocumentKind(
+	kind: string
+): asserts kind is AiAgentPromptDocumentKind {
+	if (!(kind === "core" || kind === "skill")) {
+		throw new PromptDocumentValidationError(
+			"Prompt document kind must be 'core' or 'skill'"
+		);
+	}
+}
+
+export function extractSkillReferencesFromCapabilities(
+	capabilitiesMarkdown: string
+): string[] {
+	if (!capabilitiesMarkdown.trim()) {
+		return [];
+	}
+
+	const matches = capabilitiesMarkdown.match(/[a-z0-9][a-z0-9-]{1,62}\.md/g);
+	if (!matches) {
+		return [];
+	}
+
+	const names = new Set<string>();
+	for (const match of matches) {
+		if (isValidSkillPromptDocumentName(match)) {
+			names.add(match);
+		}
+	}
+
+	return Array.from(names);
+}
+
+export function isUniqueViolation(
+	error: unknown,
+	constraintName?: string
+): boolean {
+	if (!error || typeof error !== "object") {
+		return false;
+	}
+
+	const code = "code" in error ? String(error.code) : null;
+	const message = "message" in error ? String(error.message) : "";
+
+	if (code !== "23505") {
+		return false;
+	}
+
+	if (!constraintName) {
+		return true;
+	}
+
+	return message.includes(constraintName);
+}

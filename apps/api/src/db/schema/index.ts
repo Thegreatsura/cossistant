@@ -1,4 +1,5 @@
 export * from "./ai-agent";
+export * from "./ai-agent-prompt-document";
 export * from "./api-keys";
 export * from "./auth";
 export * from "./chunk";

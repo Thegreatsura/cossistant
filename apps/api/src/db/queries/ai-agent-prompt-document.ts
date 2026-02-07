@@ -1,0 +1,337 @@
+import {
+	assertCorePromptDocumentName,
+	assertSkillPromptDocumentName,
+	isUniqueViolation,
+	normalizePromptDocumentName,
+	PromptDocumentConflictError,
+	PromptDocumentValidationError,
+} from "@api/ai-agent/prompts/documents";
+import type { Database } from "@api/db";
+import {
+	type AiAgentPromptDocumentInsert,
+	type AiAgentPromptDocumentSelect,
+	aiAgentPromptDocument,
+} from "@api/db/schema/ai-agent-prompt-document";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { ulid } from "ulid";
+
+const UNIQUE_NAME_CONSTRAINT = "ai_agent_prompt_document_unique_name_per_agent";
+
+type PromptDocumentScope = {
+	organizationId: string;
+	websiteId: string;
+	aiAgentId: string;
+};
+
+type PromptDocumentListFilters = {
+	kind?: "core" | "skill";
+	enabled?: boolean;
+};
+
+function scopeCondition(scope: PromptDocumentScope) {
+	return and(
+		eq(aiAgentPromptDocument.organizationId, scope.organizationId),
+		eq(aiAgentPromptDocument.websiteId, scope.websiteId),
+		eq(aiAgentPromptDocument.aiAgentId, scope.aiAgentId)
+	);
+}
+
+async function getPromptDocumentByName(
+	db: Database,
+	scope: PromptDocumentScope,
+	name: string
+): Promise<AiAgentPromptDocumentSelect | null> {
+	const [document] = await db
+		.select()
+		.from(aiAgentPromptDocument)
+		.where(
+			and(
+				scopeCondition(scope),
+				eq(aiAgentPromptDocument.name, normalizePromptDocumentName(name))
+			)
+		)
+		.limit(1);
+
+	return document ?? null;
+}
+
+async function getPromptDocumentById(
+	db: Database,
+	scope: PromptDocumentScope,
+	id: string
+): Promise<AiAgentPromptDocumentSelect | null> {
+	const [document] = await db
+		.select()
+		.from(aiAgentPromptDocument)
+		.where(and(scopeCondition(scope), eq(aiAgentPromptDocument.id, id)))
+		.limit(1);
+
+	return document ?? null;
+}
+
+export async function listAiAgentPromptDocuments(
+	db: Database,
+	scope: PromptDocumentScope,
+	filters: PromptDocumentListFilters = {}
+): Promise<AiAgentPromptDocumentSelect[]> {
+	const conditions = [scopeCondition(scope)];
+
+	if (filters.kind) {
+		conditions.push(eq(aiAgentPromptDocument.kind, filters.kind));
+	}
+
+	if (filters.enabled !== undefined) {
+		conditions.push(eq(aiAgentPromptDocument.enabled, filters.enabled));
+	}
+
+	return db
+		.select()
+		.from(aiAgentPromptDocument)
+		.where(and(...conditions))
+		.orderBy(
+			asc(aiAgentPromptDocument.kind),
+			desc(aiAgentPromptDocument.priority),
+			asc(aiAgentPromptDocument.name)
+		);
+}
+
+export async function upsertAiAgentCorePromptDocument(
+	db: Database,
+	params: PromptDocumentScope & {
+		name: string;
+		content: string;
+		enabled?: boolean;
+		priority?: number;
+		updatedByUserId: string;
+	}
+): Promise<AiAgentPromptDocumentSelect> {
+	const normalizedName = normalizePromptDocumentName(params.name);
+	assertCorePromptDocumentName(normalizedName);
+
+	const now = new Date().toISOString();
+	const existing = await getPromptDocumentByName(db, params, normalizedName);
+
+	if (existing) {
+		if (existing.kind !== "core") {
+			throw new PromptDocumentConflictError(
+				`Prompt document '${normalizedName}' already exists as a skill`
+			);
+		}
+
+		const [updated] = await db
+			.update(aiAgentPromptDocument)
+			.set({
+				content: params.content,
+				enabled: params.enabled ?? true,
+				priority: params.priority ?? existing.priority,
+				updatedByUserId: params.updatedByUserId,
+				updatedAt: now,
+			})
+			.where(eq(aiAgentPromptDocument.id, existing.id))
+			.returning();
+
+		if (!updated) {
+			throw new Error("Failed to update core prompt document");
+		}
+
+		return updated;
+	}
+
+	const insertData: AiAgentPromptDocumentInsert = {
+		id: ulid(),
+		organizationId: params.organizationId,
+		websiteId: params.websiteId,
+		aiAgentId: params.aiAgentId,
+		kind: "core",
+		name: normalizedName,
+		content: params.content,
+		enabled: params.enabled ?? true,
+		priority: params.priority ?? 0,
+		createdByUserId: params.updatedByUserId,
+		updatedByUserId: params.updatedByUserId,
+		createdAt: now,
+		updatedAt: now,
+	};
+
+	try {
+		const [created] = await db
+			.insert(aiAgentPromptDocument)
+			.values(insertData)
+			.returning();
+
+		if (!created) {
+			throw new Error("Failed to create core prompt document");
+		}
+
+		return created;
+	} catch (error) {
+		if (isUniqueViolation(error, UNIQUE_NAME_CONSTRAINT)) {
+			throw new PromptDocumentConflictError(
+				`A prompt document named '${normalizedName}' already exists for this agent`
+			);
+		}
+		throw error;
+	}
+}
+
+export async function createAiAgentSkillPromptDocument(
+	db: Database,
+	params: PromptDocumentScope & {
+		name: string;
+		content: string;
+		enabled?: boolean;
+		priority?: number;
+		createdByUserId: string;
+	}
+): Promise<AiAgentPromptDocumentSelect> {
+	const normalizedName = normalizePromptDocumentName(params.name);
+	assertSkillPromptDocumentName(normalizedName);
+
+	const now = new Date().toISOString();
+
+	const insertData: AiAgentPromptDocumentInsert = {
+		id: ulid(),
+		organizationId: params.organizationId,
+		websiteId: params.websiteId,
+		aiAgentId: params.aiAgentId,
+		kind: "skill",
+		name: normalizedName,
+		content: params.content,
+		enabled: params.enabled ?? true,
+		priority: params.priority ?? 0,
+		createdByUserId: params.createdByUserId,
+		updatedByUserId: params.createdByUserId,
+		createdAt: now,
+		updatedAt: now,
+	};
+
+	try {
+		const [created] = await db
+			.insert(aiAgentPromptDocument)
+			.values(insertData)
+			.returning();
+
+		if (!created) {
+			throw new Error("Failed to create skill prompt document");
+		}
+
+		return created;
+	} catch (error) {
+		if (isUniqueViolation(error, UNIQUE_NAME_CONSTRAINT)) {
+			throw new PromptDocumentConflictError(
+				`A skill named '${normalizedName}' already exists for this agent`
+			);
+		}
+		throw error;
+	}
+}
+
+export async function updateAiAgentSkillPromptDocument(
+	db: Database,
+	params: PromptDocumentScope & {
+		skillDocumentId: string;
+		name?: string;
+		content?: string;
+		enabled?: boolean;
+		priority?: number;
+		updatedByUserId: string;
+	}
+): Promise<AiAgentPromptDocumentSelect | null> {
+	const existing = await getPromptDocumentById(
+		db,
+		params,
+		params.skillDocumentId
+	);
+	if (!existing) {
+		return null;
+	}
+
+	if (existing.kind !== "skill") {
+		throw new PromptDocumentValidationError(
+			"Only skill prompt documents can be updated with this endpoint"
+		);
+	}
+
+	const nextName =
+		params.name === undefined
+			? existing.name
+			: normalizePromptDocumentName(params.name);
+	assertSkillPromptDocumentName(nextName);
+
+	const now = new Date().toISOString();
+
+	const updateData: Partial<AiAgentPromptDocumentInsert> = {
+		name: nextName,
+		content: params.content ?? existing.content,
+		enabled: params.enabled ?? existing.enabled,
+		priority: params.priority ?? existing.priority,
+		updatedByUserId: params.updatedByUserId,
+		updatedAt: now,
+	};
+
+	try {
+		const [updated] = await db
+			.update(aiAgentPromptDocument)
+			.set(updateData)
+			.where(eq(aiAgentPromptDocument.id, existing.id))
+			.returning();
+
+		return updated ?? null;
+	} catch (error) {
+		if (isUniqueViolation(error, UNIQUE_NAME_CONSTRAINT)) {
+			throw new PromptDocumentConflictError(
+				`A skill named '${nextName}' already exists for this agent`
+			);
+		}
+		throw error;
+	}
+}
+
+export async function deleteAiAgentSkillPromptDocument(
+	db: Database,
+	params: PromptDocumentScope & {
+		skillDocumentId: string;
+	}
+): Promise<boolean> {
+	const result = await db
+		.delete(aiAgentPromptDocument)
+		.where(
+			and(
+				scopeCondition(params),
+				eq(aiAgentPromptDocument.id, params.skillDocumentId),
+				eq(aiAgentPromptDocument.kind, "skill")
+			)
+		)
+		.returning({ id: aiAgentPromptDocument.id });
+
+	return result.length > 0;
+}
+
+export async function toggleAiAgentSkillPromptDocument(
+	db: Database,
+	params: PromptDocumentScope & {
+		skillDocumentId: string;
+		enabled: boolean;
+		updatedByUserId: string;
+	}
+): Promise<AiAgentPromptDocumentSelect | null> {
+	const now = new Date().toISOString();
+
+	const [updated] = await db
+		.update(aiAgentPromptDocument)
+		.set({
+			enabled: params.enabled,
+			updatedByUserId: params.updatedByUserId,
+			updatedAt: now,
+		})
+		.where(
+			and(
+				scopeCondition(params),
+				eq(aiAgentPromptDocument.id, params.skillDocumentId),
+				eq(aiAgentPromptDocument.kind, "skill")
+			)
+		)
+		.returning();
+
+	return updated ?? null;
+}

@@ -23,7 +23,9 @@ import type { ResponseMode } from "../pipeline/2-decision";
 import type { SmartDecisionResult } from "../pipeline/2a-smart-decision";
 import { getBehaviorSettings } from "../settings";
 import { buildBehaviorInstructions } from "./instructions";
+import type { ResolvedPromptBundle } from "./resolver";
 import { CORE_SECURITY_PROMPT, SECURITY_REMINDER } from "./security";
+import type { SelectedSkillPromptDocument } from "./skill-selector";
 import { PROMPT_TEMPLATES } from "./templates";
 
 type BuildPromptInput = {
@@ -42,6 +44,10 @@ type BuildPromptInput = {
 	smartDecision?: SmartDecisionResult;
 	/** Continuation hint when this run should only add incremental information */
 	continuationHint?: ContinuationHint;
+	/** Prompt documents resolved from DB with fallbacks */
+	promptBundle?: ResolvedPromptBundle;
+	/** Subset of enabled skills selected for this run */
+	selectedSkillDocuments?: SelectedSkillPromptDocument[];
 };
 
 /**
@@ -68,20 +74,48 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 		escalationReason,
 		smartDecision,
 		continuationHint,
+		promptBundle,
+		selectedSkillDocuments,
 	} = input;
 	const settings = getBehaviorSettings(aiAgent);
+	const coreDocuments = promptBundle?.coreDocuments;
+
+	const securityDocument = getCoreDocumentContent(
+		coreDocuments?.["security.md"]?.content,
+		CORE_SECURITY_PROMPT
+	);
+	const agentDocument = getCoreDocumentContent(
+		coreDocuments?.["agent.md"]?.content,
+		aiAgent.basePrompt
+	);
+	const behaviourDocument = getCoreDocumentContent(
+		coreDocuments?.["behaviour.md"]?.content,
+		buildBehaviorInstructions(settings, mode)
+	);
+	const participationDocument = getCoreDocumentContent(
+		coreDocuments?.["participation.md"]?.content,
+		PROMPT_TEMPLATES.PARTICIPATION_POLICY
+	);
+	const groundingDocument = getCoreDocumentContent(
+		coreDocuments?.["grounding.md"]?.content,
+		mode === "respond_to_visitor" ? PROMPT_TEMPLATES.GROUNDING_INSTRUCTIONS : ""
+	);
+	const capabilitiesDocument = getCoreDocumentContent(
+		coreDocuments?.["capabilities.md"]?.content,
+		""
+	);
 
 	const parts: string[] = [];
 
 	// =========================================================================
 	// LAYER 0: Core Security (immutable - always first)
 	// =========================================================================
-	parts.push(CORE_SECURITY_PROMPT);
+	parts.push(securityDocument);
 
 	// =========================================================================
 	// LAYER 1: Base Prompt (user-configurable)
 	// =========================================================================
-	parts.push(aiAgent.basePrompt);
+	parts.push(agentDocument);
 
 	// =========================================================================
 	// LAYER 2: Dynamic Context (auto-generated)
@@ -137,17 +171,31 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
 
 	// Add grounding instructions to prevent hallucinations
 	// Only needed when responding to the visitor
-	if (mode === "respond_to_visitor") {
-		parts.push(PROMPT_TEMPLATES.GROUNDING_INSTRUCTIONS);
+	if (mode === "respond_to_visitor" && groundingDocument) {
+		parts.push(groundingDocument);
 	}
 
-	parts.push(PROMPT_TEMPLATES.PARTICIPATION_POLICY);
+	if (participationDocument) {
+		parts.push(participationDocument);
+	}
 
 	// Add structured output instructions
 	parts.push(PROMPT_TEMPLATES.STRUCTURED_OUTPUT);
 
-	// Add behavior instructions based on settings
-	parts.push(buildBehaviorInstructions(settings, mode));
+	if (behaviourDocument) {
+		parts.push(behaviourDocument);
+	}
+
+	if (capabilitiesDocument) {
+		parts.push(capabilitiesDocument);
+	}
+
+	const selectedSkillsSection = buildSelectedSkillsSection(
+		selectedSkillDocuments
+	);
+	if (selectedSkillsSection) {
+		parts.push(selectedSkillsSection);
+	}
 
 	// Add command instructions when a human agent provided a command
 	if (humanCommand) {
@@ -268,4 +316,34 @@ Important:
   - If the teammate asks for internal analysis or handoff notes, use sendPrivateMessage
   - You may use both when useful (public reply + private handoff note)
 - Be concise and actionable`;
+}
+
+function getCoreDocumentContent(
+	value: string | undefined,
+	fallback: string
+): string {
+	const trimmed = value?.trim();
+	if (trimmed) {
+		return trimmed;
+	}
+
+	return fallback.trim();
+}
+
+function buildSelectedSkillsSection(
+	selectedSkillDocuments: SelectedSkillPromptDocument[] | undefined
+): string {
+	if (!selectedSkillDocuments || selectedSkillDocuments.length === 0) {
+		return "";
+	}
+
+	const sections = selectedSkillDocuments.map(
+		(skill) => `### ${skill.name}\n\n${skill.content.trim()}`
+	);
+
+	return [
+		"## Selected Skills (Optional Guidance)",
+		"These skills were selected for this turn. Use them only if relevant. You may use none, one, or several skills.",
+		sections.join("\n\n"),
+	].join("\n\n");
 }

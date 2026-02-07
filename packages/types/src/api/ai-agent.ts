@@ -65,6 +65,50 @@ export const AI_AGENT_GOALS = [
 
 export type AIAgentGoal = (typeof AI_AGENT_GOALS)[number]["value"];
 
+export const AI_AGENT_CORE_PROMPT_DOCUMENT_NAMES = [
+	"agent.md",
+	"security.md",
+	"behaviour.md",
+	"participation.md",
+	"grounding.md",
+	"capabilities.md",
+] as const;
+export type AiAgentCorePromptDocumentName =
+	(typeof AI_AGENT_CORE_PROMPT_DOCUMENT_NAMES)[number];
+
+export const aiAgentPromptDocumentKindSchema = z.enum(["core", "skill"]);
+export const aiAgentCorePromptDocumentNameSchema = z.enum(
+	AI_AGENT_CORE_PROMPT_DOCUMENT_NAMES
+);
+
+export const aiAgentSkillPromptDocumentNameSchema = z
+	.string()
+	.regex(/^[a-z0-9][a-z0-9-]{1,62}\.md$/, {
+		message: "Skill name must match ^[a-z0-9][a-z0-9-]{1,62}\\.md$",
+	})
+	.refine(
+		(value) => !AI_AGENT_CORE_PROMPT_DOCUMENT_NAMES.includes(value as never),
+		{
+			message: "Skill name cannot use reserved core document names.",
+		}
+	);
+
+export const aiAgentPromptDocumentResponseSchema = z.object({
+	id: z.ulid(),
+	organizationId: z.ulid(),
+	websiteId: z.ulid(),
+	aiAgentId: z.ulid(),
+	kind: aiAgentPromptDocumentKindSchema,
+	name: z.string(),
+	content: z.string(),
+	enabled: z.boolean(),
+	priority: z.number().int(),
+	createdByUserId: z.ulid().nullable(),
+	updatedByUserId: z.ulid().nullable(),
+	createdAt: z.string(),
+	updatedAt: z.string(),
+});
+
 /**
  * AI Agent response schema
  */
@@ -425,6 +469,122 @@ export const generateBasePromptResponseSchema = z
 			"Response containing the generated base prompt and brand info.",
 	});
 
+export const listPromptDocumentsRequestSchema = z.object({
+	websiteSlug: z.string().openapi({
+		description: "The website slug.",
+		example: "my-website",
+	}),
+	aiAgentId: z.ulid().openapi({
+		description: "The AI agent ID.",
+		example: "01JG000000000000000000000",
+	}),
+});
+
+export const listPromptDocumentsResponseSchema = z.object({
+	coreDocuments: z.array(aiAgentPromptDocumentResponseSchema),
+	skillDocuments: z.array(aiAgentPromptDocumentResponseSchema),
+});
+
+export const upsertCoreDocumentRequestSchema = z.object({
+	websiteSlug: z.string().openapi({
+		description: "The website slug.",
+		example: "my-website",
+	}),
+	aiAgentId: z.ulid().openapi({
+		description: "The AI agent ID.",
+		example: "01JG000000000000000000000",
+	}),
+	name: aiAgentCorePromptDocumentNameSchema,
+	content: z.string().max(50_000).openapi({
+		description: "Markdown content for the core document.",
+		example: "## Instructions\\nFollow these rules.",
+	}),
+	enabled: z.boolean().optional(),
+	priority: z.number().int().min(-100).max(100).optional(),
+});
+
+export const createSkillDocumentRequestSchema = z.object({
+	websiteSlug: z.string().openapi({
+		description: "The website slug.",
+		example: "my-website",
+	}),
+	aiAgentId: z.ulid().openapi({
+		description: "The AI agent ID.",
+		example: "01JG000000000000000000000",
+	}),
+	name: aiAgentSkillPromptDocumentNameSchema,
+	content: z.string().max(50_000).openapi({
+		description: "Markdown content for the skill document.",
+		example: "## Workflow\\nWhen refund appears, collect order ID first.",
+	}),
+	enabled: z.boolean().optional(),
+	priority: z.number().int().min(-100).max(100).optional(),
+});
+
+export const updateSkillDocumentRequestSchema = z
+	.object({
+		websiteSlug: z.string().openapi({
+			description: "The website slug.",
+			example: "my-website",
+		}),
+		aiAgentId: z.ulid().openapi({
+			description: "The AI agent ID.",
+			example: "01JG000000000000000000000",
+		}),
+		skillDocumentId: z.ulid().openapi({
+			description: "The skill prompt document ID.",
+			example: "01JG000000000000000000000",
+		}),
+		name: aiAgentSkillPromptDocumentNameSchema.optional(),
+		content: z.string().max(50_000).optional(),
+		enabled: z.boolean().optional(),
+		priority: z.number().int().min(-100).max(100).optional(),
+	})
+	.refine(
+		(data) =>
+			data.name !== undefined ||
+			data.content !== undefined ||
+			data.enabled !== undefined ||
+			data.priority !== undefined,
+		{
+			message: "At least one field must be provided.",
+		}
+	);
+
+export const deleteSkillDocumentRequestSchema = z.object({
+	websiteSlug: z.string().openapi({
+		description: "The website slug.",
+		example: "my-website",
+	}),
+	aiAgentId: z.ulid().openapi({
+		description: "The AI agent ID.",
+		example: "01JG000000000000000000000",
+	}),
+	skillDocumentId: z.ulid().openapi({
+		description: "The skill prompt document ID.",
+		example: "01JG000000000000000000000",
+	}),
+});
+
+export const toggleSkillDocumentRequestSchema = z.object({
+	websiteSlug: z.string().openapi({
+		description: "The website slug.",
+		example: "my-website",
+	}),
+	aiAgentId: z.ulid().openapi({
+		description: "The AI agent ID.",
+		example: "01JG000000000000000000000",
+	}),
+	skillDocumentId: z.ulid().openapi({
+		description: "The skill prompt document ID.",
+		example: "01JG000000000000000000000",
+	}),
+	enabled: z.boolean().openapi({
+		description: "Whether the skill is enabled for runtime selection.",
+		example: true,
+	}),
+});
+
 export type AiAgentResponse = z.infer<typeof aiAgentResponseSchema>;
 export type CreateAiAgentRequest = z.infer<typeof createAiAgentRequestSchema>;
 export type UpdateAiAgentRequest = z.infer<typeof updateAiAgentRequestSchema>;
@@ -438,6 +598,30 @@ export type GenerateBasePromptRequest = z.infer<
 >;
 export type GenerateBasePromptResponse = z.infer<
 	typeof generateBasePromptResponseSchema
+>;
+export type AiAgentPromptDocumentResponse = z.infer<
+	typeof aiAgentPromptDocumentResponseSchema
+>;
+export type ListPromptDocumentsRequest = z.infer<
+	typeof listPromptDocumentsRequestSchema
+>;
+export type ListPromptDocumentsResponse = z.infer<
+	typeof listPromptDocumentsResponseSchema
+>;
+export type UpsertCoreDocumentRequest = z.infer<
+	typeof upsertCoreDocumentRequestSchema
+>;
+export type CreateSkillDocumentRequest = z.infer<
+	typeof createSkillDocumentRequestSchema
+>;
+export type UpdateSkillDocumentRequest = z.infer<
+	typeof updateSkillDocumentRequestSchema
+>;
+export type DeleteSkillDocumentRequest = z.infer<
+	typeof deleteSkillDocumentRequestSchema
+>;
+export type ToggleSkillDocumentRequest = z.infer<
+	typeof toggleSkillDocumentRequestSchema
 >;
 
 /**

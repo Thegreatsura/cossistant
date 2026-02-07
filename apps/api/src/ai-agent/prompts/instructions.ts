@@ -17,32 +17,49 @@ export function buildBehaviorInstructions(
 ): string {
 	const instructions: string[] = [];
 
-	// Add escalation guidelines if enabled
-	if (settings.canEscalate) {
-		instructions.push(PROMPT_TEMPLATES.ESCALATION_GUIDELINES);
+	const escalationInstructions = buildEscalationInstructions(settings);
+	if (escalationInstructions) {
+		instructions.push(escalationInstructions);
 	}
 
 	// Build capability list
-	const capabilities = buildCapabilityList(settings);
+	const capabilities = buildCapabilitiesInstructions(settings);
 	if (capabilities) {
 		instructions.push(capabilities);
 	}
 
 	// Add mode-specific behavior
-	if (mode === "background_only") {
-		instructions.push(`## Current Mode: Background Only
-
-You are in background mode. Do NOT send visible messages to the visitor.
-Use sendPrivateMessage() if needed, then finish with respond or skip.`);
+	const modeInstructions = buildModeBehaviorInstructions(mode);
+	if (modeInstructions) {
+		instructions.push(modeInstructions);
 	}
 
 	return instructions.join("\n\n");
 }
 
+export function buildEscalationInstructions(
+	settings: AiAgentBehaviorSettings
+): string {
+	return settings.canEscalate ? PROMPT_TEMPLATES.ESCALATION_GUIDELINES : "";
+}
+
+export function buildModeBehaviorInstructions(mode: ResponseMode): string {
+	if (mode === "background_only") {
+		return `## Current Mode: Background Only
+
+You are in background mode. Do NOT send visible messages to the visitor.
+Use sendPrivateMessage() if needed, then finish with respond or skip.`;
+	}
+
+	return "";
+}
+
 /**
  * Build a list of enabled capabilities
  */
-function buildCapabilityList(settings: AiAgentBehaviorSettings): string {
+export function buildCapabilitiesInstructions(
+	settings: AiAgentBehaviorSettings
+): string {
 	const enabled: string[] = [];
 	const disabled: string[] = [];
 

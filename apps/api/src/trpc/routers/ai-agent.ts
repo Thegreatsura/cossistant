@@ -1,3 +1,7 @@
+import {
+	PromptDocumentConflictError,
+	PromptDocumentValidationError,
+} from "@api/ai-agent/prompts/documents";
 import { getBehaviorSettings } from "@api/ai-agent/settings";
 import {
 	createAiAgent,
@@ -9,6 +13,14 @@ import {
 	updateAiAgentTrainingStatus,
 } from "@api/db/queries/ai-agent";
 import {
+	createAiAgentSkillPromptDocument,
+	deleteAiAgentSkillPromptDocument,
+	listAiAgentPromptDocuments,
+	toggleAiAgentSkillPromptDocument,
+	updateAiAgentSkillPromptDocument,
+	upsertAiAgentCorePromptDocument,
+} from "@api/db/queries/ai-agent-prompt-document";
+import {
 	getWebsiteBySlugWithAccess,
 	updateWebsite,
 } from "@api/db/queries/website";
@@ -18,18 +30,26 @@ import { firecrawlService } from "@api/services/firecrawl";
 import { generateAgentBasePrompt } from "@api/services/prompt-generator";
 import { triggerAiTraining } from "@api/utils/queue-triggers";
 import {
+	aiAgentPromptDocumentResponseSchema,
 	aiAgentResponseSchema,
 	createAiAgentRequestSchema,
+	createSkillDocumentRequestSchema,
 	deleteAiAgentRequestSchema,
+	deleteSkillDocumentRequestSchema,
 	generateBasePromptRequestSchema,
 	generateBasePromptResponseSchema,
 	getAiAgentRequestSchema,
 	getBehaviorSettingsRequestSchema,
 	getBehaviorSettingsResponseSchema,
+	listPromptDocumentsRequestSchema,
+	listPromptDocumentsResponseSchema,
 	toggleAiAgentActiveRequestSchema,
+	toggleSkillDocumentRequestSchema,
 	updateAiAgentRequestSchema,
 	updateBehaviorSettingsRequestSchema,
 	updateBehaviorSettingsResponseSchema,
+	updateSkillDocumentRequestSchema,
+	upsertCoreDocumentRequestSchema,
 } from "@cossistant/types";
 import { TRPCError } from "@trpc/server";
 import { and, count, eq, gt, isNull } from "drizzle-orm";
@@ -83,6 +103,56 @@ function toAiAgentResponse(agent: {
 		updatedAt: agent.updatedAt,
 		onboardingCompletedAt: agent.onboardingCompletedAt,
 	};
+}
+
+function toPromptDocumentResponse(document: {
+	id: string;
+	organizationId: string;
+	websiteId: string;
+	aiAgentId: string;
+	kind: "core" | "skill";
+	name: string;
+	content: string;
+	enabled: boolean;
+	priority: number;
+	createdByUserId: string | null;
+	updatedByUserId: string | null;
+	createdAt: string;
+	updatedAt: string;
+}) {
+	return {
+		id: document.id,
+		organizationId: document.organizationId,
+		websiteId: document.websiteId,
+		aiAgentId: document.aiAgentId,
+		kind: document.kind,
+		name: document.name,
+		content: document.content,
+		enabled: document.enabled,
+		priority: document.priority,
+		createdByUserId: document.createdByUserId,
+		updatedByUserId: document.updatedByUserId,
+		createdAt: document.createdAt,
+		updatedAt: document.updatedAt,
+	};
+}
+
+function handlePromptDocumentMutationError(error: unknown): never {
+	if (error instanceof PromptDocumentValidationError) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: error.message,
+		});
+	}
+
+	if (error instanceof PromptDocumentConflictError) {
+		throw new TRPCError({
+			code: "CONFLICT",
+			message: error.message,
+		});
+	}
+
+	throw error;
 }
 
 export const aiAgentRouter = createTRPCRouter({
@@ -499,6 +569,291 @@ export const aiAgentRouter = createTRPCRouter({
 
 			// Return the updated settings merged with defaults
 			return getBehaviorSettings(agent);
+		}),
+
+	listPromptDocuments: protectedProcedure
+		.input(listPromptDocumentsRequestSchema)
+		.output(listPromptDocumentsResponseSchema)
+		.query(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent || agent.id !== input.aiAgentId) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			const documents = await listAiAgentPromptDocuments(db, {
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				aiAgentId: input.aiAgentId,
+			});
+
+			const coreDocuments = documents
+				.filter((document) => document.kind === "core")
+				.map(toPromptDocumentResponse);
+			const skillDocuments = documents
+				.filter((document) => document.kind === "skill")
+				.map(toPromptDocumentResponse);
+
+			return {
+				coreDocuments,
+				skillDocuments,
+			};
+		}),
+
+	upsertCoreDocument: protectedProcedure
+		.input(upsertCoreDocumentRequestSchema)
+		.output(aiAgentPromptDocumentResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent || agent.id !== input.aiAgentId) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			try {
+				const document = await upsertAiAgentCorePromptDocument(db, {
+					organizationId: websiteData.organizationId,
+					websiteId: websiteData.id,
+					aiAgentId: input.aiAgentId,
+					name: input.name,
+					content: input.content,
+					enabled: input.enabled,
+					priority: input.priority,
+					updatedByUserId: user.id,
+				});
+
+				return toPromptDocumentResponse(document);
+			} catch (error) {
+				handlePromptDocumentMutationError(error);
+			}
+		}),
+
+	createSkillDocument: protectedProcedure
+		.input(createSkillDocumentRequestSchema)
+		.output(aiAgentPromptDocumentResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent || agent.id !== input.aiAgentId) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			try {
+				const document = await createAiAgentSkillPromptDocument(db, {
+					organizationId: websiteData.organizationId,
+					websiteId: websiteData.id,
+					aiAgentId: input.aiAgentId,
+					name: input.name,
+					content: input.content,
+					enabled: input.enabled,
+					priority: input.priority,
+					createdByUserId: user.id,
+				});
+
+				return toPromptDocumentResponse(document);
+			} catch (error) {
+				handlePromptDocumentMutationError(error);
+			}
+		}),
+
+	updateSkillDocument: protectedProcedure
+		.input(updateSkillDocumentRequestSchema)
+		.output(aiAgentPromptDocumentResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent || agent.id !== input.aiAgentId) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			try {
+				const document = await updateAiAgentSkillPromptDocument(db, {
+					organizationId: websiteData.organizationId,
+					websiteId: websiteData.id,
+					aiAgentId: input.aiAgentId,
+					skillDocumentId: input.skillDocumentId,
+					name: input.name,
+					content: input.content,
+					enabled: input.enabled,
+					priority: input.priority,
+					updatedByUserId: user.id,
+				});
+
+				if (!document) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Skill document not found",
+					});
+				}
+
+				return toPromptDocumentResponse(document);
+			} catch (error) {
+				handlePromptDocumentMutationError(error);
+			}
+		}),
+
+	deleteSkillDocument: protectedProcedure
+		.input(deleteSkillDocumentRequestSchema)
+		.output(z.object({ id: z.ulid() }))
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent || agent.id !== input.aiAgentId) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			const deleted = await deleteAiAgentSkillPromptDocument(db, {
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				aiAgentId: input.aiAgentId,
+				skillDocumentId: input.skillDocumentId,
+			});
+
+			if (!deleted) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Skill document not found",
+				});
+			}
+
+			return { id: input.skillDocumentId };
+		}),
+
+	toggleSkillDocument: protectedProcedure
+		.input(toggleSkillDocumentRequestSchema)
+		.output(aiAgentPromptDocumentResponseSchema)
+		.mutation(async ({ ctx: { db, user }, input }) => {
+			const websiteData = await getWebsiteBySlugWithAccess(db, {
+				userId: user.id,
+				websiteSlug: input.websiteSlug,
+			});
+
+			if (!websiteData) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Website not found or access denied",
+				});
+			}
+
+			const agent = await getAiAgentForWebsite(db, {
+				websiteId: websiteData.id,
+				organizationId: websiteData.organizationId,
+			});
+
+			if (!agent || agent.id !== input.aiAgentId) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "AI agent not found",
+				});
+			}
+
+			const document = await toggleAiAgentSkillPromptDocument(db, {
+				organizationId: websiteData.organizationId,
+				websiteId: websiteData.id,
+				aiAgentId: input.aiAgentId,
+				skillDocumentId: input.skillDocumentId,
+				enabled: input.enabled,
+				updatedByUserId: user.id,
+			});
+
+			if (!document) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Skill document not found",
+				});
+			}
+
+			return toPromptDocumentResponse(document);
 		}),
 
 	/**
