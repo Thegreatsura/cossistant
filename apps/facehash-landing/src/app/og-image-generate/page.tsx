@@ -110,7 +110,7 @@ export default function OgImageGeneratePage() {
 				<div className="absolute inset-0 flex flex-col items-center justify-center">
 					{/* Main title */}
 					<h1
-						className="flex justify-center gap-6 font-mono text-7xl text-white"
+						className="flex justify-center gap-6 font-pixel text-7xl text-white"
 						style={{ letterSpacing: "0.15em" }}
 					>
 						<span>F</span>
@@ -125,7 +125,7 @@ export default function OgImageGeneratePage() {
 
 					{/* Tagline */}
 					<p
-						className="mt-6 text-center font-mono text-xl"
+						className="mt-6 text-center font-pixel text-xl"
 						style={{ color: "rgba(163, 163, 163, 0.9)" }}
 					>
 						beautiful minimalist avatars from any string for React

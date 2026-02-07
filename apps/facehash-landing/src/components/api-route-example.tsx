@@ -56,7 +56,7 @@ export function ApiRouteExample() {
 				<code>{CODE}</code>
 			</pre>
 			<div className="border-[var(--border)] border-t border-dashed py-4">
-				<pre className="overflow-x-auto text-[var(--muted-foreground)] text-xs">
+				<pre className="overflow-x-auto text-[var(--muted-foreground)] text-sm">
 					<code>{USAGE}</code>
 				</pre>
 			</div>

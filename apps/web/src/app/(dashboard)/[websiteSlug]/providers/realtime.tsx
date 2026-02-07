@@ -24,6 +24,7 @@ import {
 	handleLinkSourceUpdated,
 } from "./events/handlers/crawl-progress";
 import { handleMessageCreated } from "./events/handlers/timeline-item-created";
+import { handleTimelineItemUpdated } from "./events/handlers/timeline-item-updated";
 import {
 	handleTrainingCompleted,
 	handleTrainingFailed,
@@ -131,6 +132,14 @@ export function Realtime({ children }: { children: ReactNode }) {
 			timelineItemCreated: [
 				(_data, meta) => {
 					handleMessageCreated({
+						event: meta.event,
+						context: meta.context,
+					});
+				},
+			],
+			timelineItemUpdated: [
+				(_data, meta) => {
+					handleTimelineItemUpdated({
 						event: meta.event,
 						context: meta.context,
 					});

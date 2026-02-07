@@ -1,3 +1,4 @@
+import { hasMarkdownFormatting } from "@cossistant/tiny-markdown/utils";
 import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
@@ -15,7 +16,7 @@ export type TimelineItemRenderProps = {
 	timestamp: Date;
 	text: string | null;
 	senderType: "visitor" | "ai" | "human";
-	itemType: "message" | "event" | "identification";
+	itemType: "message" | "event" | "identification" | "tool";
 };
 
 export type TimelineItemProps = Omit<
@@ -33,7 +34,7 @@ export type TimelineItemProps = Omit<
 /**
  * Generic timeline item wrapper that adds accessibility attributes and resolves the
  * sender type into convenient render props for custom layouts. Works with
- * both MESSAGE and EVENT timeline item types.
+ * message, event, identification, and tool timeline item types.
  */
 export const TimelineItem = (() => {
 	const Component = React.forwardRef<HTMLDivElement, TimelineItemProps>(
@@ -65,6 +66,9 @@ export const TimelineItem = (() => {
 				if (item.type === "identification") {
 					return "Identification";
 				}
+				if (item.type === "tool") {
+					return "Tool call";
+				}
 				if (isVisitor) {
 					return "visitor";
 				}
@@ -85,7 +89,7 @@ export const TimelineItem = (() => {
 					state: renderProps,
 					props: {
 						role: "article",
-						"aria-label": `${item.type === "message" ? "Message" : "Event"} from ${itemTypeLabel}`,
+						"aria-label": `${item.type === "message" ? "Message" : item.type === "tool" ? "Tool call" : "Event"} from ${itemTypeLabel}`,
 						...props,
 						children: content,
 					},
@@ -100,6 +104,12 @@ export const TimelineItem = (() => {
 
 const MemoizedMarkdownBlock = React.memo(
 	({ content }: { content: string }) => {
+		const shouldRenderMarkdown = hasMarkdownFormatting(content);
+
+		if (!shouldRenderMarkdown) {
+			return <span className="whitespace-pre-wrap break-words">{content}</span>;
+		}
+
 		return (
 			<ReactMarkdown
 				// Allow mention: protocol URLs (not sanitized by default)

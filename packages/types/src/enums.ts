@@ -31,6 +31,7 @@ export const ConversationTimelineType = {
 	MESSAGE: "message",
 	EVENT: "event",
 	IDENTIFICATION: "identification",
+	TOOL: "tool",
 } as const;
 
 export type ConversationTimelineType =

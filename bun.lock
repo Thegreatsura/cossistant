@@ -87,6 +87,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "facehash": "workspace:*",
+        "geist": "^1.7.0",
         "lucide-react": "^0.562.0",
         "next": "16.1.1",
         "next-themes": "^0.4.6",
@@ -285,7 +286,7 @@
     },
     "packages/core": {
       "name": "@cossistant/core",
-      "version": "0.0.30",
+      "version": "0.0.31",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "nanoid": "^5.1.5",
@@ -299,7 +300,7 @@
     },
     "packages/facehash": {
       "name": "facehash",
-      "version": "0.0.5",
+      "version": "0.0.6",
       "devDependencies": {
         "@cossistant/typescript-config": "workspace:*",
         "next": "16.1.1",
@@ -339,7 +340,7 @@
     },
     "packages/next": {
       "name": "@cossistant/next",
-      "version": "0.0.30",
+      "version": "0.0.31",
       "dependencies": {
         "@cossistant/react": "workspace:*",
         "tailwindcss": "^4.1.13",
@@ -355,7 +356,7 @@
     },
     "packages/react": {
       "name": "@cossistant/react",
-      "version": "0.0.30",
+      "version": "0.0.31",
       "dependencies": {
         "@cossistant/core": "workspace:*",
         "@cossistant/tiny-markdown": "workspace:*",
@@ -465,7 +466,7 @@
     },
     "packages/types": {
       "name": "@cossistant/types",
-      "version": "0.0.30",
+      "version": "0.0.31",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "zod": "^4.1.8",
@@ -2722,6 +2723,8 @@
     "fuzzysort": ["fuzzysort@3.1.0", "", {}, "sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ=="],
 
     "fzf": ["fzf@0.5.2", "", {}, "sha512-Tt4kuxLXFKHy8KT40zwsUPUkg1CrsgY25FxA2U/j/0WgEDCk3ddc/zLTCCcbSHX9FcKtLuVaDGtGE/STWC+j3Q=="],
+
+    "geist": ["geist@1.7.0", "", { "peerDependencies": { "next": ">=13.2.0" } }, "sha512-ZaoiZwkSf0DwwB1ncdLKp+ggAldqxl5L1+SXaNIBGkPAqcu+xjVJLxlf3/S8vLt9UHx1xu5fz3lbzKCj5iOVdQ=="],
 
     "generator-function": ["generator-function@2.0.1", "", {}, "sha512-SFdFmIJi+ybC0vjlHN0ZGVGHc3lgE0DxPAT0djjVg+kjOnSqclqmj0KQ7ykTOLP6YxoqOvuAODGdcHJn+43q3g=="],
 

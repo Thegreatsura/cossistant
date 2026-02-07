@@ -98,7 +98,8 @@ export type CreateTimelineItemOptions = {
 		type:
 			| typeof ConversationTimelineType.MESSAGE
 			| typeof ConversationTimelineType.EVENT
-			| typeof ConversationTimelineType.IDENTIFICATION;
+			| typeof ConversationTimelineType.IDENTIFICATION
+			| typeof ConversationTimelineType.TOOL;
 		text?: string | null;
 		parts: unknown[];
 		userId?: string | null;
@@ -122,9 +123,10 @@ type TimelineItem = {
 	type:
 		| typeof ConversationTimelineType.MESSAGE
 		| typeof ConversationTimelineType.EVENT
-		| typeof ConversationTimelineType.IDENTIFICATION;
+		| typeof ConversationTimelineType.IDENTIFICATION
+		| typeof ConversationTimelineType.TOOL;
 	text: string | null;
-	parts: unknown;
+	parts: unknown[];
 	userId: string | null;
 	visitorId: string | null;
 	aiAgentId: string | null;
@@ -158,7 +160,66 @@ export type CreateMessageTimelineItemOptions = {
 	triggerNotificationWorkflow?: boolean;
 };
 
-function serializeTimelineItemForRealtime(
+export type UpdateTimelineItemOptions = {
+	db: Database;
+	organizationId: string;
+	websiteId: string;
+	conversationId: string;
+	conversationOwnerVisitorId?: string | null;
+	itemId: string;
+	item: {
+		text?: string | null;
+		parts?: unknown[];
+		tool?: string | null;
+	};
+};
+
+function extractToolNameFromParts(parts: unknown[]): string | null {
+	for (const part of parts) {
+		if (
+			typeof part === "object" &&
+			part !== null &&
+			"type" in part &&
+			"toolName" in part &&
+			typeof part.type === "string" &&
+			part.type.startsWith("tool-") &&
+			typeof part.toolName === "string"
+		) {
+			return part.toolName;
+		}
+	}
+
+	return null;
+}
+
+function getTimelineItemToolName(item: {
+	tool?: string | null;
+	parts: unknown[];
+}): string | null {
+	return item.tool ?? extractToolNameFromParts(item.parts);
+}
+
+function serializeTimelineItemForRealtimeItem(
+	item: TimelineItem
+): RealtimeEventData<"timelineItemCreated">["item"] {
+	return {
+		id: item.id,
+		conversationId: item.conversationId,
+		organizationId: item.organizationId,
+		visibility: item.visibility,
+		type: item.type,
+		text: item.text,
+		parts: item.parts as unknown[],
+		userId: item.userId,
+		visitorId: item.visitorId,
+		aiAgentId: item.aiAgentId,
+		createdAt: item.createdAt,
+		deletedAt: item.deletedAt,
+		tool: item.tool,
+	};
+}
+
+function serializeTimelineItemForRealtimeCreated(
 	item: TimelineItem,
 	context: {
 		conversationId: string;
@@ -169,21 +230,27 @@ function serializeTimelineItemForRealtime(
 	}
 ): RealtimeEventData<"timelineItemCreated"> {
 	return {
-		item: {
-			id: item.id,
-			conversationId: item.conversationId,
-			organizationId: item.organizationId,
-			visibility: item.visibility,
-			type: item.type,
-			text: item.text,
-			parts: item.parts as unknown[],
-			userId: item.userId,
-			visitorId: item.visitorId,
-			aiAgentId: item.aiAgentId,
-			createdAt: item.createdAt,
-			deletedAt: item.deletedAt,
-			tool: item.tool,
-		},
+		item: serializeTimelineItemForRealtimeItem(item),
+		conversationId: context.conversationId,
+		websiteId: context.websiteId,
+		organizationId: context.organizationId,
+		userId: context.userId,
+		visitorId: context.visitorId,
+	};
+}
+
+function serializeTimelineItemForRealtimeUpdated(
+	item: TimelineItem,
+	context: {
+		conversationId: string;
+		websiteId: string;
+		organizationId: string;
+		userId: string | null;
+		visitorId: string | null;
+	}
+): RealtimeEventData<"timelineItemUpdated"> {
+	return {
+		item: serializeTimelineItemForRealtimeItem(item),
 		conversationId: context.conversationId,
 		websiteId: context.websiteId,
 		organizationId: context.organizationId,
@@ -265,7 +332,7 @@ export async function createMessageTimelineItem(
 	const isResponseFromTeam = Boolean(userId || aiAgentId);
 
 	if (isResponseFromTeam) {
-		const [updatedConversation] = await db
+		await db
 			.update(conversation)
 			.set({
 				firstResponseAt: createdTimelineItem.createdAt,
@@ -356,34 +423,7 @@ export async function createTimelineItem(
 		throw new Error("Timeline item ID is required");
 	}
 
-	const realtimePayload = serializeTimelineItemForRealtime(
-		{
-			id: parsedItem.id,
-			conversationId: parsedItem.conversationId,
-			organizationId: parsedItem.organizationId,
-			visibility: parsedItem.visibility,
-			type: parsedItem.type,
-			text: parsedItem.text ?? null,
-			parts: parsedItem.parts,
-			userId: parsedItem.userId,
-			visitorId: parsedItem.visitorId,
-			aiAgentId: parsedItem.aiAgentId,
-			createdAt: parsedItem.createdAt,
-			deletedAt: parsedItem.deletedAt ?? null,
-			tool: parsedItem.tool ?? null,
-		},
-		{
-			conversationId,
-			websiteId,
-			organizationId,
-			userId: parsedItem.userId,
-			visitorId: visitorIdForEvent,
-		}
-	);
-
-	await realtime.emit("timelineItemCreated", realtimePayload);
-
-	return {
+	const normalizedItem: TimelineItem = {
 		id: parsedItem.id,
 		conversationId: parsedItem.conversationId,
 		organizationId: parsedItem.organizationId,
@@ -396,8 +436,120 @@ export async function createTimelineItem(
 		aiAgentId: parsedItem.aiAgentId,
 		createdAt: parsedItem.createdAt,
 		deletedAt: parsedItem.deletedAt ?? null,
-		tool: parsedItem.tool ?? null,
+		tool: getTimelineItemToolName({
+			tool: parsedItem.tool ?? null,
+			parts: parsedItem.parts,
+		}),
 	};
+
+	const realtimePayload = serializeTimelineItemForRealtimeCreated(
+		normalizedItem,
+		{
+			conversationId,
+			websiteId,
+			organizationId,
+			userId: parsedItem.userId,
+			visitorId: visitorIdForEvent,
+		}
+	);
+
+	await realtime.emit("timelineItemCreated", realtimePayload);
+
+	return normalizedItem;
+}
+
+export async function updateTimelineItem(
+	options: UpdateTimelineItemOptions
+): Promise<TimelineItem> {
+	const {
+		db,
+		organizationId,
+		websiteId,
+		conversationId,
+		itemId,
+		item,
+		conversationOwnerVisitorId,
+	} = options;
+
+	const updates: Partial<{
+		text: string | null;
+		parts: unknown;
+	}> = {};
+
+	if ("text" in item) {
+		updates.text = item.text ?? null;
+	}
+
+	if ("parts" in item && item.parts) {
+		updates.parts = item.parts as unknown;
+	}
+
+	if (Object.keys(updates).length === 0) {
+		throw new Error("No timeline item updates were provided");
+	}
+
+	const [updatedItem] = await db
+		.update(conversationTimelineItem)
+		.set(updates)
+		.where(
+			and(
+				eq(conversationTimelineItem.id, itemId),
+				eq(conversationTimelineItem.organizationId, organizationId),
+				eq(conversationTimelineItem.conversationId, conversationId),
+				isNull(conversationTimelineItem.deletedAt)
+			)
+		)
+		.returning();
+
+	if (!updatedItem) {
+		throw new Error("Failed to update timeline item: item not found");
+	}
+
+	const parsedItem = timelineItemSchema.parse({
+		...updatedItem,
+		parts: updatedItem.parts,
+	});
+
+	const normalizedItem: TimelineItem = {
+		id: parsedItem.id ?? updatedItem.id,
+		conversationId: parsedItem.conversationId,
+		organizationId: parsedItem.organizationId,
+		visibility: parsedItem.visibility,
+		type: parsedItem.type,
+		text: parsedItem.text ?? null,
+		parts: parsedItem.parts,
+		userId: parsedItem.userId,
+		visitorId: parsedItem.visitorId,
+		aiAgentId: parsedItem.aiAgentId,
+		createdAt: parsedItem.createdAt,
+		deletedAt: parsedItem.deletedAt ?? null,
+		tool:
+			item.tool ??
+			getTimelineItemToolName({
+				tool: parsedItem.tool ?? null,
+				parts: parsedItem.parts,
+			}),
+	};
+
+	let visitorIdForEvent =
+		conversationOwnerVisitorId ?? normalizedItem.visitorId;
+	if (!visitorIdForEvent) {
+		visitorIdForEvent =
+			(await resolveConversationVisitorId(options.db, conversationId)) ?? null;
+	}
+
+	await realtime.emit(
+		"timelineItemUpdated",
+		serializeTimelineItemForRealtimeUpdated(normalizedItem, {
+			conversationId,
+			websiteId,
+			organizationId,
+			userId: normalizedItem.userId,
+			visitorId: visitorIdForEvent,
+		})
+	);
+
+	return normalizedItem;
 }
 
 async function resolveConversationVisitorId(

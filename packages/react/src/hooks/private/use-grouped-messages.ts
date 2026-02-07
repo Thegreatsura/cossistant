@@ -104,6 +104,28 @@ const getSenderIdAndTypeFromTimelineItem = (
 	};
 };
 
+const getToolNameFromTimelineItem = (item: TimelineItem): string | null => {
+	if (item.tool) {
+		return item.tool;
+	}
+
+	for (const part of item.parts) {
+		if (
+			typeof part === "object" &&
+			part !== null &&
+			"type" in part &&
+			"toolName" in part &&
+			typeof part.type === "string" &&
+			part.type.startsWith("tool-") &&
+			typeof part.toolName === "string"
+		) {
+			return part.toolName;
+		}
+	}
+
+	return null;
+};
+
 const EMPTY_STRING_ARRAY: readonly string[] = Object.freeze([]);
 
 // Helper function to group timeline items (messages only, events stay separate)
@@ -157,7 +179,7 @@ const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 			continue;
 		}
 
-		if (item.type === "identification") {
+		if (item.type === "identification" || item.type === "tool") {
 			// Finalize any existing group
 			if (currentGroup) {
 				result.push(currentGroup);
@@ -168,7 +190,7 @@ const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 			result.push({
 				type: "timeline_tool",
 				item,
-				tool: item.tool ?? null,
+				tool: getToolNameFromTimelineItem(item),
 				timestamp: itemDate,
 			});
 			continue;

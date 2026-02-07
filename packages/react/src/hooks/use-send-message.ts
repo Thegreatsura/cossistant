@@ -261,10 +261,7 @@ export function useSendMessage(
 					item: {
 						id: timelineItemPayload.id,
 						text: timelineItemPayload.text ?? "",
-						type:
-							timelineItemPayload.type === "identification"
-								? "message"
-								: timelineItemPayload.type,
+						type: timelineItemPayload.type === "event" ? "event" : "message",
 						visibility: timelineItemPayload.visibility,
 						userId: timelineItemPayload.userId,
 						aiAgentId: timelineItemPayload.aiAgentId,

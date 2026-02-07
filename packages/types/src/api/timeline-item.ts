@@ -308,10 +308,11 @@ export const timelineItemSchema = z.object({
 			ConversationTimelineType.MESSAGE,
 			ConversationTimelineType.EVENT,
 			ConversationTimelineType.IDENTIFICATION,
+			ConversationTimelineType.TOOL,
 		])
 		.openapi({
 			description:
-				"Type of timeline item - message, event, or interactive identification tool",
+				"Type of timeline item - message, event, identification, or tool call",
 		}),
 	text: z.string().nullable().openapi({
 		description: "Main text content of the timeline item",

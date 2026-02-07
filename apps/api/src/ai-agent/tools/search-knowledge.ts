@@ -5,7 +5,7 @@
  * Returns enriched results with source metadata for attribution.
  */
 
-import { tool } from "ai";
+import { type ToolExecutionOptions, tool } from "ai";
 import { z } from "zod";
 import { generateULID } from "../../utils/db/ids";
 import type { ChunkSearchResult } from "../../utils/vector-search";
@@ -134,8 +134,11 @@ export function createSearchKnowledgeBaseTool(ctx: ToolContext) {
 		description:
 			"Search the knowledge base for information to answer the visitor's question. ALWAYS call this BEFORE answering factual questions about the product, company, pricing, features, or policies. Use short, specific queries — not the visitor's full message. You can call this multiple times with different queries to find comprehensive information. Never make up answers — only use what search returns.",
 		inputSchema,
-		execute: async ({ query }): Promise<ToolResult<SearchResultData>> => {
-			const toolCallId = generateULID();
+		execute: async (
+			{ query },
+			options?: ToolExecutionOptions
+		): Promise<ToolResult<SearchResultData>> => {
+			const toolCallId = options?.toolCallId ?? generateULID();
 
 			try {
 				console.log(

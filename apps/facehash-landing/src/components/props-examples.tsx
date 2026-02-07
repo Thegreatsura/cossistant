@@ -71,7 +71,7 @@ function Example({ label, isDefault, children }: ExampleProps) {
 	return (
 		<div className="flex flex-col items-center gap-2">
 			{children}
-			<span className="text-[10px] text-[var(--muted-foreground)]">
+			<span className="text-[var(--muted-foreground)] text-xs">
 				{label}
 				{isDefault && (
 					<span className="ml-1 text-[var(--foreground)]">(default)</span>
@@ -90,8 +90,8 @@ type PropSectionProps = {
 function PropSection({ name, code, children }: PropSectionProps) {
 	return (
 		<div className="mb-10">
-			<p className="mb-2 font-medium text-xs">{name}</p>
-			<pre className="mb-4 overflow-x-auto bg-[var(--foreground)]/[0.03] p-3 text-[11px] text-[var(--muted-foreground)]">
+			<p className="mb-2 font-medium text-sm">{name}</p>
+			<pre className="mb-4 overflow-x-auto bg-[var(--foreground)]/[0.05] p-3 text-[var(--foreground)]/70 text-sm">
 				<code>{code}</code>
 			</pre>
 			<div className="flex flex-wrap items-end gap-6">{children}</div>
@@ -377,8 +377,7 @@ export function PropsExamples() {
 			{/* className - CSS styling */}
 			<PropSection
 				code={`// Style face color and font with Tailwind classes
-<Facehash name="ghost" className="text-gray-300" />
-<Facehash name="muted" className="text-gray-400 font-sans" />
+<Facehash name="ghost" className="text-white" />
 
 // For app-wide defaults, create a wrapper with tailwind-merge:
 import { Facehash, type FacehashProps } from "facehash";
@@ -387,7 +386,7 @@ import { cn } from "@/lib/utils";
 export function Avatar({ className, ...props }: FacehashProps) {
   return (
     <Facehash
-      className={cn("text-black font-mono font-bold", className)}
+      className={cn("text-black font-pixel font-bold", className)}
       {...props}
     />
   );
@@ -406,18 +405,9 @@ export function Avatar({ className, ...props }: FacehashProps) {
 						style={{ borderRadius }}
 					/>
 				</Example>
-				<Example label="text-gray-400">
+				<Example label="text-white">
 					<Face
-						className="text-gray-400"
-						colors={COLORS}
-						name="style-demo"
-						size={48}
-						style={{ borderRadius }}
-					/>
-				</Example>
-				<Example label="text-blue-500">
-					<Face
-						className="text-blue-500"
+						className="text-white"
 						colors={COLORS}
 						name="style-demo"
 						size={48}
@@ -439,7 +429,7 @@ export function Avatar({ className, ...props }: FacehashProps) {
 			<div className="relative mt-16 pt-10">
 				{/* Full-width top border */}
 				<div className="-translate-x-1/2 absolute top-0 left-1/2 w-screen border-[var(--border)] border-t border-dashed" />
-				<p className="mb-6 text-[var(--muted-foreground)] text-xs">
+				<p className="mb-6 text-[var(--muted-foreground)] text-sm">
 					need an image with fallback? use the Avatar wrapper:
 				</p>
 				<PropSection

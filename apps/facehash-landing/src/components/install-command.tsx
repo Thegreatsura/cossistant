@@ -43,7 +43,7 @@ export function InstallCommand() {
 				{PACKAGE_MANAGERS.map((pm) => (
 					<button
 						className={cn(
-							"px-4 py-1 text-xs transition-colors",
+							"px-1 py-1 text-xs transition-colors",
 							selected === pm.id
 								? "bg-[var(--background)] text-[var(--foreground)]"
 								: "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -63,8 +63,13 @@ export function InstallCommand() {
 				))}
 			</div>
 			{/* Command */}
-			<div className="relative flex items-center justify-between py-4">
-				<code className="text-sm">{selectedPm?.command}</code>
+			<div className="relative flex items-center justify-between pb-4">
+				<code className="text-base">
+					<span className="pointer-events-none select-none opacity-50">
+						$&nbsp;
+					</span>
+					{selectedPm?.command}
+				</code>
 				<button
 					className="p-1 transition-colors hover:bg-[var(--border)]"
 					onClick={handleCopy}

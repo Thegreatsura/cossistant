@@ -44,6 +44,7 @@ const TIMELINE_ITEM_TYPES: ConversationTimelineType[] = [
 	ConversationTimelineType.MESSAGE,
 	ConversationTimelineType.EVENT,
 	ConversationTimelineType.IDENTIFICATION,
+	ConversationTimelineType.TOOL,
 ];
 
 function isConversationTimelineType(
@@ -54,7 +55,25 @@ function isConversationTimelineType(
 
 type ConversationTimelineItemRow = typeof conversationTimelineItem.$inferSelect;
 
-function mapTimelineRowToTimelineItem(
+function extractToolNameFromParts(parts: unknown[]): string | null {
+	for (const part of parts) {
+		if (
+			typeof part === "object" &&
+			part !== null &&
+			"type" in part &&
+			"toolName" in part &&
+			typeof part.type === "string" &&
+			part.type.startsWith("tool-") &&
+			typeof part.toolName === "string"
+		) {
+			return part.toolName;
+		}
+	}
+
+	return null;
+}
+
+export function mapTimelineRowToTimelineItem(
 	row: ConversationTimelineItemRow
 ): TimelineItem | null {
 	if (!isConversationTimelineType(row.type)) {
@@ -67,6 +86,8 @@ function mapTimelineRowToTimelineItem(
 		return null;
 	}
 
+	const parsedParts = parsedPartsResult.data;
+
 	return {
 		id: row.id,
 		conversationId: row.conversationId,
@@ -74,13 +95,13 @@ function mapTimelineRowToTimelineItem(
 		visibility: row.visibility,
 		type: row.type,
 		text: row.text,
-		parts: parsedPartsResult.data,
+		parts: parsedParts,
 		userId: row.userId,
 		visitorId: row.visitorId,
 		aiAgentId: row.aiAgentId,
 		createdAt: row.createdAt,
 		deletedAt: row.deletedAt,
-		tool: null,
+		tool: extractToolNameFromParts(parsedParts),
 	};
 }
 

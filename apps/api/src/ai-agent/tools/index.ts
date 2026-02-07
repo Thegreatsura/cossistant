@@ -28,6 +28,7 @@ import { createSendMessageTool } from "./send-message-tool";
 import { createSendPrivateMessageTool } from "./send-private-message-tool";
 import { createSetPriorityTool } from "./set-priority";
 import { createUpdateConversationTitleTool } from "./set-title";
+import { wrapToolsWithTimelineLogging } from "./tool-call-logger";
 import type { ToolContext } from "./types";
 import { createUpdateSentimentTool } from "./update-sentiment";
 
@@ -96,7 +97,11 @@ export function getToolsForGeneration(
 	tools.markSpam = createMarkSpamTool(toolContext);
 	tools.skip = createSkipTool(toolContext);
 
-	return Object.keys(tools).length > 0 ? tools : undefined;
+	if (Object.keys(tools).length === 0) {
+		return;
+	}
+
+	return wrapToolsWithTimelineLogging(tools, toolContext);
 }
 
 /**
@@ -112,5 +117,9 @@ export function getRepairTools(toolContext: ToolContext): ToolSet | undefined {
 		tools.respond = createRespondTool(toolContext);
 	}
 
-	return Object.keys(tools).length > 0 ? tools : undefined;
+	if (Object.keys(tools).length === 0) {
+		return;
+	}
+
+	return wrapToolsWithTimelineLogging(tools, toolContext);
 }

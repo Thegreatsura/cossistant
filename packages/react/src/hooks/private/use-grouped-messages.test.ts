@@ -68,6 +68,28 @@ const getSenderIdAndTypeFromTimelineItem = (
 	};
 };
 
+const getToolNameFromTimelineItem = (item: TimelineItem): string | null => {
+	if (item.tool) {
+		return item.tool;
+	}
+
+	for (const part of item.parts) {
+		if (
+			typeof part === "object" &&
+			part !== null &&
+			"type" in part &&
+			"toolName" in part &&
+			typeof part.type === "string" &&
+			part.type.startsWith("tool-") &&
+			typeof part.toolName === "string"
+		) {
+			return part.toolName;
+		}
+	}
+
+	return null;
+};
+
 // Copy of groupTimelineItems for testing (same as in use-grouped-messages.ts)
 const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 	const result: ConversationItem[] = [];
@@ -118,7 +140,7 @@ const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 			continue;
 		}
 
-		if (item.type === "identification") {
+		if (item.type === "identification" || item.type === "tool") {
 			// Finalize any existing group
 			if (currentGroup && currentGroup.type === "message_group") {
 				result.push(currentGroup);
@@ -129,7 +151,7 @@ const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 			result.push({
 				type: "timeline_tool",
 				item,
-				tool: item.tool ?? null,
+				tool: getToolNameFromTimelineItem(item),
 				timestamp: itemDate,
 			});
 			continue;
@@ -807,6 +829,43 @@ describe("groupTimelineItems - day separator", () => {
 		expect(result[1]?.type).toBe("message_group");
 		expect(result[2]?.type).toBe("day_separator");
 		expect(result[3]?.type).toBe("timeline_tool");
+	});
+
+	it("groups timeline type 'tool' as timeline_tool and extracts toolName from part", () => {
+		const items: TimelineItem[] = [
+			createTimelineItem({
+				id: "msg-1",
+				userId: "user-1",
+				visitorId: null,
+				createdAt: new Date("2024-01-15T10:00:00.000Z").toISOString(),
+			}),
+			createTimelineItem({
+				id: "tool-2",
+				type: "tool",
+				tool: null,
+				userId: null,
+				visitorId: null,
+				aiAgentId: "ai-1",
+				createdAt: new Date("2024-01-16T10:00:00.000Z").toISOString(),
+				parts: [
+					{
+						type: "tool-searchKnowledgeBase",
+						toolCallId: "call-1",
+						toolName: "searchKnowledgeBase",
+						input: { query: "pricing" },
+						state: "partial",
+					},
+				],
+			}),
+		];
+
+		const result = groupTimelineItems(items);
+		const toolItem = result[3];
+
+		expect(toolItem?.type).toBe("timeline_tool");
+		if (toolItem?.type === "timeline_tool") {
+			expect(toolItem.tool).toBe("searchKnowledgeBase");
+		}
 	});
 
 	it("breaks message groups at day boundaries even for same sender", () => {

@@ -25,6 +25,10 @@ type QueryKeyInput = {
 	type?: string;
 };
 
+function isPrivateToolTimelineItem(item: TimelineItem): boolean {
+	return item.type === "tool" && item.visibility === "private";
+}
+
 function extractQueryInput(
 	queryKey: readonly unknown[]
 ): ConversationTimelineItemsQueryInput | null {
@@ -102,6 +106,13 @@ export const handleMessageCreated = ({
 		upsertConversationTimelineItemInCache(queryClient, queryKey, item);
 	}
 
+	const timelineItem = item as TimelineItem;
+
+	// Keep tool-call debug rows out of conversation header ordering/preview churn.
+	if (isPrivateToolTimelineItem(timelineItem)) {
+		return;
+	}
+
 	// Type assertion needed because TimelineItemParts contains complex union types
 	// that don't fit @normy/react-query's simpler Data type constraints
 	const existingHeader = context.queryNormalizer.getObjectById(
@@ -129,9 +140,7 @@ export const handleMessageCreated = ({
 		return;
 	}
 
-	const headerUpdater = createHeaderUpdaterFromTimelineItem(
-		item as TimelineItem
-	);
+	const headerUpdater = createHeaderUpdaterFromTimelineItem(timelineItem);
 
 	forEachConversationHeadersQuery(
 		queryClient,

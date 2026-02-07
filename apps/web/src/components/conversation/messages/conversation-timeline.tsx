@@ -25,6 +25,7 @@ import { extractEventPart } from "@/lib/timeline-events";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
 import { TimelineMessageGroup } from "./timeline-message-group";
+import { ToolCall } from "./tool-call";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
 const EMPTY_TIMELINE_ITEMS: TimelineItem[] = [];
@@ -197,7 +198,10 @@ function ConversationTimelineListComponent({
 							}
 
 							if (item.type === "timeline_tool") {
-								return null;
+								const timelineItem = item.item;
+								const key = timelineItem.id ?? `timeline-tool-${index}`;
+
+								return <ToolCall item={timelineItem} key={key} />;
 							}
 
 							// Use first timeline item ID as stable key

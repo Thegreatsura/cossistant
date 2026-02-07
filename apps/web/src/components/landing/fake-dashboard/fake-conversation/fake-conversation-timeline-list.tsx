@@ -14,6 +14,7 @@ import { AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import { ConversationEvent } from "@/components/conversation/messages/event";
 import { TimelineMessageGroup } from "@/components/conversation/messages/timeline-message-group";
+import { ToolCall } from "@/components/conversation/messages/tool-call";
 import {
 	TypingIndicator,
 	type TypingParticipant,
@@ -145,7 +146,9 @@ export function FakeConversationTimelineList({
 							}
 
 							if (item.type === "timeline_tool") {
-								return null;
+								const timelineItem = item.item;
+								const key = timelineItem.id ?? `timeline-tool-${index}`;
+								return <ToolCall item={timelineItem} key={key} />;
 							}
 
 							if (item.type === "day_separator") {

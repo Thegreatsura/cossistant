@@ -1,14 +1,8 @@
 import { Analytics } from "@vercel/analytics/next";
+import { GeistPixelSquare } from "geist/font/pixel";
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-	display: "swap",
-});
 
 const siteUrl = process.env.NEXT_PUBLIC_URL || "https://facehash.dev";
 
@@ -139,7 +133,11 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html
+			className={GeistPixelSquare.variable}
+			lang="en"
+			suppressHydrationWarning
+		>
 			<Analytics />
 			<head>
 				<script
@@ -148,7 +146,7 @@ export default function RootLayout({
 					type="application/ld+json"
 				/>
 			</head>
-			<body className={`${geistMono.variable} font-mono antialiased`}>
+			<body className="font-pixel antialiased">
 				<Providers>{children}</Providers>
 			</body>
 		</html>
