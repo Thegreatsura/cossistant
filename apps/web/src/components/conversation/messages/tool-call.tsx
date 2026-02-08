@@ -42,6 +42,21 @@ function extractToolPart(item: TimelineItem): ToolTimelinePart | null {
 	return null;
 }
 
+function getFallbackSummary(
+	toolName: string,
+	state: ToolTimelinePart["state"]
+): string {
+	if (state === "partial") {
+		return `Running ${toolName}`;
+	}
+
+	if (state === "result") {
+		return `Completed ${toolName}`;
+	}
+
+	return `Failed ${toolName}`;
+}
+
 function safeJson(value: unknown): string {
 	try {
 		const serialized = JSON.stringify(value, null, 2);
@@ -98,13 +113,15 @@ export function ToolCall({ item }: { item: TimelineItem }) {
 	}
 
 	const config = stateConfig[toolPart.state];
+	const summaryText =
+		typeof item.text === "string" && item.text.trim().length > 0
+			? item.text
+			: getFallbackSummary(toolPart.toolName, toolPart.state);
 
 	return (
 		<div className="rounded-lg border border-border/60 bg-muted/30 p-3">
 			<div className="flex items-center gap-2 text-xs">
-				<span className="font-semibold text-foreground">
-					{toolPart.toolName}
-				</span>
+				<span className="font-semibold text-foreground">{summaryText}</span>
 				<span
 					className={cn(
 						"inline-flex items-center rounded-md border px-1.5 py-0.5 font-medium",
@@ -119,6 +136,9 @@ export function ToolCall({ item }: { item: TimelineItem }) {
 						minute: "2-digit",
 					})}
 				</time>
+			</div>
+			<div className="mt-1 text-[11px] text-muted-foreground">
+				Tool: <span className="font-mono">{toolPart.toolName}</span>
 			</div>
 
 			<details className="group mt-2">

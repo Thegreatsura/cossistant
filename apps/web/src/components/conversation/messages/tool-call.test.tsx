@@ -13,7 +13,7 @@ function createToolTimelineItem(
 		organizationId: "org-1",
 		visibility: "private",
 		type: "tool",
-		text: "Tool call: searchKnowledgeBase",
+		text: "Looking in knowledge base...",
 		parts: [
 			{
 				type: "tool-searchKnowledgeBase",
@@ -38,8 +38,9 @@ function render(item: TimelineItem): string {
 }
 
 describe("ToolCall", () => {
-	it("renders partial state", () => {
+	it("renders summary text and partial state", () => {
 		const html = render(createToolTimelineItem());
+		expect(html).toContain("Looking in knowledge base...");
 		expect(html).toContain("searchKnowledgeBase");
 		expect(html).toContain("Running");
 		expect(html).toContain("Debug details");
@@ -70,6 +71,7 @@ describe("ToolCall", () => {
 	it("renders error state with error details", () => {
 		const html = render(
 			createToolTimelineItem({
+				text: "Failed sendMessage",
 				parts: [
 					{
 						type: "tool-sendMessage",
@@ -85,5 +87,24 @@ describe("ToolCall", () => {
 
 		expect(html).toContain("Error");
 		expect(html).toContain("Could not send");
+	});
+
+	it("falls back to derived summary when item text is missing", () => {
+		const html = render(
+			createToolTimelineItem({
+				text: null,
+				parts: [
+					{
+						type: "tool-sendMessage",
+						toolCallId: "call-4",
+						toolName: "sendMessage",
+						input: { message: "hello" },
+						state: "partial",
+					},
+				],
+			})
+		);
+
+		expect(html).toContain("Running sendMessage");
 	});
 });

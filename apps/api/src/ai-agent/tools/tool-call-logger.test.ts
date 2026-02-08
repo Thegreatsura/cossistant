@@ -121,11 +121,19 @@ describe("tool-call-logger", () => {
 				id: expectedTimelineId,
 				type: "tool",
 				visibility: "private",
+				text: "Running sendMessage",
 			},
 		});
 
+		const updatedCall = updateTimelineItemMock.mock.calls[0]?.[0] as {
+			item: {
+				text?: string;
+				parts: Array<{ state?: string }>;
+			};
+		};
+		expect(updatedCall.item.text).toBe("Completed sendMessage");
 		const updatedPart = (
-			updateTimelineItemMock.mock.calls[0]?.[0] as {
+			updatedCall as {
 				item: { parts: Array<{ state?: string }> };
 			}
 		).item.parts[0];
@@ -159,12 +167,80 @@ describe("tool-call-logger", () => {
 		const updatedPart = (
 			updateTimelineItemMock.mock.calls[0]?.[0] as {
 				item: {
+					text?: string;
 					parts: Array<{ state?: string; errorText?: string }>;
 				};
 			}
-		).item.parts[0];
-		expect(updatedPart?.state).toBe("error");
-		expect(updatedPart?.errorText).toContain("Could not send");
+		).item;
+		expect(updatedPart.text).toBe("Failed sendMessage");
+		const part = updatedPart.parts[0];
+		expect(part?.state).toBe("error");
+		expect(part?.errorText).toContain("Could not send");
+	});
+
+	it("uses tool-specific summary text for title and sentiment updates", async () => {
+		const { wrapToolsWithTimelineLogging } = await toolCallLoggerModulePromise;
+
+		const wrappedTools = wrapToolsWithTimelineLogging(
+			{
+				updateConversationTitle: {
+					execute: async () => ({
+						success: true,
+						data: {
+							title: "Refund status request",
+						},
+					}),
+				},
+				updateSentiment: {
+					execute: async () => ({
+						success: true,
+						data: {
+							sentiment: "negative",
+						},
+					}),
+				},
+			} as never,
+			createToolContext() as never
+		);
+
+		await executeWrappedTool(
+			wrappedTools as never,
+			"updateConversationTitle",
+			{ title: "Refund status request" },
+			{ toolCallId: "call-title" }
+		);
+
+		expect(createTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			item: {
+				text: "Updating conversation title...",
+			},
+		});
+		expect(updateTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			item: {
+				text: 'Updated conversation title to "Refund status request"',
+			},
+		});
+
+		createTimelineItemMock.mockClear();
+		updateTimelineItemMock.mockClear();
+
+		await executeWrappedTool(
+			wrappedTools as never,
+			"updateSentiment",
+			{ sentiment: "negative" },
+			{ toolCallId: "call-sentiment" }
+		);
+
+		expect(createTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			item: {
+				text: "Updating sentiment...",
+			},
+		});
+		expect(updateTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			item: {
+				text: "Updated sentiment to negative",
+			},
+		});
 	});
 
 	it("updates tool row to error state when execute throws", async () => {
@@ -191,13 +267,14 @@ describe("tool-call-logger", () => {
 		).rejects.toThrow("boom");
 
 		expect(updateTimelineItemMock).toHaveBeenCalledTimes(1);
-		const updatedPart = (
-			updateTimelineItemMock.mock.calls[0]?.[0] as {
-				item: {
-					parts: Array<{ state?: string; errorText?: string }>;
-				};
-			}
-		).item.parts[0];
+		const updatedCall = updateTimelineItemMock.mock.calls[0]?.[0] as {
+			item: {
+				text?: string;
+				parts: Array<{ state?: string; errorText?: string }>;
+			};
+		};
+		expect(updatedCall.item.text).toBe("Knowledge base lookup failed");
+		const updatedPart = updatedCall.item.parts[0];
 		expect(updatedPart?.state).toBe("error");
 		expect(updatedPart?.errorText).toContain("boom");
 	});
@@ -274,6 +351,17 @@ describe("tool-call-logger", () => {
 			{ query: "pricing" },
 			{ toolCallId: "call-5" }
 		);
+
+		expect(createTimelineItemMock.mock.calls.at(-1)?.[0]).toMatchObject({
+			item: {
+				text: "Looking in knowledge base...",
+			},
+		});
+		expect(updateTimelineItemMock.mock.calls.at(-1)?.[0]).toMatchObject({
+			item: {
+				text: "Found 1 relevant source",
+			},
+		});
 
 		const updatedPart = (
 			updateTimelineItemMock.mock.calls.at(-1)?.[0] as {

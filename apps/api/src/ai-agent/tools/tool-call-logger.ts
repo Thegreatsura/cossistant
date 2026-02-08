@@ -241,6 +241,132 @@ function sanitizeToolOutput(toolName: string, output: unknown): unknown {
 	return sanitizeToolDebugValue(output);
 }
 
+function getSearchKnowledgeBaseResultCount(output: unknown): number | null {
+	if (!isRecord(output)) {
+		return null;
+	}
+
+	const data = isRecord(output.data) ? output.data : null;
+	const totalFound = data?.totalFound;
+	if (typeof totalFound === "number" && Number.isFinite(totalFound)) {
+		return totalFound;
+	}
+
+	const articles = Array.isArray(data?.articles) ? data.articles : null;
+	if (articles) {
+		return articles.length;
+	}
+
+	return null;
+}
+
+function getTitleFromToolOutput(output: unknown): string | null {
+	if (!isRecord(output)) {
+		return null;
+	}
+
+	const data = isRecord(output.data) ? output.data : null;
+	const titleCandidate =
+		typeof data?.title === "string"
+			? data.title
+			: typeof output.title === "string"
+				? output.title
+				: null;
+
+	if (!titleCandidate) {
+		return null;
+	}
+
+	return truncateString(redactString(titleCandidate), 140);
+}
+
+function getSentimentFromToolOutput(output: unknown): string | null {
+	if (!isRecord(output)) {
+		return null;
+	}
+
+	const data = isRecord(output.data) ? output.data : null;
+	const sentimentCandidate =
+		typeof data?.sentiment === "string"
+			? data.sentiment
+			: typeof output.sentiment === "string"
+				? output.sentiment
+				: null;
+
+	if (!sentimentCandidate) {
+		return null;
+	}
+
+	return truncateString(redactString(sentimentCandidate), 60);
+}
+
+function buildToolSummaryText(params: {
+	toolName: string;
+	state: "partial" | "result" | "error";
+	sanitizedOutput?: unknown;
+}): string {
+	const { toolName, state, sanitizedOutput } = params;
+
+	if (toolName === "searchKnowledgeBase") {
+		if (state === "partial") {
+			return "Looking in knowledge base...";
+		}
+
+		if (state === "result") {
+			const count = getSearchKnowledgeBaseResultCount(sanitizedOutput);
+			if (typeof count === "number" && Number.isFinite(count)) {
+				return `Found ${count} relevant source${count === 1 ? "" : "s"}`;
+			}
+			return "Finished knowledge base lookup";
+		}
+
+		return "Knowledge base lookup failed";
+	}
+
+	if (
+		toolName === "updateConversationTitle" ||
+		toolName === "setConversationTitle"
+	) {
+		if (state === "partial") {
+			return "Updating conversation title...";
+		}
+
+		if (state === "result") {
+			const title = getTitleFromToolOutput(sanitizedOutput);
+			return title
+				? `Updated conversation title to "${title}"`
+				: "Updated conversation title";
+		}
+
+		return "Failed to update conversation title";
+	}
+
+	if (toolName === "updateSentiment") {
+		if (state === "partial") {
+			return "Updating sentiment...";
+		}
+
+		if (state === "result") {
+			const sentiment = getSentimentFromToolOutput(sanitizedOutput);
+			return sentiment
+				? `Updated sentiment to ${sentiment}`
+				: "Updated sentiment";
+		}
+
+		return "Failed to update sentiment";
+	}
+
+	if (state === "partial") {
+		return `Running ${toolName}`;
+	}
+
+	if (state === "result") {
+		return `Completed ${toolName}`;
+	}
+
+	return `Failed ${toolName}`;
+}
+
 function toErrorText(error: unknown): string {
 	if (typeof error === "string") {
 		return truncateString(redactString(error), MAX_STRING_LENGTH);
@@ -333,6 +459,10 @@ async function safeCreatePartialToolTimelineItem(params: {
 }): Promise<void> {
 	const { toolContext, timelineItemId, toolName, toolCallId, sanitizedInput } =
 		params;
+	const summaryText = buildToolSummaryText({
+		toolName,
+		state: "partial",
+	});
 
 	try {
 		await createTimelineItem({
@@ -344,7 +474,7 @@ async function safeCreatePartialToolTimelineItem(params: {
 			item: {
 				id: timelineItemId,
 				type: ConversationTimelineType.TOOL,
-				text: `Tool call: ${toolName}`,
+				text: summaryText,
 				parts: [
 					buildToolPart({
 						toolName,
@@ -399,6 +529,11 @@ async function safeUpdateToolTimelineItem(params: {
 		sanitizedOutput,
 		errorText,
 	} = params;
+	const summaryText = buildToolSummaryText({
+		toolName,
+		state,
+		sanitizedOutput,
+	});
 
 	try {
 		await updateTimelineItem({
@@ -409,7 +544,7 @@ async function safeUpdateToolTimelineItem(params: {
 			conversationOwnerVisitorId: toolContext.visitorId,
 			itemId: timelineItemId,
 			item: {
-				text: `Tool call: ${toolName}`,
+				text: summaryText,
 				parts: [
 					buildToolPart({
 						toolName,
