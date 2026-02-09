@@ -11,7 +11,6 @@ describe("tool timeline policy", () => {
 			"searchKnowledgeBase",
 			"updateConversationTitle",
 			"updateSentiment",
-			"setPriority",
 		]);
 	});
 
@@ -19,7 +18,11 @@ describe("tool timeline policy", () => {
 		expect(isConversationVisibleTool("searchKnowledgeBase")).toBe(true);
 		expect(isConversationVisibleTool("updateConversationTitle")).toBe(true);
 		expect(isConversationVisibleTool("updateSentiment")).toBe(true);
-		expect(isConversationVisibleTool("setPriority")).toBe(true);
+	});
+
+	it("marks setPriority as log-only (uses conversation event instead)", () => {
+		expect(isConversationVisibleTool("setPriority")).toBe(false);
+		expect(getToolLogType("setPriority")).toBe("log");
 	});
 
 	it("marks non-allowlisted tools as log-only", () => {

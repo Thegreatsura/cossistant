@@ -38,16 +38,12 @@ function render(item: TimelineItem, mode?: "default" | "developer"): string {
 }
 
 describe("ToolCall", () => {
-	it("renders summary text and partial state", () => {
+	it("renders partial state as inline activity with spinner-friendly text", () => {
 		const html = render(createToolTimelineItem());
-		expect(html).toContain("Looking in knowledge base...");
-		expect(html).toContain("searchKnowledgeBase");
-		expect(html).toContain("Running");
-		expect(html).toContain("Debug details");
-		expect(html).toContain('Call ID: <span class="font-mono">call-1</span>');
+		expect(html).toContain("Searching knowledge base...");
 	});
 
-	it("renders result state with output details", () => {
+	it("renders result state with source count", () => {
 		const html = render(
 			createToolTimelineItem({
 				parts: [
@@ -57,36 +53,36 @@ describe("ToolCall", () => {
 						toolName: "searchKnowledgeBase",
 						input: { query: "pricing" },
 						state: "result",
-						output: { success: true, data: { totalFound: 1 } },
+						output: {
+							success: true,
+							data: { totalFound: 3, articles: [] },
+						},
 					},
 				],
 			})
 		);
 
-		expect(html).toContain("Success");
-		expect(html).toContain("Output");
-		expect(html).toContain("totalFound");
+		expect(html).toContain("Found 3 sources");
 	});
 
-	it("renders error state with error details", () => {
+	it("renders error state with friendly error text", () => {
 		const html = render(
 			createToolTimelineItem({
-				text: "Failed sendMessage",
+				text: "Knowledge base lookup failed",
 				parts: [
 					{
-						type: "tool-sendMessage",
+						type: "tool-searchKnowledgeBase",
 						toolCallId: "call-3",
-						toolName: "sendMessage",
-						input: { message: "hello" },
+						toolName: "searchKnowledgeBase",
+						input: { query: "pricing" },
 						state: "error",
-						errorText: "Could not send",
+						errorText: "Connection timeout",
 					},
 				],
 			})
 		);
 
-		expect(html).toContain("Error");
-		expect(html).toContain("Could not send");
+		expect(html).toContain("Knowledge base lookup failed");
 	});
 
 	it("falls back to derived summary when item text is missing", () => {
@@ -132,5 +128,77 @@ describe("ToolCall", () => {
 		expect(html).toContain("Fallback rendered from timeline metadata.");
 		expect(html).toContain("sendMessage");
 		expect(html).toContain("tool-1");
+	});
+
+	it("renders updateConversationTitle with quoted title on result", () => {
+		const html = render(
+			createToolTimelineItem({
+				text: 'Updated conversation title to "Help with billing"',
+				parts: [
+					{
+						type: "tool-updateConversationTitle",
+						toolCallId: "call-5",
+						toolName: "updateConversationTitle",
+						input: { title: "Help with billing" },
+						state: "result",
+						output: {
+							success: true,
+							data: { title: "Help with billing" },
+						},
+					},
+				],
+				tool: "updateConversationTitle",
+			})
+		);
+
+		expect(html).toContain("Help with billing");
+		expect(html).toContain("Changed title to");
+	});
+
+	it("renders updateSentiment with sentiment value", () => {
+		const html = render(
+			createToolTimelineItem({
+				text: "Updated sentiment to positive",
+				parts: [
+					{
+						type: "tool-updateSentiment",
+						toolCallId: "call-6",
+						toolName: "updateSentiment",
+						input: {},
+						state: "result",
+						output: {
+							success: true,
+							data: { sentiment: "positive" },
+						},
+					},
+				],
+				tool: "updateSentiment",
+			})
+		);
+
+		expect(html).toContain("Sentiment:");
+		expect(html).toContain("positive");
+	});
+
+	it("renders setPriority with priority badge", () => {
+		const html = render(
+			createToolTimelineItem({
+				text: "Priority set to high",
+				parts: [
+					{
+						type: "tool-setPriority",
+						toolCallId: "call-7",
+						toolName: "setPriority",
+						input: {},
+						state: "result",
+						output: { success: true, data: { priority: "high" } },
+					},
+				],
+				tool: "setPriority",
+			})
+		);
+
+		expect(html).toContain("Priority set to");
+		expect(html).toContain("high");
 	});
 });

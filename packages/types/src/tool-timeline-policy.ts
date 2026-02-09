@@ -11,7 +11,6 @@ export const TOOL_TIMELINE_CONVERSATION_ALLOWLIST = [
 	"searchKnowledgeBase",
 	"updateConversationTitle",
 	"updateSentiment",
-	"setPriority",
 ] as const;
 
 const CONVERSATION_VISIBLE_TOOLS = new Set<string>(

@@ -1,0 +1,60 @@
+import { cn } from "@/lib/utils";
+import type { ActivityIcon } from "../activity-wrapper";
+import { ActivityWrapper } from "../activity-wrapper";
+import type { EventActivityProps } from "../types";
+
+const priorityColor: Record<string, string> = {
+	urgent: "text-destructive font-semibold",
+};
+
+function extractPriorityFromMessage(
+	message: string | null | undefined
+): string | null {
+	if (!message) {
+		return null;
+	}
+	const match = message.match(/priority\s+(?:to\s+)?(\w+)/i);
+	return match?.[1] ?? null;
+}
+
+function resolveEventIcon(event: EventActivityProps["event"]): ActivityIcon {
+	if (event.actorType === "ai") {
+		return { type: "logo" };
+	}
+	return {
+		type: "avatar",
+		name: event.actorName,
+		image: event.actorImage,
+	};
+}
+
+export function PriorityChangedActivity({
+	event,
+	timestamp,
+}: EventActivityProps) {
+	const priority = extractPriorityFromMessage(event.message);
+	const colorClass = priority
+		? (priorityColor[priority.toLowerCase()] ?? "")
+		: "";
+
+	const text = priority ? (
+		<>
+			<span className="font-semibold">{event.actorName}</span> changed priority
+			to <span className={cn(colorClass)}>{priority}</span>
+		</>
+	) : (
+		<>
+			<span className="font-semibold">{event.actorName}</span>{" "}
+			{event.actionText}
+		</>
+	);
+
+	return (
+		<ActivityWrapper
+			icon={resolveEventIcon(event)}
+			state="result"
+			text={text}
+			timestamp={timestamp}
+		/>
+	);
+}

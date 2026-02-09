@@ -146,10 +146,10 @@ export function TimelineMessageGroup({
 									) : isAI ? (
 										<div
 											className={cn(
-												"flex size-8 shrink-0 items-center justify-center"
+												"flex size-7 shrink-0 items-center justify-center"
 											)}
 										>
-											<Logo className="size-6 text-primary/90" />
+											<Logo className="size-5 text-primary/90" />
 										</div>
 									) : (
 										<Avatar

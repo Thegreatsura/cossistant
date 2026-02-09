@@ -15,7 +15,7 @@ function WebsiteImage({ name, logoUrl, className }: WebsiteImageProps) {
 	return (
 		<div
 			className={cn(
-				"relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-background-200",
+				"relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-background-200",
 				className
 			)}
 		>

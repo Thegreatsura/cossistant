@@ -3,11 +3,10 @@ import type {
 	AvailableHumanAgent,
 	TimelinePartEvent,
 } from "@cossistant/types";
-import { motion } from "motion/react";
 import type React from "react";
-import { Avatar } from "@/components/ui/avatar";
-import { Logo } from "@/components/ui/logo";
 import { buildTimelineEventDisplay } from "@/lib/timeline-events";
+import { EVENT_RENDERER_MAP, FallbackEventActivity } from "./activity/events";
+import type { EventActivityProps, NormalizedEvent } from "./activity/types";
 
 // Minimal visitor type needed for timeline event display
 type MinimalVisitorForEvent = {
@@ -27,6 +26,27 @@ export type ConversationEventProps = {
 	visitor?: MinimalVisitorForEvent | null;
 };
 
+function buildNormalizedEvent(
+	display: ReturnType<typeof buildTimelineEventDisplay>,
+	event: TimelinePartEvent
+): NormalizedEvent {
+	return {
+		eventType: event.eventType,
+		actorName: display.actorName,
+		actorType: display.avatarType,
+		actorImage: display.avatarImage,
+		actionText: display.actionText,
+		message: event.message,
+	};
+}
+
+function formatTimestamp(createdAt: string): string {
+	return new Date(createdAt).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+}
+
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	event,
 	createdAt,
@@ -41,46 +61,11 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		visitor,
 	});
 
-	const isVisitorIdentifiedEvent = display.avatarType === "visitor";
+	const normalizedEvent = buildNormalizedEvent(display, event);
+	const timestamp = createdAt ? formatTimestamp(createdAt) : "";
 
-	return (
-		<motion.div
-			animate={{ opacity: 1, scale: 1 }}
-			className="flex items-center justify-center py-3"
-			initial={{ opacity: 0, scale: 0.95 }}
-			transition={{ duration: 0.3, ease: "easeOut" }}
-		>
-			<div className="flex items-center gap-2 text-muted-foreground text-xs">
-				<div className="flex flex-col justify-end">
-					{isVisitorIdentifiedEvent ? (
-						<Avatar
-							className="size-5 shrink-0 overflow-clip"
-							fallbackName={display.avatarFallbackName}
-							url={display.avatarImage}
-						/>
-					) : display.avatarType === "ai" ? (
-						<Logo className="size-5 text-primary" />
-					) : (
-						<Avatar
-							className="size-5 shrink-0 overflow-clip"
-							fallbackName={display.avatarFallbackName}
-							url={display.avatarImage}
-						/>
-					)}
-				</div>
-				<span className="px-1">
-					<span className="font-semibold">{display.actorName}</span>{" "}
-					{display.actionText}
-				</span>
-				{createdAt && (
-					<time className="text-[10px]">
-						{new Date(createdAt).toLocaleTimeString([], {
-							hour: "2-digit",
-							minute: "2-digit",
-						})}
-					</time>
-				)}
-			</div>
-		</motion.div>
-	);
+	const Renderer: React.ComponentType<EventActivityProps> =
+		EVENT_RENDERER_MAP[event.eventType] ?? FallbackEventActivity;
+
+	return <Renderer event={normalizedEvent} timestamp={timestamp} />;
 };
