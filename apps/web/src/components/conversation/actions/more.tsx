@@ -12,6 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
+import {
+	CONVERSATION_DEVELOPER_MODE_HOTKEY,
+	CONVERSATION_DEVELOPER_MODE_SHORTCUT_CHIPS,
+	useConversationDeveloperMode,
+} from "@/hooks/use-conversation-developer-mode";
 import { cn } from "@/lib/utils";
 import {
 	type RunConversationActionOptions,
@@ -37,6 +42,12 @@ export function MoreConversationActions({
 	const [open, setOpen] = useState(false);
 	const [tooltipSuppressed, setTooltipSuppressed] = useState(false);
 	const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const isDeveloperModeEnabled = useConversationDeveloperMode(
+		(state) => state.isDeveloperModeEnabled
+	);
+	const toggleDeveloperMode = useConversationDeveloperMode(
+		(state) => state.toggleDeveloperMode
+	);
 
 	const {
 		markResolved,
@@ -95,6 +106,9 @@ export function MoreConversationActions({
 	const copyIdErrorMessage = "Unable to copy conversation ID";
 	const copyUrlSuccessMessage = "Conversation link copied";
 	const copyUrlErrorMessage = "Unable to copy conversation link";
+	const developerModeLabel = isDeveloperModeEnabled
+		? "Disable developer mode"
+		: "Enable developer mode";
 
 	const suppressTooltipTemporarily = useCallback(() => {
 		setTooltipSuppressed(true);
@@ -270,6 +284,16 @@ export function MoreConversationActions({
 		]
 	);
 
+	useHotkeys(
+		CONVERSATION_DEVELOPER_MODE_HOTKEY,
+		(event) => {
+			event.preventDefault();
+			toggleDeveloperMode();
+		},
+		preventHotkeysOptions,
+		[toggleDeveloperMode]
+	);
+
 	useEffect(
 		() => () => {
 			if (tooltipTimeoutRef.current) {
@@ -420,6 +444,17 @@ export function MoreConversationActions({
 							{blockLabel}
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem
+						onSelect={(event) => {
+							event.preventDefault();
+							closeMenu();
+							toggleDeveloperMode();
+						}}
+						shortcuts={[...CONVERSATION_DEVELOPER_MODE_SHORTCUT_CHIPS]}
+					>
+						{developerModeLabel}
+					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
 						onSelect={(event) => {

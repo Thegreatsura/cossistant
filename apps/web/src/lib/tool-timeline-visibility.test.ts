@@ -89,4 +89,43 @@ describe("tool timeline visibility", () => {
 		expect(getToolTimelineLogType(hiddenItem)).toBe("log");
 		expect(shouldDisplayToolTimelineItem(hiddenItem)).toBe(false);
 	});
+
+	it("shows all tool timeline rows when internal logs are enabled", () => {
+		const customerFacingItem = createToolItem(
+			{ tool: "searchKnowledgeBase" },
+			{
+				type: "tool-searchKnowledgeBase",
+				toolName: "searchKnowledgeBase",
+			}
+		);
+		const logItem = createToolItem();
+		const decisionItem = createToolItem(
+			{},
+			{
+				providerMetadata: {
+					cossistant: {
+						toolTimeline: {
+							logType: "decision",
+						},
+					},
+				},
+			}
+		);
+
+		expect(
+			shouldDisplayToolTimelineItem(customerFacingItem, {
+				includeInternalLogs: true,
+			})
+		).toBe(true);
+		expect(
+			shouldDisplayToolTimelineItem(logItem, {
+				includeInternalLogs: true,
+			})
+		).toBe(true);
+		expect(
+			shouldDisplayToolTimelineItem(decisionItem, {
+				includeInternalLogs: true,
+			})
+		).toBe(true);
+	});
 });

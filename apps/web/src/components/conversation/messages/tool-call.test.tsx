@@ -33,8 +33,8 @@ function createToolTimelineItem(
 	};
 }
 
-function render(item: TimelineItem): string {
-	return renderToStaticMarkup(React.createElement(ToolCall, { item }));
+function render(item: TimelineItem, mode?: "default" | "developer"): string {
+	return renderToStaticMarkup(React.createElement(ToolCall, { item, mode }));
 }
 
 describe("ToolCall", () => {
@@ -106,5 +106,31 @@ describe("ToolCall", () => {
 		);
 
 		expect(html).toContain("Running sendMessage");
+	});
+
+	it("renders developer mode metadata badges and payload", () => {
+		const html = render(createToolTimelineItem(), "developer");
+
+		expect(html).toContain("AI agent dev log");
+		expect(html).toContain("Customer");
+		expect(html).toContain("Dev payload");
+		expect(html).toContain("tool");
+		expect(html).toContain("call-1");
+	});
+
+	it("renders developer-mode fallback when strict tool part parsing fails", () => {
+		const html = render(
+			createToolTimelineItem({
+				parts: [],
+				text: null,
+				tool: "sendMessage",
+			}),
+			"developer"
+		);
+
+		expect(html).toContain("AI agent dev log");
+		expect(html).toContain("Fallback rendered from timeline metadata.");
+		expect(html).toContain("sendMessage");
+		expect(html).toContain("tool-1");
 	});
 });

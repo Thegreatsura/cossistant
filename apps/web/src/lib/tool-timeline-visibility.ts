@@ -86,6 +86,17 @@ export function getToolTimelineLogType(
 	return "log";
 }
 
-export function shouldDisplayToolTimelineItem(item: TimelineItem): boolean {
+type ToolTimelineVisibilityOptions = {
+	includeInternalLogs?: boolean;
+};
+
+export function shouldDisplayToolTimelineItem(
+	item: TimelineItem,
+	options?: ToolTimelineVisibilityOptions
+): boolean {
+	if (options?.includeInternalLogs) {
+		return true;
+	}
+
 	return getToolTimelineLogType(item) === "customer_facing";
 }

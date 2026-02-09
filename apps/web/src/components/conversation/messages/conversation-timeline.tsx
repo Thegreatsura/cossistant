@@ -19,6 +19,7 @@ import { memo, useEffect, useMemo, useRef } from "react";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import { useVisitorPresenceById } from "@/contexts/visitor-presence";
 import { useWebsite } from "@/contexts/website";
+import { useConversationDeveloperMode } from "@/hooks/use-conversation-developer-mode";
 import { useDashboardTypingSound } from "@/hooks/use-dashboard-typing-sound";
 import { useSoundPreferences } from "@/hooks/use-sound-preferences";
 import { extractEventPart } from "@/lib/timeline-events";
@@ -78,6 +79,9 @@ function ConversationTimelineListComponent({
 		seenData,
 		currentViewerId: currentUserId,
 	});
+	const isDeveloperModeEnabled = useConversationDeveloperMode(
+		(state) => state.isDeveloperModeEnabled
+	);
 
 	const typingEntries = useConversationTyping(conversationId, {
 		excludeUserId: currentUserId,
@@ -200,12 +204,22 @@ function ConversationTimelineListComponent({
 
 							if (item.type === "timeline_tool") {
 								const timelineItem = item.item;
-								if (!shouldDisplayToolTimelineItem(timelineItem)) {
+								if (
+									!shouldDisplayToolTimelineItem(timelineItem, {
+										includeInternalLogs: isDeveloperModeEnabled,
+									})
+								) {
 									return null;
 								}
 								const key = timelineItem.id ?? `timeline-tool-${index}`;
 
-								return <ToolCall item={timelineItem} key={key} />;
+								return (
+									<ToolCall
+										item={timelineItem}
+										key={key}
+										mode={isDeveloperModeEnabled ? "developer" : "default"}
+									/>
+								);
 							}
 
 							// Use first timeline item ID as stable key
