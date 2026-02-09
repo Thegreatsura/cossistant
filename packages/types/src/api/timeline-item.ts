@@ -5,16 +5,42 @@ import {
 	ConversationTimelineType,
 	TimelineItemVisibility,
 } from "../enums";
+import { TOOL_TIMELINE_LOG_TYPE } from "../tool-timeline-policy";
 
 // ============================================================================
 // AI SDK v6 COMPATIBLE PART SCHEMAS
 // These follow Vercel AI SDK v6 patterns for UIMessagePart types.
-// Cossistant extensions use providerMetadata.cossistant namespace.
+// Cossistant extensions use providerMetadata/callProviderMetadata.cossistant namespace.
 // ============================================================================
 
 // ----------------------------------------------------------------------------
 // Cossistant Provider Metadata (extension point for all parts)
 // ----------------------------------------------------------------------------
+const cossistantToolTimelineMetadataSchema = z.object({
+	logType: z
+		.enum([
+			TOOL_TIMELINE_LOG_TYPE.CUSTOMER_FACING,
+			TOOL_TIMELINE_LOG_TYPE.LOG,
+			TOOL_TIMELINE_LOG_TYPE.DECISION,
+		])
+		.openapi({
+			description:
+				"Tool timeline classification: conversation-visible, log-only, or decision stage",
+		}),
+	triggerMessageId: z.string().openapi({
+		description:
+			"Message ID that triggered the tool/decision workflow execution",
+	}),
+	workflowRunId: z.string().openapi({
+		description:
+			"Workflow run identifier used to correlate tool timeline updates",
+	}),
+	triggerVisibility: z.enum(["public", "private"]).optional().openapi({
+		description:
+			"Visibility of the trigger message at the time the tool was executed",
+	}),
+});
+
 const cossistantProviderMetadataSchema = z
 	.object({
 		cossistant: z
@@ -27,6 +53,10 @@ const cossistantProviderMetadataSchema = z
 				}),
 				knowledgeId: z.string().optional().openapi({
 					description: "Reference to a Cossistant knowledge entry",
+				}),
+				toolTimeline: cossistantToolTimelineMetadataSchema.optional().openapi({
+					description:
+						"Tool timeline metadata used to classify visibility and trigger linkage",
 				}),
 			})
 			.optional(),
@@ -101,6 +131,7 @@ const toolPartSchema = z.object({
 	errorText: z.string().optional().openapi({
 		description: "Error message when state is 'error'",
 	}),
+	callProviderMetadata: cossistantProviderMetadataSchema,
 	providerMetadata: cossistantProviderMetadataSchema,
 });
 
@@ -371,6 +402,9 @@ export type TimelinePartText = TextPart;
 // Provider metadata type for extensions
 export type CossistantProviderMetadata = z.infer<
 	typeof cossistantProviderMetadataSchema
+>;
+export type CossistantToolTimelineMetadata = z.infer<
+	typeof cossistantToolTimelineMetadataSchema
 >;
 
 // Tool state type

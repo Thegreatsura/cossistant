@@ -25,8 +25,8 @@ type QueryKeyInput = {
 	type?: string;
 };
 
-function isPrivateToolTimelineItem(item: TimelineItem): boolean {
-	return item.type === "tool" && item.visibility === "private";
+function isToolTimelineItem(item: TimelineItem): boolean {
+	return item.type === "tool";
 }
 
 function extractQueryInput(
@@ -108,8 +108,8 @@ export const handleMessageCreated = ({
 
 	const timelineItem = item as TimelineItem;
 
-	// Keep tool-call debug rows out of conversation header ordering/preview churn.
-	if (isPrivateToolTimelineItem(timelineItem)) {
+	// Keep tool timeline rows out of conversation header ordering/preview churn.
+	if (isToolTimelineItem(timelineItem)) {
 		return;
 	}
 

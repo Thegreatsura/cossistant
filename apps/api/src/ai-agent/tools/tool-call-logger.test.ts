@@ -30,6 +30,7 @@ type TestToolContext = {
 	allowPublicMessages: boolean;
 	triggerMessageId: string;
 	workflowRunId: string;
+	triggerVisibility?: "public" | "private";
 };
 
 function createToolContext(
@@ -51,6 +52,7 @@ function createToolContext(
 		allowPublicMessages: true,
 		triggerMessageId: "trigger-1",
 		workflowRunId: "workflow-1",
+		triggerVisibility: "public",
 		...overrides,
 	};
 }
@@ -125,6 +127,44 @@ describe("tool-call-logger", () => {
 			},
 		});
 
+		const createdPart = (
+			createTimelineItemMock.mock.calls[0]?.[0] as {
+				item: {
+					parts: Array<{
+						callProviderMetadata?: {
+							cossistant?: {
+								toolTimeline?: {
+									logType?: string;
+									triggerMessageId?: string;
+									workflowRunId?: string;
+									triggerVisibility?: string;
+								};
+							};
+						};
+						providerMetadata?: {
+							cossistant?: {
+								toolTimeline?: {
+									logType?: string;
+								};
+							};
+						};
+					}>;
+				};
+			}
+		).item.parts[0];
+
+		expect(
+			createdPart?.callProviderMetadata?.cossistant?.toolTimeline
+		).toMatchObject({
+			logType: "log",
+			triggerMessageId: "trigger-1",
+			workflowRunId: "workflow-1",
+			triggerVisibility: "public",
+		});
+		expect(
+			createdPart?.providerMetadata?.cossistant?.toolTimeline?.logType
+		).toBe("log");
+
 		const updatedCall = updateTimelineItemMock.mock.calls[0]?.[0] as {
 			item: {
 				text?: string;
@@ -138,6 +178,143 @@ describe("tool-call-logger", () => {
 			}
 		).item.parts[0];
 		expect(updatedPart?.state).toBe("result");
+	});
+
+	it("marks allowlisted tools as public customer-facing timeline rows", async () => {
+		const { wrapToolsWithTimelineLogging } = await toolCallLoggerModulePromise;
+
+		const wrappedTools = wrapToolsWithTimelineLogging(
+			{
+				searchKnowledgeBase: {
+					execute: async () => ({
+						success: true,
+						data: { totalFound: 3 },
+					}),
+				},
+			} as never,
+			createToolContext() as never
+		);
+
+		await executeWrappedTool(
+			wrappedTools as never,
+			"searchKnowledgeBase",
+			{ query: "refund policy" },
+			{ toolCallId: "call-public" }
+		);
+
+		const createCall = createTimelineItemMock.mock.calls[0]?.[0] as {
+			item: {
+				visibility: string;
+				parts: Array<{
+					callProviderMetadata?: {
+						cossistant?: {
+							visibility?: string;
+							toolTimeline?: {
+								logType?: string;
+							};
+						};
+					};
+				}>;
+			};
+		};
+
+		expect(createCall.item.visibility).toBe("public");
+		expect(
+			createCall.item.parts[0]?.callProviderMetadata?.cossistant?.visibility
+		).toBe("public");
+		expect(
+			createCall.item.parts[0]?.callProviderMetadata?.cossistant?.toolTimeline
+				?.logType
+		).toBe("customer_facing");
+	});
+
+	it("logs decision stage as a private decision tool timeline row", async () => {
+		const { createToolTimelineItemId, logDecisionTimelineState } =
+			await toolCallLoggerModulePromise;
+
+		const toolContext = createToolContext();
+
+		await logDecisionTimelineState({
+			toolContext: toolContext as never,
+			state: "partial",
+		});
+
+		await logDecisionTimelineState({
+			toolContext: toolContext as never,
+			state: "result",
+			result: {
+				shouldAct: true,
+				mode: "respond_to_visitor",
+				reason: "visitor asked for help",
+			},
+		});
+
+		const expectedTimelineId = createToolTimelineItemId({
+			workflowRunId: "workflow-1",
+			toolCallId: "decision",
+		});
+
+		expect(createTimelineItemMock).toHaveBeenCalledTimes(1);
+		expect(updateTimelineItemMock).toHaveBeenCalledTimes(1);
+		expect(createTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			item: {
+				id: expectedTimelineId,
+				type: "tool",
+				visibility: "private",
+				tool: "aiDecision",
+				text: "Evaluating whether to act...",
+			},
+		});
+
+		expect(updateTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			itemId: expectedTimelineId,
+			item: {
+				text: "Decision: act (respond_to_visitor)",
+				tool: "aiDecision",
+				parts: [
+					{
+						state: "result",
+						callProviderMetadata: {
+							cossistant: {
+								toolTimeline: {
+									logType: "decision",
+								},
+							},
+						},
+					},
+				],
+			},
+		});
+	});
+
+	it("updates decision stage row to error when decision stage fails", async () => {
+		const { logDecisionTimelineState } = await toolCallLoggerModulePromise;
+
+		const toolContext = createToolContext();
+
+		await logDecisionTimelineState({
+			toolContext: toolContext as never,
+			state: "partial",
+		});
+
+		await logDecisionTimelineState({
+			toolContext: toolContext as never,
+			state: "error",
+			error: new Error("decision model timed out"),
+		});
+
+		expect(updateTimelineItemMock).toHaveBeenCalledTimes(1);
+		expect(updateTimelineItemMock.mock.calls[0]?.[0]).toMatchObject({
+			item: {
+				text: "Decision evaluation failed",
+				parts: [
+					{
+						state: "error",
+						errorText: "decision model timed out",
+					},
+				],
+			},
+		});
 	});
 
 	it("updates tool row to error state when tool returns success=false", async () => {

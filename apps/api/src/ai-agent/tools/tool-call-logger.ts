@@ -5,7 +5,10 @@ import {
 } from "@api/utils/timeline-item";
 import {
 	ConversationTimelineType,
+	getToolLogType,
+	isConversationVisibleTool,
 	TimelineItemVisibility,
+	type ToolTimelineLogType,
 } from "@cossistant/types";
 import type { ToolExecutionOptions, ToolSet } from "ai";
 import type { ToolContext } from "./types";
@@ -20,6 +23,21 @@ const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const PHONE_PATTERN = /\+?\d[\d\s().-]{7,}\d/g;
 const BEARER_PATTERN = /bearer\s+[A-Za-z0-9._-]+/gi;
 const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9._-]+\.[A-Za-z0-9._-]+\b/g;
+const DECISION_TOOL_NAME = "aiDecision";
+const DECISION_TOOL_CALL_ID = "decision";
+
+export type ToolTimelineContext = Pick<
+	ToolContext,
+	| "db"
+	| "conversationId"
+	| "organizationId"
+	| "websiteId"
+	| "visitorId"
+	| "aiAgentId"
+	| "triggerMessageId"
+	| "workflowRunId"
+	| "triggerVisibility"
+>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -300,6 +318,27 @@ function getSentimentFromToolOutput(output: unknown): string | null {
 	return truncateString(redactString(sentimentCandidate), 60);
 }
 
+function getDecisionSummary(output: unknown): {
+	shouldAct?: boolean;
+	mode?: string;
+	reason?: string;
+} {
+	if (!isRecord(output)) {
+		return {};
+	}
+
+	const shouldAct =
+		typeof output.shouldAct === "boolean" ? output.shouldAct : undefined;
+	const mode = typeof output.mode === "string" ? output.mode : undefined;
+	const reason = typeof output.reason === "string" ? output.reason : undefined;
+
+	return {
+		shouldAct,
+		mode,
+		reason,
+	};
+}
+
 function buildToolSummaryText(params: {
 	toolName: string;
 	state: "partial" | "result" | "error";
@@ -356,6 +395,23 @@ function buildToolSummaryText(params: {
 		return "Failed to update sentiment";
 	}
 
+	if (toolName === DECISION_TOOL_NAME) {
+		if (state === "partial") {
+			return "Evaluating whether to act...";
+		}
+
+		if (state === "result") {
+			const decision = getDecisionSummary(sanitizedOutput);
+			if (typeof decision.shouldAct === "boolean" && decision.mode) {
+				const action = decision.shouldAct ? "act" : "skip";
+				return `Decision: ${action} (${decision.mode})`;
+			}
+			return "Decision evaluated";
+		}
+
+		return "Decision evaluation failed";
+	}
+
 	if (state === "partial") {
 		return `Running ${toolName}`;
 	}
@@ -403,8 +459,54 @@ function getFailureTextFromResult(result: unknown): string | null {
 	return null;
 }
 
-function getWorkflowRunId(toolContext: ToolContext): string {
+function getWorkflowRunId(toolContext: ToolTimelineContext): string {
 	return toolContext.workflowRunId ?? toolContext.triggerMessageId;
+}
+
+function getToolTimelineVisibility(toolName: string): TimelineItemVisibility {
+	if (toolName === DECISION_TOOL_NAME) {
+		return TimelineItemVisibility.PRIVATE;
+	}
+
+	if (isConversationVisibleTool(toolName)) {
+		return TimelineItemVisibility.PUBLIC;
+	}
+
+	return TimelineItemVisibility.PRIVATE;
+}
+
+function getToolTimelineProviderMetadata(params: {
+	toolContext: ToolTimelineContext;
+	toolName: string;
+}): {
+	cossistant: {
+		visibility: TimelineItemVisibility;
+		toolTimeline: {
+			logType: ToolTimelineLogType;
+			triggerMessageId: string;
+			workflowRunId: string;
+			triggerVisibility?: "public" | "private";
+		};
+	};
+} {
+	const { toolContext, toolName } = params;
+	const workflowRunId = getWorkflowRunId(toolContext);
+	const visibility = getToolTimelineVisibility(toolName);
+	const logType = getToolLogType(toolName);
+
+	return {
+		cossistant: {
+			visibility,
+			toolTimeline: {
+				logType,
+				triggerMessageId: toolContext.triggerMessageId,
+				workflowRunId,
+				...(toolContext.triggerVisibility
+					? { triggerVisibility: toolContext.triggerVisibility }
+					: {}),
+			},
+		},
+	};
 }
 
 export function createToolTimelineItemId(params: {
@@ -417,6 +519,7 @@ export function createToolTimelineItemId(params: {
 }
 
 function buildToolPart(params: {
+	toolContext: ToolTimelineContext;
 	toolName: string;
 	toolCallId: string;
 	state: "partial" | "result" | "error";
@@ -424,12 +527,19 @@ function buildToolPart(params: {
 	output?: unknown;
 	errorText?: string;
 }): Record<string, unknown> {
+	const providerMetadata = getToolTimelineProviderMetadata({
+		toolContext: params.toolContext,
+		toolName: params.toolName,
+	});
+
 	return {
 		type: `tool-${params.toolName}`,
 		toolCallId: params.toolCallId,
 		toolName: params.toolName,
 		input: params.input,
 		state: params.state,
+		callProviderMetadata: providerMetadata,
+		providerMetadata,
 		...(params.output === undefined ? {} : { output: params.output }),
 		...(params.errorText ? { errorText: params.errorText } : {}),
 	};
@@ -451,7 +561,7 @@ function isUniqueViolationError(error: unknown): boolean {
 }
 
 async function safeCreatePartialToolTimelineItem(params: {
-	toolContext: ToolContext;
+	toolContext: ToolTimelineContext;
 	timelineItemId: string;
 	toolName: string;
 	toolCallId: string;
@@ -477,6 +587,7 @@ async function safeCreatePartialToolTimelineItem(params: {
 				text: summaryText,
 				parts: [
 					buildToolPart({
+						toolContext,
 						toolName,
 						toolCallId,
 						state: "partial",
@@ -485,7 +596,7 @@ async function safeCreatePartialToolTimelineItem(params: {
 				],
 				aiAgentId: toolContext.aiAgentId,
 				visitorId: toolContext.visitorId,
-				visibility: TimelineItemVisibility.PRIVATE,
+				visibility: getToolTimelineVisibility(toolName),
 				tool: toolName,
 			},
 		});
@@ -510,7 +621,7 @@ async function safeCreatePartialToolTimelineItem(params: {
 }
 
 async function safeUpdateToolTimelineItem(params: {
-	toolContext: ToolContext;
+	toolContext: ToolTimelineContext;
 	timelineItemId: string;
 	toolName: string;
 	toolCallId: string;
@@ -547,6 +658,7 @@ async function safeUpdateToolTimelineItem(params: {
 				text: summaryText,
 				parts: [
 					buildToolPart({
+						toolContext,
 						toolName,
 						toolCallId,
 						state,
@@ -564,6 +676,66 @@ async function safeUpdateToolTimelineItem(params: {
 			error
 		);
 	}
+}
+
+type DecisionTimelineResult = {
+	shouldAct: boolean;
+	mode: "respond_to_visitor" | "respond_to_command" | "background_only";
+	reason: string;
+};
+
+export async function logDecisionTimelineState(params: {
+	toolContext: ToolTimelineContext;
+	state: "partial" | "result" | "error";
+	result?: DecisionTimelineResult;
+	error?: unknown;
+}): Promise<void> {
+	const { toolContext, state, result, error } = params;
+
+	const workflowRunId = getWorkflowRunId(toolContext);
+	const timelineItemId = createToolTimelineItemId({
+		workflowRunId,
+		toolCallId: DECISION_TOOL_CALL_ID,
+	});
+
+	const sanitizedInput = sanitizeToolInput({
+		stage: "decision",
+		triggerMessageId: toolContext.triggerMessageId,
+	});
+
+	if (state === "partial") {
+		await safeCreatePartialToolTimelineItem({
+			toolContext,
+			timelineItemId,
+			toolName: DECISION_TOOL_NAME,
+			toolCallId: DECISION_TOOL_CALL_ID,
+			sanitizedInput,
+		});
+		return;
+	}
+
+	if (state === "result") {
+		await safeUpdateToolTimelineItem({
+			toolContext,
+			timelineItemId,
+			toolName: DECISION_TOOL_NAME,
+			toolCallId: DECISION_TOOL_CALL_ID,
+			state: "result",
+			sanitizedInput,
+			sanitizedOutput: sanitizeToolOutput(DECISION_TOOL_NAME, result ?? {}),
+		});
+		return;
+	}
+
+	await safeUpdateToolTimelineItem({
+		toolContext,
+		timelineItemId,
+		toolName: DECISION_TOOL_NAME,
+		toolCallId: DECISION_TOOL_CALL_ID,
+		state: "error",
+		sanitizedInput,
+		errorText: toErrorText(error),
+	});
 }
 
 export function wrapToolsWithTimelineLogging(

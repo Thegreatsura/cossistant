@@ -11,14 +11,15 @@ This document describes the architecture, design decisions, and operation of the
 5. [Multi-Party Conversation Context](#multi-party-conversation-context)
 6. [Security Architecture](#security-architecture)
 7. [Progress Events](#progress-events)
-8. [Reliability Model](#reliability-model)
-9. [Scalability](#scalability)
-10. [Adding New Features](#adding-new-features)
-11. [Debugging Guide](#debugging-guide)
-12. [Configuration](#configuration)
-13. [Behavior Settings Persistence](#behavior-settings-persistence)
-14. [Background Analysis](#background-analysis)
-15. [Escalation Handling](#escalation-handling)
+8. [Tool Timeline Logging](#tool-timeline-logging)
+9. [Reliability Model](#reliability-model)
+10. [Scalability](#scalability)
+11. [Adding New Features](#adding-new-features)
+12. [Debugging Guide](#debugging-guide)
+13. [Configuration](#configuration)
+14. [Behavior Settings Persistence](#behavior-settings-persistence)
+15. [Background Analysis](#background-analysis)
+16. [Escalation Handling](#escalation-handling)
 
 ---
 
@@ -52,6 +53,10 @@ The AI is NOT just a "replier" - it's a decision-making agent that chooses the b
 6. **Fast Response**: Queue delay is disabled; natural typing delays between messages keep responses human.
 
 7. **Audience-Aware Events**: Progress events have audience filtering (widget vs dashboard) for appropriate visibility.
+
+8. **Allowlist-Driven Tool Timeline Visibility**: Only allowlisted tools are treated as conversation-visible timeline activity; all other tools are persisted as log-only timeline rows.
+
+9. **AI SDK v6-Compatible Tool Metadata**: Tool linkage and classification metadata is stored under `callProviderMetadata.cossistant.toolTimeline` (with backward-compatible `providerMetadata` support), with no new DB schema fields.
 
 ---
 
@@ -109,6 +114,7 @@ apps/api/src/ai-agent/
 ├── pipeline/                 # 5-step processing pipeline
 │   ├── index.ts              # Pipeline orchestrator
 │   ├── 1-intake.ts           # Gather context, validate
+│   ├── 1b-continuation-gate.ts # Skip vs supplement guard for queued triggers
 │   ├── 2-decision.ts         # Should AI act?
 │   ├── 3-generation.ts       # Generate response (with message prefix protocol)
 │   ├── 4-execution.ts        # Execute actions
@@ -128,7 +134,8 @@ apps/api/src/ai-agent/
 │   └── instructions.ts       # Behavior instructions
 │
 ├── tools/                    # LLM tools
-│   └── index.ts              # Tool definitions (search, metadata updates)
+│   ├── index.ts              # Tool definitions (search, metadata updates)
+│   └── tool-call-logger.ts   # Centralized tool timeline create/update + metadata
 │
 ├── actions/                  # Idempotent executors
 │   ├── send-message.ts       # Reply to visitor
@@ -164,6 +171,12 @@ apps/api/src/ai-agent/
     ├── decision.ts           # Decision events
     └── progress.ts           # Tool progress events
 ```
+
+Shared policy and type modules used by this flow:
+
+- `packages/types/src/tool-timeline-policy.ts` - allowlist + log-type source of truth
+- `packages/types/src/api/timeline-item.ts` - tool part schemas (AI SDK v6 compatible metadata)
+- `packages/core/src/ai-sdk-utils.ts` - metadata read/write helpers (`callProviderMetadata` first, backward-compatible fallback)
 
 ---
 
@@ -204,6 +217,13 @@ The AI agent processes messages through a 5-step pipeline:
 - `shouldAct: boolean` - Whether to proceed
 - `mode: ResponseMode` - How to respond
 - `humanCommand: string | null` - Extracted command
+
+**Decision Timeline Logging**:
+
+- At decision start, create tool timeline row: `toolName="aiDecision"`, `toolCallId="decision"`, `state="partial"`
+- On success, update same row to `state="result"` with summarized decision payload
+- On failure, update same row to `state="error"`
+- Classification is `logType="decision"` (log-only by default)
 
 **Events Emitted**: `aiAgentDecisionMade` (audience depends on `shouldAct`)
 
@@ -422,6 +442,8 @@ The AI agent emits real-time events during processing. Events have an `audience`
 | `aiAgentDecisionMade` (shouldAct=false) | AI decided not to act | - | Yes |
 | `aiAgentDecisionMade` (shouldAct=true) | AI will respond | Yes | Yes |
 | `aiAgentProcessingProgress` (tool) | Tool execution | Yes | Yes |
+| `timelineItemCreated` (`type="tool"`) | Tool timeline row created (`partial`) | Public only | Yes |
+| `timelineItemUpdated` (`type="tool"`) | Tool timeline row updated (`result/error`) | Public only | Yes |
 | `aiAgentProcessingCompleted` (success) | Response sent | Yes | Yes |
 | `aiAgentProcessingCompleted` (skipped/cancelled/error) | No response | - | Yes |
 
@@ -473,7 +495,9 @@ If shouldAct:
         ↓
     stopTyping() immediately before each visible send
         ↓
-    [timelineItemCreated] → Widget + Dashboard
+    [timelineItemCreated] (tool/message) → Dashboard (+ Widget only if public)
+        ↓
+    [timelineItemUpdated] (tool state transitions) → Dashboard (+ Widget only if public)
         ↓
     Pipeline: Execution → Followup
         ↓
@@ -481,6 +505,126 @@ If shouldAct:
         ↓
 [aiAgentProcessingCompleted] → Dashboard (+ Widget if success)
 ```
+
+---
+
+## Tool Timeline Logging
+
+### Overview
+
+Tool calls are now persisted as first-class `timeline_item.type = "tool"` rows, with live updates from `partial -> result/error`.
+
+This gives:
+
+- Conversation-level visibility for selected customer-facing tool activity
+- Private log coverage for all other tool calls
+- Decision-stage observability (`aiDecision`) so we can audit why a run acted or skipped
+
+### Non-Negotiable Constraints
+
+- **No DB schema changes** for this feature
+- Reuse existing timeline item row + parts structure
+- Keep AI SDK v6-compatible metadata shape
+
+### Timeline Row Lifecycle
+
+For each tool call:
+
+1. Create tool timeline row at execution start (`state="partial"`)
+2. Update same row on completion (`state="result"` or `state="error"`)
+3. Keep deterministic row identity:
+
+```text
+timelineItemId = generateIdempotentULID("tool:<workflowRunId>:<toolCallId>")
+```
+
+This makes retries/idempotency safe and keeps updates on one row per tool call.
+
+### AI SDK v6 Metadata Contract
+
+Tool timeline metadata is attached to tool parts under:
+
+- Primary (v6): `callProviderMetadata.cossistant.toolTimeline`
+- Backward-compatible mirror: `providerMetadata.cossistant.toolTimeline`
+
+Fields:
+
+```typescript
+callProviderMetadata.cossistant.toolTimeline = {
+  logType: "customer_facing" | "log" | "decision",
+  triggerMessageId: string,
+  workflowRunId: string,
+  triggerVisibility?: "public" | "private",
+}
+```
+
+This metadata links each tool/decision row back to the message that triggered execution, without adding DB columns.
+
+### Allowlist Policy (Single Source of Truth)
+
+Configured in `packages/types/src/tool-timeline-policy.ts`:
+
+- `TOOL_TIMELINE_CONVERSATION_ALLOWLIST`
+- `isConversationVisibleTool(toolName)`
+- `getToolLogType(toolName)`
+
+Current allowlist:
+
+- `searchKnowledgeBase`
+- `updateConversationTitle`
+- `updateSentiment`
+- `setPriority`
+
+Classification:
+
+- Allowlisted tools => `logType="customer_facing"`
+- Non-allowlisted tools => `logType="log"`
+- Decision stage (`aiDecision`) => `logType="decision"`
+
+### Visibility Mapping
+
+- Allowlisted tool rows are created as `item.visibility = "public"`
+- Non-allowlisted tool rows are created as `item.visibility = "private"`
+- `aiDecision` rows are always `item.visibility = "private"`
+
+### Dashboard Behavior
+
+- Conversation timeline renders only tool rows with `logType="customer_facing"`
+- `log` and `decision` rows are persisted but hidden from normal conversation timeline
+- For older rows without metadata, dashboard falls back to allowlist-derived classification
+- Conversation list header churn is skipped for all tool rows (no ordering/preview noise)
+
+### Widget Behavior
+
+- Widget renderer remains unchanged
+- Visitors only receive tool timeline rows when `item.visibility === "public"`
+- Private tool rows are blocked server-side and client-side (defense in depth)
+
+### Decision-Step Logging
+
+Pipeline step 2 logs a synthetic tool row:
+
+- `toolName = "aiDecision"`
+- `toolCallId = "decision"`
+- `partial` at start, `result/error` at completion
+- result payload includes summarized decision context (`shouldAct`, `mode`, `reason`)
+- classified as `decision` (log-only by default)
+
+### Fail-Open Guarantee
+
+Tool logging is non-blocking:
+
+- If timeline create/update fails, tool execution still continues
+- Visitor response flow is never blocked by logging failures
+
+### Maintenance Rules
+
+When adding/updating a tool:
+
+1. Keep tool summary text concise (`item.text`) for dashboard readability
+2. Keep sanitized debug payload in `parts` (`input`, summarized `output`, `errorText`)
+3. Add tool name to allowlist only if it should appear in conversation timeline
+4. Leave non-conversation tools as log-only for future debug/log views
 
 ---
 
@@ -914,6 +1058,7 @@ This is handled in `utils/timeline-item.ts` when creating message timeline items
 - AI typing indicator (when AI will respond)
 - AI decision made (when AI will respond)
 - Tool progress updates
+- Public tool timeline rows (`type="tool"`) for allowlisted customer-facing tools only
 
 ### Private Events (team only)
 
@@ -924,6 +1069,8 @@ This is handled in `utils/timeline-item.ts` when creating message timeline items
 - AI workflow started
 - AI decision made (when AI won't respond)
 - AI workflow cancelled/skipped/error
+- Private tool timeline rows for non-allowlisted tools (`logType="log"`)
+- Decision-stage tool timeline rows (`toolName="aiDecision"`, `logType="decision"`)
 
 ---
 

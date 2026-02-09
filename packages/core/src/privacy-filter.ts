@@ -267,11 +267,18 @@ function shouldIncludeTimelineItemPart(
  * Extract visibility from an AI SDK part's providerMetadata
  */
 function getPartVisibility(part: AISDKPart): "public" | "private" {
-	if ("providerMetadata" in part && part.providerMetadata) {
-		const metadata = part.providerMetadata as {
+	const metadataCarrier = part as {
+		callProviderMetadata?: Record<string, unknown>;
+		providerMetadata?: Record<string, unknown>;
+	};
+	const metadata =
+		metadataCarrier.callProviderMetadata ?? metadataCarrier.providerMetadata;
+
+	if (metadata) {
+		const typedMetadata = metadata as {
 			cossistant?: CossistantPartMetadata;
 		};
-		return metadata.cossistant?.visibility ?? "public";
+		return typedMetadata.cossistant?.visibility ?? "public";
 	}
 	return "public";
 }
@@ -282,11 +289,16 @@ function getPartVisibility(part: AISDKPart): "public" | "private" {
 function getTimelineItemPartVisibility(
 	part: TimelineItemParts[number]
 ): "public" | "private" {
-	if ("providerMetadata" in part) {
+	if ("providerMetadata" in part || "callProviderMetadata" in part) {
 		const typedPart = part as {
+			callProviderMetadata?: { cossistant?: CossistantPartMetadata };
 			providerMetadata?: { cossistant?: CossistantPartMetadata };
 		};
-		return typedPart.providerMetadata?.cossistant?.visibility ?? "public";
+		return (
+			typedPart.callProviderMetadata?.cossistant?.visibility ??
+			typedPart.providerMetadata?.cossistant?.visibility ??
+			"public"
+		);
 	}
 	return "public";
 }

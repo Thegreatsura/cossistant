@@ -164,6 +164,103 @@ describe("timelineItemCreated handler", () => {
 			event,
 		]);
 	});
+
+	it("does not forward private tool timeline items to visitors", async () => {
+		const event: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
+			payload: {
+				websiteId: "site-tools",
+				organizationId: "org-tools",
+				userId: null,
+				visitorId: "visitor-tools",
+				conversationId: "conv-tools",
+				item: {
+					id: "tool-private-1",
+					conversationId: "conv-tools",
+					organizationId: "org-tools",
+					type: "tool",
+					text: "Running sendMessage",
+					parts: [
+						{
+							type: "tool-sendMessage",
+							toolCallId: "call-1",
+							toolName: "sendMessage",
+							input: { text: "hello" },
+							state: "partial",
+						},
+					],
+					userId: null,
+					aiAgentId: "ai-1",
+					visitorId: "visitor-tools",
+					visibility: "private",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
+					tool: "sendMessage",
+				},
+			},
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-tools",
+			websiteId: "site-tools",
+			visitorId: "visitor-tools",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor).toHaveBeenCalledTimes(0);
+	});
+
+	it("forwards public tool timeline items to visitors", async () => {
+		const event: RealtimeEvent<"timelineItemCreated"> = {
+			type: "timelineItemCreated",
+			payload: {
+				websiteId: "site-tools",
+				organizationId: "org-tools",
+				userId: null,
+				visitorId: "visitor-tools",
+				conversationId: "conv-tools",
+				item: {
+					id: "tool-public-1",
+					conversationId: "conv-tools",
+					organizationId: "org-tools",
+					type: "tool",
+					text: "Looking in knowledge base...",
+					parts: [
+						{
+							type: "tool-searchKnowledgeBase",
+							toolCallId: "call-2",
+							toolName: "searchKnowledgeBase",
+							input: { query: "pricing" },
+							state: "partial",
+						},
+					],
+					userId: null,
+					aiAgentId: "ai-1",
+					visitorId: "visitor-tools",
+					visibility: "public",
+					createdAt: new Date().toISOString(),
+					deletedAt: null,
+					tool: "searchKnowledgeBase",
+				},
+			},
+		};
+
+		await routeEvent(event, {
+			connectionId: "conn-tools",
+			websiteId: "site-tools",
+			visitorId: "visitor-tools",
+			sendToWebsite,
+			sendToVisitor,
+			sendToConnection,
+		});
+
+		expect(sendToWebsite).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor).toHaveBeenCalledTimes(1);
+		expect(sendToVisitor.mock.calls[0]).toEqual(["visitor-tools", event]);
+	});
 });
 
 describe("conversationSeen handler", () => {

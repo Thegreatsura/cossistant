@@ -8,10 +8,14 @@
  * - Cossistant uses TimelineItem with userId/aiAgentId/visitorId
  * - AI SDK uses UIMessage with role: 'user' | 'assistant' | 'system'
  * - Both use a parts array for content
- * - Extensions go in metadata (message level) and providerMetadata (part level)
+ * - Extensions go in metadata (message level) and providerMetadata/callProviderMetadata (part level)
  */
 
-import type { TimelineItem, TimelineItemParts } from "@cossistant/types";
+import type {
+	TimelineItem,
+	TimelineItemParts,
+	ToolTimelineLogType,
+} from "@cossistant/types";
 
 // ============================================================================
 // AI SDK TYPES (re-export for convenience)
@@ -41,6 +45,7 @@ export type AISDKToolPart = {
 	output?: unknown;
 	state: "partial" | "result" | "error";
 	errorText?: string;
+	callProviderMetadata?: Record<string, unknown>;
 	providerMetadata?: Record<string, unknown>;
 };
 
@@ -93,12 +98,25 @@ export type CossistantMessageMetadata = {
 };
 
 /**
- * Cossistant-specific metadata stored in part.providerMetadata.cossistant
+ * Cossistant-specific metadata stored in part.callProviderMetadata/providerMetadata.cossistant
  */
+export type CossistantToolTimelineMetadata = {
+	logType: ToolTimelineLogType;
+	triggerMessageId: string;
+	workflowRunId: string;
+	triggerVisibility?: "public" | "private";
+};
+
 export type CossistantPartMetadata = {
 	visibility?: "public" | "private";
 	progressMessage?: string;
 	knowledgeId?: string;
+	toolTimeline?: CossistantToolTimelineMetadata;
+};
+
+type AISDKPartMetadataCarrier = {
+	providerMetadata?: Record<string, unknown>;
+	callProviderMetadata?: Record<string, unknown>;
 };
 
 // ============================================================================
@@ -115,6 +133,92 @@ export type AISDKPart =
 	| AISDKFilePart;
 
 type CossistantPart = TimelineItemParts[number];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getMetadataCarrier(
+	part: AISDKPartMetadataCarrier
+): AISDKPartMetadataCarrier {
+	const callProviderMetadata =
+		part.callProviderMetadata ?? part.providerMetadata;
+	const providerMetadata = part.providerMetadata ?? part.callProviderMetadata;
+
+	return {
+		callProviderMetadata,
+		providerMetadata,
+	};
+}
+
+/**
+ * Read cossistant part metadata from AI SDK v6-compatible part metadata.
+ * Prefers callProviderMetadata but accepts providerMetadata for backward compatibility.
+ */
+export function getCossistantPartMetadata(
+	part: AISDKPartMetadataCarrier
+): CossistantPartMetadata | undefined {
+	const { callProviderMetadata, providerMetadata } = getMetadataCarrier(part);
+	const metadata = callProviderMetadata ?? providerMetadata;
+
+	if (!isRecord(metadata)) {
+		return;
+	}
+
+	const cossistant = metadata.cossistant;
+	if (!isRecord(cossistant)) {
+		return;
+	}
+
+	return cossistant as CossistantPartMetadata;
+}
+
+/**
+ * Write cossistant part metadata into both callProviderMetadata and providerMetadata.
+ * This keeps AI SDK v6 semantics while remaining backward compatible.
+ */
+export function setCossistantPartMetadata(
+	part: AISDKPartMetadataCarrier,
+	metadata: CossistantPartMetadata
+): AISDKPartMetadataCarrier {
+	const { callProviderMetadata, providerMetadata } = getMetadataCarrier(part);
+	const nextCallProviderMetadata = {
+		...(isRecord(callProviderMetadata) ? callProviderMetadata : {}),
+		cossistant: metadata,
+	};
+	const nextProviderMetadata = {
+		...(isRecord(providerMetadata) ? providerMetadata : {}),
+		cossistant: metadata,
+	};
+
+	return {
+		callProviderMetadata: nextCallProviderMetadata,
+		providerMetadata: nextProviderMetadata,
+	};
+}
+
+/**
+ * Read tool timeline metadata from cossistant part metadata.
+ */
+export function getCossistantToolTimelineMetadata(
+	part: AISDKPartMetadataCarrier
+): CossistantToolTimelineMetadata | undefined {
+	return getCossistantPartMetadata(part)?.toolTimeline;
+}
+
+/**
+ * Write tool timeline metadata into cossistant part metadata.
+ */
+export function setCossistantToolTimelineMetadata(
+	part: AISDKPartMetadataCarrier,
+	toolTimeline: CossistantToolTimelineMetadata
+): AISDKPartMetadataCarrier {
+	const existing = getCossistantPartMetadata(part) ?? {};
+	return setCossistantPartMetadata(part, {
+		...existing,
+		toolTimeline,
+	});
+}
 
 // Type guards for Cossistant parts
 function isTextPart(
@@ -333,6 +437,9 @@ function toAISDKPart(part: CossistantPart): AISDKPart | null {
 	}
 
 	if (isToolPart(part)) {
+		const typedPart = part as AISDKPartMetadataCarrier;
+		const metadataCarrier = getMetadataCarrier(typedPart);
+
 		return {
 			type: part.type as `tool-${string}`,
 			toolCallId: part.toolCallId,
@@ -341,8 +448,8 @@ function toAISDKPart(part: CossistantPart): AISDKPart | null {
 			output: (part as { output?: unknown }).output,
 			state: part.state,
 			errorText: (part as { errorText?: string }).errorText,
-			providerMetadata: (part as { providerMetadata?: Record<string, unknown> })
-				.providerMetadata,
+			callProviderMetadata: metadataCarrier.callProviderMetadata,
+			providerMetadata: metadataCarrier.providerMetadata,
 		};
 	}
 
@@ -498,6 +605,15 @@ function fromAISDKPart(part: unknown): CossistantPart | null {
 		default:
 			// Handle tool-* pattern
 			if (typedPart.type.startsWith("tool-")) {
+				const metadataCarrier = getMetadataCarrier({
+					callProviderMetadata: typedPart.callProviderMetadata as
+						| Record<string, unknown>
+						| undefined,
+					providerMetadata: typedPart.providerMetadata as
+						| Record<string, unknown>
+						| undefined,
+				});
+
 				return {
 					type: typedPart.type,
 					toolCallId: String(typedPart.toolCallId ?? ""),
@@ -507,9 +623,8 @@ function fromAISDKPart(part: unknown): CossistantPart | null {
 					state:
 						(typedPart.state as "partial" | "result" | "error") ?? "partial",
 					errorText: typedPart.errorText as string | undefined,
-					providerMetadata: typedPart.providerMetadata as
-						| Record<string, unknown>
-						| undefined,
+					callProviderMetadata: metadataCarrier.callProviderMetadata,
+					providerMetadata: metadataCarrier.providerMetadata,
 				};
 			}
 			return null;

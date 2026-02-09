@@ -143,6 +143,16 @@ function shouldSendToVisitor<T extends RealtimeEventType>(
 		if (item && "visibility" in item && item.visibility === "private") {
 			return false;
 		}
+
+		// Tool timeline rows are visitor-visible only when explicitly public.
+		if (
+			item &&
+			"type" in item &&
+			item.type === "tool" &&
+			(!("visibility" in item) || item.visibility !== "public")
+		) {
+			return false;
+		}
 	}
 
 	return true;

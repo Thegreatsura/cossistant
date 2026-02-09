@@ -22,6 +22,7 @@ import { useWebsite } from "@/contexts/website";
 import { useDashboardTypingSound } from "@/hooks/use-dashboard-typing-sound";
 import { useSoundPreferences } from "@/hooks/use-sound-preferences";
 import { extractEventPart } from "@/lib/timeline-events";
+import { shouldDisplayToolTimelineItem } from "@/lib/tool-timeline-visibility";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
 import { TimelineMessageGroup } from "./timeline-message-group";
@@ -199,6 +200,9 @@ function ConversationTimelineListComponent({
 
 							if (item.type === "timeline_tool") {
 								const timelineItem = item.item;
+								if (!shouldDisplayToolTimelineItem(timelineItem)) {
+									return null;
+								}
 								const key = timelineItem.id ?? `timeline-tool-${index}`;
 
 								return <ToolCall item={timelineItem} key={key} />;

@@ -63,4 +63,60 @@ describe("shouldDeliverEvent", () => {
 		const result = shouldDeliverEvent(baseEvent, "site-1", null);
 		expect(result).toBe(true);
 	});
+
+	it("blocks private tool timeline events for visitors", () => {
+		const privateToolEvent: RealtimeEvent<"timelineItemCreated"> = {
+			...baseEvent,
+			payload: {
+				...baseEvent.payload,
+				item: {
+					...baseEvent.payload.item,
+					type: "tool",
+					tool: "sendMessage",
+					visibility: "private",
+					parts: [
+						{
+							type: "tool-sendMessage",
+							toolCallId: "call-1",
+							toolName: "sendMessage",
+							input: { text: "hi" },
+							state: "partial",
+						},
+					],
+				},
+			},
+		};
+
+		expect(shouldDeliverEvent(privateToolEvent, "site-1", "visitor-1")).toBe(
+			false
+		);
+	});
+
+	it("allows public tool timeline events for visitors", () => {
+		const publicToolEvent: RealtimeEvent<"timelineItemCreated"> = {
+			...baseEvent,
+			payload: {
+				...baseEvent.payload,
+				item: {
+					...baseEvent.payload.item,
+					type: "tool",
+					tool: "searchKnowledgeBase",
+					visibility: "public",
+					parts: [
+						{
+							type: "tool-searchKnowledgeBase",
+							toolCallId: "call-2",
+							toolName: "searchKnowledgeBase",
+							input: { query: "pricing" },
+							state: "partial",
+						},
+					],
+				},
+			},
+		};
+
+		expect(shouldDeliverEvent(publicToolEvent, "site-1", "visitor-1")).toBe(
+			true
+		);
+	});
 });

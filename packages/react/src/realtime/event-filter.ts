@@ -34,9 +34,9 @@ export function shouldDeliverEvent(
 		return false;
 	}
 
-	// When consuming as a visitor, never deliver private timeline items.
+	// When consuming as a visitor, never deliver private/non-public tool timeline items.
 	// This is a defense-in-depth measure; the server should also filter these.
-	if (visitorId && isPrivateTimelineEvent(event)) {
+	if (visitorId && isBlockedTimelineEventForVisitor(event)) {
 		return false;
 	}
 
@@ -54,9 +54,9 @@ export function shouldDeliverEvent(
 }
 
 /**
- * Returns true if the event carries a timeline item with private visibility.
+ * Returns true if the event carries a blocked timeline item for visitor delivery.
  */
-function isPrivateTimelineEvent(event: AnyRealtimeEvent): boolean {
+function isBlockedTimelineEventForVisitor(event: AnyRealtimeEvent): boolean {
 	if (
 		event.type === "timelineItemCreated" ||
 		event.type === "timelineItemUpdated"
@@ -64,6 +64,13 @@ function isPrivateTimelineEvent(event: AnyRealtimeEvent): boolean {
 		const payload = event.payload as Record<string, unknown>;
 		const item = payload.item as Record<string, unknown> | undefined;
 		if (item && item.visibility === "private") {
+			return true;
+		}
+		if (
+			item &&
+			item.type === "tool" &&
+			(!("visibility" in item) || item.visibility !== "public")
+		) {
 			return true;
 		}
 	}

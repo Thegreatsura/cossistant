@@ -15,6 +15,9 @@ const executeMock = mock(
 const followupMock = mock((async () => {}) as (
 	...args: unknown[]
 ) => Promise<void>);
+const logDecisionTimelineStateMock = mock((async () => {}) as (
+	...args: unknown[]
+) => Promise<void>);
 
 const emitDecisionMadeMock = mock((async () => {}) as (
 	...args: unknown[]
@@ -84,6 +87,10 @@ mock.module("../actions/send-message", () => ({
 	})),
 }));
 
+mock.module("../tools/tool-call-logger", () => ({
+	logDecisionTimelineState: logDecisionTimelineStateMock,
+}));
+
 const pipelineModulePromise = import("./index");
 
 function buildReadyIntakeResult() {
@@ -137,6 +144,7 @@ describe("runAiAgentPipeline retryability and typing cleanup", () => {
 		emitTypingStopMock.mockReset();
 		typingHeartbeatStartMock.mockReset();
 		typingHeartbeatStopMock.mockReset();
+		logDecisionTimelineStateMock.mockReset();
 
 		intakeMock.mockResolvedValue(buildReadyIntakeResult());
 		decideMock.mockResolvedValue(buildDecisionResult());
@@ -168,8 +176,46 @@ describe("runAiAgentPipeline retryability and typing cleanup", () => {
 		expect(result.status).toBe("error");
 		expect(result.publicMessagesSent).toBe(0);
 		expect(result.retryable).toBe(true);
+		expect(logDecisionTimelineStateMock).toHaveBeenCalledTimes(2);
+		expect(logDecisionTimelineStateMock.mock.calls[0]?.[0]).toMatchObject({
+			state: "partial",
+		});
+		expect(logDecisionTimelineStateMock.mock.calls[1]?.[0]).toMatchObject({
+			state: "result",
+		});
 		expect(typingHeartbeatStopMock).toHaveBeenCalledTimes(1);
 		expect(emitTypingStopMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("logs decision stage error when decisioning throws", async () => {
+		const { runAiAgentPipeline } = await pipelineModulePromise;
+		decideMock.mockImplementation(async () => {
+			throw new Error("decision failed");
+		});
+
+		const result = await runAiAgentPipeline({
+			db: {} as never,
+			input: {
+				conversationId: "conv-1",
+				messageId: "trigger-msg-1",
+				messageCreatedAt: new Date().toISOString(),
+				websiteId: "site-1",
+				organizationId: "org-1",
+				visitorId: "visitor-1",
+				aiAgentId: "ai-1",
+				workflowRunId: "workflow-decision-error",
+				jobId: "job-decision-error",
+			},
+		});
+
+		expect(result.status).toBe("error");
+		expect(logDecisionTimelineStateMock).toHaveBeenCalledTimes(2);
+		expect(logDecisionTimelineStateMock.mock.calls[0]?.[0]).toMatchObject({
+			state: "partial",
+		});
+		expect(logDecisionTimelineStateMock.mock.calls[1]?.[0]).toMatchObject({
+			state: "error",
+		});
 	});
 
 	it("marks failures after a public send as non-retryable", async () => {
@@ -208,6 +254,13 @@ describe("runAiAgentPipeline retryability and typing cleanup", () => {
 		expect(result.status).toBe("error");
 		expect(result.publicMessagesSent).toBe(1);
 		expect(result.retryable).toBe(false);
+		expect(logDecisionTimelineStateMock).toHaveBeenCalledTimes(2);
+		expect(logDecisionTimelineStateMock.mock.calls[0]?.[0]).toMatchObject({
+			state: "partial",
+		});
+		expect(logDecisionTimelineStateMock.mock.calls[1]?.[0]).toMatchObject({
+			state: "result",
+		});
 		expect(typingHeartbeatStopMock).toHaveBeenCalledTimes(1);
 		expect(emitTypingStopMock).toHaveBeenCalledTimes(1);
 	});
@@ -243,6 +296,13 @@ describe("runAiAgentPipeline retryability and typing cleanup", () => {
 
 		expect(result.status).toBe("completed");
 		expect(result.retryable).toBe(false);
+		expect(logDecisionTimelineStateMock).toHaveBeenCalledTimes(2);
+		expect(logDecisionTimelineStateMock.mock.calls[0]?.[0]).toMatchObject({
+			state: "partial",
+		});
+		expect(logDecisionTimelineStateMock.mock.calls[1]?.[0]).toMatchObject({
+			state: "result",
+		});
 		expect(typingHeartbeatStopMock).toHaveBeenCalledTimes(1);
 		expect(emitTypingStopMock).toHaveBeenCalledTimes(1);
 	});

@@ -21,6 +21,7 @@ import {
 } from "@/components/conversation/messages/typing-indicator";
 import type { ConversationHeader } from "@/contexts/inboxes";
 import type { ConversationTimelineItem } from "@/data/conversation-message-cache";
+import { shouldDisplayToolTimelineItem } from "@/lib/tool-timeline-visibility";
 import { cn } from "@/lib/utils";
 import type { FakeTypingVisitor } from "../data";
 
@@ -147,6 +148,9 @@ export function FakeConversationTimelineList({
 
 							if (item.type === "timeline_tool") {
 								const timelineItem = item.item;
+								if (!shouldDisplayToolTimelineItem(timelineItem)) {
+									return null;
+								}
 								const key = timelineItem.id ?? `timeline-tool-${index}`;
 								return <ToolCall item={timelineItem} key={key} />;
 							}

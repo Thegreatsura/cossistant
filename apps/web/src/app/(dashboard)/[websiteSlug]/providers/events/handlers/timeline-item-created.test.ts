@@ -52,7 +52,7 @@ describe("handleMessageCreated", () => {
 		upsertConversationTimelineItemInCacheMock.mockClear();
 	});
 
-	it("does not mutate conversation headers for private tool items", async () => {
+	it("does not mutate conversation headers for tool items", async () => {
 		const { handleMessageCreated } = await timelineItemCreatedModulePromise;
 
 		const getObjectByIdMock = mock((_id: string) => ({ id: "conv-1" }));
@@ -72,7 +72,7 @@ describe("handleMessageCreated", () => {
 						id: "tool-1",
 						conversationId: "conv-1",
 						organizationId: "org-1",
-						visibility: "private",
+						visibility: "public",
 						type: "tool",
 						text: "Tool call: searchKnowledgeBase",
 						parts: [],

@@ -21,6 +21,7 @@ import {
 	emitWorkflowCompleted,
 	TypingHeartbeat,
 } from "../events";
+import { logDecisionTimelineState } from "../tools/tool-call-logger";
 import { type IntakeResult, intake } from "./1-intake";
 import {
 	type ContinuationHint,
@@ -192,26 +193,63 @@ export async function runAiAgentPipeline(
 
 		// Step 2: Decision - Should AI act?
 		const decisionStart = Date.now();
-		decisionResult = await decide({
-			aiAgent: intakeResult.aiAgent,
-			conversation: intakeResult.conversation,
-			conversationHistory: intakeResult.conversationHistory,
-			conversationState: intakeResult.conversationState,
-			triggerMessage: intakeResult.triggerMessage,
-		});
-		metrics.decisionMs = Date.now() - decisionStart;
+		const decisionToolContext = {
+			db: ctx.db,
+			conversationId: ctx.input.conversationId,
+			organizationId: ctx.input.organizationId,
+			websiteId: ctx.input.websiteId,
+			visitorId: ctx.input.visitorId,
+			aiAgentId: intakeResult.aiAgent.id,
+			triggerMessageId: ctx.input.messageId,
+			workflowRunId: ctx.input.workflowRunId,
+			triggerVisibility: intakeResult.triggerMessage?.visibility,
+		} as const;
 
-		if (
-			continuationResult.decision === "supplement" &&
-			(!decisionResult.shouldAct || decisionResult.mode === "background_only")
-		) {
-			decisionResult = {
-				...decisionResult,
-				shouldAct: true,
-				reason: `Continuation supplement override: ${continuationResult.reason}`,
-				mode: "respond_to_visitor",
-			};
+		await logDecisionTimelineState({
+			toolContext: decisionToolContext,
+			state: "partial",
+		});
+
+		try {
+			decisionResult = await decide({
+				aiAgent: intakeResult.aiAgent,
+				conversation: intakeResult.conversation,
+				conversationHistory: intakeResult.conversationHistory,
+				conversationState: intakeResult.conversationState,
+				triggerMessage: intakeResult.triggerMessage,
+			});
+
+			if (
+				continuationResult.decision === "supplement" &&
+				(!decisionResult.shouldAct || decisionResult.mode === "background_only")
+			) {
+				decisionResult = {
+					...decisionResult,
+					shouldAct: true,
+					reason: `Continuation supplement override: ${continuationResult.reason}`,
+					mode: "respond_to_visitor",
+				};
+			}
+
+			await logDecisionTimelineState({
+				toolContext: decisionToolContext,
+				state: "result",
+				result: {
+					shouldAct: decisionResult.shouldAct,
+					mode: decisionResult.mode,
+					reason: decisionResult.reason,
+				},
+			});
+		} catch (error) {
+			await logDecisionTimelineState({
+				toolContext: decisionToolContext,
+				state: "error",
+				error,
+			});
+			throw error;
 		}
+
+		metrics.decisionMs = Date.now() - decisionStart;
 
 		// Emit decision event
 		await emitDecisionMade({
