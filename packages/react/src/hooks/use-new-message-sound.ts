@@ -1,8 +1,6 @@
 import { useCallback } from "react";
+import { NEW_MESSAGE_SOUND_DATA_URL } from "../sounds/sound-data";
 import { useSoundEffect } from "./use-sound-effect";
-
-// Use a path that can be served from public directory
-const NEW_MESSAGE_SOUND_PATH = "/sounds/new-message.wav";
 
 /**
  * Hook to play a sound when a new message arrives.
@@ -23,7 +21,7 @@ export function useNewMessageSound(options?: {
 	volume?: number;
 	playbackRate?: number;
 }): () => void {
-	const { play } = useSoundEffect(NEW_MESSAGE_SOUND_PATH, {
+	const { play } = useSoundEffect(NEW_MESSAGE_SOUND_DATA_URL, {
 		loop: false,
 		volume: options?.volume ?? 0.7,
 		playbackRate: options?.playbackRate ?? 1.0,
