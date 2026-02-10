@@ -59,8 +59,7 @@
     "directory": "dist"
   },
   "dependencies": {
-    "@cossistant/react": "workspace:*",
-    "tailwindcss": "^4.1.13"
+    "@cossistant/react": "workspace:*"
   },
   "devDependencies": {
     "@cossistant/typescript-config": "workspace:*"

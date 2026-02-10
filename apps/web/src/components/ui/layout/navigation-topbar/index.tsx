@@ -80,7 +80,7 @@ export function NavigationTopbar() {
 					)}
 				</AnimatePresence>
 			</div>
-			<div className="flex items-center gap-3">
+			<div className="flex items-center gap-2">
 				<TopbarItem
 					active={pathname.startsWith(`/${website?.slug}/agent`)}
 					className="pr-1"
@@ -92,12 +92,7 @@ export function NavigationTopbar() {
 					}
 				>
 					{hasAgent ? (
-						<span className="flex items-center gap-1.5">
-							Agent
-							<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
-								AI
-							</span>
-						</span>
+						<span className="flex items-center gap-1.5">Agent</span>
 					) : (
 						<span className="flex items-center gap-1.5">
 							New agent

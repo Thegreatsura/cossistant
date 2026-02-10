@@ -2,23 +2,47 @@ import { formatFileSize } from "@cossistant/core";
 import {
 	extractFileParts,
 	extractImageParts,
+	hasExpandedTimelineContent,
 	TimelineItem as PrimitiveTimelineItem,
 	TimelineItemContent,
+	type TimelineItemContentMarkdownRenderers,
 	TimelineItemTimestamp,
 } from "@cossistant/next/primitives";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icons";
 import { TooltipOnHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { TimelineCodeBlock } from "./timeline-code-block";
+import { TimelineCommandBlock } from "./timeline-command-block";
 
 export type TimelineMessageItemProps = {
 	item: TimelineItem;
 	isLast?: boolean;
 	isSentByViewer?: boolean;
 };
+
+function usesExpandedMessageLayout(text: string | null | undefined): boolean {
+	return hasExpandedTimelineContent(text);
+}
+
+export function getDashboardMessageContainerWidthClasses(
+	text: string | null | undefined
+): string {
+	return usesExpandedMessageLayout(text)
+		? "w-full max-w-full"
+		: "w-fit max-w-full";
+}
+
+export function getDashboardMessageBubbleWidthClasses(
+	text: string | null | undefined
+): string {
+	return usesExpandedMessageLayout(text)
+		? "w-full max-w-full md:max-w-full"
+		: "w-fit max-w-full md:max-w-[420px]";
+}
 
 export function TimelineMessageItem({
 	item,
@@ -33,7 +57,32 @@ export function TimelineMessageItem({
 	const files = extractFileParts(item.parts);
 	const hasAttachments = images.length > 0 || files.length > 0;
 	const hasText = item.text && item.text.trim().length > 0;
+	const messageContainerWidthClassName =
+		getDashboardMessageContainerWidthClasses(item.text);
+	const messageBubbleWidthClassName = getDashboardMessageBubbleWidthClasses(
+		item.text
+	);
 	const isPrivate = item.visibility === "private";
+	const markdownRenderers = useMemo<TimelineItemContentMarkdownRenderers>(
+		() => ({
+			codeBlock: ({ code, fileName, language }) => (
+				<TimelineCodeBlock
+					code={code}
+					fileName={fileName}
+					language={language}
+				/>
+			),
+			commandBlock: ({ commands }) => (
+				<TimelineCommandBlock commands={commands} />
+			),
+			inlineCode: ({ code }) => (
+				<code className="rounded bg-background-300 px-1 py-0.5 text-xs">
+					{code}
+				</code>
+			),
+		}),
+		[]
+	);
 
 	const openLightbox = (index: number) => {
 		setLightboxIndex(index);
@@ -62,9 +111,13 @@ export function TimelineMessageItem({
 							{/* Text content */}
 							{hasText && (
 								<div
-									className={cn("flex w-fit min-w-0 max-w-full flex-col", {
-										"items-end": isSentByViewer,
-									})}
+									className={cn(
+										"flex min-w-0 flex-col",
+										messageContainerWidthClassName,
+										{
+											"items-end": isSentByViewer,
+										}
+									)}
 								>
 									<TooltipOnHover
 										content={
@@ -78,7 +131,8 @@ export function TimelineMessageItem({
 										{isPrivate ? (
 											<div
 												className={cn(
-													"flex w-fit min-w-0 max-w-full flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 bg-cossistant-yellow-100/30 px-3 py-2 md:max-w-[420px] dark:border-cossistant-yellow-600/30 dark:bg-cossistant-yellow-100/20",
+													"flex min-w-0 flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 border-dashed bg-cossistant-yellow-100/30 px-3 py-2 dark:border-cossistant-yellow-600/20 dark:bg-cossistant-yellow-100/5",
+													messageBubbleWidthClassName,
 													{
 														"rounded-br-[2px]":
 															isLast && isSentByViewer && !hasAttachments,
@@ -87,19 +141,28 @@ export function TimelineMessageItem({
 													}
 												)}
 											>
-												<span className="font-medium text-cossistant-yellow-600 text-xs">
+												<span className="font-medium text-cossistant-yellow-700 text-xs opacity-50 dark:text-cossistant-yellow-600">
 													NOTE
 												</span>
 												<TimelineItemContent
 													className="block min-w-0 max-w-full break-words text-foreground text-sm"
+													markdownRenderers={markdownRenderers}
 													renderMarkdown
 													text={item.text}
 												/>
+												<span className="mt-6 flex items-center gap-1 font-medium text-cossistant-yellow-700 text-xs opacity-40 dark:text-cossistant-yellow-600">
+													<Icon
+														className="mb-[1px] size-3 shrink-0"
+														name="eye-off"
+													/>
+													Not visible to visitor
+												</span>
 											</div>
 										) : (
 											<TimelineItemContent
 												className={cn(
-													"block w-fit min-w-0 max-w-full break-words rounded-lg px-3 py-2 text-sm md:max-w-[420px]",
+													"block min-w-0 break-words rounded-lg px-3 py-2 text-sm",
+													messageBubbleWidthClassName,
 													{
 														"bg-background-300 text-foreground dark:bg-background-600":
 															!isSentByViewer,
@@ -111,6 +174,7 @@ export function TimelineMessageItem({
 															isLast && !isSentByViewer && !hasAttachments,
 													}
 												)}
+												markdownRenderers={markdownRenderers}
 												renderMarkdown
 												text={item.text}
 											/>

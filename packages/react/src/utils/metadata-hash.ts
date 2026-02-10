@@ -3,7 +3,7 @@
  * This is used to check if metadata has changed without comparing the entire object.
  * Returns a short hash string (first 8 characters of SHA256).
  *
- * Note: This uses SubtleCrypto API in the browser and crypto module in Node.js
+ * Uses Web Crypto when available and falls back to a deterministic non-crypto hash.
  */
 export async function computeMetadataHash(
 	metadata: Record<string, unknown> | null | undefined
@@ -25,12 +25,11 @@ export async function computeMetadataHash(
 	// Create a stable string representation
 	const metadataString = JSON.stringify(sortedMetadata);
 
-	// Use SubtleCrypto in browser, crypto module in Node.js
-	if (typeof window !== "undefined" && window.crypto?.subtle) {
-		// Browser environment
+	// Use Web Crypto when available (browser and modern Node runtimes)
+	if (globalThis.crypto?.subtle) {
 		const encoder = new TextEncoder();
 		const data = encoder.encode(metadataString);
-		const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+		const hashBuffer = await globalThis.crypto.subtle.digest("SHA-256", data);
 		const hashArray = Array.from(new Uint8Array(hashBuffer));
 		const hashHex = hashArray
 			.map((b) => b.toString(16).padStart(2, "0"))
@@ -38,11 +37,12 @@ export async function computeMetadataHash(
 		return hashHex.slice(0, 8);
 	}
 
-	// Node.js environment (for SSR)
-	const crypto = await import("node:crypto");
-	return crypto
-		.createHash("sha256")
-		.update(metadataString)
-		.digest("hex")
-		.slice(0, 8);
+	// FNV-1a fallback for runtimes without Web Crypto.
+	let hash = 0x81_1c_9d_c5;
+	for (let i = 0; i < metadataString.length; i += 1) {
+		hash ^= metadataString.charCodeAt(i);
+		hash = Math.imul(hash, 0x01_00_01_93);
+	}
+
+	return (hash >>> 0).toString(16).padStart(8, "0");
 }

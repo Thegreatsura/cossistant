@@ -23,6 +23,7 @@ export const coButtonVariants = cva(
 			size: {
 				default: "h-8 px-4 py-2 has-[>svg]:px-3",
 				large: "h-14 px-6 has-[>svg]:px-4",
+				small: "h-6 px-1 text-xs has-[>svg]:px-1.5",
 				icon: "size-6",
 			},
 		},

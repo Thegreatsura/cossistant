@@ -88,6 +88,8 @@ function renderTokens(
 					components.code({
 						children: token.content,
 						inline: token.inline,
+						language: token.language,
+						fileName: token.fileName,
 					})
 				);
 

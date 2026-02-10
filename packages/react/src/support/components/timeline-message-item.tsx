@@ -1,26 +1,38 @@
 import { formatFileSize } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	TimelineItem as PrimitiveTimelineItem,
 	TimelineItemContent,
+	type TimelineItemContentMarkdownRenderers,
 	TimelineItemTimestamp,
 } from "../../primitives/timeline-item";
 import {
 	extractFileParts,
 	extractImageParts,
 } from "../../primitives/timeline-item-attachments";
+import { hasExpandedTimelineContent } from "../../primitives/timeline-message-layout";
 import { useSupportText } from "../text";
 import { cn } from "../utils";
 import Icon from "./icons";
 import { ImageLightbox } from "./image-lightbox";
+import { TimelineCodeBlock } from "./timeline-code-block";
+import { TimelineCommandBlock } from "./timeline-command-block";
 
 export type TimelineMessageItemProps = {
 	item: TimelineItem;
 	isLast?: boolean;
 	isSentByViewer?: boolean;
 };
+
+export function getSupportMessageWidthClasses(
+	text: string | null | undefined
+): string {
+	return hasExpandedTimelineContent(text)
+		? "w-full max-w-full"
+		: "max-w-[300px]";
+}
 
 /**
  * Message bubble renderer that adapts layout depending on whether the visitor
@@ -40,6 +52,27 @@ export function TimelineMessageItem({
 	const files = extractFileParts(item.parts);
 	const hasAttachments = images.length > 0 || files.length > 0;
 	const hasText = item.text && item.text.trim().length > 0;
+	const messageWidthClassName = getSupportMessageWidthClasses(item.text);
+	const markdownRenderers = useMemo<TimelineItemContentMarkdownRenderers>(
+		() => ({
+			codeBlock: ({ code, fileName, language }) => (
+				<TimelineCodeBlock
+					code={code}
+					fileName={fileName}
+					language={language}
+				/>
+			),
+			commandBlock: ({ commands }) => (
+				<TimelineCommandBlock commands={commands} />
+			),
+			inlineCode: ({ code }) => (
+				<code className="rounded bg-co-background-300 px-1 py-0.5 text-xs">
+					{code}
+				</code>
+			),
+		}),
+		[]
+	);
 
 	const openLightbox = (index: number) => {
 		setLightboxIndex(index);
@@ -72,7 +105,8 @@ export function TimelineMessageItem({
 								{hasText && (
 									<TimelineItemContent
 										className={cn(
-											"block min-w-0 max-w-[300px] break-words rounded-lg px-3.5 py-2.5 text-sm",
+											"block min-w-0 break-words rounded-lg px-3.5 py-2.5 text-sm",
+											messageWidthClassName,
 											{
 												"bg-co-background-300 text-co-foreground dark:bg-co-background-600":
 													!isSentByViewerFinal,
@@ -84,6 +118,7 @@ export function TimelineMessageItem({
 													isLast && !isSentByViewerFinal && !hasAttachments,
 											}
 										)}
+										markdownRenderers={markdownRenderers}
 										renderMarkdown
 										text={item.text}
 									/>

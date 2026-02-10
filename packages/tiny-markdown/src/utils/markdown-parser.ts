@@ -7,11 +7,17 @@ import type { MarkdownToken, ParsedMention } from "../types";
  */
 
 // Regex patterns for inline parsing
-const MENTION_REGEX = /@\[([^\]]+)\]\(mention:([^:]+):([^)]+)\)/;
+const MENTION_REGEX = /\[@([^\]]+)\]\(mention:([^:]+):([^)]+)\)/;
 const BOLD_REGEX = /\*\*(.+?)\*\*/;
 const ITALIC_REGEX = /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/;
 const CODE_INLINE_REGEX = /`([^`]+)`/;
+const CODE_FENCE_OPEN_REGEX = /^```(.*)$/;
+const CODE_FENCE_CLOSE_REGEX = /^```\s*$/;
 const LINK_REGEX = /\[([^\]]+)\]\(([^)]+)\)/;
+const CODE_FENCE_INFO_TOKEN_REGEX = /(?:[^\s"']+|"[^"]*"|'[^']*')+/g;
+const FILE_METADATA_KEYS = new Set(["file", "filename", "name", "title"]);
+const FILENAME_COMMENT_PREFIXES = [/^\/\/\s*(.+)$/, /^#\s*(.+)$/];
+const BLOCK_COMMENT_FILENAME_REGEX = /^\/\*\s*(.+?)\s*\*\/$/;
 
 // Regex patterns for block-level parsing
 const HEADER_REGEX = /^(#{1,3})\s+(.*)$/;
@@ -23,11 +29,127 @@ const BLOCKQUOTE_REGEX = /^>\s*(.*)$/;
 const BOLD_CHECK_REGEX = /\*\*.+?\*\*/;
 const ITALIC_CHECK_REGEX = /\*.+?\*/;
 const CODE_CHECK_REGEX = /`.+?`/;
+const CODE_FENCE_CHECK_REGEX = /^```\s*/m;
 const LINK_CHECK_REGEX = /\[.+?\]\(.+?\)/;
 const HEADER_CHECK_REGEX = /^#{1,3}\s/m;
 const BULLET_CHECK_REGEX = /^[-*]\s/m;
 const NUMBERED_CHECK_REGEX = /^\d+\.\s/m;
 const BLOCKQUOTE_CHECK_REGEX = /^>\s/m;
+
+type ParsedCodeFenceInfo = {
+	language?: string;
+	fileName?: string;
+};
+
+function stripWrappedQuotes(value: string): string {
+	const trimmed = value.trim();
+	if (
+		(trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+		(trimmed.startsWith("'") && trimmed.endsWith("'"))
+	) {
+		return trimmed.slice(1, -1);
+	}
+
+	return trimmed;
+}
+
+function looksLikeFileName(value: string): boolean {
+	const trimmed = value.trim();
+	if (!trimmed || trimmed.includes(" ")) {
+		return false;
+	}
+
+	if (trimmed.includes("/") || trimmed.includes("\\")) {
+		return true;
+	}
+
+	return /^[\w.-]+\.[\w.-]+$/.test(trimmed) || /^\.[\w.-]+$/.test(trimmed);
+}
+
+function parseCodeFenceInfo(info: string): ParsedCodeFenceInfo {
+	const normalizedInfo = info.trim();
+	if (!normalizedInfo) {
+		return {};
+	}
+
+	const tokens =
+		normalizedInfo
+			.match(CODE_FENCE_INFO_TOKEN_REGEX)
+			?.map(stripWrappedQuotes) ?? [];
+	if (tokens.length === 0) {
+		return {};
+	}
+
+	let language: string | undefined;
+	let fileName: string | undefined;
+	let cursor = 0;
+
+	const firstToken = tokens[0];
+	if (
+		firstToken &&
+		!firstToken.includes("=") &&
+		/^[a-zA-Z0-9_-]+$/.test(firstToken)
+	) {
+		language = firstToken;
+		cursor = 1;
+	}
+
+	for (let index = cursor; index < tokens.length; index += 1) {
+		const token = tokens[index];
+		if (!token) {
+			continue;
+		}
+
+		const assignmentIndex = token.indexOf("=");
+		if (assignmentIndex > 0) {
+			const key = token.slice(0, assignmentIndex).trim().toLowerCase();
+			const value = stripWrappedQuotes(token.slice(assignmentIndex + 1));
+
+			if (key === "lang" && !language && value) {
+				language = value;
+			}
+
+			if (FILE_METADATA_KEYS.has(key) && !fileName && value) {
+				fileName = value;
+			}
+			continue;
+		}
+
+		if (
+			!fileName &&
+			token !== "showLineNumbers" &&
+			!token.startsWith("{") &&
+			looksLikeFileName(token)
+		) {
+			fileName = token;
+		}
+	}
+
+	return { language, fileName };
+}
+
+function inferFileNameFromFirstCommentLine(code: string): string | undefined {
+	const firstLine = code.split("\n")[0]?.trim();
+	if (!firstLine) {
+		return;
+	}
+
+	for (const regex of FILENAME_COMMENT_PREFIXES) {
+		const match = firstLine.match(regex);
+		const candidate = stripWrappedQuotes(match?.[1] ?? "");
+		if (looksLikeFileName(candidate)) {
+			return candidate;
+		}
+	}
+
+	const blockCommentMatch = firstLine.match(BLOCK_COMMENT_FILENAME_REGEX);
+	const blockCandidate = stripWrappedQuotes(blockCommentMatch?.[1] ?? "");
+	if (looksLikeFileName(blockCandidate)) {
+		return blockCandidate;
+	}
+
+	return;
+}
 
 /**
  * Parse inline markdown into tokens.
@@ -246,7 +368,39 @@ export function parseMarkdown(text: string): MarkdownToken[] {
 	const lines = text.split("\n");
 	const tokens: MarkdownToken[] = [];
 
-	for (const line of lines) {
+	for (let index = 0; index < lines.length; index += 1) {
+		const line = lines[index] ?? "";
+		const codeFenceStart = line.match(CODE_FENCE_OPEN_REGEX);
+
+		if (codeFenceStart) {
+			const fenceInfo = parseCodeFenceInfo(codeFenceStart[1] ?? "");
+			const codeLines: string[] = [];
+
+			index += 1;
+			while (index < lines.length) {
+				const currentLine = lines[index] ?? "";
+				if (CODE_FENCE_CLOSE_REGEX.test(currentLine)) {
+					break;
+				}
+
+				codeLines.push(currentLine);
+				index += 1;
+			}
+
+			const codeContent = codeLines.join("\n");
+			const fileName =
+				fenceInfo.fileName ?? inferFileNameFromFirstCommentLine(codeContent);
+
+			tokens.push({
+				type: "code",
+				content: codeContent,
+				inline: false,
+				language: fenceInfo.language,
+				fileName,
+			});
+			continue;
+		}
+
 		// Empty line = line break
 		if (line.trim() === "") {
 			tokens.push({ type: "br" });
@@ -267,7 +421,7 @@ export function parseMarkdown(text: string): MarkdownToken[] {
 		});
 	}
 
-	// Group list items
+	// Group consecutive list items
 	return groupLists(tokens);
 }
 
@@ -279,6 +433,7 @@ export function hasMarkdownFormatting(text: string): boolean {
 		BOLD_CHECK_REGEX.test(text) ||
 		ITALIC_CHECK_REGEX.test(text) ||
 		CODE_CHECK_REGEX.test(text) ||
+		CODE_FENCE_CHECK_REGEX.test(text) ||
 		LINK_CHECK_REGEX.test(text) ||
 		HEADER_CHECK_REGEX.test(text) ||
 		BULLET_CHECK_REGEX.test(text) ||

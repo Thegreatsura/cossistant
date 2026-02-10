@@ -8,6 +8,12 @@ export { SupportConfig as Config } from "../support-config";
 export { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 export { Button } from "./button";
 export {
+	type CommandPackageManager,
+	type CommandVariants,
+	DEFAULT_PACKAGE_MANAGER,
+	mapCommandVariants,
+} from "./command-block-utils";
+export {
 	ConversationTimeline,
 	ConversationTimelineContainer,
 	ConversationTimelineEmpty,
@@ -30,8 +36,17 @@ export {
 } from "./multimodal-input";
 export { type PageDefinition, Router, type RouterProps } from "./router";
 export {
+	TimelineCodeBlock,
+	type TimelineCodeBlockProps,
+} from "./timeline-code-block";
+export {
+	TimelineCommandBlock,
+	type TimelineCommandBlockProps,
+} from "./timeline-command-block";
+export {
 	TimelineItem,
 	TimelineItemContent,
+	type TimelineItemContentMarkdownRenderers,
 	TimelineItemTimestamp,
 } from "./timeline-item";
 export {
@@ -50,6 +65,7 @@ export {
 	TimelineItemGroupReadIndicator,
 	TimelineItemGroupSeenIndicator,
 } from "./timeline-item-group";
+export { hasExpandedTimelineContent } from "./timeline-message-layout";
 export {
 	SupportTrigger as Trigger,
 	type TriggerProps,

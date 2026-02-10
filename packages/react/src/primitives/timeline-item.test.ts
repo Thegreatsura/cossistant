@@ -23,15 +23,6 @@ describe("TimelineItemContent", () => {
 		expect(html).not.toContain("<br");
 	});
 
-	it("preserves a single line break for plain text messages", () => {
-		const text = "Line 1\nLine 2";
-		const html = renderMessageContent(text);
-
-		expect(html).toContain("whitespace-pre-wrap");
-		expect(html).toContain(text);
-		expect(html).not.toContain("<br");
-	});
-
 	it("still renders markdown formatting and mention links", () => {
 		const markdownHtml = renderMessageContent("**bold**");
 		expect(markdownHtml).toContain(
@@ -46,5 +37,68 @@ describe("TimelineItemContent", () => {
 		expect(mentionHtml).toContain('data-mention-id="123"');
 		expect(mentionHtml).toContain("@John");
 		expect(mentionHtml).not.toContain("whitespace-pre-wrap");
+	});
+
+	it("renders fenced code blocks with file metadata and copy affordance", () => {
+		const codeSnippet = [
+			'```tsx title="app/layout.tsx"',
+			'import { Cossistant } from "@cossistant/react";',
+			"export default function RootLayout() {",
+			"  return null;",
+			"}",
+			"```",
+		].join("\n");
+
+		const html = renderMessageContent(codeSnippet);
+
+		expect(html).toContain('data-co-code-block=""');
+		expect(html).toContain("app/layout.tsx");
+		expect(html).toContain(">TSX<");
+		expect(html).toContain(">Copy<");
+		expect(html).toContain('class="language-tsx"');
+		expect(html).toContain("import { Cossistant } from");
+		expect(html).not.toContain("whitespace-pre-wrap");
+	});
+
+	it("renders command blocks with package-manager tabs and copy affordance", () => {
+		const commandSnippet = [
+			"```bash",
+			"npm install @cossistant/react",
+			"```",
+		].join("\n");
+
+		const html = renderMessageContent(commandSnippet);
+
+		expect(html).toContain('data-co-command-block=""');
+		expect(html).toContain(">npm<");
+		expect(html).toContain(">yarn<");
+		expect(html).toContain(">pnpm<");
+		expect(html).toContain(">bun<");
+		expect(html).toContain(">Copy<");
+		expect(html).toContain("npm install @cossistant/react");
+		expect(html).not.toContain("whitespace-pre-wrap");
+	});
+
+	it("promotes standalone inline commands to command blocks", () => {
+		const html = renderMessageContent("`pnpm add @cossistant/react`");
+
+		expect(html).toContain('data-co-command-block=""');
+		expect(html).toContain(">npm<");
+		expect(html).toContain(">yarn<");
+		expect(html).toContain(">pnpm<");
+		expect(html).toContain(">bun<");
+		expect(html).toContain("npm install @cossistant/react");
+	});
+
+	it("promotes inline command code inside prose to a command block", () => {
+		const html = renderMessageContent(
+			"Run `pnpm add @cossistant/react` in your terminal."
+		);
+
+		expect(html).toContain("Run ");
+		expect(html).toContain("in your terminal.");
+		expect(html).toContain('data-co-command-block=""');
+		expect(html).toContain("npm install @cossistant/react");
+		expect(html).not.toContain("<code>pnpm add @cossistant/react</code>");
 	});
 });

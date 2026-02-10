@@ -47,7 +47,13 @@ export type MentionFeatures = {
 export type TextToken = { type: "text"; content: string };
 export type StrongToken = { type: "strong"; children: MarkdownToken[] };
 export type EmToken = { type: "em"; children: MarkdownToken[] };
-export type CodeToken = { type: "code"; content: string; inline: boolean };
+export type CodeToken = {
+	type: "code";
+	content: string;
+	inline: boolean;
+	language?: string;
+	fileName?: string;
+};
 export type ParagraphToken = { type: "p"; children: MarkdownToken[] };
 export type BlockquoteToken = { type: "blockquote"; children: MarkdownToken[] };
 export type UnorderedListToken = { type: "ul"; children: MarkdownToken[] };
@@ -91,6 +97,8 @@ export type MarkdownComponents = {
 	code?: (props: {
 		children: React.ReactNode;
 		inline: boolean;
+		language?: string;
+		fileName?: string;
 	}) => React.ReactNode;
 	p?: (props: { children: React.ReactNode }) => React.ReactNode;
 	blockquote?: (props: { children: React.ReactNode }) => React.ReactNode;

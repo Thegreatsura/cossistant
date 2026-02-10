@@ -367,7 +367,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 								: "pointer-events-none translate-y-0 opacity-0"
 						)}
 					>
-						Only visible to team members and AI
+						Not visible to visitor
 					</div>
 
 					<div className="bg-background">
@@ -375,7 +375,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 							className={cn(
 								"relative flex h-fit flex-col rounded-xs border drop-shadow-xs",
 								isPrivate
-									? "border-cossistant-yellow-600/40 border-dashed bg-cossistant-yellow-100/30 dark:border-cossistant-yellow-600/30 dark:bg-cossistant-yellow-100/20"
+									? "border-cossistant-yellow-600/40 border-dashed bg-cossistant-yellow-100/30 dark:border-cossistant-yellow-600/20 dark:bg-cossistant-yellow-100/5"
 									: "border-border/50 bg-background-100 dark:border-border/50 dark:bg-background-300"
 							)}
 						>
