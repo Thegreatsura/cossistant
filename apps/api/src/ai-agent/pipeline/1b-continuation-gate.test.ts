@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it, mock } from "bun:test";
 
 const getLatestPublicAiMessageAfterCursorMock = mock(
 	(async () => null) as (...args: unknown[]) => Promise<unknown>
@@ -27,6 +27,10 @@ mock.module("@api/lib/ai", () => ({
 const modulePromise = import("./1b-continuation-gate");
 
 describe("continuationGate", () => {
+	afterAll(() => {
+		mock.restore();
+	});
+
 	beforeEach(() => {
 		getLatestPublicAiMessageAfterCursorMock.mockReset();
 		createModelRawMock.mockReset();

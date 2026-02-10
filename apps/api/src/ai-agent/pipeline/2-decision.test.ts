@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it, mock } from "bun:test";
 
 const runSmartDecisionMock = mock((async () => ({
 	intent: "observe" as const,
@@ -70,6 +70,10 @@ function buildInput(
 }
 
 describe("decide", () => {
+	afterAll(() => {
+		mock.restore();
+	});
+
 	beforeEach(() => {
 		runSmartDecisionMock.mockReset();
 		runSmartDecisionMock.mockResolvedValue({
@@ -179,6 +183,60 @@ describe("decide", () => {
 		const result = await decide(input as never);
 
 		expect(result.shouldAct).toBe(true);
+		expect(result.mode).toBe("background_only");
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("maps untagged public teammate observe decisions to background-only skip", async () => {
+		const { decide } = await modulePromise;
+		runSmartDecisionMock.mockResolvedValueOnce({
+			intent: "observe",
+			reasoning: "Human teammate is actively handling this",
+			confidence: "high",
+		});
+
+		const trigger = visitorMessage("I am taking this ticket.", {
+			messageId: "msg-human-public-observe",
+			senderType: "human_agent",
+			senderName: "Sarah",
+			visibility: "public",
+		});
+		const input = buildInput({
+			conversationHistory: [trigger],
+			triggerMessage: trigger,
+		});
+
+		const result = await decide(input as never);
+
+		expect(result.shouldAct).toBe(false);
+		expect(result.mode).toBe("background_only");
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("maps untagged private teammate observe decisions to background-only skip", async () => {
+		const { decide } = await modulePromise;
+		runSmartDecisionMock.mockResolvedValueOnce({
+			intent: "observe",
+			reasoning: "Private teammate note does not require AI action",
+			confidence: "high",
+		});
+
+		const trigger = visitorMessage("Internal note: I am handling this.", {
+			messageId: "msg-human-private-observe",
+			senderType: "human_agent",
+			senderName: "Sarah",
+			visibility: "private",
+		});
+		const input = buildInput({
+			conversationHistory: [trigger],
+			triggerMessage: trigger,
+		});
+
+		const result = await decide(input as never);
+
+		expect(result.shouldAct).toBe(false);
 		expect(result.mode).toBe("background_only");
 		expect(result.reason).toContain("Smart decision");
 		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);

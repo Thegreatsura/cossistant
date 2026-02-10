@@ -20,6 +20,11 @@ import { z } from "zod";
 import type { RoleAwareMessage } from "../context/conversation";
 import type { ConversationState } from "../context/state";
 
+const HUMAN_ACTIVE_WINDOW_MS = 120_000;
+const DECISION_TIMEOUT_MS = 2000;
+const MESSAGE_CHAR_LIMIT = 220;
+const MAX_MESSAGES = 10;
+
 /**
  * What the AI decides to do
  */
@@ -30,6 +35,8 @@ export type DecisionIntent = "respond" | "observe" | "assist_team";
  */
 export type DecisionConfidence = "high" | "medium" | "low";
 
+export type DecisionSource = "rule" | "model" | "fallback";
+
 /**
  * Result from the smart decision AI
  */
@@ -37,6 +44,8 @@ export type SmartDecisionResult = {
 	intent: DecisionIntent;
 	reasoning: string;
 	confidence: DecisionConfidence;
+	source?: DecisionSource;
+	ruleId?: string;
 };
 
 type SmartDecisionInput = {
@@ -45,6 +54,18 @@ type SmartDecisionInput = {
 	conversationHistory: RoleAwareMessage[];
 	conversationState: ConversationState;
 	triggerMessage: RoleAwareMessage;
+};
+
+type DecisionSignals = {
+	humanActive: boolean;
+	lastHumanSecondsAgo: number | null;
+	messagesSinceHuman: number;
+	visitorBurstCount: number;
+	recentTurnPattern: string;
+	triggerIsShortAckOrGreeting: boolean;
+	triggerIsQuestionOrRequest: boolean;
+	triggerIsSingleNonQuestion: boolean;
+	triggerLooksLikeHumanCommand: boolean;
 };
 
 /**
@@ -61,6 +82,151 @@ const decisionSchema = z.object({
 		.enum(["high", "medium", "low"])
 		.describe("How confident are you in this decision?"),
 });
+
+function normalizeText(text: string): string {
+	return text.replace(/\s+/g, " ").trim();
+}
+
+function clipText(text: string, maxChars: number): string {
+	const normalized = normalizeText(text);
+	if (normalized.length <= maxChars) {
+		return normalized;
+	}
+	return `${normalized.slice(0, Math.max(0, maxChars - 3))}...`;
+}
+
+function isShortAckOrGreeting(text: string): boolean {
+	const value = normalizeText(text).toLowerCase();
+	if (!value) {
+		return false;
+	}
+
+	return /^(hi|hello|hey|yo|ok|okay|k|thanks|thank you|thx|ty|cool|great|awesome|sounds good|alright|got it|sure|yep|yup)[.!?]*$/.test(
+		value
+	);
+}
+
+function looksLikeQuestionOrRequest(text: string): boolean {
+	const value = normalizeText(text).toLowerCase();
+	if (!value) {
+		return false;
+	}
+
+	if (value.includes("?")) {
+		return true;
+	}
+
+	return /\b(can you|could you|would you|please|help|need|issue|problem|error|stuck|unable|cannot|can't|not working|how|what|why|when|where|which|who|tell me|explain|show me)\b/.test(
+		value
+	);
+}
+
+function isSingleNonQuestionMessage(text: string): boolean {
+	const value = normalizeText(text);
+	if (!value) {
+		return false;
+	}
+
+	const sentences = value
+		.split(/[.!?]+/)
+		.filter((chunk) => chunk.trim().length > 0);
+	const sentenceCount = Math.max(1, sentences.length);
+	return sentenceCount <= 1 && !looksLikeQuestionOrRequest(value);
+}
+
+function looksLikeHumanCommand(text: string): boolean {
+	const value = normalizeText(text).toLowerCase();
+	if (!value) {
+		return false;
+	}
+
+	if (value.includes("?")) {
+		return true;
+	}
+
+	return /\b(can you|could you|please|summari[sz]e|draft|reply|respond|tell (the )?visitor|update (the )?visitor|message (the )?visitor|analy[sz]e|what do you think|help me)\b/.test(
+		value
+	);
+}
+
+function mapSenderToTurnCode(
+	senderType: RoleAwareMessage["senderType"]
+): string {
+	switch (senderType) {
+		case "human_agent":
+			return "H";
+		case "visitor":
+			return "V";
+		case "ai_agent":
+			return "A";
+		default:
+			return "?";
+	}
+}
+
+function extractDecisionSignals(input: SmartDecisionInput): DecisionSignals {
+	const { conversationHistory, triggerMessage } = input;
+
+	const lastHumanIndex = conversationHistory.findLastIndex(
+		(message) =>
+			message.senderType === "human_agent" && message.visibility === "public"
+	);
+
+	const messagesSinceHuman =
+		lastHumanIndex >= 0 ? conversationHistory.length - 1 - lastHumanIndex : -1;
+
+	let lastHumanPublicAt: number | null = null;
+	if (lastHumanIndex >= 0) {
+		const timestamp = conversationHistory[lastHumanIndex]?.timestamp;
+		const parsed = timestamp ? Date.parse(timestamp) : Number.NaN;
+		if (!Number.isNaN(parsed)) {
+			lastHumanPublicAt = parsed;
+		}
+	}
+
+	const now = Date.now();
+	const humanActive =
+		lastHumanPublicAt !== null
+			? now - lastHumanPublicAt <= HUMAN_ACTIVE_WINDOW_MS
+			: messagesSinceHuman >= 0 && messagesSinceHuman <= 1;
+
+	const lastHumanSecondsAgo =
+		lastHumanPublicAt !== null
+			? Math.max(0, Math.round((now - lastHumanPublicAt) / 1000))
+			: null;
+
+	let visitorBurstCount = 0;
+	for (let i = conversationHistory.length - 1; i >= 0; i--) {
+		if (conversationHistory[i].senderType === "visitor") {
+			visitorBurstCount++;
+			continue;
+		}
+		break;
+	}
+
+	const triggerText = normalizeText(triggerMessage.content);
+
+	return {
+		humanActive,
+		lastHumanSecondsAgo,
+		messagesSinceHuman,
+		visitorBurstCount,
+		recentTurnPattern: conversationHistory
+			.slice(-6)
+			.map((message) => mapSenderToTurnCode(message.senderType))
+			.join(","),
+		triggerIsShortAckOrGreeting:
+			triggerMessage.senderType === "visitor" &&
+			isShortAckOrGreeting(triggerText),
+		triggerIsQuestionOrRequest: looksLikeQuestionOrRequest(triggerText),
+		triggerIsSingleNonQuestion:
+			triggerMessage.senderType === "visitor" &&
+			isSingleNonQuestionMessage(triggerText),
+		triggerLooksLikeHumanCommand:
+			triggerMessage.senderType === "human_agent" &&
+			looksLikeHumanCommand(triggerText),
+	};
+}
 
 /**
  * Select relevant messages for context (token-light)
@@ -79,15 +245,17 @@ function selectRelevantMessages(
 		return [];
 	}
 
-	const MAX_MESSAGES = 8;
 	const MAX_HUMAN_MESSAGES = 3;
 	const result: RoleAwareMessage[] = [];
 	const seen = new Set<string>();
+	const messageIndex = new Map<string, number>();
+	for (let i = 0; i < history.length; i++) {
+		messageIndex.set(history[i].messageId, i);
+	}
 
 	const addMessage = (msg: RoleAwareMessage) => {
-		const key = `${msg.messageId}-${msg.content.slice(0, 50)}`;
-		if (!seen.has(key)) {
-			seen.add(key);
+		if (!seen.has(msg.messageId)) {
+			seen.add(msg.messageId);
 			result.push(msg);
 		}
 	};
@@ -142,8 +310,8 @@ function selectRelevantMessages(
 
 	return result
 		.sort((a, b) => {
-			const aIndex = history.findIndex((m) => m.messageId === a.messageId);
-			const bIndex = history.findIndex((m) => m.messageId === b.messageId);
+			const aIndex = messageIndex.get(a.messageId) ?? 0;
+			const bIndex = messageIndex.get(b.messageId) ?? 0;
 			return aIndex - bIndex;
 		})
 		.slice(-MAX_MESSAGES);
@@ -160,55 +328,32 @@ function formatMessage(msg: RoleAwareMessage): string {
 			: msg.senderType === "human_agent"
 				? `[TEAM:${msg.senderName || "Agent"}]`
 				: "[AI]";
-	return `${privatePrefix}${prefix} ${msg.content}`;
+	return `${privatePrefix}${prefix} ${clipText(msg.content, MESSAGE_CHAR_LIMIT)}`;
 }
 
 /**
  * Build the prompt for the decision AI
  */
-function buildDecisionPrompt(input: SmartDecisionInput): string {
+function buildDecisionPrompt(
+	input: SmartDecisionInput,
+	signals: DecisionSignals
+): string {
 	const { conversationHistory, triggerMessage, conversationState } = input;
+	const historyWithoutTrigger = conversationHistory.filter(
+		(message) => message.messageId !== triggerMessage.messageId
+	);
 
 	// Select relevant messages (smart selection, not just last N)
 	const relevantMessages = selectRelevantMessages(
-		conversationHistory,
+		historyWithoutTrigger,
 		triggerMessage
 	);
 
 	// Format messages
-	const formattedMessages = relevantMessages.map(formatMessage).join("\n");
-
-	// Human activity signals
-	const lastHumanIndex = conversationHistory.findLastIndex(
-		(m) => m.senderType === "human_agent" && m.visibility === "public"
-	);
-	const messagesSinceHuman =
-		lastHumanIndex >= 0 ? conversationHistory.length - 1 - lastHumanIndex : -1;
-	let lastHumanPublicAt: number | null = null;
-	if (lastHumanIndex >= 0) {
-		const ts = conversationHistory[lastHumanIndex]?.timestamp;
-		const parsed = ts ? Date.parse(ts) : Number.NaN;
-		if (!Number.isNaN(parsed)) {
-			lastHumanPublicAt = parsed;
-		}
-	}
-	const humanActive =
-		lastHumanPublicAt !== null
-			? Date.now() - lastHumanPublicAt <= 2 * 60 * 1000
-			: messagesSinceHuman >= 0 && messagesSinceHuman <= 1;
-	const lastHumanSecondsAgo =
-		lastHumanPublicAt !== null
-			? Math.max(0, Math.round((Date.now() - lastHumanPublicAt) / 1000))
-			: null;
-
-	let visitorBurstCount = 0;
-	for (let i = conversationHistory.length - 1; i >= 0; i--) {
-		if (conversationHistory[i].senderType === "visitor") {
-			visitorBurstCount++;
-		} else {
-			break;
-		}
-	}
+	const formattedMessages =
+		relevantMessages.length > 0
+			? relevantMessages.map(formatMessage).join("\n")
+			: "- (none)";
 
 	return `You are the decision gate for a support AI.
 
@@ -223,22 +368,22 @@ Intent guidance:
 - "assist_team" means leave internal guidance only.
 
 Decision policy:
-- Prioritize natural conversation flow; do not interrupt an active human unless helpful.
-- Prefer respond for visitor greetings/openers ("hi", "hey", "hello"), unanswered questions, or repeated visitor follow-ups.
-- Prefer observe for pure acknowledgements/banter when no clear help is needed.
-- Prefer respond when a teammate asks AI to message or update the visitor.
-- Prefer assist_team when the teammate request is analysis/planning/handoff context.
-- If uncertain, choose the option that avoids visitor dead-ends.
+- Priority 1: protect human conversation continuity; if a teammate is actively handling and AI value is unclear, choose observe.
+- Priority 2: resolve clear unmet visitor need; choose respond for unanswered questions or explicit help requests.
+- Priority 3: honor teammate intent; choose respond for clear execution commands and assist_team for internal analysis/handoff.
+- Prefer observe for acknowledgements, greetings, or banter without a clear need.
+- If uncertain, choose observe.
 
 Signals:
-- triggerSender: ${triggerMessage.senderType}
-- triggerVisibility: ${triggerMessage.visibility}
-- humanActive: ${humanActive}
-- lastHumanSecondsAgo: ${lastHumanSecondsAgo ?? "none"}
-- messagesSinceHuman: ${messagesSinceHuman >= 0 ? messagesSinceHuman : "none"}
-- hasHumanAssignee: ${conversationState.hasHumanAssignee}
-- escalated: ${conversationState.isEscalated}
-- visitorBurst: ${visitorBurstCount}
+- triggerSender=${triggerMessage.senderType}
+- triggerVisibility=${triggerMessage.visibility}
+- humanActive=${signals.humanActive}
+- lastHumanSecondsAgo=${signals.lastHumanSecondsAgo ?? "none"}
+- messagesSinceHuman=${signals.messagesSinceHuman >= 0 ? signals.messagesSinceHuman : "none"}
+- hasHumanAssignee=${conversationState.hasHumanAssignee}
+- escalated=${conversationState.isEscalated}
+- visitorBurst=${signals.visitorBurstCount}
+- recentTurns=${signals.recentTurnPattern || "none"}
 
 Conversation:
 ${formattedMessages}
@@ -247,6 +392,103 @@ Latest trigger:
 ${formatMessage(triggerMessage)}
 
 Return concise reasoning (max 1 sentence).`;
+}
+
+function observeDecision(params: {
+	reasoning: string;
+	confidence: DecisionConfidence;
+	source: DecisionSource;
+	ruleId?: string;
+}): SmartDecisionResult {
+	return {
+		intent: "observe",
+		reasoning: params.reasoning,
+		confidence: params.confidence,
+		source: params.source,
+		ruleId: params.ruleId,
+	};
+}
+
+function applyDeterministicRules(
+	input: SmartDecisionInput,
+	signals: DecisionSignals
+): SmartDecisionResult | null {
+	const { triggerMessage } = input;
+
+	if (
+		triggerMessage.senderType === "human_agent" &&
+		!signals.triggerLooksLikeHumanCommand
+	) {
+		const ruleId =
+			triggerMessage.visibility === "private"
+				? "human_private_non_command_observe"
+				: "human_public_non_command_observe";
+
+		return observeDecision({
+			reasoning:
+				"Human teammate is handling the conversation without a clear AI command.",
+			confidence: "high",
+			source: "rule",
+			ruleId,
+		});
+	}
+
+	if (triggerMessage.senderType === "visitor" && signals.humanActive) {
+		if (signals.triggerIsShortAckOrGreeting) {
+			return observeDecision({
+				reasoning:
+					"Visitor acknowledgement while human is active does not need AI.",
+				confidence: "high",
+				source: "rule",
+				ruleId: "visitor_ack_with_human_active_observe",
+			});
+		}
+
+		if (signals.triggerIsSingleNonQuestion) {
+			return observeDecision({
+				reasoning:
+					"Single non-question visitor message while human is active should not be interrupted.",
+				confidence: "medium",
+				source: "rule",
+				ruleId: "visitor_single_non_question_human_active_observe",
+			});
+		}
+	}
+
+	return null;
+}
+
+function shouldClampModelRespond(params: {
+	modelDecision: SmartDecisionResult;
+	signals: DecisionSignals;
+}): boolean {
+	const { modelDecision, signals } = params;
+
+	if (modelDecision.intent !== "respond") {
+		return false;
+	}
+	if (!signals.humanActive) {
+		return false;
+	}
+	if (modelDecision.confidence === "high") {
+		return false;
+	}
+	if (signals.triggerIsQuestionOrRequest) {
+		return false;
+	}
+
+	return true;
+}
+
+function logDecision(params: {
+	convId: string;
+	result: SmartDecisionResult;
+	signals: DecisionSignals;
+}): void {
+	const { convId, result, signals } = params;
+	console.log(
+		`[ai-agent:smart-decision] conv=${convId} | source=${result.source ?? "model"} | ruleId=${result.ruleId ?? "none"} | intent=${result.intent} confidence=${result.confidence} | humanActive=${signals.humanActive} visitorBurst=${signals.visitorBurstCount} lastHumanSecondsAgo=${signals.lastHumanSecondsAgo ?? "none"} | "${result.reasoning}"`
+	);
 }
 
 /**
@@ -266,13 +508,29 @@ export async function runSmartDecision(
 	input: SmartDecisionInput
 ): Promise<SmartDecisionResult> {
 	const convId = input.conversation.id;
+	const signals = extractDecisionSignals(input);
 
 	console.log(
-		`[ai-agent:smart-decision] conv=${convId} | Running smart decision`
+		`[ai-agent:smart-decision] conv=${convId} | Running smart decision | humanActive=${signals.humanActive} triggerSender=${input.triggerMessage.senderType}`
 	);
 
+	const ruleDecision = applyDeterministicRules(input, signals);
+	if (ruleDecision) {
+		logDecision({
+			convId,
+			result: ruleDecision,
+			signals,
+		});
+		return ruleDecision;
+	}
+
+	const abortController = new AbortController();
+	const timeout = setTimeout(() => {
+		abortController.abort();
+	}, DECISION_TIMEOUT_MS);
+
 	try {
-		const prompt = buildDecisionPrompt(input);
+		const prompt = buildDecisionPrompt(input, signals);
 
 		// Use Output.object for structured response (not tools)
 		const result = await generateText({
@@ -282,47 +540,78 @@ export async function runSmartDecision(
 			}),
 			prompt, // Use prompt directly, not messages array
 			temperature: 0, // Deterministic decisions
+			abortSignal: abortController.signal,
 		});
 
 		// Get the structured output
 		const decision = result.output;
 
 		if (!decision) {
-			console.warn(
-				`[ai-agent:smart-decision] conv=${convId} | No output, defaulting to observe`
-			);
-			return {
-				intent: "observe",
+			const fallback = observeDecision({
 				reasoning: "Smart decision returned no output, defaulting to observe",
 				confidence: "low",
-			};
+				source: "fallback",
+				ruleId: "empty_output_observe",
+			});
+			logDecision({
+				convId,
+				result: fallback,
+				signals,
+			});
+			return fallback;
 		}
 
-		console.log(
-			`[ai-agent:smart-decision] conv=${convId} | intent=${decision.intent} confidence=${decision.confidence} | "${decision.reasoning}"`
-		);
+		const modelDecision: SmartDecisionResult = {
+			intent: decision.intent,
+			reasoning: decision.reasoning,
+			confidence: decision.confidence,
+			source: "model",
+		};
 
-		// Log token usage for monitoring
+		const finalDecision = shouldClampModelRespond({
+			modelDecision,
+			signals,
+		})
+			? observeDecision({
+					reasoning:
+						"Conservative clamp applied: low-confidence response during active human handling.",
+					confidence: "medium",
+					source: "rule",
+					ruleId: "post_model_human_active_low_confidence_observe",
+				})
+			: modelDecision;
+
+		logDecision({
+			convId,
+			result: finalDecision,
+			signals,
+		});
+
 		if (result.usage) {
 			console.log(
 				`[ai-agent:smart-decision] conv=${convId} | tokens: in=${result.usage.inputTokens} out=${result.usage.outputTokens}`
 			);
 		}
 
-		return {
-			intent: decision.intent,
-			reasoning: decision.reasoning,
-			confidence: decision.confidence,
-		};
+		return finalDecision;
 	} catch (error) {
-		console.error(`[ai-agent:smart-decision] conv=${convId} | Error:`, error);
-
-		// On error, default to observe to avoid low-confidence interruptions.
-		return {
-			intent: "observe",
-			reasoning: "Smart decision failed, defaulting to observe",
+		const isTimeout = error instanceof Error && error.name === "AbortError";
+		const fallback = observeDecision({
+			reasoning: isTimeout
+				? "Smart decision timed out, defaulting to observe"
+				: "Smart decision failed, defaulting to observe",
 			confidence: "low",
-		};
+			source: "fallback",
+			ruleId: isTimeout ? "timeout_observe" : "error_observe",
+		});
+		logDecision({
+			convId,
+			result: fallback,
+			signals,
+		});
+		return fallback;
+	} finally {
+		clearTimeout(timeout);
 	}
 }
 
