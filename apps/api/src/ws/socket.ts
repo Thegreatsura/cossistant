@@ -430,7 +430,7 @@ function enrichClientEventPayload(
 				visitorId:
 					typeof basePayload.visitorId === "string"
 						? basePayload.visitorId
-						: visitorId ?? null,
+						: (visitorId ?? null),
 				aiAgentId: null, // Clients can't impersonate AI agents
 			};
 		case "conversationSeen":

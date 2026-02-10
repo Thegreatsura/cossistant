@@ -300,6 +300,96 @@ describe("groupTimelineItems", () => {
 		}
 	});
 
+	it("groups messages correctly when non-visible tool items are pre-filtered", () => {
+		const base = new Date("2024-01-01T09:00:00.000Z").getTime();
+
+		// Simulate what happens when invisible tools are filtered out before
+		// grouping: AI sends 3 messages with internal tool calls between them.
+		// Without pre-filtering, the tools break the message groups.
+		// With pre-filtering (removing the tool items), all 3 messages group.
+		const items: TimelineItem[] = [
+			createMessageItem({
+				id: "m1",
+				createdAt: new Date(base).toISOString(),
+				aiAgentId: "ai-1",
+			}),
+			// tool item would be here at base + 5s but is filtered out
+			createMessageItem({
+				id: "m2",
+				createdAt: new Date(base + 10_000).toISOString(),
+				aiAgentId: "ai-1",
+			}),
+			// another tool item would be here at base + 15s but is filtered out
+			createMessageItem({
+				id: "m3",
+				createdAt: new Date(base + 20_000).toISOString(),
+				aiAgentId: "ai-1",
+			}),
+		];
+
+		const grouped = groupTimelineItems(
+			items,
+			items.map((item) => new Date(item.createdAt).getTime())
+		);
+
+		expect(grouped).toHaveLength(2);
+		expect(grouped[0]?.type).toBe("day_separator");
+		expect(grouped[1]?.type).toBe("message_group");
+
+		if (grouped[1]?.type === "message_group") {
+			expect(grouped[1].items.map((item) => item.id)).toEqual([
+				"m1",
+				"m2",
+				"m3",
+			]);
+			expect(grouped[1].senderId).toBe("ai-1");
+		}
+	});
+
+	it("tool items between messages from the same sender break groups", () => {
+		const base = new Date("2024-01-01T09:00:00.000Z").getTime();
+
+		// Without pre-filtering, tool items break message groups.
+		// This is the expected behavior of the grouping algorithm itself.
+		const items: TimelineItem[] = [
+			createMessageItem({
+				id: "m1",
+				createdAt: new Date(base).toISOString(),
+				aiAgentId: "ai-1",
+			}),
+			createToolItem({
+				id: "t1",
+				createdAt: new Date(base + 5000).toISOString(),
+				toolName: "searchKnowledgeBase",
+				aiAgentId: "ai-1",
+			}),
+			createMessageItem({
+				id: "m2",
+				createdAt: new Date(base + 10_000).toISOString(),
+				aiAgentId: "ai-1",
+			}),
+		];
+
+		const grouped = groupTimelineItems(
+			items,
+			items.map((item) => new Date(item.createdAt).getTime())
+		);
+
+		// Tool breaks the message group into: day_sep, msg_group(m1), activity_group(t1), msg_group(m2)
+		expect(grouped).toHaveLength(4);
+		expect(grouped[0]?.type).toBe("day_separator");
+		expect(grouped[1]?.type).toBe("message_group");
+		expect(grouped[2]?.type).toBe("activity_group");
+		expect(grouped[3]?.type).toBe("message_group");
+
+		if (grouped[1]?.type === "message_group") {
+			expect(grouped[1].items.map((item) => item.id)).toEqual(["m1"]);
+		}
+		if (grouped[3]?.type === "message_group") {
+			expect(grouped[3].items.map((item) => item.id)).toEqual(["m2"]);
+		}
+	});
+
 	it("groups events and tools together for the same sender in the window", () => {
 		const base = new Date("2024-01-01T12:00:00.000Z").getTime();
 		const items: TimelineItem[] = [

@@ -69,19 +69,38 @@ function ConversationTimelineListComponent({
 		websiteSlug: website.slug,
 	});
 
+	const isDeveloperModeEnabled = useConversationDeveloperMode(
+		(state) => state.isDeveloperModeEnabled
+	);
+
+	// Filter out non-visible tool items BEFORE grouping so they don't break
+	// message groups. Without this, invisible internal tool calls (e.g. AI
+	// decision logs) interleaved between messages from the same sender cause
+	// the grouping algorithm to flush and split what should be a single group.
+	const visibleTimelineItems = useMemo(() => {
+		if (isDeveloperModeEnabled) {
+			return timelineItems;
+		}
+
+		return timelineItems.filter(
+			(item) =>
+				item.type !== "tool" ||
+				shouldDisplayToolTimelineItem(item, {
+					includeInternalLogs: false,
+				})
+		);
+	}, [timelineItems, isDeveloperModeEnabled]);
+
 	const {
 		items,
 		lastReadMessageMap,
 		getLastReadMessageId,
 		isMessageSeenByViewer,
 	} = useGroupedMessages({
-		items: timelineItems,
+		items: visibleTimelineItems,
 		seenData,
 		currentViewerId: currentUserId,
 	});
-	const isDeveloperModeEnabled = useConversationDeveloperMode(
-		(state) => state.isDeveloperModeEnabled
-	);
 
 	const typingEntries = useConversationTyping(conversationId, {
 		excludeUserId: currentUserId,
