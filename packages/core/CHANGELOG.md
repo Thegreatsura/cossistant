@@ -1,5 +1,11 @@
 # @cossistant/core
 
+## 0.0.33
+
+### Patch Changes
+
+- bug fixes + reduce lib size
+
 ## 0.0.32
 
 ## 0.0.31
