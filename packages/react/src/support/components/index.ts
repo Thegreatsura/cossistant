@@ -8,6 +8,7 @@ export type { IconName, IconProps, IconVariant } from "./icons";
 export { default as Icon } from "./icons";
 export { SendButton } from "./multimodal-input";
 export { Root, type RootProps } from "./root";
+export { TimelineActivityGroup } from "./timeline-activity-group";
 export type { TimelineMessageGroupProps } from "./timeline-message-group";
 export { TimelineMessageGroup } from "./timeline-message-group";
 export type { TimelineMessageItemProps } from "./timeline-message-item";

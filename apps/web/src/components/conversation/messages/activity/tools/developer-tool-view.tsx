@@ -1,6 +1,10 @@
 import type { ToolTimelineLogType } from "@cossistant/types";
+import type { LucideIcon } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import type { ActivityIcon } from "../activity-wrapper";
 import type {
 	NormalizedToolCall,
 	ToolActivityProps,
@@ -116,12 +120,61 @@ function LogTypeBadge({ logType }: { logType: ToolTimelineLogType }) {
 	);
 }
 
-export function DeveloperToolView({ toolCall, timestamp }: ToolActivityProps) {
+function resolveIcon(icon: ActivityIcon | undefined): ActivityIcon {
+	if (icon) {
+		return icon;
+	}
+	return { type: "logo" };
+}
+
+function IconRenderer({ icon }: { icon: ActivityIcon | undefined }) {
+	const resolvedIcon = resolveIcon(icon);
+
+	switch (resolvedIcon.type) {
+		case "spinner":
+			return (
+				<div className="flex size-6 shrink-0 items-center justify-center">
+					<Spinner className="size-5" size={20} />
+				</div>
+			);
+		case "avatar":
+			return (
+				<Avatar
+					className="size-6 shrink-0 overflow-clip"
+					fallbackName={resolvedIcon.name}
+					url={resolvedIcon.image}
+				/>
+			);
+		case "icon": {
+			const Icon = resolvedIcon.Icon as LucideIcon;
+			return (
+				<div className="flex size-6 shrink-0 items-center justify-center">
+					<Icon
+						aria-hidden
+						className="size-4 text-muted-foreground"
+						data-activity-icon={resolvedIcon.iconKey}
+					/>
+				</div>
+			);
+		}
+		default:
+			return (
+				<div className="flex size-6 shrink-0 items-center justify-center">
+					<Logo className="size-5 text-primary/90" />
+				</div>
+			);
+	}
+}
+
+export function DeveloperToolView({
+	toolCall,
+	timestamp,
+	showIcon = true,
+	icon,
+}: ToolActivityProps) {
 	return (
-		<div className="flex w-full gap-2">
-			<div className="flex size-7 shrink-0 items-center justify-center">
-				<Logo className="size-5 text-primary/90" />
-			</div>
+		<div className={cn("flex w-full", showIcon ? "gap-2" : "gap-0")}>
+			{showIcon ? <IconRenderer icon={icon} /> : null}
 			<div className="flex min-w-0 flex-1 flex-col gap-1 pb-1.5">
 				<div className="px-1 text-muted-foreground text-xs">
 					AI agent dev log

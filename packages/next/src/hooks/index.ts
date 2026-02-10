@@ -9,6 +9,7 @@ export type {
 	ConversationTypingParticipant,
 	CreateConversationVariables,
 	DaySeparatorItem,
+	GroupedActivity,
 	GroupedMessage,
 	SendMessageOptions,
 	SendMessageResult,

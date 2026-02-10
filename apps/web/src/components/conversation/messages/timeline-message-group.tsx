@@ -135,7 +135,7 @@ export function TimelineMessageGroup({
 								<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-end">
 									{isVisitor ? (
 										<Avatar
-											className="size-7"
+											className="size-6"
 											fallbackName={visitorName}
 											lastOnlineAt={
 												visitorPresence?.lastSeenAt ?? visitor?.lastSeenAt
@@ -146,14 +146,14 @@ export function TimelineMessageGroup({
 									) : isAI ? (
 										<div
 											className={cn(
-												"flex size-7 shrink-0 items-center justify-center"
+												"flex size-6 shrink-0 items-center justify-center"
 											)}
 										>
 											<Logo className="size-5 text-primary/90" />
 										</div>
 									) : (
 										<Avatar
-											className="size-7"
+											className="size-6"
 											fallbackName={humanAgent?.name || "Team"}
 											lastOnlineAt={humanAgent?.lastSeenAt}
 											url={humanAgent?.image}

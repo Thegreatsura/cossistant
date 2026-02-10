@@ -5,6 +5,7 @@ import type { EventActivityProps } from "../types";
 export function VisitorIdentifiedActivity({
 	event,
 	timestamp,
+	showIcon = true,
 }: EventActivityProps) {
 	const icon: ActivityIcon = {
 		type: "avatar",
@@ -22,6 +23,7 @@ export function VisitorIdentifiedActivity({
 	return (
 		<ActivityWrapper
 			icon={icon}
+			showIcon={showIcon}
 			state="result"
 			text={text}
 			timestamp={timestamp}

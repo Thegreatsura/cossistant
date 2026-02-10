@@ -1,4 +1,5 @@
 import type { ToolTimelineLogType } from "@cossistant/types";
+import type { ActivityIcon } from "./activity-wrapper";
 
 // --- Tool activity types (moved from tool-renderers/types.ts) ---
 
@@ -19,6 +20,8 @@ export type NormalizedToolCall = {
 export type ToolActivityProps = {
 	toolCall: NormalizedToolCall;
 	timestamp: string;
+	showIcon?: boolean;
+	icon?: ActivityIcon;
 };
 
 // --- Event activity types ---
@@ -35,4 +38,5 @@ export type NormalizedEvent = {
 export type EventActivityProps = {
 	event: NormalizedEvent;
 	timestamp: string;
+	showIcon?: boolean;
 };

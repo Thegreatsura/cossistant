@@ -109,12 +109,16 @@ function SourceList({ articles }: { articles: ArticleSummary[] }) {
 export function SearchKnowledgeBaseActivity({
 	toolCall,
 	timestamp,
+	showIcon = true,
+	icon,
 }: ToolActivityProps) {
 	const { state, output, summaryText } = toolCall;
 
 	if (state === "partial") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="partial"
 				text="Searching knowledge base..."
 				timestamp={timestamp}
@@ -125,6 +129,8 @@ export function SearchKnowledgeBaseActivity({
 	if (state === "error") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="error"
 				text="Knowledge base lookup failed"
 				timestamp={timestamp}
@@ -140,7 +146,13 @@ export function SearchKnowledgeBaseActivity({
 			: summaryText;
 
 	return (
-		<ActivityWrapper state="result" text={resultText} timestamp={timestamp}>
+		<ActivityWrapper
+			icon={icon}
+			showIcon={showIcon}
+			state="result"
+			text={resultText}
+			timestamp={timestamp}
+		>
 			<SourceList articles={articles} />
 		</ActivityWrapper>
 	);

@@ -1,5 +1,4 @@
 import type { RouterOutputs } from "@api/trpc/types";
-import type { DaySeparatorItem } from "@cossistant/next/hooks";
 import { useGroupedMessages } from "@cossistant/next/hooks";
 import {
 	ConversationTimelineContainer,
@@ -26,6 +25,7 @@ import { extractEventPart } from "@/lib/timeline-events";
 import { shouldDisplayToolTimelineItem } from "@/lib/tool-timeline-visibility";
 import { cn } from "@/lib/utils";
 import { ConversationEvent } from "./event";
+import { TimelineActivityGroup } from "./timeline-activity-group";
 import { TimelineMessageGroup } from "./timeline-message-group";
 import { ToolCall } from "./tool-call";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
@@ -218,6 +218,25 @@ function ConversationTimelineListComponent({
 										item={timelineItem}
 										key={key}
 										mode={isDeveloperModeEnabled ? "developer" : "default"}
+									/>
+								);
+							}
+
+							if (item.type === "activity_group") {
+								const activityGroupKey =
+									item.firstItemId ||
+									item.items[0]?.id ||
+									`activity-group-${index}`;
+
+								return (
+									<TimelineActivityGroup
+										availableAIAgents={availableAIAgents}
+										currentUserId={currentUserId}
+										group={item}
+										isDeveloperModeEnabled={isDeveloperModeEnabled}
+										key={activityGroupKey}
+										teamMembers={teamMembers}
+										visitor={visitor}
 									/>
 								);
 							}

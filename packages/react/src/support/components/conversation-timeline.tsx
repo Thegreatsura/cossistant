@@ -21,6 +21,7 @@ import {
 import { cn } from "../utils";
 import { ConversationEvent } from "./conversation-event";
 import { filterSeenByIdsForViewer } from "./conversation-timeline-utils";
+import { TimelineActivityGroup } from "./timeline-activity-group";
 import { TimelineMessageGroup } from "./timeline-message-group";
 import { TypingIndicator, type TypingParticipant } from "./typing-indicator";
 
@@ -232,6 +233,25 @@ export const ConversationTimelineList: React.FC<ConversationTimelineProps> = ({
 								conversationId={conversationId}
 								item={item.item}
 								key={toolKey}
+							/>
+						);
+					}
+
+					if (item.type === "activity_group") {
+						const groupKey =
+							item.firstItemId ??
+							item.items?.[0]?.id ??
+							`activity-group-${item.items?.[0]?.createdAt ?? index}`;
+
+						return (
+							<TimelineActivityGroup
+								availableAIAgents={availableAIAgents}
+								availableHumanAgents={availableHumanAgents}
+								conversationId={conversationId}
+								currentVisitorId={currentVisitorId}
+								group={item}
+								key={groupKey}
+								tools={tools}
 							/>
 						);
 					}

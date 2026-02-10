@@ -5,7 +5,6 @@ import {
 	ConversationTimelineContainer,
 	ConversationTimeline as PrimitiveConversationTimeline,
 } from "@cossistant/next/primitives";
-import { SenderType } from "@cossistant/types";
 import type {
 	TimelineItem,
 	TimelinePartEvent,
@@ -13,6 +12,7 @@ import type {
 import { AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import { ConversationEvent } from "@/components/conversation/messages/event";
+import { TimelineActivityGroup } from "@/components/conversation/messages/timeline-activity-group";
 import { TimelineMessageGroup } from "@/components/conversation/messages/timeline-message-group";
 import { ToolCall } from "@/components/conversation/messages/tool-call";
 import {
@@ -153,6 +153,23 @@ export function FakeConversationTimelineList({
 								}
 								const key = timelineItem.id ?? `timeline-tool-${index}`;
 								return <ToolCall item={timelineItem} key={key} />;
+							}
+
+							if (item.type === "activity_group") {
+								const key =
+									item.firstItemId || item.items[0]?.id || `activity-${index}`;
+
+								return (
+									<TimelineActivityGroup
+										availableAIAgents={[]}
+										currentUserId={ANTHONY_RIERA_ID}
+										group={item}
+										isDeveloperModeEnabled={false}
+										key={key}
+										teamMembers={fakeTeamMembers}
+										visitor={visitor}
+									/>
+								);
 							}
 
 							if (item.type === "day_separator") {

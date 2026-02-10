@@ -38,6 +38,31 @@ function render(item: TimelineItem, mode?: "default" | "developer"): string {
 }
 
 describe("ToolCall", () => {
+	it("renders mapped icon for known tools", () => {
+		const html = render(createToolTimelineItem());
+		expect(html).toContain('data-activity-icon="searchKnowledgeBase"');
+	});
+
+	it("renders default icon when tool has no specific icon mapping", () => {
+		const html = render(
+			createToolTimelineItem({
+				text: "Running sendMessage",
+				parts: [
+					{
+						type: "tool-sendMessage",
+						toolCallId: "call-unknown",
+						toolName: "sendMessage",
+						input: { message: "Hello there" },
+						state: "partial",
+					},
+				],
+				tool: "sendMessage",
+			})
+		);
+
+		expect(html).toContain('data-activity-icon="default"');
+	});
+
 	it("renders partial state as inline activity with spinner-friendly text", () => {
 		const html = render(createToolTimelineItem());
 		expect(html).toContain("Searching knowledge base...");
@@ -198,7 +223,7 @@ describe("ToolCall", () => {
 			})
 		);
 
-		expect(html).toContain("Priority set to");
+		expect(html).toContain("Conversation priority set to");
 		expect(html).toContain("high");
 	});
 });

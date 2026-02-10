@@ -274,7 +274,6 @@ export function AIAgentForm({
 									<Input
 										placeholder={`${websiteName} AI`}
 										{...field}
-										autoFocus
 										disabled={isPending}
 									/>
 								</FormControl>

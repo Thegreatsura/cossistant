@@ -13,7 +13,11 @@ function resolveEventIcon(event: EventActivityProps["event"]): ActivityIcon {
 	};
 }
 
-export function ReopenedActivity({ event, timestamp }: EventActivityProps) {
+export function ReopenedActivity({
+	event,
+	timestamp,
+	showIcon = true,
+}: EventActivityProps) {
 	const text = (
 		<>
 			<span className="font-semibold">{event.actorName}</span> reopened the
@@ -24,6 +28,7 @@ export function ReopenedActivity({ event, timestamp }: EventActivityProps) {
 	return (
 		<ActivityWrapper
 			icon={resolveEventIcon(event)}
+			showIcon={showIcon}
 			state="result"
 			text={text}
 			timestamp={timestamp}

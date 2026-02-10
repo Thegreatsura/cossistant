@@ -16,6 +16,7 @@ function resolveEventIcon(event: EventActivityProps["event"]): ActivityIcon {
 export function ParticipantLeftActivity({
 	event,
 	timestamp,
+	showIcon = true,
 }: EventActivityProps) {
 	const text = (
 		<>
@@ -27,6 +28,7 @@ export function ParticipantLeftActivity({
 	return (
 		<ActivityWrapper
 			icon={resolveEventIcon(event)}
+			showIcon={showIcon}
 			state="result"
 			text={text}
 			timestamp={timestamp}

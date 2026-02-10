@@ -34,12 +34,16 @@ const priorityVariant: Record<string, "default" | "secondary" | "destructive"> =
 export function SetPriorityActivity({
 	toolCall,
 	timestamp,
+	showIcon = true,
+	icon,
 }: ToolActivityProps) {
 	const { state, output, summaryText } = toolCall;
 
 	if (state === "partial") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="partial"
 				text="Setting priority..."
 				timestamp={timestamp}
@@ -50,6 +54,8 @@ export function SetPriorityActivity({
 	if (state === "error") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="error"
 				text="Failed to set priority"
 				timestamp={timestamp}
@@ -69,6 +75,12 @@ export function SetPriorityActivity({
 	);
 
 	return (
-		<ActivityWrapper state="result" text={resultText} timestamp={timestamp} />
+		<ActivityWrapper
+			icon={icon}
+			showIcon={showIcon}
+			state="result"
+			text={resultText}
+			timestamp={timestamp}
+		/>
 	);
 }

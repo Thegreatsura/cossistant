@@ -1,6 +1,7 @@
 import type { SenderType } from "@cossistant/types";
 import type { TimelineItem as TimelineItemType } from "@cossistant/types/api/timeline-item";
 import * as React from "react";
+import { getTimelineItemSender } from "../utils/timeline-item-sender";
 import { useRenderElement } from "../utils/use-render-element";
 
 /**
@@ -79,24 +80,9 @@ export const TimelineItemGroup = (() => {
 			const firstItem = items[0];
 			const lastItem = items.at(-1);
 
-			// Determine sender info
-			let senderId = "";
-			let senderType: SenderType;
-
-			if (firstItem?.visitorId) {
-				senderId = firstItem.visitorId;
-				senderType = "visitor" as SenderType;
-			} else if (firstItem?.aiAgentId) {
-				senderId = firstItem.aiAgentId;
-				senderType = "ai" as SenderType;
-			} else if (firstItem?.userId) {
-				senderId = firstItem.userId;
-				senderType = "team_member" as SenderType;
-			} else {
-				// Fallback
-				senderId = firstItem?.id || "unknown";
-				senderType = "team_member" as SenderType;
-			}
+			const { senderId, senderType } = firstItem
+				? getTimelineItemSender(firstItem)
+				: { senderId: "unknown", senderType: "team_member" as SenderType };
 
 			// Determine POV
 			const isSentByViewer = viewerId

@@ -1,0 +1,216 @@
+import type {
+	AvailableAIAgent,
+	AvailableHumanAgent,
+	TimelinePartEvent,
+} from "@cossistant/types";
+import { SenderType } from "@cossistant/types";
+import type { TimelineItem } from "@cossistant/types/api/timeline-item";
+import type React from "react";
+import { useMemo } from "react";
+import type { GroupedActivity } from "../../hooks/private/use-grouped-messages";
+import {
+	TimelineItemGroup as PrimitiveTimelineItemGroup,
+	TimelineItemGroupAvatar,
+	TimelineItemGroupContent,
+} from "../../primitives/timeline-item-group";
+import { Avatar } from "./avatar";
+import { ConversationEvent } from "./conversation-event";
+
+type TimelineActivityToolProps = {
+	item: TimelineItem;
+	conversationId: string;
+};
+
+type TimelineActivityTools = Record<
+	string,
+	{
+		component: React.ComponentType<TimelineActivityToolProps>;
+	}
+>;
+
+type TimelineActivityGroupProps = {
+	group: GroupedActivity;
+	conversationId: string;
+	availableAIAgents: AvailableAIAgent[];
+	availableHumanAgents: AvailableHumanAgent[];
+	currentVisitorId?: string;
+	tools?: TimelineActivityTools;
+};
+
+type ActivityRow =
+	| {
+			type: "event";
+			key: string;
+			item: TimelineItem;
+			event: TimelinePartEvent;
+	  }
+	| {
+			type: "tool";
+			key: string;
+			item: TimelineItem;
+			ToolComponent: React.ComponentType<TimelineActivityToolProps>;
+	  };
+
+function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
+	if (item.type !== "event") {
+		return null;
+	}
+
+	const eventPart = item.parts.find(
+		(part): part is TimelinePartEvent => part.type === "event"
+	);
+
+	return eventPart || null;
+}
+
+function getToolNameFromTimelineItem(item: TimelineItem): string | null {
+	if (item.tool) {
+		return item.tool;
+	}
+
+	for (const part of item.parts) {
+		if (
+			typeof part === "object" &&
+			part !== null &&
+			"type" in part &&
+			"toolName" in part &&
+			typeof part.type === "string" &&
+			part.type.startsWith("tool-") &&
+			typeof part.toolName === "string"
+		) {
+			return part.toolName;
+		}
+	}
+
+	return null;
+}
+
+export const TimelineActivityGroup: React.FC<TimelineActivityGroupProps> = ({
+	group,
+	conversationId,
+	availableAIAgents,
+	availableHumanAgents,
+	currentVisitorId,
+	tools,
+}) => {
+	const activityRows = useMemo<ActivityRow[]>(() => {
+		const rows: ActivityRow[] = [];
+
+		for (let index = 0; index < group.items.length; index++) {
+			const item = group.items[index];
+			if (!item) {
+				continue;
+			}
+
+			if (item.type === "event") {
+				const eventPart = extractEventPart(item);
+				if (!eventPart) {
+					continue;
+				}
+
+				rows.push({
+					type: "event",
+					key: item.id ?? `activity-event-${item.createdAt}-${index}`,
+					item,
+					event: eventPart,
+				});
+				continue;
+			}
+
+			if (item.type === "tool") {
+				const toolName = getToolNameFromTimelineItem(item);
+				if (!toolName) {
+					continue;
+				}
+
+				const toolDefinition = tools?.[toolName];
+				if (!toolDefinition) {
+					continue;
+				}
+
+				rows.push({
+					type: "tool",
+					key: item.id ?? `activity-tool-${item.createdAt}-${index}`,
+					item,
+					ToolComponent: toolDefinition.component,
+				});
+			}
+		}
+
+		return rows;
+	}, [group.items, tools]);
+
+	if (activityRows.length === 0) {
+		return null;
+	}
+
+	const humanAgent = availableHumanAgents.find(
+		(agent) => agent.id === group.senderId
+	);
+	const aiAgent = availableAIAgents.find(
+		(agent) => agent.id === group.senderId
+	);
+
+	return (
+		<PrimitiveTimelineItemGroup
+			items={group.items}
+			viewerId={currentVisitorId}
+			viewerType={SenderType.VISITOR}
+		>
+			{({ isAI, isTeamMember }) => (
+				<div className="flex w-full flex-row gap-2">
+					<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-start">
+						{isAI ? (
+							<Avatar
+								className="size-6"
+								image={aiAgent?.image}
+								isAI
+								name={aiAgent?.name || "AI Assistant"}
+								showBackground={!!aiAgent?.image}
+							/>
+						) : (
+							<Avatar
+								className="size-6"
+								image={humanAgent?.image}
+								name={isTeamMember ? humanAgent?.name || "Support" : "Visitor"}
+							/>
+						)}
+					</TimelineItemGroupAvatar>
+
+					<TimelineItemGroupContent className="flex min-w-0 flex-1 flex-col gap-1">
+						<div className="flex w-full min-w-0 flex-col gap-2">
+							{activityRows.map((row) => {
+								if (row.type === "event") {
+									return (
+										<ConversationEvent
+											availableAIAgents={availableAIAgents}
+											availableHumanAgents={availableHumanAgents}
+											className="w-full"
+											compact
+											createdAt={row.item.createdAt}
+											event={row.event}
+											key={row.key}
+											showAvatar={false}
+										/>
+									);
+								}
+
+								const ToolComponent = row.ToolComponent;
+								return (
+									<div className="w-full" key={row.key}>
+										<ToolComponent
+											conversationId={conversationId}
+											item={row.item}
+										/>
+									</div>
+								);
+							})}
+						</div>
+					</TimelineItemGroupContent>
+				</div>
+			)}
+		</PrimitiveTimelineItemGroup>
+	);
+};
+
+TimelineActivityGroup.displayName = "TimelineActivityGroup";

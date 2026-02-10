@@ -33,12 +33,16 @@ const sentimentDotColor: Record<string, string> = {
 export function UpdateSentimentActivity({
 	toolCall,
 	timestamp,
+	showIcon = true,
+	icon,
 }: ToolActivityProps) {
 	const { state, output, summaryText } = toolCall;
 
 	if (state === "partial") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="partial"
 				text="Analyzing sentiment..."
 				timestamp={timestamp}
@@ -49,6 +53,8 @@ export function UpdateSentimentActivity({
 	if (state === "error") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="error"
 				text="Failed to update sentiment"
 				timestamp={timestamp}
@@ -74,6 +80,12 @@ export function UpdateSentimentActivity({
 	);
 
 	return (
-		<ActivityWrapper state="result" text={resultText} timestamp={timestamp} />
+		<ActivityWrapper
+			icon={icon}
+			showIcon={showIcon}
+			state="result"
+			text={resultText}
+			timestamp={timestamp}
+		/>
 	);
 }

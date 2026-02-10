@@ -25,12 +25,16 @@ function extractTitle(output: unknown): string | null {
 export function UpdateConversationTitleActivity({
 	toolCall,
 	timestamp,
+	showIcon = true,
+	icon,
 }: ToolActivityProps) {
 	const { state, output, summaryText } = toolCall;
 
 	if (state === "partial") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="partial"
 				text="Updating title..."
 				timestamp={timestamp}
@@ -41,6 +45,8 @@ export function UpdateConversationTitleActivity({
 	if (state === "error") {
 		return (
 			<ActivityWrapper
+				icon={icon}
+				showIcon={showIcon}
 				state="error"
 				text="Failed to update title"
 				timestamp={timestamp}
@@ -59,6 +65,12 @@ export function UpdateConversationTitleActivity({
 	);
 
 	return (
-		<ActivityWrapper state="result" text={resultText} timestamp={timestamp} />
+		<ActivityWrapper
+			icon={icon}
+			showIcon={showIcon}
+			state="result"
+			text={resultText}
+			timestamp={timestamp}
+		/>
 	);
 }

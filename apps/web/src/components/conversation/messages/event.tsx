@@ -24,6 +24,7 @@ export type ConversationEventProps = {
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	visitor?: MinimalVisitorForEvent | null;
+	showIcon?: boolean;
 };
 
 function buildNormalizedEvent(
@@ -53,6 +54,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	availableAIAgents,
 	availableHumanAgents,
 	visitor,
+	showIcon = true,
 }) => {
 	const display = buildTimelineEventDisplay({
 		event,
@@ -67,5 +69,11 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	const Renderer: React.ComponentType<EventActivityProps> =
 		EVENT_RENDERER_MAP[event.eventType] ?? FallbackEventActivity;
 
-	return <Renderer event={normalizedEvent} timestamp={timestamp} />;
+	return (
+		<Renderer
+			event={normalizedEvent}
+			showIcon={showIcon}
+			timestamp={timestamp}
+		/>
+	);
 };

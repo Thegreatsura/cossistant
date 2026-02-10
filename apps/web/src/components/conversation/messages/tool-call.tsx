@@ -1,5 +1,6 @@
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { getToolTimelineLogType } from "@/lib/tool-timeline-visibility";
+import { resolveToolActivityIcon } from "./activity/action-icon-map";
 import {
 	DeveloperToolView,
 	FallbackToolActivity,
@@ -158,9 +159,11 @@ function buildNormalizedToolCall(
 export function ToolCall({
 	item,
 	mode = "default",
+	showIcon = true,
 }: {
 	item: TimelineItem;
 	mode?: ToolCallMode;
+	showIcon?: boolean;
 }) {
 	const strictPart = extractToolPart(item);
 	if (!strictPart && mode !== "developer") {
@@ -169,11 +172,26 @@ export function ToolCall({
 
 	const toolCall = buildNormalizedToolCall(item, strictPart);
 	const timestamp = formatTimestamp(item.createdAt);
+	const icon = resolveToolActivityIcon(toolCall.toolName);
 
 	if (mode === "developer") {
-		return <DeveloperToolView timestamp={timestamp} toolCall={toolCall} />;
+		return (
+			<DeveloperToolView
+				icon={icon}
+				showIcon={showIcon}
+				timestamp={timestamp}
+				toolCall={toolCall}
+			/>
+		);
 	}
 
 	const Renderer = TOOL_RENDERER_MAP[toolCall.toolName] ?? FallbackToolActivity;
-	return <Renderer timestamp={timestamp} toolCall={toolCall} />;
+	return (
+		<Renderer
+			icon={icon}
+			showIcon={showIcon}
+			timestamp={timestamp}
+			toolCall={toolCall}
+		/>
+	);
 }

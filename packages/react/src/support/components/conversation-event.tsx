@@ -6,6 +6,7 @@ import type {
 import { motion } from "motion/react";
 import type React from "react";
 import { useSupportText } from "../text";
+import { cn } from "../utils";
 import { Avatar } from "./avatar";
 
 export type ConversationEventProps = {
@@ -13,6 +14,9 @@ export type ConversationEventProps = {
 	availableAIAgents: AvailableAIAgent[];
 	availableHumanAgents: AvailableHumanAgent[];
 	createdAt?: string;
+	compact?: boolean;
+	showAvatar?: boolean;
+	className?: string;
 };
 
 export const ConversationEvent: React.FC<ConversationEventProps> = ({
@@ -20,6 +24,9 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	availableAIAgents,
 	createdAt,
 	availableHumanAgents,
+	compact = false,
+	showAvatar = true,
+	className,
 }) => {
 	const text = useSupportText();
 	const isAI = event.actorAiAgentId !== null;
@@ -101,31 +108,58 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		}
 	};
 
+	const avatarContent = isAI ? (
+		<Avatar
+			className="size-5 flex-shrink-0"
+			image={aiAgent?.image}
+			isAI
+			name={aiAgent?.name || text("common.fallbacks.cossistant")}
+			showBackground={!!aiAgent?.image}
+		/>
+	) : (
+		<Avatar
+			className="size-5 flex-shrink-0"
+			image={humanAgent?.image}
+			name={humanAgent?.name || text("common.fallbacks.someone")}
+		/>
+	);
+
+	if (compact) {
+		return (
+			<motion.div
+				animate={{ opacity: 1, scale: 1 }}
+				className={cn(
+					"flex items-center gap-2 text-co-muted-foreground text-xs",
+					className
+				)}
+				initial={{ opacity: 0, scale: 0.95 }}
+				transition={{ duration: 0.3, ease: "easeOut" }}
+			>
+				{showAvatar ? avatarContent : null}
+				<span className="break-words">{getEventText()}</span>
+				{createdAt ? (
+					<time className="text-[10px]">
+						{new Date(createdAt).toLocaleTimeString([], {
+							hour: "2-digit",
+							minute: "2-digit",
+						})}
+					</time>
+				) : null}
+			</motion.div>
+		);
+	}
+
 	return (
 		<motion.div
 			animate={{ opacity: 1, scale: 1 }}
-			className="flex items-center justify-center pt-4 pb-8"
+			className={cn("flex items-center justify-center pt-4 pb-8", className)}
 			initial={{ opacity: 0, scale: 0.95 }}
 			transition={{ duration: 0.3, ease: "easeOut" }}
 		>
 			<div className="flex items-center gap-2 text-co-muted-foreground text-xs">
-				<div className="flex flex-col justify-end">
-					{isAI ? (
-						<Avatar
-							className="size-5 flex-shrink-0"
-							image={aiAgent?.image}
-							isAI
-							name={aiAgent?.name || text("common.fallbacks.cossistant")}
-							showBackground={!!aiAgent?.image}
-						/>
-					) : (
-						<Avatar
-							className="size-5 flex-shrink-0"
-							image={humanAgent?.image}
-							name={humanAgent?.name || text("common.fallbacks.someone")}
-						/>
-					)}
-				</div>
+				{showAvatar ? (
+					<div className="flex flex-col justify-end">{avatarContent}</div>
+				) : null}
 				<span className="px-2">{getEventText()}</span>
 				{createdAt && (
 					<time className="text-[10px]">

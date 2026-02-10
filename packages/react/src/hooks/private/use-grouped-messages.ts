@@ -1,7 +1,8 @@
-import { SenderType } from "@cossistant/types";
+import type { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { useMemo } from "react";
+import { getTimelineItemSender } from "../../utils/timeline-item-sender";
 
 export type GroupedMessage = {
 	type: "message_group";
@@ -12,6 +13,19 @@ export type GroupedMessage = {
 	lastMessageId: string;
 	firstMessageTime: Date;
 	lastMessageTime: Date;
+};
+
+export type GroupedActivity = {
+	type: "activity_group";
+	senderId: string;
+	senderType: SenderType;
+	items: TimelineItem[];
+	firstItemId: string;
+	lastItemId: string;
+	firstItemTime: Date;
+	lastItemTime: Date;
+	hasEvent: boolean;
+	hasTool: boolean;
 };
 
 export type TimelineEventItem = {
@@ -35,6 +49,7 @@ export type DaySeparatorItem = {
 
 export type ConversationItem =
 	| GroupedMessage
+	| GroupedActivity
 	| TimelineEventItem
 	| TimelineToolItem
 	| DaySeparatorItem;
@@ -47,6 +62,14 @@ export type UseGroupedMessagesOptions = {
 
 export type UseGroupedMessagesProps = UseGroupedMessagesOptions;
 
+export type PreparedTimelineItems = {
+	items: TimelineItem[];
+	times: number[];
+	didSort: boolean;
+};
+
+export const TIMELINE_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
 // Helper function to safely get timestamp from Date or string
 const getTimestamp = (date: Date | string | null | undefined): number => {
 	if (!date) {
@@ -56,17 +79,6 @@ const getTimestamp = (date: Date | string | null | undefined): number => {
 		return new Date(date).getTime();
 	}
 	return date.getTime();
-};
-
-// Helper function to safely convert to Date
-const toDate = (date: Date | string | null | undefined): Date => {
-	if (!date) {
-		return typeof window !== "undefined" ? new Date() : new Date(0);
-	}
-	if (typeof date === "string") {
-		return new Date(date);
-	}
-	return date;
 };
 
 // Helper to extract the date string (YYYY-MM-DD) from a Date for day comparison
@@ -81,27 +93,6 @@ const getDateString = (date: Date): string => {
 const createDayDate = (dateString: string): Date => {
 	const [year, month, day] = dateString.split("-").map(Number);
 	return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1, 0, 0, 0, 0);
-};
-
-// Helper to determine sender ID and type from a timeline item
-const getSenderIdAndTypeFromTimelineItem = (
-	item: TimelineItem
-): { senderId: string; senderType: SenderType } => {
-	if (item.visitorId) {
-		return { senderId: item.visitorId, senderType: SenderType.VISITOR };
-	}
-	if (item.aiAgentId) {
-		return { senderId: item.aiAgentId, senderType: SenderType.AI };
-	}
-	if (item.userId) {
-		return { senderId: item.userId, senderType: SenderType.TEAM_MEMBER };
-	}
-
-	// Fallback
-	return {
-		senderId: item.id || "default-sender",
-		senderType: SenderType.TEAM_MEMBER,
-	};
 };
 
 const getToolNameFromTimelineItem = (item: TimelineItem): string | null => {
@@ -128,90 +119,180 @@ const getToolNameFromTimelineItem = (item: TimelineItem): string | null => {
 
 const EMPTY_STRING_ARRAY: readonly string[] = Object.freeze([]);
 
-// Helper function to group timeline items (messages only, events stay separate)
-// Also inserts day separators when the day changes between items
-const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
+type GroupableTimelineItemType =
+	| "message"
+	| "activity"
+	| "standalone_tool"
+	| "standalone_event";
+
+function getGroupableTimelineItemType(
+	item: TimelineItem
+): GroupableTimelineItemType {
+	if (item.type === "message") {
+		return "message";
+	}
+
+	if (item.type === "event" || item.type === "tool") {
+		return "activity";
+	}
+
+	if (item.type === "identification") {
+		return "standalone_tool";
+	}
+
+	return "standalone_event";
+}
+
+export const prepareTimelineItems = (
+	items: TimelineItem[]
+): PreparedTimelineItems => {
+	if (items.length <= 1) {
+		return {
+			items,
+			times: items.map((item) => getTimestamp(item.createdAt)),
+			didSort: false,
+		};
+	}
+
+	const times = new Array<number>(items.length);
+	let isSorted = true;
+
+	for (let index = 0; index < items.length; index++) {
+		const item = items[index];
+		const time = getTimestamp(item?.createdAt);
+		times[index] = time;
+
+		if (index === 0) {
+			continue;
+		}
+
+		const previousTime = times[index - 1];
+		if (
+			previousTime !== undefined &&
+			time !== undefined &&
+			time < previousTime
+		) {
+			isSorted = false;
+		}
+	}
+
+	if (isSorted) {
+		return { items, times, didSort: false };
+	}
+
+	const entries = items.map((item, index) => ({
+		item,
+		time: times[index] ?? 0,
+		index,
+	}));
+
+	entries.sort((a, b) => {
+		if (a.time === b.time) {
+			return a.index - b.index;
+		}
+		return a.time - b.time;
+	});
+
+	return {
+		items: entries.map((entry) => entry.item),
+		times: entries.map((entry) => entry.time),
+		didSort: true,
+	};
+};
+
+const isWithinGroupingWindow = (
+	previousTimestamp: number,
+	currentTimestamp: number
+): boolean => currentTimestamp - previousTimestamp <= TIMELINE_GROUP_WINDOW_MS;
+
+// Helper function to group timeline items with a sender + time window policy.
+// - message items group with messages only
+// - event + tool items group together
+// - identification remains standalone to preserve the interactive identification form
+// Also inserts day separators when the day changes between items.
+export const groupTimelineItems = (
+	items: TimelineItem[],
+	itemTimes: number[]
+): ConversationItem[] => {
 	const result: ConversationItem[] = [];
-	let currentGroup: GroupedMessage | null = null;
+	let currentMessageGroup: GroupedMessage | null = null;
+	let currentActivityGroup: GroupedActivity | null = null;
 	let currentDayString: string | null = null;
+
+	const flushMessageGroup = () => {
+		if (!currentMessageGroup) {
+			return;
+		}
+
+		result.push(currentMessageGroup);
+		currentMessageGroup = null;
+	};
+
+	const flushActivityGroup = () => {
+		if (!currentActivityGroup) {
+			return;
+		}
+
+		result.push(currentActivityGroup);
+		currentActivityGroup = null;
+	};
+
+	const flushAllGroups = () => {
+		flushMessageGroup();
+		flushActivityGroup();
+	};
 
 	const maybeInsertDaySeparator = (itemDate: Date): void => {
 		const itemDayString = getDateString(itemDate);
 
-		if (currentDayString !== itemDayString) {
-			// Finalize any existing group before inserting day separator
-			if (currentGroup) {
-				result.push(currentGroup);
-				currentGroup = null;
-			}
-
-			// Insert day separator
-			result.push({
-				type: "day_separator",
-				date: createDayDate(itemDayString),
-				dateString: itemDayString,
-			});
-
-			currentDayString = itemDayString;
+		if (currentDayString === itemDayString) {
+			return;
 		}
+
+		flushAllGroups();
+		result.push({
+			type: "day_separator",
+			date: createDayDate(itemDayString),
+			dateString: itemDayString,
+		});
+		currentDayString = itemDayString;
 	};
 
-	for (const item of items) {
-		const itemDate = toDate(item.createdAt);
+	for (let index = 0; index < items.length; index++) {
+		const item = items[index];
+		if (!item) {
+			continue;
+		}
 
-		// Check for day boundary before processing any item
+		const itemTimestamp = itemTimes[index] ?? getTimestamp(item.createdAt);
+		const itemDate = new Date(itemTimestamp);
+
 		maybeInsertDaySeparator(itemDate);
 
-		// Events don't get grouped
-		if (item.type === "event") {
-			// Finalize any existing group
-			if (currentGroup) {
-				result.push(currentGroup);
-				currentGroup = null;
+		const groupableType = getGroupableTimelineItemType(item);
+
+		if (groupableType === "message") {
+			flushActivityGroup();
+
+			const { senderId, senderType } = getTimelineItemSender(item);
+			const previousTimestamp = currentMessageGroup?.lastMessageTime.getTime();
+			const canAppendToCurrentGroup = Boolean(
+				currentMessageGroup &&
+					currentMessageGroup.senderId === senderId &&
+					previousTimestamp !== undefined &&
+					isWithinGroupingWindow(previousTimestamp, itemTimestamp)
+			);
+
+			if (canAppendToCurrentGroup && currentMessageGroup) {
+				currentMessageGroup.items.push(item);
+				currentMessageGroup.lastMessageId =
+					item.id || currentMessageGroup.lastMessageId;
+				currentMessageGroup.lastMessageTime = itemDate;
+				continue;
 			}
 
-			// Add event as standalone item
-			result.push({
-				type: "timeline_event",
-				item,
-				timestamp: itemDate,
-			});
-			continue;
-		}
-
-		if (item.type === "identification" || item.type === "tool") {
-			// Finalize any existing group
-			if (currentGroup) {
-				result.push(currentGroup);
-				currentGroup = null;
-			}
-
-			// Add tool item as standalone entry
-			result.push({
-				type: "timeline_tool",
-				item,
-				tool: getToolNameFromTimelineItem(item),
-				timestamp: itemDate,
-			});
-			continue;
-		}
-
-		// Group messages by sender
-		const { senderId, senderType } = getSenderIdAndTypeFromTimelineItem(item);
-
-		if (currentGroup && currentGroup.senderId === senderId) {
-			// Add to existing group (day boundary already handled above)
-			currentGroup.items.push(item);
-			currentGroup.lastMessageId = item.id || currentGroup.lastMessageId;
-			currentGroup.lastMessageTime = itemDate;
-		} else {
-			// Finalize previous group if exists
-			if (currentGroup) {
-				result.push(currentGroup);
-			}
-
-			// Start new group
-			currentGroup = {
+			flushMessageGroup();
+			currentMessageGroup = {
 				type: "message_group",
 				senderId,
 				senderType,
@@ -221,21 +302,77 @@ const groupTimelineItems = (items: TimelineItem[]): ConversationItem[] => {
 				firstMessageTime: itemDate,
 				lastMessageTime: itemDate,
 			};
+			continue;
 		}
+
+		if (groupableType === "activity") {
+			flushMessageGroup();
+
+			const { senderId, senderType } = getTimelineItemSender(item);
+			const previousTimestamp = currentActivityGroup?.lastItemTime.getTime();
+			const canAppendToCurrentGroup = Boolean(
+				currentActivityGroup &&
+					currentActivityGroup.senderId === senderId &&
+					previousTimestamp !== undefined &&
+					isWithinGroupingWindow(previousTimestamp, itemTimestamp)
+			);
+
+			if (canAppendToCurrentGroup && currentActivityGroup) {
+				currentActivityGroup.items.push(item);
+				currentActivityGroup.lastItemId =
+					item.id || currentActivityGroup.lastItemId;
+				currentActivityGroup.lastItemTime = itemDate;
+				currentActivityGroup.hasEvent =
+					currentActivityGroup.hasEvent || item.type === "event";
+				currentActivityGroup.hasTool =
+					currentActivityGroup.hasTool || item.type === "tool";
+				continue;
+			}
+
+			flushActivityGroup();
+			currentActivityGroup = {
+				type: "activity_group",
+				senderId,
+				senderType,
+				items: [item],
+				firstItemId: item.id || "",
+				lastItemId: item.id || "",
+				firstItemTime: itemDate,
+				lastItemTime: itemDate,
+				hasEvent: item.type === "event",
+				hasTool: item.type === "tool",
+			};
+			continue;
+		}
+
+		flushAllGroups();
+
+		if (groupableType === "standalone_tool") {
+			result.push({
+				type: "timeline_tool",
+				item,
+				tool: getToolNameFromTimelineItem(item),
+				timestamp: itemDate,
+			});
+			continue;
+		}
+
+		result.push({
+			type: "timeline_event",
+			item,
+			timestamp: itemDate,
+		});
 	}
 
-	if (currentGroup) {
-		result.push(currentGroup);
-	}
+	flushAllGroups();
 
 	return result;
 };
 
-// Build read receipt data for timeline items
-// Accepts pre-sorted message items for performance
-const buildTimelineReadReceiptData = (
+// Build read receipt data for timeline items.
+// Accepts pre-sorted message items and timestamps for performance.
+export const buildTimelineReadReceiptData = (
 	seenData: ConversationSeen[],
-	items: TimelineItem[],
 	sortedMessageItems: TimelineItem[],
 	sortedMessageTimes: number[]
 ) => {
@@ -243,14 +380,16 @@ const buildTimelineReadReceiptData = (
 	const lastReadMessageMap = new Map<string, string>();
 	const unreadCountMap = new Map<string, number>();
 
-	// Initialize map for all message-type timeline items
-	for (const item of items) {
-		if (item.type === "message" && item.id) {
+	for (const item of sortedMessageItems) {
+		if (item.id) {
 			seenByMap.set(item.id, new Set());
 		}
 	}
 
-	// Process seen data for each viewer
+	if (seenData.length === 0 || sortedMessageItems.length === 0) {
+		return { seenByMap, lastReadMessageMap, unreadCountMap };
+	}
+
 	for (const seen of seenData) {
 		const seenTime = getTimestamp(seen.lastSeenAt);
 		const viewerId = seen.userId || seen.visitorId || seen.aiAgentId;
@@ -261,7 +400,6 @@ const buildTimelineReadReceiptData = (
 		let lastReadItem: TimelineItem | null = null;
 		let unreadCount = 0;
 
-		// Process items in chronological order (using pre-sorted array)
 		for (let index = 0; index < sortedMessageItems.length; index++) {
 			const item = sortedMessageItems[index];
 			if (!item) {
@@ -272,26 +410,21 @@ const buildTimelineReadReceiptData = (
 				sortedMessageTimes[index] ?? getTimestamp(item.createdAt);
 
 			if (itemTime <= seenTime) {
-				// This item has been seen
 				if (item.id) {
 					const seenBy = seenByMap.get(item.id);
-					if (seenBy) {
-						seenBy.add(viewerId);
-					}
+					seenBy?.add(viewerId);
 				}
 				lastReadItem = item;
-			} else {
-				// This item is unread
-				unreadCount++;
+				continue;
 			}
+
+			unreadCount++;
 		}
 
-		// Store the last read item for this viewer
 		if (lastReadItem?.id) {
 			lastReadMessageMap.set(viewerId, lastReadItem.id);
 		}
 
-		// Store unread count
 		unreadCountMap.set(viewerId, unreadCount);
 	}
 
@@ -310,57 +443,36 @@ export const useGroupedMessages = ({
 	currentViewerId,
 }: UseGroupedMessagesOptions) => {
 	return useMemo(() => {
-		const groupedItems = groupTimelineItems(items);
-
-		// Pre-compute message items and timestamps once for reuse
-		const messageItems = items.filter((item) => item.type === "message");
-		let sortedMessageItems = messageItems;
-		let sortedMessageTimes = messageItems.map((item) =>
-			getTimestamp(item.createdAt)
+		const preparedItems = prepareTimelineItems(items);
+		const groupedItems = groupTimelineItems(
+			preparedItems.items,
+			preparedItems.times
 		);
 
-		// Avoid sorting if items are already in chronological order
-		let isSorted = true;
-		for (let index = 1; index < sortedMessageTimes.length; index++) {
-			const currentTime = sortedMessageTimes[index];
-			const previousTime = sortedMessageTimes[index - 1];
-			if (
-				currentTime !== undefined &&
-				previousTime !== undefined &&
-				currentTime < previousTime
-			) {
-				isSorted = false;
-				break;
-			}
-		}
-
-		if (!isSorted) {
-			const itemsWithTimes = messageItems.map((item, index) => ({
-				item,
-				time: sortedMessageTimes[index] ?? 0,
-			}));
-
-			itemsWithTimes.sort((a, b) => a.time - b.time);
-
-			sortedMessageItems = itemsWithTimes.map((entry) => entry.item);
-			sortedMessageTimes = itemsWithTimes.map((entry) => entry.time);
-		}
-
-		// Build index map from sorted items for O(1) chronological lookups
-		// Must use sortedMessageItems (not raw items) to ensure indices reflect time order
+		const sortedMessageItems: TimelineItem[] = [];
+		const sortedMessageTimes: number[] = [];
 		const messageIndexMap = new Map<string, number>();
-		for (let i = 0; i < sortedMessageItems.length; i++) {
-			const item = sortedMessageItems[i];
-			if (item?.id) {
-				messageIndexMap.set(item.id, i);
+
+		for (let index = 0; index < preparedItems.items.length; index++) {
+			const item = preparedItems.items[index];
+			if (item?.type !== "message") {
+				continue;
+			}
+
+			const messageIndex = sortedMessageItems.length;
+			sortedMessageItems.push(item);
+			sortedMessageTimes.push(
+				preparedItems.times[index] ?? getTimestamp(item.createdAt)
+			);
+
+			if (item.id) {
+				messageIndexMap.set(item.id, messageIndex);
 			}
 		}
 
-		// Build read receipt data with pre-sorted items
 		const { seenByMap, lastReadMessageMap, unreadCountMap } =
 			buildTimelineReadReceiptData(
 				seenData,
-				items,
 				sortedMessageItems,
 				sortedMessageTimes
 			);

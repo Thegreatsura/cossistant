@@ -79,36 +79,34 @@ export function NavigationTopbar() {
 						</TooltipOnHover>
 					)}
 				</AnimatePresence>
-				{process.env.NODE_ENV === "development" && (
-					<TopbarItem
-						active={pathname.startsWith(`/${website?.slug}/agent`)}
-						className="pr-1"
-						hideLabelOnMobile
-						href={
-							hasAgent
-								? `/${website?.slug}/agent`
-								: `/${website?.slug}/agent/create`
-						}
-					>
-						{hasAgent ? (
-							<span className="flex items-center gap-1.5">
-								Agent
-								<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
-									AI
-								</span>
-							</span>
-						) : (
-							<span className="flex items-center gap-1.5">
-								New agent
-								<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
-									AI
-								</span>
-							</span>
-						)}
-					</TopbarItem>
-				)}
 			</div>
 			<div className="flex items-center gap-3">
+				<TopbarItem
+					active={pathname.startsWith(`/${website?.slug}/agent`)}
+					className="pr-1"
+					hideLabelOnMobile
+					href={
+						hasAgent
+							? `/${website?.slug}/agent`
+							: `/${website?.slug}/agent/create`
+					}
+				>
+					{hasAgent ? (
+						<span className="flex items-center gap-1.5">
+							Agent
+							<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
+								AI
+							</span>
+						</span>
+					) : (
+						<span className="flex items-center gap-1.5">
+							New agent
+							<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
+								AI
+							</span>
+						</span>
+					)}
+				</TopbarItem>
 				<TopbarItem
 					active={pathname.startsWith(`/${website?.slug}/contacts`)}
 					hideLabelOnMobile

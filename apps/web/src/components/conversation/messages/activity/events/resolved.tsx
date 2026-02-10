@@ -14,7 +14,11 @@ function resolveEventIcon(event: EventActivityProps["event"]): ActivityIcon {
 	};
 }
 
-export function ResolvedActivity({ event, timestamp }: EventActivityProps) {
+export function ResolvedActivity({
+	event,
+	timestamp,
+	showIcon = true,
+}: EventActivityProps) {
 	const text = (
 		<span className="flex items-center gap-1">
 			<span className="font-semibold">{event.actorName}</span> resolved the
@@ -25,6 +29,7 @@ export function ResolvedActivity({ event, timestamp }: EventActivityProps) {
 	return (
 		<ActivityWrapper
 			icon={resolveEventIcon(event)}
+			showIcon={showIcon}
 			state="result"
 			text={text}
 			timestamp={timestamp}

@@ -1,10 +1,17 @@
 "use client";
 
-import { useGroupedMessages } from "@cossistant/react/hooks";
+import {
+	type GroupedActivity,
+	useGroupedMessages,
+} from "@cossistant/react/hooks";
 import {
 	ConversationTimelineContainer,
 	ConversationTimeline as PrimitiveConversationTimeline,
+	TimelineItemGroup as PrimitiveTimelineItemGroup,
+	TimelineItemGroupAvatar,
+	TimelineItemGroupContent,
 } from "@cossistant/react/primitives";
+import { Avatar } from "@cossistant/react/support/components/avatar";
 import { ConversationEvent } from "@cossistant/react/support/components/conversation-event";
 import { TimelineMessageGroup } from "@cossistant/react/support/components/timeline-message-group";
 import {
@@ -18,10 +25,14 @@ import type {
 	TimelineItem,
 	TimelinePartEvent,
 } from "@cossistant/types/api/timeline-item";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import {
+	renderEventActionIcon,
+	renderToolActionIcon,
+} from "@/components/conversation/messages/activity/action-icon-map";
+import { shouldDisplayToolTimelineItem } from "@/lib/tool-timeline-visibility";
 import type { FakeTypingVisitor } from "../fake-dashboard/data";
 
-// Helper to extract event part from timeline item
 function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 	if (item.type !== "event") {
 		return null;
@@ -32,6 +43,261 @@ function extractEventPart(item: TimelineItem): TimelinePartEvent | null {
 	);
 
 	return eventPart || null;
+}
+
+type ToolState = "partial" | "result" | "error";
+
+type ToolDetails = {
+	toolName: string | null;
+	state: ToolState;
+};
+
+function extractToolDetails(item: TimelineItem): ToolDetails {
+	let toolName =
+		typeof item.tool === "string" && item.tool.length > 0 ? item.tool : null;
+	let state: ToolState = "partial";
+
+	for (const part of item.parts) {
+		if (
+			typeof part !== "object" ||
+			part === null ||
+			!("type" in part) ||
+			typeof part.type !== "string" ||
+			!part.type.startsWith("tool-")
+		) {
+			continue;
+		}
+
+		if (
+			"toolName" in part &&
+			typeof part.toolName === "string" &&
+			part.toolName.length > 0
+		) {
+			toolName = part.toolName;
+		}
+
+		if ("state" in part && part.state === "result") {
+			state = "result";
+		} else if ("state" in part && part.state === "error") {
+			state = "error";
+		}
+
+		break;
+	}
+
+	return {
+		toolName,
+		state,
+	};
+}
+
+function getFallbackToolSummary(
+	toolName: string | null,
+	state: ToolState
+): string {
+	const label = toolName ?? "tool";
+
+	if (state === "result") {
+		return `Completed ${label}`;
+	}
+
+	if (state === "error") {
+		return `Failed ${label}`;
+	}
+
+	return `Running ${label}`;
+}
+
+function formatToolSummary(item: TimelineItem, details: ToolDetails): string {
+	if (typeof item.text === "string" && item.text.trim().length > 0) {
+		return item.text;
+	}
+
+	return getFallbackToolSummary(details.toolName, details.state);
+}
+
+function formatTimestamp(createdAt: string): string {
+	return new Date(createdAt).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+}
+
+type ActivityRow =
+	| {
+			type: "event";
+			key: string;
+			item: TimelineItem;
+			event: TimelinePartEvent;
+	  }
+	| {
+			type: "tool";
+			key: string;
+			item: TimelineItem;
+			toolName: string | null;
+			summary: string;
+	  };
+
+type FakeTimelineActivityGroupProps = {
+	group: GroupedActivity;
+	availableAIAgents: AvailableAIAgent[];
+	availableHumanAgents: AvailableHumanAgent[];
+	currentVisitorId?: string;
+};
+
+function FakeTimelineActivityGroup({
+	group,
+	availableAIAgents,
+	availableHumanAgents,
+	currentVisitorId,
+}: FakeTimelineActivityGroupProps) {
+	const activityRows = useMemo(() => {
+		const rows: ActivityRow[] = [];
+
+		for (let index = 0; index < group.items.length; index++) {
+			const item = group.items[index];
+			if (!item) {
+				continue;
+			}
+
+			if (item.type === "event") {
+				const eventPart = extractEventPart(item);
+				if (!eventPart) {
+					continue;
+				}
+
+				rows.push({
+					type: "event",
+					key: item.id ?? `activity-event-${item.createdAt}-${index}`,
+					item,
+					event: eventPart,
+				});
+				continue;
+			}
+
+			if (item.type === "tool") {
+				if (!shouldDisplayToolTimelineItem(item)) {
+					continue;
+				}
+
+				const details = extractToolDetails(item);
+				rows.push({
+					type: "tool",
+					key: item.id ?? `activity-tool-${item.createdAt}-${index}`,
+					item,
+					toolName: details.toolName,
+					summary: formatToolSummary(item, details),
+				});
+			}
+		}
+
+		return rows;
+	}, [group.items]);
+
+	if (activityRows.length === 0) {
+		return null;
+	}
+
+	const showRowBullets = activityRows.length > 1;
+	const humanAgent = availableHumanAgents.find(
+		(agent) => agent.id === group.senderId
+	);
+	const aiAgent = availableAIAgents.find(
+		(agent) => agent.id === group.senderId
+	);
+
+	return (
+		<PrimitiveTimelineItemGroup
+			items={group.items}
+			viewerId={currentVisitorId}
+			viewerType={SenderType.VISITOR}
+		>
+			{({ isAI, isTeamMember, isVisitor }) => (
+				<div className="flex w-full flex-row gap-2">
+					<TimelineItemGroupAvatar className="flex shrink-0 flex-col justify-start">
+						{isAI ? (
+							<Avatar
+								className="size-6"
+								image={aiAgent?.image}
+								isAI
+								name={aiAgent?.name || "AI Assistant"}
+								showBackground={!!aiAgent?.image}
+							/>
+						) : (
+							<Avatar
+								className="size-6"
+								image={isTeamMember ? humanAgent?.image : null}
+								name={
+									isTeamMember
+										? humanAgent?.name || "Support"
+										: isVisitor
+											? "Visitor"
+											: "Support"
+								}
+							/>
+						)}
+					</TimelineItemGroupAvatar>
+
+					<TimelineItemGroupContent className="flex min-w-0 flex-1 flex-col gap-1">
+						<div className="flex w-full min-w-0 flex-col gap-1.5">
+							{activityRows.map((row) => (
+								<div
+									className={cn(
+										"flex w-full min-w-0 items-start",
+										showRowBullets ? "gap-2" : "gap-0"
+									)}
+									key={row.key}
+								>
+									{showRowBullets ? (
+										<span
+											className="mt-[0.3rem] shrink-0"
+											data-activity-bullet={row.type}
+										>
+											{row.type === "event"
+												? renderEventActionIcon(
+														row.event.eventType,
+														"size-3 text-co-muted-foreground"
+													)
+												: renderToolActionIcon(
+														row.toolName,
+														"size-3 text-co-muted-foreground"
+													)}
+										</span>
+									) : null}
+
+									<div
+										className={cn(
+											"min-w-0",
+											showRowBullets ? "flex-1" : "w-full"
+										)}
+									>
+										{row.type === "event" ? (
+											<ConversationEvent
+												availableAIAgents={availableAIAgents}
+												availableHumanAgents={availableHumanAgents}
+												className="w-full"
+												compact
+												createdAt={row.item.createdAt}
+												event={row.event}
+												showAvatar={false}
+											/>
+										) : (
+											<div className="flex min-h-5 items-center gap-2 text-co-muted-foreground text-xs">
+												<span className="break-words">{row.summary}</span>
+												<time className="text-[10px]">
+													{formatTimestamp(row.item.createdAt)}
+												</time>
+											</div>
+										)}
+									</div>
+								</div>
+							))}
+						</div>
+					</TimelineItemGroupContent>
+				</div>
+			)}
+		</PrimitiveTimelineItemGroup>
+	);
 }
 
 const EMPTY_SEEN_BY_IDS: readonly string[] = Object.freeze([]);
@@ -47,12 +313,8 @@ type FakeConversationTimelineListProps = {
 	typingVisitors: FakeTypingVisitor[];
 };
 
-/**
- * Custom timeline list for the fake support widget that accepts
- * typing data as props instead of relying on the typing store.
- */
 export function FakeConversationTimelineList({
-	conversationId,
+	conversationId: _conversationId,
 	items: timelineItems,
 	className,
 	availableAIAgents = [],
@@ -62,15 +324,12 @@ export function FakeConversationTimelineList({
 }: FakeConversationTimelineListProps) {
 	const messageListRef = useRef<HTMLDivElement | null>(null);
 
-	// Use the real useGroupedMessages hook
 	const { items: groupedMessages } = useGroupedMessages({
 		items: timelineItems,
 		seenData: [],
 		currentViewerId: currentVisitorId,
 	});
 
-	// Convert fake typing visitors to typing participants
-	// Filter out the current visitor's own typing indicator
 	const typingIndicatorParticipants = useMemo<TypingParticipant[]>(
 		() =>
 			typingVisitors
@@ -82,71 +341,6 @@ export function FakeConversationTimelineList({
 		[typingVisitors, currentVisitorId]
 	);
 
-	const seenNameLookup = useMemo(() => {
-		const map = new Map<string, string>();
-
-		for (const agent of availableHumanAgents) {
-			if (agent.name) {
-				map.set(agent.id, agent.name);
-			}
-		}
-
-		for (const agent of availableAIAgents) {
-			if (agent.name) {
-				map.set(agent.id, agent.name);
-			}
-		}
-
-		return map;
-	}, [availableHumanAgents, availableAIAgents]);
-
-	const getSeenByNames = useCallback(
-		(ids: readonly string[] = EMPTY_SEEN_BY_IDS): readonly string[] => {
-			if (ids.length === 0 || seenNameLookup.size === 0) {
-				return EMPTY_SEEN_BY_NAMES;
-			}
-
-			const uniqueNames = new Set<string>();
-			const names: string[] = [];
-
-			for (const id of ids) {
-				const name = seenNameLookup.get(id);
-				if (!name || uniqueNames.has(name)) {
-					continue;
-				}
-
-				uniqueNames.add(name);
-				names.push(name);
-			}
-
-			if (names.length === 0) {
-				return EMPTY_SEEN_BY_NAMES;
-			}
-
-			return Object.freeze(names);
-		},
-		[seenNameLookup]
-	);
-
-	// Find last visitor message group index
-	const lastVisitorMessageGroupIndex = useMemo(() => {
-		for (let index = groupedMessages.length - 1; index >= 0; index--) {
-			const item = groupedMessages[index];
-
-			if (!item || item.type !== "message_group") {
-				continue;
-			}
-
-			const firstMessage = item.items?.[0];
-			if (firstMessage?.visitorId === currentVisitorId) {
-				return index;
-			}
-		}
-
-		return -1;
-	}, [groupedMessages, currentVisitorId]);
-
-	// Auto-scroll when typing indicator appears
 	useEffect(() => {
 		if (!messageListRef.current || typingIndicatorParticipants.length === 0) {
 			return;
@@ -172,10 +366,7 @@ export function FakeConversationTimelineList({
 			<ConversationTimelineContainer className="flex min-h-full w-full flex-col gap-5">
 				{groupedMessages.map((item, index) => {
 					if (item.type === "timeline_event") {
-						// Extract event data from parts
 						const eventPart = extractEventPart(item.item);
-
-						// Only render if we have valid event data
 						if (!eventPart) {
 							return null;
 						}
@@ -195,16 +386,30 @@ export function FakeConversationTimelineList({
 						return null;
 					}
 
+					if (item.type === "activity_group") {
+						const groupKey =
+							item.firstItemId ??
+							item.items[0]?.id ??
+							`activity-group-${item.items[0]?.createdAt ?? index}`;
+
+						return (
+							<FakeTimelineActivityGroup
+								availableAIAgents={availableAIAgents}
+								availableHumanAgents={availableHumanAgents}
+								currentVisitorId={currentVisitorId}
+								group={item}
+								key={groupKey}
+							/>
+						);
+					}
+
 					if (item.type === "day_separator") {
 						return null;
 					}
 
-					// Only show seen indicator on the LAST message group sent by the visitor
-					const isLastVisitorGroup = index === lastVisitorMessageGroupIndex;
-					const seenByIds = EMPTY_SEEN_BY_IDS; // No seen data for fake widget
+					const seenByIds = EMPTY_SEEN_BY_IDS;
 					const seenByNames = EMPTY_SEEN_BY_NAMES;
 
-					// Use first timeline item ID as stable key
 					const groupKey =
 						item.lastMessageId ??
 						item.items[0]?.id ??
