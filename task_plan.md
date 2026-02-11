@@ -1,259 +1,363 @@
-# Task Plan: Inbox Analytics Fixes + Feedback System
+# Task Plan: Migrate Analytics to Tinybird
 
 ## Goal
 
-Fix inbox analytics to display correct data and create a new standalone feedback system that:
-1. Allows visitors to rate + leave written feedback
-2. Can be tied to a conversation OR be standalone (product feedback)
-3. Feeds into the satisfaction index for analytics
+Replace DB-based analytics with Tinybird for:
+1. **Inbox analytics** (response time, resolution time, AI rate, satisfaction, visitors)
+2. **Visitor "seen" events** with geolocation (online tracking, globe-ready)
+3. **Page view tracking** (schema-ready, not wired up in MVP)
+
+Keep it lean: one datasource, no materialized views initially, 3-week retention for free tier (enforced at query time), 90-day TTL on data.
 
 ---
 
-## Phase 1: Investigate Analytics Issues - IN PROGRESS
+## Phase 1: Tinybird Project Setup `PENDING`
 
-### 1.1 Unique Visitors Query Issue
-**Status:** Needs investigation
+### 1.1 Create Tinybird project structure at repo root
 
-**Current Query Logic:**
-```sql
-SELECT COUNT(DISTINCT COALESCE(contact_id, id))
-FROM visitor
-WHERE organization_id = ?
-  AND website_id = ?
-  AND deleted_at IS NULL
-  AND is_test = false  -- This might filter everything!
-  AND last_seen_at IS NOT NULL
-  AND last_seen_at >= range.start
-  AND last_seen_at < range.end
+```
+tinybird/
+  datasources/
+    analytics_events.datasource
+  endpoints/
+    inbox_analytics.pipe
+    active_visitors.pipe
+    visitor_locations.pipe
 ```
 
-**Possible Issues:**
-- `isTest` might be `true` for all visitors in dev/testing
-- `lastSeenAt` might not be set (but `upsertVisitor` does set it)
-- Date range might be wrong
+### 1.2 Define `visitor_events.datasource` (high-volume, short-lived)
 
-**Action:** Debug by running raw queries against the database
+Raw visitor activity events. TTL: 30 days (all tiers -- these are operational, not KPIs).
 
-### 1.2 Median Response Time Issue
-**Status:** Understood
+```
+SCHEMA >
+    `timestamp` DateTime              `json:$.timestamp`,
+    `website_id` String               `json:$.website_id`,
+    `visitor_id` String               `json:$.visitor_id`,
+    `session_id` String               `json:$.session_id`,
+    `event_type` LowCardinality(String) `json:$.event_type`,
+    `country_code` LowCardinality(String) `json:$.country_code`,
+    `city` LowCardinality(String)     `json:$.city`,
+    `latitude` Float32               `json:$.latitude`,
+    `longitude` Float32              `json:$.longitude`,
+    `device_type` LowCardinality(String) `json:$.device_type`,
+    `browser` LowCardinality(String)  `json:$.browser`,
+    `page_url` String                `json:$.page_url`
 
-**Root Cause:** Query requires `firstResponseAt IS NOT NULL`, which is only set when a team member or AI agent sends a message to a conversation.
-
-**Current Logic (in timeline-item.ts:267-283):**
-```ts
-const isResponseFromTeam = Boolean(userId || aiAgentId);
-if (isResponseFromTeam) {
-  // Updates firstResponseAt only if null
-}
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
+ENGINE_SORTING_KEY "website_id, toDate(timestamp), event_type"
+ENGINE_TTL "timestamp + toIntervalDay(30)"
 ```
 
-**Issue:** If no conversations have received a response from team/AI, median will be null/0.
+**Event types:** `seen`, `page_view`
 
-**Action:** This is working correctly - just no data yet. No fix needed.
+**`last_seen` trace:** The existing `lastSeenAt` field on the visitor table in PostgreSQL persists beyond Tinybird TTL, so we always know when a visitor was last active even after raw events are purged.
 
-### 1.3 Satisfaction Index Issue
-**Status:** Understood
+### 1.3 Define `conversation_metrics.datasource` (low-volume, long-lived)
 
-**Root Cause:** Query requires `visitorRating IS NOT NULL`, but:
-1. The rating columns were just added in migration 0037
-2. No ratings have been submitted yet
-3. The current rating UI only shows on resolved conversations
+Conversation lifecycle events. No TTL for paid customers (business KPIs trended over years). Free tier: 21 days enforced at query time.
 
-**Action:** This will be fixed by the new feedback system.
+```
+SCHEMA >
+    `timestamp` DateTime              `json:$.timestamp`,
+    `website_id` String               `json:$.website_id`,
+    `visitor_id` String               `json:$.visitor_id`,
+    `event_type` LowCardinality(String) `json:$.event_type`,
+    `conversation_id` String          `json:$.conversation_id`,
+    `duration_seconds` Float32       `json:$.duration_seconds`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
+ENGINE_SORTING_KEY "website_id, toDate(timestamp), event_type"
+```
+
+**Event types:** `conversation_started`, `conversation_resolved`, `first_response`, `ai_resolved`, `escalated`, `feedback_submitted`
+
+**`duration_seconds`:** time delta for `first_response` and `conversation_resolved` events (computed at ingestion).
+
+**No `ENGINE_TTL`** -- data kept indefinitely. On plan downgrade/unsubscribe: delete by `website_id` filter.
+
+**Note:** No geo/device fields here -- these are conversation-level metrics, not visitor activity. Keeps the schema lean.
+
+**Why `website_id` first in sort key (not `organization_id`):**
+- Most queries filter by website, not org
+- Org can be derived from website; no need to scan by org
+- Keeps sorting lean
+
+### 1.4 Define pipes (API endpoints)
+
+**`inbox_analytics.pipe`** -- Reads from `conversation_metrics` datasource. Single consolidated endpoint returning all dashboard metrics:
+- Median response time (`quantile(0.5)` on `first_response` events' `duration_seconds`)
+- Median resolution time (`quantile(0.5)` on `conversation_resolved` events' `duration_seconds`)
+- % AI handled (count `ai_resolved` / count `conversation_resolved`)
+- Accepts params: `website_id`, `date_from`, `date_to`
+- Returns current period + previous period in one call (saves QPS)
+- Note: unique visitors comes from `visitor_events` (separate pipe or combined in tRPC)
+
+**`active_visitors.pipe`** -- Reads from `visitor_events` datasource. Real-time active visitors:
+- `SELECT visitor_id, any(city), any(country_code), any(latitude), any(longitude), max(timestamp) as last_seen FROM visitor_events WHERE event_type = 'seen' AND timestamp > now() - INTERVAL 10 MINUTE AND website_id = {{String(website_id)}} GROUP BY visitor_id`
+- Accepts params: `website_id`, `minutes` (default 10)
+
+**`visitor_locations.pipe`** -- Reads from `visitor_events` datasource. Geo aggregation for globe:
+- Groups `seen` events by lat/lng with counts
+- Accepts params: `website_id`, `minutes` (default 5)
+
+**`unique_visitors.pipe`** -- Reads from `visitor_events` datasource. Unique visitor count by date range:
+- `uniq(visitor_id)` on `seen` events
+- Accepts params: `website_id`, `date_from`, `date_to`
 
 ---
 
-## Phase 2: Create Feedback Table - PENDING
+## Phase 2: Backend Integration (`apps/api`) `PENDING`
 
-### 2.1 Database Schema Design
+### 2.1 Create Tinybird client library
 
-**New Table: `feedback`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | ULID (PK) | Unique identifier |
-| organization_id | ULID (FK) | Reference to organization |
-| website_id | ULID (FK) | Reference to website (required) |
-| conversation_id | nanoid (FK, nullable) | Optional conversation reference |
-| visitor_id | ULID (FK, nullable) | Visitor who submitted feedback |
-| contact_id | ULID (FK, nullable) | Contact if visitor has one |
-| rating | integer (1-5) | Star rating |
-| comment | text | Written feedback (optional) |
-| source | enum | Where feedback was collected (widget, api, email) |
-| created_at | timestamp | When feedback was submitted |
-| updated_at | timestamp | Last update time |
-| deleted_at | timestamp | Soft delete |
-
-**Indexes:**
-- `feedback_org_website_created_idx` - For analytics queries by date range
-- `feedback_website_idx` - For listing feedback by website
-- `feedback_conversation_idx` - For looking up feedback by conversation
-- `feedback_visitor_idx` - For looking up feedback by visitor
-
-### 2.2 Schema File Changes
-
-Create: `apps/api/src/db/schema/feedback.ts`
+**Create: `apps/api/src/lib/tinybird.ts`**
 
 ```ts
-export const feedbackSourceEnum = pgEnum("feedback_source", [
-  "widget",
-  "api",
-  "email"
+// Thin wrapper around Tinybird Events API + Pipe query API
+// - sendEvent(datasource, events[]) -- POST NDJSON to Events API (fire-and-forget)
+// - queryPipe(pipeName, params) -- GET pipe endpoint with auth
+// - deleteByFilter(datasource, filter) -- DELETE for plan cancellation cleanup
+// Env vars: TINYBIRD_HOST, TINYBIRD_APPEND_TOKEN, TINYBIRD_READ_TOKEN
+```
+
+Keep it minimal: three functions, no SDK dependency.
+
+### 2.2 Emit events from existing code paths
+
+**Where to emit `seen` events (-> `visitor_events` datasource):**
+- In `markVisitorPresence()` (`apps/api/src/services/presence.ts`)
+- Already called on WebSocket connection + REST message endpoints
+- Add: fire-and-forget `sendEvent("visitor_events", [{ event_type: "seen", ... }])`
+- Include geo data already available from visitor record / edge headers
+
+**Where to emit conversation lifecycle events (-> `conversation_metrics` datasource):**
+- `conversation_started`: in conversation creation mutation
+- `first_response`: in `apps/api/src/utils/timeline-item.ts` where `firstResponseAt` is set
+- `conversation_resolved`: in `apps/api/src/db/mutations/conversation.ts` resolve action
+- `ai_resolved`: in `apps/api/src/ai-agent/actions/update-status.ts` when AI resolves
+- `escalated`: in escalation action
+
+**`duration_seconds` for time-based events (on `conversation_metrics`):**
+- `first_response`: `(now - conversation.startedAt)` in seconds
+- `conversation_resolved`: `(now - conversation.startedAt)` in seconds
+
+### 2.3 Replace analytics tRPC endpoint
+
+**Modify: `apps/api/src/trpc/routers/conversation.ts`** (getInboxAnalytics)
+
+Replace 7 parallel PG queries with 2 Tinybird pipe calls + 2 PG queries:
+```ts
+const [metrics, uniqueVisitors, feedbackRating, sentimentScore] = await Promise.all([
+  queryPipe("inbox_analytics", { website_id, date_from, date_to, prev_date_from, prev_date_to }),
+  queryPipe("unique_visitors", { website_id, date_from, date_to }),
+  db.select(...).from(feedback),   // rating score (PG, low volume)
+  db.select(...).from(conversation), // sentiment score (PG, low volume)
 ]);
-
-export const feedback = pgTable("feedback", {
-  id: ulidPrimaryKey("id"),
-  organizationId: ulidReference("organization_id"),
-  websiteId: ulidReference("website_id"),
-  conversationId: nanoidNullableReference("conversation_id"),
-  visitorId: ulidNullableReference("visitor_id"),
-  contactId: ulidNullableReference("contact_id"),
-  rating: integer("rating").notNull(), // 1-5
-  comment: text("comment"),
-  source: feedbackSourceEnum("source").default("widget").notNull(),
-  createdAt: timestamp("created_at"),
-  updatedAt: timestamp("updated_at"),
-  deletedAt: timestamp("deleted_at"),
-}, (table) => [
-  // Analytics index
-  index("feedback_org_website_created_idx").on(
-    table.organizationId,
-    table.websiteId,
-    table.createdAt,
-    table.deletedAt
-  ),
-  // Lookup indexes
-  index("feedback_website_idx").on(table.websiteId),
-  index("feedback_conversation_idx").on(table.conversationId),
-  index("feedback_visitor_idx").on(table.visitorId),
-]);
 ```
 
-### 2.3 Migration
+**Satisfaction Index stays hybrid:**
+- Response time score + resolution rate: from Tinybird (`inbox_analytics` pipe)
+- Rating score: from PostgreSQL `feedback` table (low volume, stays in PG)
+- Sentiment score: from PostgreSQL `conversation` table (set by AI agent)
+- Combine in the tRPC procedure
 
-Run: `bun run db:generate` to create migration file
+### 2.4 Remove old analytics DB queries
 
----
+**Delete: `apps/api/src/db/queries/inbox-analytics.ts`** (entirely replaced by Tinybird)
 
-## Phase 3: Backend API Implementation - PENDING
+### 2.5 Add retention-aware query param
 
-### 3.1 Types
-
-Add to `packages/types`:
-- `FeedbackSource` enum
-- `submitFeedbackRequestSchema`
-- `submitFeedbackResponseSchema`
-- `FeedbackResponse` type
-
-### 3.2 REST API Endpoint
-
-Create: `POST /api/v1/feedback`
-
-**Request Body:**
+In the tRPC procedure, compute `date_from` based on customer tier:
 ```ts
-{
-  rating: number; // 1-5
-  comment?: string;
-  conversationId?: string; // Optional
-  visitorId: string;
-}
+const maxRetentionDays = isPaying ? 90 : 21;
+const effectiveDateFrom = max(requestedDateFrom, now - maxRetentionDays);
 ```
 
-**Response:**
-```ts
-{
-  id: string;
-  rating: number;
-  comment: string | null;
-  conversationId: string | null;
-  createdAt: string;
-}
+This enforces 3-week limit for free tier at query time (Tinybird TTL handles physical deletion at 90d).
+
+---
+
+## Phase 3: "Seen" Events & Active Visitors `PENDING`
+
+### 3.1 Emit `seen` events from widget/SDK
+
+**Option A (chosen): Server-side emission**
+- Widget already pings the API (WebSocket heartbeat / REST calls)
+- `markVisitorPresence()` already fires on these -- just add Tinybird event
+- No new client-side code needed
+
+**Why not client-side:** APPEND tokens can't be safely exposed in browser.
+
+### 3.2 Wire up active visitors endpoint
+
+**Modify: `apps/api/src/trpc/routers/visitor.ts`** (listOnline)
+
+Add a new field or replace data source:
+- Keep Redis for instant presence (online/away status for chat UI)
+- Add Tinybird query for "active visitors with geo" (for dashboard / globe)
+- The `active_visitors` pipe returns visitor_id + last_seen + geo data
+
+### 3.3 Ensure geo data flows through
+
+Visitor geo data is already resolved from edge headers in:
+- `apps/api/src/rest/routers/visitor.ts` (PATCH endpoint)
+- `apps/api/src/services/presence.ts` (profile hydration)
+
+When emitting `seen` events, include `country_code`, `city`, `latitude`, `longitude` from the visitor record or edge headers available in the request context.
+
+---
+
+## Phase 4: Frontend Updates (`apps/web`) `PENDING`
+
+### 4.1 Update analytics display
+
+**Modify: `apps/web/src/components/inbox-analytics/`**
+
+The component already works with the shape returned by `useInboxAnalytics`. Changes:
+- Remove `websiteSlug === "cossistant"` guard -- enable for all websites
+- Response types should remain compatible (same metric names)
+- Adjust range options if needed (free tier max = 21 days)
+
+### 4.2 Update hook
+
+**Modify: `apps/web/src/data/use-inbox-analytics.tsx`**
+
+Minimal changes -- the tRPC endpoint signature stays the same. Just:
+- Remove the `websiteSlug === "cossistant"` check
+- Potentially add tier-based range constraints in the UI
+
+### 4.3 Visitor presence context (optional enhancement)
+
+**File: `apps/web/src/contexts/visitor-presence.tsx`**
+
+Currently polls Redis-backed endpoint every 15s. For the globe feature:
+- Add a separate hook for geo-aggregated data from `visitor_locations` pipe
+- This is a future enhancement, not MVP
+
+---
+
+## Phase 5: Type Updates (`packages/types`) `PENDING`
+
+### 5.1 Analytics types
+
+**Modify: `packages/types/src/trpc/conversation.ts`**
+
+- Keep `InboxAnalyticsMetrics` interface (same shape)
+- Add `AnalyticsEventType` union type
+- Add `TinybirdEvent` schema for event payloads
+
+### 5.2 Presence types
+
+**Modify: `packages/types/src/trpc/visitor.ts`**
+
+- Add `VisitorGeoLocation` type for globe data
+- Keep existing `VisitorPresenceEntry` (Redis-backed, unchanged)
+
+---
+
+## Phase 6: Cleanup & Testing `PENDING`
+
+### 6.1 Remove dead code
+
+- Delete `apps/api/src/db/queries/inbox-analytics.ts`
+- Delete `apps/api/src/utils/cache/inbox-analytics-cache.ts` (if still exists)
+- Remove any unused imports
+
+### 6.2 Environment setup
+
+Add to `.env.example`:
+```
+TINYBIRD_HOST=https://api.us-east.aws.tinybird.co
+TINYBIRD_APPEND_TOKEN=
+TINYBIRD_READ_TOKEN=
 ```
 
-### 3.3 Update Analytics Query
+### 6.3 Testing
 
-Modify `apps/api/src/db/queries/inbox-analytics.ts`:
+- Deploy Tinybird datasource + pipes via `tb deploy` (or manual)
+- Verify event ingestion with `tb datasource ls` / `tb sql`
+- Test dashboard analytics render with real data
+- Test active visitors with geo data
+- Verify free tier sees max 21 days
+- Verify TTL cleanup (can simulate with test data)
 
-**Old satisfaction query:** Uses `conversation.visitorRating`
-**New satisfaction query:** Uses `feedback.rating` table
+### 6.4 CI/CD
 
-```ts
-// New satisfaction query
-db.select({
-  average: sql<number | null>`AVG(${feedback.rating}::float / 5.0 * 100)`,
-})
-.from(feedback)
-.where(
-  and(
-    eq(feedback.organizationId, organizationId),
-    eq(feedback.websiteId, websiteId),
-    isNull(feedback.deletedAt),
-    gte(feedback.createdAt, range.start),
-    lt(feedback.createdAt, range.end)
-  )
-)
-```
+- Add `tinybird/` to the repo
+- Consider `tb deploy` in CI pipeline (future)
+- For now: manual deploy via Tinybird CLI
 
 ---
 
-## Phase 4: Frontend Implementation - PENDING
+## Files Summary
 
-### 4.1 Update Support Widget
+### Create
+| File | Purpose |
+|------|---------|
+| `tinybird/datasources/visitor_events.datasource` | Seen/page_view events, 30d TTL |
+| `tinybird/datasources/conversation_metrics.datasource` | Conversation lifecycle, no TTL |
+| `tinybird/endpoints/inbox_analytics.pipe` | Dashboard metrics (from conversation_metrics) |
+| `tinybird/endpoints/unique_visitors.pipe` | Unique visitor counts (from visitor_events) |
+| `tinybird/endpoints/active_visitors.pipe` | Real-time active visitors (from visitor_events) |
+| `tinybird/endpoints/visitor_locations.pipe` | Geo aggregation for globe (from visitor_events) |
+| `apps/api/src/lib/tinybird.ts` | Tinybird client (ingest + query + delete) |
 
-Modify `packages/react/src/support/components/conversation-resolved-feedback.tsx`:
-- Add optional text input for written feedback
-- Call new feedback API endpoint
-- Support standalone feedback (not tied to conversation)
+### Modify
+| File | Change |
+|------|--------|
+| `apps/api/src/services/presence.ts` | Add `seen` event emission |
+| `apps/api/src/db/mutations/conversation.ts` | Add lifecycle event emissions |
+| `apps/api/src/utils/timeline-item.ts` | Add `first_response` event |
+| `apps/api/src/ai-agent/actions/update-status.ts` | Add `ai_resolved` event |
+| `apps/api/src/trpc/routers/conversation.ts` | Replace PG queries with Tinybird pipe |
+| `apps/api/src/trpc/routers/visitor.ts` | Add Tinybird-backed geo query |
+| `apps/web/src/components/inbox-analytics/inbox-analytics.tsx` | Remove cossistant guard |
+| `apps/web/src/data/use-inbox-analytics.tsx` | Remove cossistant guard |
+| `packages/types/src/trpc/conversation.ts` | Add event types |
+| `.env.example` | Add Tinybird env vars |
 
-### 4.2 Add Standalone Feedback Component
-
-Create: `packages/react/src/support/components/feedback-form.tsx`
-- Can be used outside of conversation context
-- Rating + comment form
-- Calls the same feedback API
-
----
-
-## Phase 5: Testing & Verification - PENDING
-
-### 5.1 Verify Analytics Queries
-- Run queries directly against database
-- Debug `isTest` flag issue for unique visitors
-- Verify date range calculations
-
-### 5.2 Test Feedback Flow
-- Submit feedback with conversation
-- Submit standalone feedback
-- Verify satisfaction index updates
-
----
-
-## Files to Create/Modify
-
-### Create:
-1. `apps/api/src/db/schema/feedback.ts` - New schema
-2. `apps/api/drizzle/migrations/0038_*.sql` - Migration (auto-generated)
-3. `packages/types/src/api/feedback.ts` - Types and schemas
-4. `packages/react/src/support/components/feedback-form.tsx` - Standalone form
-
-### Modify:
-1. `apps/api/src/db/schema/index.ts` - Export new schema
-2. `apps/api/src/db/queries/inbox-analytics.ts` - Update satisfaction query
-3. `apps/api/src/rest/routers/conversation.ts` - Add feedback endpoint OR create new router
-4. `packages/react/src/support/components/conversation-resolved-feedback.tsx` - Add comment field
-5. `packages/types/src/api/index.ts` - Export feedback types
+### Delete
+| File | Reason |
+|------|--------|
+| `apps/api/src/db/queries/inbox-analytics.ts` | Replaced by Tinybird |
 
 ---
 
-## Questions to Clarify
+## Design Decisions & Tradeoffs
 
-1. **Should we keep the old `visitorRating` on conversation table?**
-   - Option A: Keep it as a denormalized quick-access field
-   - Option B: Remove it and only use feedback table
-   - Recommendation: Keep for now, but prefer feedback table for analytics
+### Why two datasources (not one)
+- Different retention needs: visitor events are operational (30d), conversation metrics are business KPIs (indefinite)
+- Tinybird TTL is per-datasource, not per-row -- two datasources is the only clean way
+- Still lean: only 2 datasources, both with the same sorting key pattern
+- Conversation metrics has no geo/device fields -- keeps it slim
 
-2. **Feedback source enum values?**
-   - widget, api, email - are these sufficient?
+### Why no materialized views initially
+- Adds complexity; queries on raw data should be fast with proper sorting key
+- Can add later if p95 query time >5s
+- Keeps Tinybird setup minimal and cheap
 
-3. **Should feedback be editable/deletable by visitors?**
-   - Currently planning: No, once submitted it's final
+### Why Redis presence stays
+- Tinybird is analytics-grade (seconds of latency), not real-time presence
+- Chat UI needs instant online/away status
+- Redis is already working well for this
+
+### Why satisfaction index is hybrid (TB + PG)
+- Ratings and sentiment live in PG (low volume, relational)
+- Response time and resolution rate compute naturally from TB events
+- Avoids duplicating PG data into Tinybird
+
+### Why `page_view` is schema-ready but not wired
+- User wants it to "stay possible"
+- Schema includes `page_url` field
+- Widget can emit these later with zero Tinybird schema changes
+- Just needs a `sendEvent` call from the SDK
+
+### Why split retention strategy
+- `visitor_events`: 30-day TTL for all tiers (operational data, not KPIs)
+- `conversation_metrics`: no TTL (business KPIs trended over years for paid customers)
+- Free tier: 21 days enforced at query time on both datasources
+- On plan cancellation: `deleteByFilter(datasource, "website_id = 'xxx'")` on both
+- `lastSeenAt` persists in PostgreSQL visitor table as a trace after event purge

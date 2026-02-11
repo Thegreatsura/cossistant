@@ -44,10 +44,8 @@ type DecisionInput = {
 };
 
 const MENTION_REGEX = /\[@([^\]]+)\]\(mention:([^:]+):([^)]+)\)/g;
-const AI_TAG_REGEX = /(^|\s)(@ai|\/ai)(?=\s|$|[.,!?])/i;
 const TEXT_MENTION_REGEX = /@([a-zA-Z0-9][a-zA-Z0-9 _-]{0,60})/g;
 const PLAIN_TAG_REGEX = /[.,!?]+$/;
-const REMOVE_TAG_REGEX = /^(@ai|\/ai)(\s+|$)/i;
 
 /**
  * Determine if and how the AI agent should act
@@ -173,27 +171,27 @@ function detectMarkdownMention(text: string, aiAgentId: string): boolean {
 }
 
 function detectPlainTextTag(text: string, aiAgentName: string): boolean {
-	if (AI_TAG_REGEX.test(text)) {
-		return true;
-	}
-
 	const normalizedAgentName = normalizeName(aiAgentName);
 	if (!normalizedAgentName) {
 		return false;
 	}
+	const agentWordCount = normalizedAgentName.split(" ").length;
 	const normalizedAgentNoSpace = normalizedAgentName.replace(/\s+/g, "");
 
 	for (const match of text.matchAll(TEXT_MENTION_REGEX)) {
 		const raw = (match[1] ?? "").replace(PLAIN_TAG_REGEX, "");
-
 		const normalized = normalizeName(raw);
 		if (!normalized) {
 			continue;
 		}
-		if (normalized === normalizedAgentName) {
+
+		const words = normalized.split(" ");
+		const leadingCandidate = words.slice(0, agentWordCount).join(" ");
+		if (leadingCandidate === normalizedAgentName) {
 			return true;
 		}
-		if (normalized.replace(/\s+/g, "") === normalizedAgentNoSpace) {
+
+		if (leadingCandidate.replace(/\s+/g, "") === normalizedAgentNoSpace) {
 			return true;
 		}
 	}
@@ -204,21 +202,19 @@ function detectPlainTextTag(text: string, aiAgentName: string): boolean {
 function stripLeadingTag(text: string, aiAgentName: string): string {
 	let cleaned = text.trim();
 
-	// Remove @ai or /ai at start
-	cleaned = cleaned.replace(REMOVE_TAG_REGEX, "").trim();
-
 	// Remove @AgentName at start (best-effort, supports spaces)
 	if (cleaned.startsWith("@")) {
 		const normalizedAgentName = normalizeName(aiAgentName);
 		if (normalizedAgentName) {
+			const normalizedAgentNoSpace = normalizedAgentName.replace(/\s+/g, "");
 			const words = cleaned.slice(1).split(/\s+/);
 			const agentWordCount = aiAgentName.trim().split(/\s+/).length;
-			const candidate = words.slice(0, agentWordCount).join(" ");
-			const normalizedCandidate = normalizeName(candidate);
+			const leadingCandidate = words.slice(0, agentWordCount).join(" ");
+			const normalizedLeadingCandidate = normalizeName(leadingCandidate);
 			if (
-				normalizedCandidate === normalizedAgentName ||
-				normalizedCandidate.replace(/\s+/g, "") ===
-					normalizedAgentName.replace(/\s+/g, "")
+				normalizedLeadingCandidate === normalizedAgentName ||
+				normalizedLeadingCandidate.replace(/\s+/g, "") ===
+					normalizedAgentNoSpace
 			) {
 				cleaned = words.slice(agentWordCount).join(" ").trim();
 			}

@@ -204,7 +204,7 @@ The AI agent processes messages through a 5-step pipeline:
 
 **Decision Factors**:
 
-- Explicit tags via markdown mentions `[@Name](mention:ai-agent:ID)` or plain-text `@ai`/`@Name`
+- Explicit tags via markdown mentions `[@Name](mention:ai-agent:ID)` or plain-text `@AgentName`
 - Human agent activity (recent replies, assignments, idle window)
 - Visitor burst detection (multiple messages in a row)
 - Private vs public visibility (private triggers are background-only)
@@ -807,7 +807,7 @@ if (shouldCheckNewFactor(input)) {
 1. Check agent is active: `aiAgent.isActive`
 2. Check for human activity: Recent human messages?
 3. Check escalation status: Is conversation escalated but not handled?
-4. Check explicit tagging format (markdown mention or `@ai`)
+4. Check explicit tagging format (markdown mention or `@AgentName`)
 
 **Duplicate messages**:
 
@@ -902,7 +902,7 @@ AI can be explicitly tagged using markdown mention format:
 [@Agent Name](mention:ai-agent:AGENT_ID)
 ```
 
-Plain text `@ai` or `@AgentName` is accepted as a fallback for non-markdown channels.
+Plain text `@AgentName` is accepted as a fallback for non-markdown channels.
 
 If the tag appears in a private message, the AI responds privately only.
 

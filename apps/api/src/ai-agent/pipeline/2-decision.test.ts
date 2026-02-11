@@ -125,7 +125,7 @@ describe("decide", () => {
 
 	it("still responds when explicitly tagged, even for short acknowledgements", async () => {
 		const { decide } = await modulePromise;
-		const trigger = visitorMessage("@ai thanks", { messageId: "msg-tagged" });
+		const trigger = visitorMessage("@coss thanks", { messageId: "msg-tagged" });
 		const input = buildInput({
 			conversationHistory: [trigger],
 			triggerMessage: trigger,
@@ -140,7 +140,7 @@ describe("decide", () => {
 	it("keeps private tagged teammate commands in command mode", async () => {
 		const { decide } = await modulePromise;
 		const trigger = visitorMessage(
-			"@ai tell the visitor we've shipped the fix",
+			"@coss tell the visitor we've shipped the fix",
 			{
 				messageId: "msg-private-tag",
 				senderType: "human_agent",
@@ -159,6 +159,41 @@ describe("decide", () => {
 		expect(result.mode).toBe("respond_to_command");
 		expect(result.humanCommand).toContain("tell the visitor");
 		expect(runSmartDecisionMock).toHaveBeenCalledTimes(0);
+	});
+
+	it("does not treat @ai alias as explicit tag anymore", async () => {
+		const { decide } = await modulePromise;
+		const trigger = visitorMessage("@ai thanks", { messageId: "msg-ai-alias" });
+		const input = buildInput({
+			conversationHistory: [trigger],
+			triggerMessage: trigger,
+		});
+
+		const result = await decide(input as never);
+
+		expect(result.shouldAct).toBe(false);
+		expect(result.mode).toBe("background_only");
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not false-positive on mentions that include AI in another name", async () => {
+		const { decide } = await modulePromise;
+		const trigger = visitorMessage(
+			"Hey @AI Studio Team yes, it's updated (it updates automatically when the doc changes!)",
+			{ messageId: "msg-ai-studio-team" }
+		);
+		const input = buildInput({
+			conversationHistory: [trigger],
+			triggerMessage: trigger,
+		});
+
+		const result = await decide(input as never);
+
+		expect(result.shouldAct).toBe(false);
+		expect(result.mode).toBe("background_only");
+		expect(result.reason).toContain("Smart decision");
+		expect(runSmartDecisionMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("routes untagged public teammate messages to smart decision", async () => {

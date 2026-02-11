@@ -1,224 +1,85 @@
-# Findings: Inbox Analytics Audit
+# Findings: Analytics Migration to Tinybird
 
-## Summary
+## Current System Architecture
 
-The inbox analytics feature has **a critical cache key collision bug** that causes data from different time periods to be mixed up and incorrectly displayed.
+### Inbox Analytics (`apps/web/src/components/inbox-analytics/`)
+- **5 metrics**: Median Response Time, Median Resolution Time, % Handled by AI, Satisfaction Index, Unique Visitors
+- **Satisfaction Index** = weighted composite: ratings (40%) + sentiment (25%) + response_time (20%) + resolution_rate (15%)
+- **Data hook**: `useInboxAnalytics` -> tRPC `conversation.getInboxAnalytics`
+- **Backend**: 7 parallel PostgreSQL queries with `percentile_cont`, `EXTRACT(EPOCH)`, distinct counts
+- **Currently hardcoded** to `websiteSlug="cossistant"` only
+- **Stale time**: 5 min, refetch: 5 min
 
----
+### Online Presence (`apps/api/src/services/presence.ts`)
+- Redis sorted sets + hash profiles
+- Windows: online=10min, away=30min, TTL=1hr
+- Stores: id, status, lastSeenAt, name, email, image, city/region/country, lat/lng, contactId
+- tRPC: `visitor.listOnline` (polls every 15s, stale 5s)
+- **Functions**: `markVisitorPresence()`, `markUserPresence()`, `listOnlineVisitors()`
 
-## Critical Bug: Cache Tag Collision
+### Visitor Schema (PostgreSQL)
+- 30+ fields: browser/device (10), location (7 incl lat/lng), preferences (3), relationships (4), metadata (6)
+- Location from edge headers: Cloudflare `cf-ip*`, Vercel `x-vercel-ip-*`
+- Existing `packages/location` handles geo resolution
 
-### Evidence
+### Feedback Table
+- Rating (1-5), comment, trigger, source
+- Used by analytics for satisfaction index (40% weight)
 
-In `apps/api/src/db/queries/inbox-analytics.ts`:
+## Key Files
 
-```ts
-export async function getInboxAnalyticsMetrics(
-  db: Database,
-  params: {
-    organizationId: string;
-    websiteId: string;
-    range: AnalyticsRange;  // <-- Different for current vs previous
-    rangeDays: InboxAnalyticsRangeDays;  // <-- Same for both!
-  }
-): Promise<InboxAnalyticsMetrics> {
-  const { organizationId, websiteId, range, rangeDays } = params;
-  const cacheOptions = {
-    tag: getInboxAnalyticsCacheTag(websiteId, rangeDays),  // PROBLEM: Same tag for both calls!
-    config: { ex: CACHE_TTL_SECONDS },
-  };
-```
+| File | Purpose |
+|------|---------|
+| `apps/web/src/components/inbox-analytics/` | Frontend analytics display |
+| `apps/web/src/data/use-inbox-analytics.tsx` | React hook for analytics |
+| `apps/api/src/db/queries/inbox-analytics.ts` | 7 parallel PG queries |
+| `apps/api/src/trpc/routers/conversation.ts` L113-179 | tRPC analytics endpoint |
+| `apps/api/src/services/presence.ts` | Redis presence tracking |
+| `apps/api/src/trpc/routers/visitor.ts` L19-44 | tRPC online visitors |
+| `apps/web/src/contexts/visitor-presence.tsx` | Frontend presence context |
+| `apps/api/src/db/schema/website.ts` L199-283 | Visitor DB schema |
+| `apps/api/src/rest/routers/visitor.ts` | Visitor REST endpoints |
+| `packages/types/src/trpc/conversation.ts` | Analytics type schemas |
+| `packages/types/src/trpc/visitor.ts` | Presence type schemas |
 
-In `apps/api/src/trpc/routers/conversation.ts`:
+## Tinybird Research
 
-```ts
-const [current, previous] = await Promise.all([
-  getInboxAnalyticsMetrics(db, {
-    organizationId: websiteData.organizationId,
-    websiteId: websiteData.id,
-    rangeDays,
-    range: {
-      start: currentStart.toISOString(),  // e.g., 7 days ago
-      end: currentEnd.toISOString(),      // e.g., now
-    },
-  }),
-  getInboxAnalyticsMetrics(db, {
-    organizationId: websiteData.organizationId,
-    websiteId: websiteData.id,
-    rangeDays,
-    range: {
-      start: previousStart.toISOString(),  // e.g., 14 days ago
-      end: previousEnd.toISOString(),      // e.g., 7 days ago
-    },
-  }),
-]);
-```
+### Cost-Effective Approach
+- **Ingestion is FREE** (Events API doesn't consume vCPU)
+- **Queries cost**: Free plan = 1,000/day, $49 Developer = unlimited
+- **Keep cheap**: proper sorting keys, LowCardinality types, consolidated endpoints, caching
+- **TTL**: `ENGINE_TTL` auto-deletes old rows. Set to max tier (90d), enforce per-tier at query time.
 
-### What Happens
+### Architecture Decisions
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Ingestion | Events API via server-side proxy | APPEND tokens can't be exposed client-side |
+| Client-side | No direct ingestion | Security: no write tokens in browser |
+| Retention | Single datasource, TTL=90d | Simple; filter to 21d at query time for free tier |
+| Geo resolution | In Hono API, pre-resolved | Already have `packages/location`; ClickHouse GeoIP is complex |
+| Live presence | Keep Redis/WS | Tinybird isn't sub-second; use TB for "active in last 5min" aggregate |
+| Frontend reads | tRPC proxy initially | Simpler; JWT direct access later for perf |
+| Materialized views | Start without | Add when queries are slow (>5s p95) |
+| Schema | Flat, typed, LowCardinality | Avoid JSON blobs; cheap queries |
 
-1. First request calls `getInboxAnalyticsMetrics` for **current period** (last 7 days)
-2. All 5 queries run and cache with tag `inbox-analytics:websiteId:7`
-3. Second request (in parallel) calls `getInboxAnalyticsMetrics` for **previous period** (7-14 days ago)
-4. Cache lookup finds tag `inbox-analytics:websiteId:7` **already exists**
-5. Returns **cached data from current period** for previous period!
+### What Moves to Tinybird vs What Stays
+| Data | Destination | Retention | Reason |
+|------|-------------|-----------|--------|
+| Visitor "seen" events | Tinybird `visitor_events` | 30d (all tiers) | High volume, operational |
+| Page views | Tinybird `visitor_events` | 30d (all tiers) | High volume, operational |
+| Conversation lifecycle | Tinybird `conversation_metrics` | Indefinite paid / 21d free | Business KPIs |
+| Live presence (online/away) | Redis (stays) | TTL 1hr | Sub-second requirement |
+| Visitor profiles | PostgreSQL (stays) | Indefinite | Relational, low-write |
+| `lastSeenAt` | PostgreSQL visitor table (stays) | Indefinite | Persistent trace post-purge |
+| Feedback/ratings | PostgreSQL (stays) | Indefinite | Low volume, relational |
+| Satisfaction Index | Computed from TB + PG | N/A | Hybrid: TB for time, PG for ratings/sentiment |
 
-This explains:
-- **Identical median times**: Same cached data returned for both periods
-- **Wrong satisfaction index** (34,528/100): Possibly `uniqueVisitors` count being returned in place of satisfaction
-- **Same value appearing twice** (34,528): Cache collision returning same values
-
----
-
-## Analysis of Each Cached Query
-
-The function runs 5 separate queries in parallel, all using the **same cache tag**:
-
-| Query | Purpose | Cache Key (Current) |
-|-------|---------|---------------------|
-| `medianResponse` | Median first response time | `inbox-analytics:ws:7` |
-| `medianResolution` | Median resolution time | `inbox-analytics:ws:7` |
-| `resolutionCounts` | AI handled rate | `inbox-analytics:ws:7` |
-| `satisfaction` | Satisfaction index | `inbox-analytics:ws:7` |
-| `uniqueVisitors` | Unique visitor count | `inbox-analytics:ws:7` |
-
-**Problem**: All 5 queries use the same tag. When Drizzle caches by tag, it stores the **query result** keyed by tag. If multiple queries use the same tag, they may overwrite or retrieve each other's results.
-
----
-
-## Cache Implementation Analysis
-
-Looking at `apps/api/src/db/cache/bun-redis-cache.ts`:
-
-```ts
-override async get(
-  key: string,
-  tables: string[],
-  isTag = false,
-  isAutoInvalidate?: boolean
-): Promise<any[] | undefined> {
-  // ...
-  if (isTag) {
-    const result = (await this.redis.eval(
-      getByTagScript,
-      1,
-      BunRedisCache.tagsMapKey,
-      key  // <-- This is the tag
-    )) as string | null;
-    return this.deserialize(result);
-  }
-  // ...
-}
-```
-
-When using tags, Drizzle stores in Redis:
-1. A mapping from tag → composite table key
-2. The value in the composite table hash
-
-If all 5 queries use the same tag, they're competing for the same cache slot!
-
----
-
-## Why Data Sometimes Appears, Sometimes Doesn't
-
-Cache TTL is 300 seconds (5 minutes). The behavior depends on:
-
-1. **First request after cache expires**: Fetches fresh data (may be correct)
-2. **Subsequent requests within TTL**: Returns cached (potentially wrong) data
-3. **Race conditions**: Parallel queries may cache in unpredictable order
-
----
-
-## Recommended Fix
-
-### Option A: Include Date Range in Cache Tag (Recommended)
-
-```ts
-// In inbox-analytics.ts
-const cacheOptions = {
-  tag: `${getInboxAnalyticsCacheTag(websiteId, rangeDays)}:${range.start}:${range.end}`,
-  config: { ex: CACHE_TTL_SECONDS },
-};
-```
-
-### Option B: Use Unique Tags Per Query Type
-
-```ts
-const medianResponseCache = { tag: `${baseTag}:medianResponse:${range.start}` };
-const medianResolutionCache = { tag: `${baseTag}:medianResolution:${range.start}` };
-// etc.
-```
-
-### Option C: Remove Caching for Analytics
-
-Analytics are aggregate queries with good indexes. The cache adds complexity and bugs. Consider:
-
-```ts
-// Remove .$withCache() calls entirely for analytics
-const [medianResponse, ...] = await Promise.all([
-  db.select(...).from(conversation).where(...),  // No cache
-  // ...
-]);
-```
-
----
-
-## Performance Considerations
-
-Current indexes support these queries well:
-- `conversation_org_website_started_idx`
-- `conversation_org_website_first_response_idx`
-- `conversation_org_website_resolved_idx`
-- `conversation_org_website_rating_idx`
-
-With proper indexes, these aggregate queries should be fast (< 100ms) even without caching. The 5-minute cache TTL suggests performance isn't critical.
-
----
-
-## Additional Observations
-
-### 1. `invalidateInboxAnalyticsCacheForWebsite` Never Called
-
-The function exists but is never used in the codebase:
-
-```ts
-export async function invalidateInboxAnalyticsCacheForWebsite(
-  db: Database,
-  websiteId: string
-): Promise<void> {
-  const tags = INBOX_ANALYTICS_RANGE_DAYS.map((range) =>
-    getInboxAnalyticsCacheTag(websiteId, range)
-  );
-  await db.$cache.invalidate({ tags });
-}
-```
-
-This should be called when:
-- A conversation is resolved
-- A conversation receives a rating
-- A visitor is created
-
-### 2. No Table Auto-Invalidation
-
-Using custom tags disables automatic table-based invalidation. The cache won't clear when the `conversation` or `visitor` tables are mutated.
-
-### 3. Feature Limited to "cossistant" Website
-
-```ts
-if (input.websiteSlug !== "cossistant") {
-  throw new TRPCError({
-    code: "FORBIDDEN",
-    message: "Analytics are not enabled for this website",
-  });
-}
-```
-
-And in the frontend:
-```ts
-const query = useInboxAnalytics({
-  websiteSlug,
-  rangeDays,
-  enabled: websiteSlug === "cossistant",
-});
-```
-
-This is intentional (beta/testing) but should be documented.
+### Event Types to Track in Tinybird
+- `seen` -- visitor heartbeat (presence substitute for analytics)
+- `page_view` -- page visited (extensible, not MVP)
+- `conversation_started` -- new conversation opened
+- `conversation_resolved` -- conversation marked resolved
+- `first_response` -- first agent/AI response sent
+- `ai_resolved` -- conversation resolved by AI without escalation
+- `escalated` -- AI handed off to human
+- `feedback_submitted` -- visitor submitted feedback

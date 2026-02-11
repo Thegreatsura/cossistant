@@ -119,67 +119,56 @@ export function TimelineMessageItem({
 										}
 									)}
 								>
-									<TooltipOnHover
-										content={
-											isPrivate
-												? "This message is only visible to you, your team and AI — not the visitor"
-												: undefined
-										}
-										delay={300}
-										side="bottom"
-									>
-										{isPrivate ? (
-											<div
-												className={cn(
-													"flex min-w-0 flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 border-dashed bg-cossistant-yellow-100/30 px-3 py-2 dark:border-cossistant-yellow-600/20 dark:bg-cossistant-yellow-100/5",
-													messageBubbleWidthClassName,
-													{
-														"rounded-br-[2px]":
-															isLast && isSentByViewer && !hasAttachments,
-														"rounded-bl-[2px]":
-															isLast && !isSentByViewer && !hasAttachments,
-													}
-												)}
-											>
-												<span className="font-medium text-cossistant-yellow-700 text-xs opacity-50 dark:text-cossistant-yellow-600">
-													NOTE
-												</span>
-												<TimelineItemContent
-													className="block min-w-0 max-w-full break-words text-foreground text-sm"
-													markdownRenderers={markdownRenderers}
-													renderMarkdown
-													text={item.text}
-												/>
-												<span className="mt-6 flex items-center gap-1 font-medium text-cossistant-yellow-700 text-xs opacity-40 dark:text-cossistant-yellow-600">
-													<Icon
-														className="mb-[1px] size-3 shrink-0"
-														name="eye-off"
-													/>
-													Not visible to visitor
-												</span>
-											</div>
-										) : (
+									{isPrivate ? (
+										<div
+											className={cn(
+												"flex min-w-0 flex-col gap-1 rounded-lg border border-cossistant-yellow-600/40 border-dashed bg-cossistant-yellow-100/30 px-3 py-2 dark:border-cossistant-yellow-600/20 dark:bg-cossistant-yellow-100/5",
+												messageBubbleWidthClassName,
+												{
+													"rounded-br-[2px]":
+														isLast && isSentByViewer && !hasAttachments,
+													"rounded-bl-[2px]":
+														isLast && !isSentByViewer && !hasAttachments,
+												}
+											)}
+										>
+											<span className="font-medium text-cossistant-yellow-700 text-xs opacity-50 dark:text-cossistant-yellow-600">
+												NOTE
+											</span>
 											<TimelineItemContent
-												className={cn(
-													"block min-w-0 break-words rounded-lg px-3 py-2 text-sm",
-													messageBubbleWidthClassName,
-													{
-														"bg-background-300 text-foreground dark:bg-background-600":
-															!isSentByViewer,
-														"bg-primary text-primary-foreground":
-															isSentByViewer,
-														"rounded-br-[2px]":
-															isLast && isSentByViewer && !hasAttachments,
-														"rounded-bl-[2px]":
-															isLast && !isSentByViewer && !hasAttachments,
-													}
-												)}
+												className="block min-w-0 max-w-full break-words text-foreground text-sm"
 												markdownRenderers={markdownRenderers}
 												renderMarkdown
 												text={item.text}
 											/>
-										)}
-									</TooltipOnHover>
+											<span className="mt-6 flex items-center gap-1 font-medium text-cossistant-yellow-700 text-xs opacity-40 dark:text-cossistant-yellow-600">
+												<Icon
+													className="mb-[1px] size-3 shrink-0"
+													name="eye-off"
+												/>
+												Not visible to visitor
+											</span>
+										</div>
+									) : (
+										<TimelineItemContent
+											className={cn(
+												"block min-w-0 break-words rounded-lg px-3 py-2 text-sm",
+												messageBubbleWidthClassName,
+												{
+													"bg-background-300 text-foreground dark:bg-background-600":
+														!isSentByViewer,
+													"bg-primary text-primary-foreground": isSentByViewer,
+													"rounded-br-[2px]":
+														isLast && isSentByViewer && !hasAttachments,
+													"rounded-bl-[2px]":
+														isLast && !isSentByViewer && !hasAttachments,
+												}
+											)}
+											markdownRenderers={markdownRenderers}
+											renderMarkdown
+											text={item.text}
+										/>
+									)}
 								</div>
 							)}
 
