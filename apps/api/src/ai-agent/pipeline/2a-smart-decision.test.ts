@@ -189,14 +189,98 @@ describe("runSmartDecision", () => {
 		expect(triggerMentions.length).toBe(1);
 	});
 
-	it("falls back to observe on timeout", async () => {
+	it("retries with fallback model on primary timeout", async () => {
 		const { runSmartDecision } = await modulePromise;
 		const timeoutError = new Error("aborted");
 		timeoutError.name = "AbortError";
 		generateTextMock.mockRejectedValueOnce(timeoutError);
+		generateTextMock.mockResolvedValueOnce({
+			output: {
+				intent: "respond",
+				reasoning: "Visitor asked a billing question",
+				confidence: "high",
+			},
+		});
 
 		const trigger = message("How does billing work?", {
-			messageId: "msg-visitor-timeout",
+			messageId: "msg-visitor-retry",
+			senderType: "visitor",
+		});
+		const input = buildInput({
+			triggerMessage: trigger,
+			conversationHistory: [trigger],
+		});
+
+		const result = await runSmartDecision(input as never);
+
+		expect(result.intent).toBe("respond");
+		expect(result.source).toBe("model");
+		expect(generateTextMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("retries with fallback model on primary error", async () => {
+		const { runSmartDecision } = await modulePromise;
+		generateTextMock.mockRejectedValueOnce(new Error("model unavailable"));
+		generateTextMock.mockResolvedValueOnce({
+			output: {
+				intent: "respond",
+				reasoning: "Visitor needs help",
+				confidence: "high",
+			},
+		});
+
+		const trigger = message("How does billing work?", {
+			messageId: "msg-visitor-error-retry",
+			senderType: "visitor",
+		});
+		const input = buildInput({
+			triggerMessage: trigger,
+			conversationHistory: [trigger],
+		});
+
+		const result = await runSmartDecision(input as never);
+
+		expect(result.intent).toBe("respond");
+		expect(result.source).toBe("model");
+		expect(generateTextMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("retries with fallback model on primary empty output", async () => {
+		const { runSmartDecision } = await modulePromise;
+		generateTextMock.mockResolvedValueOnce({ output: null });
+		generateTextMock.mockResolvedValueOnce({
+			output: {
+				intent: "respond",
+				reasoning: "Visitor needs help",
+				confidence: "high",
+			},
+		});
+
+		const trigger = message("How does billing work?", {
+			messageId: "msg-visitor-empty-retry",
+			senderType: "visitor",
+		});
+		const input = buildInput({
+			triggerMessage: trigger,
+			conversationHistory: [trigger],
+		});
+
+		const result = await runSmartDecision(input as never);
+
+		expect(result.intent).toBe("respond");
+		expect(result.source).toBe("model");
+		expect(generateTextMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("falls back to observe only when all models fail", async () => {
+		const { runSmartDecision } = await modulePromise;
+		const timeoutError = new Error("aborted");
+		timeoutError.name = "AbortError";
+		generateTextMock.mockRejectedValueOnce(timeoutError);
+		generateTextMock.mockRejectedValueOnce(timeoutError);
+
+		const trigger = message("How does billing work?", {
+			messageId: "msg-visitor-all-fail",
 			senderType: "visitor",
 		});
 		const input = buildInput({
@@ -209,36 +293,16 @@ describe("runSmartDecision", () => {
 		expect(result.intent).toBe("observe");
 		expect(result.source).toBe("fallback");
 		expect(result.ruleId).toBe("timeout_observe");
+		expect(generateTextMock).toHaveBeenCalledTimes(2);
 	});
 
-	it("falls back to observe on model error", async () => {
+	it("falls back to observe when all models return empty output", async () => {
 		const { runSmartDecision } = await modulePromise;
-		generateTextMock.mockRejectedValueOnce(new Error("model unavailable"));
+		generateTextMock.mockResolvedValueOnce({ output: null });
+		generateTextMock.mockResolvedValueOnce({ output: null });
 
 		const trigger = message("How does billing work?", {
-			messageId: "msg-visitor-error",
-			senderType: "visitor",
-		});
-		const input = buildInput({
-			triggerMessage: trigger,
-			conversationHistory: [trigger],
-		});
-
-		const result = await runSmartDecision(input as never);
-
-		expect(result.intent).toBe("observe");
-		expect(result.source).toBe("fallback");
-		expect(result.ruleId).toBe("error_observe");
-	});
-
-	it("falls back to observe on empty model output", async () => {
-		const { runSmartDecision } = await modulePromise;
-		generateTextMock.mockResolvedValueOnce({
-			output: null,
-		});
-
-		const trigger = message("How does billing work?", {
-			messageId: "msg-visitor-empty",
+			messageId: "msg-visitor-all-empty",
 			senderType: "visitor",
 		});
 		const input = buildInput({

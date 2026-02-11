@@ -21,7 +21,6 @@ import type { RoleAwareMessage } from "../context/conversation";
 import type { ConversationState } from "../context/state";
 
 const HUMAN_ACTIVE_WINDOW_MS = 120_000;
-const DECISION_TIMEOUT_MS = 2000;
 const MESSAGE_CHAR_LIMIT = 220;
 const MAX_MESSAGES = 10;
 
@@ -371,7 +370,8 @@ Decision policy:
 - Priority 1: protect human conversation continuity; if a teammate is actively handling and AI value is unclear, choose observe.
 - Priority 2: resolve clear unmet visitor need; choose respond for unanswered questions or explicit help requests.
 - Priority 3: honor teammate intent; choose respond for clear execution commands and assist_team for internal analysis/handoff.
-- Prefer observe for acknowledgements, greetings, or banter without a clear need.
+- For greetings (hi, hello, hey): prefer respond when humanActive=false — the AI should engage and start the conversation. When humanActive=true, prefer observe.
+- Prefer observe for short acknowledgements (ok, thanks, got it) or banter without a clear need.
 - If uncertain, choose observe.
 
 Signals:
@@ -492,9 +492,13 @@ function logDecision(params: {
 }
 
 /**
- * Model for decision - use fast, cheap model
+ * Models for decision, tried sequentially.
+ * Primary: fast & cheap. Fallback: proven stable (used in continuation gate).
  */
-const DECISION_MODEL = "google/gemini-2.5-flash";
+const DECISION_MODELS = [
+	{ id: "google/gemini-2.5-flash", timeoutMs: 4000 },
+	{ id: "openai/gpt-4o-mini", timeoutMs: 4000 },
+];
 
 /**
  * Run smart decision to determine if AI should respond
@@ -524,95 +528,120 @@ export async function runSmartDecision(
 		return ruleDecision;
 	}
 
-	const abortController = new AbortController();
-	const timeout = setTimeout(() => {
-		abortController.abort();
-	}, DECISION_TIMEOUT_MS);
+	const prompt = buildDecisionPrompt(input, signals);
 
-	try {
-		const prompt = buildDecisionPrompt(input, signals);
+	// Try each model sequentially until one succeeds
+	for (let i = 0; i < DECISION_MODELS.length; i++) {
+		const modelConfig = DECISION_MODELS[i];
+		const isLastModel = i === DECISION_MODELS.length - 1;
+		const abortController = new AbortController();
+		const timeout = setTimeout(() => {
+			abortController.abort();
+		}, modelConfig.timeoutMs);
 
-		// Use Output.object for structured response (not tools)
-		const result = await generateText({
-			model: createModelRaw(DECISION_MODEL),
-			output: Output.object({
-				schema: decisionSchema,
-			}),
-			prompt, // Use prompt directly, not messages array
-			temperature: 0, // Deterministic decisions
-			abortSignal: abortController.signal,
-		});
+		try {
+			const result = await generateText({
+				model: createModelRaw(modelConfig.id),
+				output: Output.object({
+					schema: decisionSchema,
+				}),
+				prompt,
+				temperature: 0,
+				abortSignal: abortController.signal,
+			});
 
-		// Get the structured output
-		const decision = result.output;
+			const decision = result.output;
 
-		if (!decision) {
+			if (!decision) {
+				// Empty output — try next model if available
+				if (!isLastModel) {
+					console.log(
+						`[ai-agent:smart-decision] conv=${convId} | model=${modelConfig.id} returned empty output, trying next model`
+					);
+					continue;
+				}
+
+				const fallback = observeDecision({
+					reasoning: "Smart decision returned no output, defaulting to observe",
+					confidence: "low",
+					source: "fallback",
+					ruleId: "empty_output_observe",
+				});
+				logDecision({ convId, result: fallback, signals });
+				return fallback;
+			}
+
+			const modelDecision: SmartDecisionResult = {
+				intent: decision.intent,
+				reasoning: decision.reasoning,
+				confidence: decision.confidence,
+				source: "model",
+			};
+
+			if (i > 0) {
+				console.log(
+					`[ai-agent:smart-decision] conv=${convId} | succeeded with fallback model=${modelConfig.id} (attempt ${i + 1})`
+				);
+			}
+
+			const finalDecision = shouldClampModelRespond({
+				modelDecision,
+				signals,
+			})
+				? observeDecision({
+						reasoning:
+							"Conservative clamp applied: low-confidence response during active human handling.",
+						confidence: "medium",
+						source: "rule",
+						ruleId: "post_model_human_active_low_confidence_observe",
+					})
+				: modelDecision;
+
+			logDecision({ convId, result: finalDecision, signals });
+
+			if (result.usage) {
+				console.log(
+					`[ai-agent:smart-decision] conv=${convId} | model=${modelConfig.id} tokens: in=${result.usage.inputTokens} out=${result.usage.outputTokens}`
+				);
+			}
+
+			return finalDecision;
+		} catch (error) {
+			const isTimeout = error instanceof Error && error.name === "AbortError";
+			const errorType = isTimeout ? "timeout" : "error";
+
+			if (!isLastModel) {
+				console.log(
+					`[ai-agent:smart-decision] conv=${convId} | model=${modelConfig.id} ${errorType}, trying next model`
+				);
+				continue;
+			}
+
+			// All models exhausted
 			const fallback = observeDecision({
-				reasoning: "Smart decision returned no output, defaulting to observe",
+				reasoning: isTimeout
+					? "All decision models timed out, defaulting to observe"
+					: "All decision models failed, defaulting to observe",
 				confidence: "low",
 				source: "fallback",
-				ruleId: "empty_output_observe",
+				ruleId: isTimeout ? "timeout_observe" : "error_observe",
 			});
-			logDecision({
-				convId,
-				result: fallback,
-				signals,
-			});
+			logDecision({ convId, result: fallback, signals });
 			return fallback;
+		} finally {
+			clearTimeout(timeout);
 		}
-
-		const modelDecision: SmartDecisionResult = {
-			intent: decision.intent,
-			reasoning: decision.reasoning,
-			confidence: decision.confidence,
-			source: "model",
-		};
-
-		const finalDecision = shouldClampModelRespond({
-			modelDecision,
-			signals,
-		})
-			? observeDecision({
-					reasoning:
-						"Conservative clamp applied: low-confidence response during active human handling.",
-					confidence: "medium",
-					source: "rule",
-					ruleId: "post_model_human_active_low_confidence_observe",
-				})
-			: modelDecision;
-
-		logDecision({
-			convId,
-			result: finalDecision,
-			signals,
-		});
-
-		if (result.usage) {
-			console.log(
-				`[ai-agent:smart-decision] conv=${convId} | tokens: in=${result.usage.inputTokens} out=${result.usage.outputTokens}`
-			);
-		}
-
-		return finalDecision;
-	} catch (error) {
-		const isTimeout = error instanceof Error && error.name === "AbortError";
-		const fallback = observeDecision({
-			reasoning: isTimeout
-				? "Smart decision timed out, defaulting to observe"
-				: "Smart decision failed, defaulting to observe",
-			confidence: "low",
-			source: "fallback",
-			ruleId: isTimeout ? "timeout_observe" : "error_observe",
-		});
-		logDecision({
-			convId,
-			result: fallback,
-			signals,
-		});
-		return fallback;
-	} finally {
-		clearTimeout(timeout);
 	}
+
+	// Should never reach here, but TypeScript needs it
+	const fallback = observeDecision({
+		reasoning: "No decision models configured",
+		confidence: "low",
+		source: "fallback",
+		ruleId: "no_models_observe",
+	});
+	logDecision({ convId, result: fallback, signals });
+	return fallback;
 }
 
 /**
