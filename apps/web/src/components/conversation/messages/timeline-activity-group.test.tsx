@@ -67,6 +67,7 @@ function createToolItem({
 	text,
 	userId = "user-1",
 	state = "result",
+	output,
 }: {
 	id: string;
 	createdAt: string;
@@ -74,6 +75,7 @@ function createToolItem({
 	text: string;
 	userId?: string | null;
 	state?: "partial" | "result" | "error";
+	output?: unknown;
 }): TimelineItem {
 	return createTimelineItem({
 		id,
@@ -89,6 +91,7 @@ function createToolItem({
 				toolName,
 				input: {},
 				state,
+				output,
 			},
 		],
 	});
@@ -150,6 +153,10 @@ function renderActivityGroup(
 	);
 }
 
+function countOccurrences(html: string, pattern: string): number {
+	return html.split(pattern).length - 1;
+}
+
 describe("TimelineActivityGroup", () => {
 	it("shows sender avatar for viewer-authored activity groups", () => {
 		const group = createActivityGroup([
@@ -167,7 +174,7 @@ describe("TimelineActivityGroup", () => {
 		expect(html).not.toContain("mb-2 px-1 text-muted-foreground text-xs");
 	});
 
-	it("renders per-row bullet icons for multi-row activity groups", () => {
+	it("renders tree prefixes for multi-row activity groups in normal mode", () => {
 		const group = createActivityGroup([
 			createEventItem({
 				id: "event-1",
@@ -184,13 +191,80 @@ describe("TimelineActivityGroup", () => {
 
 		const html = renderActivityGroup(group);
 
-		expect(html).toContain('data-activity-bullet="event"');
-		expect(html).toContain('data-activity-bullet="tool"');
-		expect(html).toContain('data-event-action-icon="participant_joined"');
-		expect(html).toContain('data-tool-action-icon="updateSentiment"');
+		expect(html).toContain('data-activity-tree-prefix="event"');
+		expect(html).toContain('data-activity-tree-prefix="tool"');
+		expect(
+			countOccurrences(html, 'data-activity-tree-continuation="true"')
+		).toBe(1);
+		expect(html).toContain("Anthony Riera");
+		expect(html).not.toContain("data-activity-bullet=");
 	});
 
-	it("does not render row-level bullet icons for single-row activity groups", () => {
+	it("renders tree continuation markers only for non-last tree rows", () => {
+		const group = createActivityGroup([
+			createEventItem({
+				id: "event-1",
+				createdAt: "2026-01-01T10:00:00.000Z",
+			}),
+			createToolItem({
+				id: "tool-1",
+				createdAt: "2026-01-01T10:01:00.000Z",
+				toolName: "updateSentiment",
+				text: "Updated sentiment to positive",
+			}),
+			createEventItem({
+				id: "event-2",
+				createdAt: "2026-01-01T10:02:00.000Z",
+				eventType: "status_changed",
+			}),
+		]);
+
+		const html = renderActivityGroup(group);
+
+		expect(countOccurrences(html, "data-activity-tree-prefix=")).toBe(3);
+		expect(
+			countOccurrences(html, 'data-activity-tree-continuation="true"')
+		).toBe(2);
+	});
+
+	it("keeps tree continuation visible when tool rows render source detail pills", () => {
+		const group = createActivityGroup([
+			createToolItem({
+				id: "tool-1",
+				createdAt: "2026-01-01T10:00:00.000Z",
+				toolName: "searchKnowledgeBase",
+				text: "Found 6 sources",
+				output: {
+					success: true,
+					data: {
+						totalFound: 6,
+						articles: [
+							{ title: "A", sourceUrl: "https://example.com/a" },
+							{ title: "B", sourceUrl: "https://example.com/b" },
+							{ title: "C", sourceUrl: "https://example.com/c" },
+							{ title: "D", sourceUrl: "https://example.com/d" },
+							{ title: "E", sourceUrl: "https://example.com/e" },
+							{ title: "F", sourceUrl: "https://example.com/f" },
+						],
+					},
+				},
+			}),
+			createEventItem({
+				id: "event-1",
+				createdAt: "2026-01-01T10:01:00.000Z",
+			}),
+		]);
+
+		const html = renderActivityGroup(group);
+
+		expect(html).toContain('data-source-pill="true"');
+		expect(html).toContain('data-source-overflow="2"');
+		expect(
+			countOccurrences(html, 'data-activity-tree-continuation="true"')
+		).toBe(1);
+	});
+
+	it("renders single-tool activity groups as one compact line", () => {
 		const group = createActivityGroup([
 			createToolItem({
 				id: "tool-1",
@@ -202,9 +276,35 @@ describe("TimelineActivityGroup", () => {
 
 		const html = renderActivityGroup(group);
 
+		expect(html).toContain('data-activity-single-tool="true"');
+		expect(html).toContain("Anthony Riera Updated sentiment to positive");
+		expect(html).not.toContain("data-activity-tree-prefix=");
 		expect(html).not.toContain("data-activity-bullet=");
-		expect(html).not.toContain("data-tool-action-icon=");
-		expect(html).not.toContain("data-event-action-icon=");
+	});
+
+	it("keeps developer mode activity bullets and icons unchanged", () => {
+		const group = createActivityGroup([
+			createEventItem({
+				id: "event-1",
+				createdAt: "2026-01-01T10:00:00.000Z",
+				eventType: "participant_joined",
+			}),
+			createToolItem({
+				id: "tool-1",
+				createdAt: "2026-01-01T10:01:00.000Z",
+				toolName: "updateSentiment",
+				text: "Updated sentiment to positive",
+			}),
+		]);
+
+		const html = renderActivityGroup(group, true);
+
+		expect(html).toContain('data-activity-bullet="event"');
+		expect(html).toContain('data-activity-bullet="tool"');
+		expect(html).toContain('data-event-action-icon="participant_joined"');
+		expect(html).toContain('data-tool-action-icon="updateSentiment"');
+		expect(html).not.toContain("data-activity-tree-prefix=");
+		expect(html).not.toContain("data-activity-single-tool=");
 	});
 
 	it("hides non-customer-facing tools in non-developer mode", () => {

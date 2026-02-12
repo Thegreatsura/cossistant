@@ -10,10 +10,13 @@ import {
 	SettingsPage,
 	SettingsRow,
 } from "@/components/ui/layout/settings-layout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
 import { AIAgentForm } from "../ai-agent-form";
 import { DeleteAgentDialog } from "../delete-agent-dialog";
+import { BackgroundAnalysisForm } from "./behavior/background-analysis-form";
+import { VisitorContactForm } from "./behavior/visitor-contact-form";
 
 export default function AgentsPage() {
 	const website = useWebsite();
@@ -27,6 +30,16 @@ export default function AgentsPage() {
 			websiteSlug: website.slug,
 		})
 	);
+	const {
+		data: behaviorSettings,
+		isLoading: isLoadingBehaviorSettings,
+		isError: isBehaviorSettingsError,
+	} = useQuery({
+		...trpc.aiAgent.getBehaviorSettings.queryOptions({
+			websiteSlug: website.slug,
+		}),
+		enabled: Boolean(aiAgent?.onboardingCompletedAt),
+	});
 
 	// Redirect to create page if no agent exists OR onboarding not complete
 	useEffect(() => {
@@ -54,6 +67,56 @@ export default function AgentsPage() {
 						websiteSlug={website.slug}
 					/>
 				</SettingsRow>
+
+				{isLoadingBehaviorSettings ? (
+					<div className="space-y-8">
+						<SettingsRow
+							description="Loading behavior settings..."
+							title="Visitor Contact Policy"
+						>
+							<div className="space-y-3 p-4">
+								<Skeleton className="h-10 w-full" />
+								<Skeleton className="h-10 w-full" />
+								<Skeleton className="h-10 w-full" />
+							</div>
+						</SettingsRow>
+					</div>
+				) : isBehaviorSettingsError ? (
+					<SettingsRow
+						description="Policy controls for contact collection and background analysis."
+						title="Agent Policies"
+					>
+						<div className="p-4">
+							<p className="text-destructive text-sm">
+								Failed to load behavior settings.
+							</p>
+						</div>
+					</SettingsRow>
+				) : behaviorSettings ? (
+					<>
+						<SettingsRow
+							description="Control how and when the AI asks for visitor contact details."
+							title="Visitor Contact Policy"
+						>
+							<VisitorContactForm
+								aiAgentId={aiAgent.id}
+								initialData={behaviorSettings}
+								websiteSlug={website.slug}
+							/>
+						</SettingsRow>
+
+						<SettingsRow
+							description="Enable automatic background analysis that runs silently during conversations."
+							title="Background Analysis"
+						>
+							<BackgroundAnalysisForm
+								aiAgentId={aiAgent.id}
+								initialData={behaviorSettings}
+								websiteSlug={website.slug}
+							/>
+						</SettingsRow>
+					</>
+				) : null}
 
 				<SettingsRow
 					description="Permanently delete this AI agent and all associated data. This action cannot be undone."

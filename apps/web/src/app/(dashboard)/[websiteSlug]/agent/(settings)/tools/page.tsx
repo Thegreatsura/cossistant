@@ -2,10 +2,12 @@
 
 import type { GetCapabilitiesStudioResponse } from "@cossistant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
-import { buildBehaviorSettingsPatch } from "@/components/agents/skills/tools-studio-utils";
+import {
+	buildBehaviorSettingsPatch,
+	buildToolStudioSections,
+} from "@/components/agents/skills/tools-studio-utils";
 import { Badge } from "@/components/ui/badge";
 import { PageContent } from "@/components/ui/layout";
 import {
@@ -22,9 +24,9 @@ const TOOL_CATEGORY_LABELS: Record<
 	GetCapabilitiesStudioResponse["tools"][number]["category"],
 	string
 > = {
-	system: "System Tools",
+	system: "System",
 	messaging: "Messaging",
-	action: "Action Tools",
+	action: "Action",
 	context: "Context",
 	analysis: "Analysis",
 };
@@ -87,16 +89,10 @@ export default function ToolsPage() {
 		})
 	);
 
-	const groupedTools = useMemo(() => {
-		const tools = studio?.tools ?? [];
-		return tools.reduce<Record<string, typeof tools>>((accumulator, tool) => {
-			if (!accumulator[tool.category]) {
-				accumulator[tool.category] = [];
-			}
-			accumulator[tool.category].push(tool);
-			return accumulator;
-		}, {});
-	}, [studio?.tools]);
+	const toolSections = useMemo(
+		() => buildToolStudioSections(studio?.tools ?? []),
+		[studio?.tools]
+	);
 
 	if (!aiAgent || isLoadingAgent) {
 		return null;
@@ -152,19 +148,28 @@ export default function ToolsPage() {
 			<SettingsHeader>Tools</SettingsHeader>
 			<PageContent className="py-30">
 				<SettingsRow
-					description="Enable or disable capabilities and review always-on system tools."
+					description="Review always-on defaults, manage optional tools, and track custom tool availability."
 					title="Tools"
 				>
-					<div className="space-y-6 p-4">
-						{Object.entries(groupedTools).map(([category, tools]) => (
-							<div key={category}>
-								<h3 className="mb-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">
-									{TOOL_CATEGORY_LABELS[
-										category as GetCapabilitiesStudioResponse["tools"][number]["category"]
-									] ?? category}
+					<div className="space-y-8 p-4">
+						<section className="space-y-3">
+							<div className="space-y-1">
+								<h3 className="font-medium text-sm">
+									Default Tools (Always On)
 								</h3>
-								<div className="space-y-3">
-									{tools.map((tool) => (
+								<p className="text-muted-foreground text-xs">
+									Mandatory runtime tools that cannot be disabled.
+								</p>
+							</div>
+							<div className="space-y-3">
+								{toolSections.defaultTools.length === 0 ? (
+									<div className="rounded-md border border-border/60 border-dashed p-3">
+										<p className="font-medium text-sm">
+											No mandatory tools configured.
+										</p>
+									</div>
+								) : (
+									toolSections.defaultTools.map((tool) => (
 										<div
 											className="flex items-start justify-between gap-4 rounded-md border border-border/60 p-3"
 											key={tool.id}
@@ -172,38 +177,84 @@ export default function ToolsPage() {
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
 													<p className="font-medium text-sm">{tool.label}</p>
-													{tool.isSystem && (
-														<Badge variant="secondary">System</Badge>
-													)}
-													{tool.isRequired && (
-														<Badge variant="outline">
-															<Lock className="mr-1 size-3" />
-															Required
-														</Badge>
-													)}
+													<Badge variant="secondary">Required</Badge>
+													<Badge variant="outline">
+														{TOOL_CATEGORY_LABELS[tool.category]}
+													</Badge>
 												</div>
 												<p className="text-muted-foreground text-xs">
 													{tool.description}
 												</p>
 											</div>
-											{tool.isToggleable ? (
-												<Switch
-													checked={tool.enabled}
-													disabled={updateBehaviorMutation.isPending}
-													onCheckedChange={(checked) =>
-														void handleToggleTool(tool, checked)
-													}
-												/>
-											) : (
-												<p className="pt-1 text-muted-foreground text-xs">
-													Always on
-												</p>
-											)}
+											<p className="pt-1 text-muted-foreground text-xs">
+												Always on
+											</p>
 										</div>
-									))}
-								</div>
+									))
+								)}
 							</div>
-						))}
+						</section>
+
+						<section className="space-y-3">
+							<div className="space-y-1">
+								<h3 className="font-medium text-sm">Optional Tools</h3>
+								<p className="text-muted-foreground text-xs">
+									Enable only the optional actions and analyses your agent
+									should run.
+								</p>
+							</div>
+							<div className="space-y-3">
+								{toolSections.optionalTools.length === 0 ? (
+									<div className="rounded-md border border-border/60 border-dashed p-3">
+										<p className="font-medium text-sm">
+											No optional tools available.
+										</p>
+									</div>
+								) : (
+									toolSections.optionalTools.map((tool) => (
+										<div
+											className="flex items-start justify-between gap-4 rounded-md border border-border/60 p-3"
+											key={tool.id}
+										>
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<p className="font-medium text-sm">{tool.label}</p>
+													<Badge variant="outline">
+														{TOOL_CATEGORY_LABELS[tool.category]}
+													</Badge>
+												</div>
+												<p className="text-muted-foreground text-xs">
+													{tool.description}
+												</p>
+											</div>
+											<Switch
+												aria-label={`Toggle ${tool.label}`}
+												checked={tool.enabled}
+												disabled={updateBehaviorMutation.isPending}
+												onCheckedChange={(checked) =>
+													void handleToggleTool(tool, checked)
+												}
+											/>
+										</div>
+									))
+								)}
+							</div>
+						</section>
+
+						<section className="space-y-3">
+							<div className="space-y-1">
+								<h3 className="font-medium text-sm">Custom Tools</h3>
+								<p className="text-muted-foreground text-xs">
+									Custom tool support will appear here when it is available.
+								</p>
+							</div>
+							<div className="rounded-md border border-border/60 border-dashed p-3">
+								<p className="font-medium text-sm">No custom tools yet.</p>
+								<p className="text-muted-foreground text-xs">
+									Use default and optional tools for now.
+								</p>
+							</div>
+						</section>
 					</div>
 				</SettingsRow>
 			</PageContent>

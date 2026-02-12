@@ -7,7 +7,7 @@ export default defineConfig({
 		resolve: true,
 	},
 	hash: false,
-	minify: false,
+	minify: true,
 	sourcemap: true,
 	treeshake: true,
 	outExtensions: () => ({

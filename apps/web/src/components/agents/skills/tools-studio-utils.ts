@@ -11,6 +11,41 @@ import {
 type BehaviorSettingKey = NonNullable<
 	GetCapabilitiesStudioResponse["tools"][number]["behaviorSettingKey"]
 >;
+type StudioTool = GetCapabilitiesStudioResponse["tools"][number];
+
+const TOOL_CATEGORY_ORDER: Record<StudioTool["category"], number> = {
+	system: 0,
+	messaging: 1,
+	action: 2,
+	context: 3,
+	analysis: 4,
+};
+
+function sortTools(tools: StudioTool[]): StudioTool[] {
+	return [...tools].sort((a, b) => {
+		const categoryOrderDiff =
+			TOOL_CATEGORY_ORDER[a.category] - TOOL_CATEGORY_ORDER[b.category];
+		if (categoryOrderDiff !== 0) {
+			return categoryOrderDiff;
+		}
+		return a.label.localeCompare(b.label);
+	});
+}
+
+export function buildToolStudioSections(tools: StudioTool[]) {
+	const isDefaultTool = (tool: StudioTool) =>
+		tool.isRequired || !tool.isToggleable;
+	const defaultTools = sortTools(tools.filter(isDefaultTool));
+	const optionalTools = sortTools(
+		tools.filter((tool) => !isDefaultTool(tool) && tool.isToggleable)
+	);
+
+	return {
+		defaultTools,
+		optionalTools,
+		customTools: [] as StudioTool[],
+	};
+}
 
 export function buildBehaviorSettingsPatch(
 	key: BehaviorSettingKey,

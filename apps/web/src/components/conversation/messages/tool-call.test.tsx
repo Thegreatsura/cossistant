@@ -37,6 +37,10 @@ function render(item: TimelineItem, mode?: "default" | "developer"): string {
 	return renderToStaticMarkup(React.createElement(ToolCall, { item, mode }));
 }
 
+function countOccurrences(html: string, pattern: string): number {
+	return html.split(pattern).length - 1;
+}
+
 describe("ToolCall", () => {
 	it("renders mapped icon for known tools", () => {
 		const html = render(createToolTimelineItem());
@@ -88,6 +92,99 @@ describe("ToolCall", () => {
 		);
 
 		expect(html).toContain("Found 3 sources");
+	});
+
+	it("renders compact source pills with +N overflow for search results", () => {
+		const html = render(
+			createToolTimelineItem({
+				parts: [
+					{
+						type: "tool-searchKnowledgeBase",
+						toolCallId: "call-sources",
+						toolName: "searchKnowledgeBase",
+						input: { query: "pricing" },
+						state: "result",
+						output: {
+							success: true,
+							data: {
+								totalFound: 6,
+								articles: [
+									{
+										title: "Billing FAQ",
+										sourceUrl: "https://example.com/billing-faq",
+									},
+									{
+										title: "Pricing API",
+										sourceUrl: "https://example.com/pricing-api",
+									},
+									{
+										title: "Upgrade Guide",
+										sourceUrl: "https://example.com/upgrade-guide",
+									},
+									{
+										title: "Enterprise Terms",
+										sourceUrl: "https://example.com/enterprise",
+									},
+									{
+										title: "Refund Policy",
+										sourceUrl: "https://example.com/refunds",
+									},
+									{
+										title: "Changelog",
+										sourceUrl: "https://example.com/changelog",
+									},
+								],
+							},
+						},
+					},
+				],
+			})
+		);
+
+		expect(html).not.toContain("View sources");
+		expect(countOccurrences(html, 'data-source-pill="true"')).toBe(4);
+		expect(html).toContain('data-source-overflow="2"');
+		expect(html).toContain(">+2<");
+		expect(countOccurrences(html, 'data-source-overflow-item="true"')).toBe(2);
+		expect(html).toContain("Refund Policy");
+		expect(html).toContain("Changelog");
+		expect(html).not.toContain("<a ");
+	});
+
+	it("prefers title labels and falls back to compact URL labels", () => {
+		const html = render(
+			createToolTimelineItem({
+				parts: [
+					{
+						type: "tool-searchKnowledgeBase",
+						toolCallId: "call-labels",
+						toolName: "searchKnowledgeBase",
+						input: { query: "help" },
+						state: "result",
+						output: {
+							success: true,
+							data: {
+								totalFound: 3,
+								articles: [
+									{
+										title: "Help Center",
+										sourceUrl: "https://www.example.com/help-center",
+									},
+									{
+										sourceUrl: "https://docs.example.com/getting-started/",
+									},
+									{},
+								],
+							},
+						},
+					},
+				],
+			})
+		);
+
+		expect(html).toContain("Help Center");
+		expect(html).toContain("docs.example.com/getting-started");
+		expect(html).toContain("Untitled");
 	});
 
 	it("renders error state with friendly error text", () => {

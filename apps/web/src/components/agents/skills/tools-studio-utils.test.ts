@@ -1,12 +1,37 @@
 import { describe, expect, it } from "bun:test";
+import type { GetCapabilitiesStudioResponse } from "@cossistant/types";
 import {
 	buildBehaviorSettingsPatch,
+	buildToolStudioSections,
 	normalizeSkillFileName,
 	normalizeSkillFrontmatterName,
 	parseSkillEditorContent,
 	serializeSkillEditorContent,
 	toCanonicalSkillFileNameFromFrontmatterName,
 } from "./tools-studio-utils";
+
+function createTool(
+	overrides: Partial<GetCapabilitiesStudioResponse["tools"][number]> & {
+		id: GetCapabilitiesStudioResponse["tools"][number]["id"];
+		label: string;
+		category: GetCapabilitiesStudioResponse["tools"][number]["category"];
+		isRequired: boolean;
+		isToggleable: boolean;
+	}
+): GetCapabilitiesStudioResponse["tools"][number] {
+	return {
+		id: overrides.id,
+		label: overrides.label,
+		description: overrides.description ?? `${overrides.label} description`,
+		category: overrides.category,
+		isSystem: overrides.isSystem ?? false,
+		isRequired: overrides.isRequired,
+		isToggleable: overrides.isToggleable,
+		behaviorSettingKey: overrides.behaviorSettingKey ?? null,
+		defaultTemplateNames: overrides.defaultTemplateNames ?? [],
+		enabled: overrides.enabled ?? true,
+	};
+}
 
 describe("tools-studio-utils", () => {
 	it("maps each toggle key to the expected behavior setting patch", () => {
@@ -84,5 +109,63 @@ describe("tools-studio-utils", () => {
 		expect(parsed.name).toBe("escalation-playbook");
 		expect(parsed.description).toBe("Escalation Playbook");
 		expect(parsed.body).toContain("Escalate when policy is unclear.");
+	});
+
+	it("builds deterministic tool sections for mandatory, optional, and custom", () => {
+		const tools: GetCapabilitiesStudioResponse["tools"] = [
+			createTool({
+				id: "resolve",
+				label: "Finish: Resolve",
+				category: "action",
+				isRequired: false,
+				isToggleable: true,
+				behaviorSettingKey: "canResolve",
+			}),
+			createTool({
+				id: "searchKnowledgeBase",
+				label: "Search Knowledge Base",
+				category: "context",
+				isRequired: true,
+				isToggleable: false,
+				isSystem: true,
+			}),
+			createTool({
+				id: "updateConversationTitle",
+				label: "Update Conversation Title",
+				category: "analysis",
+				isRequired: false,
+				isToggleable: true,
+				behaviorSettingKey: "autoGenerateTitle",
+			}),
+			createTool({
+				id: "sendMessage",
+				label: "Send Public Message",
+				category: "messaging",
+				isRequired: true,
+				isToggleable: false,
+				isSystem: true,
+			}),
+			createTool({
+				id: "escalate",
+				label: "Always Required Toggleable",
+				category: "system",
+				isRequired: true,
+				isToggleable: true,
+				behaviorSettingKey: "canEscalate",
+			}),
+		];
+
+		const sections = buildToolStudioSections(tools);
+
+		expect(sections.defaultTools.map((tool) => tool.id)).toEqual([
+			"escalate",
+			"sendMessage",
+			"searchKnowledgeBase",
+		]);
+		expect(sections.optionalTools.map((tool) => tool.id)).toEqual([
+			"resolve",
+			"updateConversationTitle",
+		]);
+		expect(sections.customTools).toEqual([]);
 	});
 });

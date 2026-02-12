@@ -292,35 +292,6 @@ export default function SkillsPage() {
 		});
 	};
 
-	const handleDeleteTemplateForAgent = async (
-		template: GetCapabilitiesStudioResponse["defaultSkillTemplates"][number]
-	) => {
-		const content = buildCanonicalSkillContent({
-			content: templateDrafts[template.name] ?? template.content,
-			canonicalFileName: template.name,
-			fallbackDescription: template.description,
-		});
-		if (template.skillDocumentId) {
-			await updateSkillMutation.mutateAsync({
-				websiteSlug: website.slug,
-				aiAgentId: aiAgent.id,
-				skillDocumentId: template.skillDocumentId,
-				enabled: false,
-				content,
-			});
-			return;
-		}
-
-		await createSkillMutation.mutateAsync({
-			websiteSlug: website.slug,
-			aiAgentId: aiAgent.id,
-			name: template.name,
-			content,
-			enabled: false,
-			priority: 0,
-		});
-	};
-
 	const handleSaveTemplateOverride = async (
 		template: GetCapabilitiesStudioResponse["defaultSkillTemplates"][number]
 	) => {
@@ -452,8 +423,13 @@ export default function SkillsPage() {
 
 			return (
 				<div className="space-y-3 p-2">
-					<Input disabled={true} value={templateFrontmatterName} />
 					<Input
+						aria-label="Template name"
+						disabled={true}
+						value={templateFrontmatterName}
+					/>
+					<Input
+						aria-label="Template description"
 						disabled={isMutating}
 						onChange={(event) =>
 							setTemplateDrafts((current) => ({
@@ -504,6 +480,7 @@ export default function SkillsPage() {
 			return (
 				<div className="space-y-3 p-2">
 					<Input
+						aria-label="Custom skill name"
 						disabled={isMutating}
 						onChange={(event) =>
 							setCustomSkillDrafts((current) => ({
@@ -519,6 +496,7 @@ export default function SkillsPage() {
 						value={parsedCustomContent.name}
 					/>
 					<Input
+						aria-label="Custom skill description"
 						disabled={isMutating}
 						onChange={(event) =>
 							setCustomSkillDrafts((current) => ({
@@ -584,12 +562,14 @@ export default function SkillsPage() {
 			return (
 				<div className="space-y-3 p-2">
 					<Input
+						aria-label="New custom skill name"
 						disabled={isMutating}
 						onChange={(event) => setNewSkillName(event.target.value)}
 						placeholder="refund-playbook"
 						value={newSkillName}
 					/>
 					<Input
+						aria-label="New custom skill description"
 						disabled={isMutating}
 						onChange={(event) => setNewSkillDescription(event.target.value)}
 						placeholder="Description"
@@ -633,15 +613,17 @@ export default function SkillsPage() {
 						>
 							Save override
 						</BaseSubmitButton>
-						<Button
-							disabled={isMutating || !activeTemplate.skillDocumentId}
-							onClick={() => void handleResetTemplate(activeTemplate)}
-							size="sm"
-							type="button"
-							variant="outline"
-						>
-							Reset to default
-						</Button>
+						{activeTemplate.hasOverride && (
+							<Button
+								disabled={isMutating}
+								onClick={() => void handleResetTemplate(activeTemplate)}
+								size="sm"
+								type="button"
+								variant="outline"
+							>
+								Reset to default
+							</Button>
+						)}
 					</div>
 				</div>
 			);
@@ -767,8 +749,8 @@ export default function SkillsPage() {
 			<PageContent className="py-30">
 				<div className="space-y-8">
 					<SettingsRow
-						description="Default templates are visible to everyone but only affect runtime once enabled."
-						title="Default Skill Templates"
+						description="Enable default templates for runtime and customize their markdown when needed."
+						title="Default Skills (Templates)"
 					>
 						<div className="space-y-3 p-4">
 							{studio.defaultSkillTemplates.map((template) => (
@@ -810,43 +792,42 @@ export default function SkillsPage() {
 												type="button"
 												variant="outline"
 											>
-												Customize
+												Edit
 											</Button>
-											<Button
+											<Switch
+												aria-label={`Toggle ${template.label}`}
+												checked={template.isEnabled}
 												disabled={isMutating}
-												onClick={() =>
-													void handleEnableTemplate(
-														template,
-														!template.isEnabled
-													)
+												onCheckedChange={(checked) =>
+													void handleEnableTemplate(template, checked)
 												}
-												size="sm"
-												type="button"
-												variant="outline"
-											>
-												{template.isEnabled ? "Disable" : "Enable"}
-											</Button>
-											<Button
-												disabled={isMutating}
-												onClick={() =>
-													void handleDeleteTemplateForAgent(template)
-												}
-												size="sm"
-												type="button"
-												variant="outline"
-											>
-												Delete for agent
-											</Button>
+											/>
+											{template.hasOverride && (
+												<Button
+													disabled={isMutating}
+													onClick={() => void handleResetTemplate(template)}
+													size="sm"
+													type="button"
+													variant="outline"
+												>
+													Reset to default
+												</Button>
+											)}
 										</div>
 									</div>
 								</div>
 							))}
 						</div>
+						<SettingsRowFooter className="flex justify-end">
+							<p className="text-muted-foreground text-xs">
+								Runtime enforcement comes from Tools and General settings.
+							</p>
+						</SettingsRowFooter>
 					</SettingsRow>
 
 					<SettingsRow
-						description="Create and maintain custom reusable skills for your workflows."
-						title="Skill Library"
+						description="Create, edit, and enable markdown skills for your own workflows."
+						title="Custom Skills (Markdown)"
 					>
 						<div className="space-y-4 p-4">
 							<div className="flex items-center justify-between rounded-md border border-border/70 border-dashed p-3">
@@ -904,6 +885,7 @@ export default function SkillsPage() {
 												Edit
 											</Button>
 											<Switch
+												aria-label={`Toggle ${skill.name}`}
 												checked={skill.enabled}
 												disabled={isMutating}
 												onCheckedChange={(checked) =>
@@ -938,8 +920,8 @@ export default function SkillsPage() {
 					</SettingsRow>
 
 					<SettingsRow
-						description="Core prompt layers represented as named system skills."
-						title="System Skills"
+						description="Advanced core prompt layers that shape global runtime behavior and safeguards."
+						title="Advanced Prompt Layers"
 					>
 						<div className="space-y-3 p-4">
 							{studio.systemSkillDocuments.map((systemSkill) => (
@@ -981,7 +963,8 @@ export default function SkillsPage() {
 						</div>
 						<SettingsRowFooter className="flex justify-end">
 							<p className="text-muted-foreground text-xs">
-								System skill changes alter the agent&apos;s base behavior.
+								These layers alter the agent&apos;s global behavior. Edit with
+								care.
 							</p>
 						</SettingsRowFooter>
 					</SettingsRow>

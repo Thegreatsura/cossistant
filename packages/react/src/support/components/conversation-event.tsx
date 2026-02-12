@@ -110,7 +110,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 
 	const avatarContent = isAI ? (
 		<Avatar
-			className="size-5 flex-shrink-0"
+			className="size-6 flex-shrink-0"
 			image={aiAgent?.image}
 			isAI
 			name={aiAgent?.name || text("common.fallbacks.cossistant")}
@@ -118,7 +118,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 		/>
 	) : (
 		<Avatar
-			className="size-5 flex-shrink-0"
+			className="size-6 flex-shrink-0"
 			image={humanAgent?.image}
 			name={humanAgent?.name || text("common.fallbacks.someone")}
 		/>
@@ -129,7 +129,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 			<motion.div
 				animate={{ opacity: 1, scale: 1 }}
 				className={cn(
-					"flex items-center gap-2 text-co-muted-foreground text-xs",
+					"flex items-center gap-2 text-co-muted-foreground text-sm",
 					className
 				)}
 				initial={{ opacity: 0, scale: 0.95 }}
@@ -152,11 +152,11 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 	return (
 		<motion.div
 			animate={{ opacity: 1, scale: 1 }}
-			className={cn("flex items-center justify-center pt-4 pb-8", className)}
+			className={cn("flex items-center pt-4 pb-8", className)}
 			initial={{ opacity: 0, scale: 0.95 }}
 			transition={{ duration: 0.3, ease: "easeOut" }}
 		>
-			<div className="flex items-center gap-2 text-co-muted-foreground text-xs">
+			<div className="flex items-center gap-2 text-co-muted-foreground text-sm">
 				{showAvatar ? (
 					<div className="flex flex-col justify-end">{avatarContent}</div>
 				) : null}

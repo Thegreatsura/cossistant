@@ -1,6 +1,6 @@
 # facehash
 
-Deterministic avatar faces from any string. Zero dependencies, works with React 18/19 and Next.js 15/16.
+Deterministic avatar faces from any string. **Lightweight (~3KB gzipped), zero dependencies**, works with React 18/19 and Next.js 15/16.
 
 <p align="center">
   <img src="https://facehash.dev/og-image.png" alt="facehash examples" width="600" />

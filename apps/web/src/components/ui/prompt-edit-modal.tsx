@@ -38,6 +38,7 @@ export function PromptEditModal({
 				<DialogHeader className="flex-row items-center justify-between px-6 py-4">
 					<DialogTitle className="text-md">{title}</DialogTitle>
 					<Button
+						aria-label="Close editor"
 						onClick={() => onOpenChange(false)}
 						size="icon-small"
 						type="button"

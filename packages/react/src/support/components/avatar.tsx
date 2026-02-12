@@ -98,7 +98,7 @@ export function Avatar({
 				<AvatarImage alt={name} src={image} />
 				<AvatarFallback className="size-full">
 					<Facehash
-						className="size-full"
+						className="size-full text-black"
 						colorClasses={colorClasses}
 						interactive={false}
 						name={name}
@@ -117,10 +117,10 @@ export function Avatar({
 					"flex size-full items-center justify-center overflow-clip rounded bg-co-background-200 ring-1 ring-co-border/30 dark:bg-co-background-500"
 				)}
 			>
-				{image && <AvatarImage alt={name} src={image} />}
+				{image && image.trim() !== "" && <AvatarImage alt={name} src={image} />}
 				<AvatarFallback className="size-full">
 					<Facehash
-						className="size-full"
+						className="size-full text-black"
 						colorClasses={colorClasses}
 						interactive={false}
 						name={name}

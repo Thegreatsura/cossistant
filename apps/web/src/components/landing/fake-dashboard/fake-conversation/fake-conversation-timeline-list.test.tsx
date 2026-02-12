@@ -75,7 +75,7 @@ const VISITOR = {
 } as unknown as ConversationHeader["visitor"];
 
 describe("FakeDashboard timeline activity grouping", () => {
-	it("uses grouped bullet icons and keeps sender identity visible", () => {
+	it("uses tree prefixes for grouped activity rows and keeps sender identity visible", () => {
 		const items = [
 			createEventItem("event-1", "2026-01-01T10:00:00.000Z"),
 			createToolItem("tool-1", "2026-01-01T10:01:00.000Z"),
@@ -89,10 +89,9 @@ describe("FakeDashboard timeline activity grouping", () => {
 			})
 		);
 
-		expect(html).toContain('data-activity-bullet="event"');
-		expect(html).toContain('data-activity-bullet="tool"');
-		expect(html).toContain('data-event-action-icon="participant_joined"');
-		expect(html).toContain('data-tool-action-icon="updateSentiment"');
+		expect(html).toContain('data-activity-tree-prefix="event"');
+		expect(html).toContain('data-activity-tree-prefix="tool"');
+		expect(html).not.toContain("data-activity-bullet=");
 		expect(html).toContain('data-slot="avatar"');
 		expect(html).not.toContain("flex-row-reverse");
 		expect(html).not.toContain("mb-2 px-1 text-muted-foreground text-xs");

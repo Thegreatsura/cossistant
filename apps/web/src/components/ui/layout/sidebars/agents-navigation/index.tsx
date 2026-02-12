@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { SidebarUpgradeButton } from "@/components/plan/sidebar-upgrade-button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useWebsite } from "@/contexts/website";
 import { useTRPC } from "@/lib/trpc/client";
@@ -27,22 +26,15 @@ export function AgentsNavigationSidebar() {
 	});
 
 	// Check if current path matches
-	const isGeneralActive =
-		pathname === basePath &&
-		!pathname.includes("/training") &&
-		!pathname.includes("/behavior");
-	const isBehaviorActive = pathname.startsWith(`${basePath}/behavior`);
+	const isGeneralActive = pathname === basePath;
+	const isToolsActive = pathname.startsWith(`${basePath}/tools`);
+	const isSkillsActive = pathname.startsWith(`${basePath}/skills`);
 	const isWebSourcesActive = pathname.startsWith(`${trainingPath}/web`);
 	const isFaqActive = pathname.startsWith(`${trainingPath}/faq`);
 	const isFilesActive = pathname.startsWith(`${trainingPath}/files`);
-	const isToolsActive = pathname.startsWith(`${basePath}/tools`);
-	const isSkillsActive = pathname.startsWith(`${basePath}/skills`);
-	const isIntegrationsActive = pathname.startsWith(`${basePath}/integrations`);
 
 	// Determine if sections should be open by default
 	const isKnowledgeActive = isWebSourcesActive || isFaqActive || isFilesActive;
-	const isCapabilitiesActive =
-		isToolsActive || isSkillsActive || isIntegrationsActive;
 
 	return (
 		<ResizableSidebar position="left" sidebarTitle="AI Agent">
@@ -73,17 +65,24 @@ export function AgentsNavigationSidebar() {
 						General
 					</SidebarItem>
 					<SidebarItem
-						active={isBehaviorActive}
-						href={`${basePath}/behavior`}
+						active={isToolsActive}
+						href={`${basePath}/tools`}
+						iconName="agent"
+					>
+						Tools
+					</SidebarItem>
+					<SidebarItem
+						active={isSkillsActive}
+						href={`${basePath}/skills`}
 						iconName="target"
 					>
-						Behavior
+						Skills
 					</SidebarItem>
 				</div>
 
 				{/* Knowledge Section - always open by default */}
 				<SidebarItem
-					defaultOpen={true}
+					defaultOpen={isKnowledgeActive}
 					iconName="book-open"
 					items={[
 						{
@@ -104,36 +103,6 @@ export function AgentsNavigationSidebar() {
 					]}
 				>
 					Knowledge
-				</SidebarItem>
-
-				{/* Capabilities Section */}
-				<SidebarItem
-					defaultOpen={isCapabilitiesActive}
-					iconName="agent"
-					items={[
-						{
-							label: "Tools",
-							href: `${basePath}/tools`,
-							active: isToolsActive,
-						},
-						{
-							label: "Skills",
-							href: `${basePath}/skills`,
-							active: isSkillsActive,
-						},
-						{
-							label: "Integrations",
-							href: `${basePath}/integrations`,
-							active: isIntegrationsActive,
-							rightItem: (
-								<Badge className="ml-auto" variant="secondary">
-									Soon
-								</Badge>
-							),
-						},
-					]}
-				>
-					Capabilities
 				</SidebarItem>
 			</SidebarContainer>
 		</ResizableSidebar>

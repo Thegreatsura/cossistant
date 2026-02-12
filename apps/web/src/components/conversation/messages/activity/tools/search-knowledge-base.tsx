@@ -1,10 +1,9 @@
-import { ChevronRight, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ActivityWrapper } from "../activity-wrapper";
 import type { ToolActivityProps } from "../types";
 
@@ -14,6 +13,8 @@ type ArticleSummary = {
 	sourceType?: string | null;
 	similarity?: number | null;
 };
+
+const INLINE_SOURCE_LIMIT = 4;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -51,58 +52,102 @@ function extractSourceCount(output: unknown): number | null {
 	return articles ? articles.length : null;
 }
 
-function SourceList({ articles }: { articles: ArticleSummary[] }) {
-	const [open, setOpen] = useState(false);
+function getSourceLabel(article: ArticleSummary): string {
+	const title = article.title?.trim();
+	if (title && title.length > 0) {
+		return title;
+	}
+
+	const sourceUrl = article.sourceUrl?.trim();
+	if (sourceUrl && sourceUrl.length > 0) {
+		try {
+			const parsedUrl = new URL(sourceUrl);
+			const hostname = parsedUrl.hostname.replace(/^www\./, "");
+			const pathname =
+				parsedUrl.pathname === "/" ? "" : parsedUrl.pathname.replace(/\/$/, "");
+
+			const compactUrl = `${hostname}${pathname}`;
+			return compactUrl.length > 0 ? compactUrl : sourceUrl;
+		} catch {
+			return sourceUrl;
+		}
+	}
+
+	return "Untitled";
+}
+
+function SourcePillList({ articles }: { articles: ArticleSummary[] }) {
+	const visibleArticles = articles.slice(0, INLINE_SOURCE_LIMIT);
+	const hiddenArticles = articles.slice(INLINE_SOURCE_LIMIT);
+	const hiddenSourceEntries = hiddenArticles.map((article, index) => ({
+		key: article.sourceUrl ?? article.title ?? `overflow-source-${index}`,
+		label: getSourceLabel(article),
+	}));
 
 	if (articles.length === 0) {
 		return null;
 	}
 
 	return (
-		<Collapsible onOpenChange={setOpen} open={open}>
-			<CollapsibleTrigger className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground">
-				<ChevronRight
-					className={`size-3 transition-transform ${open ? "rotate-90" : ""}`}
-				/>
-				View sources
-			</CollapsibleTrigger>
-			<CollapsibleContent>
-				<div className="mt-1.5 space-y-1">
-					{articles.map((article, i) => (
-						<div
-							className="flex items-baseline gap-2 text-[10px] text-muted-foreground"
-							key={article.sourceUrl ?? i}
+		<div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+			{visibleArticles.map((article, index) => {
+				const label = getSourceLabel(article);
+
+				return (
+					<Badge
+						className="max-w-[10rem] px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+						data-source-pill="true"
+						key={article.sourceUrl ?? article.title ?? `source-${index}`}
+						title={label}
+						variant="secondary"
+					>
+						<span className="truncate">{label}</span>
+					</Badge>
+				);
+			})}
+
+			{hiddenArticles.length > 0 ? (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Badge
+							className="cursor-default px-1.5 py-0 font-normal text-[10px] text-muted-foreground"
+							data-source-overflow={hiddenSourceEntries.length}
+							variant="outline"
 						>
-							{article.sourceType ? (
-								<span className="shrink-0 uppercase tracking-wide">
-									{article.sourceType}
-								</span>
-							) : null}
-							{article.sourceUrl ? (
-								<a
-									className="truncate text-foreground/80 underline decoration-muted-foreground/30 hover:text-foreground"
-									href={article.sourceUrl}
-									rel="noopener noreferrer"
-									target="_blank"
-								>
-									{article.title ?? article.sourceUrl}
-									<ExternalLink className="ml-0.5 inline size-2.5" />
-								</a>
-							) : (
-								<span className="truncate text-foreground/80">
-									{article.title ?? "Untitled"}
-								</span>
-							)}
-							{typeof article.similarity === "number" ? (
-								<span className="ml-auto shrink-0">
-									{Math.round(article.similarity * 100)}%
-								</span>
-							) : null}
-						</div>
+							+{hiddenSourceEntries.length}
+						</Badge>
+					</TooltipTrigger>
+					<TooltipContent
+						align="start"
+						className="max-w-72 space-y-1 px-2 py-1.5"
+						forceMount
+						side="bottom"
+					>
+						{hiddenSourceEntries.map((entry) => (
+							<div
+								className="truncate text-[10px] text-primary-foreground/90"
+								key={entry.key}
+								title={entry.label}
+							>
+								{entry.label}
+							</div>
+						))}
+					</TooltipContent>
+				</Tooltip>
+			) : null}
+			{hiddenSourceEntries.length > 0 ? (
+				<div className="hidden" data-source-overflow-content="true">
+					{hiddenSourceEntries.map((entry) => (
+						<span
+							data-source-overflow-item="true"
+							key={`source-hook-${entry.key}`}
+						>
+							{entry.label}
+						</span>
 					))}
 				</div>
-			</CollapsibleContent>
-		</Collapsible>
+			) : null}
+		</div>
 	);
 }
 
@@ -153,7 +198,7 @@ export function SearchKnowledgeBaseActivity({
 			text={resultText}
 			timestamp={timestamp}
 		>
-			<SourceList articles={articles} />
+			<SourcePillList articles={articles} />
 		</ActivityWrapper>
 	);
 }

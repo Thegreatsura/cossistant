@@ -39,9 +39,11 @@ export function BlurredAgentsSidebar({ className }: BlurredAgentsSidebarProps) {
 
 			{/* Content */}
 			<div className="relative flex w-full flex-col gap-1 px-2 py-2 opacity-40">
-				{/* General */}
+				{/* Top-level items */}
 				<div className="flex flex-col gap-1">
 					<SkeletonSidebarItem width="w-16" />
+					<SkeletonSidebarItem width="w-12" />
+					<SkeletonSidebarItem width="w-12" />
 				</div>
 
 				{/* Knowledge Section (collapsible style) */}
@@ -52,17 +54,6 @@ export function BlurredAgentsSidebar({ className }: BlurredAgentsSidebarProps) {
 						<SkeletonSidebarItem hasIcon={false} width="w-20" />
 						<SkeletonSidebarItem hasIcon={false} width="w-10" />
 						<SkeletonSidebarItem hasIcon={false} width="w-12" />
-					</div>
-				</div>
-
-				{/* Capabilities Section (collapsible style) */}
-				<div className="mt-2 flex flex-col gap-1">
-					<SkeletonSidebarItem width="w-24" />
-					{/* Sub-items */}
-					<div className="ml-6 flex flex-col gap-1">
-						<SkeletonSidebarItem hasIcon={false} width="w-12" />
-						<SkeletonSidebarItem hasIcon={false} width="w-14" />
-						<SkeletonSidebarItem hasIcon={false} width="w-20" />
 					</div>
 				</div>
 
