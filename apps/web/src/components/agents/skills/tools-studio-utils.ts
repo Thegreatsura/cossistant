@@ -2,6 +2,11 @@ import type {
 	GetCapabilitiesStudioResponse,
 	UpdateBehaviorSettingsRequest,
 } from "@cossistant/types";
+import {
+	parseSkillFileContent,
+	serializeSkillFileContent,
+	stripSkillMarkdownExtension,
+} from "@cossistant/types";
 
 type BehaviorSettingKey = NonNullable<
 	GetCapabilitiesStudioResponse["tools"][number]["behaviorSettingKey"]
@@ -35,4 +40,34 @@ export function normalizeSkillFileName(input: string): string {
 		return "";
 	}
 	return value.endsWith(".md") ? value : `${value}.md`;
+}
+
+export function normalizeSkillFrontmatterName(input: string): string {
+	return stripSkillMarkdownExtension(input).trim();
+}
+
+export function toCanonicalSkillFileNameFromFrontmatterName(
+	input: string
+): string {
+	return normalizeSkillFileName(normalizeSkillFrontmatterName(input));
+}
+
+export function parseSkillEditorContent(input: {
+	content: string;
+	canonicalFileName: string;
+	fallbackDescription?: string;
+}) {
+	return parseSkillFileContent(input);
+}
+
+export function serializeSkillEditorContent(input: {
+	name: string;
+	description: string;
+	body: string;
+}) {
+	return serializeSkillFileContent({
+		name: normalizeSkillFrontmatterName(input.name),
+		description: input.description,
+		body: input.body,
+	});
 }

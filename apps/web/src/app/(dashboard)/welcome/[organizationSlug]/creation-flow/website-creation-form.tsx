@@ -77,7 +77,9 @@ export default function WebsiteCreationForm({
 		<div className="mt-4 w-full">
 			<div className="mb-6">
 				<p className="text-muted-foreground">
-					Provide your website details and select your framework to get started.
+					Provide your website details and select your framework. In step 2,
+					you'll get a one-click AI setup prompt by default, with manual
+					integration steps available anytime.
 				</p>
 			</div>
 

@@ -12,6 +12,12 @@ import {
 	type AiAgentPromptDocumentSelect,
 	aiAgentPromptDocument,
 } from "@api/db/schema/ai-agent-prompt-document";
+import {
+	deriveSkillDescriptionFromBody,
+	parseSkillFileContent,
+	serializeSkillFileContent,
+	stripSkillMarkdownExtension,
+} from "@cossistant/types";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 
@@ -27,6 +33,29 @@ type PromptDocumentListFilters = {
 	kind?: "core" | "skill";
 	enabled?: boolean;
 };
+
+function normalizeSkillContentForStorage(input: {
+	content: string;
+	canonicalFileName: string;
+}): string {
+	const parsed = parseSkillFileContent({
+		content: input.content,
+		canonicalFileName: input.canonicalFileName,
+	});
+	const canonicalFrontmatterName = stripSkillMarkdownExtension(
+		input.canonicalFileName
+	);
+	const description =
+		parsed.description.trim() ||
+		deriveSkillDescriptionFromBody(parsed.body) ||
+		`Instructions for ${canonicalFrontmatterName}`;
+
+	return serializeSkillFileContent({
+		name: canonicalFrontmatterName,
+		description,
+		body: parsed.body,
+	});
+}
 
 function scopeCondition(scope: PromptDocumentScope) {
 	return and(
@@ -188,6 +217,10 @@ export async function createAiAgentSkillPromptDocument(
 	assertSkillPromptDocumentName(normalizedName);
 
 	const now = new Date().toISOString();
+	const normalizedContent = normalizeSkillContentForStorage({
+		content: params.content,
+		canonicalFileName: normalizedName,
+	});
 
 	const insertData: AiAgentPromptDocumentInsert = {
 		id: ulid(),
@@ -196,7 +229,7 @@ export async function createAiAgentSkillPromptDocument(
 		aiAgentId: params.aiAgentId,
 		kind: "skill",
 		name: normalizedName,
-		content: params.content,
+		content: normalizedContent,
 		enabled: params.enabled ?? true,
 		priority: params.priority ?? 0,
 		createdByUserId: params.createdByUserId,
@@ -257,12 +290,17 @@ export async function updateAiAgentSkillPromptDocument(
 			? existing.name
 			: normalizePromptDocumentName(params.name);
 	assertSkillPromptDocumentName(nextName);
+	const contentSource = params.content ?? existing.content;
+	const normalizedContent = normalizeSkillContentForStorage({
+		content: contentSource,
+		canonicalFileName: nextName,
+	});
 
 	const now = new Date().toISOString();
 
 	const updateData: Partial<AiAgentPromptDocumentInsert> = {
 		name: nextName,
-		content: params.content ?? existing.content,
+		content: normalizedContent,
 		enabled: params.enabled ?? existing.enabled,
 		priority: params.priority ?? existing.priority,
 		updatedByUserId: params.updatedByUserId,

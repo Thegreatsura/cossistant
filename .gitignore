@@ -38,6 +38,7 @@ yarn-error.log*
 *.pem
 apps/api/server
 .devtools
+tinybird.log
 
 # Terraform
 terraform.tfvars

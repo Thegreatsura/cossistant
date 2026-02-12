@@ -25,9 +25,13 @@ You have two options for providing your API key:
     <TabsTrigger value="explicit">Explicit prop</TabsTrigger>
   </TabsList>
   <TabsContent value="auto">
-    The library automatically detects the `COSSISTANT_API_KEY` environment variable. This works in any environment where `process.env` is available at build time:
+    The library automatically detects `NEXT_PUBLIC_COSSISTANT_API_KEY` and `COSSISTANT_API_KEY`. This works in environments where `process.env` is available at build time:
 
 ```bash title=".env"
+# Preferred for Next.js-compatible environments
+NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
+
+# Or use this generic key name
 COSSISTANT_API_KEY=pk_test_xxxx
 ```
 
@@ -36,7 +40,7 @@ COSSISTANT_API_KEY=pk_test_xxxx
   <AlertTitle>Vite users</AlertTitle>
   <AlertDescription>
     Vite doesn't expose `process.env` by default. Use the "Explicit prop" tab
-    instead, or configure Vite to expose `process.env.COSSISTANT_API_KEY`.
+    instead and pass `import.meta.env.VITE_COSSISTANT_API_KEY`.
   </AlertDescription>
 </Alert>
 

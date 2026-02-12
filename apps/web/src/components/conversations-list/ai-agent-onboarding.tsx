@@ -14,7 +14,7 @@ export function AIAgentOnboarding({ websiteSlug }: AIAgentOnboardingProps) {
 				Create your AI agent to handle conversations automatically while you
 				sleep.
 			</p>
-			<Button asChild className="mt-6 ml-auto w-fit" variant="outline">
+			<Button asChild className="mt-6 ml-auto w-fit">
 				<Link href={`/${websiteSlug}/agent/create`}>Create AI Agent now</Link>
 			</Button>
 		</div>

@@ -19,7 +19,7 @@ import {
 	getConversationTimelineItems,
 	listConversationsHeaders,
 } from "@api/db/queries/conversation";
-import { getInboxAnalyticsMetrics } from "@api/db/queries/inbox-analytics";
+import { getInboxAnalyticsMetrics } from "@api/db/queries/inbox-analytics-tinybird";
 import { getCompleteVisitorWithContact } from "@api/db/queries/visitor";
 import { getWebsiteBySlugWithAccess } from "@api/db/queries/website";
 import { env } from "@api/env";
@@ -114,13 +114,7 @@ export const conversationRouter = createTRPCRouter({
 		.input(inboxAnalyticsRequestSchema)
 		.output(inboxAnalyticsResponseSchema)
 		.query(async ({ ctx: { db, user }, input }) => {
-			if (input.websiteSlug !== "cossistant") {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Analytics are not enabled for this website",
-				});
-			}
-
+			// Analytics now available for all websites (removed cossistant-only restriction)
 			const websiteData = await getWebsiteBySlugWithAccess(db, {
 				userId: user.id,
 				websiteSlug: input.websiteSlug,
@@ -144,24 +138,49 @@ export const conversationRouter = createTRPCRouter({
 				previousEnd.getTime() - rangeDays * 24 * 60 * 60 * 1000
 			);
 
+			// Enforce tier-based retention limits
+			// TODO: Implement proper plan checking (check Polar.sh subscription or organization.plan field)
+			// For now, enforce free tier limits for all organizations
+			const MAX_RETENTION_DAYS_FREE = 21;
+			const MAX_RETENTION_DAYS_PAID = 365;
+
+			// Default to free tier retention
+			const isPaying = false; // TODO: Check organization subscription status
+			const maxRetentionDays = isPaying
+				? MAX_RETENTION_DAYS_PAID
+				: MAX_RETENTION_DAYS_FREE;
+
+			// Calculate retention cutoff date
+			const retentionCutoff = new Date(
+				now.getTime() - maxRetentionDays * 24 * 60 * 60 * 1000
+			);
+
+			// Clamp date ranges to retention window
+			const effectiveCurrentStart = new Date(
+				Math.max(currentStart.getTime(), retentionCutoff.getTime())
+			);
+			const effectivePreviousStart = new Date(
+				Math.max(previousStart.getTime(), retentionCutoff.getTime())
+			);
+
+			// Fetch current and previous period analytics from Tinybird + PostgreSQL
+			// Using retention-enforced dates
 			const [current, previous] = await Promise.all([
 				getInboxAnalyticsMetrics(db, {
 					organizationId: websiteData.organizationId,
 					websiteId: websiteData.id,
 					range: {
-						start: currentStart.toISOString(),
+						start: effectiveCurrentStart.toISOString(),
 						end: currentEnd.toISOString(),
 					},
-					isTestMode: true, // Include test visitors in dashboard analytics
 				}),
 				getInboxAnalyticsMetrics(db, {
 					organizationId: websiteData.organizationId,
 					websiteId: websiteData.id,
 					range: {
-						start: previousStart.toISOString(),
+						start: effectivePreviousStart.toISOString(),
 						end: previousEnd.toISOString(),
 					},
-					isTestMode: true, // Include test visitors in dashboard analytics
 				}),
 			]);
 

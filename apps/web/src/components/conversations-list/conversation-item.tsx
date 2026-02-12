@@ -1,7 +1,7 @@
 "use client";
 
 import type { RouterOutputs } from "@api/trpc/types";
-import { useConversationTyping } from "@cossistant/react/hooks/use-conversation-typing";
+import { useConversationTyping } from "@cossistant/react";
 import { formatMessagePreview } from "@cossistant/tiny-markdown/utils";
 import {
 	ConversationStatus,

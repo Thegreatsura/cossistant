@@ -1,6 +1,7 @@
 import type { Database } from "@api/db";
 import { getConversationById } from "@api/db/queries/conversation";
 import { conversation, conversationTimelineItem } from "@api/db/schema";
+import { trackConversationMetric } from "@api/lib/tinybird-sdk";
 import { realtime } from "@api/realtime/emitter";
 import { generateULID } from "@api/utils/db/ids";
 import {
@@ -332,7 +333,7 @@ export async function createMessageTimelineItem(
 	const isResponseFromTeam = Boolean(userId || aiAgentId);
 
 	if (isResponseFromTeam) {
-		await db
+		const [updated] = await db
 			.update(conversation)
 			.set({
 				firstResponseAt: createdTimelineItem.createdAt,
@@ -346,7 +347,31 @@ export async function createMessageTimelineItem(
 					isNull(conversation.firstResponseAt)
 				)
 			)
-			.returning({ id: conversation.id });
+			.returning({
+				id: conversation.id,
+				startedAt: conversation.startedAt,
+				visitorId: conversation.visitorId,
+			});
+
+		// Track first_response event in Tinybird for analytics
+		if (updated?.startedAt) {
+			const durationSeconds = Math.max(
+				0,
+				Math.round(
+					(new Date(createdTimelineItem.createdAt).getTime() -
+						new Date(updated.startedAt).getTime()) /
+						1000
+				)
+			);
+
+			trackConversationMetric({
+				website_id: websiteId,
+				visitor_id: updated.visitorId,
+				conversation_id: conversationId,
+				event_type: "first_response",
+				duration_seconds: durationSeconds,
+			});
+		}
 	}
 
 	const actor = resolveMessageActor(

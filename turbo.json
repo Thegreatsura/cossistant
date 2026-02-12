@@ -78,6 +78,10 @@
       "cache": false,
       "persistent": true
     },
+    "@cossistant/tinybird#dev": {
+      "cache": false,
+      "persistent": true
+    },
     "db:migrate": {
       "outputs": []
     },

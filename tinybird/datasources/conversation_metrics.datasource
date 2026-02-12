@@ -1,0 +1,16 @@
+DESCRIPTION >
+	Conversation lifecycle events: started, resolved, first response, AI handled, escalated.
+	Low volume, business KPIs with no TTL (kept indefinitely for paid customers).
+	Free tier retention enforced at query time (21 days).
+
+SCHEMA >
+	`timestamp` DateTime `json:$.timestamp`,
+	`website_id` String `json:$.website_id`,
+	`visitor_id` String `json:$.visitor_id`,
+	`event_type` LowCardinality(String) `json:$.event_type`,
+	`conversation_id` String `json:$.conversation_id`,
+	`duration_seconds` Float32 `json:$.duration_seconds`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
+ENGINE_SORTING_KEY "website_id, toDate(timestamp), event_type"

@@ -1,4 +1,8 @@
-import { AI_AGENT_TOOL_IDS, type AiAgentToolId } from "@cossistant/types";
+import {
+	AI_AGENT_TOOL_IDS,
+	type AiAgentToolId,
+	parseSkillFileContent,
+} from "@cossistant/types";
 import { tool } from "ai";
 import { z } from "zod";
 import { normalizePromptDocumentName } from "./documents";
@@ -73,6 +77,12 @@ type CreateRuntimeSkillRegistryInput = {
 	maxLoadsPerRun?: number;
 };
 
+type RuntimeSkillContentEntry = {
+	name: string;
+	body: string;
+	summary: string;
+};
+
 export type RuntimeSkillRegistry = {
 	loadSkill: (name: string) => RuntimeLoadSkillResult;
 	getLoadedSkills: () => RuntimeLoadedSkillDocument[];
@@ -85,19 +95,31 @@ export function createRuntimeSkillRegistry(
 ): RuntimeSkillRegistry {
 	const { enabledSkills, maxLoadsPerRun = MAX_RUNTIME_SKILL_LOADS_PER_RUN } =
 		input;
-	const enabledSkillsByName = new Map(
-		enabledSkills.map((skill) => [
-			normalizePromptDocumentName(skill.name),
-			skill,
-		])
+	const enabledSkillsByName = new Map<string, RuntimeSkillContentEntry>(
+		enabledSkills.map((skill) => {
+			const parsed = parseSkillFileContent({
+				content: skill.content,
+				canonicalFileName: skill.name,
+			});
+			const summary = parsed.description || summarizeSkillContent(parsed.body);
+
+			return [
+				normalizePromptDocumentName(skill.name),
+				{
+					name: skill.name,
+					body: parsed.body,
+					summary,
+				},
+			];
+		})
 	);
 	const loadedSkillsByName = new Map<string, RuntimeLoadedSkillDocument>();
 	let loadSkillCallCount = 0;
 
-	const catalog = enabledSkills
+	const catalog = Array.from(enabledSkillsByName.values())
 		.map((skill) => ({
 			name: skill.name,
-			summary: summarizeSkillContent(skill.content),
+			summary: skill.summary,
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -130,9 +152,9 @@ export function createRuntimeSkillRegistry(
 
 			const loadedSkill: RuntimeLoadedSkillDocument = {
 				name: resolvedSkill.name,
-				content: resolvedSkill.content,
+				content: resolvedSkill.body,
 				mentionedToolIds: extractMentionedToolIdsFromSkillContent(
-					resolvedSkill.content
+					resolvedSkill.body
 				),
 			};
 			loadedSkillsByName.set(normalizedName, loadedSkill);

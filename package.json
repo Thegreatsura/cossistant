@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "docker compose up -d && turbo run dev",
+    "dev": "sh -c 'docker compose up -d && turbo run dev'",
     "lint": "turbo run lint",
     "docs:links": "npx --yes markdown-link-check@3.11.2 packages/react/README.md --config docs/markdown-link-check.json",
     "check": "npx ultracite@latest check",
@@ -39,7 +39,8 @@
   "packageManager": "bun@1.2.22",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tinybird"
   ],
   "dependencies": {
     "better-auth": "^1.4.17",

@@ -7,6 +7,7 @@
 import type { Database } from "@api/db";
 import type { ConversationSelect } from "@api/db/schema/conversation";
 import { conversation } from "@api/db/schema/conversation";
+import { trackConversationMetric } from "@api/lib/tinybird-sdk";
 import { realtime } from "@api/realtime/emitter";
 import { createConversationEvent } from "@api/utils/conversation-event";
 import {
@@ -120,4 +121,15 @@ export async function updateStatus(params: UpdateStatusParams): Promise<void> {
 		},
 		aiAgentId,
 	});
+
+	// Track ai_resolved event in Tinybird for analytics
+	if (newStatus === "resolved") {
+		trackConversationMetric({
+			website_id: websiteId,
+			visitor_id: conv.visitorId,
+			conversation_id: conv.id,
+			event_type: "ai_resolved",
+			duration_seconds: updatedConversation.resolutionTime ?? undefined,
+		});
+	}
 }

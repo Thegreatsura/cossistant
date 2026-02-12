@@ -1,5 +1,6 @@
 import type { Database } from "@api/db";
 import { getVisitorPresenceProfiles } from "@api/db/queries/visitor";
+import { trackVisitorEvent } from "@api/lib/tinybird-sdk";
 import { waitForRedis } from "@api/redis";
 import {
 	PRESENCE_AWAY_WINDOW_MS,
@@ -206,6 +207,17 @@ export async function markVisitorPresence(params: {
 	websiteId: string;
 	visitorId: string;
 	lastSeenAt: string | number | Date;
+	sessionId?: string;
+	geo?: {
+		countryCode?: string;
+		city?: string;
+		latitude?: number;
+		longitude?: number;
+	};
+	device?: {
+		deviceType?: string;
+		browser?: string;
+	};
 }): Promise<void> {
 	try {
 		const redis = await waitForRedis();
@@ -221,6 +233,20 @@ export async function markVisitorPresence(params: {
 		pipeline.hset(profileKey, { lastSeenAt: iso });
 		pipeline.expire(profileKey, PRESENCE_TTL_SECONDS);
 		await pipeline.exec();
+
+		// Track "seen" event in Tinybird for analytics
+		trackVisitorEvent({
+			website_id: params.websiteId,
+			visitor_id: params.visitorId,
+			session_id: params.sessionId ?? params.visitorId,
+			event_type: "seen",
+			country_code: params.geo?.countryCode,
+			city: params.geo?.city,
+			latitude: params.geo?.latitude,
+			longitude: params.geo?.longitude,
+			device_type: params.device?.deviceType,
+			browser: params.device?.browser,
+		});
 	} catch (error) {
 		console.error("[Presence] Failed to mark visitor presence", {
 			websiteId: params.websiteId,

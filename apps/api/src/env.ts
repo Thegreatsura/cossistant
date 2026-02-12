@@ -26,6 +26,8 @@ const getEnvVariable = (name: string, defaultValue?: string): string => {
 
 export const env = {
 	NODE_ENV: getEnvVariable("NODE_ENV"),
+	TINYBIRD_HOST: getEnvVariable("TINYBIRD_HOST", "http://localhost:7181"),
+	TINYBIRD_TOKEN: getEnvVariable("TINYBIRD_TOKEN", "admin"),
 	DATABASE_HOST: getEnvVariable("DATABASE_HOST"),
 	DATABASE_PORT: +getEnvVariable("DATABASE_PORT"),
 	DATABASE_USERNAME: getEnvVariable("DATABASE_USERNAME"),

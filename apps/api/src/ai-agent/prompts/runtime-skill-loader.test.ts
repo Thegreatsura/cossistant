@@ -11,7 +11,12 @@ describe("runtime-skill-loader", () => {
 				{
 					id: "skill_1",
 					name: "deep-research.md",
-					content: "Use retrieval before answers.",
+					content: `---
+name: deep-research
+description: Research before answering factual questions.
+---
+
+Use retrieval before answers.`,
 					priority: 0,
 				},
 			],
@@ -21,6 +26,7 @@ describe("runtime-skill-loader", () => {
 		expect(result.found).toBe(true);
 		expect(result.name).toBe("deep-research.md");
 		expect(result.content).toContain("retrieval");
+		expect(result.content).not.toContain("name: deep-research");
 		expect(result.alreadyLoaded).toBe(false);
 	});
 
@@ -67,5 +73,32 @@ describe("runtime-skill-loader", () => {
 		);
 
 		expect(toolIds).toEqual(["searchKnowledgeBase", "sendMessage"]);
+	});
+
+	it("builds catalog summaries from frontmatter descriptions", () => {
+		const registry = createRuntimeSkillRegistry({
+			enabledSkills: [
+				{
+					id: "skill_1",
+					name: "tone-and-voice.md",
+					content: `---
+name: tone-and-voice
+description: Keep replies clear and concise.
+---
+
+## Tone
+
+Be concise.`,
+					priority: 0,
+				},
+			],
+		});
+
+		expect(registry.getCatalog()).toEqual([
+			{
+				name: "tone-and-voice.md",
+				summary: "Keep replies clear and concise.",
+			},
+		]);
 	});
 });

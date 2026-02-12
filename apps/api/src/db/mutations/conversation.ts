@@ -1,5 +1,6 @@
 import type { Database } from "@api/db";
 import { conversation, conversationSeen } from "@api/db/schema";
+import { trackConversationMetric } from "@api/lib/tinybird-sdk";
 import { createConversationEvent } from "@api/utils/conversation-event";
 import { generateULID } from "@api/utils/db/ids";
 import {
@@ -73,6 +74,15 @@ export async function resolveConversation(
 			createdAt: resolvedAt,
 			visibility: TimelineItemVisibility.PRIVATE,
 		},
+	});
+
+	// Track conversation_resolved event in Tinybird for analytics
+	trackConversationMetric({
+		website_id: params.conversation.websiteId,
+		visitor_id: params.conversation.visitorId,
+		conversation_id: params.conversation.id,
+		event_type: "conversation_resolved",
+		duration_seconds: updated.resolutionTime ?? undefined,
 	});
 
 	return updated;

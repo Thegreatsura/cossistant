@@ -5,7 +5,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { SkillMarkdownEditor } from "@/components/agents/skills/skill-markdown-editor";
-import { normalizeSkillFileName } from "@/components/agents/skills/tools-studio-utils";
+import {
+	normalizeSkillFrontmatterName,
+	parseSkillEditorContent,
+	serializeSkillEditorContent,
+	toCanonicalSkillFileNameFromFrontmatterName,
+} from "@/components/agents/skills/tools-studio-utils";
 import { Badge } from "@/components/ui/badge";
 import { BaseSubmitButton } from "@/components/ui/base-submit-button";
 import { Button } from "@/components/ui/button";
@@ -38,7 +43,8 @@ export default function SkillsPage() {
 	const queryClient = useQueryClient();
 
 	const [newSkillName, setNewSkillName] = useState("");
-	const [newSkillContent, setNewSkillContent] = useState(
+	const [newSkillDescription, setNewSkillDescription] = useState("");
+	const [newSkillBody, setNewSkillBody] = useState(
 		"## New Skill\n\nDescribe when and how this skill should be used."
 	);
 
@@ -233,6 +239,24 @@ export default function SkillsPage() {
 		return "Skill Editor";
 	}, [activeCustomSkill, activeSystemSkill, activeTemplate, editorTarget]);
 
+	const buildCanonicalSkillContent = (input: {
+		content: string;
+		canonicalFileName: string;
+		fallbackDescription?: string;
+	}) => {
+		const parsed = parseSkillEditorContent({
+			content: input.content,
+			canonicalFileName: input.canonicalFileName,
+			fallbackDescription: input.fallbackDescription,
+		});
+
+		return serializeSkillEditorContent({
+			name: normalizeSkillFrontmatterName(input.canonicalFileName),
+			description: parsed.description,
+			body: parsed.body,
+		});
+	};
+
 	if (!aiAgent || isLoadingAgent) {
 		return null;
 	}
@@ -241,7 +265,11 @@ export default function SkillsPage() {
 		template: GetCapabilitiesStudioResponse["defaultSkillTemplates"][number],
 		enabled: boolean
 	) => {
-		const content = templateDrafts[template.name] ?? template.content;
+		const content = buildCanonicalSkillContent({
+			content: templateDrafts[template.name] ?? template.content,
+			canonicalFileName: template.name,
+			fallbackDescription: template.description,
+		});
 
 		if (template.skillDocumentId) {
 			await updateSkillMutation.mutateAsync({
@@ -267,7 +295,11 @@ export default function SkillsPage() {
 	const handleDeleteTemplateForAgent = async (
 		template: GetCapabilitiesStudioResponse["defaultSkillTemplates"][number]
 	) => {
-		const content = templateDrafts[template.name] ?? template.content;
+		const content = buildCanonicalSkillContent({
+			content: templateDrafts[template.name] ?? template.content,
+			canonicalFileName: template.name,
+			fallbackDescription: template.description,
+		});
 		if (template.skillDocumentId) {
 			await updateSkillMutation.mutateAsync({
 				websiteSlug: website.slug,
@@ -292,7 +324,11 @@ export default function SkillsPage() {
 	const handleSaveTemplateOverride = async (
 		template: GetCapabilitiesStudioResponse["defaultSkillTemplates"][number]
 	) => {
-		const content = templateDrafts[template.name] ?? template.content;
+		const content = buildCanonicalSkillContent({
+			content: templateDrafts[template.name] ?? template.content,
+			canonicalFileName: template.name,
+			fallbackDescription: template.description,
+		});
 		if (template.skillDocumentId) {
 			await updateSkillMutation.mutateAsync({
 				websiteSlug: website.slug,
@@ -328,22 +364,29 @@ export default function SkillsPage() {
 	};
 
 	const handleCreateCustomSkill = async () => {
-		const normalizedName = normalizeSkillFileName(newSkillName);
-		if (!(normalizedName && newSkillContent.trim())) {
+		const normalizedName =
+			toCanonicalSkillFileNameFromFrontmatterName(newSkillName);
+		if (!(normalizedName && newSkillBody.trim())) {
 			return;
 		}
+		const content = serializeSkillEditorContent({
+			name: normalizeSkillFrontmatterName(normalizedName),
+			description: newSkillDescription,
+			body: newSkillBody,
+		});
 
 		await createSkillMutation.mutateAsync({
 			websiteSlug: website.slug,
 			aiAgentId: aiAgent.id,
 			name: normalizedName,
-			content: newSkillContent,
+			content,
 			enabled: true,
 			priority: 0,
 		});
 
 		setNewSkillName("");
-		setNewSkillContent(
+		setNewSkillDescription("");
+		setNewSkillBody(
 			"## New Skill\n\nDescribe when and how this skill should be used."
 		);
 		setEditorTarget(null);
@@ -396,20 +439,52 @@ export default function SkillsPage() {
 					</p>
 				);
 			}
+			const templateContent =
+				templateDrafts[activeTemplate.name] ?? activeTemplate.content;
+			const parsedTemplateContent = parseSkillEditorContent({
+				content: templateContent,
+				canonicalFileName: activeTemplate.name,
+				fallbackDescription: activeTemplate.description,
+			});
+			const templateFrontmatterName = normalizeSkillFrontmatterName(
+				activeTemplate.name
+			);
 
 			return (
-				<SkillMarkdownEditor
-					disabled={isMutating}
-					onChange={(nextValue) =>
-						setTemplateDrafts((current) => ({
-							...current,
-							[activeTemplate.name]: nextValue,
-						}))
-					}
-					rows={20}
-					toolMentions={toolMentionOptions}
-					value={templateDrafts[activeTemplate.name] ?? activeTemplate.content}
-				/>
+				<div className="space-y-3 p-2">
+					<Input disabled={true} value={templateFrontmatterName} />
+					<Input
+						disabled={isMutating}
+						onChange={(event) =>
+							setTemplateDrafts((current) => ({
+								...current,
+								[activeTemplate.name]: serializeSkillEditorContent({
+									name: templateFrontmatterName,
+									description: event.target.value,
+									body: parsedTemplateContent.body,
+								}),
+							}))
+						}
+						placeholder="Description"
+						value={parsedTemplateContent.description}
+					/>
+					<SkillMarkdownEditor
+						disabled={isMutating}
+						onChange={(nextValue) =>
+							setTemplateDrafts((current) => ({
+								...current,
+								[activeTemplate.name]: serializeSkillEditorContent({
+									name: templateFrontmatterName,
+									description: parsedTemplateContent.description,
+									body: nextValue,
+								}),
+							}))
+						}
+						rows={20}
+						toolMentions={toolMentionOptions}
+						value={parsedTemplateContent.body}
+					/>
+				</div>
 			);
 		}
 
@@ -419,22 +494,62 @@ export default function SkillsPage() {
 					<p className="p-3 text-muted-foreground text-sm">Skill not found.</p>
 				);
 			}
+			const customSkillContent =
+				customSkillDrafts[activeCustomSkill.id] ?? activeCustomSkill.content;
+			const parsedCustomContent = parseSkillEditorContent({
+				content: customSkillContent,
+				canonicalFileName: activeCustomSkill.name,
+			});
 
 			return (
-				<SkillMarkdownEditor
-					disabled={isMutating}
-					onChange={(nextValue) =>
-						setCustomSkillDrafts((current) => ({
-							...current,
-							[activeCustomSkill.id]: nextValue,
-						}))
-					}
-					rows={20}
-					toolMentions={toolMentionOptions}
-					value={
-						customSkillDrafts[activeCustomSkill.id] ?? activeCustomSkill.content
-					}
-				/>
+				<div className="space-y-3 p-2">
+					<Input
+						disabled={isMutating}
+						onChange={(event) =>
+							setCustomSkillDrafts((current) => ({
+								...current,
+								[activeCustomSkill.id]: serializeSkillEditorContent({
+									name: event.target.value,
+									description: parsedCustomContent.description,
+									body: parsedCustomContent.body,
+								}),
+							}))
+						}
+						placeholder="refund-playbook"
+						value={parsedCustomContent.name}
+					/>
+					<Input
+						disabled={isMutating}
+						onChange={(event) =>
+							setCustomSkillDrafts((current) => ({
+								...current,
+								[activeCustomSkill.id]: serializeSkillEditorContent({
+									name: parsedCustomContent.name,
+									description: event.target.value,
+									body: parsedCustomContent.body,
+								}),
+							}))
+						}
+						placeholder="Description"
+						value={parsedCustomContent.description}
+					/>
+					<SkillMarkdownEditor
+						disabled={isMutating}
+						onChange={(nextValue) =>
+							setCustomSkillDrafts((current) => ({
+								...current,
+								[activeCustomSkill.id]: serializeSkillEditorContent({
+									name: parsedCustomContent.name,
+									description: parsedCustomContent.description,
+									body: nextValue,
+								}),
+							}))
+						}
+						rows={20}
+						toolMentions={toolMentionOptions}
+						value={parsedCustomContent.body}
+					/>
+				</div>
 			);
 		}
 
@@ -471,15 +586,21 @@ export default function SkillsPage() {
 					<Input
 						disabled={isMutating}
 						onChange={(event) => setNewSkillName(event.target.value)}
-						placeholder="refund-playbook.md"
+						placeholder="refund-playbook"
 						value={newSkillName}
+					/>
+					<Input
+						disabled={isMutating}
+						onChange={(event) => setNewSkillDescription(event.target.value)}
+						placeholder="Description"
+						value={newSkillDescription}
 					/>
 					<SkillMarkdownEditor
 						disabled={isMutating}
-						onChange={setNewSkillContent}
+						onChange={setNewSkillBody}
 						rows={16}
 						toolMentions={toolMentionOptions}
-						value={newSkillContent}
+						value={newSkillBody}
 					/>
 				</div>
 			);
@@ -527,6 +648,23 @@ export default function SkillsPage() {
 		}
 
 		if (editorTarget?.kind === "custom" && activeCustomSkill) {
+			const customSkillContent =
+				customSkillDrafts[activeCustomSkill.id] ?? activeCustomSkill.content;
+			const parsedCustomContent = parseSkillEditorContent({
+				content: customSkillContent,
+				canonicalFileName: activeCustomSkill.name,
+			});
+			const canonicalFileName = toCanonicalSkillFileNameFromFrontmatterName(
+				parsedCustomContent.name
+			);
+			const canonicalContent = canonicalFileName
+				? serializeSkillEditorContent({
+						name: normalizeSkillFrontmatterName(canonicalFileName),
+						description: parsedCustomContent.description,
+						body: parsedCustomContent.body,
+					})
+				: "";
+
 			return (
 				<div className="flex w-full justify-end gap-2">
 					<Button
@@ -538,15 +676,15 @@ export default function SkillsPage() {
 						Close
 					</Button>
 					<BaseSubmitButton
+						disabled={!canonicalFileName}
 						isSubmitting={isMutating}
 						onClick={() =>
 							void updateSkillMutation.mutateAsync({
 								websiteSlug: website.slug,
 								aiAgentId: aiAgent.id,
 								skillDocumentId: activeCustomSkill.id,
-								content:
-									customSkillDrafts[activeCustomSkill.id] ??
-									activeCustomSkill.content,
+								name: canonicalFileName,
+								content: canonicalContent,
 							})
 						}
 						size="sm"
@@ -593,6 +731,9 @@ export default function SkillsPage() {
 		}
 
 		if (editorTarget?.kind === "create-custom") {
+			const normalizedNewSkillName =
+				toCanonicalSkillFileNameFromFrontmatterName(newSkillName);
+
 			return (
 				<div className="flex w-full justify-end gap-2">
 					<Button
@@ -605,9 +746,7 @@ export default function SkillsPage() {
 					</Button>
 					<Button
 						disabled={
-							isMutating ||
-							!normalizeSkillFileName(newSkillName) ||
-							!newSkillContent.trim()
+							isMutating || !normalizedNewSkillName || !newSkillBody.trim()
 						}
 						onClick={() => void handleCreateCustomSkill()}
 						size="sm"

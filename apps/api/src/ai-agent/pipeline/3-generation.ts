@@ -23,6 +23,7 @@ import {
 	stepCountIs,
 	ToolLoopAgent,
 } from "@api/lib/ai";
+import { parseSkillFileContent } from "@cossistant/types";
 import type { PrepareStepFunction, ToolSet } from "ai";
 import {
 	detectPromptInjection,
@@ -271,9 +272,13 @@ export async function generate(
 		const mergedByName = new Map<string, PromptSkillDocument>();
 
 		for (const skill of fallbackSelectedSkillDocuments) {
+			const parsedSkill = parseSkillFileContent({
+				content: skill.content,
+				canonicalFileName: skill.name,
+			});
 			mergedByName.set(skill.name, {
 				name: skill.name,
-				content: skill.content,
+				content: parsedSkill.body,
 			});
 		}
 

@@ -2,9 +2,11 @@
 "use client";
 
 import { FILE_INPUT_ACCEPT } from "@cossistant/core";
-import { useMultimodalInput } from "@cossistant/react/hooks/private/use-multimodal-input";
-import { CONVERSATION_AUTO_SEEN_DELAY_MS } from "@cossistant/react/hooks/use-conversation-auto-seen";
-import { useWindowVisibilityFocus } from "@cossistant/react/hooks/use-window-visibility-focus";
+import {
+	CONVERSATION_AUTO_SEEN_DELAY_MS,
+	useMultimodalInput,
+	useWindowVisibilityFocus,
+} from "@cossistant/react";
 import type { AvailableAIAgent } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useQuery } from "@tanstack/react-query";

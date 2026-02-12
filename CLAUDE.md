@@ -82,6 +82,25 @@ Background job processing with BullMQ + Redis:
 | `ai-agent` | AI agent response generation and escalation |
 | `web-crawl` | Web scraping for knowledge base ingestion |
 
+## Analytics (`tinybird/`)
+
+Real-time analytics powered by Tinybird (ClickHouse):
+
+### Datasources
+| Datasource | Contents | Retention |
+|------------|----------|-----------|
+| `visitor_events` | `seen`, `page_view` events with geo data | 30 days (all tiers) |
+| `conversation_metrics` | Conversation lifecycle events | Indefinite for paid, 21d for free (query-time enforcement) |
+
+### Endpoints (Pipes)
+- `inbox_analytics` - Dashboard metrics (response time, resolution time, AI rate)
+- `unique_visitors` - Unique visitor counts by date range
+- `active_visitors` - Real-time active visitors with geolocation
+- `visitor_locations` - Geo aggregation for globe visualization
+
+### Local Development
+Tinybird Local (`tb dev`) runs automatically on port 7181 when you start `bun dev`. The Tinybird schema is defined in `.datasource` and `.pipe` files in the `tinybird/` directory.
+
 ## Documentation Sync (Critical)
 
 Documentation lives in `apps/web/content/docs/`. When updating `packages/react`:
@@ -170,7 +189,9 @@ Use `bun run changeset` for public package releases.
 Copy `.env.example` to `.env`:
 - **Database**: PostgreSQL with pgvector
 - **Auth**: Better Auth (Google/GitHub OAuth)
-- **Services**: Redis, Resend (email), QStash (queues), S3 (storage)
+- **Services**: Redis, Tinybird Local, Resend (email), QStash (queues), S3 (storage)
 - **AI**: OpenRouter API
 
-Start local services: `docker compose up -d`
+Start all services: `bun dev`
+
+**Tinybird Setup**: Tinybird Local runs on port 7181. Schema is in `tinybird/` and auto-loads when you run `bun dev`.

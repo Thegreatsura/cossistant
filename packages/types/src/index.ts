@@ -7,6 +7,7 @@ export * from "./presence";
 export * from "./realtime-events";
 export type { Conversation, ConversationSeen } from "./schemas";
 export { conversationSchema, conversationSeenSchema } from "./schemas";
+export * from "./skill-file-format";
 export * from "./tool-timeline-policy";
 export * from "./trpc/contact";
 export * from "./trpc/conversation";

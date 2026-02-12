@@ -14,7 +14,8 @@ export function InboxAnalytics({ websiteSlug }: { websiteSlug: string }) {
 	const query = useInboxAnalytics({
 		websiteSlug,
 		rangeDays,
-		enabled: websiteSlug === "cossistant",
+		// Analytics now available for all websites via Tinybird
+		enabled: true,
 	});
 
 	return (

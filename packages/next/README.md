@@ -9,13 +9,13 @@ Build fully featured customer support experiences in your NextJS app with the of
 Pick the command that matches your package manager:
 
 ```bash
-bun add @cossistant/next @cossistant/react
+bun add @cossistant/next
 # or
-npm install @cossistant/next @cossistant/react
+npm install @cossistant/next
 # or
-pnpm add @cossistant/next @cossistant/react
+pnpm add @cossistant/next
 # or
-yarn add @cossistant/next @cossistant/react
+yarn add @cossistant/next
 ```
 
 ## Need help or spot a typo?

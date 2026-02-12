@@ -25,7 +25,7 @@ declare module "@cossistant/core" {
 ### Step 2: Create your page component
 
 ```tsx
-import { useSupportNavigation, Header, Button } from "@cossistant/react";
+import { useSupportNavigation, Header, Button } from "@cossistant/next";
 
 const SettingsPage = ({ params }) => {
   const { navigate, goBack, canGoBack } = useSupportNavigation();
@@ -50,7 +50,7 @@ const SettingsPage = ({ params }) => {
 ### Step 3: Register with `<Support.Page>`
 
 ```tsx
-import { Support } from "@cossistant/react";
+import { Support } from "@cossistant/next";
 
 <Support>
   <Support.Page name="SETTINGS" component={SettingsPage} />
@@ -74,7 +74,7 @@ navigate({
 The `useSupportNavigation` hook provides everything needed for routing:
 
 ```tsx
-import { useSupportNavigation } from "@cossistant/react";
+import { useSupportNavigation } from "@cossistant/next";
 
 const MyPage = () => {
   const {
@@ -168,7 +168,7 @@ import {
   Text,
   useSupportText,
   useSupportNavigation
-} from "@cossistant/react";
+} from "@cossistant/next";
 
 const HelpPage = () => {
   const { goBack } = useSupportNavigation();
@@ -203,7 +203,7 @@ const HelpPage = () => {
 ```tsx
 "use client";
 
-import { Support, useSupportNavigation } from "@cossistant/react";
+import { Support, useSupportNavigation } from "@cossistant/next";
 
 // 1. Extend types
 declare module "@cossistant/core" {

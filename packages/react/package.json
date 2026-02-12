@@ -35,7 +35,6 @@
     "./primitives/*": "./src/primitives/*.ts",
     "./support": "./src/support/index.tsx",
     "./hooks": "./src/hooks/index.ts",
-    "./hooks/*": "./src/hooks/*",
     "./support.css": "./dist/support.css",
     "./tailwind.css": "./dist/tailwind.css",
     "./realtime": "./src/realtime/index.ts",
@@ -62,6 +61,7 @@
     "@floating-ui/react": "^0.27.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "motion": "^12.18.1",
     "nanoid": "^5.1.5",
     "react-use-websocket": "^4.13.0",
     "tailwind-merge": "^3.3.1",
@@ -79,7 +79,6 @@
     "react": ">=18 <20",
     "react-dom": ">=18 <20",
     "@types/react": "",
-    "motion": "^12.18.1",
     "tailwindcss": "*"
   },
   "peerDependenciesMeta": {

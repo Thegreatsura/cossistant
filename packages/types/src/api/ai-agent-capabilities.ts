@@ -1,3 +1,8 @@
+import {
+	serializeSkillFileContent,
+	stripSkillMarkdownExtension,
+} from "../skill-file-format";
+
 export const AI_AGENT_TOOL_CATEGORIES = [
 	"system",
 	"messaging",
@@ -191,7 +196,7 @@ export const AI_AGENT_TOOL_CATALOG: readonly AiAgentToolCatalogEntry[] = [
 	},
 ] as const;
 
-export const AI_AGENT_DEFAULT_SKILL_TEMPLATES = [
+const AI_AGENT_DEFAULT_SKILL_TEMPLATE_DEFINITIONS = [
 	{
 		name: "reply-or-stay-silent.md",
 		label: "Reply Or Stay Silent",
@@ -416,6 +421,24 @@ export const AI_AGENT_DEFAULT_SKILL_TEMPLATES = [
 		suggestedToolIds: ["sendPrivateMessage"] as const,
 	},
 ] as const;
+
+type AiAgentDefaultSkillTemplateEntry = {
+	name: string;
+	label: string;
+	description: string;
+	content: string;
+	suggestedToolIds: readonly AiAgentToolId[];
+};
+
+export const AI_AGENT_DEFAULT_SKILL_TEMPLATES: readonly AiAgentDefaultSkillTemplateEntry[] =
+	AI_AGENT_DEFAULT_SKILL_TEMPLATE_DEFINITIONS.map((template) => ({
+		...template,
+		content: serializeSkillFileContent({
+			name: stripSkillMarkdownExtension(template.name),
+			description: template.description,
+			body: template.content,
+		}),
+	}));
 
 export type AiAgentDefaultSkillTemplate =
 	(typeof AI_AGENT_DEFAULT_SKILL_TEMPLATES)[number];

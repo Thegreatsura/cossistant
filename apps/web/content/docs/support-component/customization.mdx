@@ -60,7 +60,7 @@ The widget automatically repositions itself to stay within the viewport. When th
 Replace the default trigger with `<Support.Trigger>`:
 
 ```tsx
-import { Support, type TriggerRenderProps } from "@cossistant/react";
+import { Support, type TriggerRenderProps } from "@cossistant/next";
 
 <Support side="bottom" align="end">
   <Support.Trigger className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg">
@@ -112,7 +112,7 @@ Control the content positioning and styling with `<Support.Content>`:
 For complete control, use `<Support.Root>`:
 
 ```tsx
-import { Support } from "@cossistant/react";
+import { Support } from "@cossistant/next";
 
 export default function App() {
   return (
@@ -135,7 +135,7 @@ export default function App() {
 A common use case is placing the trigger in your navigation bar:
 
 ```tsx
-import { Support, type TriggerRenderProps } from "@cossistant/react";
+import { Support, type TriggerRenderProps } from "@cossistant/next";
 
 function Topbar() {
   return (
@@ -168,7 +168,7 @@ function Topbar() {
 Add custom pages to the router:
 
 ```tsx
-import { Support, useSupportNavigation } from "@cossistant/react";
+import { Support, useSupportNavigation } from "@cossistant/next";
 
 const FAQPage = () => {
   const { goBack } = useSupportNavigation();
@@ -259,33 +259,12 @@ type SupportProps = {
 Combining multiple customizations:
 
 ```tsx
-import { Support, type TriggerRenderProps } from "@cossistant/react";
-import { AnimatePresence, motion } from "motion/react";
+import { Support, type TriggerRenderProps } from "@cossistant/next";
 import { MessageCircle, X } from "lucide-react";
 
-const AnimatedTriggerContent = ({ isOpen, unreadCount }: TriggerRenderProps) => (
+const TriggerContent = ({ isOpen, unreadCount }: TriggerRenderProps) => (
   <>
-    <AnimatePresence mode="wait">
-      {isOpen ? (
-        <motion.div
-          key="close"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-        >
-          <X className="size-5" />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="open"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-        >
-          <MessageCircle className="size-6" />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    {isOpen ? <X className="size-5" /> : <MessageCircle className="size-6" />}
     {unreadCount > 0 && (
       <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
         {unreadCount}
@@ -298,7 +277,7 @@ export default function App() {
   return (
     <Support theme="dark" side="top" align="end">
       <Support.Trigger className="relative flex size-14 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
-        {(props) => <AnimatedTriggerContent {...props} />}
+        {(props) => <TriggerContent {...props} />}
       </Support.Trigger>
       <Support.Content className="border-indigo-200" />
     </Support>

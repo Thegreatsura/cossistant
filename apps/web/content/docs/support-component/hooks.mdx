@@ -133,7 +133,7 @@ Programmatically identify visitors and manage contact metadata.
   <AlertDescription>
     Metadata is stored on **contacts**, not visitors. You must call `identify()`
     before `setVisitorMetadata()` will work. Learn more about{" "}
-    <Link href="/docs/concepts/visitors">visitors</Link> and{" "}
+    <Link href="/docs/concepts">visitors</Link> and{" "}
     <Link href="/docs/concepts/contacts">contacts</Link>.
   </AlertDescription>
 </Alert>
@@ -297,7 +297,7 @@ Access and control widget visibility and size configuration.
 ```tsx showLineNumbers title="components/custom-toggle.tsx"
 "use client";
 
-import { useSupportConfig } from "@cossistant/react/support";
+import { useSupportConfig } from "@cossistant/next/support";
 
 export function CustomToggle() {
   const { isOpen, open, close, toggle, size } = useSupportConfig();
@@ -364,7 +364,7 @@ Access navigation state and routing methods for the widget.
 ```tsx showLineNumbers title="components/navigation-buttons.tsx"
 "use client";
 
-import { useSupportNavigation } from "@cossistant/react/support";
+import { useSupportNavigation } from "@cossistant/next/support";
 
 export function NavigationButtons() {
   const { page, navigate, goBack, canGoBack } = useSupportNavigation();
@@ -446,7 +446,7 @@ Access the imperative handle from within the widget tree. Alternative to using r
 ```tsx showLineNumbers title="components/help-button.tsx"
 "use client";
 
-import { useSupportHandle } from "@cossistant/react/support";
+import { useSupportHandle } from "@cossistant/next/support";
 
 export function HelpButton() {
   const support = useSupportHandle();
@@ -521,7 +521,7 @@ Logic hook for building custom home pages. Provides all state and actions needed
 ```tsx showLineNumbers title="pages/custom-home.tsx"
 "use client";
 
-import { useHomePage } from "@cossistant/react";
+import { useHomePage } from "@cossistant/next";
 
 export function CustomHomePage() {
   const home = useHomePage({
@@ -605,7 +605,7 @@ Logic hook for building custom conversation pages. Manages the conversation life
 ```tsx showLineNumbers title="pages/custom-conversation.tsx"
 "use client";
 
-import { useConversationPage } from "@cossistant/react";
+import { useConversationPage } from "@cossistant/next";
 
 export function CustomConversationPage({ conversationId }: { conversationId: string }) {
   const conversation = useConversationPage({
@@ -698,7 +698,7 @@ Hook for managing message composition with file attachments.
 ```tsx showLineNumbers title="components/message-input.tsx"
 "use client";
 
-import { useMessageComposer } from "@cossistant/react";
+import { useMessageComposer } from "@cossistant/next";
 
 export function MessageInput({ conversationId }: { conversationId: string }) {
   const composer = useMessageComposer({
@@ -802,7 +802,7 @@ Hook for handling file uploads with progress tracking.
 ```tsx showLineNumbers title="components/file-uploader.tsx"
 "use client";
 
-import { useFileUpload } from "@cossistant/react";
+import { useFileUpload } from "@cossistant/next";
 
 export function FileUploader() {
   const upload = useFileUpload({
@@ -879,7 +879,7 @@ Access the localization system for the support widget.
 ```tsx showLineNumbers title="components/localized-button.tsx"
 "use client";
 
-import { useSupportText } from "@cossistant/react/support";
+import { useSupportText } from "@cossistant/next/support";
 
 export function LocalizedButton() {
   const text = useSupportText();
@@ -919,7 +919,7 @@ Access the events context for subscribing to widget lifecycle events.
 ```tsx showLineNumbers title="components/analytics-tracker.tsx"
 "use client";
 
-import { useSupportEvents } from "@cossistant/react/support";
+import { useSupportEvents } from "@cossistant/next/support";
 import { useEffect } from "react";
 
 export function AnalyticsTracker() {
