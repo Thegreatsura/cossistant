@@ -58,6 +58,17 @@ export default function RootLayout({
 }
 ```
 
+<Alert variant="info" className="mt-6">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Troubleshooting startup animation resets</AlertTitle>
+  <AlertDescription>
+    Older SDK builds could remount descendants during widget initialization. If
+    you still see startup animations replaying, scope `SupportProvider` to the
+    smallest subtree that needs support hooks until you upgrade to a build with
+    the remount fix.
+  </AlertDescription>
+</Alert>
+
   </Step>
 
   <Step>

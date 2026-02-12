@@ -1,4 +1,4 @@
-import type { CossistantClient } from "@cossistant/core";
+import { CossistantAPIError, type CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import {
 	ConversationTimelineType,
@@ -71,6 +71,10 @@ export type UseConversationPageReturn = {
 	lastTimelineItem: TimelineItem | null;
 };
 
+function isNotFoundError(error: Error | null): boolean {
+	return error instanceof CossistantAPIError && error.code === "HTTP_404";
+}
+
 /**
  * Main orchestrator hook for the conversation page.
  *
@@ -140,9 +144,16 @@ export function useConversationPage(
 		? []
 		: defaultTimelineItems;
 
+	const isPendingConversationBootstrap = Boolean(
+		lifecycle.realConversationId &&
+			client?.isConversationPending(lifecycle.realConversationId)
+	);
+	const shouldEnableConversationNetworkSync =
+		Boolean(lifecycle.realConversationId) && !isPendingConversationBootstrap;
+
 	// 3. Fetch timeline items from backend if real conversation exists
 	const timelineQuery = useConversationTimelineItems(lifecycle.conversationId, {
-		enabled: !lifecycle.isPending,
+		enabled: shouldEnableConversationNetworkSync,
 	});
 
 	// 4. Determine which items to display
@@ -241,6 +252,17 @@ export function useConversationPage(
 		[displayItems]
 	);
 
+	const timelineError = useMemo(() => {
+		if (
+			isPendingConversationBootstrap &&
+			isNotFoundError(timelineQuery.error)
+		) {
+			return null;
+		}
+
+		return timelineQuery.error;
+	}, [isPendingConversationBootstrap, timelineQuery.error]);
+
 	// 5. Set up message composer
 	const composer = useMessageComposer({
 		client: client ?? undefined,
@@ -317,7 +339,7 @@ export function useConversationPage(
 		conversationId: lifecycle.realConversationId,
 		visitorId: visitor?.id,
 		lastTimelineItem,
-		enabled: autoSeenEnabled,
+		enabled: autoSeenEnabled && shouldEnableConversationNetworkSync,
 		isWidgetOpen: autoSeenEnabled,
 	});
 
@@ -326,7 +348,7 @@ export function useConversationPage(
 		isPending: lifecycle.isPending,
 		items: displayItems,
 		isLoading: timelineQuery.isLoading,
-		error: timelineQuery.error || composer.error,
+		error: timelineError || composer.error,
 		composer: {
 			message: composer.message,
 			files: composer.files,

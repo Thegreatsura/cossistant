@@ -77,6 +77,11 @@ type ResolvedAuthConfig = {
 	publicKey: string | null;
 };
 
+type RealtimeAuthIdentity = Pick<
+	ResolvedAuthConfig,
+	"visitorId" | "websiteId" | "userId"
+>;
+
 type RealtimeProviderProps = {
 	children: React.ReactNode;
 	wsUrl?: string;
@@ -341,6 +346,27 @@ function normalizeAuth(
 	} satisfies ResolvedAuthConfig;
 }
 
+function toRealtimeAuthIdentity(
+	auth: ResolvedAuthConfig | null
+): RealtimeAuthIdentity {
+	return {
+		visitorId: auth?.visitorId ?? null,
+		websiteId: auth?.websiteId ?? null,
+		userId: auth?.userId ?? null,
+	};
+}
+
+function hasRealtimeAuthIdentityChanged(
+	previous: RealtimeAuthIdentity,
+	next: RealtimeAuthIdentity
+): boolean {
+	return (
+		previous.visitorId !== next.visitorId ||
+		previous.websiteId !== next.websiteId ||
+		previous.userId !== next.userId
+	);
+}
+
 function buildSocketUrl(
 	baseUrl: string,
 	auth: ResolvedAuthConfig | null
@@ -374,7 +400,6 @@ function buildSocketUrl(
 
 /**
  * Internal component that handles the WebSocket connection.
- * Only rendered in the browser to avoid SSR issues with react-use-websocket.
  */
 function RealtimeProviderInternal({
 	children,
@@ -386,11 +411,20 @@ function RealtimeProviderInternal({
 	onError,
 }: RealtimeProviderProps): React.ReactElement {
 	const normalizedAuth = normalizeAuth(auth);
+	const authIdentity = useMemo(
+		() => toRealtimeAuthIdentity(normalizedAuth),
+		[
+			normalizedAuth?.visitorId,
+			normalizedAuth?.websiteId,
+			normalizedAuth?.userId,
+		]
+	);
 
 	const socketUrl = buildSocketUrl(wsUrl, normalizedAuth);
 	const eventHandlersRef = useRef<Set<SubscribeHandler>>(new Set());
 	const lastHeartbeatRef = useRef<number>(0);
 	const hasOpenedRef = useRef(false);
+	const previousAuthIdentityRef = useRef(authIdentity);
 	const previousUrlRef = useRef<string | null>(null);
 	const [connectionError, setConnectionError] = useState<Error | null>(null);
 	const [lastEvent, setLastEvent] = useState<AnyRealtimeEvent | null>(null);
@@ -401,6 +435,25 @@ function RealtimeProviderInternal({
 
 	const canConnect = Boolean(autoConnect && socketUrl);
 	const connectionUrl = canConnect ? socketUrl : null;
+
+	// Reset connection metadata when auth identity changes without remounting descendants.
+	useEffect(() => {
+		const previous = previousAuthIdentityRef.current;
+		const hasIdentityChanged = hasRealtimeAuthIdentityChanged(
+			previous,
+			authIdentity
+		);
+
+		if (hasIdentityChanged) {
+			hasOpenedRef.current = false;
+			lastHeartbeatRef.current = 0;
+			setConnectionId(null);
+			setLastEvent(null);
+			setConnectionError(null);
+		}
+
+		previousAuthIdentityRef.current = authIdentity;
+	}, [authIdentity]);
 
 	// Track URL changes to detect when connection is being replaced
 	useEffect(() => {
@@ -691,7 +744,6 @@ function RealtimeProviderInternal({
 
 /**
  * Provides websocket connectivity and heartbeating logic for realtime events.
- * Handles SSR by only initializing the WebSocket connection in the browser.
  */
 export function RealtimeProvider({
 	children,
@@ -702,51 +754,6 @@ export function RealtimeProvider({
 	onDisconnect,
 	onError,
 }: RealtimeProviderProps): React.ReactElement {
-	const [isBrowser, setIsBrowser] = useState(false);
-
-	useEffect(() => {
-		setIsBrowser(true);
-	}, []);
-
-	const normalizedAuth = normalizeAuth(auth);
-
-	// Create a default context value for SSR
-	const defaultValue = useMemo<RealtimeContextValue>(
-		() => ({
-			isConnected: false,
-			isConnecting: false,
-			error: null,
-			send: () => {
-				throw new Error("Realtime connection is not available during SSR");
-			},
-			sendRaw: () => {
-				throw new Error("Realtime connection is not available during SSR");
-			},
-			subscribe: () => () => {},
-			lastEvent: null,
-			connectionId: null,
-			reconnect: () => {},
-			visitorId: normalizedAuth?.visitorId ?? null,
-			websiteId: normalizedAuth?.websiteId ?? null,
-			userId: normalizedAuth?.userId ?? null,
-		}),
-		[
-			normalizedAuth?.visitorId,
-			normalizedAuth?.websiteId,
-			normalizedAuth?.userId,
-		]
-	);
-
-	// During SSR or before hydration, provide a default context
-	if (!isBrowser) {
-		return (
-			<RealtimeContext.Provider value={defaultValue}>
-				{children}
-			</RealtimeContext.Provider>
-		);
-	}
-
-	// In the browser, use the full implementation
 	return (
 		<RealtimeProviderInternal
 			auth={auth}

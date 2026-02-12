@@ -479,23 +479,11 @@ function SupportProviderInner({
 		]
 	);
 
-	const webSocketKey = React.useMemo(() => {
-		if (!website) {
-			return "no-website";
-		}
-
-		const visitorKey = website.visitor?.id ?? "anonymous";
-		const blockedState = isVisitorBlocked ? "blocked" : "active";
-
-		return `${website.id}:${visitorKey}:${blockedState}`;
-	}, [isVisitorBlocked, website]);
-
 	return (
 		<SupportContext.Provider value={value}>
 			<IdentificationProvider>
 				<WebSocketProvider
 					autoConnect={autoConnect && !isVisitorBlocked && !configurationError}
-					key={webSocketKey}
 					onConnect={onWsConnect}
 					onDisconnect={onWsDisconnect}
 					onError={onWsError}

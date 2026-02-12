@@ -1,4 +1,4 @@
-import type { CossistantClient } from "@cossistant/core";
+import { CossistantAPIError, type CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useRef } from "react";
 import {
@@ -8,6 +8,10 @@ import {
 import { useWindowVisibilityFocus } from "./use-window-visibility-focus";
 
 export const CONVERSATION_AUTO_SEEN_DELAY_MS = 2000;
+
+function isNotFoundError(error: unknown): boolean {
+	return error instanceof CossistantAPIError && error.code === "HTTP_404";
+}
 
 export type UseConversationAutoSeenOptions = {
 	/**
@@ -121,6 +125,10 @@ export function useConversationAutoSeen(
 					}
 				})
 				.catch((err) => {
+					if (isNotFoundError(err)) {
+						return;
+					}
+
 					console.error("Failed to fetch conversation seen data:", err);
 				});
 		}
@@ -200,6 +208,10 @@ export function useConversationAutoSeen(
 						});
 					})
 					.catch((err) => {
+						if (isNotFoundError(err)) {
+							return;
+						}
+
 						console.error("Failed to mark conversation as seen:", err);
 					})
 					.finally(() => {

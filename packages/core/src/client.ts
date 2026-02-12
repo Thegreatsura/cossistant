@@ -102,6 +102,14 @@ export class CossistantClient {
 		return { ...this.config };
 	}
 
+	isConversationPending(conversationId: string | null | undefined): boolean {
+		if (!conversationId) {
+			return false;
+		}
+
+		return this.pendingConversations.has(conversationId);
+	}
+
 	// Website information
 	async fetchWebsite(
 		params: { force?: boolean } = {}
@@ -362,6 +370,7 @@ export class CossistantClient {
 			try {
 				const response = await this.restClient.createConversation({
 					conversationId: rest.conversationId,
+					visitorId: pending.conversation.visitorId || undefined,
 					defaultTimelineItems: [
 						...pending.initialTimelineItems,
 						optimisticTimelineItem,
