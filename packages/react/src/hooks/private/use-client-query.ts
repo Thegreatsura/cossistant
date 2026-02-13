@@ -115,12 +115,12 @@ export function useClientQuery<TData, TArgs = void>(
 
 	queryFnRef.current = queryFn;
 
-	useEffect(
-		() => () => {
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
 			isMountedRef.current = false;
-		},
-		[]
-	);
+		};
+	}, []);
 
 	useEffect(() => {
 		argsRef.current = initialArgs;

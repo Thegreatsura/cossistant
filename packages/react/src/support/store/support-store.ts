@@ -16,19 +16,20 @@ type Selector<T> = (state: SupportStoreState) => T;
 
 type EqualityChecker<T> = (previous: T, next: T) => boolean;
 
+// Stable subscribe function — store is module-level so this never changes
+const stableSubscribe = (onStoreChange: () => void) =>
+	store.subscribe(() => {
+		onStoreChange();
+	});
+
 function useSelector<TSelected>(
 	selector: Selector<TSelected>,
 	isEqual: EqualityChecker<TSelected> = Object.is
 ): TSelected {
 	const selectionRef = useRef<TSelected>(undefined);
 
-	const subscribe = (onStoreChange: () => void) =>
-		store.subscribe(() => {
-			onStoreChange();
-		});
-
 	const snapshot = useSyncExternalStore(
-		subscribe,
+		stableSubscribe,
 		store.getState,
 		store.getState
 	);

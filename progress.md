@@ -1,12 +1,16 @@
-# Progress Log: Tinybird Analytics Migration
+# Progress: Avatar Stack Race Condition
 
-## Session Started: 2026-02-11
+## Session 1 — 2026-02-12
 
-### Phase 0: Research & Planning ✅
+### Attempt 1: isMountedRef fix — FAILED
+- Fixed useClientQuery's isMountedRef not resetting on remount
+- Issue: didn't affect the store-based data path
 
-**Completed:**
-- Explored current analytics implementation (7 PG queries, presence via Redis, visitor schema)
-- Researched Tinybird: Events API, TTL, pricing, pipes, real-time, integration patterns
-- Identified what stays (Redis presence, PG profiles/feedback) vs what moves (analytics events)
-- Created findings.md with architecture decisions
-- Creating task_plan.md with phased migration plan
+### Attempt 2: Stable subscribe — FAILED
+- Stabilized subscribe/getSnapshot in useStoreSelector and support-store
+- Issue: useSyncExternalStore handles unstable refs correctly
+
+### Starting Phase 1: Deep investigation
+- Searching for all websiteStore mutations
+- Checking realtime/identification flows
+- Looking for secondary fetch paths

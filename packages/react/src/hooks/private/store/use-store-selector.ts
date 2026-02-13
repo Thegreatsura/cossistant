@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 
 type Subscription<TState> = (state: TState) => void;
 
@@ -9,6 +9,7 @@ type BasicStore<TState> = {
 
 // No-op subscribe function for null store case
 const noopSubscribe = () => () => {};
+const getNull = () => null;
 
 /**
  * React hook that bridges Zustand-like stores with React components by
@@ -35,16 +36,29 @@ export function useStoreSelector<TState, TSelected>(
 ): TSelected {
 	const selectionRef = useRef<TSelected>(undefined);
 
-	// Create stable subscribe function
-	const subscribe = store
-		? (onStoreChange: () => void) => store.subscribe(() => onStoreChange())
-		: noopSubscribe;
+	// Stable subscribe function — only recreated when store identity changes
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => {
+			if (!store) {
+				return noopSubscribe();
+			}
+			return store.subscribe(() => onStoreChange());
+		},
+		[store]
+	);
 
-	// Create stable getSnapshot function
-	const getSnapshot = store ? () => store.getState() : () => null;
+	// Stable getSnapshot function — only recreated when store identity changes
+	const getSnapshot = useCallback(
+		() => (store ? store.getState() : null),
+		[store]
+	);
 
 	// Always call useSyncExternalStore unconditionally
-	const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+	const snapshot = useSyncExternalStore(
+		store ? subscribe : noopSubscribe,
+		store ? getSnapshot : getNull,
+		store ? getSnapshot : getNull
+	);
 
 	const selected = selector(snapshot);
 

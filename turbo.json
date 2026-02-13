@@ -82,6 +82,11 @@
       "cache": false,
       "persistent": true
     },
+    "@cossistant/example-nextjs-tailwind#dev": {
+      "dependsOn": ["@cossistant/next#build"],
+      "cache": false,
+      "persistent": true
+    },
     "db:migrate": {
       "outputs": []
     },

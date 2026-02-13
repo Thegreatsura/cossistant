@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Check types
+        run: bun run check-types
+
       - name: Create Release PR or Publish
         id: changesets
         uses: changesets/action@v1
