@@ -162,9 +162,9 @@ Required implementation:
 4. Render <Support /> in an existing page.
 5. CSS setup rule:
    - If global CSS already contains '@import "tailwindcss";', add:
-     @import "@cossistant/next/tailwind.css";
+     @import "@cossistant/next/support.css";
    - Otherwise import:
-     "@cossistant/next/support.css";
+     import "@cossistant/next/styles.css";
 
 Output format (strict):
 1. List all changed files.
@@ -411,7 +411,7 @@ export default function CreationFlowWrapper({
 											<DashboardCodeBlock
 												code={`@import "tailwindcss";
 
-@import "@cossistant/next/tailwind.css";
+@import "@cossistant/next/support.css";
 `}
 												fileName="app/globals.css"
 												highlightLines="3"

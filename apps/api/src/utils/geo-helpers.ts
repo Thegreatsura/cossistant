@@ -1,14 +1,11 @@
 /**
  * Geo and Device Data Helpers
  *
- * Extract geo location and device information from visitorRecord records
+ * Extract geo location and device information from visitor records
  * for analytics tracking.
  */
 
-import type { visitorRecord } from "@api/db/schema";
-import type { InferSelectModel } from "drizzle-orm";
-
-type VisitorRecord = InferSelectModel<typeof visitorRecord>;
+import type { VisitorSelect } from "@api/db/schema";
 
 export type GeoData = {
 	countryCode?: string;
@@ -23,10 +20,10 @@ export type DeviceData = {
 };
 
 /**
- * Extract geo location data from a visitorRecord record
+ * Extract geo location data from a visitor record
  */
 export function extractGeoFromVisitor(
-	record: VisitorRecord | null | undefined
+	record: VisitorSelect | null | undefined
 ): GeoData | undefined {
 	if (!record) {
 		return;
@@ -48,10 +45,10 @@ export function extractGeoFromVisitor(
 }
 
 /**
- * Extract device information from a visitorRecord record
+ * Extract device information from a visitor record
  */
 export function extractDeviceFromVisitor(
-	record: VisitorRecord | null | undefined
+	record: VisitorSelect | null | undefined
 ): DeviceData | undefined {
 	if (!record) {
 		return;
@@ -70,8 +67,8 @@ export function extractDeviceFromVisitor(
 }
 
 /**
- * Extract session ID from visitorRecord record (uses visitorRecord ID as fallback)
+ * Extract session ID from visitor record (uses visitor ID as fallback)
  */
-export function getSessionId(record: VisitorRecord | null | undefined): string {
-	return record?.sessionId ?? record?.id ?? "unknown";
+export function getSessionId(record: VisitorSelect | null | undefined): string {
+	return record?.id ?? "unknown";
 }

@@ -8,7 +8,7 @@ mock.module("./tool-call-logger", () => ({
 	wrapToolsWithTimelineLogging: <T>(tools: T) => tools,
 }));
 
-const toolsModulePromise = import("./index.ts?tool-index-test");
+const toolsModulePromise = import("./index");
 
 function createAgent(
 	overrides: Partial<AiAgentSelect["behaviorSettings"]> = {}

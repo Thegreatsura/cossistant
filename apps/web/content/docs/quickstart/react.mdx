@@ -156,10 +156,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 Import the support widget styles in your main CSS file:
 
 ```css {1} showLineNumbers title="src/index.css"
-@import "@cossistant/react/support.css";
+@import "@cossistant/react/styles.css";
 
 /* Your existing styles */
 ```
+
+If you're using Tailwind CSS v4 and want source-based theme integration, use `@import "@cossistant/react/support.css";` instead.
 
 Or import it directly in your entry file:
 
@@ -168,7 +170,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { SupportProvider } from "@cossistant/react";
 import App from "./App";
-import "@cossistant/react/support.css";
+import "@cossistant/react/styles.css";
 import "./index.css";
 ```
 
@@ -215,7 +217,7 @@ Here's a minimal Vite + React setup:
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { SupportProvider, Support } from "@cossistant/react";
-import "@cossistant/react/support.css";
+import "@cossistant/react/styles.css";
 
 function App() {
   return (

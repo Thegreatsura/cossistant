@@ -83,7 +83,6 @@
       "persistent": true
     },
     "@cossistant/example-nextjs-tailwind#dev": {
-      "dependsOn": ["@cossistant/next#build"],
       "cache": false,
       "persistent": true
     },
@@ -93,8 +92,15 @@
     "db:seed": {
       "outputs": []
     },
+    "lint": {
+      "outputs": []
+    },
     "check-types": {
       "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@cossistant/example-nextjs-tailwind#check-types": {
+      "dependsOn": [],
       "outputs": []
     }
   }

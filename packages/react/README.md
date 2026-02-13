@@ -25,7 +25,7 @@ The SDK provides two CSS entrypoints to fit your setup:
 If you're using Tailwind CSS v4, import the source file to enable full theme customization:
 
 ```tsx
-import "@cossistant/react/tailwind.css";
+import "@cossistant/react/support.css";
 ```
 
 ### Option 2: Plain CSS
@@ -33,7 +33,7 @@ import "@cossistant/react/tailwind.css";
 Import the pre-compiled CSS with no Tailwind dependency:
 
 ```tsx
-import "@cossistant/react/support.css";
+import "@cossistant/react/styles.css";
 ```
 
 This file contains all the compiled styles and works in any React application without requiring Tailwind CSS.
@@ -44,7 +44,7 @@ This file contains all the compiled styles and works in any React application wi
 
 ```tsx
 import { SupportProvider, Support } from "@cossistant/react";
-import "@cossistant/react/support.css";
+import "@cossistant/react/styles.css";
 
 export function App() {
   return (

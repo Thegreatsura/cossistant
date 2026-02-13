@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@cossistant/react/tailwind.css";
+@import "@cossistant/next/support.css";
 
 :root {
 	--background: #ffffff;

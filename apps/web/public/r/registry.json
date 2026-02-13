@@ -8,12 +8,7 @@
       "type": "registry:block",
       "title": "Cossistant Support Widget",
       "description": "Open source, developer-first support widget for your SaaS.",
-      "dependencies": [
-        "@cossistant/react",
-        "@cossistant/next",
-        "motion",
-        "lucide-react"
-      ],
+      "dependencies": ["@cossistant/next", "motion", "lucide-react"],
       "files": [
         {
           "path": "src/registry/support.tsx",
@@ -29,7 +24,7 @@
         }
       ],
       "css": {
-        "@import \"@cossistant/react/tailwind.css\"": {}
+        "@import \"@cossistant/next/support.css\"": {}
       },
       "envVars": {
         "NEXT_PUBLIC_COSSISTANT_API_KEY": ""

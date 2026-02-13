@@ -42,6 +42,9 @@ jobs:
       - name: Check types
         run: bun run check-types
 
+      - name: Build example integration app
+        run: bun run build --filter @cossistant/example-nextjs-tailwind
+
       - name: Create Release PR or Publish
         id: changesets
         uses: changesets/action@v1
