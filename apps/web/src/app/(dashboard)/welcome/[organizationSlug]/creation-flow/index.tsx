@@ -292,7 +292,7 @@ export default function CreationFlowWrapper({
 
 									<DashboardCodeBlock
 										code={aiSetupPrompt}
-										fileName={`cossistant-${guide.framework}-setup-prompt.md`}
+										fileName={"cossistant-prompt.md"}
 										language="md"
 									/>
 									{publicApiKey ? null : (

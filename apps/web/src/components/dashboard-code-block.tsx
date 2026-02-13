@@ -1,5 +1,6 @@
 "use client";
 
+import { FileIcon } from "lucide-react";
 import * as React from "react";
 import { useShikiHighlighter } from "react-shiki/web";
 import type { ShikiTransformer } from "shiki";
@@ -97,6 +98,8 @@ const FRAMEWORK_META: Record<
 		icon: NextJsIcon,
 	},
 };
+
+const COLLAPSED_PREVIEW_HEIGHT = 200;
 
 export function DashboardCodeBlock({
 	fileName,
@@ -204,6 +207,68 @@ export function DashboardCodeBlock({
 	const showFrameworkSwitcher = Boolean(
 		frameworkExamples && frameworkExamples.length > 1
 	);
+	const codeContainerRef = React.useRef<HTMLDivElement>(null);
+	const [isExpandable, setIsExpandable] = React.useState(false);
+	const [isExpanded, setIsExpanded] = React.useState(false);
+
+	const isCollapsed = isExpandable && !isExpanded;
+
+	React.useEffect(() => {
+		setIsExpanded(false);
+	}, [activeCode, fileName, selectedFramework]);
+
+	React.useEffect(() => {
+		const codeContainer = codeContainerRef.current;
+		if (!codeContainer) {
+			setIsExpandable(false);
+			return;
+		}
+
+		let rafId: number | null = null;
+
+		const updateExpandableState = () => {
+			const preElement = codeContainer.querySelector("pre");
+			const measuredHeight =
+				preElement?.scrollHeight ?? codeContainer.scrollHeight;
+			setIsExpandable(measuredHeight > COLLAPSED_PREVIEW_HEIGHT);
+		};
+
+		const scheduleUpdate = () => {
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+			}
+
+			rafId = requestAnimationFrame(() => {
+				updateExpandableState();
+				rafId = null;
+			});
+		};
+
+		updateExpandableState();
+
+		const resizeObserver = new ResizeObserver(scheduleUpdate);
+		resizeObserver.observe(codeContainer);
+
+		const preElement = codeContainer.querySelector("pre");
+		if (preElement) {
+			resizeObserver.observe(preElement);
+		}
+
+		const mutationObserver = new MutationObserver(scheduleUpdate);
+		mutationObserver.observe(codeContainer, {
+			childList: true,
+			subtree: true,
+			characterData: true,
+		});
+
+		return () => {
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+			}
+			resizeObserver.disconnect();
+			mutationObserver.disconnect();
+		};
+	}, [activeCode, highlighted, selectedFramework]);
 
 	return (
 		<div className="flex flex-col">
@@ -244,13 +309,55 @@ export function DashboardCodeBlock({
 						"absolute top-0 flex flex-wrap items-center justify-between gap-2 px-4 py-2",
 						{
 							"right-6": showFrameworkSwitcher,
-							"left-6": !showFrameworkSwitcher,
+							"left-0": !showFrameworkSwitcher,
 						}
 					)}
 				>
-					<span className="text-muted-foreground text-sm">{fileName}</span>
+					<div className="flex items-center gap-2 text-muted-foreground text-sm [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:translate-y-px [&_svg]:opacity-70">
+						<FileIcon />
+						<span>{fileName}</span>
+					</div>
 				</div>
-				<ComponentCodeReact code={activeCode}>{highlighted}</ComponentCodeReact>
+				<div
+					className={cn({
+						"max-h-[200px] overflow-hidden": isCollapsed,
+					})}
+					ref={codeContainerRef}
+				>
+					<ComponentCodeReact code={activeCode}>
+						{highlighted}
+					</ComponentCodeReact>
+				</div>
+				{isCollapsed ? (
+					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background-200 via-background-200/95 to-transparent" />
+				) : null}
+				{isExpandable ? (
+					isCollapsed ? (
+						<div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-center px-4 pb-3">
+							<Button
+								className="pointer-events-auto h-8"
+								onClick={() => setIsExpanded(true)}
+								size="sm"
+								type="button"
+								variant="secondary"
+							>
+								Expand
+							</Button>
+						</div>
+					) : (
+						<div className="flex items-center justify-center border-primary/10 border-t px-4 py-2">
+							<Button
+								className="h-7"
+								onClick={() => setIsExpanded(false)}
+								size="xs"
+								type="button"
+								variant="ghost"
+							>
+								Collapse
+							</Button>
+						</div>
+					)
+				) : null}
 			</div>
 			{activeComment ? (
 				<div

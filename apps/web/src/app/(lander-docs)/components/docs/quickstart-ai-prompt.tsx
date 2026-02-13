@@ -59,7 +59,7 @@ export function QuickstartAIPrompt({
 	};
 
 	return (
-		<div className="mt-8 space-y-4 rounded-md border border-primary/10 bg-background-100 p-4">
+		<div className="mt-8 space-y-4">
 			<p className="m-0 text-muted-foreground text-sm leading-relaxed">
 				Paste your public key to prefill the prompt, then copy it and run it in
 				ChatGPT, Claude, or Cursor.
@@ -80,7 +80,7 @@ export function QuickstartAIPrompt({
 			</Button>
 			<DashboardCodeBlock
 				code={aiPrompt}
-				fileName={`cossistant-${framework}-setup-prompt.md`}
+				fileName={"cossistant-prompt.md"}
 				language="md"
 			/>
 		</div>

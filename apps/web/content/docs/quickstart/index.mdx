@@ -3,23 +3,25 @@ title: Next.js
 description: Install and launch the Cossistant support widget in Next.js.
 ---
 
-## Copy AI Prompt
+## Quick start with AI prompt
 
 <QuickstartAIPrompt framework="nextjs" />
 
-## 1. Install the package
+## Manually
+
+### 1. Install the package
 
 ```bash
 npm install @cossistant/next
 ```
 
-## 2. Add your public API key
+### 2. Add your public API key
 
 ```bash title=".env.local"
 NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
 ```
 
-## 3. Add `SupportProvider`
+### 3. Add `SupportProvider`
 
 ```tsx title="app/layout.tsx"
 import { SupportProvider } from "@cossistant/next";
@@ -41,7 +43,7 @@ export default function RootLayout({
 }
 ```
 
-## 4. Import styles
+### 4. Import styles
 
 <Tabs defaultValue="tailwind" className="mt-6">
   <TabsList>
@@ -82,7 +84,7 @@ export default function RootLayout({
   </TabsContent>
 </Tabs>
 
-## 5. Render the widget
+### 5. Render the widget
 
 ```tsx title="app/page.tsx"
 import { Support } from "@cossistant/next";
@@ -97,16 +99,12 @@ export default function Page() {
 }
 ```
 
-## 6. Identify logged-in visitors (optional)
+### 6. Identify logged-in visitors (optional)
 
 ```tsx title="app/(app)/layout.tsx"
 import { IdentifySupportVisitor } from "@cossistant/next";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const user = {
     id: "user_123",
     email: "jane@acme.com",
@@ -126,7 +124,7 @@ export default function AppLayout({
 }
 ```
 
-## 7. Display custom messages with `<DefaultMessage />`
+### 7. Display custom messages with `<DefaultMessage />`
 
 ```tsx title="app/page.tsx"
 import { DefaultMessage, Support, SupportConfig } from "@cossistant/next";

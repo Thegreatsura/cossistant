@@ -1,6 +1,12 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: no needed */
 import { ImageResponse } from "next/og";
 
+declare module "react" {
+	type HTMLAttributes<T> = {
+		tw?: string;
+	};
+}
+
 async function loadAssets(): Promise<
 	{ name: string; data: Buffer; weight: 400 | 600; style: "normal" }[]
 > {

@@ -267,6 +267,7 @@ export const mdxComponents = {
 		width,
 		height,
 		alt,
+		ref: _ref,
 		...props
 	}: React.ComponentProps<"img">) => (
 		<Image

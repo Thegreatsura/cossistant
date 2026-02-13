@@ -1,5 +1,6 @@
 "use client";
 
+/// <reference types="@react-three/fiber" />
 import { AsciiRenderer } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useTheme } from "next-themes";
