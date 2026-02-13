@@ -1,5 +1,16 @@
 # @cossistant/next
 
+## 0.1.0
+
+### Minor Changes
+
+- Huge refactor including fixes around 404 errors (race conditions between conversation creation and first message sent displaying 404 errors)
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @cossistant/react@0.1.0
+
 ## 0.0.34
 
 ### Patch Changes
