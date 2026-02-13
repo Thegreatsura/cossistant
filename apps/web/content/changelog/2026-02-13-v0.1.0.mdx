@@ -10,57 +10,50 @@ Major improvements to AI agent intelligence, simplified Next.js integration, and
 ### Highlights
 
 - <HighlightLine variant="new">
-    **AI-powered setup**: Install Cossistant by copying a prompt and letting your AI handle the configuration.
+    **AI-powered setup**: Install Cossistant by copying a prompt and letting
+    your AI handle the configuration.
   </HighlightLine>
 - <HighlightLine variant="updated">
-    **Simplified Next.js integration**: No longer requires separate React library installation, only Next.js is needed.
+    **Simplified Next.js integration**: No longer requires separate React
+    library installation, only Next.js is needed.
   </HighlightLine>
 - <HighlightLine variant="fixed">
-    **Conversation creation reliability**: Fixed race condition causing 404 errors when sending first message.
+    **Conversation creation reliability**: Fixed race condition causing 404
+    errors when sending first message.
   </HighlightLine>
 
 ### Support Widget
 
 - <HighlightLine variant="updated">
-    **Improved UI design**: Better brand alignment and visual consistency across components.
+    **Improved UI design**: Better brand alignment and visual consistency across
+    components.
   </HighlightLine>
 - <HighlightLine variant="new">
-    **Smarter AI decisions**: Agents now use a dedicated decision step to determine when to engage in conversations.
+    **Smarter AI decisions**: Agents now use a dedicated decision step to
+    determine when to engage in conversations.
   </HighlightLine>
 - <HighlightLine variant="new">
-    **Automatic model fallback**: Fast, cheap models handle decisions with automatic fallback to better models if needed.
+    **Automatic model fallback**: Fast, cheap models handle decisions with
+    automatic fallback to better models if needed.
   </HighlightLine>
 
 ### Bug Fixes & Improvements
 
 - <HighlightLine variant="fixed">
-    **404 error on new conversations**: Resolved race condition between conversation creation and first message.
+    **404 error on new conversations**: Resolved race condition between
+    conversation creation and first message.
   </HighlightLine>
 - <HighlightLine variant="fixed">
-    **Re-rendering issues**: Fixed unnecessary re-renders in main React provider.
+    **Re-rendering issues**: Fixed unnecessary re-renders in main React
+    provider.
   </HighlightLine>
 - <HighlightLine variant="updated">
-    **Timeline improvements**: Enhanced timeline component functionality and display.
+    **Timeline improvements**: Enhanced timeline component functionality and
+    display.
   </HighlightLine>
 
 ### Upgrade
 
 ```bash
 npm install @cossistant/react@0.1.0 @cossistant/next@0.1.0
-```
-
-### Example
-
-```tsx showLineNumbers
-// Simplified Next.js integration - no separate React import needed
-import { Support } from "@cossistant/next";
-
-export default function App() {
-  return (
-    <Support 
-      // AI agents now make smarter decisions about engagement
-      aiEnabled={true}
-    />
-  );
-}
 ```
