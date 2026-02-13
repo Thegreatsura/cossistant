@@ -1,5 +1,11 @@
 # facehash
 
+## 0.1.0
+
+### Minor Changes
+
+- lib is now 10 times lighter
+
 ## 0.0.7
 
 ### Patch Changes

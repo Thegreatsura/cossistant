@@ -1,5 +1,7 @@
 # @cossistant/core
 
+## 0.0.34
+
 ## 0.0.33
 
 ### Patch Changes
