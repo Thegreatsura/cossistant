@@ -1,44 +1,27 @@
 ---
-title: NextJS
-description: Setup with NextJS.
+title: Next.js
+description: Install and launch the Cossistant support widget in Next.js.
 ---
 
-<Steps>
-  <Step>
-  ## Install the packages
-  Let's start by adding Cossistant to your NextJS project:
+## Copy AI Prompt
+
+<QuickstartAIPrompt framework="nextjs" />
+
+## 1. Install the package
 
 ```bash
 npm install @cossistant/next
 ```
 
-  </Step>
-  <Step>
-  ## Add your public API key
+## 2. Add your public API key
 
-Add your public API key to the `NEXT_PUBLIC_COSSISTANT_API_KEY` environment variable.
-
-```bash
+```bash title=".env.local"
 NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
 ```
 
-<Alert variant="info" className="mt-10">
-  <Icon name="help" className="size-4" />
-  <AlertTitle>Where to find your public API key?</AlertTitle>
-  <AlertDescription>
-    You can find your public API key at the end of your onboarding or can access
-    it anytime from the settings page.
-  </AlertDescription>
-</Alert>
+## 3. Add `SupportProvider`
 
-  </Step>
-
-  <Step>
-  ## Add Cossistant provider
-
-Add the Cossistant `SupportProvider` to the root layout of your app:
-
-```tsx {1,13} showLineNumbers title="app/layout.tsx"
+```tsx title="app/layout.tsx"
 import { SupportProvider } from "@cossistant/next";
 
 import "./globals.css";
@@ -58,59 +41,28 @@ export default function RootLayout({
 }
 ```
 
-<Alert variant="info" className="mt-6">
-  <Icon name="help" className="size-4" />
-  <AlertTitle>Troubleshooting startup animation resets</AlertTitle>
-  <AlertDescription>
-    Older SDK builds could remount descendants during widget initialization. If
-    you still see startup animations replaying, scope `SupportProvider` to the
-    smallest subtree that needs support hooks until you upgrade to a build with
-    the remount fix.
-  </AlertDescription>
-</Alert>
+## 4. Import styles
 
-  </Step>
-
-  <Step>
-  ## Import support widget styling
-
-Cossistant support widget provides two CSS options depending on your setup:
-
-<Tabs defaultValue="tailwindv4" className="mt-10">
+<Tabs defaultValue="tailwind" className="mt-6">
   <TabsList>
-    <TabsTrigger value="tailwindv4">Tailwind v4</TabsTrigger>
-    <TabsTrigger value="css">Plain CSS</TabsTrigger>
+    <TabsTrigger value="tailwind">Tailwind v4</TabsTrigger>
+    <TabsTrigger value="plain">Plain CSS</TabsTrigger>
   </TabsList>
-  <TabsContent value="tailwindv4">
-    If you're using Tailwind CSS v4, import the source file in your CSS to enable full theme customization:
+  <TabsContent value="tailwind">
 
-    ````css {3} showLineNumbers title="app/globals.css"
-
+```css title="app/globals.css"
 @import "tailwindcss";
 
 @import "@cossistant/next/support.css";
-
-````
-
-This allows you to override variables like `--co-theme-primary` in your own CSS for theming.
-
-<Alert variant="info" className="mt-4">
-  <Icon name="help" className="size-4" />
-  <AlertTitle>Tailwind v3 users</AlertTitle>
-  <AlertDescription>
-    Tailwind v3 is not supported. Please use the plain CSS import instead (see "Plain CSS" tab).
-  </AlertDescription>
-</Alert>
+```
 
   </TabsContent>
-  <TabsContent value="css">
-    Import the pre-compiled CSS in your layout - works with any setup, no Tailwind required:
+  <TabsContent value="plain">
 
-    ```tsx {4} showLineNumbers title="app/layout.tsx"
+```tsx title="app/layout.tsx"
 import { SupportProvider } from "@cossistant/next";
-
-import "./globals.css";
 import "@cossistant/next/styles.css";
+import "./globals.css";
 
 export default function RootLayout({
   children,
@@ -126,39 +78,76 @@ export default function RootLayout({
   );
 }
 ```
+
   </TabsContent>
 </Tabs>
 
-  </Step>
+## 5. Render the widget
 
-    <Step>
-  ## Use support widget
-
-Add the Cossistant `<Support />` widget to your app:
-
-```tsx {1,8} showLineNumbers title="app/page.tsx"
+```tsx title="app/page.tsx"
 import { Support } from "@cossistant/next";
 
 export default function Page() {
   return (
-    <div>
-      <h1>You're ready to go!</h1>
-      {/* Support widget can be placed anywhere in your app */}
+    <main>
+      <h1>You are ready to chat</h1>
       <Support />
-    </div>
+    </main>
   );
 }
 ```
 
-  </Step>
+## 6. Identify logged-in visitors (optional)
 
-  <Step>
-  ## Done!
+```tsx title="app/(app)/layout.tsx"
+import { IdentifySupportVisitor } from "@cossistant/next";
 
-You're ready to go! You can now start using Cossistant `<Support />` widget in your app.
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = {
+    id: "user_123",
+    email: "jane@acme.com",
+    name: "Jane Doe",
+  };
 
-Simple isn't it? You can stop here or move on to the <Link href="/docs/support-component">basic usage guide</Link> to learn how to use and customize your support widget, to make it truly yours.
+  return (
+    <>
+      <IdentifySupportVisitor
+        externalId={user.id}
+        email={user.email}
+        name={user.name}
+      />
+      {children}
+    </>
+  );
+}
+```
 
-  </Step>
+## 7. Display custom messages with `<DefaultMessage />`
 
-</Steps>
+```tsx title="app/page.tsx"
+import { DefaultMessage, Support, SupportConfig } from "@cossistant/next";
+
+export default function Page() {
+  return (
+    <>
+      <SupportConfig>
+        <DefaultMessage
+          senderType="team_member"
+          content="Hey, tell us what you are building and we will help."
+        />
+        <DefaultMessage
+          senderType="ai"
+          content="I can answer setup questions right away."
+        />
+      </SupportConfig>
+      <Support />
+    </>
+  );
+}
+```
+
+You can now customize behavior in the [Support component guide](/docs/support-component).

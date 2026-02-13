@@ -332,7 +332,7 @@ export function CreateApiKeySheet({ organizationId }: CreateApiKeySheetProps) {
 																"This is the public key for your website.",
 														},
 														react: {
-															code: `COSSISTANT_KEY=${lastCreatedKey.key}`,
+															code: `COSSISTANT_API_KEY=${lastCreatedKey.key}`,
 															comment:
 																"This is the public key for your website.",
 														},

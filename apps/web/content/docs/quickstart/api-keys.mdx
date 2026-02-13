@@ -1,122 +1,69 @@
 ---
 title: API Keys
-description: Get your public API key to connect the Cossistant widget.
+description: Configure public API keys for Next.js and React support widgets.
 ---
 
-## Get Your API Key
+## Get your public key
 
-The Cossistant widget requires a **public API key** to connect to your website. You can find it in your [dashboard settings](https://cossistant.com) under **Settings > Developers**.
+Open your dashboard at **Settings → Developers** and create or copy a **Public key**.
 
-The URL follows this pattern:
+## Configure environment variables
 
-```
-https://cossistant.com/{your-website-slug}/settings/developers
-```
-
-Click **New API key** and select **Public key** for client-side widget integration.
-
-## Configure Your Environment
-
-Add the key to your environment variables:
-
-**Next.js:**
+**Next.js**
 
 ```bash title=".env.local"
 NEXT_PUBLIC_COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
 ```
 
-**Vite:**
+**React**
 
 ```bash title=".env"
-VITE_COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
-```
-
-Then pass it to the provider:
-
-```tsx title="src/main.tsx"
-<SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>
-  <App />
-</SupportProvider>
-```
-
-**Create React App:**
-
-```bash title=".env"
-REACT_APP_COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
-```
-
-```tsx title="src/index.tsx"
-<SupportProvider publicKey={process.env.REACT_APP_COSSISTANT_API_KEY}>
-  <App />
-</SupportProvider>
+COSSISTANT_API_KEY=pk_live_xxxxxxxxxxxx
 ```
 
 <Alert variant="info" className="mt-6">
   <Icon name="help" className="size-4" />
   <AlertTitle>Auto-detection</AlertTitle>
   <AlertDescription>
-    For Next.js apps, the `NEXT_PUBLIC_COSSISTANT_API_KEY` variable is automatically detected. No need to pass it as a prop.
+    The SDK automatically checks `NEXT_PUBLIC_COSSISTANT_API_KEY` and `COSSISTANT_API_KEY`. You can also pass the key explicitly through `publicKey`.
   </AlertDescription>
 </Alert>
 
-## Public vs Private Keys
+## Public vs private keys
 
-Cossistant uses two types of API keys:
+| Type | Prefix | Purpose | Safe in browser |
+|------|--------|---------|------------------|
+| **Public** | `pk_live_*`, `pk_test_*` | Widget integration | Yes |
+| **Private** | `sk_live_*`, `sk_test_*` | Server-to-server API | No |
 
-| Type | Prefix | Purpose | Visibility |
-|------|--------|---------|------------|
-| **Public** | `pk_live_*` or `pk_test_*` | Client-side widget | Safe to expose in browser |
-| **Private** | `sk_live_*` or `sk_test_*` | Server-to-server API | Never expose to client |
+Only use **public** keys in frontend widget code.
 
-Use **public keys** for the `<Support />` widget. Use **private keys** for backend integrations where you need full API access.
+## Allowed domains
 
-<Alert variant="warning" className="mt-6">
-  <Icon name="alert-triangle" className="size-4" />
-  <AlertTitle>Keep private keys secret</AlertTitle>
-  <AlertDescription>
-    Never expose private keys in client-side code, Git repositories, or public environments.
-  </AlertDescription>
-</Alert>
+Public keys work only on whitelisted domains.
 
-## Allowed Domains
+- Production keys (`pk_live_*`) require explicit allowlisting.
+- Test keys (`pk_test_*`) work on localhost.
 
-Public keys only work on **whitelisted domains**. Configure these in **Settings > Developers > Allowed domains**.
+Use full origins, for example:
 
-- **Production keys** (`pk_live_*`) require explicit domain allowlisting
-- **Test keys** (`pk_test_*`) only work on `localhost`
-
-Add your domains with the full origin including protocol:
-
-`https://example.com` or
-`https://app.example.com` or
-`https://staging.example.com`
+- `https://example.com`
+- `https://app.example.com`
+- `https://staging.example.com`
 
 ## Troubleshooting
 
-### Configuration Required Error
+### Configuration error in the widget
 
-If the widget shows a configuration error, your API key is missing or invalid.
+Check:
 
-**Check:**
-- Environment variable is set correctly
-- Variable name matches your framework
-- App was restarted after adding the variable
-- Key hasn't been revoked in the dashboard
+- env variable name is correct
+- key is still active
+- app was restarted after env changes
 
-### Domain Not Allowed Error
+### Domain not allowed
 
-Your domain isn't in the allowlist.
+Check:
 
-**Fix:**
-- Go to **Settings > Developers > Allowed domains**
-- Add your domain with the correct protocol (`https://`)
-- For local development, use a **Test key** instead
-
-### Key Not Working After Deploy
-
-Environment variables may not be loaded in production.
-
-**Check:**
-- Variable is set in your hosting platform (Vercel, Netlify, etc.)
-- Variable name includes required prefix (`NEXT_PUBLIC_` for Next.js)
-- Deployment was triggered after adding the variable
+- domain is listed in **Settings → Developers → Allowed domains**
+- protocol matches (`https://`)

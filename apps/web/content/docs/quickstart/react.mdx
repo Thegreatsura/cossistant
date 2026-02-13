@@ -1,239 +1,150 @@
 ---
 title: React
-description: Setup with React (Vite, Create React App, or any React project).
+description: Install and launch the Cossistant support widget in React.
 ---
 
-<Steps>
-  <Step>
-  ## Install the package
+## Copy AI Prompt
 
-Add `@cossistant/react` to your React project:
+<QuickstartAIPrompt framework="react" />
+
+## 1. Install the package
 
 ```bash
 npm install @cossistant/react
 ```
 
-  </Step>
-  <Step>
-  ## Configure your API key
-
-You have two options for providing your API key:
-
-<Tabs defaultValue="auto" className="mt-10">
-  <TabsList>
-    <TabsTrigger value="auto">Auto-detection</TabsTrigger>
-    <TabsTrigger value="explicit">Explicit prop</TabsTrigger>
-  </TabsList>
-  <TabsContent value="auto">
-    The library automatically detects `NEXT_PUBLIC_COSSISTANT_API_KEY` and `COSSISTANT_API_KEY`. This works in environments where `process.env` is available at build time:
+## 2. Add your public API key
 
 ```bash title=".env"
-# Preferred for Next.js-compatible environments
-NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
-
-# Or use this generic key name
 COSSISTANT_API_KEY=pk_test_xxxx
 ```
 
-<Alert variant="info" className="mt-4">
-  <Icon name="help" className="size-4" />
-  <AlertTitle>Vite users</AlertTitle>
-  <AlertDescription>
-    Vite doesn't expose `process.env` by default. Use the "Explicit prop" tab
-    instead and pass `import.meta.env.VITE_COSSISTANT_API_KEY`.
-  </AlertDescription>
-</Alert>
-
-  </TabsContent>
-  <TabsContent value="explicit">
-    For Vite, Create React App, or when you need explicit control, pass the key via the `publicKey` prop:
-
-**Vite:**
-
-```bash title=".env"
-VITE_COSSISTANT_API_KEY=pk_test_xxxx
-```
-
-**Create React App:**
-
-```bash title=".env"
-REACT_APP_COSSISTANT_API_KEY=pk_test_xxxx
-```
-
-Then pass it to the provider (see next step).
-
-  </TabsContent>
-</Tabs>
-
-<Alert variant="info" className="mt-10">
-  <Icon name="help" className="size-4" />
-  <AlertTitle>Where to find your public API key?</AlertTitle>
-  <AlertDescription>
-    You can find your public API key at the end of your onboarding or can access
-    it anytime from the settings page.
-  </AlertDescription>
-</Alert>
-
-  </Step>
-
-  <Step>
-  ## Add the SupportProvider
-
-Wrap your app with `SupportProvider` at the root level:
-
-<Tabs defaultValue="vite" className="mt-10">
-  <TabsList>
-    <TabsTrigger value="vite">Vite</TabsTrigger>
-    <TabsTrigger value="cra">Create React App</TabsTrigger>
-    <TabsTrigger value="auto">Auto-detection</TabsTrigger>
-  </TabsList>
-  <TabsContent value="vite">
-
-```tsx {3,9} showLineNumbers title="src/main.tsx"
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { SupportProvider } from "@cossistant/react";
-import App from "./App";
-import "./index.css";
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>
-      <App />
-    </SupportProvider>
-  </React.StrictMode>
-);
-```
-
-  </TabsContent>
-  <TabsContent value="cra">
-
-```tsx {3,10} showLineNumbers title="src/index.tsx"
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { SupportProvider } from "@cossistant/react";
-import App from "./App";
-import "./index.css";
-
-const root = ReactDOM.createRoot(document.getElementById("root")!);
-root.render(
-  <React.StrictMode>
-    <SupportProvider publicKey={process.env.REACT_APP_COSSISTANT_API_KEY}>
-      <App />
-    </SupportProvider>
-  </React.StrictMode>
-);
-```
-
-  </TabsContent>
-  <TabsContent value="auto">
-    If you've set `COSSISTANT_API_KEY` in your environment and it's available via `process.env`, you don't need to pass any prop:
-
-```tsx {3,9} showLineNumbers title="src/main.tsx"
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { SupportProvider } from "@cossistant/react";
-import App from "./App";
-import "./index.css";
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <SupportProvider>
-      <App />
-    </SupportProvider>
-  </React.StrictMode>
-);
-```
-
-  </TabsContent>
-</Tabs>
-
-  </Step>
-
-  <Step>
-  ## Import the CSS
-
-Import the support widget styles in your main CSS file:
-
-```css {1} showLineNumbers title="src/index.css"
-@import "@cossistant/react/styles.css";
-
-/* Your existing styles */
-```
-
-If you're using Tailwind CSS v4 and want source-based theme integration, use `@import "@cossistant/react/support.css";` instead.
-
-Or import it directly in your entry file:
-
-```tsx {5} showLineNumbers title="src/main.tsx"
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { SupportProvider } from "@cossistant/react";
-import App from "./App";
-import "@cossistant/react/styles.css";
-import "./index.css";
-```
-
-  </Step>
-
-  <Step>
-  ## Add the Support widget
-
-Add the `<Support />` component anywhere in your app:
-
-```tsx {1,7} showLineNumbers title="src/App.tsx"
-import { Support } from "@cossistant/react";
-
-function App() {
-  return (
-    <div>
-      <h1>Welcome to my app!</h1>
-      <Support />
-    </div>
-  );
-}
-
-export default App;
-```
-
-  </Step>
-
-  <Step>
-  ## Done!
-
-You're ready to go! You now have a fully functional support widget in your React app.
-
-Move on to the <Link href="/docs/support-component">basic usage guide</Link> to learn how to customize your support widget.
-
-  </Step>
-
-</Steps>
-
-## Complete Example (Vite)
-
-Here's a minimal Vite + React setup:
+## 3. Add `SupportProvider`
 
 ```tsx title="src/main.tsx"
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { SupportProvider, Support } from "@cossistant/react";
-import "@cossistant/react/styles.css";
-
-function App() {
-  return (
-    <div style={{ padding: "2rem" }}>
-      <h1>My App</h1>
-      <p>Click the chat button to get support!</p>
-      <Support />
-    </div>
-  );
-}
+import { SupportProvider } from "@cossistant/react";
+import App from "./App";
+import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>
+    <SupportProvider publicKey={process.env.COSSISTANT_API_KEY}>
       <App />
     </SupportProvider>
   </React.StrictMode>
 );
 ```
+
+<Alert variant="info" className="mt-6">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>When `process.env` is unavailable</AlertTitle>
+  <AlertDescription>
+    Pass the key directly to `publicKey`, or inject it through your app config.
+  </AlertDescription>
+</Alert>
+
+## 4. Import styles
+
+<Tabs defaultValue="tailwind" className="mt-6">
+  <TabsList>
+    <TabsTrigger value="tailwind">Tailwind v4</TabsTrigger>
+    <TabsTrigger value="plain">Plain CSS</TabsTrigger>
+  </TabsList>
+  <TabsContent value="tailwind">
+
+```css title="src/index.css"
+@import "tailwindcss";
+
+@import "@cossistant/react/support.css";
+```
+
+  </TabsContent>
+  <TabsContent value="plain">
+
+```tsx title="src/main.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { SupportProvider } from "@cossistant/react";
+import "@cossistant/react/styles.css";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <SupportProvider publicKey={process.env.COSSISTANT_API_KEY}>
+      <App />
+    </SupportProvider>
+  </React.StrictMode>
+);
+```
+
+  </TabsContent>
+</Tabs>
+
+## 5. Render the widget
+
+```tsx title="src/App.tsx"
+import { Support } from "@cossistant/react";
+
+export default function App() {
+  return (
+    <main>
+      <h1>You are ready to chat</h1>
+      <Support />
+    </main>
+  );
+}
+```
+
+## 6. Identify logged-in visitors (optional)
+
+```tsx title="src/App.tsx"
+import { IdentifySupportVisitor, Support } from "@cossistant/react";
+
+export default function App() {
+  const user = {
+    id: "user_123",
+    email: "jane@acme.com",
+    name: "Jane Doe",
+  };
+
+  return (
+    <>
+      <IdentifySupportVisitor
+        externalId={user.id}
+        email={user.email}
+        name={user.name}
+      />
+      <Support />
+    </>
+  );
+}
+```
+
+## 7. Display custom messages with `<DefaultMessage />`
+
+```tsx title="src/App.tsx"
+import { DefaultMessage, Support, SupportConfig } from "@cossistant/react";
+
+export default function App() {
+  return (
+    <>
+      <SupportConfig>
+        <DefaultMessage
+          senderType="team_member"
+          content="Hey, tell us what you are building and we will help."
+        />
+        <DefaultMessage
+          senderType="ai"
+          content="I can answer setup questions right away."
+        />
+      </SupportConfig>
+      <Support />
+    </>
+  );
+}
+```
+
+You can now customize behavior in the [Support component guide](/docs/support-component).

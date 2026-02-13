@@ -1,8 +1,6 @@
 import { db } from "@api/db";
 import { getOrganizationBySlug } from "@api/db/queries/organization";
 import { notFound } from "next/navigation";
-import { Logo } from "@/components/ui/logo";
-import { TextEffect } from "@/components/ui/text-effect";
 import { ensurePageAuth } from "@/lib/auth/server";
 import CreationFlowWrapper from "./creation-flow";
 
