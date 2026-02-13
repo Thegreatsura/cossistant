@@ -110,7 +110,7 @@ export function NavigationTopbar() {
 					Contacts
 				</TopbarItem>
 				<Support side="bottom" sideOffset={8}>
-					<Support.Trigger className="group/btn relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors hover:bg-background-300 hover:text-primary">
+					<Support.Trigger className="group/btn relative flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-primary/80 text-sm transition-colors hover:bg-background-300 hover:text-primary">
 						{(props) => <DashboardTriggerContent {...props} />}
 					</Support.Trigger>
 				</Support>

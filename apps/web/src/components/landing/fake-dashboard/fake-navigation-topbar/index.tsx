@@ -15,7 +15,7 @@ export function FakeNavigationTopbar({ className }: { className?: string }) {
 				<TopbarItem className="pr-1" hideLabelOnMobile href="/agent">
 					<span className="flex items-center gap-1.5">
 						Agent
-						<span className="rounded-sm bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
+						<span className="rounded bg-cossistant-orange px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
 							AI
 						</span>
 					</span>
@@ -25,7 +25,7 @@ export function FakeNavigationTopbar({ className }: { className?: string }) {
 				<TopbarItem hideLabelOnMobile href="/contacts">
 					Contacts
 				</TopbarItem>
-				<div className="group/btn relative flex items-center gap-2 rounded-md px-2 py-1 text-primary/80 text-sm transition-colors hover:bg-background-300 hover:text-primary">
+				<div className="group/btn relative flex items-center gap-2 rounded px-2 py-1 text-primary/80 text-sm transition-colors hover:bg-background-300 hover:text-primary">
 					<Icon className="size-4" name="chat" variant="filled" />
 					<span className="font-medium text-sm">Need help?</span>
 				</div>

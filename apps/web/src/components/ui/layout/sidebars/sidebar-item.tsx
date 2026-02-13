@@ -45,7 +45,7 @@ export function SidebarItem({
 	const [isOpen, setIsOpen] = useState(defaultOpen);
 
 	const baseClasses = cn(
-		"group/btn relative flex h-10 items-center gap-2.5 rounded-md px-3 py-1 text-primary/80 text-sm transition-colors",
+		"group/btn relative flex h-10 items-center gap-2.5 rounded px-3 py-1 text-primary/80 text-sm transition-colors",
 		"hover:bg-background-100 hover:text-primary dark:hover:bg-background-300",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 		active && "bg-background-100 text-primary dark:bg-background-300",
@@ -117,7 +117,7 @@ export function SidebarItem({
 						{items.map((item) => (
 							<Link
 								className={cn(
-									"group/btn relative flex h-9 items-center gap-2.5 rounded-md py-1 pr-3 pl-5.5 text-primary/70 text-sm transition-colors",
+									"group/btn relative flex h-9 items-center gap-2.5 rounded py-1 pr-3 pl-5.5 text-primary/70 text-sm transition-colors",
 									"hover:bg-background-100 hover:text-primary dark:hover:bg-background-300",
 									"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 									item.active &&

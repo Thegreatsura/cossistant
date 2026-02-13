@@ -130,7 +130,7 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 				)}
 
 				{home.lastOpenConversation && (
-					<div className="flex w-full flex-col overflow-clip rounded-md border border-co-border/80">
+					<div className="flex w-full flex-col overflow-clip rounded border border-co-border/80">
 						<ConversationButtonLink
 							className="rounded-none"
 							conversation={home.lastOpenConversation}
