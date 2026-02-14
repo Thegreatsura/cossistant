@@ -43,7 +43,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <Icon name="help" className="size-4" />
   <AlertTitle>When `process.env` is unavailable</AlertTitle>
   <AlertDescription>
-    Pass the key directly to `publicKey`, or inject it through your app config.
+    If you're using Vite, set `VITE_COSSISTANT_API_KEY` in `.env` and pass
+    `publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}`. Otherwise, pass the
+    key directly to `publicKey`, or inject it through your app config.
   </AlertDescription>
 </Alert>
 

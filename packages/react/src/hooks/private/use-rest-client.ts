@@ -46,9 +46,10 @@ export function useClient(
 	wsUrl = "wss://api.cossistant.com/ws"
 ): UseClientResult {
 	return useMemo(() => {
+		const processEnv = typeof process !== "undefined" ? process.env : undefined;
 		const keyFromEnv =
-			process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-			process.env.COSSISTANT_API_KEY;
+			processEnv?.NEXT_PUBLIC_COSSISTANT_API_KEY ||
+			processEnv?.COSSISTANT_API_KEY;
 		const keyToUse = publicKey ?? keyFromEnv;
 
 		if (!keyToUse) {

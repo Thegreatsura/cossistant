@@ -1,10 +1,10 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: no needed */
 import { ImageResponse } from "next/og";
 
-declare module "react" {
-	type HTMLAttributes<T> = {
-		tw?: string;
-	};
+type OgDivProps = React.HTMLAttributes<HTMLDivElement> & { tw?: string };
+
+function OgDiv({ tw, ...props }: OgDivProps) {
+	return <div {...props} {...(tw ? ({ tw } as { tw: string }) : {})} />;
 }
 
 async function loadAssets(): Promise<
@@ -50,15 +50,15 @@ export async function GET(request: Request) {
 	const [fonts] = await Promise.all([loadAssets()]);
 
 	return new ImageResponse(
-		<div
+		<OgDiv
 			style={{ fontFamily: "Geist Sans" }}
 			tw="flex h-full w-full bg-black text-white"
 		>
-			<div tw="flex border absolute border-white/10 border-dotted inset-y-0 right-16 w-[1px]" />
-			<div tw="flex border absolute border-white/10 border-dotted inset-y-0 right-[165px] w-[1px]" />
-			<div tw="flex border absolute border-white/10 border-dotted inset-x-0 h-[1px] bottom-16" />
-			<div tw="flex border absolute border-white/10 border-dotted inset-x-0 h-[1px] bottom-[148px]" />
-			<div tw="flex absolute flex-row bottom-16 right-16 text-white">
+			<OgDiv tw="flex border absolute border-white/10 border-dotted inset-y-0 right-16 w-[1px]" />
+			<OgDiv tw="flex border absolute border-white/10 border-dotted inset-y-0 right-[165px] w-[1px]" />
+			<OgDiv tw="flex border absolute border-white/10 border-dotted inset-x-0 h-[1px] bottom-16" />
+			<OgDiv tw="flex border absolute border-white/10 border-dotted inset-x-0 h-[1px] bottom-[148px]" />
+			<OgDiv tw="flex absolute flex-row bottom-16 right-16 text-white">
 				<svg
 					fill="none"
 					height="83"
@@ -73,9 +73,9 @@ export async function GET(request: Request) {
 						fillRule="evenodd"
 					/>
 				</svg>
-			</div>
-			<div tw="flex flex-col absolute w-[896px] inset-16">
-				<div
+			</OgDiv>
+			<OgDiv tw="flex flex-col absolute w-[896px] inset-16">
+				<OgDiv
 					style={{
 						textWrap: "balance",
 						fontWeight: 600,
@@ -86,8 +86,8 @@ export async function GET(request: Request) {
 					tw="tracking-tight grow-0 flex flex-col justify-center leading-[1.1]"
 				>
 					{title}
-				</div>
-				<div
+				</OgDiv>
+				<OgDiv
 					style={{
 						fontWeight: 500,
 						textWrap: "balance",
@@ -95,9 +95,9 @@ export async function GET(request: Request) {
 					tw="text-[40px] leading-[1.5] grow-0 text-stone-400"
 				>
 					{description}
-				</div>
-			</div>
-		</div>,
+				</OgDiv>
+			</OgDiv>
+		</OgDiv>,
 		{
 			width: 1200,
 			height: 630,

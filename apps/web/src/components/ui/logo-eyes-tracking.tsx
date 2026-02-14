@@ -99,7 +99,7 @@ export function LogoEyesTracking({ className }: Props) {
 				className={cn(className, "text-primary")}
 				fill="none"
 				height="96"
-				ref={svgRef as React.RefObject<SVGSVGElement>}
+				ref={svgRef}
 				transition={{ duration: 0.05, ease: "easeInOut" }}
 				viewBox="0 0 117 96"
 				width="117"

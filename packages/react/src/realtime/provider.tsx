@@ -295,11 +295,13 @@ function resolvePublicKey(explicit?: string | null): string | null {
 		return trimmed;
 	}
 
+	const processEnv = typeof process !== "undefined" ? process.env : undefined;
+
 	// Next.js: NEXT_PUBLIC_COSSISTANT_API_KEY
 	// React/other: COSSISTANT_API_KEY
 	const fromEnv =
-		process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-		process.env.COSSISTANT_API_KEY ||
+		processEnv?.NEXT_PUBLIC_COSSISTANT_API_KEY ||
+		processEnv?.COSSISTANT_API_KEY ||
 		null;
 
 	const normalized = fromEnv?.trim();

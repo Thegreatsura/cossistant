@@ -4,7 +4,13 @@
 import { AsciiRenderer } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useTheme } from "next-themes";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+	createElement,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import * as THREE from "three";
 
 type ThreeLogoProps = {
@@ -101,11 +107,14 @@ function LogoPlane() {
 	const planeHeight = 2 * Math.tan(vFOV / 2) * distance;
 	const planeWidth = planeHeight * safeAspect;
 
-	return (
-		<mesh position={[0, 0, 0]} ref={meshRef}>
-			<planeGeometry args={[planeWidth, planeHeight]} />
-			<meshBasicMaterial map={texture} transparent />
-		</mesh>
+	return createElement(
+		"mesh",
+		{
+			position: [0, 0, 0],
+			ref: meshRef,
+		},
+		createElement("planeGeometry", { args: [planeWidth, planeHeight] }),
+		createElement("meshBasicMaterial", { map: texture, transparent: true })
 	);
 }
 
