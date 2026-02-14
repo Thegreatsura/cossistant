@@ -94,13 +94,15 @@ export function LogoEyesTracking({ className }: Props) {
 			style={{ width: "fit-content", height: "fit-content" }}
 		>
 			{/* Eyes tracking logo */}
-			<motion.svg
-				animate={{ opacity: isClose ? 0 : 1 }}
+			<svg
 				className={cn(className, "text-primary")}
 				fill="none"
 				height="96"
 				ref={svgRef}
-				transition={{ duration: 0.05, ease: "easeInOut" }}
+				style={{
+					opacity: isClose ? 0 : 1,
+					transition: "opacity 0.05s ease-in-out",
+				}}
 				viewBox="0 0 117 96"
 				width="117"
 				xmlns="http://www.w3.org/2000/svg"
@@ -155,15 +157,17 @@ export function LogoEyesTracking({ className }: Props) {
 						strokeWidth="2"
 					/>
 				</motion.g>
-			</motion.svg>
+			</svg>
 
 			{/* Brand logo - same size as eyes logo */}
-			<motion.svg
-				animate={{ opacity: isClose ? 1 : 0 }}
+			<svg
 				className={cn(className, "absolute inset-0 text-white dark:text-black")}
 				fill="none"
 				height="96"
-				transition={{ duration: 0.05, ease: "easeInOut" }}
+				style={{
+					opacity: isClose ? 1 : 0,
+					transition: "opacity 0.05s ease-in-out",
+				}}
 				viewBox="0 0 117 96"
 				width="117"
 				xmlns="http://www.w3.org/2000/svg"
@@ -175,7 +179,7 @@ export function LogoEyesTracking({ className }: Props) {
 					fill="currentColor"
 					fillRule="evenodd"
 				/>
-			</motion.svg>
+			</svg>
 		</div>
 	);
 }
