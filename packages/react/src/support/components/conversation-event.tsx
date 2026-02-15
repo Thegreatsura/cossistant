@@ -3,7 +3,6 @@ import type {
 	AvailableHumanAgent,
 	TimelinePartEvent,
 } from "@cossistant/types";
-import { motion } from "motion/react";
 import type React from "react";
 import { useSupportText } from "../text";
 import { cn } from "../utils";
@@ -126,14 +125,11 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 
 	if (compact) {
 		return (
-			<motion.div
-				animate={{ opacity: 1, scale: 1 }}
+			<div
 				className={cn(
-					"flex items-center gap-2 text-co-muted-foreground text-sm",
+					"co-animate-fade-in-scale flex items-center gap-2 text-co-muted-foreground text-sm",
 					className
 				)}
-				initial={{ opacity: 0, scale: 0.95 }}
-				transition={{ duration: 0.3, ease: "easeOut" }}
 			>
 				{showAvatar ? avatarContent : null}
 				<span className="break-words">{getEventText()}</span>
@@ -145,16 +141,16 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 						})}
 					</time>
 				) : null}
-			</motion.div>
+			</div>
 		);
 	}
 
 	return (
-		<motion.div
-			animate={{ opacity: 1, scale: 1 }}
-			className={cn("flex items-center pt-4 pb-8", className)}
-			initial={{ opacity: 0, scale: 0.95 }}
-			transition={{ duration: 0.3, ease: "easeOut" }}
+		<div
+			className={cn(
+				"co-animate-fade-in-scale flex items-center pt-4 pb-8",
+				className
+			)}
 		>
 			<div className="flex items-center gap-2 text-co-muted-foreground text-sm">
 				{showAvatar ? (
@@ -170,7 +166,7 @@ export const ConversationEvent: React.FC<ConversationEventProps> = ({
 					</time>
 				)}
 			</div>
-		</motion.div>
+		</div>
 	);
 };
 

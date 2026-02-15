@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import type { ReactElement } from "react";
 import { useHomePage } from "../../hooks/use-home-page";
 import { useSupport } from "../../provider";
@@ -55,19 +54,9 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 			<Header>{/* <NavigationTab /> */}</Header>
 			<div className="sticky top-0 flex flex-1 px-6">
 				<div className="flex flex-col gap-2">
-					<motion.div
-						animate="visible"
-						className="flex flex-col gap-2"
-						exit="exit"
-						initial="hidden"
-						transition={{
-							delay: 0.1,
-						}}
-						variants={{
-							hidden: { opacity: 0, y: 20, filter: "blur(12px)" },
-							visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-							exit: { opacity: 0, y: 20, filter: "blur(12px)" },
-						}}
+					<div
+						className="co-animate-slide-up-blur flex flex-col gap-2"
+						style={{ animationDelay: "100ms" }}
 					>
 						<AvatarStack
 							aiAgents={website?.availableAIAgents || []}
@@ -82,22 +71,12 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 								visitorName: visitor?.contact?.name?.split(" ")[0] ?? undefined,
 							})}
 						</h2>
-					</motion.div>
+					</div>
 
 					{quickOptions.length > 0 && (
-						<motion.div
-							animate="visible"
-							className="mt-6 space-x-2 space-y-2"
-							exit="exit"
-							initial="hidden"
-							transition={{
-								delay: 0.1,
-							}}
-							variants={{
-								hidden: { opacity: 0, y: 20, filter: "blur(12px)" },
-								visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-								exit: { opacity: 0, y: 20, filter: "blur(12px)" },
-							}}
+						<div
+							className="co-animate-slide-up-blur mt-6 space-x-2 space-y-2"
+							style={{ animationDelay: "100ms" }}
 						>
 							{quickOptions?.map((option) => (
 								<CoButton
@@ -110,7 +89,7 @@ export const HomePage = (_props: HomePageProps = {}): ReactElement => {
 									{option}
 								</CoButton>
 							))}
-						</motion.div>
+						</div>
 					)}
 				</div>
 			</div>

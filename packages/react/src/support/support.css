@@ -1,3 +1,5 @@
+@import "./animations.css";
+
 /*
 * This indicates to tailwind to
 * compile classes from Cossistant with the host tailwind config

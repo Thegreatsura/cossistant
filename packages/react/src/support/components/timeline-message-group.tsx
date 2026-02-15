@@ -1,7 +1,6 @@
 import type { AvailableAIAgent, AvailableHumanAgent } from "@cossistant/types";
 import { SenderType } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
-import { motion } from "motion/react";
 import type React from "react";
 import {
 	TimelineItemGroup as PrimitiveTimelineItemGroup,
@@ -13,25 +12,6 @@ import {
 import { cn } from "../utils";
 import { Avatar } from "./avatar";
 import { TimelineMessageItem } from "./timeline-message-item";
-
-const MESSAGE_ANIMATION = {
-	initial: { opacity: 0, y: 6 },
-	animate: { opacity: 1, y: 0 },
-	exit: { opacity: 0 },
-	transition: {
-		duration: 0.1,
-		ease: [0.25, 0.46, 0.45, 0.94] as const, // easeOutCubic
-	},
-} as const;
-
-const SEEN_ANIMATION = {
-	initial: { opacity: 0 },
-	animate: { opacity: 1 },
-	transition: {
-		duration: 0.1,
-		ease: "easeOut" as const,
-	},
-} as const;
 
 export type TimelineMessageGroupProps = {
 	items: TimelineItem[];
@@ -75,13 +55,7 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 			viewerId={currentVisitorId}
 			viewerType={SenderType.VISITOR}
 		>
-			{({
-				isSentByViewer,
-				isReceivedByViewer,
-				isVisitor,
-				isAI,
-				isTeamMember,
-			}) => (
+			{({ isSentByViewer, isReceivedByViewer, isAI }) => (
 				<div
 					className={cn(
 						"flex w-full gap-2",
@@ -125,20 +99,20 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 						)}
 
 						{items.map((item, index) => (
-							<motion.div key={item.id} {...MESSAGE_ANIMATION}>
+							<div className="co-animate-slide-up-fade" key={item.id}>
 								<TimelineMessageItem
 									isLast={index === items.length - 1}
 									isSentByViewer={isSentByViewer}
 									item={item}
 								/>
-							</motion.div>
+							</div>
 						))}
 
 						{isSentByViewer && (
 							<div className={cn("", hasSeenIndicator && "mt-2")}>
 								<div className="min-h-[1.25rem]">
 									{hasSeenIndicator && (
-										<motion.div key="seen-indicator" {...SEEN_ANIMATION}>
+										<div className="co-animate-fade-in">
 											<TimelineItemGroupSeenIndicator
 												className="px-1 text-co-muted-foreground text-xs"
 												seenByIds={seenByIds}
@@ -149,7 +123,7 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 														: "Seen"
 												}
 											</TimelineItemGroupSeenIndicator>
-										</motion.div>
+										</div>
 									)}
 								</div>
 							</div>

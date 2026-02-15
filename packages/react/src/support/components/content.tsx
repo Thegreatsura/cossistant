@@ -8,7 +8,6 @@ import {
 	shift,
 	useFloating,
 } from "@floating-ui/react";
-import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import * as Primitive from "../../primitives";
 import { useTriggerRef } from "../context/positioning";
@@ -197,7 +196,7 @@ export const Content: React.FC<ContentPropsType> = ({
 		},
 	});
 
-	// Merge refs for the floating element - ensures proper ref forwarding with motion.div
+	// Merge refs for the floating element
 	const setFloatingRef = React.useCallback(
 		(node: HTMLDivElement | null) => {
 			refs.setFloating(node);
@@ -293,7 +292,6 @@ export const Content: React.FC<ContentPropsType> = ({
 
 		if (useFloatingPositioning && hasValidFloatingPosition) {
 			// Desktop with Floating UI: use calculated coordinates
-			// Using top/left instead of transform to avoid conflicts with motion animations
 			return {
 				position: "fixed" as const,
 				left: x,
@@ -318,6 +316,9 @@ export const Content: React.FC<ContentPropsType> = ({
 		// Common base styles
 		"flex flex-col overflow-hidden overscroll-none bg-co-background",
 
+		// Entrance animation
+		"co-animate-panel-in",
+
 		// Mobile: fullscreen fixed
 		"max-md:fixed max-md:inset-0 max-md:z-[9999]",
 
@@ -337,22 +338,10 @@ export const Content: React.FC<ContentPropsType> = ({
 	return (
 		<SlotProvider>
 			<Primitive.Window asChild>
-				<motion.div
-					animate="visible"
+				<div
 					className={computedClassName}
-					exit="exit"
-					initial="hidden"
 					ref={setFloatingRef}
 					style={computedStyles}
-					transition={{
-						default: { ease: "anticipate" },
-						layout: { duration: 0.3 },
-					}}
-					variants={{
-						hidden: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
-						visible: { opacity: 1, scale: 1, filter: "blur(0px)" },
-						exit: { opacity: 0, scale: 0.95, filter: "blur(6px)" },
-					}}
 				>
 					<ContentInner
 						containerRef={containerRef}
@@ -360,7 +349,7 @@ export const Content: React.FC<ContentPropsType> = ({
 					>
 						{children}
 					</ContentInner>
-				</motion.div>
+				</div>
 			</Primitive.Window>
 		</SlotProvider>
 	);
@@ -396,26 +385,19 @@ const ContentInner: React.FC<{
 			{/* Custom footer slot */}
 			{hasCustomFooter && <div className="flex-shrink-0">{footer}</div>}
 
-			<AnimatePresence>
-				{showScrollIndicator && (
-					<>
-						<motion.div
-							animate={{ opacity: 1 }}
-							className="pointer-events-none absolute inset-x-0 bottom-0 z-5 h-32 bg-gradient-to-t from-co-background via-co-background/70 to-transparent"
-							exit={{ opacity: 0 }}
-							initial={{ opacity: 0 }}
-							transition={{ duration: 0.3, ease: "easeInOut" }}
-						/>
-						<motion.div
-							animate={{ opacity: 0.6 }}
-							className="pointer-events-none absolute inset-x-0 bottom-0 z-5 h-48 bg-gradient-to-t from-co-background/80 via-co-background/30 to-transparent"
-							exit={{ opacity: 0 }}
-							initial={{ opacity: 0 }}
-							transition={{ duration: 0.4, ease: "easeInOut", delay: 0.05 }}
-						/>
-					</>
+			{/* Scroll indicator gradients — CSS transition for show/hide */}
+			<div
+				className={cn(
+					"pointer-events-none absolute inset-x-0 bottom-0 z-5 h-32 bg-gradient-to-t from-co-background via-co-background/70 to-transparent transition-opacity duration-300 ease-in-out",
+					showScrollIndicator ? "opacity-100" : "opacity-0"
 				)}
-			</AnimatePresence>
+			/>
+			<div
+				className={cn(
+					"pointer-events-none absolute inset-x-0 bottom-0 z-5 h-48 bg-gradient-to-t from-co-background/80 via-co-background/30 to-transparent transition-opacity duration-400 ease-in-out",
+					showScrollIndicator ? "opacity-60" : "opacity-0"
+				)}
+			/>
 		</div>
 	);
 };

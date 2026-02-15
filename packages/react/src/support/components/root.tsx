@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import type * as React from "react";
 import { TriggerRefProvider } from "../context/positioning";
 import { cn } from "../utils";
@@ -24,17 +23,8 @@ export type RootProps = {
  */
 export const Root: React.FC<RootProps> = ({ className, children }) => (
 	<TriggerRefProvider>
-		<motion.div
-			animate={{ opacity: 1 }}
-			className={cn("cossistant relative", className)}
-			initial={{ opacity: 0 }}
-			layout="position"
-			transition={{
-				default: { ease: "anticipate" },
-				layout: { duration: 0.3 },
-			}}
-		>
+		<div className={cn("cossistant co-animate-fade-in relative", className)}>
 			{children}
-		</motion.div>
+		</div>
 	</TriggerRefProvider>
 );

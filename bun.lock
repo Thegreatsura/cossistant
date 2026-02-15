@@ -250,7 +250,7 @@
     },
     "examples/nextjs-tailwind": {
       "name": "@cossistant/example-nextjs-tailwind",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@cossistant/next": "workspace:*",
         "next": "16.1.1",
@@ -269,7 +269,7 @@
     },
     "packages/core": {
       "name": "@cossistant/core",
-      "version": "0.0.33",
+      "version": "0.1.0",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "nanoid": "^5.1.5",
@@ -283,7 +283,7 @@
     },
     "packages/facehash": {
       "name": "facehash",
-      "version": "0.0.7",
+      "version": "0.1.0",
       "devDependencies": {
         "@cossistant/typescript-config": "workspace:*",
         "next": "16.1.1",
@@ -323,7 +323,7 @@
     },
     "packages/next": {
       "name": "@cossistant/next",
-      "version": "0.0.33",
+      "version": "0.1.0",
       "dependencies": {
         "@cossistant/react": "workspace:*",
       },
@@ -338,7 +338,7 @@
     },
     "packages/react": {
       "name": "@cossistant/react",
-      "version": "0.0.33",
+      "version": "0.1.0",
       "dependencies": {
         "@cossistant/core": "workspace:*",
         "@cossistant/tiny-markdown": "workspace:*",
@@ -347,7 +347,6 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "facehash": "workspace:*",
-        "motion": "^12.18.1",
         "nanoid": "^5.1.5",
         "react-use-websocket": "^4.13.0",
         "tailwind-merge": "^3.3.1",
@@ -446,7 +445,7 @@
     },
     "packages/types": {
       "name": "@cossistant/types",
-      "version": "0.0.33",
+      "version": "0.1.0",
       "dependencies": {
         "@hono/zod-openapi": "^1.1.0",
         "zod": "^4.1.8",
