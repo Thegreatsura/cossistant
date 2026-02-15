@@ -17,9 +17,52 @@ npm install @cossistant/react
 
 ### 2. Add your public API key
 
+<Tabs defaultValue="vite" className="mt-6">
+  <TabsList>
+    <TabsTrigger value="vite">Vite</TabsTrigger>
+    <TabsTrigger value="nextjs">Next.js</TabsTrigger>
+    <TabsTrigger value="other">Other</TabsTrigger>
+  </TabsList>
+  <TabsContent value="vite">
+
+```bash title=".env"
+VITE_COSSISTANT_API_KEY=pk_test_xxxx
+```
+
+  </TabsContent>
+  <TabsContent value="nextjs">
+
+```bash title=".env.local"
+NEXT_PUBLIC_COSSISTANT_API_KEY=pk_test_xxxx
+```
+
+  </TabsContent>
+  <TabsContent value="other">
+
+For other frameworks (CRA, Remix, etc.), either set the env variable:
+
 ```bash title=".env"
 COSSISTANT_API_KEY=pk_test_xxxx
 ```
+
+Or pass the key directly via the `publicKey` prop:
+
+```tsx
+<SupportProvider publicKey="pk_test_xxxx">
+```
+
+  </TabsContent>
+</Tabs>
+
+<Alert variant="info" className="mt-6">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>Auto-detection</AlertTitle>
+  <AlertDescription>
+    The SDK automatically detects your framework and reads the right
+    environment variable (`VITE_COSSISTANT_API_KEY`, `NEXT_PUBLIC_COSSISTANT_API_KEY`,
+    or `COSSISTANT_API_KEY`). You can also pass the key explicitly through `publicKey`.
+  </AlertDescription>
+</Alert>
 
 ### 3. Add `SupportProvider`
 
@@ -32,7 +75,7 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <SupportProvider publicKey={process.env.COSSISTANT_API_KEY}>
+    <SupportProvider>
       <App />
     </SupportProvider>
   </React.StrictMode>,
@@ -41,11 +84,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
 <Alert variant="info" className="mt-6">
   <Icon name="help" className="size-4" />
-  <AlertTitle>When `process.env` is unavailable</AlertTitle>
+  <AlertTitle>Passing the key explicitly</AlertTitle>
   <AlertDescription>
-    If you're using Vite, set `VITE_COSSISTANT_API_KEY` in `.env` and pass
-    `publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}`. Otherwise, pass the
-    key directly to `publicKey`, or inject it through your app config.
+    If your framework does not support automatic env variable detection,
+    pass `publicKey` directly:
+    `<SupportProvider publicKey={import.meta.env.VITE_COSSISTANT_API_KEY}>`.
   </AlertDescription>
 </Alert>
 
@@ -77,7 +120,7 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <SupportProvider publicKey={process.env.COSSISTANT_API_KEY}>
+    <SupportProvider>
       <App />
     </SupportProvider>
   </React.StrictMode>,

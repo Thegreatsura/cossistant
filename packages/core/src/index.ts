@@ -42,6 +42,13 @@ export {
 	hasVisibleContent,
 	PrivacyPresets,
 } from "./privacy-filter";
+// Environment variable resolution
+export {
+	detectFramework,
+	type Framework,
+	getEnvVarName,
+	resolvePublicKey,
+} from "./resolve-public-key";
 export { CossistantRestClient } from "./rest-client";
 export {
 	type ConversationPagination,

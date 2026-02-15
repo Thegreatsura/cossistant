@@ -1,5 +1,9 @@
 import type { CossistantClient } from "@cossistant/core";
-import { CossistantAPIError, normalizeLocale } from "@cossistant/core";
+import {
+	CossistantAPIError,
+	getEnvVarName,
+	normalizeLocale,
+} from "@cossistant/core";
 import type { DefaultMessage, PublicWebsiteResponse } from "@cossistant/types";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { ConversationTimelineType } from "@cossistant/types/enums";
@@ -56,16 +60,6 @@ function isAuthError(error: Error | null): boolean {
 		message.includes("forbidden") ||
 		message.includes("not authorized")
 	);
-}
-
-/**
- * Detect if running in a Next.js environment.
- */
-function isNextJSEnvironment(): boolean {
-	if (typeof window !== "undefined") {
-		return "__NEXT_DATA__" in window;
-	}
-	return typeof process !== "undefined" && "__NEXT_RUNTIME" in process.env;
 }
 
 export type SupportProviderProps = {
@@ -235,15 +229,10 @@ function SupportProviderInner({
 
 		// Check if website error is an auth error (invalid/expired API key)
 		if (websiteError && isAuthError(websiteError)) {
-			const isNextJS = isNextJSEnvironment();
-			const envVarName = isNextJS
-				? "NEXT_PUBLIC_COSSISTANT_API_KEY"
-				: "COSSISTANT_API_KEY";
-
 			return {
 				type: "invalid_api_key",
 				message: websiteError.message,
-				envVarName,
+				envVarName: getEnvVarName(),
 			};
 		}
 

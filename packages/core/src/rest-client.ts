@@ -25,6 +25,7 @@ import type {
 	GenerateUploadUrlResponse,
 } from "@cossistant/types/api/upload";
 import { logger } from "./logger";
+import { resolvePublicKey } from "./resolve-public-key";
 import {
 	CossistantAPIError,
 	type CossistantConfig,
@@ -57,22 +58,11 @@ export class CossistantRestClient {
 	constructor(config: CossistantConfig) {
 		this.config = config;
 
-		// Get public key from config or environment variables
-		// Next.js: NEXT_PUBLIC_COSSISTANT_API_KEY
-		// React/other: COSSISTANT_API_KEY
-		this.publicKey =
-			config.publicKey ||
-			(typeof process !== "undefined"
-				? process.env.NEXT_PUBLIC_COSSISTANT_API_KEY
-				: undefined) ||
-			(typeof process !== "undefined"
-				? process.env.COSSISTANT_API_KEY
-				: undefined) ||
-			"";
+		this.publicKey = resolvePublicKey(config.publicKey) ?? "";
 
 		if (!this.publicKey) {
 			throw new Error(
-				"Public key is required. Please provide it in the config or set NEXT_PUBLIC_COSSISTANT_API_KEY (Next.js) or COSSISTANT_API_KEY (React) environment variable."
+				"Public key is required. Provide it via the publicKey prop, or set the appropriate environment variable: NEXT_PUBLIC_COSSISTANT_API_KEY (Next.js), VITE_COSSISTANT_API_KEY (Vite), or COSSISTANT_API_KEY (other)."
 			);
 		}
 

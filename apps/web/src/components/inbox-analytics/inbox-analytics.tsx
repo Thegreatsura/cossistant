@@ -19,12 +19,14 @@ export function InboxAnalytics({ websiteSlug }: { websiteSlug: string }) {
 	});
 
 	return (
-		<InboxAnalyticsDisplay
-			data={query.data ?? null}
-			isError={query.isError}
-			isLoading={query.isLoading || query.isFetching}
-			onRangeChange={setRangeDays}
-			rangeDays={rangeDays}
-		/>
+		<div className="px-1">
+			<InboxAnalyticsDisplay
+				data={query.data ?? null}
+				isError={query.isError}
+				isLoading={query.isLoading || query.isFetching}
+				onRangeChange={setRangeDays}
+				rangeDays={rangeDays}
+			/>
+		</div>
 	);
 }

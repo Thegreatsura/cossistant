@@ -1,5 +1,6 @@
 "use client";
 
+import { resolvePublicKey } from "@cossistant/core";
 import {
 	type AnyRealtimeEvent,
 	isValidEventType,
@@ -310,42 +311,8 @@ function isHeartbeatTimedOut(
 	return elapsed > timeoutMs;
 }
 
-function resolvePublicKey(explicit?: string | null): string | null {
-	const trimmed = explicit?.trim();
-	if (trimmed) {
-		return trimmed;
-	}
-
-	// IMPORTANT: Must use DIRECT access to env vars for build-time inlining
-	// Next.js/Webpack: requires direct `process.env.X` access to inline at build time
-	// Vite: requires direct `import.meta.env.X` access
-	// Dynamic access (e.g., `const env = process.env; env.X`) breaks inlining!
-	let fromEnv: string | undefined | null;
-
-	// Try Next.js/Node.js environment variables
-	try {
-		fromEnv =
-			process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-			process.env.COSSISTANT_API_KEY ||
-			null;
-	} catch {
-		// process not available (Vite/browser-only environment)
-		fromEnv = null;
-	}
-
-	// Fallback to Vite environment variables
-	if (!fromEnv) {
-		try {
-			// @ts-expect-error - import.meta.env is Vite-specific and not in standard types
-			fromEnv = import.meta.env?.VITE_COSSISTANT_API_KEY || null;
-		} catch {
-			// import.meta not available (older bundlers)
-			fromEnv = null;
-		}
-	}
-
-	const normalized = fromEnv?.trim();
-	return normalized && normalized.length > 0 ? normalized : null;
+function resolvePublicKeyOrNull(explicit?: string | null): string | null {
+	return resolvePublicKey(explicit) ?? null;
 }
 
 function normalizeAuth(
@@ -368,7 +335,7 @@ function normalizeAuth(
 			websiteId: auth.websiteId?.trim() || null,
 			userId: null,
 			sessionToken: null,
-			publicKey: resolvePublicKey(auth.publicKey ?? null),
+			publicKey: resolvePublicKeyOrNull(auth.publicKey ?? null),
 		} satisfies ResolvedAuthConfig;
 	}
 

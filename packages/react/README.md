@@ -48,14 +48,16 @@ import "@cossistant/react/styles.css";
 
 export function App() {
   return (
-    <SupportProvider publicKey={process.env.NEXT_PUBLIC_COSSISTANT_API_KEY}>
+    <SupportProvider>
       <Support />
     </SupportProvider>
   );
 }
 ```
 
-1. Wrap the subtree that should access support data with `SupportProvider` and supply your public key (A Cossistant account is mandatory)
+The SDK auto-detects your public key from environment variables: `VITE_COSSISTANT_API_KEY` (Vite), `NEXT_PUBLIC_COSSISTANT_API_KEY` (Next.js), or `COSSISTANT_API_KEY` (other). You can also pass it explicitly via `publicKey`.
+
+1. Wrap the subtree that should access support data with `SupportProvider` (A Cossistant account is mandatory)
 2. Drop the `Support` component anywhere inside that provider to mount the floating widget.
 3. Optionally pass `defaultOpen`, `quickOptions`, `defaultMessages`, or locale overrides straight into `Support` for instant personalization.
 
