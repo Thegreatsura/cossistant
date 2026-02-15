@@ -29,9 +29,7 @@ export type TimelineMessageItemProps = {
 export function getSupportMessageWidthClasses(
 	text: string | null | undefined
 ): string {
-	return hasExpandedTimelineContent(text)
-		? "w-full max-w-full"
-		: "max-w-[300px]";
+	return hasExpandedTimelineContent(text) ? "w-full max-w-full" : "max-w-[70%]";
 }
 
 /**
@@ -105,8 +103,9 @@ export function TimelineMessageItem({
 								{hasText && (
 									<TimelineItemContent
 										className={cn(
-											"block min-w-0 break-words rounded-lg px-3.5 py-2.5 text-sm",
+											"inline-block min-w-0 break-words rounded-lg px-3.5 py-2.5 text-sm",
 											messageWidthClassName,
+											isSentByViewerFinal ? "self-end" : "self-start",
 											{
 												"bg-co-background-300 text-co-foreground dark:bg-co-background-600":
 													!isSentByViewerFinal,

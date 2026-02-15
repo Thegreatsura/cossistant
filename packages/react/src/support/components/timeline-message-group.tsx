@@ -87,7 +87,10 @@ export const TimelineMessageGroup: React.FC<TimelineMessageGroupProps> = ({
 					)}
 
 					<TimelineItemGroupContent
-						className={cn("flex flex-col gap-1", isSentByViewer && "items-end")}
+						className={cn(
+							"flex min-w-0 flex-1 flex-col gap-1",
+							isSentByViewer && "items-end"
+						)}
 					>
 						{/* Header - show sender name for received messages (agents) */}
 						{isReceivedByViewer && (
