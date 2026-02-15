@@ -154,7 +154,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 					<Primitive.MultimodalInput
 						autoFocus
 						className={cn(
-							"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-co-primary/50 focus-visible:outline-none",
+							"w-full resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-co-primary/50 focus-visible:outline-none",
 							className
 						)}
 						disabled={disabled}

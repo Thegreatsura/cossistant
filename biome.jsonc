@@ -29,7 +29,8 @@
         "noUnusedFunctionParameters": "off",
         "noUnusedVariables": "off",
         "noUnknownProperty": "off",
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "off",
+        "noConstructorReturn": "off"
       },
       "performance": {
         "noNamespaceImport": "off",

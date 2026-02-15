@@ -11,7 +11,8 @@ import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import type { ConversationSeen } from "@cossistant/types/schemas";
 import { useRef, useSyncExternalStore } from "react";
 
-const store = createSeenStore();
+/** Module-level singleton shared by the dashboard and the SDK widget. */
+export const seenStoreSingleton = createSeenStore();
 
 type Selector<T> = (state: SeenState) => T;
 
@@ -24,14 +25,14 @@ function useSelector<TSelected>(
 	const selectionRef = useRef<TSelected>(undefined);
 
 	const subscribe = (onStoreChange: () => void) =>
-		store.subscribe(() => {
+		seenStoreSingleton.subscribe(() => {
 			onStoreChange();
 		});
 
 	const snapshot = useSyncExternalStore(
 		subscribe,
-		store.getState,
-		store.getState
+		seenStoreSingleton.getState,
+		seenStoreSingleton.getState
 	);
 
 	const selected = selector(snapshot);
@@ -63,7 +64,7 @@ export function hydrateConversationSeen(
 	conversationId: string,
 	entries: ConversationSeen[]
 ) {
-	hydrateStore(store, conversationId, entries);
+	hydrateStore(seenStoreSingleton, conversationId, entries);
 }
 
 /**
@@ -75,7 +76,7 @@ export function upsertConversationSeen(options: {
 	actorId: string;
 	lastSeenAt: Date;
 }) {
-	upsertStore(store, {
+	upsertStore(seenStoreSingleton, {
 		...options,
 		lastSeenAt: options.lastSeenAt.toISOString(),
 	});
@@ -93,5 +94,5 @@ export function applyConversationSeenEvent(
 		ignoreAiAgentId?: string | null;
 	}
 ) {
-	applyEvent(store, event, options);
+	applyEvent(seenStoreSingleton, event, options);
 }

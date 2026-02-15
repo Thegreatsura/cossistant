@@ -1,10 +1,6 @@
 import { CossistantAPIError, type CossistantClient } from "@cossistant/core";
 import type { TimelineItem } from "@cossistant/types/api/timeline-item";
 import { useEffect, useRef } from "react";
-import {
-	hydrateConversationSeen,
-	upsertConversationSeen,
-} from "../realtime/seen-store";
 import { useWindowVisibilityFocus } from "./use-window-visibility-focus";
 
 export const CONVERSATION_AUTO_SEEN_DELAY_MS = 2000;
@@ -121,7 +117,7 @@ export function useConversationAutoSeen(
 				.getConversationSeenData({ conversationId })
 				.then((response) => {
 					if (response.seenData.length > 0) {
-						hydrateConversationSeen(conversationId, response.seenData);
+						client.seenStore.hydrate(conversationId, response.seenData);
 					}
 				})
 				.catch((err) => {
@@ -200,11 +196,11 @@ export function useConversationAutoSeen(
 						lastSeenItemIdRef.current = pendingItemId;
 
 						// Optimistically update local seen store
-						upsertConversationSeen({
+						client.seenStore.upsert({
 							conversationId,
 							actorType: "visitor",
 							actorId: visitorId,
-							lastSeenAt: new Date(response.lastSeenAt),
+							lastSeenAt: new Date(response.lastSeenAt).toISOString(),
 						});
 					})
 					.catch((err) => {

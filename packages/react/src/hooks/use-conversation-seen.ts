@@ -1,6 +1,8 @@
+import type { SeenEntry } from "@cossistant/core";
 import type { ConversationSeen } from "@cossistant/types/schemas";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { hydrateConversationSeen, useSeenStore } from "../realtime/seen-store";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSupport } from "../provider";
+import { useStoreSelector } from "./private/store/use-store-selector";
 
 type UseConversationSeenOptions = {
 	initialData?: ConversationSeen[];
@@ -23,33 +25,40 @@ export function useConversationSeen(
 	options: UseConversationSeenOptions = {}
 ): ConversationSeen[] {
 	const { initialData } = options;
+	const { client } = useSupport();
 	const hydratedKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		// Clear hydration key when conversation changes or is unmounted
 		if (!conversationId) {
 			hydratedKeyRef.current = null;
 			return;
 		}
 
-		// Skip if no initial data
 		if (!initialData || initialData.length === 0) {
 			return;
 		}
 
-		// Only hydrate once per conversation
 		const hydrationKey = conversationId;
 
 		if (hydratedKeyRef.current === hydrationKey) {
-			return; // Already hydrated for this conversation
+			return;
 		}
 
-		hydrateConversationSeen(conversationId, initialData);
+		client?.seenStore.hydrate(conversationId, initialData);
 		hydratedKeyRef.current = hydrationKey;
-	}, [conversationId]); // Only depend on conversationId, NOT initialData
+	}, [conversationId, client]);
 
-	const conversationSeen = useSeenStore((state) =>
-		conversationId ? (state.conversations[conversationId] ?? null) : null
+	const conversationSeen = useStoreSelector(
+		client?.seenStore ?? null,
+		useCallback(
+			(
+				state: {
+					conversations: Record<string, Record<string, SeenEntry>>;
+				} | null
+			) =>
+				conversationId ? (state?.conversations[conversationId] ?? null) : null,
+			[conversationId]
+		)
 	);
 
 	return useMemo(() => {
@@ -93,17 +102,14 @@ export function useDebouncedConversationSeen(
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {
-		// Clear any pending timeout
 		if (timeoutRef.current) {
 			clearTimeout(timeoutRef.current);
 		}
 
-		// Set new timeout to update after delay
 		timeoutRef.current = setTimeout(() => {
 			setDebouncedSeenData(seenData);
 		}, delay);
 
-		// Cleanup on unmount or when seenData changes
 		return () => {
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);

@@ -7,6 +7,8 @@ import {
 } from "@cossistant/core";
 import type { CossistantConfig } from "@cossistant/types";
 import { useMemo } from "react";
+import { seenStoreSingleton } from "../../realtime/seen-store";
+import { typingStoreSingleton } from "../../realtime/typing-store";
 
 export type ConfigurationError = {
 	type: "missing_api_key" | "invalid_api_key";
@@ -61,7 +63,10 @@ export function useClient(
 		};
 
 		try {
-			const client = new CossistantClient(config);
+			const client = new CossistantClient(config, {
+				seenStore: seenStoreSingleton,
+				typingStore: typingStoreSingleton,
+			});
 			return { client, error: null, configurationError: null };
 		} catch (err: unknown) {
 			const envVarName = getEnvVarName();

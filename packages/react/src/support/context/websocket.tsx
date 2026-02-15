@@ -1,16 +1,35 @@
 "use client";
 
+import type { RealtimeAuthConfig } from "@cossistant/core";
 import { PRESENCE_PING_INTERVAL_MS } from "@cossistant/types";
-import type React from "react";
-import { createContext, useContext, useEffect, useMemo } from "react";
+import type { AnyRealtimeEvent } from "@cossistant/types/realtime-events";
 import {
-	type RealtimeAuthConfig,
-	type RealtimeContextValue,
-	RealtimeProvider,
-	useRealtimeConnection,
-} from "../../realtime";
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+	useSyncExternalStore,
+} from "react";
+import { useSupport } from "../../provider";
 
-type WebSocketContextValue = RealtimeContextValue;
+type SubscribeHandler = (event: AnyRealtimeEvent) => void;
+
+type WebSocketContextValue = {
+	isConnected: boolean;
+	isConnecting: boolean;
+	error: Error | null;
+	send: (event: AnyRealtimeEvent) => void;
+	sendRaw: (data: string) => void;
+	subscribe: (handler: SubscribeHandler) => () => void;
+	lastEvent: AnyRealtimeEvent | null;
+	connectionId: string | null;
+	reconnect: () => void;
+	visitorId: string | null;
+	websiteId: string | null;
+	userId: string | null;
+};
 
 type WebSocketProviderProps = {
 	children: React.ReactNode;
@@ -26,166 +45,179 @@ type WebSocketProviderProps = {
 
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
-function createVisitorAuthConfig({
-	visitorId,
-	websiteId,
-	publicKey,
-}: Pick<
-	WebSocketProviderProps,
-	"visitorId" | "websiteId" | "publicKey"
->): RealtimeAuthConfig | null {
-	const normalizedVisitorId = visitorId?.trim();
-	if (!normalizedVisitorId) {
-		return null;
-	}
-
-	return {
-		kind: "visitor",
-		visitorId: normalizedVisitorId,
-		websiteId: websiteId?.trim() || null,
-		publicKey: publicKey?.trim() || null,
-	} satisfies RealtimeAuthConfig;
-}
-
-type WebSocketBridgeProps = {
-	children: React.ReactNode;
-	onError?: (error: Error) => void;
-};
-
-const WebSocketBridge: React.FC<WebSocketBridgeProps> = ({
-	children,
-	onError,
-}) => {
-	const connection = useRealtimeConnection();
-	const { visitorId, sendRaw, isConnected } = connection;
-
-	useEffect(() => {
-		if (typeof window === "undefined" || typeof document === "undefined") {
-			return;
-		}
-
-		if (!(visitorId && sendRaw)) {
-			return;
-		}
-
-		const pingMessage = "presence:ping";
-
-		const sendPresencePing = () => {
-			if (!isConnected) {
-				return;
-			}
-
-			try {
-				sendRaw(pingMessage);
-			} catch (error) {
-				if (!onError) {
-					return;
-				}
-
-				const normalizedError =
-					error instanceof Error
-						? error
-						: new Error(
-								typeof error === "string"
-									? error
-									: "Unknown presence ping error"
-							);
-
-				if (!normalizedError.message.includes("Failed to send presence ping")) {
-					normalizedError.message = `Failed to send presence ping: ${normalizedError.message}`;
-				}
-
-				onError(normalizedError);
-			}
-		};
-
-		let intervalId: number | null = null;
-
-		const clearPresenceInterval = () => {
-			if (intervalId !== null) {
-				window.clearInterval(intervalId);
-				intervalId = null;
-			}
-		};
-
-		const startPresenceInterval = () => {
-			clearPresenceInterval();
-
-			if (!isConnected || document.visibilityState === "hidden") {
-				return;
-			}
-
-			intervalId = window.setInterval(
-				sendPresencePing,
-				PRESENCE_PING_INTERVAL_MS
-			);
-		};
-
-		const handleFocus = () => {
-			sendPresencePing();
-			startPresenceInterval();
-		};
-
-		const handleVisibilityChange = () => {
-			if (document.visibilityState === "hidden") {
-				clearPresenceInterval();
-				return;
-			}
-
-			sendPresencePing();
-			startPresenceInterval();
-		};
-
-		window.addEventListener("focus", handleFocus);
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-
-		if (isConnected && document.visibilityState !== "hidden") {
-			sendPresencePing();
-			startPresenceInterval();
-		}
-
-		return () => {
-			window.removeEventListener("focus", handleFocus);
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-			clearPresenceInterval();
-		};
-	}, [isConnected, onError, sendRaw, visitorId]);
-	const value = useMemo(() => connection, [connection]);
-	return (
-		<WebSocketContext.Provider value={value}>
-			{children}
-		</WebSocketContext.Provider>
-	);
-};
-
 /**
- * Support-specific realtime provider that authenticates visitors and keeps the
- * connection alive with presence pings.
+ * Support-specific realtime provider that authenticates visitors using the
+ * core client's RealtimeClient and keeps the connection alive with presence pings.
  */
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 	children,
 	publicKey,
 	websiteId,
 	visitorId,
-	wsUrl,
+	wsUrl: _wsUrl,
 	autoConnect = true,
-	onConnect,
-	onDisconnect,
+	onConnect: _onConnect,
+	onDisconnect: _onDisconnect,
 	onError,
 }) => {
-	const auth = createVisitorAuthConfig({ publicKey, websiteId, visitorId });
+	const { client } = useSupport();
+	const realtime = client?.realtime ?? null;
+
+	// Build auth config
+	const auth = useMemo<RealtimeAuthConfig | null>(() => {
+		const normalizedVisitorId = visitorId?.trim();
+		if (!normalizedVisitorId) {
+			return null;
+		}
+		return {
+			kind: "visitor",
+			visitorId: normalizedVisitorId,
+			websiteId: websiteId?.trim() || null,
+			publicKey: publicKey?.trim() || null,
+		};
+	}, [visitorId, websiteId, publicKey]);
+
+	// Connect/disconnect
+	useEffect(() => {
+		if (!realtime) {
+			return;
+		}
+
+		if (autoConnect && auth) {
+			realtime.connect(auth);
+		} else {
+			realtime.disconnect();
+		}
+	}, [realtime, auth, autoConnect]);
+
+	// Subscribe to connection state
+	const connectionState = useSyncExternalStore(
+		useCallback(
+			(onStoreChange: () => void) =>
+				realtime?.onStateChange(onStoreChange) ?? (() => {}),
+			[realtime]
+		),
+		() =>
+			realtime?.getState() ?? {
+				status: "disconnected" as const,
+				error: null,
+				connectionId: null,
+			},
+		() =>
+			realtime?.getState() ?? {
+				status: "disconnected" as const,
+				error: null,
+				connectionId: null,
+			}
+	);
+
+	// Track last event via subscription
+	const [lastEvent, setLastEvent] = useState<AnyRealtimeEvent | null>(null);
+
+	useEffect(() => {
+		if (!realtime) {
+			return;
+		}
+		return realtime.subscribe((event) => setLastEvent(event));
+	}, [realtime]);
+
+	// Presence pings based on visibility
+	useEffect(() => {
+		if (
+			typeof window === "undefined" ||
+			typeof document === "undefined" ||
+			!realtime ||
+			!visitorId ||
+			connectionState.status !== "connected"
+		) {
+			return;
+		}
+
+		// Enable presence with the standard interval
+		realtime.enablePresence(PRESENCE_PING_INTERVAL_MS);
+
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "hidden") {
+				realtime.pausePresence();
+			} else {
+				realtime.resumePresence();
+			}
+		};
+
+		const handleFocus = () => {
+			realtime.resumePresence();
+		};
+
+		window.addEventListener("focus", handleFocus);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+
+		// Start with correct state
+		if (document.visibilityState === "hidden") {
+			realtime.pausePresence();
+		}
+
+		return () => {
+			window.removeEventListener("focus", handleFocus);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			realtime.pausePresence();
+		};
+	}, [realtime, visitorId, connectionState.status]);
+
+	// Stable send/subscribe callbacks
+	const send = useCallback(
+		(event: AnyRealtimeEvent) => {
+			realtime?.send(event);
+		},
+		[realtime]
+	);
+
+	const sendRaw = useCallback(
+		(data: string) => {
+			realtime?.sendRaw(data);
+		},
+		[realtime]
+	);
+
+	const subscribe = useCallback(
+		(handler: SubscribeHandler) => realtime?.subscribe(handler) ?? (() => {}),
+		[realtime]
+	);
+
+	const reconnect = useCallback(() => {
+		realtime?.reconnect();
+	}, [realtime]);
+
+	const value = useMemo<WebSocketContextValue>(
+		() => ({
+			isConnected: connectionState.status === "connected",
+			isConnecting: connectionState.status === "connecting",
+			error: connectionState.error,
+			send,
+			sendRaw,
+			subscribe,
+			lastEvent,
+			connectionId: connectionState.connectionId,
+			reconnect,
+			visitorId: visitorId ?? null,
+			websiteId: websiteId ?? null,
+			userId: null,
+		}),
+		[
+			connectionState,
+			send,
+			sendRaw,
+			subscribe,
+			lastEvent,
+			reconnect,
+			visitorId,
+			websiteId,
+		]
+	);
 
 	return (
-		<RealtimeProvider
-			auth={auth}
-			autoConnect={autoConnect}
-			onConnect={onConnect}
-			onDisconnect={onDisconnect}
-			onError={onError}
-			wsUrl={wsUrl}
-		>
-			<WebSocketBridge onError={onError}>{children}</WebSocketBridge>
-		</RealtimeProvider>
+		<WebSocketContext.Provider value={value}>
+			{children}
+		</WebSocketContext.Provider>
 	);
 };
 
@@ -204,7 +236,6 @@ export const useWebSocket = (): WebSocketContextValue => {
 /**
  * Safe accessor for the support websocket context.
  * Returns null if used outside WebSocketProvider instead of throwing.
- * Useful for optional WebSocket usage in hooks that may or may not have the provider.
  */
 export const useWebSocketSafe = (): WebSocketContextValue | null =>
 	useContext(WebSocketContext);

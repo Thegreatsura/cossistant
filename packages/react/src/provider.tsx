@@ -14,7 +14,6 @@ import {
 	type ConfigurationError,
 	useClient,
 } from "./hooks/private/use-rest-client";
-import { useSeenStore } from "./realtime/seen-store";
 import { WebSocketProvider } from "./support";
 import { IdentificationProvider } from "./support/context/identification";
 import {
@@ -239,8 +238,22 @@ function SupportProviderInner({
 		return null;
 	}, [clientConfigError, websiteError]);
 
-	const seenEntriesByConversation = useSeenStore(
-		React.useCallback((state) => state.conversations, [])
+	const seenEntriesByConversation = useStoreSelector(
+		client?.seenStore ?? null,
+		React.useCallback(
+			(
+				state: {
+					conversations: Record<
+						string,
+						Record<
+							string,
+							{ actorType: string; actorId: string; lastSeenAt: string }
+						>
+					>;
+				} | null
+			) => state?.conversations ?? {},
+			[]
+		)
 	);
 
 	const conversationSnapshots = useStoreSelector(

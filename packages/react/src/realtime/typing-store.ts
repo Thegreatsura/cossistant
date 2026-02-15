@@ -12,7 +12,8 @@ import {
 import type { RealtimeEvent } from "@cossistant/types/realtime-events";
 import { useRef, useSyncExternalStore } from "react";
 
-const store = createTypingStore();
+/** Module-level singleton shared by the dashboard and the SDK widget. */
+export const typingStoreSingleton = createTypingStore();
 
 type Selector<T> = (state: TypingState) => T;
 
@@ -25,14 +26,14 @@ function useSelector<TSelected>(
 	const selectionRef = useRef<TSelected>(undefined);
 
 	const subscribe = (onStoreChange: () => void) =>
-		store.subscribe(() => {
+		typingStoreSingleton.subscribe(() => {
 			onStoreChange();
 		});
 
 	const snapshot = useSyncExternalStore(
 		subscribe,
-		store.getState,
-		store.getState
+		typingStoreSingleton.getState,
+		typingStoreSingleton.getState
 	);
 
 	const selected = selector(snapshot);
@@ -69,7 +70,7 @@ export function setTypingState(options: {
 	preview?: string | null;
 	ttlMs?: number;
 }) {
-	setState(store, options);
+	setState(typingStoreSingleton, options);
 }
 
 /**
@@ -80,7 +81,7 @@ export function clearTypingState(options: {
 	actorType: TypingActorType;
 	actorId: string;
 }) {
-	clearState(store, options);
+	clearState(typingStoreSingleton, options);
 }
 
 /**
@@ -96,7 +97,7 @@ export function applyConversationTypingEvent(
 		ttlMs?: number;
 	}
 ) {
-	applyEvent(store, event, options);
+	applyEvent(typingStoreSingleton, event, options);
 }
 
 /**
@@ -106,5 +107,5 @@ export function applyConversationTypingEvent(
 export function clearTypingFromTimelineItem(
 	event: RealtimeEvent<"timelineItemCreated">
 ) {
-	clearFromTimelineItem(store, event);
+	clearFromTimelineItem(typingStoreSingleton, event);
 }

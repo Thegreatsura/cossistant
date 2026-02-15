@@ -1,6 +1,6 @@
 import * as React from "react";
+import { useStoreSelector } from "../hooks/private/store/use-store-selector";
 import { useSupport } from "../provider";
-import { useTypingStore } from "../realtime/typing-store";
 import { useSupportConfig } from "../support";
 import { useTriggerRef } from "../support/context/positioning";
 import { useRenderElement } from "../utils/use-render-element";
@@ -72,7 +72,7 @@ export type TriggerProps = Omit<
 export const SupportTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
 	({ children, className, asChild = false, ...props }, ref) => {
 		const { isOpen, toggle } = useSupportConfig();
-		const { unreadCount, visitor } = useSupport();
+		const { unreadCount, visitor, client } = useSupport();
 		const visitorId = visitor?.id ?? null;
 		const triggerRefContext = useTriggerRef();
 
@@ -96,22 +96,32 @@ export const SupportTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
 			[ref, setTriggerElement]
 		);
 
-		const hasTyping = useTypingStore(
+		const hasTyping = useStoreSelector(
+			client?.typingStore ?? null,
 			React.useCallback(
-				(state) =>
-					Object.values(state.conversations).some((entries) =>
-						Object.values(entries).some((entry) => {
-							if (
-								visitorId &&
-								entry.actorType === "visitor" &&
-								entry.actorId === visitorId
-							) {
-								return false;
-							}
+				(
+					state: {
+						conversations: Record<
+							string,
+							Record<string, { actorType: string; actorId: string }>
+						>;
+					} | null
+				) =>
+					state
+						? Object.values(state.conversations).some((entries) =>
+								Object.values(entries).some((entry) => {
+									if (
+										visitorId &&
+										entry.actorType === "visitor" &&
+										entry.actorId === visitorId
+									) {
+										return false;
+									}
 
-							return true;
-						})
-					),
+									return true;
+								})
+							)
+						: false,
 				[visitorId]
 			)
 		);

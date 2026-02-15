@@ -27,7 +27,11 @@ export {
 	toUIMessage,
 	toUIMessages,
 } from "./ai-sdk-utils";
-export { CossistantClient, CossistantClient as default } from "./client";
+export {
+	CossistantClient,
+	CossistantClient as default,
+	type CossistantClientOptions,
+} from "./client";
 export { normalizeLocale } from "./locale-utils";
 // Privacy filter utilities
 export {
@@ -42,6 +46,21 @@ export {
 	hasVisibleContent,
 	PrivacyPresets,
 } from "./privacy-filter";
+// Realtime client
+export {
+	type RealtimeAuthConfig,
+	RealtimeClient,
+	type RealtimeClientOptions,
+	type RealtimeConnectionState,
+	type RealtimeConnectionStatus,
+	type SessionAuthConfig,
+	type VisitorAuthConfig,
+} from "./realtime-client";
+// Realtime event filter
+export {
+	getTargetVisitorId,
+	shouldDeliverEvent,
+} from "./realtime-event-filter";
 // Environment variable resolution
 export {
 	detectFramework,
@@ -152,4 +171,3 @@ export {
 	getVisitorId,
 	setVisitorId,
 } from "./visitor-tracker";
-// WebSocket client removed - use React WebSocket context instead

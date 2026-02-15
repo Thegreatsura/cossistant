@@ -1,6 +1,7 @@
 import type { TypingEntry } from "@cossistant/core";
-import { useMemo } from "react";
-import { useTypingStore } from "../realtime/typing-store";
+import { useCallback, useMemo } from "react";
+import { useSupport } from "../provider";
+import { useStoreSelector } from "./private/store/use-store-selector";
 
 export type ConversationTypingParticipant = TypingEntry;
 
@@ -37,8 +38,19 @@ export function useConversationTyping(
 	conversationId: string | null | undefined,
 	options: UseConversationTypingOptions = {}
 ): ConversationTypingParticipant[] {
-	const conversationTyping = useTypingStore((state) =>
-		conversationId ? (state.conversations[conversationId] ?? null) : null
+	const { client } = useSupport();
+
+	const conversationTyping = useStoreSelector(
+		client?.typingStore ?? null,
+		useCallback(
+			(
+				state: {
+					conversations: Record<string, Record<string, TypingEntry>>;
+				} | null
+			) =>
+				conversationId ? (state?.conversations[conversationId] ?? null) : null,
+			[conversationId]
+		)
 	);
 
 	return useMemo(() => {

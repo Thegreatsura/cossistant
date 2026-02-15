@@ -1,9 +1,8 @@
-import {
-	type AnyRealtimeEvent,
-	type DefaultMessage,
-	getEventPayload,
-	type IdentifyContactResponse,
-	type RealtimeEvent,
+import type {
+	AnyRealtimeEvent,
+	DefaultMessage,
+	IdentifyContactResponse,
+	RealtimeEvent,
 } from "@cossistant/types";
 import type {
 	CreateConversationRequestBody,
@@ -32,15 +31,28 @@ import {
 	TimelineItemVisibility,
 } from "@cossistant/types/enums";
 import type { Conversation } from "@cossistant/types/schemas";
+import { RealtimeClient } from "./realtime-client";
+import { shouldDeliverEvent } from "./realtime-event-filter";
 import { CossistantRestClient } from "./rest-client";
 import {
 	type ConversationsStore,
 	createConversationsStore,
 } from "./store/conversations-store";
 import {
+	applyConversationSeenEvent,
+	createSeenStore,
+	type SeenStore,
+} from "./store/seen-store";
+import {
 	createTimelineItemsStore,
 	type TimelineItemsStore,
 } from "./store/timeline-items-store";
+import {
+	applyConversationTypingEvent,
+	clearTypingFromTimelineItem,
+	createTypingStore,
+	type TypingStore,
+} from "./store/typing-store";
 import {
 	createWebsiteStore,
 	type WebsiteState,
@@ -74,6 +86,13 @@ type InitiateConversationResult = {
 	defaultTimelineItems: TimelineItem[];
 };
 
+export type CossistantClientOptions = {
+	/** Supply an external seen store so the client shares state with callers. */
+	seenStore?: SeenStore;
+	/** Supply an external typing store so the client shares state with callers. */
+	typingStore?: TypingStore;
+};
+
 export class CossistantClient {
 	private restClient: CossistantRestClient;
 	private config: CossistantConfig;
@@ -82,13 +101,22 @@ export class CossistantClient {
 	readonly conversationsStore: ConversationsStore;
 	readonly timelineItemsStore: TimelineItemsStore;
 	readonly websiteStore: WebsiteStore;
+	readonly seenStore: SeenStore;
+	readonly typingStore: TypingStore;
+	readonly realtime: RealtimeClient;
 
-	constructor(config: CossistantConfig) {
+	constructor(config: CossistantConfig, options?: CossistantClientOptions) {
 		this.config = config;
 		this.restClient = new CossistantRestClient(config);
 		this.conversationsStore = createConversationsStore();
 		this.timelineItemsStore = createTimelineItemsStore();
 		this.websiteStore = createWebsiteStore();
+		this.seenStore = options?.seenStore ?? createSeenStore();
+		this.typingStore = options?.typingStore ?? createTypingStore();
+		this.realtime = new RealtimeClient({
+			wsUrl: config.wsUrl,
+			onEvent: (event) => this.handleRealtimeEvent(event),
+		});
 	}
 
 	// Configuration updates
@@ -445,14 +473,25 @@ export class CossistantClient {
 	}
 
 	handleRealtimeEvent(event: AnyRealtimeEvent): void {
+		// Apply website/visitor event filtering
+		const websiteId = this.restClient.getCurrentWebsiteId();
+		const visitorId = this.restClient.getCurrentVisitorId();
+
+		if (!shouldDeliverEvent(event, websiteId, visitorId)) {
+			return;
+		}
+
 		if (event.type === "conversationCreated") {
-			const { conversation, header } = event.payload;
+			const { conversation } = event.payload;
 
 			this.conversationsStore.ingestConversation({
 				...conversation,
 				lastTimelineItem: conversation.lastTimelineItem ?? undefined,
 			});
 		} else if (event.type === "timelineItemCreated") {
+			// Clear typing state when a timeline item is created
+			clearTypingFromTimelineItem(this.typingStore, event);
+
 			// Ingest timeline item into store
 			const timelineItem =
 				this.timelineItemsStore.ingestRealtimeTimelineItem(event);
@@ -474,6 +513,16 @@ export class CossistantClient {
 
 				this.conversationsStore.ingestConversation(nextConversation);
 			}
+		} else if (event.type === "conversationSeen") {
+			applyConversationSeenEvent(this.seenStore, event, {
+				ignoreVisitorId: visitorId,
+			});
+		} else if (event.type === "conversationTyping") {
+			applyConversationTypingEvent(this.typingStore, event, {
+				ignoreVisitorId: visitorId,
+			});
+		} else if (event.type === "conversationUpdated") {
+			this.handleConversationUpdated(event);
 		}
 	}
 
@@ -577,7 +626,7 @@ export class CossistantClient {
 
 	// Cleanup method
 	destroy(): void {
-		// No cleanup needed for REST client
+		this.realtime.destroy();
 	}
 }
 
