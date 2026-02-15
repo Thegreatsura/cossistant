@@ -150,21 +150,23 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 			{/* Input area */}
 			<div className="group/multimodal-input flex flex-col rounded border border-co-border bg-co-background ring-offset-2 focus-within:ring-1 focus-within:ring-co-primary/10 dark:bg-co-background-200">
-				<Primitive.MultimodalInput
-					autoFocus
-					className={cn(
-						"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-co-primary/50 focus-visible:outline-none",
-						className
-					)}
-					disabled={disabled}
-					error={error}
-					onChange={onChange}
-					onFileSelect={onFileSelect}
-					onSubmit={handleSubmit}
-					placeholder={resolvedPlaceholder}
-					ref={inputRef}
-					value={value}
-				/>
+				<div className="max-h-[200px] overflow-y-auto">
+					<Primitive.MultimodalInput
+						autoFocus
+						className={cn(
+							"flex-1 resize-none overflow-hidden p-3 text-co-foreground text-sm placeholder:text-co-primary/50 focus-visible:outline-none",
+							className
+						)}
+						disabled={disabled}
+						error={error}
+						onChange={onChange}
+						onFileSelect={onFileSelect}
+						onSubmit={handleSubmit}
+						placeholder={resolvedPlaceholder}
+						ref={inputRef}
+						value={value}
+					/>
+				</div>
 
 				<div className="flex items-center justify-between py-1 pr-1 pl-3">
 					<Watermark />
