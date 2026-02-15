@@ -43,7 +43,7 @@ export const CommandShortcut = ({
 		}
 
 		if (child === "mod") {
-			return isMac ? <span className="text-xs">⌘</span> : "Ctrl";
+			return isMac ? "⌘" : "Ctrl";
 		}
 
 		return child;
@@ -63,7 +63,7 @@ export const CommandShortcut = ({
 	return (
 		<span
 			className={cn(
-				"ml-auto inline-flex h-[18px] min-w-[20px] items-center justify-center rounded-xs bg-primary-foreground/15 px-1 text-center font-medium font-mono text-[9px] text-primary-foreground uppercase",
+				"ml-auto inline-flex h-[18px] min-w-[20px] items-center justify-center rounded-xs bg-primary-foreground/15 px-1 text-center font-medium font-sans text-[9px] text-primary-foreground uppercase",
 				className
 			)}
 			{...props}
