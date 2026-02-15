@@ -238,7 +238,7 @@ export function ConversationBasicActions({
 	);
 
 	useHotkeys(
-		["Backspace", "Delete"],
+		"x",
 		(event) => {
 			event.preventDefault();
 			event.stopPropagation();
@@ -285,10 +285,7 @@ export function ConversationBasicActions({
 						<Icon filledOnHover name="inbox-zero" />
 					</Button>
 				</TooltipOnHover>
-				<TooltipOnHover
-					content={archiveLabel}
-					shortcuts={["Backspace", "Delete"]}
-				>
+				<TooltipOnHover content={archiveLabel} shortcuts={["X"]}>
 					<Button
 						aria-label={archiveLabel}
 						disabled={archivePending}
@@ -332,10 +329,7 @@ export function ConversationBasicActions({
 					<Icon filledOnHover name={readUnreadIcon} />
 				</Button>
 			</TooltipOnHover>
-			<TooltipOnHover
-				content={archiveLabel}
-				shortcuts={["Backspace", "Delete"]}
-			>
+			<TooltipOnHover content={archiveLabel} shortcuts={["X"]}>
 				<Button
 					aria-label={archiveLabel}
 					disabled={archivePending}

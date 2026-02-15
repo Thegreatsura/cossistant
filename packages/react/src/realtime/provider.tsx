@@ -16,7 +16,22 @@ import {
 	useRef,
 	useState,
 } from "react";
-import useWebSocket, { ReadyState } from "react-use-websocket";
+import * as ReactUseWebSocket from "react-use-websocket";
+
+const useWebSocket =
+	typeof ReactUseWebSocket.default === "function"
+		? ReactUseWebSocket.default
+		: typeof ReactUseWebSocket.useWebSocket === "function"
+			? ReactUseWebSocket.useWebSocket
+			: null;
+
+const ReadyState = ReactUseWebSocket.ReadyState ?? {
+	UNINSTANTIATED: -1,
+	CONNECTING: 0,
+	OPEN: 1,
+	CLOSING: 2,
+	CLOSED: 3,
+};
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000;
 const DEFAULT_HEARTBEAT_TIMEOUT_MS = 45_000;
@@ -113,6 +128,12 @@ type RealtimeContextValue = RealtimeConnectionState & {
 const DEFAULT_WS_URL = "wss://api.cossistant.com/ws";
 
 const RealtimeContext = createContext<RealtimeContextValue | null>(null);
+
+if (!useWebSocket) {
+	throw new Error(
+		"[Realtime] Failed to resolve react-use-websocket hook export. Please ensure react-use-websocket is installed correctly."
+	);
+}
 
 /**
  * Decodes WebSocket message data into a string.
@@ -295,14 +316,33 @@ function resolvePublicKey(explicit?: string | null): string | null {
 		return trimmed;
 	}
 
-	const processEnv = typeof process !== "undefined" ? process.env : undefined;
+	// IMPORTANT: Must use DIRECT access to env vars for build-time inlining
+	// Next.js/Webpack: requires direct `process.env.X` access to inline at build time
+	// Vite: requires direct `import.meta.env.X` access
+	// Dynamic access (e.g., `const env = process.env; env.X`) breaks inlining!
+	let fromEnv: string | undefined | null;
 
-	// Next.js: NEXT_PUBLIC_COSSISTANT_API_KEY
-	// React/other: COSSISTANT_API_KEY
-	const fromEnv =
-		processEnv?.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-		processEnv?.COSSISTANT_API_KEY ||
-		null;
+	// Try Next.js/Node.js environment variables
+	try {
+		fromEnv =
+			process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
+			process.env.COSSISTANT_API_KEY ||
+			null;
+	} catch {
+		// process not available (Vite/browser-only environment)
+		fromEnv = null;
+	}
+
+	// Fallback to Vite environment variables
+	if (!fromEnv) {
+		try {
+			// @ts-expect-error - import.meta.env is Vite-specific and not in standard types
+			fromEnv = import.meta.env?.VITE_COSSISTANT_API_KEY || null;
+		} catch {
+			// import.meta not available (older bundlers)
+			fromEnv = null;
+		}
+	}
 
 	const normalized = fromEnv?.trim();
 	return normalized && normalized.length > 0 ? normalized : null;

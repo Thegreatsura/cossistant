@@ -391,7 +391,7 @@ export function MoreConversationActions({
 									}
 								);
 							}}
-							shortcuts={["Delete"]}
+							shortcuts={["x"]}
 						>
 							{archiveLabel}
 						</DropdownMenuItem>

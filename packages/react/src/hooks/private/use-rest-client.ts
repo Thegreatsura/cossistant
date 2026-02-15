@@ -46,10 +46,31 @@ export function useClient(
 	wsUrl = "wss://api.cossistant.com/ws"
 ): UseClientResult {
 	return useMemo(() => {
-		const processEnv = typeof process !== "undefined" ? process.env : undefined;
-		const keyFromEnv =
-			processEnv?.NEXT_PUBLIC_COSSISTANT_API_KEY ||
-			processEnv?.COSSISTANT_API_KEY;
+		// IMPORTANT: Must use DIRECT access to env vars for build-time inlining
+		// Next.js/Webpack: requires direct `process.env.X` access to inline at build time
+		// Vite: requires direct `import.meta.env.X` access
+		// Dynamic access (e.g., `const env = process.env; env.X`) breaks inlining!
+		let keyFromEnv: string | undefined;
+
+		// Try Next.js/Node.js environment variables
+		try {
+			keyFromEnv =
+				process.env.NEXT_PUBLIC_COSSISTANT_API_KEY ||
+				process.env.COSSISTANT_API_KEY;
+		} catch {
+			// process not available (Vite/browser-only environment)
+		}
+
+		// Fallback to Vite environment variables
+		if (!keyFromEnv) {
+			try {
+				// @ts-expect-error - import.meta.env is Vite-specific and not in standard types
+				keyFromEnv = import.meta.env?.VITE_COSSISTANT_API_KEY;
+			} catch {
+				// import.meta not available (older bundlers)
+			}
+		}
+
 		const keyToUse = publicKey ?? keyFromEnv;
 
 		if (!keyToUse) {

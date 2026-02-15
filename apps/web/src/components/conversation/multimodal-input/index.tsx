@@ -64,6 +64,10 @@ export type MultimodalInputProps = {
 	 * Use this to get the value for sending to the server.
 	 */
 	onMarkdownChange?: (markdownValue: string) => void;
+	/**
+	 * Called when the input container height changes (for dynamic timeline padding).
+	 */
+	onHeightChange?: (height: number) => void;
 };
 
 export const MultimodalInput: React.FC<MultimodalInputProps> = ({
@@ -88,6 +92,7 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 	renderAttachButton,
 	mentionConfig,
 	onMarkdownChange,
+	onHeightChange,
 }) => {
 	const isPrivate = visibility === "private";
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -195,9 +200,13 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		[isPrivate, onVisibilityChange]
 	);
 
+	// Track previous container height for auto-scroll
+	const previousHeightRef = useRef<number>(0);
+
 	// Auto-resize textarea with max height constraint
 	useLayoutEffect(() => {
 		const textarea = textareaRef.current;
+		const container = containerRef.current;
 		if (!textarea) {
 			return;
 		}
@@ -215,7 +224,40 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 		if (overlayRef.current) {
 			overlayRef.current.style.height = `${scrollHeight}px`;
 		}
-	}, [value]);
+
+		// Report height changes for dynamic timeline padding & auto-scroll
+		if (container && typeof document !== "undefined") {
+			const currentHeight = container.getBoundingClientRect().height;
+			const heightDelta = currentHeight - previousHeightRef.current;
+
+			// Notify parent of height change for dynamic padding
+			if (onHeightChange && heightDelta !== 0) {
+				onHeightChange(currentHeight);
+			}
+
+			// Only auto-scroll if height increased (input is growing)
+			if (heightDelta > 0) {
+				const timeline = document.getElementById("conversation-timeline");
+				if (timeline) {
+					const timelineScrollTop = timeline.scrollTop;
+					const timelineScrollHeight = timeline.scrollHeight;
+					const timelineClientHeight = timeline.clientHeight;
+					const distanceFromBottom =
+						timelineScrollHeight - timelineScrollTop - timelineClientHeight;
+
+					// If user is near bottom (within 50px), scroll down by the height delta
+					if (distanceFromBottom <= 50) {
+						timeline.scrollTo({
+							top: timelineScrollTop + heightDelta,
+							behavior: "smooth",
+						});
+					}
+				}
+			}
+
+			previousHeightRef.current = currentHeight;
+		}
+	}, [value, onHeightChange]);
 
 	// Scroll sync between textarea and overlay
 	const handleScroll = useCallback(() => {
@@ -287,7 +329,10 @@ export const MultimodalInput: React.FC<MultimodalInputProps> = ({
 
 	return (
 		<div className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl">
-			<form className="flex flex-col gap-2" onSubmit={handleFormSubmit}>
+			<form
+				className="flex max-h-[50vh] flex-col gap-2"
+				onSubmit={handleFormSubmit}
+			>
 				{/* Error message */}
 				{error && (
 					<div className="rounded-md bg-destructive-muted p-2 text-destructive text-xs">

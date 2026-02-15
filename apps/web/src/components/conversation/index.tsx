@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
+import { useState } from "react";
 import { Page } from "../ui/layout";
 import {
 	VisitorSidebar,
@@ -34,15 +35,18 @@ export function Conversation({
 	visitorSidebar,
 	escalation,
 }: ConversationProps) {
+	// Track input/escalation height for dynamic timeline padding
+	const [inputHeight, setInputHeight] = useState(80); // Default ~80px for initial render
+
 	return (
 		<>
 			<Page className="relative py-0 pr-0.5 pl-0">
 				<ConversationHeader {...header} />
-				<ConversationTimelineList {...timeline} />
+				<ConversationTimelineList {...timeline} inputHeight={inputHeight} />
 				{escalation ? (
-					<EscalationAction {...escalation} />
+					<EscalationAction {...escalation} onHeightChange={setInputHeight} />
 				) : (
-					<MultimodalInput {...input} />
+					<MultimodalInput {...input} onHeightChange={setInputHeight} />
 				)}
 			</Page>
 			<VisitorSidebar {...visitorSidebar} />

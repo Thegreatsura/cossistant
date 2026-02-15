@@ -43,7 +43,7 @@ export const CommandShortcut = ({
 		}
 
 		if (child === "mod") {
-			return isMac ? "⌘" : "Ctrl";
+			return isMac ? <span className="text-xs">⌘</span> : "Ctrl";
 		}
 
 		return child;
@@ -54,9 +54,7 @@ export const CommandShortcut = ({
 			{_children.map((child, index) => (
 				<span key={`${child}-${index}`}>
 					<span>{renderChild(child)}</span>
-					{index < _children.length - 1 && (
-						<span className="mx-0.5 text-primary-foreground/80">+</span>
-					)}
+					{index < _children.length - 1 && <span className="mx-0.5">+</span>}
 				</span>
 			))}
 		</>

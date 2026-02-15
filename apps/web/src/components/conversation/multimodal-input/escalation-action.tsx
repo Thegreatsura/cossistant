@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icons";
 
@@ -8,15 +9,33 @@ export type EscalationActionProps = {
 	reason: string;
 	onJoin: () => void;
 	isJoining?: boolean;
+	/**
+	 * Called when the container height changes (for dynamic timeline padding).
+	 */
+	onHeightChange?: (height: number) => void;
 };
 
 export const EscalationAction: React.FC<EscalationActionProps> = ({
 	reason,
 	onJoin,
 	isJoining = false,
+	onHeightChange,
 }) => {
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	// Report height for dynamic timeline padding
+	useEffect(() => {
+		if (containerRef.current && onHeightChange) {
+			const height = containerRef.current.getBoundingClientRect().height;
+			onHeightChange(height);
+		}
+	}, [onHeightChange]);
+
 	return (
-		<div className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full bg-background px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl">
+		<div
+			className="absolute right-0 bottom-4 left-0 z-10 mx-auto w-full bg-background px-4 xl:max-w-xl xl:px-0 2xl:max-w-2xl"
+			ref={containerRef}
+		>
 			<div className="flex flex-col gap-3 rounded border border-cossistant-orange/50 border-dashed bg-cossistant-orange/5 p-4">
 				{/* Header */}
 				<div className="flex items-center gap-2">
